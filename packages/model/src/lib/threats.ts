@@ -4,8 +4,10 @@ import { elementIdSchema, threatIdSchema } from './ids.js';
 
 /**
  * Lifecycle of a threat. Écluse's Open, Mitigated, and Accepted map onto the
- * first three; `not-applicable` exists for Threat Dragon's NotApplicable so
- * the import (#27) stays total.
+ * first three; `not-applicable` exists for Threat Dragon's NotApplicable,
+ * making the import (#27) total against Threat Dragon 2.6.2 releases.
+ * Threat Dragon's unreleased main adds Transferred, Avoided, and Eliminated,
+ * which have no home here.
  */
 export const threatStatusSchema = z.enum([
   'open',

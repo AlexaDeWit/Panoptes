@@ -22,6 +22,22 @@ describe('threatCategorySchema', () => {
     }
   });
 
+  it('parses every STRIDE category', () => {
+    for (const category of [
+      'spoofing',
+      'tampering',
+      'repudiation',
+      'information-disclosure',
+      'denial-of-service',
+      'elevation-of-privilege',
+    ]) {
+      expect(
+        threatCategorySchema.safeParse({ methodology: 'STRIDE', category })
+          .success,
+      ).toBe(true);
+    }
+  });
+
   it("rejects a category outside its methodology's set", () => {
     expect(
       threatCategorySchema.safeParse({

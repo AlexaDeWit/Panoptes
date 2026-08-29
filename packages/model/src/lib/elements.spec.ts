@@ -136,6 +136,18 @@ describe('actorSchema', () => {
       }).success,
     ).toBe(true);
   });
+
+  it('ties the scoping pair by convention only: either field stands alone', () => {
+    expect(actorSchema.safeParse({ ...actor, outOfScope: true }).success).toBe(
+      true,
+    );
+    expect(
+      actorSchema.safeParse({
+        ...actor,
+        reasonOutOfScope: 'Out of the operator trust zone.',
+      }).success,
+    ).toBe(true);
+  });
 });
 
 describe('processSchema', () => {

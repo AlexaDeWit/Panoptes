@@ -37,7 +37,7 @@ export type Diagram = z.infer<typeof diagramSchema>;
 /**
  * The root of a threat model: metadata, diagrams, threats, mitigations, and
  * assumptions. Every array may be empty: a model saves before it is drawn or
- * analysed. Cross-record checks (id and threat-number uniqueness, reference
+ * analyzed. Cross-record checks (id and threat-number uniqueness, reference
  * resolution) land with the parse entry point (#19), so this schema alone
  * accepts duplicates and dangling ids.
  */
