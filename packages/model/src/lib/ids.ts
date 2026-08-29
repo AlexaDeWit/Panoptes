@@ -24,6 +24,36 @@ export const diagramIdSchema = z.string().min(1).brand<'DiagramId'>();
 export type DiagramId = z.infer<typeof diagramIdSchema>;
 
 /**
+ * Identifier of one threat in a model. Same contract as
+ * {@link elementIdSchema}: any non-empty string parses, uniqueness across
+ * the model is #19's refinement, and the brand is compile-time only.
+ */
+export const threatIdSchema = z.string().min(1).brand<'ThreatId'>();
+
+/** Branded threat id. */
+export type ThreatId = z.infer<typeof threatIdSchema>;
+
+/**
+ * Identifier of one mitigation in a model. Same contract as
+ * {@link elementIdSchema}: any non-empty string parses, uniqueness across
+ * the model is #19's refinement, and the brand is compile-time only.
+ */
+export const mitigationIdSchema = z.string().min(1).brand<'MitigationId'>();
+
+/** Branded mitigation id. */
+export type MitigationId = z.infer<typeof mitigationIdSchema>;
+
+/**
+ * Identifier of one assumption in a model. Same contract as
+ * {@link elementIdSchema}: any non-empty string parses, uniqueness across
+ * the model is #19's refinement, and the brand is compile-time only.
+ */
+export const assumptionIdSchema = z.string().min(1).brand<'AssumptionId'>();
+
+/** Branded assumption id. */
+export type AssumptionId = z.infer<typeof assumptionIdSchema>;
+
+/**
  * Generates a fresh element id as a UUID. Generation strategy only: parsing
  * accepts any non-empty string. Requires a secure context; crypto.randomUUID
  * is undefined on plain-http browser pages.
@@ -39,4 +69,31 @@ export function generateElementId(): ElementId {
  */
 export function generateDiagramId(): DiagramId {
   return diagramIdSchema.parse(crypto.randomUUID());
+}
+
+/**
+ * Generates a fresh threat id as a UUID. Generation strategy only: parsing
+ * accepts any non-empty string. Requires a secure context; crypto.randomUUID
+ * is undefined on plain-http browser pages.
+ */
+export function generateThreatId(): ThreatId {
+  return threatIdSchema.parse(crypto.randomUUID());
+}
+
+/**
+ * Generates a fresh mitigation id as a UUID. Generation strategy only:
+ * parsing accepts any non-empty string. Requires a secure context;
+ * crypto.randomUUID is undefined on plain-http browser pages.
+ */
+export function generateMitigationId(): MitigationId {
+  return mitigationIdSchema.parse(crypto.randomUUID());
+}
+
+/**
+ * Generates a fresh assumption id as a UUID. Generation strategy only:
+ * parsing accepts any non-empty string. Requires a secure context;
+ * crypto.randomUUID is undefined on plain-http browser pages.
+ */
+export function generateAssumptionId(): AssumptionId {
+  return assumptionIdSchema.parse(crypto.randomUUID());
 }

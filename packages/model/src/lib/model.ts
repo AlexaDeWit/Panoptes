@@ -1,6 +1,9 @@
 import { z } from 'zod';
+import { assumptionSchema } from './assumptions.js';
 import { elementSchema } from './elements.js';
 import { diagramIdSchema } from './ids.js';
+import { mitigationSchema } from './mitigations.js';
+import { threatSchema } from './threats.js';
 
 /**
  * Facts about the model as a whole: what it covers and who answers for it.
@@ -32,14 +35,18 @@ export const diagramSchema = z.strictObject({
 export type Diagram = z.infer<typeof diagramSchema>;
 
 /**
- * The root of a threat model: metadata plus the diagrams. A model with no
- * diagrams and a diagram with no elements are both legal: a model saves
- * before it is drawn. Threats, mitigations, and assumptions are added by a
- * later slice (#18).
+ * The root of a threat model: metadata, diagrams, threats, mitigations, and
+ * assumptions. Every array may be empty: a model saves before it is drawn or
+ * analysed. Cross-record checks (id and threat-number uniqueness, reference
+ * resolution) land with the parse entry point (#19), so this schema alone
+ * accepts duplicates and dangling ids.
  */
 export const modelSchema = z.strictObject({
   metadata: modelMetadataSchema,
   diagrams: z.array(diagramSchema),
+  threats: z.array(threatSchema),
+  mitigations: z.array(mitigationSchema),
+  assumptions: z.array(assumptionSchema),
 });
 
 /** Threat model root. */

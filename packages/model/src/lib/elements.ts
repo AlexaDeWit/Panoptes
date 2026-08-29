@@ -5,6 +5,9 @@ import { elementIdSchema } from './ids.js';
 const elementBaseSchema = z.strictObject({
   id: elementIdSchema,
   name: z.string(),
+  description: z.string(),
+  outOfScope: z.boolean(),
+  reasonOutOfScope: z.string(),
 });
 
 const nodeBaseSchema = elementBaseSchema.extend({
@@ -145,8 +148,15 @@ export type TrustBoundary = z.infer<typeof trustBoundarySchema>;
 
 /**
  * Any element a diagram can hold, discriminated on `kind`. Every kind
- * carries a name; the empty string is allowed because imported diagrams may
- * hold unnamed cells.
+ * carries a name, a description, and the scoping pair `outOfScope` and
+ * `reasonOutOfScope`; the empty string is allowed throughout because
+ * imported diagrams may hold unnamed or undescribed cells, and
+ * `reasonOutOfScope` is by convention empty while the element is in scope
+ * (no schema refinement ties the pair together). Threat Dragon's per-type
+ * flags (isEncrypted, isPublicNetwork, protocol, privilegeLevel,
+ * storesCredentials, and kin) and its persisted boundary membership
+ * (trustBoundaryIds, containedElements, crossingFlows) are deliberately not
+ * modelled; the import codec reports them as loss (M2).
  */
 export const elementSchema = z.discriminatedUnion('kind', [
   actorSchema,
