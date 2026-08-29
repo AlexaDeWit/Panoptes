@@ -35,7 +35,7 @@ catalog:
   '@vitest/coverage-v8': ~4.1.0
   '@vitest/ui': ~4.1.0
   esbuild: ^0.28.0
-  jiti: 2.4.2
+  jiti: 2.7.0
   jsdom: ^27.1.0
   nx: 23.1.2
   prettier: ^3.8.1
