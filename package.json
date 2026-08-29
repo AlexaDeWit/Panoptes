@@ -3,7 +3,15 @@
   "version": "0.0.0",
   "private": true,
   "packageManager": "pnpm@11.21.0",
+  "//": [
+    "check runs everything the CI gate runs except: workflow lint (#13; actionlint and zizmor live in the Nix ci shell, not the pnpm graph) and the Playwright e2e job (#25; its own CI job).",
+    "Coverage stays enabled in check so the local run and CI's Codecov upload are the same command.",
+    "check splits its nx invocations because coverage flags go to the test target only: forwarded args reach every selected target, and tsc and vite reject them.",
+    "format runs tree-wide, not per project: oxfmt also owns the root configs and docs that no nx project claims."
+  ],
   "scripts": {
+    "check": "pnpm nx sync:check && pnpm nx run-many -t lint boundaries && pnpm format:check && pnpm nx run-many -t build typecheck && pnpm nx run-many -t test -- --coverage.enabled=true",
+    "fix": "pnpm nx run-many -t lint -- --fix && pnpm format",
     "format": "oxfmt",
     "format:check": "oxfmt --check"
   },

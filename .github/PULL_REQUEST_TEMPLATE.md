@@ -15,7 +15,7 @@ CONTRIBUTING.md -> "Pull requests" has the rules.
 
 ## Checklist
 
-- [ ] `pnpm nx run-many -t build typecheck test` passes locally
+- [ ] `pnpm check` passes locally
 - [ ] Docs updated in this PR where behaviour, interfaces, or config changed
 - [ ] Conventional Commit subjects, and every commit GPG-signed
 - [ ] Every commit signed off under the DCO (`git commit -s`)
