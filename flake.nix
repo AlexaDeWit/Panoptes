@@ -49,19 +49,25 @@
           # playwright's host-distribution check does not apply.
           PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS = "true";
         };
+
+        # SAST scanner. CI's static-checks job gates on its findings, and it
+        # lives in both shells so a local run matches the gate.
+        sastInputs = [
+          pkgs.semgrep
+        ];
       in {
         devShells = {
           # The shell every CI job enters: one closure, one cache entry.
           ci = pkgs.mkShell (shellEnv // playwrightEnv // {
             name = "panoptes-ci";
-            buildInputs = toolchainInputs ++ workflowLintInputs;
+            buildInputs = toolchainInputs ++ workflowLintInputs ++ sastInputs;
           });
 
           # The shell for humans. Currently identical to ci; interactive-only
           # tooling joins here, never in ci, so CI's closure stays lean.
           default = pkgs.mkShell (shellEnv // playwrightEnv // {
             name = "panoptes";
-            buildInputs = toolchainInputs ++ workflowLintInputs;
+            buildInputs = toolchainInputs ++ workflowLintInputs ++ sastInputs;
           });
         };
       });
