@@ -14,7 +14,7 @@ level of experience, education, socio-economic status, nationality, personal
 appearance, race, caste, colour, religion, or sexual identity and orientation.
 
 And I'll be specific about who that means, because an unnamed "everyone" too easily
-defaults to white, male, and cisgender, and leaving unspoken who a space is *for* is
+defaults to white, male, and cisgender, and leaving unspoken who a space is _for_ is
 how marginalised people get quietly edged back out of it. People of colour (including,
 though by no means limited to, Black, Indigenous, and Arab communities), as well as
 queer people, transgender people, disabled people, and others historically pushed to
@@ -27,26 +27,26 @@ for it, and it is not up for debate.
 
 Things that make this a place worth being:
 
-* Empathy and kindness toward other people.
-* Respect for differing opinions, viewpoints, and experiences.
-* Giving and gracefully accepting constructive feedback.
-* Owning your mistakes, apologising to the people affected, and learning from them.
-* Weighing what is best for the project and the people in it, not just yourself.
+- Empathy and kindness toward other people.
+- Respect for differing opinions, viewpoints, and experiences.
+- Giving and gracefully accepting constructive feedback.
+- Owning your mistakes, apologising to the people affected, and learning from them.
+- Weighing what is best for the project and the people in it, not just yourself.
 
 Things that are not welcome here:
 
-* Sexualised language or imagery, and sexual attention or advances of any kind.
-* Trolling, insulting or derogatory comments, and personal or political attacks.
-* Public or private harassment.
-* Publishing someone's private information, such as a physical or email address,
+- Sexualised language or imagery, and sexual attention or advances of any kind.
+- Trolling, insulting or derogatory comments, and personal or political attacks.
+- Public or private harassment.
+- Publishing someone's private information, such as a physical or email address,
   without their explicit permission.
-* Tone-policing: dismissing, derailing, or minimising a report of harm by going after
+- Tone-policing: dismissing, derailing, or minimising a report of harm by going after
   the tone or manner it was raised in rather than the harm itself.
-* Invoking "reverse" racism, sexism, transphobia, or the like to deflect from, excuse,
+- Invoking "reverse" racism, sexism, transphobia, or the like to deflect from, excuse,
   or draw a false equivalence with harm done to marginalised people.
-* Demanding "neutrality," "both sides," or "civility" as a way to shield bigotry or to
+- Demanding "neutrality," "both sides," or "civility" as a way to shield bigotry or to
   silence the people responding to it.
-* Anything else you would reasonably expect to be out of line in a professional setting.
+- Anything else you would reasonably expect to be out of line in a professional setting.
 
 ## This Code is not neutral
 
@@ -80,9 +80,9 @@ whoever raised it.
 Two honest caveats, because pretending otherwise would defeat the point of writing this
 in my own words:
 
-* **I am one person, doing this in spare time.** Acknowledging and resolving a report
+- **I am one person, doing this in spare time.** Acknowledging and resolving a report
   can take longer than I would like. Slow does not mean it is not being taken seriously.
-* **There is no formal enforcement ladder, because there is no panel to run one.**
+- **There is no formal enforcement ladder, because there is no panel to run one.**
   Depending on what happened, I will do whatever is warranted: a private word, a public
   correction, editing or removing the offending contribution, or blocking someone from
   the project for a while or for good. I aim for a response proportionate to the harm,

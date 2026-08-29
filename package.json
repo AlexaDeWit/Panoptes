@@ -3,7 +3,10 @@
   "version": "0.0.0",
   "private": true,
   "packageManager": "pnpm@11.21.0",
-  "scripts": {},
+  "scripts": {
+    "format": "oxfmt",
+    "format:check": "oxfmt --check"
+  },
   "dependencies": {
     "react": "catalog:",
     "react-dom": "catalog:"
@@ -33,9 +36,9 @@
     "jiti": "catalog:",
     "jsdom": "catalog:",
     "nx": "catalog:",
+    "oxfmt": "catalog:",
     "oxlint": "catalog:",
     "oxlint-tsgolint": "catalog:",
-    "prettier": "catalog:",
     "tslib": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",

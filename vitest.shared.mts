@@ -12,11 +12,15 @@ const projectName = (projectRoot: string): string =>
     .name as string;
 
 export const cacheDir = (projectRoot: string): string =>
-  join(workspaceRoot, 'node_modules/.vite', relative(workspaceRoot, projectRoot));
+  join(
+    workspaceRoot,
+    'node_modules/.vite',
+    relative(workspaceRoot, projectRoot),
+  );
 
 export const sharedTest = (
   projectRoot: string,
-  environment: 'node' | 'jsdom'
+  environment: 'node' | 'jsdom',
 ) => ({
   name: projectName(projectRoot),
   watch: false,

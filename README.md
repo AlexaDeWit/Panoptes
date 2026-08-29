@@ -29,14 +29,14 @@ Dragon and license it under the same Apache License 2.0. See
 
 ## Structure
 
-| Project | What it holds |
-| --- | --- |
-| `packages/model` | The internal data structures and operations on them |
-| `packages/formats` | File-format codecs (Threat Dragon v2 JSON, Panoptes YAML) |
-| `packages/canvas` | React canvas components, shared by the UI and headless rendering |
-| `packages/render` | Projections of a model: SVG, markdown, PDF |
-| `apps/studio` | The drawing UI |
-| `apps/cli` | The command-line interface |
+| Project            | What it holds                                                    |
+| ------------------ | ---------------------------------------------------------------- |
+| `packages/model`   | The internal data structures and operations on them              |
+| `packages/formats` | File-format codecs (Threat Dragon v2 JSON, Panoptes YAML)        |
+| `packages/canvas`  | React canvas components, shared by the UI and headless rendering |
+| `packages/render`  | Projections of a model: SVG, markdown, PDF                       |
+| `apps/studio`      | The drawing UI                                                   |
+| `apps/cli`         | The command-line interface                                       |
 
 ## Development
 
@@ -48,6 +48,7 @@ nix develop            # or let direnv do it
 pnpm install
 pnpm nx run-many -t build typecheck test
 pnpm nx run-many -t lint
+pnpm format:check        # or pnpm format to write
 ```
 
 See [`CONTRIBUTING.md`](CONTRIBUTING.md) for the contribution process,

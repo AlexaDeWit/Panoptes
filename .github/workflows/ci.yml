@@ -55,6 +55,11 @@ jobs:
       - name: Lint
         run: nix develop .#ci --command pnpm nx run-many -t lint
 
+      # Tree-wide, not per-project: oxfmt also owns the root configs and docs
+      # that no nx project claims.
+      - name: Format check
+        run: nix develop .#ci --command pnpm format:check
+
       - name: Build and typecheck
         run: nix develop .#ci --command pnpm nx run-many -t build typecheck
 

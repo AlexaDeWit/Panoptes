@@ -12,12 +12,12 @@ suggestions.
 - The tracker is the plan: milestones are the waves, issues are the slices,
   and issue bodies carry the acceptance criteria and dependency order.
 
-| Work | Read next |
-|---|---|
-| Implement an issue | The issue body and its milestone description, then the packages it names |
-| Change build, CI, or dependencies | [CONTRIBUTING, Repository requirements](CONTRIBUTING.md#repository-requirements) and [`.agents/orchestration.md`](.agents/orchestration.md) |
-| Run or resume the orchestration loop | [`.agents/orchestration.md`](.agents/orchestration.md) |
-| Commit or open a PR | [`CONTRIBUTING.md`](CONTRIBUTING.md) and the PR template |
+| Work                                 | Read next                                                                                                                                   |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| Implement an issue                   | The issue body and its milestone description, then the packages it names                                                                    |
+| Change build, CI, or dependencies    | [CONTRIBUTING, Repository requirements](CONTRIBUTING.md#repository-requirements) and [`.agents/orchestration.md`](.agents/orchestration.md) |
+| Run or resume the orchestration loop | [`.agents/orchestration.md`](.agents/orchestration.md)                                                                                      |
+| Commit or open a PR                  | [`CONTRIBUTING.md`](CONTRIBUTING.md) and the PR template                                                                                    |
 
 ## Invariants
 
@@ -36,9 +36,9 @@ suggestions.
   import anything below them.
 - **The flake is the toolchain authority.** Work inside `nix develop`. No
   global installs.
-- **Local verification**: `pnpm nx run-many -t build typecheck test`. The
-  floor equals the full check while the workspace is small. Issue #23
-  upgrades this to `pnpm check`; update this line when it lands.
+- **Local verification**: `pnpm nx run-many -t build typecheck test lint`,
+  then `pnpm format:check`. Issue #23 consolidates this into `pnpm check`;
+  update this line when it lands.
 - **One fact, one home.** Decision records only on the maintainer's explicit
   request ([CONTRIBUTING, Decision records](CONTRIBUTING.md#decision-records)).
 - **Prose register**: Canadian English, no em- or en-dashes, no filler
