@@ -21,6 +21,7 @@ For a security fix, coordinate privately first. See SECURITY.md.
 
 <!-- AI assistance: see CONTRIBUTING.md -> "AI-assisted contributions".
      Keep one line, or delete. -->
+
 AI-assisted: `Assisted-by:` trailer on every commit.
 
 Closes #
