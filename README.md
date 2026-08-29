@@ -59,7 +59,8 @@ workspace TypeScript and wires format-on-save to the oxc extension
 (`oxc.oxc-vscode`), which formats through the repository's pinned oxfmt,
 so the editor and the format check inside `pnpm check` agree.
 
-See [`CONTRIBUTING.md`](CONTRIBUTING.md) for the contribution process,
+See [`CODING.md`](CODING.md) for the coding guidelines,
+[`CONTRIBUTING.md`](CONTRIBUTING.md) for the contribution process,
 [`SECURITY.md`](SECURITY.md) for reporting vulnerabilities, and
 [`GOVERNANCE.md`](GOVERNANCE.md) for how decisions get made.
 

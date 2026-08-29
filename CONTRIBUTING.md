@@ -96,18 +96,4 @@ commitment. A weekend of rework is not serious commitment. Two more rules:
   optional. Keep the summary short and imperative.
 - **Commits are GPG-signed and DCO signed off** (see above). Disclose
   non-trivial AI assistance with an `Assisted-by:` trailer.
-- **Single version policy**: external dependency versions live only in the
-  `pnpm-workspace.yaml` catalog. Leaf manifests use `catalog:` and
-  `workspace:*` references.
-- **Targets are root-defined**: nx plugins and `targetDefaults` own task
-  configuration. A leaf project opts in with a config file or an
-  executor-only marker, and deviations need a stated reason.
-- **Pin every GitHub Action to a full commit SHA**, never a tag, with the
-  version in a trailing comment. Renovate bumps them. CI's static-checks job
-  fails an unpinned action (zizmor, hash-pin policy in `.github/zizmor.yml`).
-- **Keep workflows injection-free**. Never interpolate untrusted
-  `${{ github.event.* }}` or `${{ github.head_ref }}` into `run:` blocks.
-  Pass them through `env:` or intermediate files. CI's static-checks job
-  fails a violating expression (actionlint and zizmor both catch it).
-- **Diagrams are Mermaid, not ASCII art**: a fenced ` ```mermaid ` block,
-  never box-drawing characters.
+- **The engineering rules live in [`CODING.md`](CODING.md)**.
