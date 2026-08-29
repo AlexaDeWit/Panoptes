@@ -97,9 +97,11 @@ commitment. A weekend of rework is not serious commitment. Two more rules:
   configuration. A leaf project opts in with a config file or an
   executor-only marker, and deviations need a stated reason.
 - **Pin every GitHub Action to a full commit SHA**, never a tag, with the
-  version in a trailing comment. Renovate bumps them.
+  version in a trailing comment. Renovate bumps them. CI's static-checks job
+  fails an unpinned action (zizmor, hash-pin policy in `.github/zizmor.yml`).
 - **Keep workflows injection-free**. Never interpolate untrusted
   `${{ github.event.* }}` or `${{ github.head_ref }}` into `run:` blocks.
-  Pass them through `env:` or intermediate files.
+  Pass them through `env:` or intermediate files. CI's static-checks job
+  fails a violating expression (actionlint and zizmor both catch it).
 - **Diagrams are Mermaid, not ASCII art**: a fenced ` ```mermaid ` block,
   never box-drawing characters.
