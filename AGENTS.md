@@ -36,9 +36,9 @@ suggestions.
   import anything below them.
 - **The flake is the toolchain authority.** Work inside `nix develop`. No
   global installs.
-- **Local verification**: `pnpm nx run-many -t build typecheck test lint`,
-  then `pnpm format:check`. Issue #23 consolidates this into `pnpm check`;
-  update this line when it lands.
+- **Local verification**: `pnpm check`, everything the CI gate runs
+  (exclusions noted beside the script definition in `package.json`).
+  `pnpm fix` runs the writing variants.
 - **One fact, one home.** Decision records only on the maintainer's explicit
   request ([CONTRIBUTING, Decision records](CONTRIBUTING.md#decision-records)).
 - **Prose register**: Canadian English, no em- or en-dashes, no filler

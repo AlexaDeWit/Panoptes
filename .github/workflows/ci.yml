@@ -49,26 +49,12 @@ jobs:
       - name: Install dependencies
         run: nix develop .#ci --command pnpm install --frozen-lockfile
 
-      - name: Check workspace sync (project references)
-        run: nix develop .#ci --command pnpm nx sync:check
-
-      - name: Lint and boundaries
-        run: nix develop .#ci --command pnpm nx run-many -t lint boundaries
-
-      # Tree-wide, not per-project: oxfmt also owns the root configs and docs
-      # that no nx project claims.
-      - name: Format check
-        run: nix develop .#ci --command pnpm format:check
-
-      - name: Build and typecheck
-        run: nix develop .#ci --command pnpm nx run-many -t build typecheck
-
-      # Coverage flags go to the test target only: forwarded args reach every
-      # selected target, and tsc and vite reject them.
-      - name: Test with coverage
-        run: >-
-          nix develop .#ci --command
-          pnpm nx run-many -t test -- --coverage.enabled=true
+      # The same command a contributor runs locally, so local and CI cannot
+      # drift. The script (package.json) chains sync check, lint, boundaries,
+      # format check, build, typecheck, and test with coverage; the coverage
+      # output feeds the Codecov upload below.
+      - name: Check
+        run: nix develop .#ci --command pnpm check
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
