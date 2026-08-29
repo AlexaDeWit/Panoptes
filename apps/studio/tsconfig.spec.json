@@ -7,9 +7,13 @@
       "vitest/importMeta",
       "vite/client",
       "node",
-      "vitest"
+      "vitest",
+      "@nx/react/typings/cssmodule.d.ts",
+      "@nx/react/typings/image.d.ts"
     ],
-    "forceConsistentCasingInFileNames": true
+    "jsx": "react-jsx",
+    "module": "esnext",
+    "moduleResolution": "bundler"
   },
   "include": [
     "src/**/*.test.ts",
@@ -24,7 +28,7 @@
   ],
   "references": [
     {
-      "path": "./tsconfig.lib.json"
+      "path": "./tsconfig.app.json"
     }
   ]
 }

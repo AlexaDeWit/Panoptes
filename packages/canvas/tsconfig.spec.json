@@ -9,7 +9,9 @@
       "node",
       "vitest"
     ],
-    "forceConsistentCasingInFileNames": true
+    "jsx": "react-jsx",
+    "module": "esnext",
+    "moduleResolution": "bundler"
   },
   "include": [
     "src/**/*.test.ts",

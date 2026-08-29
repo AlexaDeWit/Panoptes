@@ -1,0 +1,101 @@
+name: CI
+
+# Push-to-main and pull_request, so a feature-branch push never double-runs
+# beside its PR.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+# Never cancel on main: it keeps the complete build history of every commit
+# that lands.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+# Least privilege by default. Jobs that need more widen it at the job level.
+permissions:
+  contents: read
+
+env:
+  # One deterministic pnpm store location, shared with the cache in
+  # .github/actions/setup-toolchain.
+  npm_config_store_dir: ${{ github.workspace }}/.pnpm-store
+
+jobs:
+  build-test:
+    name: Build, typecheck & tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      id-token: write # OIDC for tokenless Codecov upload (no stored token)
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up toolchain
+        uses: ./.github/actions/setup-toolchain
+
+      # cache-nix-action trims the store with `nix store gc` before saving, and
+      # a dev shell holds no GC root, so without this profile the saved entry
+      # loses `.#ci`.
+      - name: Root the .#ci shell for the Nix-store cache save
+        run: nix develop .#ci --profile "$RUNNER_TEMP/panoptes-ci-profile" --command true
+
+      - name: Install dependencies
+        run: nix develop .#ci --command pnpm install --frozen-lockfile
+
+      - name: Check workspace sync (project references)
+        run: nix develop .#ci --command pnpm nx sync:check
+
+      - name: Build and typecheck
+        run: nix develop .#ci --command pnpm nx run-many -t build typecheck
+
+      # Coverage flags go to the test target only: forwarded args reach every
+      # selected target, and tsc and vite reject them.
+      - name: Test with coverage
+        run: >-
+          nix develop .#ci --command
+          pnpm nx run-many -t test -- --coverage.enabled=true
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
+        with:
+          use_oidc: true # tokenless upload via GitHub OIDC, no CODECOV_TOKEN secret
+          fail_ci_if_error: true # a lost upload must not silently skip the gate
+
+      # Restore-everywhere, save-on-main-only, one writer: the same policy as
+      # the Nix store, applied to the pnpm store.
+      - name: Save pnpm store (main only)
+        if: github.ref == 'refs/heads/main'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ github.workspace }}/.pnpm-store
+          key: pnpm-store-${{ runner.os }}-${{ hashFiles('flake.lock', 'pnpm-lock.yaml') }}
+
+  gate:
+    name: CI gate
+    # The single required check. Wire a new gating job in by adding it to
+    # `needs` AND to the verdict step, so a job that silently never ran can
+    # never read as green.
+    needs: [build-test]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Require every gating job
+        env:
+          BUILD_TEST: ${{ needs.build-test.result }}
+        run: |
+          verdict=0
+          if [ "$BUILD_TEST" = "success" ]; then
+            echo "ok      build-test"
+          else
+            echo "FAILED  build-test: $BUILD_TEST"
+            verdict=1
+          fi
+          exit "$verdict"

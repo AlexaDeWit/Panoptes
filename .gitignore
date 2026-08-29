@@ -20,7 +20,8 @@ coverage/
 # Editor and OS noise
 .vscode/*
 !.vscode/settings.json
-!.vscode/extensions.json
+!.vscode/launch.json
 .DS_Store
 
 vitest.config.*.timestamp*
+vite.config.*.timestamp*
