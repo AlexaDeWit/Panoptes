@@ -1,6 +1,8 @@
 # @panoptes/model
 
 Zod schemas and inferred types for the threat model core: ids, geometry,
-elements, diagrams, and model metadata. Imports no internal package.
+elements, diagrams, threats, mitigations, assumptions, and model metadata.
+`parseModel` is the parse boundary and the only exported way a `Model` value
+comes into existence. Imports no internal package.
 
 Unit tests: `pnpm nx test @panoptes/model`.
