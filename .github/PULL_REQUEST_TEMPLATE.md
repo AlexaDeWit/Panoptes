@@ -20,8 +20,9 @@ For a security fix, coordinate privately first. See SECURITY.md.
      sentence each. Delete the section when there are none. -->
 
 <!-- AI assistance: see CONTRIBUTING.md -> "AI-assisted contributions".
-     Keep one line, or delete. -->
+     Name the tool, or delete the line. A disclosure that names no tool
+     discloses nothing. -->
 
-AI-assisted: `Assisted-by:` trailer on every commit.
+AI-assisted: `Assisted-by: <Agent> (<Vendor>)` trailer on every commit.
 
 Closes #
