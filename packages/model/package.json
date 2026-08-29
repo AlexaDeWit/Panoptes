@@ -13,7 +13,9 @@
     },
     "./package.json": "./package.json"
   },
-  "dependencies": {},
+  "dependencies": {
+    "zod": "catalog:"
+  },
   "nx": {
     "tags": [
       "layer:model"
