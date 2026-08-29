@@ -33,6 +33,8 @@
     "jiti": "catalog:",
     "jsdom": "catalog:",
     "nx": "catalog:",
+    "oxlint": "catalog:",
+    "oxlint-tsgolint": "catalog:",
     "prettier": "catalog:",
     "tslib": "catalog:",
     "typescript": "catalog:",

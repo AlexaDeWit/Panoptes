@@ -1,0 +1,43 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "options": {
+    "typeAware": true
+  },
+  "plugins": [
+    "typescript",
+    "oxc",
+    "unicorn",
+    "import",
+    "promise",
+    "react",
+    "vitest"
+  ],
+  "categories": {
+    "correctness": "error",
+    "suspicious": "error"
+  },
+  "rules": {
+    // The workspace compiles JSX with the automatic runtime ("jsx":
+    // "react-jsx"), so React never needs to be in scope.
+    "react/react-in-jsx-scope": "off",
+    // Type-aware rules the categories above do not reach (they sit in
+    // pedantic or restriction). Rules already denied by correctness or
+    // suspicious, no-floating-promises among them, are not repeated here.
+    "typescript/no-confusing-void-expression": "error",
+    "typescript/no-misused-promises": "error",
+    "typescript/no-mixed-enums": "error",
+    "typescript/no-unsafe-argument": "error",
+    "typescript/no-unsafe-assignment": "error",
+    "typescript/no-unsafe-call": "error",
+    "typescript/no-unsafe-member-access": "error",
+    "typescript/no-unsafe-return": "error",
+    "typescript/only-throw-error": "error",
+    "typescript/prefer-promise-reject-errors": "error",
+    "typescript/require-await": "error",
+    "typescript/restrict-plus-operands": "error",
+    "typescript/switch-exhaustiveness-check": "error",
+    "typescript/use-unknown-in-catch-callback-variable": "error"
+  },
+  // Generated output; node_modules is ignored by default.
+  "ignorePatterns": ["**/dist/**", "**/out-tsc/**", "**/coverage/**"]
+}

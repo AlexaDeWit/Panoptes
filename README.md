@@ -47,6 +47,7 @@ Nix with flakes provides the toolchain (node, pnpm). With
 nix develop            # or let direnv do it
 pnpm install
 pnpm nx run-many -t build typecheck test
+pnpm nx run-many -t lint
 ```
 
 See [`CONTRIBUTING.md`](CONTRIBUTING.md) for the contribution process,

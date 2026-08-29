@@ -17,6 +17,9 @@
   "nx": {
     "tags": [
       "layer:model"
-    ]
+    ],
+    "targets": {
+      "lint": {}
+    }
   }
 }

@@ -19,6 +19,9 @@
   "nx": {
     "tags": [
       "layer:formats"
-    ]
+    ],
+    "targets": {
+      "lint": {}
+    }
   }
 }

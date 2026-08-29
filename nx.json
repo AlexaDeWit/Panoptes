@@ -52,6 +52,21 @@
     "test": {
       "dependsOn": ["^build"]
     },
+    "lint": {
+      "executor": "nx:run-commands",
+      "cache": true,
+      "inputs": [
+        "default",
+        "^production",
+        "{workspaceRoot}/.oxlintrc.json",
+        {
+          "externalDependencies": ["oxlint", "oxlint-tsgolint"]
+        }
+      ],
+      "options": {
+        "command": "oxlint {projectRoot}"
+      }
+    },
     "@nx/esbuild:esbuild": {
       "cache": true,
       "dependsOn": ["^build"],
