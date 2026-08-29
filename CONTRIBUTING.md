@@ -54,10 +54,12 @@ Signed-off-by: Your Name <you@example.com>
 ## Pull requests
 
 Open as a draft while work or review is moving, and mark it ready when it is
-not. The body is the goal, the motivation, and the consequence, readable in
-seconds, plus a one-line AI-assistance disclosure. The old checklist is gone
-on purpose: the gate enforces its items, and a body should not restate a
-gate.
+not. The body is three headings, **What** (the goal), **Why** (the
+motivation), and **Consequences** (user-visible changes, deviations,
+trade-offs, one sentence each; the section goes when there are none), plus a
+one-line AI-assistance disclosure. Readable in seconds. There is no
+checklist on purpose: the gate enforces its items, and a body should not
+restate a gate.
 
 A reviewer reads the body before the diff, so write it so someone who has
 not opened the diff understands the change on its own. Lead with what a
