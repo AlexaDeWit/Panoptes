@@ -129,3 +129,7 @@ catalog:
   typescript: ~6.0.3
   vite: ^8.0.0
   vitest: ~4.1.0
+  # Floor below the 4.5 line: it was younger than minimumReleaseAge when
+  # adopted (2026-08-29), so the caret resolves to the newest aged release
+  # and picks up 4.5.x as it ages.
+  zod: ^4.4.0
