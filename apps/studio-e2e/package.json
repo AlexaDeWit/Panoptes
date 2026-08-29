@@ -1,0 +1,17 @@
+{
+  "name": "@panoptes/studio-e2e",
+  "version": "0.0.1",
+  "private": true,
+  "nx": {
+    "tags": [
+      "layer:app"
+    ],
+    "implicitDependencies": [
+      "@panoptes/studio"
+    ],
+    "targets": {
+      "boundaries": {},
+      "lint": {}
+    }
+  }
+}

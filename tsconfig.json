@@ -20,6 +20,9 @@
     },
     {
       "path": "./apps/cli"
+    },
+    {
+      "path": "./apps/studio-e2e"
     }
   ],
   "compilerOptions": {}
