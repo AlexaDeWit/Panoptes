@@ -27,11 +27,6 @@ with its model schema. We consider this project a derived work of Threat
 Dragon and license it under the same Apache License 2.0. See
 [`NOTICE`](NOTICE) for the upstream attribution.
 
-## Status
-
-Pre-alpha. The workspace, the project boundaries, and CI exist. The model,
-codecs, canvas, and CLI are placeholders being built out.
-
 ## Structure
 
 | Project | What it holds |
