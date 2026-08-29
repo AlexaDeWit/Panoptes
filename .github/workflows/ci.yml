@@ -71,15 +71,17 @@ jobs:
           path: ${{ github.workspace }}/.pnpm-store
           key: pnpm-store-${{ runner.os }}-${{ hashFiles('flake.lock', 'pnpm-lock.yaml') }}
 
-  # Workflow linting: actionlint for syntax and semantics, zizmor for the
-  # security rules the repository already commits to (SHA pins, injection-free
-  # run blocks; policy in .github/zizmor.yml).
+  # Workflow linting (actionlint for syntax and semantics, zizmor for the
+  # security rules the repository already commits to: SHA pins, injection-free
+  # run blocks; policy in .github/zizmor.yml) and SAST over the source tree
+  # (semgrep, findings uploaded to code scanning).
   static-checks:
     name: Static checks
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
       contents: read
+      security-events: write # SARIF upload to code scanning
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -101,6 +103,26 @@ jobs:
         run: >-
           nix develop .#ci --command
           zizmor --offline --config .github/zizmor.yml .github/
+
+      # --config auto fetches registry rules over the network at scan time
+      # (accepted in #70). --error exits non-zero on any finding at ERROR or
+      # WARNING severity, which fails this job and with it the gate. Per-rule
+      # exclusions go here as --exclude-rule, each with its reason beside it.
+      - name: Scan sources (semgrep)
+        run: >-
+          nix develop .#ci --command
+          semgrep scan --config auto --severity ERROR --severity WARNING
+          --sarif-output=semgrep.sarif --error .
+
+      # The Security tab is the triage view; the gating is the --error exit
+      # above. if: always() so findings still reach code scanning when the
+      # scan step fails the job.
+      - name: Upload semgrep SARIF to code scanning
+        if: always()
+        uses: github/codeql-action/upload-sarif@db488ddef3bf6cb639b32c2e9a7c0a7ea8271d28 # v4.37.8
+        with:
+          sarif_file: semgrep.sarif
+          category: semgrep
 
   # Browser-level smoke: the app boots under a real browser from the flake's
   # pinned browsers (no network download; PLAYWRIGHT_BROWSERS_PATH points into

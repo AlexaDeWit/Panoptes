@@ -37,6 +37,12 @@
           pkgs.zizmor
         ];
 
+        # SAST scanner. CI's static-checks job gates on its findings, and it
+        # lives in both shells so a local run matches the gate.
+        sastInputs = [
+          pkgs.semgrep
+        ];
+
         # Playwright browsers from the same pinned set: no playwright-managed
         # downloads at install or test time. The driver version is exported so
         # the version-equality test in apps/studio-e2e can red an unpaired
@@ -54,14 +60,14 @@
           # The shell every CI job enters: one closure, one cache entry.
           ci = pkgs.mkShell (shellEnv // playwrightEnv // {
             name = "panoptes-ci";
-            buildInputs = toolchainInputs ++ workflowLintInputs;
+            buildInputs = toolchainInputs ++ workflowLintInputs ++ sastInputs;
           });
 
           # The shell for humans. Currently identical to ci; interactive-only
           # tooling joins here, never in ci, so CI's closure stays lean.
           default = pkgs.mkShell (shellEnv // playwrightEnv // {
             name = "panoptes";
-            buildInputs = toolchainInputs ++ workflowLintInputs;
+            buildInputs = toolchainInputs ++ workflowLintInputs ++ sastInputs;
           });
         };
       });

@@ -20,6 +20,9 @@ test-output/
 *.tsbuildinfo
 .direnv/
 
+# Scan output from the CI semgrep invocation, when run locally
+semgrep.sarif
+
 # Editor and OS noise
 .vscode/*
 !.vscode/settings.json

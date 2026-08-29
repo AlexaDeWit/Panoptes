@@ -9,6 +9,11 @@ Edit here when the process changes, in the same PR as the change.
 - "CI gate" is the terminal job in
   [`.github/workflows/ci.yml`](../.github/workflows/ci.yml); its `needs` list
   and verdict step define the gating set. Wire a new gating job into both.
+- A code scanning rule on `main` additionally requires a Semgrep OSS analysis
+  per PR (alerts at `errors_and_warnings`, security alerts at
+  `medium_or_higher`). The CI gate's semgrep step remains the strict
+  enforcement: it fails the job on any ERROR or WARNING finding before the
+  ruleset thresholds matter.
 - Informational contexts: **codecov/patch** (explicit once #14 lands).
 
 ## Work decomposition
