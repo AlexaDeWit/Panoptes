@@ -37,6 +37,12 @@
           pkgs.zizmor
         ];
 
+        # SAST scanner. CI's static-checks job gates on its findings, and it
+        # lives in both shells so a local run matches the gate.
+        sastInputs = [
+          pkgs.semgrep
+        ];
+
         # Playwright browsers from the same pinned set: no playwright-managed
         # downloads at install or test time. The driver version is exported so
         # the version-equality test in apps/studio-e2e can red an unpaired
@@ -49,12 +55,6 @@
           # playwright's host-distribution check does not apply.
           PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS = "true";
         };
-
-        # SAST scanner. CI's static-checks job gates on its findings, and it
-        # lives in both shells so a local run matches the gate.
-        sastInputs = [
-          pkgs.semgrep
-        ];
       in {
         devShells = {
           # The shell every CI job enters: one closure, one cache entry.
