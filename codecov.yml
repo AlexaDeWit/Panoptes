@@ -1,0 +1,13 @@
+# Reviewed-in-repo statuses replacing Codecov's defaults (issue #14).
+coverage:
+  status:
+    # The required codecov/project check: auto target with a 1% threshold, so
+    # it stays meaningful without blocking placeholder churn.
+    project:
+      default:
+        target: auto
+        threshold: 1%
+    # Informational until M1 lands real code. Gating flips then (issue #22).
+    patch:
+      default:
+        informational: true
