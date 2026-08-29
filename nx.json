@@ -67,6 +67,25 @@
         "command": "oxlint {projectRoot}"
       }
     },
+    "boundaries": {
+      "executor": "nx:run-commands",
+      "cache": true,
+      "inputs": [
+        "default",
+        "^production",
+        "{workspaceRoot}/eslint.config.mjs",
+        {
+          "externalDependencies": [
+            "eslint",
+            "@nx/eslint-plugin",
+            "@typescript-eslint/parser"
+          ]
+        }
+      ],
+      "options": {
+        "command": "eslint {projectRoot}"
+      }
+    },
     "@nx/esbuild:esbuild": {
       "cache": true,
       "dependsOn": ["^build"],

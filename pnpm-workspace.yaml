@@ -26,6 +26,7 @@ minimumReleaseAgeExclude:
   - '@nx/docker@23.1.2'
   - '@nx/esbuild@23.1.2'
   - '@nx/eslint@23.1.2'
+  - '@nx/eslint-plugin@23.1.2'
   - '@nx/jest@23.1.2'
   - '@nx/js@23.1.2'
   - '@nx/node@23.1.2'
@@ -71,6 +72,7 @@ catalog:
   '@babel/core': ^7.14.5
   '@babel/preset-react': ^7.14.5
   '@nx/esbuild': 23.1.2
+  '@nx/eslint-plugin': 23.1.2
   '@nx/js': 23.1.2
   '@nx/node': 23.1.2
   '@nx/react': 23.1.2
@@ -85,10 +87,17 @@ catalog:
   '@types/node': ^24.0.0
   '@types/react': ^19.0.0
   '@types/react-dom': ^19.0.0
+  # Parser only, for the boundaries host: no type program and no checker
+  # API, the rule reads syntax alone. The parser still depends on the
+  # typescript package (typescript-estree consumes the compiler's parser)
+  # and 8.x declares a ceiling of typescript <6.1.0, so bump it in the
+  # same Renovate wave as the typescript pin when TS 7.1 lands (#57).
+  '@typescript-eslint/parser': ^8.0.0
   '@vitejs/plugin-react': ^6.0.0
   '@vitest/coverage-v8': ~4.1.0
   '@vitest/ui': ~4.1.0
   esbuild: ^0.28.0
+  eslint: ^10.0.0
   jiti: 2.7.0
   jsdom: ^27.1.0
   nx: 23.1.2
