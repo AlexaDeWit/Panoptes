@@ -36,17 +36,30 @@
           pkgs.actionlint
           pkgs.zizmor
         ];
+
+        # Playwright browsers from the same pinned set: no playwright-managed
+        # downloads at install or test time. The driver version is exported so
+        # the version-equality test in apps/studio-e2e can red an unpaired
+        # bump between this pin and the catalog's @playwright/test (#25).
+        playwrightEnv = {
+          PLAYWRIGHT_BROWSERS_PATH = pkgs.playwright-driver.browsers;
+          PLAYWRIGHT_DRIVER_VERSION = pkgs.playwright-driver.version;
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD = "1";
+          # The store's browsers link against nix-provided libraries, so
+          # playwright's host-distribution check does not apply.
+          PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS = "true";
+        };
       in {
         devShells = {
           # The shell every CI job enters: one closure, one cache entry.
-          ci = pkgs.mkShell (shellEnv // {
+          ci = pkgs.mkShell (shellEnv // playwrightEnv // {
             name = "panoptes-ci";
             buildInputs = toolchainInputs ++ workflowLintInputs;
           });
 
           # The shell for humans. Currently identical to ci; interactive-only
           # tooling joins here, never in ci, so CI's closure stays lean.
-          default = pkgs.mkShell (shellEnv // {
+          default = pkgs.mkShell (shellEnv // playwrightEnv // {
             name = "panoptes";
             buildInputs = toolchainInputs ++ workflowLintInputs;
           });

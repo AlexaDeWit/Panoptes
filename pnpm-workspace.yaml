@@ -40,6 +40,7 @@ minimumReleaseAgeExclude:
   - '@nx/nx-linux-x64-musl@23.1.2'
   - '@nx/nx-win32-arm64-msvc@23.1.2'
   - '@nx/nx-win32-x64-msvc@23.1.2'
+  - '@nx/playwright@23.1.2'
   - '@nx/react@23.1.2'
   - '@nx/vite@23.1.2'
   - '@nx/vitest@23.1.2'
@@ -75,10 +76,17 @@ catalog:
   '@nx/eslint-plugin': 23.1.2
   '@nx/js': 23.1.2
   '@nx/node': 23.1.2
+  '@nx/playwright': 23.1.2
   '@nx/react': 23.1.2
   '@nx/vite': 23.1.2
   '@nx/vitest': 23.1.2
   '@nx/web': 23.1.2
+  # Pinned exactly to the nixpkgs playwright-driver version: the browsers come
+  # from the flake, and a driver of one version cannot run browsers installed
+  # for another. The version-equality test in apps/studio-e2e reds a mismatch,
+  # and Renovate holds playwright bumps for Dependency Dashboard approval so
+  # the pair moves together (renovate.json5).
+  '@playwright/test': 1.59.1
   '@swc-node/register': 1.11.1
   '@swc/core': 1.15.8
   '@swc/helpers': 0.5.18

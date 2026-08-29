@@ -102,12 +102,39 @@ jobs:
           nix develop .#ci --command
           zizmor --offline --config .github/zizmor.yml .github/
 
+  # Browser-level smoke: the app boots under a real browser from the flake's
+  # pinned browsers (no network download; PLAYWRIGHT_BROWSERS_PATH points into
+  # the nix store). Its own job so browser time never stretches build-test.
+  e2e-smoke:
+    name: Playwright smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up toolchain
+        uses: ./.github/actions/setup-toolchain
+        with:
+          # build-test is the one writer for the shared "nix" prefix.
+          save-nix-store: 'false'
+
+      - name: Install dependencies
+        run: nix develop .#ci --command pnpm install --frozen-lockfile
+
+      - name: Run the smoke suite
+        run: nix develop .#ci --command pnpm nx e2e @panoptes/studio-e2e
+
   gate:
     name: CI gate
     # The single required check. Wire a new gating job in by adding it to
     # `needs` AND to the verdict step, so a job that silently never ran can
     # never read as green.
-    needs: [build-test, static-checks]
+    needs: [build-test, static-checks, e2e-smoke]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -116,6 +143,7 @@ jobs:
         env:
           BUILD_TEST: ${{ needs.build-test.result }}
           STATIC_CHECKS: ${{ needs.static-checks.result }}
+          E2E_SMOKE: ${{ needs.e2e-smoke.result }}
         run: |
           verdict=0
           if [ "$BUILD_TEST" = "success" ]; then
@@ -128,6 +156,12 @@ jobs:
             echo "ok      static-checks"
           else
             echo "FAILED  static-checks: $STATIC_CHECKS"
+            verdict=1
+          fi
+          if [ "$E2E_SMOKE" = "success" ]; then
+            echo "ok      e2e-smoke"
+          else
+            echo "FAILED  e2e-smoke: $E2E_SMOKE"
             verdict=1
           fi
           exit "$verdict"

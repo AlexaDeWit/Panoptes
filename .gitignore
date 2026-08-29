@@ -6,6 +6,9 @@ out-tsc/
 tmp/
 coverage/
 
+# Test artifacts (vitest coverage, playwright reports and traces)
+test-output/
+
 # nx caches and state
 .nx/cache
 .nx/workspace-data

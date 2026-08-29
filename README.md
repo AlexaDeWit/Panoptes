@@ -48,6 +48,7 @@ nix develop            # or let direnv do it
 pnpm install
 pnpm check             # everything the CI gate runs
 pnpm fix               # write formatting and lint fixes
+pnpm nx e2e @panoptes/studio-e2e   # browser smoke, excluded from pnpm check
 ```
 
 See [`CONTRIBUTING.md`](CONTRIBUTING.md) for the contribution process,

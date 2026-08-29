@@ -34,6 +34,12 @@
       }
     },
     {
+      "plugin": "@nx/playwright/plugin",
+      "options": {
+        "targetName": "e2e"
+      }
+    },
+    {
       "plugin": "@nx/vite/plugin",
       "options": {
         "buildTargetName": "build",
@@ -85,6 +91,23 @@
       "options": {
         "command": "eslint {projectRoot}"
       }
+    },
+    "e2e": {
+      "inputs": [
+        "default",
+        "^production",
+        "^{projectRoot}/tsconfig*.json",
+        {
+          "json": "{workspaceRoot}/tsconfig.json",
+          "fields": ["compilerOptions", "extends", "files", "include"]
+        },
+        {
+          "externalDependencies": ["@playwright/test"]
+        },
+        {
+          "env": "PLAYWRIGHT_DRIVER_VERSION"
+        }
+      ]
     },
     "@nx/esbuild:esbuild": {
       "cache": true,
