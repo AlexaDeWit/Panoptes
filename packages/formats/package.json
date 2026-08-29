@@ -21,6 +21,7 @@
       "layer:formats"
     ],
     "targets": {
+      "boundaries": {},
       "lint": {}
     }
   }

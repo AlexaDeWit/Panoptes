@@ -52,8 +52,8 @@ jobs:
       - name: Check workspace sync (project references)
         run: nix develop .#ci --command pnpm nx sync:check
 
-      - name: Lint
-        run: nix develop .#ci --command pnpm nx run-many -t lint
+      - name: Lint and boundaries
+        run: nix develop .#ci --command pnpm nx run-many -t lint boundaries
 
       # Tree-wide, not per-project: oxfmt also owns the root configs and docs
       # that no nx project claims.
@@ -104,7 +104,7 @@ jobs:
         uses: ./.github/actions/setup-toolchain
         with:
           # build-test is the one writer for the shared "nix" prefix.
-          save-nix-store: "false"
+          save-nix-store: 'false'
 
       - name: Lint workflows (actionlint)
         run: nix develop .#ci --command actionlint

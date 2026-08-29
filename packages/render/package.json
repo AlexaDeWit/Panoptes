@@ -21,6 +21,7 @@
       "layer:render"
     ],
     "targets": {
+      "boundaries": {},
       "lint": {}
     }
   }
