@@ -1,12 +1,15 @@
 import { modelMetadataSchema } from '@panoptes/model';
 
-// Placeholder wiring probe: parses through the model layer so the workspace
-// dependency is exercised. Replaced when this package gets its own slice.
+const placeholderMetadata = modelMetadataSchema.parse({
+  title: 'model',
+  owner: '',
+  description: '',
+});
+
+/**
+ * Placeholder that reaches the model layer until this package's own slice
+ * lands.
+ */
 export function formats(): string {
-  const metadata = modelMetadataSchema.parse({
-    title: 'model',
-    owner: '',
-    description: '',
-  });
-  return `formats of ${metadata.title}`;
+  return `formats of ${placeholderMetadata.title}`;
 }

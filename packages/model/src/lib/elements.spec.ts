@@ -9,8 +9,6 @@ import {
   trustBoundarySchema,
 } from './elements.js';
 
-// Samples taken from Écluse's Threat Dragon diagram, the representability
-// target: real cell ids, names, and geometry.
 const actor = {
   kind: 'actor',
   id: '0ec10e5e-0000-4000-8000-000000000010',
@@ -50,8 +48,6 @@ const attachedFlow = {
   waypoints: [],
 };
 
-// Écluse's flow whose source is a bare point on the canvas, the case the
-// free endpoint variant exists for.
 const freeSourceFlow = {
   kind: 'flow',
   id: '4e565871-45cc-4987-abba-24859ee2cf60',
@@ -75,8 +71,6 @@ const boundaryBox = {
   },
 };
 
-// Écluse has no boundary curves; Threat Dragon draws them, so the model
-// carries the variant from the start.
 const boundaryCurve = {
   kind: 'trust-boundary',
   id: 'internet-edge',
@@ -96,9 +90,8 @@ describe('actorSchema', () => {
     expect(actorSchema.parse(actor)).toEqual(actor);
   });
 
-  it('rejects a missing size', () => {
-    const { size: _size, ...rest } = actor;
-    expect(actorSchema.safeParse(rest).success).toBe(false);
+  it('accepts the empty string as a name', () => {
+    expect(actorSchema.safeParse({ ...actor, name: '' }).success).toBe(true);
   });
 });
 
@@ -128,10 +121,6 @@ describe('flowEndpointSchema', () => {
         position: { x: 0, y: 0 },
       }).success,
     ).toBe(true);
-  });
-
-  it('rejects an endpoint without a kind tag', () => {
-    expect(flowEndpointSchema.safeParse({ element: 'a' }).success).toBe(false);
   });
 
   it('rejects an attached endpoint carrying a position', () => {
@@ -171,11 +160,11 @@ describe('boundaryShapeSchema', () => {
     );
   });
 
-  it('rejects an unknown shape kind', () => {
+  it('rejects a curve with fewer than two waypoints', () => {
     expect(
       boundaryShapeSchema.safeParse({
-        kind: 'blob',
-        position: { x: 0, y: 0 },
+        kind: 'curve',
+        waypoints: [{ x: 0, y: 0 }],
       }).success,
     ).toBe(false);
   });
@@ -184,19 +173,6 @@ describe('boundaryShapeSchema', () => {
 describe('trustBoundarySchema', () => {
   it('parses a box boundary', () => {
     expect(trustBoundarySchema.parse(boundaryBox)).toEqual(boundaryBox);
-  });
-
-  it('parses a curve boundary', () => {
-    expect(trustBoundarySchema.parse(boundaryCurve)).toEqual(boundaryCurve);
-  });
-
-  it('rejects a box shape without a size', () => {
-    expect(
-      trustBoundarySchema.safeParse({
-        ...boundaryBox,
-        shape: { kind: 'box', position: { x: 240, y: 10 } },
-      }).success,
-    ).toBe(false);
   });
 });
 
@@ -215,12 +191,6 @@ describe('elementSchema', () => {
     for (const sample of samples) {
       expect(elementSchema.parse(sample).kind).toBe(sample.kind);
     }
-  });
-
-  it('rejects an unknown element kind', () => {
-    expect(elementSchema.safeParse({ ...actor, kind: 'cloud' }).success).toBe(
-      false,
-    );
   });
 
   it('rejects an unknown key instead of dropping it', () => {

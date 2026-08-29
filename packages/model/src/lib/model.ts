@@ -13,14 +13,14 @@ export const modelMetadataSchema = z.strictObject({
   description: z.string(),
 });
 
-/** Model metadata, inferred from {@link modelMetadataSchema}. */
+/** Model metadata. */
 export type ModelMetadata = z.infer<typeof modelMetadataSchema>;
 
 /**
  * One diagram: a titled canvas that owns its elements, geometry inline on
- * each element. Element ids must be unique across the whole model, not just
- * within one diagram; that refinement lands with the parse entry point
- * (#19), so this schema alone accepts duplicates.
+ * each element. Element ids and diagram ids must each be unique across the
+ * whole model; both refinements land with the parse entry point (#19), so
+ * this schema alone accepts duplicates.
  */
 export const diagramSchema = z.strictObject({
   id: diagramIdSchema,
@@ -28,7 +28,7 @@ export const diagramSchema = z.strictObject({
   elements: z.array(elementSchema),
 });
 
-/** Diagram, inferred from {@link diagramSchema}. */
+/** One diagram of a model. */
 export type Diagram = z.infer<typeof diagramSchema>;
 
 /**
@@ -40,5 +40,5 @@ export const modelSchema = z.strictObject({
   diagrams: z.array(diagramSchema),
 });
 
-/** Threat model root, inferred from {@link modelSchema}. */
+/** Threat model root. */
 export type Model = z.infer<typeof modelSchema>;

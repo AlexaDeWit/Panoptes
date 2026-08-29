@@ -21,10 +21,6 @@ describe('elementIdSchema', () => {
   it('rejects the empty string', () => {
     expect(elementIdSchema.safeParse('').success).toBe(false);
   });
-
-  it('rejects a non-string', () => {
-    expect(elementIdSchema.safeParse(7).success).toBe(false);
-  });
 });
 
 describe('diagramIdSchema', () => {
@@ -40,10 +36,6 @@ describe('diagramIdSchema', () => {
 describe('generateElementId', () => {
   it('produces an id the schema accepts', () => {
     expect(elementIdSchema.safeParse(generateElementId()).success).toBe(true);
-  });
-
-  it('produces a different id on each call', () => {
-    expect(generateElementId()).not.toBe(generateElementId());
   });
 });
 

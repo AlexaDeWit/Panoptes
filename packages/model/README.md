@@ -1,7 +1,6 @@
-# model
+# @panoptes/model
 
-This library was generated with [Nx](https://nx.dev).
+Zod schemas and inferred types for the threat model core: ids, geometry,
+elements, diagrams, and model metadata. Imports no internal package.
 
-## Running unit tests
-
-Run `nx test model` to execute the unit tests via [Vitest](https://vitest.dev/).
+Unit tests: `pnpm nx test @panoptes/model`.

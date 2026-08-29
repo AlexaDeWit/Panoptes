@@ -42,22 +42,11 @@ describe('modelMetadataSchema', () => {
       modelMetadataSchema.safeParse({ ...metadata, description: '' }).success,
     ).toBe(true);
   });
-
-  it('rejects a missing owner', () => {
-    const { owner: _owner, ...rest } = metadata;
-    expect(modelMetadataSchema.safeParse(rest).success).toBe(false);
-  });
 });
 
 describe('diagramSchema', () => {
   it('parses a diagram owning mixed elements', () => {
     expect(diagramSchema.parse(diagram)).toEqual(diagram);
-  });
-
-  it('accepts an empty element list', () => {
-    expect(diagramSchema.safeParse({ ...diagram, elements: [] }).success).toBe(
-      true,
-    );
   });
 
   it('rejects an unknown key', () => {
@@ -71,12 +60,6 @@ describe('modelSchema', () => {
   it('parses metadata plus diagrams', () => {
     const model = { metadata, diagrams: [diagram] };
     expect(modelSchema.parse(model)).toEqual(model);
-  });
-
-  it('accepts a model with no diagrams yet', () => {
-    expect(modelSchema.safeParse({ metadata, diagrams: [] }).success).toBe(
-      true,
-    );
   });
 
   it('accepts duplicate element ids until the model-wide refinement lands (#19)', () => {

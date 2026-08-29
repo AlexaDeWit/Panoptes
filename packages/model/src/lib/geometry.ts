@@ -9,7 +9,7 @@ export const pointSchema = z.strictObject({
   y: z.number(),
 });
 
-/** Canvas location, inferred from {@link pointSchema}. */
+/** Canvas location. */
 export type Point = z.infer<typeof pointSchema>;
 
 /**
@@ -21,7 +21,7 @@ export const sizeSchema = z.strictObject({
   height: z.number().positive(),
 });
 
-/** Canvas extent, inferred from {@link sizeSchema}. */
+/** Canvas extent. */
 export type Size = z.infer<typeof sizeSchema>;
 
 /**
@@ -30,5 +30,5 @@ export type Size = z.infer<typeof sizeSchema>;
  */
 export const waypointsSchema = z.array(pointSchema);
 
-/** Ordered waypoints, inferred from {@link waypointsSchema}. */
+/** Ordered route points. */
 export type Waypoints = z.infer<typeof waypointsSchema>;
