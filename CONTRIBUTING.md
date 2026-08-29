@@ -54,15 +54,19 @@ Signed-off-by: Your Name <you@example.com>
 ## Pull requests
 
 Open as a draft while work or review is moving, and mark it ready when it is
-not. Fill every section of the template, and tick a checklist item only when
-it is true. Otherwise say "not applicable" and why.
+not. The body is the goal, the motivation, and the consequence, readable in
+seconds, plus a one-line AI-assistance disclosure. The old checklist is gone
+on purpose: the gate enforces its items, and a body should not restate a
+gate.
 
-The Summary is the part worth effort. A reviewer reads it before the diff, so
-write it so someone who has not opened the diff understands the change on its
-own. Two to five sentences: what changed and why. Lead with what a reviewer
-or user gains or is protected from. The mechanism comes second, and only as
-far as the diff does not already show it. No play-by-play of files. End with
-`Closes #NNN` where an issue completes.
+A reviewer reads the body before the diff, so write it so someone who has
+not opened the diff understands the change on its own. Lead with what a
+reviewer or user gains or is protected from. The mechanism comes second, and
+only as far as the diff does not already show it. No play-by-play of files.
+The body never carries checklists, evidence transcripts, or per-round
+appendices: that audit trail lives in the commit message of the change that
+produced it, and a review round rewrites the body only when the goal or a
+consequence changed. End with `Closes #NNN` where an issue completes.
 
 Before you push, run the local check:
 
