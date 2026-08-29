@@ -1,0 +1,27 @@
+# Dependencies and build output
+node_modules/
+dist/
+out/
+out-tsc/
+tmp/
+coverage/
+
+# nx caches and state
+.nx/cache
+.nx/workspace-data
+.nx/polygraph
+.nx/self-healing
+.nx/migrate-runs
+
+# Toolchain caches
+*.tsbuildinfo
+.direnv/
+
+# Editor and OS noise
+.vscode/*
+!.vscode/settings.json
+!.vscode/launch.json
+.DS_Store
+
+vitest.config.*.timestamp*
+vite.config.*.timestamp*

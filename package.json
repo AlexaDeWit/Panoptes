@@ -1,0 +1,43 @@
+{
+  "name": "@panoptes/source",
+  "version": "0.0.0",
+  "private": true,
+  "packageManager": "pnpm@11.21.0",
+  "scripts": {},
+  "dependencies": {
+    "react": "catalog:",
+    "react-dom": "catalog:"
+  },
+  "devDependencies": {
+    "@babel/core": "catalog:",
+    "@babel/preset-react": "catalog:",
+    "@nx/esbuild": "catalog:",
+    "@nx/js": "catalog:",
+    "@nx/node": "catalog:",
+    "@nx/react": "catalog:",
+    "@nx/vite": "catalog:",
+    "@nx/vitest": "catalog:",
+    "@nx/web": "catalog:",
+    "@swc-node/register": "catalog:",
+    "@swc/core": "catalog:",
+    "@swc/helpers": "catalog:",
+    "@testing-library/dom": "catalog:",
+    "@testing-library/react": "catalog:",
+    "@types/node": "catalog:",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "@vitejs/plugin-react": "catalog:",
+    "@vitest/coverage-v8": "catalog:",
+    "@vitest/ui": "catalog:",
+    "esbuild": "catalog:",
+    "jiti": "catalog:",
+    "jsdom": "catalog:",
+    "nx": "catalog:",
+    "prettier": "catalog:",
+    "tslib": "catalog:",
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "vitest": "catalog:"
+  },
+  "license": "Apache-2.0"
+}

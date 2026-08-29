@@ -1,0 +1,26 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compileOnSave": false,
+  "files": [],
+  "references": [
+    {
+      "path": "./packages/model"
+    },
+    {
+      "path": "./packages/formats"
+    },
+    {
+      "path": "./packages/render"
+    },
+    {
+      "path": "./packages/canvas"
+    },
+    {
+      "path": "./apps/studio"
+    },
+    {
+      "path": "./apps/cli"
+    }
+  ],
+  "compilerOptions": {}
+}

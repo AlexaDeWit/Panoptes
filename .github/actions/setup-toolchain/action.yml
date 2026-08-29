@@ -1,0 +1,64 @@
+name: Set up toolchain
+description: >-
+  Install the flake-pinned Nix, restore the Nix store, and restore the pnpm
+  store. One home for the SHA-pinned setup actions and the cache config, so
+  Renovate bumps each pin once.
+
+  Caching policy, following Écluse: restore everywhere, save only on main, one
+  writer per key. A PR restores main's entries through GitHub's base-branch
+  fallback and never saves.
+
+inputs:
+  save-nix-store:
+    description: >-
+      Whether this job may save the Nix-store cache (only ever on main). Set
+      "false" for a job that restores a prefix another job writes, so the two
+      never race for the one entry.
+    default: "true"
+  nix-cache-prefix:
+    description: >-
+      The Nix-store cache key prefix, one entry per distinct closure. "nix" is
+      the shared `.#ci` dev-shell store. A job that realises a different
+      closure needs its own prefix and must be its sole writer.
+    default: "nix"
+  nix-gc-max-store-size:
+    description: >-
+      The size cache-nix-action trims the Nix store to before saving. The trim
+      is a `nix store gc`, so root what the entry must carry (the job roots the
+      .#ci shell profile before saving).
+    default: "5G"
+
+runs:
+  using: composite
+  steps:
+    - name: Install Nix
+      uses: DeterminateSystems/nix-installer-action@ef8a148080ab6020fd15196c2084a2eea5ff2d25 # v22
+      with:
+        # Determinate Nix logs the runner in to FlakeHub, which adds
+        # substituters no run is authorised for. auto-optimise-store's hard
+        # links break the cache restore (nix-community/cache-nix-action#170).
+        determinate: false
+        extra-conf: |
+          connect-timeout = 10
+          download-attempts = 5
+          auto-optimise-store = false
+
+    # Keyed on the flake. Two conditions gate the save, main and the
+    # save-nix-store input, so exactly one job writes each prefix.
+    - name: Cache Nix store
+      uses: nix-community/cache-nix-action@7df957e333c1e5da7721f60227dbba6d06080569 # v7.0.2
+      with:
+        primary-key: ${{ inputs.nix-cache-prefix }}-${{ runner.os }}-${{ hashFiles('flake.nix', 'flake.lock') }}
+        restore-prefixes-first-match: ${{ inputs.nix-cache-prefix }}-${{ runner.os }}-
+        save: ${{ inputs.save-nix-store == 'true' && github.ref == 'refs/heads/main' }}
+        gc-max-store-size-linux: ${{ inputs.nix-gc-max-store-size }}
+
+    # The workflow sets npm_config_store_dir to this path, so pnpm installs
+    # from it. Saved by the workflow on main only, mirroring the Nix rule.
+    - name: Restore pnpm store
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ${{ github.workspace }}/.pnpm-store
+        key: pnpm-store-${{ runner.os }}-${{ hashFiles('flake.lock', 'pnpm-lock.yaml') }}
+        restore-keys: |
+          pnpm-store-${{ runner.os }}-
