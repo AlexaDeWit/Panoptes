@@ -32,8 +32,10 @@ export const diagramSchema = z.strictObject({
 export type Diagram = z.infer<typeof diagramSchema>;
 
 /**
- * The root of a threat model: metadata plus the diagrams. Threats,
- * mitigations, and assumptions are added by a later slice (#18).
+ * The root of a threat model: metadata plus the diagrams. A model with no
+ * diagrams and a diagram with no elements are both legal: a model saves
+ * before it is drawn. Threats, mitigations, and assumptions are added by a
+ * later slice (#18).
  */
 export const modelSchema = z.strictObject({
   metadata: modelMetadataSchema,

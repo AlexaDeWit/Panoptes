@@ -26,7 +26,7 @@ export type Size = z.infer<typeof sizeSchema>;
 
 /**
  * Intermediate points a flow or boundary curve passes through, in drawing
- * order. Empty leaves the routing to the renderer.
+ * order. On a flow, an empty list leaves the routing to the renderer.
  */
 export const waypointsSchema = z.array(pointSchema);
 

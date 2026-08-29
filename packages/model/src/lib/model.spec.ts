@@ -62,6 +62,18 @@ describe('modelSchema', () => {
     expect(modelSchema.parse(model)).toEqual(model);
   });
 
+  it('accepts empty diagrams and empty elements', () => {
+    expect(modelSchema.safeParse({ metadata, diagrams: [] }).success).toBe(
+      true,
+    );
+    expect(
+      modelSchema.safeParse({
+        metadata,
+        diagrams: [{ ...diagram, elements: [] }],
+      }).success,
+    ).toBe(true);
+  });
+
   it('accepts duplicate element ids until the model-wide refinement lands (#19)', () => {
     const twice = { ...diagram, elements: [actor, actor] };
     expect(modelSchema.safeParse({ metadata, diagrams: [twice] }).success).toBe(

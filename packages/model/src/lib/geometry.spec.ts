@@ -24,7 +24,7 @@ describe('sizeSchema', () => {
 });
 
 describe('waypointsSchema', () => {
-  it('accepts points in order', () => {
+  it('parses a waypoint list', () => {
     expect(
       waypointsSchema.parse([
         { x: 1, y: 2 },

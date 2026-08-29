@@ -43,8 +43,8 @@ suggestions.
 - **One fact, one home.** Decision records only on the maintainer's explicit
   request ([CONTRIBUTING, Decision records](CONTRIBUTING.md#decision-records)).
 - **Comments in TypeScript source are TSDoc on exports only**, and stay a
-  simple summary of the non-obvious. Config files (workflows, the flake)
-  keep their constraint comments.
+  simple summary of the non-obvious. Config files (workflows, the flake,
+  tool config like playwright.config.ts) keep their constraint comments.
 - **Tests pin this project's decisions and regressions in broad strokes.**
   They do not re-verify what a dependency's own test suite or the
   type-checker already guarantees.
