@@ -6,20 +6,13 @@
       "request": "launch",
       "name": "Debug @panoptes/cli with Nx",
       "runtimeExecutable": "pnpm",
-      "runtimeArgs": [
-        "exec",
-        "nx",
-        "serve",
-        "@panoptes/cli"
-      ],
+      "runtimeArgs": ["exec", "nx", "serve", "@panoptes/cli"],
       "env": {
         "NODE_OPTIONS": "--inspect=9229"
       },
       "console": "integratedTerminal",
       "internalConsoleOptions": "neverOpen",
-      "skipFiles": [
-        "<node_internals>/**"
-      ],
+      "skipFiles": ["<node_internals>/**"],
       "sourceMaps": true,
       "outFiles": [
         "${workspaceFolder}/apps/cli/dist/**/*.(m|c|)js",

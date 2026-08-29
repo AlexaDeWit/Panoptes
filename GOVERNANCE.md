@@ -22,7 +22,7 @@ is deliberately simple: a **benevolent-dictator (BDFL) model**.
 I decide. Contributors raise proposals as issues or pull requests. A change
 merges when I approve it and the CI gate passes. I resolve disagreements, and
 I'll explain the reasoning. There's no voting body and no second approver
-today, which I've recorded as a known risk under *Continuity*.
+today, which I've recorded as a known risk under _Continuity_.
 
 ## Becoming a maintainer
 

@@ -1,36 +1,36 @@
 {
-  $schema: "https://docs.renovatebot.com/renovate-schema.json",
+  $schema: 'https://docs.renovatebot.com/renovate-schema.json',
 
   // One bot for the ecosystems this repo automates: the pnpm catalog, GitHub
   // Actions, and the Nix flake. The npm manager edits catalog entries in
   // pnpm-workspace.yaml natively, so a bump lands in the one place a version
   // lives (the single version policy).
   extends: [
-    "config:recommended",
+    'config:recommended',
     // Keep every GitHub Action pinned to a full commit SHA with the version
     // in a trailing comment (CONTRIBUTING, Repository requirements). Renovate
     // moves the digest and the comment together and never unpins.
-    "helpers:pinGitHubActionDigests",
+    'helpers:pinGitHubActionDigests',
     // config:recommended's group:monorepos already groups nx and the @nx/*
     // plugins (one source repo). Named here so the grouping survives a change
     // to the recommended preset.
-    "group:nxMonorepo",
+    'group:nxMonorepo',
   ],
 
   // Weekly wave, early Saturday UTC, at the start of the weekend session.
-  schedule: ["before 9am on saturday"],
+  schedule: ['before 9am on saturday'],
 
   // Quarantine a version for a week after publication, mirroring pnpm's own
   // minimumReleaseAge (#16), so the wave never proposes a version pnpm
   // refuses to resolve.
-  minimumReleaseAge: "7 days",
+  minimumReleaseAge: '7 days',
 
   // Withhold an update still inside the quarantine entirely, instead of
   // raising a PR that reports it as pending.
-  internalChecksFilter: "strict",
+  internalChecksFilter: 'strict',
 
   // Conventional Commit subjects, matching the repo's commit rule.
-  semanticCommits: "enabled",
+  semanticCommits: 'enabled',
 
   // The nix manager is beta and off by default. Without this block neither
   // flake input bumps nor the flake.lock maintenance below run at all.
@@ -51,20 +51,20 @@
   // toolchain closure. Covers pnpm-lock.yaml drift too.
   lockFileMaintenance: {
     enabled: true,
-    schedule: ["before 9am on saturday"],
+    schedule: ['before 9am on saturday'],
   },
 
   packageRules: [
     // Flake inputs and the lock refresh are toolchain moves.
     {
-      matchManagers: ["nix"],
-      semanticCommitType: "build",
+      matchManagers: ['nix'],
+      semanticCommitType: 'build',
     },
 
     // Action bumps are CI moves.
     {
-      matchManagers: ["github-actions"],
-      semanticCommitType: "ci",
+      matchManagers: ['github-actions'],
+      semanticCommitType: 'ci',
     },
 
     // Playwright must not move independently of the nixpkgs browser pin in
@@ -72,16 +72,16 @@
     // for Dependency Dashboard approval; the version-equality test (#25)
     // reds a mismatch.
     {
-      matchPackageNames: ["playwright", "playwright-core", "@playwright/*"],
-      groupName: "playwright",
+      matchPackageNames: ['playwright', 'playwright-core', '@playwright/*'],
+      groupName: 'playwright',
       dependencyDashboardApproval: true,
     },
 
     // The catalog pins typescript ~6.0.3: nx breaks on TS 7 before 7.1. A
     // major waits for Dependency Dashboard approval; #57 owns the adoption.
     {
-      matchPackageNames: ["typescript"],
-      matchUpdateTypes: ["major"],
+      matchPackageNames: ['typescript'],
+      matchUpdateTypes: ['major'],
       dependencyDashboardApproval: true,
     },
   ],

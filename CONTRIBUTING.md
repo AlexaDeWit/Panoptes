@@ -67,7 +67,8 @@ far as the diff does not already show it. No play-by-play of files. End with
 Before you push, run the local check:
 
 ```sh
-pnpm nx run-many -t build typecheck test
+pnpm nx run-many -t build typecheck test lint
+pnpm format:check
 ```
 
 ## Decision records

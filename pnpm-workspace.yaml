@@ -92,13 +92,15 @@ catalog:
   jiti: 2.7.0
   jsdom: ^27.1.0
   nx: 23.1.2
+  # Pinned exactly: a pre-1.0 oxfmt bump may reformat the tree, so it happens
+  # only in a reviewed PR. Renovate proposes the bumps.
+  oxfmt: 0.64.0
   # Pinned exactly: oxlint minors add rules, so a range bump could redden CI
   # outside a reviewed PR. Renovate proposes the bumps.
   oxlint: 1.80.0
   # tsgolint bundles its own typescript-go checker, so it does not care about
   # the catalog's typescript version.
   oxlint-tsgolint: 7.0.2001
-  prettier: ^3.8.1
   react: ^19.0.0
   react-dom: ^19.0.0
   tslib: ^2.3.0

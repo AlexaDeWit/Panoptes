@@ -14,19 +14,19 @@ inputs:
       Whether this job may save the Nix-store cache (only ever on main). Set
       "false" for a job that restores a prefix another job writes, so the two
       never race for the one entry.
-    default: "true"
+    default: 'true'
   nix-cache-prefix:
     description: >-
       The Nix-store cache key prefix, one entry per distinct closure. "nix" is
       the shared `.#ci` dev-shell store. A job that realises a different
       closure needs its own prefix and must be its sole writer.
-    default: "nix"
+    default: 'nix'
   nix-gc-max-store-size:
     description: >-
       The size cache-nix-action trims the Nix store to before saving. The trim
       is a `nix store gc`, so root what the entry must carry (the job roots the
       .#ci shell profile before saving).
-    default: "5G"
+    default: '5G'
 
 runs:
   using: composite
