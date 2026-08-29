@@ -1,0 +1,22 @@
+{
+  "name": "@panoptes/cli",
+  "version": "0.0.1",
+  "private": true,
+  "nx": {
+    "tags": [
+      "layer:app"
+    ],
+    "targets": {
+      "build": {
+        "executor": "@nx/esbuild:esbuild"
+      },
+      "serve": {
+        "executor": "@nx/js:node"
+      }
+    }
+  },
+  "dependencies": {
+    "@panoptes/formats": "workspace:*",
+    "@panoptes/render": "workspace:*"
+  }
+}

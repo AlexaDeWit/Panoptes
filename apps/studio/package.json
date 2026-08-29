@@ -1,0 +1,13 @@
+{
+  "name": "@panoptes/studio",
+  "version": "0.0.1",
+  "private": true,
+  "dependencies": {
+    "@panoptes/canvas": "workspace:*"
+  },
+  "nx": {
+    "tags": [
+      "layer:app"
+    ]
+  }
+}
