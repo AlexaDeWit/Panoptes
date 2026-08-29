@@ -1,6 +1,3 @@
-# Single version policy: the catalog below is the only place an external
-# dependency version is written. Leaf manifests use "catalog:" references, and
-# internal dependencies use "workspace:*".
 packages:
   - 'packages/*'
   - 'apps/*'
@@ -37,7 +34,7 @@ catalog:
   '@vitejs/plugin-react': ^6.0.0
   '@vitest/coverage-v8': ~4.1.0
   '@vitest/ui': ~4.1.0
-  esbuild: ^0.27.0
+  esbuild: ^0.28.0
   jiti: 2.4.2
   jsdom: ^27.1.0
   nx: 23.1.2
