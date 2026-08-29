@@ -70,6 +70,18 @@ Before you push, run the local check:
 pnpm nx run-many -t build typecheck test
 ```
 
+## Decision records
+
+[`docs/decisions/`](docs/decisions/) holds the reasoning for **major**
+decisions only: sweeping consequences that cannot be undone without serious
+commitment. A weekend of rework is not serious commitment. Two more rules:
+
+- A record is written only when the maintainer explicitly asks for one.
+  Offering one is fine. Producing one unbidden is not.
+- If the reasoning already lives where it bites (a README section, a comment
+  beside the config it constrains, the PR that made the change), it stays
+  there. Self-documenting artifacts win.
+
 ## Repository requirements
 
 - **Use [Conventional Commits](https://www.conventionalcommits.org/)**.
