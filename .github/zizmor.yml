@@ -1,0 +1,9 @@
+# zizmor policy, run by CI's static-checks job (nix develop .#ci).
+# zizmor's current default already requires a hash pin on every non-local
+# `uses:`; this file states the repository's hash-pin rule explicitly, so an
+# upstream change to that default cannot silently weaken the gate.
+rules:
+  unpinned-uses:
+    config:
+      policies:
+        "*": hash-pin

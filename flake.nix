@@ -29,19 +29,26 @@
           pkgs.nodejs_24
           pkgs.pnpm
         ];
+
+        # Workflow linters. CI's static-checks job gates on these, and they
+        # live in both shells so a local run matches the gate.
+        workflowLintInputs = [
+          pkgs.actionlint
+          pkgs.zizmor
+        ];
       in {
         devShells = {
           # The shell every CI job enters: one closure, one cache entry.
           ci = pkgs.mkShell (shellEnv // {
             name = "panoptes-ci";
-            buildInputs = toolchainInputs;
+            buildInputs = toolchainInputs ++ workflowLintInputs;
           });
 
           # The shell for humans. Currently identical to ci; interactive-only
           # tooling joins here, never in ci, so CI's closure stays lean.
           default = pkgs.mkShell (shellEnv // {
             name = "panoptes";
-            buildInputs = toolchainInputs;
+            buildInputs = toolchainInputs ++ workflowLintInputs;
           });
         };
       });
