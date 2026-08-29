@@ -1,0 +1,23 @@
+{
+  "name": "@panoptes/source",
+  "version": "0.0.0",
+  "private": true,
+  "packageManager": "pnpm@11.21.0",
+  "scripts": {},
+  "dependencies": {},
+  "devDependencies": {
+    "@nx/js": "catalog:",
+    "@nx/vitest": "catalog:",
+    "@swc-node/register": "catalog:",
+    "@swc/core": "catalog:",
+    "@swc/helpers": "catalog:",
+    "@types/node": "catalog:",
+    "@vitest/coverage-v8": "catalog:",
+    "nx": "catalog:",
+    "prettier": "catalog:",
+    "tslib": "catalog:",
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "vitest": "catalog:"
+  }
+}

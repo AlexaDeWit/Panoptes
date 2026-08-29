@@ -1,0 +1,32 @@
+# Single version policy: the catalog below is the only place an external
+# dependency version is written. Leaf manifests use "catalog:" references, and
+# internal dependencies use "workspace:*".
+packages:
+  - 'packages/*'
+  - 'apps/*'
+
+# Postinstall scripts are opt-in per package. Only these two run: both install
+# their native binaries that way. Every other package's build scripts stay off.
+allowBuilds:
+  '@swc/core': true
+  nx: true
+
+catalog:
+  '@nx/js': 23.1.2
+  '@nx/vitest': 23.1.2
+  '@vitest/coverage-v8': ~4.1.0
+  vite: ^8.0.0
+  vitest: ~4.1.0
+  '@swc-node/register': 1.11.1
+  '@swc/core': 1.15.8
+  '@swc/helpers': 0.5.18
+  '@types/node': ^24.0.0
+  nx: 23.1.2
+  prettier: ^3.8.1
+  tslib: ^2.3.0
+# TypeScript stays on 6.x: nx's @nx/js/typescript plugin drives the compiler
+  # through the programmatic API, which the Go-native 7.0 line does not ship
+  # until 7.1 (`ts.readConfigFile is not a function` under 7.0.2). Type-aware
+  # lint speed comes from oxlint's tsgolint, which carries its own Go checker.
+  # Revisit at 7.1.
+  typescript: ~6.0.3
