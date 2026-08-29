@@ -1,6 +1,6 @@
 import { render } from '@testing-library/react';
 
-import PanoptesCanvas from './canvas';
+import { PanoptesCanvas } from './canvas';
 
 describe('PanoptesCanvas', () => {
   it('should render successfully', () => {

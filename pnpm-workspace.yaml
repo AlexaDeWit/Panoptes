@@ -45,6 +45,27 @@ minimumReleaseAgeExclude:
   - '@nx/web@23.1.2'
   - '@nx/workspace@23.1.2'
   - '@testing-library/react@16.3.3'
+  # oxlint 1.80.0 was published 2026-08-24, inside the window when adopted.
+  - 'oxlint@1.80.0'
+  - '@oxlint/binding-android-arm-eabi@1.80.0'
+  - '@oxlint/binding-android-arm64@1.80.0'
+  - '@oxlint/binding-darwin-arm64@1.80.0'
+  - '@oxlint/binding-darwin-x64@1.80.0'
+  - '@oxlint/binding-freebsd-x64@1.80.0'
+  - '@oxlint/binding-linux-arm-gnueabihf@1.80.0'
+  - '@oxlint/binding-linux-arm-musleabihf@1.80.0'
+  - '@oxlint/binding-linux-arm64-gnu@1.80.0'
+  - '@oxlint/binding-linux-arm64-musl@1.80.0'
+  - '@oxlint/binding-linux-ppc64-gnu@1.80.0'
+  - '@oxlint/binding-linux-riscv64-gnu@1.80.0'
+  - '@oxlint/binding-linux-riscv64-musl@1.80.0'
+  - '@oxlint/binding-linux-s390x-gnu@1.80.0'
+  - '@oxlint/binding-linux-x64-gnu@1.80.0'
+  - '@oxlint/binding-linux-x64-musl@1.80.0'
+  - '@oxlint/binding-openharmony-arm64@1.80.0'
+  - '@oxlint/binding-win32-arm64-msvc@1.80.0'
+  - '@oxlint/binding-win32-ia32-msvc@1.80.0'
+  - '@oxlint/binding-win32-x64-msvc@1.80.0'
 
 catalog:
   '@babel/core': ^7.14.5
@@ -71,6 +92,12 @@ catalog:
   jiti: 2.7.0
   jsdom: ^27.1.0
   nx: 23.1.2
+  # Pinned exactly: oxlint minors add rules, so a range bump could redden CI
+  # outside a reviewed PR. Renovate proposes the bumps.
+  oxlint: 1.80.0
+  # tsgolint bundles its own typescript-go checker, so it does not care about
+  # the catalog's typescript version.
+  oxlint-tsgolint: 7.0.2001
   prettier: ^3.8.1
   react: ^19.0.0
   react-dom: ^19.0.0

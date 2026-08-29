@@ -1,12 +1,13 @@
 import { StrictMode } from 'react';
 import * as ReactDOM from 'react-dom/client';
-import App from './app/app';
+import { App } from './app/app';
 
-const root = ReactDOM.createRoot(
-  document.getElementById('root') as HTMLElement,
-);
+const rootElement = document.getElementById('root');
+if (rootElement === null) {
+  throw new Error('index.html has no #root element');
+}
 
-root.render(
+ReactDOM.createRoot(rootElement).render(
   <StrictMode>
     <App />
   </StrictMode>,

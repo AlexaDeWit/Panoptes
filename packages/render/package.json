@@ -19,6 +19,9 @@
   "nx": {
     "tags": [
       "layer:render"
-    ]
+    ],
+    "targets": {
+      "lint": {}
+    }
   }
 }

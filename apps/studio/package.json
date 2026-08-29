@@ -8,6 +8,9 @@
   "nx": {
     "tags": [
       "layer:app"
-    ]
+    ],
+    "targets": {
+      "lint": {}
+    }
   }
 }

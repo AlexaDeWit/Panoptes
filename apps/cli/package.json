@@ -10,6 +10,7 @@
       "build": {
         "executor": "@nx/esbuild:esbuild"
       },
+      "lint": {},
       "serve": {
         "executor": "@nx/js:node"
       }
