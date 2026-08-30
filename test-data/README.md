@@ -7,9 +7,9 @@ dependency between the readers: `packages/formats` may import
 `packages/model` and nothing else, so a fixture file owned by `model` would
 be out of reach.
 
-Nothing here is formatted or linted. `.oxfmtrc.json` ignores the directory so
-each file keeps the bytes the foreign tool wrote, which is what a codec has
-to read.
+The vendored payloads are not formatted. `.oxfmtrc.json` ignores
+`test-data/*.json` so each keeps the bytes the foreign tool wrote, which is
+what a codec has to read. This note is formatted like any other document.
 
 ## `ecluse.json`
 
@@ -38,5 +38,8 @@ project has. Two uses:
 
 One drift to know about before writing that codec: the file's `threatTop` is
 28, while two of its threats are numbered 101 and 102. Threat Dragon does not
-enforce the invariant the internal model does, so a codec cannot copy
-`threatTop` into `lastIssuedThreatNumber`.
+enforce the invariant the internal model does, so the import rule is
+`lastIssuedThreatNumber = max(threatTop, highest threat number in the file)`.
+Neither half alone is enough. `threatTop` alone breaks on this file, and the
+highest number alone drops the gap left by a removed highest-numbered threat,
+which is the record the field exists to keep.

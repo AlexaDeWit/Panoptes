@@ -1,6 +1,13 @@
 import { Either } from 'effect';
 import { assumptionStatusSchema } from './assumptions.js';
-import { strideCategorySchema, threatCategorySchema } from './categories.js';
+import {
+  ciaCategorySchema,
+  ciaDieCategorySchema,
+  linddunCategorySchema,
+  plot4aiCategorySchema,
+  strideCategorySchema,
+  threatCategorySchema,
+} from './categories.js';
 import {
   elementsWithoutThreats,
   openThreatsBySeverity,
@@ -15,15 +22,12 @@ import {
   type Flow,
   type TrustBoundary,
 } from './elements.js';
-import {
-  elementId,
-  parsedFixture,
-  vocabularyComplementFixture,
-} from './fixtures.js';
+import { elementId, parsedFixture } from './fixtures.js';
 import { mitigationStatusSchema } from './mitigations.js';
 import { parseModel, type Model, type ParseIssue } from './parse.js';
 import { elementsAcross } from './references.js';
 import { severitySchema, threatStatusSchema } from './threats.js';
+import { vocabularyComplementFixture } from './vocabulary.fixtures.js';
 
 const ecluse = parsedFixture(ecluseFixture);
 const complement = parsedFixture(vocabularyComplementFixture);
@@ -43,6 +47,15 @@ const tally = (values: readonly string[]): Record<string, number> =>
 const spanning = (reach: (model: Model) => readonly string[]): Set<string> =>
   new Set(fixtures.flatMap(reach));
 
+const categoriesUnder =
+  (methodology: string) =>
+  (model: Model): string[] =>
+    model.threats.flatMap((threat) =>
+      threat.category.methodology === methodology
+        ? [threat.category.category]
+        : [],
+    );
+
 const elementsOf = (model: Model): Element[] => elementsAcross(model.diagrams);
 
 const flowsOf = (model: Model): Flow[] =>
@@ -54,6 +67,10 @@ const boundariesOf = (model: Model): TrustBoundary[] =>
 describe('ecluseFixture', () => {
   it('parses through parseModel', () => {
     expect(issuesOf(ecluseFixture)).toEqual([]);
+  });
+
+  it('credits the one contributor the source file names', () => {
+    expect(ecluse.metadata.contributors).toEqual(['Alexandra de Wit']);
   });
 
   it('holds the source diagram whole, 38 elements over five kinds', () => {
@@ -102,7 +119,7 @@ describe('ecluseFixture', () => {
     );
   });
 
-  it('issues up to 102, above the 28 the source file records as threatTop', () => {
+  it('issues up to 102, the greater of threatTop 28 and its own highest', () => {
     expect(ecluse.lastIssuedThreatNumber).toBe(102);
   });
 
@@ -263,16 +280,14 @@ describe('the two fixtures together', () => {
     );
   });
 
-  it('reach every STRIDE category', () => {
-    expect(
-      spanning((model) =>
-        model.threats.flatMap((threat) =>
-          threat.category.methodology === 'STRIDE'
-            ? [threat.category.category]
-            : [],
-        ),
-      ),
-    ).toEqual(new Set(strideCategorySchema.shape.category.options));
+  it.each([
+    ['STRIDE', strideCategorySchema.shape.category.options],
+    ['LINDDUN', linddunCategorySchema.shape.category.options],
+    ['CIA', ciaCategorySchema.shape.category.options],
+    ['CIA-DIE', ciaDieCategorySchema.shape.category.options],
+    ['PLOT4ai', plot4aiCategorySchema.shape.category.options],
+  ])('reach every %s category', (methodology, categories) => {
+    expect(spanning(categoriesUnder(methodology))).toEqual(new Set(categories));
   });
 
   it('reach every mitigation status', () => {

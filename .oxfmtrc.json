@@ -3,9 +3,9 @@
   "singleQuote": true,
   "printWidth": 80,
   "sortPackageJson": false,
-  // test-data holds files vendored from other projects byte for byte, so
-  // their provenance checksums keep matching upstream. Reformatting one
-  // would also make it a poor codec input: a codec has to read what the
-  // foreign tool actually wrote.
-  "ignorePatterns": ["test-data/"]
+  // Vendored files keep the bytes the foreign tool wrote, so their
+  // provenance checksums stay matched to upstream and a codec reads the
+  // real thing. Only the vendored payloads are exempt; prose beside them
+  // is formatted like any other document.
+  "ignorePatterns": ["test-data/*.json"]
 }
