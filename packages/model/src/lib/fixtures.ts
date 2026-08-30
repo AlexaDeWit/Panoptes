@@ -26,10 +26,20 @@ export const threatId = (value: string): ThreatId =>
 /**
  * The parsed form of a fixture, for specs that need a Model rather than the
  * schema's input. Throws where the fixture stops parsing: a fixture that no
- * longer parses is a broken suite, not a case under test.
+ * longer parses is a broken suite, not a case under test. The message
+ * carries parseModel's issues, so the failure names the construct the
+ * fixture lost.
  */
 export function parsedFixture(input: z.input<typeof modelSchema>): Model {
-  return Either.getOrThrow(parseModel(input));
+  return Either.getOrThrowWith(
+    parseModel(input),
+    (failure) =>
+      new Error(
+        `Fixture does not parse: ${failure.issues
+          .map((issue) => `${issue.path.join('.')}: ${issue.message}`)
+          .join('; ')}`,
+      ),
+  );
 }
 
 /**
@@ -335,4 +345,158 @@ export const emptyRegisterFixture: z.input<typeof modelSchema> = {
   lastIssuedThreatNumber: 0,
   mitigations: [],
   assumptions: [],
+};
+
+/**
+ * Hand-authored valid model covering the constructs Écluse's real threat
+ * model never reaches: a curve trust boundary, an out-of-scope element with
+ * its reason, the `tbd` severity, the `not-applicable` status, the five
+ * methodologies outside STRIDE, all three mitigation statuses, and both
+ * assumption statuses. The representability gate reads it beside
+ * `ecluseFixture` (`ecluse.fixtures.ts`) so the two together span the
+ * model's whole vocabulary; it stays separate so that fixture remains a
+ * faithful transcription of the source file. Typed as the schema's input,
+ * not as a Model: specs feed it through parseModel.
+ */
+export const vocabularyComplementFixture: z.input<typeof modelSchema> = {
+  metadata: {
+    title: 'Vocabulary complement',
+    owner: 'Alexandra de Wit',
+    description: 'Sample model covering what the Écluse fixture leaves unused.',
+  },
+  diagrams: [
+    {
+      id: 'diagram-complement',
+      title: 'Complement',
+      elements: [
+        {
+          kind: 'trust-boundary',
+          id: 'element-shoreline',
+          name: 'Shoreline',
+          description: 'Freehand boundary drawn around the tidal zone.',
+          outOfScope: false,
+          reasonOutOfScope: '',
+          shape: {
+            kind: 'curve',
+            waypoints: [
+              { x: 0, y: 0 },
+              { x: 120, y: 40 },
+              { x: 240, y: 20 },
+            ],
+          },
+        },
+        {
+          kind: 'store',
+          id: 'element-tape-archive',
+          name: 'Tape archive',
+          description: 'Offline copies of the ledger, written nightly.',
+          outOfScope: true,
+          reasonOutOfScope: 'Held and operated by the records department.',
+          position: { x: 40, y: 120 },
+          size: { width: 160, height: 80 },
+        },
+      ],
+    },
+  ],
+  threats: [
+    {
+      id: 'threat-complement-linking',
+      number: 1,
+      title: 'Archived backups link a reader across visits',
+      category: { methodology: 'LINDDUN', category: 'linking' },
+      severity: 'tbd',
+      status: 'not-applicable',
+      description: 'The archive predates the records it would have to link.',
+      mitigation: '',
+      elements: ['element-tape-archive'],
+    },
+    {
+      id: 'threat-complement-availability',
+      number: 2,
+      title: 'Ledger unreadable during a restore',
+      category: { methodology: 'CIA', category: 'availability' },
+      severity: 'medium',
+      status: 'open',
+      description: 'A restore takes the ledger offline for its duration.',
+      mitigation: '',
+      elements: [],
+    },
+    {
+      id: 'threat-complement-ephemeral',
+      number: 3,
+      title: 'Boundary state outlives the session that drew it',
+      category: { methodology: 'CIA-DIE', category: 'ephemeral' },
+      severity: 'low',
+      status: 'mitigated',
+      description: 'Session state persists past the session.',
+      mitigation: 'State is dropped when the session closes.',
+      elements: ['element-shoreline'],
+    },
+    {
+      id: 'threat-complement-cybersecurity',
+      number: 4,
+      title: 'Model inputs reach an unreviewed pipeline',
+      category: { methodology: 'PLOT4ai', category: 'cybersecurity' },
+      severity: 'high',
+      status: 'accepted-risk',
+      description: 'The ingestion pipeline has no review step.',
+      mitigation: '',
+      elements: [],
+    },
+    {
+      id: 'threat-complement-attack-modelling',
+      number: 5,
+      title: 'Attack tree omits the archive path',
+      category: {
+        methodology: 'custom',
+        methodologyName: 'PASTA',
+        category: 'attack-modelling',
+      },
+      severity: 'critical',
+      status: 'open',
+      description: 'No attack tree covers a restore from tape.',
+      mitigation: '',
+      elements: [],
+    },
+  ],
+  lastIssuedThreatNumber: 5,
+  mitigations: [
+    {
+      id: 'mitigation-complement-proposed',
+      title: 'Read replica during a restore',
+      prose: 'Serve reads from a replica while the ledger restores.',
+      status: 'proposed',
+      threats: ['threat-complement-availability'],
+    },
+    {
+      id: 'mitigation-complement-implemented',
+      title: 'Drop session state on close',
+      prose: 'Session state is discarded when the session closes.',
+      status: 'implemented',
+      threats: ['threat-complement-ephemeral'],
+    },
+    {
+      id: 'mitigation-complement-verified',
+      title: 'Archive retention audit',
+      prose: 'The retention window is audited every quarter.',
+      status: 'verified',
+      threats: ['threat-complement-linking'],
+    },
+  ],
+  assumptions: [
+    {
+      id: 'assumption-complement-valid',
+      prose: 'The records department encrypts every tape it holds.',
+      status: 'valid',
+      elements: ['element-tape-archive'],
+      threats: ['threat-complement-linking'],
+    },
+    {
+      id: 'assumption-complement-invalidated',
+      prose: 'The ingestion pipeline was believed to be reviewed.',
+      status: 'invalidated',
+      elements: [],
+      threats: ['threat-complement-cybersecurity'],
+    },
+  ],
 };

@@ -15,4 +15,15 @@ Fallible exports return Effect's `Either`, carrying a package-owned
 returns its result bare. Nothing throws and no zod type appears in a fallible
 export's signature. Imports no internal package.
 
+The suite carries a representability gate over the whole model vocabulary.
+`ecluseFixture` transcribes Écluse's real Threat Dragon model, one diagram of
+38 elements and a register of 29 threats numbered with the gaps the source
+carries, into the internal form; `vocabularyComplementFixture` covers what
+that model never reaches. Together they must span every element kind,
+boundary shape, endpoint kind, threat status, severity, methodology,
+mitigation status, and assumption status the schemas declare, so a construct
+that stops being representable fails a named assertion or the type-check. The
+source file is vendored at
+[`test-data/ecluse.json`](../../test-data/ecluse.json).
+
 Unit tests: `pnpm nx test @panoptes/model`.
