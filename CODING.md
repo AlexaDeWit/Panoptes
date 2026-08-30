@@ -12,6 +12,10 @@ is not an error channel in this project's TypeScript. `parseModel`
 follows the same rule: zod stays behind the parse boundary, and its
 issues surface as plain data on the failure.
 
+A fallible function's own parameter and return types carry no zod type,
+and its failure carries plain data. A type that holds a schema as a member,
+or is parameterized by one, is not a fallible signature.
+
 ## Schema-first typing
 
 Strict typing everywhere, schema-first. Zod schemas are the source of
