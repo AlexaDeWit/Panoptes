@@ -12,12 +12,12 @@ suggestions.
 - The tracker is the plan: milestones are the waves, issues are the slices,
   and issue bodies carry the acceptance criteria and dependency order.
 
-| Work                                 | Read next                                                                                                                                                              |
-| ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Implement an issue                   | The issue body and its milestone description, then the packages it names                                                                                               |
-| Change build, CI, or dependencies    | [`CODING.md`](CODING.md), [CONTRIBUTING, Repository requirements](CONTRIBUTING.md#repository-requirements), and [`.agents/orchestration.md`](.agents/orchestration.md) |
-| Run or resume the orchestration loop | [`.agents/orchestration.md`](.agents/orchestration.md)                                                                                                                 |
-| Commit or open a PR                  | [`CONTRIBUTING.md`](CONTRIBUTING.md) and the PR template                                                                                                               |
+| Work                                 | Read next                                                                                             |
+| ------------------------------------ | ----------------------------------------------------------------------------------------------------- |
+| Implement an issue                   | The issue body and its milestone description, then [`CODING.md`](CODING.md) and the packages it names |
+| Change build, CI, or dependencies    | [`CODING.md`](CODING.md) and [`.agents/orchestration.md`](.agents/orchestration.md)                   |
+| Run or resume the orchestration loop | [`.agents/orchestration.md`](.agents/orchestration.md)                                                |
+| Commit or open a PR                  | [`CONTRIBUTING.md`](CONTRIBUTING.md) and the PR template                                              |
 
 ## Invariants
 

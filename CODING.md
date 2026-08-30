@@ -7,7 +7,7 @@ These are requirements, not suggestions.
 
 Fallible operations return discriminated result unions, with zod's
 `safeParse` shape as the local idiom. Throwing is not an error channel in
-this project's TypeScript. Ruled 2026-08-29.
+this project's TypeScript.
 
 ## Schema-first typing
 
@@ -52,14 +52,15 @@ executor-only marker, and deviations need a stated reason.
 
 ## Workflows and CI
 
-- **Pin every GitHub Action to a full commit SHA**, never a tag, with the
-  version in a trailing comment. Renovate bumps them. CI's static-checks job
-  fails an unpinned action (zizmor, hash-pin policy in
-  [`.github/zizmor.yml`](.github/zizmor.yml)).
-- **Keep workflows injection-free**. Never interpolate untrusted
-  `${{ github.event.* }}` or `${{ github.head_ref }}` into `run:` blocks.
-  Pass them through `env:` or intermediate files. CI's static-checks job
-  fails a violating expression (actionlint and zizmor both catch it).
+Pin every GitHub Action to a full commit SHA, never a tag, with the
+version in a trailing comment. Renovate bumps them. CI's static-checks
+job fails an unpinned action (zizmor, hash-pin policy in
+[`.github/zizmor.yml`](.github/zizmor.yml)).
+
+Keep workflows injection-free. Never interpolate untrusted
+`${{ github.event.* }}` or `${{ github.head_ref }}` into `run:` blocks.
+Pass them through `env:` or intermediate files. CI's static-checks job
+fails a violating expression (actionlint and zizmor both catch it).
 
 ## Diagrams
 

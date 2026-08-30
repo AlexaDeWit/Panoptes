@@ -8,8 +8,8 @@
   extends: [
     'config:recommended',
     // Keep every GitHub Action pinned to a full commit SHA with the version
-    // in a trailing comment (CONTRIBUTING, Repository requirements). Renovate
-    // moves the digest and the comment together and never unpins.
+    // in a trailing comment (CODING.md, Workflows and CI). Renovate moves
+    // the digest and the comment together and never unpins.
     'helpers:pinGitHubActionDigests',
     // config:recommended's group:monorepos already groups nx and the @nx/*
     // plugins (one source repo). Named here so the grouping survives a change
