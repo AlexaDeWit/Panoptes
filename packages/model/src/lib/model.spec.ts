@@ -4,6 +4,7 @@ const metadata = {
   title: 'Écluse',
   owner: 'Alexandra de Wit',
   description: 'STRIDE threat model for a supply-chain policy proxy.',
+  contributors: ['Alexandra de Wit'],
 };
 
 const actor = {
@@ -77,13 +78,19 @@ const emptyRecords = {
 };
 
 describe('modelMetadataSchema', () => {
-  it('parses title, owner, and description', () => {
+  it('parses title, owner, description, and contributors', () => {
     expect(modelMetadataSchema.parse(metadata)).toEqual(metadata);
   });
 
   it('accepts an empty description', () => {
     expect(
       modelMetadataSchema.safeParse({ ...metadata, description: '' }).success,
+    ).toBe(true);
+  });
+
+  it('accepts a model no one has been credited on yet', () => {
+    expect(
+      modelMetadataSchema.safeParse({ ...metadata, contributors: [] }).success,
     ).toBe(true);
   });
 });

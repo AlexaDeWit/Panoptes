@@ -54,6 +54,7 @@ export const validModelFixture: z.input<typeof modelSchema> = {
     title: 'Order service',
     owner: 'Alexandra de Wit',
     description: 'Sample model exercising every record kind.',
+    contributors: ['Alexandra de Wit'],
   },
   diagrams: [
     {
@@ -182,6 +183,7 @@ export const threatRegisterFixture: z.input<typeof modelSchema> = {
     title: 'Payment gateway',
     owner: 'Alexandra de Wit',
     description: 'Sample model with a threat register worth querying.',
+    contributors: [],
   },
   diagrams: [
     {
@@ -363,6 +365,7 @@ export const vocabularyComplementFixture: z.input<typeof modelSchema> = {
     title: 'Vocabulary complement',
     owner: 'Alexandra de Wit',
     description: 'Sample model covering what the Écluse fixture leaves unused.',
+    contributors: ['Alexandra de Wit', 'Jonas Lindqvist'],
   },
   diagrams: [
     {

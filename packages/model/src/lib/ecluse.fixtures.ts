@@ -21,6 +21,7 @@ export const ecluseFixture: z.input<typeof modelSchema> = {
     owner: 'Alexandra de Wit',
     description:
       "STRIDE threat model for Écluse, a supply-chain policy proxy for package registries. The 'High Level' diagram captures the canonical deployment posture. It shows per-caller passthrough credentials and AWS CodeArtifact reached over VPC endpoints. The three registries are a first-party private store, a public-derived mirror store, and a pull-through read endpoint. The demand-driven mirror worker mints its own write token under the container role. Edge access control and storage-layer scanning are operator responsibilities and out of scope, recorded as trust assumptions. This model is an iterative sketch, refined collaboratively. The .json file is the single source of truth, and Threat Dragon renders it.",
+    contributors: ['Alexandra de Wit'],
   },
   diagrams: [
     {

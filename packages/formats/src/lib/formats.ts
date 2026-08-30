@@ -4,6 +4,7 @@ const placeholderMetadata = modelMetadataSchema.parse({
   title: 'model',
   owner: '',
   description: '',
+  contributors: [],
 });
 
 /**
