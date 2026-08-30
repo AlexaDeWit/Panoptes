@@ -22,8 +22,8 @@ export type ModelMetadata = z.infer<typeof modelMetadataSchema>;
 /**
  * One diagram: a titled canvas that owns its elements, geometry inline on
  * each element. Element ids and diagram ids must each be unique across the
- * whole model; both refinements land with the parse entry point (#19), so
- * this schema alone accepts duplicates.
+ * whole model; parseModel enforces both, so this schema alone accepts
+ * duplicates.
  */
 export const diagramSchema = z.strictObject({
   id: diagramIdSchema,
@@ -35,11 +35,12 @@ export const diagramSchema = z.strictObject({
 export type Diagram = z.infer<typeof diagramSchema>;
 
 /**
- * The root of a threat model: metadata, diagrams, threats, mitigations, and
- * assumptions. Every array may be empty: a model saves before it is drawn or
- * analyzed. Cross-record checks (id and threat-number uniqueness, reference
- * resolution) land with the parse entry point (#19), so this schema alone
- * accepts duplicates and dangling ids.
+ * The structural shape of a threat model root: metadata, diagrams, threats,
+ * mitigations, and assumptions. Every array may be empty: a model saves
+ * before it is drawn or analyzed. Cross-record checks (id and threat-number
+ * uniqueness, reference resolution) are parseModel's refinements, so this
+ * schema alone accepts duplicates and dangling ids. Internal to the package:
+ * parseModel is the only exported way a Model value comes into existence.
  */
 export const modelSchema = z.strictObject({
   metadata: modelMetadataSchema,
@@ -48,6 +49,3 @@ export const modelSchema = z.strictObject({
   mitigations: z.array(mitigationSchema),
   assumptions: z.array(assumptionSchema),
 });
-
-/** Threat model root. */
-export type Model = z.infer<typeof modelSchema>;

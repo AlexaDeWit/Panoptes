@@ -121,7 +121,7 @@ describe('modelSchema', () => {
     ).toBe(true);
   });
 
-  it('accepts duplicate element ids until the model-wide refinement lands (#19)', () => {
+  it("accepts duplicate element ids: model-wide uniqueness is parseModel's refinement", () => {
     const twice = { ...diagram, elements: [actor, actor] };
     expect(
       modelSchema.safeParse({ metadata, diagrams: [twice], ...emptyRecords })
@@ -129,7 +129,7 @@ describe('modelSchema', () => {
     ).toBe(true);
   });
 
-  it('accepts duplicate threat numbers until the model-wide refinement lands (#19)', () => {
+  it("accepts duplicate threat numbers: model-wide uniqueness is parseModel's refinement", () => {
     const twin = { ...threat, id: 'another-threat' };
     expect(
       modelSchema.safeParse({

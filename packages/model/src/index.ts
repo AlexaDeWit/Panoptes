@@ -5,4 +5,10 @@ export * from './lib/categories.js';
 export * from './lib/threats.js';
 export * from './lib/mitigations.js';
 export * from './lib/assumptions.js';
-export * from './lib/model.js';
+export {
+  diagramSchema,
+  modelMetadataSchema,
+  type Diagram,
+  type ModelMetadata,
+} from './lib/model.js';
+export * from './lib/parse.js';

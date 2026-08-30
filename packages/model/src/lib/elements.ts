@@ -48,8 +48,8 @@ export type Store = z.infer<typeof storeSchema>;
 
 /**
  * A flow endpoint fastened to an element, referenced by id. Whether the id
- * resolves to an element of the model is checked by the parse entry point
- * (#19), not here.
+ * resolves to an element of the flow's own diagram is checked by parseModel,
+ * not here.
  */
 export const attachedEndpointSchema = z.strictObject({
   kind: z.literal('attached'),

@@ -39,8 +39,8 @@ export type Severity = z.infer<typeof severitySchema>;
  * diagram cell (Threat Dragon nests threats per cell; this record attaches
  * to any number of elements by id instead). `description` and `mitigation`
  * are markdown prose. Threat numbers must be unique across the model and
- * element ids must resolve; both refinements land with the parse entry point
- * (#19), so this schema alone accepts duplicates and dangling ids.
+ * element ids must resolve; parseModel enforces both, so this schema alone
+ * accepts duplicates and dangling ids.
  */
 export const threatSchema = z.strictObject({
   id: threatIdSchema,

@@ -5,8 +5,8 @@ import { z } from 'zod';
  * from foreign files (Threat Dragon cell ids, for example) pass through
  * unchanged, and UUIDs appear only in generation, never as a parse
  * constraint. Element ids must be unique across the whole model, not just
- * one diagram; that refinement lands with the parse entry point (#19). The
- * brand exists at compile time only; at runtime the value is a plain string.
+ * one diagram; parseModel enforces that refinement. The brand exists at
+ * compile time only; at runtime the value is a plain string.
  */
 export const elementIdSchema = z.string().min(1).brand<'ElementId'>();
 
@@ -16,7 +16,7 @@ export type ElementId = z.infer<typeof elementIdSchema>;
 /**
  * Identifier of one diagram in a model. Same contract as
  * {@link elementIdSchema}: any non-empty string parses, uniqueness across
- * the model is #19's refinement, and the brand is compile-time only.
+ * the model is parseModel's refinement, and the brand is compile-time only.
  */
 export const diagramIdSchema = z.string().min(1).brand<'DiagramId'>();
 
@@ -25,8 +25,8 @@ export type DiagramId = z.infer<typeof diagramIdSchema>;
 
 /**
  * Identifier of one threat in a model. Same contract as
- * {@link elementIdSchema}: any non-empty string parses, uniqueness across
- * the model is #19's refinement, and the brand is compile-time only.
+ * {@link elementIdSchema}: any non-empty string parses, uniqueness among
+ * threats is parseModel's refinement, and the brand is compile-time only.
  */
 export const threatIdSchema = z.string().min(1).brand<'ThreatId'>();
 
@@ -35,8 +35,9 @@ export type ThreatId = z.infer<typeof threatIdSchema>;
 
 /**
  * Identifier of one mitigation in a model. Same contract as
- * {@link elementIdSchema}: any non-empty string parses, uniqueness across
- * the model is #19's refinement, and the brand is compile-time only.
+ * {@link elementIdSchema}: any non-empty string parses, uniqueness among
+ * mitigations is parseModel's refinement, and the brand is compile-time
+ * only.
  */
 export const mitigationIdSchema = z.string().min(1).brand<'MitigationId'>();
 
@@ -45,8 +46,9 @@ export type MitigationId = z.infer<typeof mitigationIdSchema>;
 
 /**
  * Identifier of one assumption in a model. Same contract as
- * {@link elementIdSchema}: any non-empty string parses, uniqueness across
- * the model is #19's refinement, and the brand is compile-time only.
+ * {@link elementIdSchema}: any non-empty string parses, uniqueness among
+ * assumptions is parseModel's refinement, and the brand is compile-time
+ * only.
  */
 export const assumptionIdSchema = z.string().min(1).brand<'AssumptionId'>();
 

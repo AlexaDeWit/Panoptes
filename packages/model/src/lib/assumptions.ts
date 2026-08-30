@@ -13,7 +13,7 @@ export type AssumptionStatus = z.infer<typeof assumptionStatusSchema>;
 /**
  * One assumption the analysis rests on, linked to the elements and threats
  * it underpins by id. `prose` is markdown. Whether the ids resolve is
- * checked by the parse entry point (#19), not here.
+ * checked by parseModel, not here.
  */
 export const assumptionSchema = z.strictObject({
   id: assumptionIdSchema,
