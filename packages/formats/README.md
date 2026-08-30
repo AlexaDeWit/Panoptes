@@ -25,8 +25,9 @@ disagree about what the file said.
 
 Both write paths report through one `LossReport`. Its entries name the
 entity, what was dropped, and why: `unrepresentable` and `narrowed` for what
-a format cannot hold, `discarded-by-edit` for source material an edited model
-no longer accounts for. A report with no entries records no loss, and
+a format cannot hold, `split` for a record the format forces into several,
+and `discarded-by-edit` for source material an edited model no longer
+accounts for. A report with no entries records no loss, and
 `renderLossReport` turns a report into lines for a person.
 
 `read` returns Effect's `Either` with a package-owned `ReadFailure` on the

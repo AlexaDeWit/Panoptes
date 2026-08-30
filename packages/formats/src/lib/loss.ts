@@ -56,14 +56,17 @@ export type LossSubject = z.infer<typeof lossSubjectSchema>;
 /**
  * Why an entry's material is not in the output. `unrepresentable`: the
  * format has no place for the construct. `narrowed`: the format holds a
- * reduced form of it, as a threat attached to several elements loses its
- * single identity where the format nests each threat under one cell.
+ * reduced form of it, so less reaches the output than the model carried.
+ * `split`: the format forces one record into several, as Threat Dragon
+ * nests each threat under one cell, so a threat attached to several
+ * elements is written once per cell and its single identity is gone.
  * `discarded-by-edit`: the write merged onto a source document, and the
  * model no longer accounts for material that document held.
  */
 export const lossReasonSchema = z.enum([
   'unrepresentable',
   'narrowed',
+  'split',
   'discarded-by-edit',
 ]);
 
@@ -110,6 +113,7 @@ export function isLossless(report: LossReport): boolean {
 const reasonPhrases: Record<LossReason, string> = {
   unrepresentable: 'no place in the format',
   narrowed: 'reduced to fit the format',
+  split: 'split by the format',
   'discarded-by-edit': 'removed by an edit',
 };
 

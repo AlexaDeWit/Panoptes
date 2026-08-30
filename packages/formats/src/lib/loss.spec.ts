@@ -25,10 +25,10 @@ const threatSubject: LossSubject = {
   id: threatIdSchema.parse('threat-4'),
 };
 
-const lostThreat = entry(
+const splitThreat = entry(
   threatSubject,
-  'attachments beyond the first element',
-  'narrowed',
+  'one identity across the three elements it is attached to',
+  'split',
 );
 
 describe('loss report', () => {
@@ -42,7 +42,7 @@ describe('loss report', () => {
   });
 
   it('is no longer lossless once it carries an entry', () => {
-    expect(isLossless([lostThreat])).toBe(false);
+    expect(isLossless([splitThreat])).toBe(false);
   });
 });
 
@@ -53,7 +53,7 @@ describe('renderLossReport', () => {
 
   it('renders one line per entry, in the report order', () => {
     const report = [
-      lostThreat,
+      splitThreat,
       entry(
         { kind: 'element', id: elementIdSchema.parse('element-customer') },
         'the cell ports',
@@ -62,7 +62,7 @@ describe('renderLossReport', () => {
     ];
     expect(renderLossReport(report)).toBe(
       [
-        'threat "threat-4": attachments beyond the first element (reduced to fit the format)',
+        'threat "threat-4": one identity across the three elements it is attached to (split by the format)',
         'element "element-customer": the cell ports (removed by an edit)',
       ].join('\n'),
     );
@@ -104,6 +104,7 @@ describe('renderLossReport', () => {
     const reasons: LossReason[] = [
       'unrepresentable',
       'narrowed',
+      'split',
       'discarded-by-edit',
     ];
     const report = reasons.map((reason) =>
@@ -112,6 +113,7 @@ describe('renderLossReport', () => {
     expect(renderLossReport(report).split('\n')).toEqual([
       'model: the thing (no place in the format)',
       'model: the thing (reduced to fit the format)',
+      'model: the thing (split by the format)',
       'model: the thing (removed by an edit)',
     ]);
   });
