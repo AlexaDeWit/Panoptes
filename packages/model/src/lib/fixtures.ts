@@ -116,6 +116,7 @@ export const validModelFixture: z.input<typeof modelSchema> = {
       elements: ['element-api', 'element-order-flow'],
     },
   ],
+  lastIssuedThreatNumber: 1,
   mitigations: [
     {
       id: 'mitigation-tls',
@@ -140,9 +141,11 @@ export const validModelFixture: z.input<typeof modelSchema> = {
  * Hand-authored valid model for the threat register: two diagrams, threats
  * numbered with gaps and spread over severities and statuses, an element
  * two threats reference, an element no threat references, and a threat
- * linked to no element. The coverage query specs compute their expected
- * results from it by hand. Typed as the schema's input, not as a Model:
- * specs feed it through parseModel.
+ * linked to no element. The last issued number sits above every number the
+ * register still holds, the state a register reaches once its
+ * highest-numbered threat is removed. The coverage query specs compute
+ * their expected results from it by hand. Typed as the schema's input, not
+ * as a Model: specs feed it through parseModel.
  */
 export const threatRegisterFixture: z.input<typeof modelSchema> = {
   metadata: {
@@ -279,6 +282,7 @@ export const threatRegisterFixture: z.input<typeof modelSchema> = {
       elements: [],
     },
   ],
+  lastIssuedThreatNumber: 12,
   mitigations: [
     {
       id: 'mitigation-bind-session',

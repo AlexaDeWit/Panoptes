@@ -69,7 +69,12 @@ const assumption = {
   threats: ['c87367bd-fc3f-4792-94b6-8db459011823'],
 };
 
-const emptyRecords = { threats: [], mitigations: [], assumptions: [] };
+const emptyRecords = {
+  threats: [],
+  lastIssuedThreatNumber: 0,
+  mitigations: [],
+  assumptions: [],
+};
 
 describe('modelMetadataSchema', () => {
   it('parses title, owner, and description', () => {
@@ -101,6 +106,7 @@ describe('modelSchema', () => {
       metadata,
       diagrams: [diagram],
       threats: [threat],
+      lastIssuedThreatNumber: 101,
       mitigations: [mitigation],
       assumptions: [assumption],
     };
@@ -137,6 +143,17 @@ describe('modelSchema', () => {
         diagrams: [],
         ...emptyRecords,
         threats: [threat, twin],
+      }).success,
+    ).toBe(true);
+  });
+
+  it("accepts a last issued number below a threat it holds: the ceiling is parseModel's refinement", () => {
+    expect(
+      modelSchema.safeParse({
+        metadata,
+        diagrams: [],
+        ...emptyRecords,
+        threats: [threat],
       }).success,
     ).toBe(true);
   });

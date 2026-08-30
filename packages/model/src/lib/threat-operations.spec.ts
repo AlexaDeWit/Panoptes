@@ -9,7 +9,6 @@ import {
   detachThreat,
   nextThreatNumber,
   removeThreat,
-  renumberThreats,
   replaceThreat,
 } from './threat-operations.js';
 import { threatSchema, type Threat } from './threats.js';
@@ -18,6 +17,7 @@ const base = parsedFixture(threatRegisterFixture);
 const emptyRegister = parsedFixture({
   ...threatRegisterFixture,
   threats: [],
+  lastIssuedThreatNumber: 0,
   mitigations: [],
   assumptions: [],
 });
@@ -57,7 +57,7 @@ const threatNumbers = (model: Model): number[] =>
 
 const replayInput = {
   id: 'threat-replay-payment',
-  number: 10,
+  number: 13,
   title: 'Payment replay',
   category: { methodology: 'STRIDE', category: 'repudiation' },
   severity: 'medium',
@@ -100,10 +100,25 @@ describe('addThreat', () => {
     );
   });
 
-  it('fails on a number the register already holds', () => {
-    const clash = threatSchema.parse({ ...replayInput, number: 5 });
-    expect(errorOf(addThreat(base, clash))).toEqual(
-      OperationFailure.DuplicateThreatNumber({ number: 5 }),
+  it('advances the last issued number to the added threat', () => {
+    expect(modelOf(addThreat(base, replay)).lastIssuedThreatNumber).toBe(13);
+  });
+
+  it('fails on the number last issued', () => {
+    const spent = threatSchema.parse({ ...replayInput, number: 12 });
+    expect(errorOf(addThreat(base, spent))).toEqual(
+      OperationFailure.ReusedThreatNumber({ number: 12 }),
+    );
+  });
+
+  it('fails on a number below the last issued, held or not', () => {
+    const held = threatSchema.parse({ ...replayInput, number: 5 });
+    expect(errorOf(addThreat(base, held))).toEqual(
+      OperationFailure.ReusedThreatNumber({ number: 5 }),
+    );
+    const gap = threatSchema.parse({ ...replayInput, number: 11 });
+    expect(errorOf(addThreat(base, gap))).toEqual(
+      OperationFailure.ReusedThreatNumber({ number: 11 }),
     );
   });
 
@@ -139,10 +154,18 @@ describe('removeThreat', () => {
     });
   });
 
-  it('leaves the surviving numbers as they were', () => {
-    expect(threatNumbers(modelOf(removeThreat(base, spoofShopper)))).toEqual([
-      5, 9, 4, 7,
-    ]);
+  it('leaves the surviving numbers and the last issued number alone', () => {
+    const next = modelOf(removeThreat(base, spoofShopper));
+    expect(threatNumbers(next)).toEqual([5, 9, 4, 7]);
+    expect(next.lastIssuedThreatNumber).toBe(base.lastIssuedThreatNumber);
+  });
+
+  it('never lets the removed number be issued again', () => {
+    const issued = modelOf(addThreat(base, replay));
+    const removed = modelOf(removeThreat(issued, replay.id));
+    expect(threatIds(removed)).toEqual(threatIds(base));
+    expect(nextThreatNumber(issued)).toBe(14);
+    expect(nextThreatNumber(removed)).toBe(14);
   });
 
   it('fails on a threat the register does not hold', () => {
@@ -159,14 +182,10 @@ describe('replaceThreat', () => {
     expect(threatIds(next)).toEqual(threatIds(base));
   });
 
-  it('accepts the number the replaced threat already holds', () => {
-    const renamed = threatSchema.parse({
-      ...threatIn(base, 'threat-flood-checkout'),
-      title: 'Checkout flooding, restated',
-    });
+  it('leaves the last issued number where it was', () => {
     expect(
-      threatIn(modelOf(replaceThreat(base, renamed)), renamed.id).title,
-    ).toBe('Checkout flooding, restated');
+      modelOf(replaceThreat(base, editedFlood)).lastIssuedThreatNumber,
+    ).toBe(base.lastIssuedThreatNumber);
   });
 
   it('fails on an id the register does not hold', () => {
@@ -175,10 +194,13 @@ describe('replaceThreat', () => {
     );
   });
 
-  it('fails on a number another threat holds', () => {
-    const clash = threatSchema.parse({ ...editedFlood, number: 5 });
-    expect(errorOf(replaceThreat(base, clash))).toEqual(
-      OperationFailure.DuplicateThreatNumber({ number: 5 }),
+  it('fails on a changed number', () => {
+    const renumbered = threatSchema.parse({ ...editedFlood, number: 13 });
+    expect(errorOf(replaceThreat(base, renumbered))).toEqual(
+      OperationFailure.ChangedThreatNumber({
+        threatId: floodCheckout,
+        number: 13,
+      }),
     );
   });
 
@@ -256,30 +278,13 @@ describe('detachThreat', () => {
   });
 });
 
-describe('renumberThreats', () => {
-  it('hands out 1 to n in ascending order of current number', () => {
-    const next = renumberThreats(base);
-    expect(threatNumbers(base)).toEqual([2, 5, 9, 4, 7]);
-    expect(threatNumbers(next)).toEqual([1, 3, 5, 2, 4]);
-    expect(threatIds(next)).toEqual(threatIds(base));
-  });
-
-  it('changes nothing when applied to its own output', () => {
-    const once = renumberThreats(base);
-    expect(renumberThreats(once)).toEqual(once);
-  });
-
-  it('accepts an empty register', () => {
-    expect(renumberThreats(emptyRegister).threats).toEqual([]);
-  });
-});
-
 describe('nextThreatNumber', () => {
-  it('is one above the highest number in use', () => {
-    expect(nextThreatNumber(base)).toBe(10);
+  it('is one above the number last issued, not one above the highest held', () => {
+    expect(threatNumbers(base)).toEqual([2, 5, 9, 4, 7]);
+    expect(nextThreatNumber(base)).toBe(13);
   });
 
-  it('is 1 for an empty register', () => {
+  it('is 1 for a register that has issued nothing', () => {
     expect(nextThreatNumber(emptyRegister)).toBe(1);
   });
 });
@@ -292,7 +297,6 @@ describe('threat operation purity', () => {
     replaceThreat(base, editedFlood);
     attachThreat(base, floodCheckout, ledger);
     detachThreat(base, spoofShopper, shopper);
-    renumberThreats(base);
     nextThreatNumber(base);
     expect(base).toEqual(pristine);
   });
@@ -305,7 +309,6 @@ describe('threat operation outputs re-parse through parseModel', () => {
     ['replaceThreat', modelOf(replaceThreat(base, editedFlood))],
     ['attachThreat', modelOf(attachThreat(base, floodCheckout, ledger))],
     ['detachThreat', modelOf(detachThreat(base, spoofShopper, shopper))],
-    ['renumberThreats', renumberThreats(base)],
   ];
 
   for (const [operation, model] of outputs) {

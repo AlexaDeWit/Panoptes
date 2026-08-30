@@ -2,13 +2,13 @@ import { Either } from 'effect';
 import type { ElementId, ThreatId } from './ids.js';
 import { OperationFailure } from './operation-failures.js';
 import type { Model } from './parse.js';
-import { elementIdsAcross, threatIdsOf } from './references.js';
+import { elementIdsAcross } from './references.js';
 import type { Threat } from './threats.js';
 
 /** The failures {@link addThreat} can produce. */
 export type AddThreatFailure = Extract<
   OperationFailure,
-  { _tag: 'DuplicateThreatId' | 'DuplicateThreatNumber' | 'UnknownElement' }
+  { _tag: 'DuplicateThreatId' | 'ReusedThreatNumber' | 'UnknownElement' }
 >;
 
 /** The failure {@link removeThreat} can produce. */
@@ -20,7 +20,7 @@ export type RemoveThreatFailure = Extract<
 /** The failures {@link replaceThreat} can produce. */
 export type ReplaceThreatFailure = Extract<
   OperationFailure,
-  { _tag: 'UnknownThreat' | 'DuplicateThreatNumber' | 'UnknownElement' }
+  { _tag: 'UnknownThreat' | 'ChangedThreatNumber' | 'UnknownElement' }
 >;
 
 /** The failures {@link attachThreat} can produce. */
@@ -36,25 +36,28 @@ export type DetachThreatFailure = Extract<
 >;
 
 /**
- * Returns a new model with `threat` appended to the threat register. The
- * threat value comes from the threat schema; what this operation checks is
- * its fit against the model. Numbers are the caller's to choose, and
- * {@link nextThreatNumber} yields a free one. Fails when the id or the
- * number is already taken, or when a linked element id names no element of
- * the model. The input model is never mutated.
+ * Returns a new model with `threat` appended to the threat register and the
+ * last issued number advanced to its number. The threat value comes from
+ * the threat schema; what this operation checks is its fit against the
+ * model. The number is the caller's to choose from those above the last
+ * issued, and {@link nextThreatNumber} yields the lowest of them. Fails
+ * when the id is already taken, when the number is not above the last
+ * issued (a spent number stays spent, whether or not a threat still holds
+ * it), or when a linked element id names no element of the model. The input
+ * model is never mutated.
  */
 export function addThreat(
   model: Model,
   threat: Threat,
 ): Either.Either<Model, AddThreatFailure> {
-  if (threatIdsOf(model.threats).has(threat.id)) {
+  if (model.threats.some((candidate) => candidate.id === threat.id)) {
     return Either.left(
       OperationFailure.DuplicateThreatId({ threatId: threat.id }),
     );
   }
-  if (model.threats.some((candidate) => candidate.number === threat.number)) {
+  if (threat.number <= model.lastIssuedThreatNumber) {
     return Either.left(
-      OperationFailure.DuplicateThreatNumber({ number: threat.number }),
+      OperationFailure.ReusedThreatNumber({ number: threat.number }),
     );
   }
   const unlinkable = unknownElementIn(model, threat.elements);
@@ -63,22 +66,26 @@ export function addThreat(
       OperationFailure.UnknownElement({ elementId: unlinkable }),
     );
   }
-  return Either.right({ ...model, threats: [...model.threats, threat] });
+  return Either.right({
+    ...model,
+    threats: [...model.threats, threat],
+    lastIssuedThreatNumber: threat.number,
+  });
 }
 
 /**
  * Returns a new model without the threat named by `threatId`, cascading so
  * the rest of the model stays consistent: mitigations and assumptions lose
  * the removed threat from their `threats` links while the records
- * themselves stay. Threat numbers are left alone, so removing opens a gap
- * until {@link renumberThreats} closes it. Fails when the threat is
- * unknown. The input model is never mutated.
+ * themselves stay. The removed threat's number stays spent: the last
+ * issued number does not move, so the gap it leaves is permanent. Fails
+ * when the threat is unknown. The input model is never mutated.
  */
 export function removeThreat(
   model: Model,
   threatId: ThreatId,
 ): Either.Either<Model, RemoveThreatFailure> {
-  if (!threatIdsOf(model.threats).has(threatId)) {
+  if (!model.threats.some((threat) => threat.id === threatId)) {
     return Either.left(OperationFailure.UnknownThreat({ threatId }));
   }
   const unlinked = (ids: readonly ThreatId[]): ThreatId[] =>
@@ -101,24 +108,28 @@ export function removeThreat(
  * Returns a new model with the threat carrying `threat.id` swapped for
  * `threat`. Editing a threat is whole-record replacement: the caller builds
  * the complete record from the threat schema and this operation checks its
- * fit against the model. Fails when the id names no threat of the model,
- * when the number belongs to a different threat, or when a linked element
- * id names no element of the model. The input model is never mutated.
+ * fit against the model. Every field but the number is the caller's to
+ * change. Fails when the id names no threat of the model, when the
+ * replacement carries a different number from the threat it replaces, or
+ * when a linked element id names no element of the model. The input model
+ * is never mutated.
  */
 export function replaceThreat(
   model: Model,
   threat: Threat,
 ): Either.Either<Model, ReplaceThreatFailure> {
-  if (!threatIdsOf(model.threats).has(threat.id)) {
+  const replaced = model.threats.find(
+    (candidate) => candidate.id === threat.id,
+  );
+  if (!replaced) {
     return Either.left(OperationFailure.UnknownThreat({ threatId: threat.id }));
   }
-  const numberTaken = model.threats.some(
-    (candidate) =>
-      candidate.number === threat.number && candidate.id !== threat.id,
-  );
-  if (numberTaken) {
+  if (replaced.number !== threat.number) {
     return Either.left(
-      OperationFailure.DuplicateThreatNumber({ number: threat.number }),
+      OperationFailure.ChangedThreatNumber({
+        threatId: threat.id,
+        number: threat.number,
+      }),
     );
   }
   const unlinkable = unknownElementIn(model, threat.elements);
@@ -163,32 +174,13 @@ export function detachThreat(
 }
 
 /**
- * Returns a new model whose threats carry the numbers 1 to n: each threat
- * takes the rank its current number holds in ascending order, so relative
- * order survives and gaps close. The threat array keeps its own order.
- * Applying this to its own output changes nothing. The input model is never
- * mutated.
- */
-export function renumberThreats(model: Model): Model {
-  const rank = (number: number): number =>
-    model.threats.filter((threat) => threat.number < number).length + 1;
-  return {
-    ...model,
-    threats: model.threats.map((threat) => ({
-      ...threat,
-      number: rank(threat.number),
-    })),
-  };
-}
-
-/**
- * A threat number no threat of the model holds: one above the highest in
- * use, and 1 when the register is empty. A number a removed threat once
- * held is not handed out again, so a number names one threat for as long as
- * the model goes unrenumbered.
+ * The number to give the next threat: one above the number the model last
+ * issued, and 1 when it has issued none. A number a removed threat held is
+ * never handed out again, so a number names one threat for the life of the
+ * model.
  */
 export function nextThreatNumber(model: Model): number {
-  return Math.max(0, ...model.threats.map((threat) => threat.number)) + 1;
+  return model.lastIssuedThreatNumber + 1;
 }
 
 function withThreat(model: Model, next: Threat): Model {

@@ -12,6 +12,7 @@ const base = parsedFixture(threatRegisterFixture);
 const emptyRegister = parsedFixture({
   ...threatRegisterFixture,
   threats: [],
+  lastIssuedThreatNumber: 0,
   mitigations: [],
   assumptions: [],
 });
