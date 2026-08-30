@@ -1,3 +1,4 @@
+import { Either } from 'effect';
 import * as api from '../index.js';
 import { validModelFixture } from './fixtures.js';
 import { parseModel } from './parse.js';
@@ -9,18 +10,18 @@ const seeded = (mutate: (draft: typeof validModelFixture) => void) => {
 };
 
 const issuesOf = (result: ReturnType<typeof parseModel>) =>
-  result.success ? [] : result.error.issues;
+  Either.isLeft(result) ? result.left.issues : [];
 
 describe('parseModel', () => {
   it('parses the committed valid fixture', () => {
-    expect(parseModel(validModelFixture)).toEqual({
-      success: true,
-      data: validModelFixture,
-    });
+    expect(Either.getOrNull(parseModel(validModelFixture))).toEqual(
+      validModelFixture,
+    );
   });
 
-  it('reports structural violations through the same result union', () => {
+  it('reports violations through the same Either as plain tagged data', () => {
     const result = parseModel({ ...validModelFixture, version: '2.6.2' });
+    expect(Either.isLeft(result) && result.left._tag).toBe('InvalidModel');
     expect(issuesOf(result)).toContainEqual(
       expect.objectContaining({ code: 'unrecognized_keys', path: [] }),
     );

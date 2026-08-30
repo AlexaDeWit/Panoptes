@@ -1,34 +1,57 @@
+import { Either } from 'effect';
 import type { BoundaryShape, Element, Flow, FlowEndpoint } from './elements.js';
 import type { Point, Size } from './geometry.js';
 import type { DiagramId, ElementId } from './ids.js';
 import type { Diagram } from './model.js';
 import type { Model } from './parse.js';
+import {
+  elementIdsAcross,
+  elementIdsIn,
+  endpointViolationsOf,
+} from './references.js';
 
 /**
- * Why a graph operation refused to produce a model: the discriminant names
- * the violation and the remaining fields carry the offending id or
- * reference. Operation failures are relational facts about the model;
- * structural validity of an input value is its own schema's contract.
+ * Why a graph operation refused to produce a model: `_tag` discriminates
+ * the violation, following Effect's own convention, and the remaining
+ * fields carry the offending id or reference. Operation failures are
+ * relational facts about the model; structural validity of an input value
+ * is its own schema's contract. Each operation's Either narrows its error
+ * channel to the members it can actually produce.
  */
 export type OperationFailure =
-  | { readonly kind: 'unknown-diagram'; readonly diagramId: DiagramId }
-  | { readonly kind: 'unknown-element'; readonly elementId: ElementId }
-  | { readonly kind: 'duplicate-element-id'; readonly elementId: ElementId }
+  | { readonly _tag: 'UnknownDiagram'; readonly diagramId: DiagramId }
+  | { readonly _tag: 'UnknownElement'; readonly elementId: ElementId }
+  | { readonly _tag: 'DuplicateElementId'; readonly elementId: ElementId }
   | {
-      readonly kind: 'invalid-flow-endpoint';
+      readonly _tag: 'InvalidFlowEndpoint';
       readonly side: 'source' | 'target';
       readonly reference: ElementId;
     }
-  | { readonly kind: 'not-resizable'; readonly elementId: ElementId };
+  | { readonly _tag: 'NotResizable'; readonly elementId: ElementId };
 
-/**
- * Outcome of a fallible graph operation, in the shape of zod's safeParse
- * result: the new model on success, a structured {@link OperationFailure}
- * otherwise. The input model is never mutated either way.
- */
-export type OperationResult =
-  | { readonly success: true; readonly data: Model }
-  | { readonly success: false; readonly error: OperationFailure };
+/** The failures {@link addElement} can produce. */
+export type AddElementFailure = Extract<
+  OperationFailure,
+  { _tag: 'UnknownDiagram' | 'DuplicateElementId' | 'InvalidFlowEndpoint' }
+>;
+
+/** The failure {@link removeElement} can produce. */
+export type RemoveElementFailure = Extract<
+  OperationFailure,
+  { _tag: 'UnknownElement' }
+>;
+
+/** The failure {@link moveElement} can produce. */
+export type MoveElementFailure = Extract<
+  OperationFailure,
+  { _tag: 'UnknownElement' }
+>;
+
+/** The failures {@link resizeElement} can produce. */
+export type ResizeElementFailure = Extract<
+  OperationFailure,
+  { _tag: 'UnknownElement' | 'NotResizable' }
+>;
 
 /**
  * Returns a new model with `element` appended to the diagram named by
@@ -37,34 +60,30 @@ export type OperationResult =
  * already taken anywhere in the model, or when an attached flow endpoint
  * references the flow itself or an element outside the target diagram.
  * The element value comes from the element schema; what this operation
- * checks is its fit against the model.
+ * checks is its fit against the model. The input model is never mutated.
  */
 export function addElement(
   model: Model,
   diagramId: DiagramId,
   element: Element,
-): OperationResult {
+): Either.Either<Model, AddElementFailure> {
   const diagramIndex = model.diagrams.findIndex(
     (diagram) => diagram.id === diagramId,
   );
   if (diagramIndex === -1) {
-    return failure({ kind: 'unknown-diagram', diagramId });
+    return Either.left({ _tag: 'UnknownDiagram', diagramId });
   }
-  if (
-    model.diagrams.some((diagram) =>
-      diagram.elements.some((existing) => existing.id === element.id),
-    )
-  ) {
-    return failure({ kind: 'duplicate-element-id', elementId: element.id });
+  if (elementIdsAcross(model.diagrams).has(element.id)) {
+    return Either.left({ _tag: 'DuplicateElementId', elementId: element.id });
   }
   const endpointFailure = flowEndpointFailure(
     element,
     model.diagrams[diagramIndex],
   );
   if (endpointFailure) {
-    return failure(endpointFailure);
+    return Either.left(endpointFailure);
   }
-  return success(
+  return Either.right(
     withDiagram(model, diagramIndex, (diagram) => ({
       ...diagram,
       elements: [...diagram.elements, element],
@@ -81,15 +100,15 @@ export function addElement(
  * point: the centre of a node or box boundary, the first waypoint of a
  * curve boundary, and for a flow its first waypoint, else a free
  * endpoint's position, else the canvas origin. Fails when the element is
- * unknown.
+ * unknown. The input model is never mutated.
  */
 export function removeElement(
   model: Model,
   elementId: ElementId,
-): OperationResult {
+): Either.Either<Model, RemoveElementFailure> {
   const located = locateElement(model, elementId);
   if (!located) {
-    return failure({ kind: 'unknown-element', elementId });
+    return Either.left({ _tag: 'UnknownElement', elementId });
   }
   const freed: FlowEndpoint = {
     kind: 'free',
@@ -113,7 +132,7 @@ export function removeElement(
           : element,
       ),
   }));
-  return success({
+  return Either.right({
     ...trimmed,
     threats: trimmed.threats.map((threat) => ({
       ...threat,
@@ -131,18 +150,19 @@ export function removeElement(
  * `offset`, a displacement in canvas units: a node or box boundary shifts
  * its position, a curve boundary its waypoints, and a flow its waypoints
  * and free endpoints, while attached endpoints keep following their
- * element. Fails when the element is unknown.
+ * element. Fails when the element is unknown. The input model is never
+ * mutated.
  */
 export function moveElement(
   model: Model,
   elementId: ElementId,
   offset: Point,
-): OperationResult {
+): Either.Either<Model, MoveElementFailure> {
   const located = locateElement(model, elementId);
   if (!located) {
-    return failure({ kind: 'unknown-element', elementId });
+    return Either.left({ _tag: 'UnknownElement', elementId });
   }
-  return success(
+  return Either.right(
     withElement(
       model,
       located.diagramIndex,
@@ -155,31 +175,24 @@ export function moveElement(
  * Returns a new model with the element named by `elementId` given `size`.
  * Only elements carrying an extent resize: actors, processes, stores, and
  * box trust boundaries. Fails when the element is unknown and refuses a
- * flow or a curve boundary as `not-resizable`. The size value comes from
- * the size schema, which keeps extents strictly positive.
+ * flow or a curve boundary as not resizable. The size value comes from
+ * the size schema, which keeps extents strictly positive. The input model
+ * is never mutated.
  */
 export function resizeElement(
   model: Model,
   elementId: ElementId,
   size: Size,
-): OperationResult {
+): Either.Either<Model, ResizeElementFailure> {
   const located = locateElement(model, elementId);
   if (!located) {
-    return failure({ kind: 'unknown-element', elementId });
+    return Either.left({ _tag: 'UnknownElement', elementId });
   }
   const next = resized(located.element, size);
   if (!next) {
-    return failure({ kind: 'not-resizable', elementId });
+    return Either.left({ _tag: 'NotResizable', elementId });
   }
-  return success(withElement(model, located.diagramIndex, next));
-}
-
-function success(model: Model): OperationResult {
-  return { success: true, data: model };
-}
-
-function failure(error: OperationFailure): OperationResult {
-  return { success: false, error };
+  return Either.right(withElement(model, located.diagramIndex, next));
 }
 
 type LocatedElement = {
@@ -227,28 +240,18 @@ function withElement(model: Model, diagramIndex: number, next: Element): Model {
 function flowEndpointFailure(
   element: Element,
   diagram: Diagram,
-): OperationFailure | undefined {
+): AddElementFailure | undefined {
   if (element.kind !== 'flow') {
     return undefined;
   }
-  const diagramElementIds = new Set<string>(
-    diagram.elements.map((existing) => existing.id),
-  );
-  for (const side of ['source', 'target'] as const) {
-    const endpoint = element[side];
-    if (
-      endpoint.kind === 'attached' &&
-      (endpoint.element === element.id ||
-        !diagramElementIds.has(endpoint.element))
-    ) {
-      return {
-        kind: 'invalid-flow-endpoint',
-        side,
-        reference: endpoint.element,
-      };
-    }
-  }
-  return undefined;
+  const violation = endpointViolationsOf(element, elementIdsIn(diagram)).at(0);
+  return violation
+    ? {
+        _tag: 'InvalidFlowEndpoint',
+        side: violation.side,
+        reference: violation.reference,
+      }
+    : undefined;
 }
 
 const origin: Point = { x: 0, y: 0 };
@@ -273,10 +276,11 @@ function centreOf(position: Point, size: Size): Point {
 }
 
 function freeEndpointPosition(flow: Flow): Point | undefined {
-  if (flow.source.kind === 'free') {
-    return flow.source.position;
-  }
-  return flow.target.kind === 'free' ? flow.target.position : undefined;
+  return [flow.source, flow.target]
+    .flatMap((endpoint) =>
+      endpoint.kind === 'free' ? [endpoint.position] : [],
+    )
+    .at(0);
 }
 
 function translated(element: Element, offset: Point): Element {

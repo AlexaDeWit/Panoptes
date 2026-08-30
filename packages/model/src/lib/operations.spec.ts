@@ -1,3 +1,4 @@
+import { Either } from 'effect';
 import { elementSchema, type Element, type Flow } from './elements.js';
 import { validModelFixture } from './fixtures.js';
 import { diagramIdSchema, elementIdSchema } from './ids.js';
@@ -6,29 +7,31 @@ import {
   moveElement,
   removeElement,
   resizeElement,
-  type OperationResult,
+  type OperationFailure,
 } from './operations.js';
 import { parseModel, type Model } from './parse.js';
 
 const parsedFixture = parseModel(validModelFixture);
-if (!parsedFixture.success) {
+if (Either.isLeft(parsedFixture)) {
   throw new Error('The operations specs need the valid fixture to parse.');
 }
-const base: Model = parsedFixture.data;
+const base: Model = parsedFixture.right;
 
 const elementId = (value: string) => elementIdSchema.parse(value);
 const diagramId = (value: string) => diagramIdSchema.parse(value);
 const mainDiagram = diagramId('diagram-main');
 
-const modelOf = (result: OperationResult): Model => {
-  if (!result.success) {
-    throw new Error(`Expected the operation to succeed: ${result.error.kind}`);
+type OperationOutcome = Either.Either<Model, OperationFailure>;
+
+const modelOf = (result: OperationOutcome): Model => {
+  if (Either.isLeft(result)) {
+    throw new Error(`Expected the operation to succeed: ${result.left._tag}`);
   }
-  return result.data;
+  return result.right;
 };
 
-const errorOf = (result: OperationResult) =>
-  result.success ? undefined : result.error;
+const errorOf = (result: OperationOutcome): OperationFailure | undefined =>
+  Either.isLeft(result) ? result.left : undefined;
 
 const elementIds = (model: Model): string[] =>
   model.diagrams.flatMap((diagram) =>
@@ -96,13 +99,13 @@ describe('addElement', () => {
   it('fails on an unknown diagram', () => {
     expect(
       errorOf(addElement(base, diagramId('diagram-ghost'), cache)),
-    ).toEqual({ kind: 'unknown-diagram', diagramId: 'diagram-ghost' });
+    ).toEqual({ _tag: 'UnknownDiagram', diagramId: 'diagram-ghost' });
   });
 
   it('fails on a duplicate element id', () => {
     const clash = elementSchema.parse({ ...storeInput, id: 'element-api' });
     expect(errorOf(addElement(base, mainDiagram, clash))).toEqual({
-      kind: 'duplicate-element-id',
+      _tag: 'DuplicateElementId',
       elementId: 'element-api',
     });
   });
@@ -114,7 +117,7 @@ describe('addElement', () => {
       target: { kind: 'attached', element: 'element-ghost' },
     });
     expect(errorOf(addElement(base, mainDiagram, dangling))).toEqual({
-      kind: 'invalid-flow-endpoint',
+      _tag: 'InvalidFlowEndpoint',
       side: 'target',
       reference: 'element-ghost',
     });
@@ -127,7 +130,7 @@ describe('addElement', () => {
       source: { kind: 'attached', element: 'element-loop-flow' },
     });
     expect(errorOf(addElement(base, mainDiagram, selfAnchored))).toEqual({
-      kind: 'invalid-flow-endpoint',
+      _tag: 'InvalidFlowEndpoint',
       side: 'source',
       reference: 'element-loop-flow',
     });
@@ -146,7 +149,7 @@ describe('removeElement', () => {
       kind: 'free',
       position: { x: 120, y: 160 },
     });
-    expect(parseModel(next).success).toBe(true);
+    expect(Either.isRight(parseModel(next))).toBe(true);
   });
 
   it('detaches the removed element from threat and assumption links', () => {
@@ -159,7 +162,7 @@ describe('removeElement', () => {
 
   it('fails on an unknown element', () => {
     expect(errorOf(removeElement(base, elementId('element-ghost')))).toEqual({
-      kind: 'unknown-element',
+      _tag: 'UnknownElement',
       elementId: 'element-ghost',
     });
   });
@@ -211,7 +214,7 @@ describe('moveElement', () => {
   it('fails on an unknown element', () => {
     expect(
       errorOf(moveElement(base, elementId('element-ghost'), { x: 1, y: 1 })),
-    ).toEqual({ kind: 'unknown-element', elementId: 'element-ghost' });
+    ).toEqual({ _tag: 'UnknownElement', elementId: 'element-ghost' });
   });
 });
 
@@ -244,10 +247,10 @@ describe('resizeElement', () => {
     const size = { width: 10, height: 10 };
     expect(
       errorOf(resizeElement(base, elementId('element-order-flow'), size)),
-    ).toEqual({ kind: 'not-resizable', elementId: 'element-order-flow' });
+    ).toEqual({ _tag: 'NotResizable', elementId: 'element-order-flow' });
     expect(
       errorOf(resizeElement(base, elementId('element-billing-zone'), size)),
-    ).toEqual({ kind: 'not-resizable', elementId: 'element-billing-zone' });
+    ).toEqual({ _tag: 'NotResizable', elementId: 'element-billing-zone' });
   });
 
   it('fails on an unknown element', () => {
@@ -258,7 +261,7 @@ describe('resizeElement', () => {
           height: 10,
         }),
       ),
-    ).toEqual({ kind: 'unknown-element', elementId: 'element-ghost' });
+    ).toEqual({ _tag: 'UnknownElement', elementId: 'element-ghost' });
   });
 });
 
@@ -272,7 +275,7 @@ describe('operation purity', () => {
 });
 
 describe('operation outputs re-parse through parseModel', () => {
-  const outputs: [string, OperationResult][] = [
+  const outputs: [string, OperationOutcome][] = [
     ['addElement', addElement(base, mainDiagram, writeFlow)],
     ['removeElement', removeElement(base, elementId('element-customer'))],
     [
@@ -290,7 +293,7 @@ describe('operation outputs re-parse through parseModel', () => {
 
   for (const [operation, result] of outputs) {
     it(`${operation} returns a model parseModel accepts`, () => {
-      expect(parseModel(modelOf(result)).success).toBe(true);
+      expect(Either.isRight(parseModel(modelOf(result)))).toBe(true);
     });
   }
 });
