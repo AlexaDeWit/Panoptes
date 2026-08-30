@@ -7,7 +7,10 @@ coverage:
       default:
         target: auto
         threshold: 1%
-    # Informational until M1 lands real code. Gating flips then (issue #22).
+    # Gating since M1 landed real code (issue #22). 90%, not 100%: the model
+    # package covers every line it has today, so the floor catches a real
+    # regression while leaving room for the occasional line a test cannot
+    # reach, rather than turning each PR into a coverage negotiation.
     patch:
       default:
-        informational: true
+        target: 90%
