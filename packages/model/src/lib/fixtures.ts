@@ -3,9 +3,10 @@ import { modelSchema } from './model.js';
 
 /**
  * Hand-authored valid model exercising every record kind: the five element
- * kinds (the flow anchored at its source and free at its target), a threat
- * attached to two elements, a mitigation, and an assumption. Typed as the
- * schema's input, not as a Model: specs feed it through parseModel.
+ * kinds (the flow anchored at its source and free at its target, trust
+ * boundaries in both shapes), a threat attached to two elements, a
+ * mitigation, and an assumption. Typed as the schema's input, not as a
+ * Model: specs feed it through parseModel.
  */
 export const validModelFixture: z.input<typeof modelSchema> = {
   metadata: {
@@ -70,6 +71,22 @@ export const validModelFixture: z.input<typeof modelSchema> = {
             kind: 'box',
             position: { x: 280, y: 60 },
             size: { width: 520, height: 220 },
+          },
+        },
+        {
+          kind: 'trust-boundary',
+          id: 'element-billing-zone',
+          name: 'Billing zone',
+          description: '',
+          outOfScope: false,
+          reasonOutOfScope: '',
+          shape: {
+            kind: 'curve',
+            waypoints: [
+              { x: 40, y: 320 },
+              { x: 400, y: 300 },
+              { x: 760, y: 340 },
+            ],
           },
         },
       ],
