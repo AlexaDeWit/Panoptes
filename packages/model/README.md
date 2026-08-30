@@ -9,11 +9,10 @@ remove, replace, attach, detach). A threat number is issued once and never
 moves: the model carries the highest number it has ever issued, so a removed
 threat leaves a permanent gap and `nextThreatNumber` never hands its number
 back. Coverage queries read a model without changing it: elements no threat
-references, open threats by severity, and the threat count of every
-element. Fallible exports return
-Effect's `Either`, carrying a package-owned `_tag`-discriminated failure on
-the error channel; an infallible operation returns its result bare. Nothing
-throws and no zod type appears in a fallible export's signature.
-Imports no internal package.
+references, open threats by severity, and the threat count of every element.
+Fallible exports return Effect's `Either`, carrying a package-owned
+`_tag`-discriminated failure on the error channel; an infallible operation
+returns its result bare. Nothing throws and no zod type appears in a fallible
+export's signature. Imports no internal package.
 
 Unit tests: `pnpm nx test @panoptes/model`.

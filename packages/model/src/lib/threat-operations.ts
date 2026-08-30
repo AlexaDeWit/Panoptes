@@ -107,8 +107,8 @@ export function removeThreat(
  * Returns a new model with the threat carrying `threat.id` swapped for
  * `threat`. Editing a threat is whole-record replacement: the caller builds
  * the complete record from the threat schema and this operation checks its
- * fit against the model. Every field but the number is the caller's to
- * change. Fails when the id names no threat of the model, when the
+ * fit against the model. Every field but the id and the number is the
+ * caller's to change. Fails when the id names no threat of the model, when the
  * replacement carries a different number from the threat it replaces, or
  * when a linked element id names no element of the model. The input model
  * is never mutated.

@@ -162,7 +162,10 @@ function threatNumberViolations(model: StructuralModel): Violation[] {
 }
 
 function lastIssuedThreatNumberViolations(model: StructuralModel): Violation[] {
-  const highest = Math.max(0, ...model.threats.map((threat) => threat.number));
+  const highest = model.threats.reduce(
+    (max, threat) => Math.max(max, threat.number),
+    0,
+  );
   return highest > model.lastIssuedThreatNumber
     ? [
         {
