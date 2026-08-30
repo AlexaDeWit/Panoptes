@@ -126,14 +126,19 @@ const reasonPhrases: Record<LossReason, string> = {
   undeclared: 'not declared by the wire schema',
 };
 
-const controlCharacters = /\p{Cc}/gu;
+const escapableText = /\\|\p{Cc}/gu;
+
+const escapableId = /["\\]|\p{Cc}/gu;
 
 /**
  * The report as lines for a person, one per entry and in the report's own
  * order. An empty report renders as a line saying so, so the rendering is
- * never blank. Control characters in an id or in `dropped` are escaped to
- * `\uXXXX`, because an id passes through a codec as the foreign file wrote
- * it and this rendering reaches a terminal.
+ * never blank. An id reaches this rendering as the foreign file wrote it,
+ * so control characters are escaped to `\uXXXX` and a backslash or a quote
+ * escapes with a backslash: a newline in an id cannot split one entry into
+ * two lines, and no id can render as another. Nothing else is escaped, so
+ * an id written with bidirectional or zero-width formatting still displays
+ * as something other than what it says.
  */
 export function renderLossReport(report: LossReport): string {
   return isLossless(report)
@@ -142,7 +147,7 @@ export function renderLossReport(report: LossReport): string {
 }
 
 function renderEntry(entry: LossEntry): string {
-  return `${renderSubject(entry.subject)}: ${escapeControls(entry.dropped)} (${
+  return `${renderSubject(entry.subject)}: ${escapeText(entry.dropped)} (${
     reasonPhrases[entry.reason]
   })`;
 }
@@ -150,13 +155,19 @@ function renderEntry(entry: LossEntry): string {
 function renderSubject(subject: LossSubject): string {
   return subject.kind === 'model'
     ? 'model'
-    : `${subject.kind} "${escapeControls(subject.id)}"`;
+    : `${subject.kind} "${escapeId(subject.id)}"`;
 }
 
-function escapeControls(text: string): string {
-  return text.replace(
-    controlCharacters,
-    (character) =>
-      `\\u${character.charCodeAt(0).toString(16).padStart(4, '0')}`,
-  );
+function escapeText(text: string): string {
+  return text.replace(escapableText, escapeCharacter);
+}
+
+function escapeId(id: string): string {
+  return id.replace(escapableId, escapeCharacter);
+}
+
+function escapeCharacter(character: string): string {
+  return character === '\\' || character === '"'
+    ? `\\${character}`
+    : `\\u${character.charCodeAt(0).toString(16).padStart(4, '0')}`;
 }

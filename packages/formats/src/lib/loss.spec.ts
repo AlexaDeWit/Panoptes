@@ -124,6 +124,33 @@ describe('renderLossReport', () => {
     ]);
   });
 
+  it('escapes a backslash, so no id renders as another', () => {
+    const rendered = (id: string): string =>
+      renderLossReport([
+        entry(
+          { kind: 'element', id: elementIdSchema.parse(id) },
+          'the ports',
+          'unrepresentable',
+        ),
+      ]);
+    expect(rendered('a\\u000ab')).toBe(
+      'element "a\\\\u000ab": the ports (no place in the format)',
+    );
+    expect(rendered('a\nb')).not.toBe(rendered('a\\u000ab'));
+  });
+
+  it('escapes a quote inside the quotes it wraps an id in', () => {
+    expect(
+      renderLossReport([
+        entry(
+          { kind: 'element', id: elementIdSchema.parse('he said "no"') },
+          'the ports',
+          'unrepresentable',
+        ),
+      ]),
+    ).toBe('element "he said \\"no\\"": the ports (no place in the format)');
+  });
+
   it('escapes the control characters an imported id carries into a terminal', () => {
     const report = [
       entry(
