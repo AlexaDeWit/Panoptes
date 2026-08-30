@@ -4,20 +4,16 @@ import {
   threatCountByElement,
 } from './coverage.js';
 import type { Element } from './elements.js';
-import { parsedFixture, threatRegisterFixture } from './fixtures.js';
-import { elementIdSchema } from './ids.js';
+import {
+  elementId,
+  emptyRegisterFixture,
+  parsedFixture,
+  threatRegisterFixture,
+} from './fixtures.js';
 import type { Threat } from './threats.js';
 
 const base = parsedFixture(threatRegisterFixture);
-const emptyRegister = parsedFixture({
-  ...threatRegisterFixture,
-  threats: [],
-  lastIssuedThreatNumber: 0,
-  mitigations: [],
-  assumptions: [],
-});
-
-const elementId = (value: string) => elementIdSchema.parse(value);
+const emptyRegister = parsedFixture(emptyRegisterFixture);
 
 const idsOfElements = (elements: Element[]): string[] =>
   elements.map((element) => element.id);
@@ -53,18 +49,11 @@ describe('elementsWithoutThreats', () => {
 describe('openThreatsBySeverity', () => {
   it('groups the open threats under a key for every severity', () => {
     const grouped = openThreatsBySeverity(base);
-    expect(
-      Object.entries(grouped).map(([severity, threats]) => [
-        severity,
-        idsOfThreats(threats),
-      ]),
-    ).toEqual([
-      ['low', ['threat-flood-checkout']],
-      ['medium', []],
-      ['high', ['threat-spoof-shopper']],
-      ['critical', ['threat-tamper-payment']],
-      ['tbd', []],
-    ]);
+    expect(idsOfThreats(grouped.low)).toEqual(['threat-flood-checkout']);
+    expect(idsOfThreats(grouped.medium)).toEqual([]);
+    expect(idsOfThreats(grouped.high)).toEqual(['threat-spoof-shopper']);
+    expect(idsOfThreats(grouped.critical)).toEqual(['threat-tamper-payment']);
+    expect(idsOfThreats(grouped.tbd)).toEqual([]);
   });
 
   it('returns whole threat records', () => {

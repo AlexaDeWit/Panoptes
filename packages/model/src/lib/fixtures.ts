@@ -1,7 +1,27 @@
 import { Either } from 'effect';
 import { z } from 'zod';
+import {
+  diagramIdSchema,
+  elementIdSchema,
+  threatIdSchema,
+  type DiagramId,
+  type ElementId,
+  type ThreatId,
+} from './ids.js';
 import { modelSchema } from './model.js';
 import { parseModel, type Model } from './parse.js';
+
+/** Parses a spec's literal string into a branded element id. */
+export const elementId = (value: string): ElementId =>
+  elementIdSchema.parse(value);
+
+/** Parses a spec's literal string into a branded diagram id. */
+export const diagramId = (value: string): DiagramId =>
+  diagramIdSchema.parse(value);
+
+/** Parses a spec's literal string into a branded threat id. */
+export const threatId = (value: string): ThreatId =>
+  threatIdSchema.parse(value);
 
 /**
  * The parsed form of a fixture, for specs that need a Model rather than the
@@ -301,4 +321,18 @@ export const threatRegisterFixture: z.input<typeof modelSchema> = {
       threats: ['threat-spoof-shopper'],
     },
   ],
+};
+
+/**
+ * The threat register fixture before any analysis: its diagrams with no
+ * threats, mitigations, or assumptions, and no threat number yet issued.
+ * Typed as the schema's input, not as a Model: specs feed it through
+ * parseModel.
+ */
+export const emptyRegisterFixture: z.input<typeof modelSchema> = {
+  ...threatRegisterFixture,
+  threats: [],
+  lastIssuedThreatNumber: 0,
+  mitigations: [],
+  assumptions: [],
 };

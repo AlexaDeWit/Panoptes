@@ -1,6 +1,11 @@
 import { Either } from 'effect';
-import { parsedFixture, threatRegisterFixture } from './fixtures.js';
-import { elementIdSchema, threatIdSchema } from './ids.js';
+import {
+  elementId,
+  emptyRegisterFixture,
+  parsedFixture,
+  threatId,
+  threatRegisterFixture,
+} from './fixtures.js';
 import { OperationFailure } from './operation-failures.js';
 import { parseModel, type Model } from './parse.js';
 import {
@@ -14,16 +19,8 @@ import {
 import { threatSchema, type Threat } from './threats.js';
 
 const base = parsedFixture(threatRegisterFixture);
-const emptyRegister = parsedFixture({
-  ...threatRegisterFixture,
-  threats: [],
-  lastIssuedThreatNumber: 0,
-  mitigations: [],
-  assumptions: [],
-});
+const emptyRegister = parsedFixture(emptyRegisterFixture);
 
-const elementId = (value: string) => elementIdSchema.parse(value);
-const threatId = (value: string) => threatIdSchema.parse(value);
 const shopper = elementId('element-shopper');
 const ledger = elementId('element-ledger');
 const spoofShopper = threatId('threat-spoof-shopper');

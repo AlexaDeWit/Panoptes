@@ -46,13 +46,16 @@ export function openThreatsBySeverity(
  * of threats outstanding.
  */
 export function threatCountByElement(model: Model): Map<ElementId, number> {
-  const linkSets = model.threats.map(
-    (threat) => new Set<string>(threat.elements),
-  );
+  const links = new Map<string, number>();
+  for (const threat of model.threats) {
+    for (const elementId of new Set(threat.elements)) {
+      links.set(elementId, (links.get(elementId) ?? 0) + 1);
+    }
+  }
   return new Map(
     elementsAcross(model.diagrams).map((element) => [
       element.id,
-      linkSets.filter((links) => links.has(element.id)).length,
+      links.get(element.id) ?? 0,
     ]),
   );
 }

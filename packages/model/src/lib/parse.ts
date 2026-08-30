@@ -5,7 +5,6 @@ import {
   elementIdsAcross,
   elementIdsIn,
   endpointViolationsOf,
-  threatIdsOf,
 } from './references.js';
 
 type StructuralModel = z.infer<typeof modelSchema>;
@@ -238,7 +237,7 @@ function flowEndpointViolations(model: StructuralModel): Violation[] {
 
 function referenceViolations(model: StructuralModel): Violation[] {
   const elementIds = elementIdsAcross(model.diagrams);
-  const threatIds = threatIdsOf(model.threats);
+  const threatIds = new Set<string>(model.threats.map((threat) => threat.id));
   const references = [
     {
       collection: 'threats',

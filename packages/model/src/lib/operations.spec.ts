@@ -1,7 +1,11 @@
 import { Either } from 'effect';
 import { elementSchema, type Element, type Flow } from './elements.js';
-import { parsedFixture, validModelFixture } from './fixtures.js';
-import { diagramIdSchema, elementIdSchema } from './ids.js';
+import {
+  diagramId,
+  elementId,
+  parsedFixture,
+  validModelFixture,
+} from './fixtures.js';
 import { OperationFailure } from './operation-failures.js';
 import {
   addElement,
@@ -12,9 +16,6 @@ import {
 import { parseModel, type Model } from './parse.js';
 
 const base = parsedFixture(validModelFixture);
-
-const elementId = (value: string) => elementIdSchema.parse(value);
-const diagramId = (value: string) => diagramIdSchema.parse(value);
 const mainDiagram = diagramId('diagram-main');
 
 type OperationOutcome = Either.Either<Model, OperationFailure>;

@@ -23,17 +23,16 @@ export type ReplaceThreatFailure = Extract<
   { _tag: 'UnknownThreat' | 'ChangedThreatNumber' | 'UnknownElement' }
 >;
 
-/** The failures {@link attachThreat} can produce. */
-export type AttachThreatFailure = Extract<
+type ThreatLinkFailure = Extract<
   OperationFailure,
   { _tag: 'UnknownThreat' | 'UnknownElement' }
 >;
 
+/** The failures {@link attachThreat} can produce. */
+export type AttachThreatFailure = ThreatLinkFailure;
+
 /** The failures {@link detachThreat} can produce. */
-export type DetachThreatFailure = Extract<
-  OperationFailure,
-  { _tag: 'UnknownThreat' | 'UnknownElement' }
->;
+export type DetachThreatFailure = ThreatLinkFailure;
 
 /**
  * Returns a new model with `threat` appended to the threat register and the
@@ -197,7 +196,7 @@ function withRelinkedThreat(
   threatId: ThreatId,
   elementId: ElementId,
   relink: (elements: readonly ElementId[]) => ElementId[],
-): Either.Either<Model, AttachThreatFailure> {
+): Either.Either<Model, ThreatLinkFailure> {
   const threat = model.threats.find((candidate) => candidate.id === threatId);
   if (!threat) {
     return Either.left(OperationFailure.UnknownThreat({ threatId }));
