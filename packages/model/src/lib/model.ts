@@ -7,13 +7,19 @@ import { threatSchema } from './threats.js';
 
 /**
  * Facts about the model as a whole: what it covers and who answers for it.
- * All three fields are free text; empty strings are allowed so a model can
- * be saved before it is described.
+ * `title`, `owner`, and `description` are free text; empty strings are
+ * allowed so a model can be saved before it is described. `contributors`
+ * names everyone who worked on the model, one name per entry, and is
+ * required with an empty array legal, so a model can be saved before anyone
+ * is credited. Threat Dragon wraps each name in an object of its own; the
+ * internal model is format-independent, so the import codec (M2) flattens
+ * that wrapper to the name.
  */
 export const modelMetadataSchema = z.strictObject({
   title: z.string(),
   owner: z.string(),
   description: z.string(),
+  contributors: z.array(z.string()),
 });
 
 /** Model metadata. */

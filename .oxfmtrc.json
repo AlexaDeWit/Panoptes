@@ -2,5 +2,10 @@
   "$schema": "./node_modules/oxfmt/configuration_schema.json",
   "singleQuote": true,
   "printWidth": 80,
-  "sortPackageJson": false
+  "sortPackageJson": false,
+  // Vendored files keep the bytes the foreign tool wrote, so their
+  // provenance checksums stay matched to upstream and a codec reads the
+  // real thing. Only the vendored payloads are exempt; prose beside them
+  // is formatted like any other document.
+  "ignorePatterns": ["test-data/*.json"]
 }

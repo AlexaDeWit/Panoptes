@@ -26,10 +26,20 @@ export const threatId = (value: string): ThreatId =>
 /**
  * The parsed form of a fixture, for specs that need a Model rather than the
  * schema's input. Throws where the fixture stops parsing: a fixture that no
- * longer parses is a broken suite, not a case under test.
+ * longer parses is a broken suite, not a case under test. The message
+ * carries parseModel's issues, so the failure names the construct the
+ * fixture lost.
  */
 export function parsedFixture(input: z.input<typeof modelSchema>): Model {
-  return Either.getOrThrow(parseModel(input));
+  return Either.getOrThrowWith(
+    parseModel(input),
+    (failure) =>
+      new Error(
+        `Fixture does not parse: ${failure.issues
+          .map((issue) => `${issue.path.join('.')}: ${issue.message}`)
+          .join('; ')}`,
+      ),
+  );
 }
 
 /**
@@ -44,6 +54,7 @@ export const validModelFixture: z.input<typeof modelSchema> = {
     title: 'Order service',
     owner: 'Alexandra de Wit',
     description: 'Sample model exercising every record kind.',
+    contributors: ['Alexandra de Wit'],
   },
   diagrams: [
     {
@@ -172,6 +183,7 @@ export const threatRegisterFixture: z.input<typeof modelSchema> = {
     title: 'Payment gateway',
     owner: 'Alexandra de Wit',
     description: 'Sample model with a threat register worth querying.',
+    contributors: [],
   },
   diagrams: [
     {
