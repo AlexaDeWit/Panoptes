@@ -27,6 +27,17 @@ describe('parseModel', () => {
     );
   });
 
+  it('serializes a failure to its plain tagged shape', () => {
+    const result = parseModel({ ...validModelFixture, version: '2.6.2' });
+    if (Either.isRight(result)) {
+      throw new Error('The invalid input must fail to parse.');
+    }
+    expect(JSON.parse(JSON.stringify(result.left))).toEqual({
+      _tag: 'InvalidModel',
+      issues: result.left.issues,
+    });
+  });
+
   it('rejects a duplicate element id across diagrams', () => {
     const result = seeded((draft) => {
       draft.diagrams.push({

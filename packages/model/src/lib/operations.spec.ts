@@ -5,9 +5,9 @@ import { diagramIdSchema, elementIdSchema } from './ids.js';
 import {
   addElement,
   moveElement,
+  OperationFailure,
   removeElement,
   resizeElement,
-  type OperationFailure,
 } from './operations.js';
 import { parseModel, type Model } from './parse.js';
 
@@ -133,15 +133,20 @@ describe('addElement', () => {
   it('fails on an unknown diagram', () => {
     expect(
       errorOf(addElement(base, diagramId('diagram-ghost'), cache)),
-    ).toEqual({ _tag: 'UnknownDiagram', diagramId: 'diagram-ghost' });
+    ).toEqual(
+      OperationFailure.UnknownDiagram({
+        diagramId: diagramId('diagram-ghost'),
+      }),
+    );
   });
 
   it('fails on a duplicate element id', () => {
     const clash = elementSchema.parse({ ...storeInput, id: 'element-api' });
-    expect(errorOf(addElement(base, mainDiagram, clash))).toEqual({
-      _tag: 'DuplicateElementId',
-      elementId: 'element-api',
-    });
+    expect(errorOf(addElement(base, mainDiagram, clash))).toEqual(
+      OperationFailure.DuplicateElementId({
+        elementId: elementId('element-api'),
+      }),
+    );
   });
 
   it('fails on a flow endpoint anchored outside the diagram', () => {
@@ -150,11 +155,12 @@ describe('addElement', () => {
       id: 'element-dangling-flow',
       target: { kind: 'attached', element: 'element-ghost' },
     });
-    expect(errorOf(addElement(base, mainDiagram, dangling))).toEqual({
-      _tag: 'InvalidFlowEndpoint',
-      side: 'target',
-      reference: 'element-ghost',
-    });
+    expect(errorOf(addElement(base, mainDiagram, dangling))).toEqual(
+      OperationFailure.InvalidFlowEndpoint({
+        side: 'target',
+        reference: elementId('element-ghost'),
+      }),
+    );
   });
 
   it('fails on a flow anchored to itself', () => {
@@ -163,11 +169,12 @@ describe('addElement', () => {
       id: 'element-loop-flow',
       source: { kind: 'attached', element: 'element-loop-flow' },
     });
-    expect(errorOf(addElement(base, mainDiagram, selfAnchored))).toEqual({
-      _tag: 'InvalidFlowEndpoint',
-      side: 'source',
-      reference: 'element-loop-flow',
-    });
+    expect(errorOf(addElement(base, mainDiagram, selfAnchored))).toEqual(
+      OperationFailure.InvalidFlowEndpoint({
+        side: 'source',
+        reference: elementId('element-loop-flow'),
+      }),
+    );
   });
 });
 
@@ -255,10 +262,11 @@ describe('removeElement', () => {
   });
 
   it('fails on an unknown element', () => {
-    expect(errorOf(removeElement(base, elementId('element-ghost')))).toEqual({
-      _tag: 'UnknownElement',
-      elementId: 'element-ghost',
-    });
+    expect(errorOf(removeElement(base, elementId('element-ghost')))).toEqual(
+      OperationFailure.UnknownElement({
+        elementId: elementId('element-ghost'),
+      }),
+    );
   });
 });
 
@@ -308,7 +316,11 @@ describe('moveElement', () => {
   it('fails on an unknown element', () => {
     expect(
       errorOf(moveElement(base, elementId('element-ghost'), { x: 1, y: 1 })),
-    ).toEqual({ _tag: 'UnknownElement', elementId: 'element-ghost' });
+    ).toEqual(
+      OperationFailure.UnknownElement({
+        elementId: elementId('element-ghost'),
+      }),
+    );
   });
 });
 
@@ -341,10 +353,18 @@ describe('resizeElement', () => {
     const size = { width: 10, height: 10 };
     expect(
       errorOf(resizeElement(base, elementId('element-order-flow'), size)),
-    ).toEqual({ _tag: 'NotResizable', elementId: 'element-order-flow' });
+    ).toEqual(
+      OperationFailure.NotResizable({
+        elementId: elementId('element-order-flow'),
+      }),
+    );
     expect(
       errorOf(resizeElement(base, elementId('element-billing-zone'), size)),
-    ).toEqual({ _tag: 'NotResizable', elementId: 'element-billing-zone' });
+    ).toEqual(
+      OperationFailure.NotResizable({
+        elementId: elementId('element-billing-zone'),
+      }),
+    );
   });
 
   it('fails on an unknown element', () => {
@@ -355,7 +375,11 @@ describe('resizeElement', () => {
           height: 10,
         }),
       ),
-    ).toEqual({ _tag: 'UnknownElement', elementId: 'element-ghost' });
+    ).toEqual(
+      OperationFailure.UnknownElement({
+        elementId: elementId('element-ghost'),
+      }),
+    );
   });
 });
 

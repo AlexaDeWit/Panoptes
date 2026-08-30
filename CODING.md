@@ -6,10 +6,11 @@ These are requirements, not suggestions.
 ## Error handling
 
 Fallible APIs return Effect's `Either`, with a package-owned tagged
-failure (a plain readonly object discriminated on `_tag`) on the error
-channel. Throwing is not an error channel in this project's TypeScript.
-`parseModel` follows the same rule: zod stays behind the parse boundary,
-and its issues surface as plain data on the failure.
+failure on the error channel: an Effect `Data.taggedEnum` discriminated
+on `_tag`, readonly, and serializing to its plain tagged shape. Throwing
+is not an error channel in this project's TypeScript. `parseModel`
+follows the same rule: zod stays behind the parse boundary, and its
+issues surface as plain data on the failure.
 
 ## Schema-first typing
 

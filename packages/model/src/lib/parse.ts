@@ -1,4 +1,4 @@
-import { Either } from 'effect';
+import { Data, Either } from 'effect';
 import { z } from 'zod';
 import { modelSchema } from './model.js';
 import {
@@ -39,13 +39,19 @@ export type ParseIssue = {
 };
 
 /**
- * Why parseModel refused an input, as plain data: zod stays behind the
+ * Why parseModel refused an input, as tagged data: zod stays behind the
  * parse boundary, so no zod type appears in the exported surface.
  */
-export type ParseFailure = {
-  readonly _tag: 'InvalidModel';
-  readonly issues: readonly ParseIssue[];
-};
+export type ParseFailure = Data.TaggedEnum<{
+  InvalidModel: { readonly issues: readonly ParseIssue[] };
+}>;
+
+/**
+ * Constructor for {@link ParseFailure}: the single InvalidModel variant,
+ * plus Effect's `$is` and `$match` helpers. Values compare structurally
+ * under Effect's Equal and serialize to their plain tagged shape.
+ */
+export const ParseFailure = Data.taggedEnum<ParseFailure>();
 
 /**
  * The only way a Model value comes into existence: the structural schema
@@ -68,8 +74,7 @@ export function parseModel(input: unknown): Either.Either<Model, ParseFailure> {
 }
 
 function toParseFailure(error: z.ZodError<Model>): ParseFailure {
-  return {
-    _tag: 'InvalidModel',
+  return ParseFailure.InvalidModel({
     issues: error.issues.map((issue) => ({
       path: issue.path.map((key) =>
         typeof key === 'symbol' ? String(key) : key,
@@ -77,7 +82,7 @@ function toParseFailure(error: z.ZodError<Model>): ParseFailure {
       message: issue.message,
       code: issue.code,
     })),
-  };
+  });
 }
 
 function collectViolations(model: StructuralModel): Violation[] {

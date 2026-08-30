@@ -1,4 +1,4 @@
-import { Either } from 'effect';
+import { Data, Either } from 'effect';
 import type { BoundaryShape, Element, Flow, FlowEndpoint } from './elements.js';
 import type { Point, Size } from './geometry.js';
 import type { DiagramId, ElementId } from './ids.js';
@@ -18,16 +18,23 @@ import {
  * is its own schema's contract. Each operation's Either narrows its error
  * channel to the members it can actually produce.
  */
-export type OperationFailure =
-  | { readonly _tag: 'UnknownDiagram'; readonly diagramId: DiagramId }
-  | { readonly _tag: 'UnknownElement'; readonly elementId: ElementId }
-  | { readonly _tag: 'DuplicateElementId'; readonly elementId: ElementId }
-  | {
-      readonly _tag: 'InvalidFlowEndpoint';
-      readonly side: 'source' | 'target';
-      readonly reference: ElementId;
-    }
-  | { readonly _tag: 'NotResizable'; readonly elementId: ElementId };
+export type OperationFailure = Data.TaggedEnum<{
+  UnknownDiagram: { readonly diagramId: DiagramId };
+  UnknownElement: { readonly elementId: ElementId };
+  DuplicateElementId: { readonly elementId: ElementId };
+  InvalidFlowEndpoint: {
+    readonly side: 'source' | 'target';
+    readonly reference: ElementId;
+  };
+  NotResizable: { readonly elementId: ElementId };
+}>;
+
+/**
+ * Constructors for {@link OperationFailure}, one per variant, plus
+ * Effect's `$is` and `$match` helpers. Values compare structurally under
+ * Effect's Equal and serialize to their plain tagged shape.
+ */
+export const OperationFailure = Data.taggedEnum<OperationFailure>();
 
 /** The failures {@link addElement} can produce. */
 export type AddElementFailure = Extract<
@@ -71,10 +78,12 @@ export function addElement(
     (diagram) => diagram.id === diagramId,
   );
   if (diagramIndex === -1) {
-    return Either.left({ _tag: 'UnknownDiagram', diagramId });
+    return Either.left(OperationFailure.UnknownDiagram({ diagramId }));
   }
   if (elementIdsAcross(model.diagrams).has(element.id)) {
-    return Either.left({ _tag: 'DuplicateElementId', elementId: element.id });
+    return Either.left(
+      OperationFailure.DuplicateElementId({ elementId: element.id }),
+    );
   }
   const endpointFailure = flowEndpointFailure(
     element,
@@ -108,7 +117,7 @@ export function removeElement(
 ): Either.Either<Model, RemoveElementFailure> {
   const located = locateElement(model, elementId);
   if (!located) {
-    return Either.left({ _tag: 'UnknownElement', elementId });
+    return Either.left(OperationFailure.UnknownElement({ elementId }));
   }
   const freed: FlowEndpoint = {
     kind: 'free',
@@ -160,7 +169,7 @@ export function moveElement(
 ): Either.Either<Model, MoveElementFailure> {
   const located = locateElement(model, elementId);
   if (!located) {
-    return Either.left({ _tag: 'UnknownElement', elementId });
+    return Either.left(OperationFailure.UnknownElement({ elementId }));
   }
   return Either.right(
     withElement(
@@ -186,11 +195,11 @@ export function resizeElement(
 ): Either.Either<Model, ResizeElementFailure> {
   const located = locateElement(model, elementId);
   if (!located) {
-    return Either.left({ _tag: 'UnknownElement', elementId });
+    return Either.left(OperationFailure.UnknownElement({ elementId }));
   }
   const next = resized(located.element, size);
   if (!next) {
-    return Either.left({ _tag: 'NotResizable', elementId });
+    return Either.left(OperationFailure.NotResizable({ elementId }));
   }
   return Either.right(withElement(model, located.diagramIndex, next));
 }
@@ -246,11 +255,10 @@ function flowEndpointFailure(
   }
   const violation = endpointViolationsOf(element, elementIdsIn(diagram)).at(0);
   return violation
-    ? {
-        _tag: 'InvalidFlowEndpoint',
+    ? OperationFailure.InvalidFlowEndpoint({
         side: violation.side,
         reference: violation.reference,
-      }
+      })
     : undefined;
 }
 
