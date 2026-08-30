@@ -25,6 +25,15 @@ Shared object fields are expressed with zod's own composition: a base
 `z.strictObject` extended per variant with `.extend()`. Never spread raw
 field maps into schema literals.
 
+`strictObject` is the base for the internal model's schemas, where an
+undeclared key is a mistake and reporting it is the point. A format's wire
+schema in `packages/formats` is the exception and stays tolerant: a foreign
+file carries fields Panoptes does not model, and a strict wire schema stops
+reading the file the first time the other tool adds one. Preservation does
+not rest on that tolerance, because a codec writes onto the raw parsed
+document rather than onto its schema's output. The composition rule is
+unchanged either way, only the strictness of the base.
+
 ## Comments
 
 Comments in TypeScript source are TSDoc on exports only, a simple summary
