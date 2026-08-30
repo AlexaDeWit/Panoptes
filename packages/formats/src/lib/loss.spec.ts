@@ -110,6 +110,7 @@ describe('renderLossReport', () => {
       'narrowed',
       'split',
       'discarded-by-edit',
+      'undeclared',
     ];
     const report = reasons.map((reason) =>
       entry({ kind: 'model' }, 'the thing', reason),
@@ -119,6 +120,7 @@ describe('renderLossReport', () => {
       'model: the thing (reduced to fit the format)',
       'model: the thing (split by the format)',
       'model: the thing (removed by an edit)',
+      'model: the thing (not declared by the wire schema)',
     ]);
   });
 

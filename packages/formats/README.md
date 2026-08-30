@@ -3,33 +3,28 @@
 The codec contract for Panoptes' file formats. `Codec` is one interface over
 two paths. `read` returns the internal model together with the wire document
 it was mapped from. `write` takes that document back as an option: given one
-it merges onto it, which is how fields Panoptes does not model (Threat
-Dragon's ports, styling, and z-order among them) can reach the output at all;
-given none it projects the model into the format's canonical form.
+it merges onto it, so what the model does not describe stays as the file had
+it; given none it projects the model into the format's canonical form.
 
-What `read` hands back is the raw parsed document, not the wire schema's
-output, so a field the schema never declared is still there to write back.
-`WireDocument` is the value space JSON and YAML both parse into, and it lives
-here rather than in the model package, which stays the format-independent
-authority.
+A format is adopted completely or not at all. Its wire schema declares
+everything the format carries, the parts Panoptes does not model included,
+because that completeness is what preserves them: a merge leaves untouched
+what it does not map, and only a declared key is there to leave alone. The
+schema is demanding about what it declares and drops what it does not, so
+`read` returns its own loss report naming the keys it stripped and an
+incomplete schema announces itself rather than quietly shortening the file.
 
-The interface is generic over the format's own zod schema and carries it as a
-member, so the contract cannot describe a codec without one. That schema
-works inside `read`: typed access to the document, the paths a wire-document
-failure reports, and the mapping into the model. Two obligations on it are
-the codec's to keep, since the types do not carry them. It stays tolerant of
-keys it does not declare, because a strict wire schema stops reading a file
-the first time the other tool adds a field. And it neither transforms nor
-coerces a value it round-trips, or the retained document and the mapped model
-disagree about what the file said.
+The interface is generic over that schema and carries it as a member, so the
+contract cannot describe a codec without one, and a document one format read
+is not a document another format can be asked to write.
 
-Both write paths report through one `LossReport`. Its entries name the
-entity, what was dropped, and why: `unrepresentable` and `narrowed` for what
-a format cannot hold, `split` for a record the format forces into several,
-and `discarded-by-edit` for source material an edited model no longer
-accounts for. A report with no entries records no loss, and
-`renderLossReport` turns a report into lines for a person, escaping the
-control characters an imported id can carry.
+One `LossReport` serves every path. Its entries name the entity, what did not
+come through, and why: `unrepresentable`, `narrowed`, and `split` for what a
+format cannot hold as the model holds it, `discarded-by-edit` for source
+material an edited model no longer accounts for, and `undeclared` for a key a
+read dropped. A report with no entries records no loss, and `renderLossReport`
+turns a report into lines for a person, escaping what an imported id could
+otherwise do to a line.
 
 `read` returns Effect's `Either` with a package-owned `ReadFailure` on the
 error channel, one variant per place a read stops: text the format's syntax

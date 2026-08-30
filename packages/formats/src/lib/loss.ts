@@ -54,27 +54,32 @@ export const lossSubjectSchema = z.discriminatedUnion('kind', [
 export type LossSubject = z.infer<typeof lossSubjectSchema>;
 
 /**
- * Why an entry's material is not in the output. `unrepresentable`: the
+ * Why an entry's material did not come through. `unrepresentable`: the
  * format has no place for the construct. `narrowed`: the format holds a
  * reduced form of it, so less reaches the output than the model carried.
  * `split`: the format forces one record into several, as Threat Dragon
  * nests each threat under one cell, so a threat attached to several
  * elements is written once per cell and its single identity is gone.
  * `discarded-by-edit`: the write merged onto a source document, and the
- * model no longer accounts for material that document held.
+ * model no longer accounts for material that document held. `undeclared`:
+ * the file held a key the wire schema does not declare, so the read
+ * dropped it and neither the model nor the retained document has it. The
+ * first four are a write reporting on the file it produces, the last is a
+ * read reporting on the file it was given.
  */
 export const lossReasonSchema = z.enum([
   'unrepresentable',
   'narrowed',
   'split',
   'discarded-by-edit',
+  'undeclared',
 ]);
 
-/** Why an entry's material is not in the output. */
+/** Why an entry's material did not come through. */
 export type LossReason = z.infer<typeof lossReasonSchema>;
 
 /**
- * One loss: the entity it concerns, what did not reach the output, and why.
+ * One loss: the entity it concerns, what did not come through, and why.
  * `dropped` is prose in the entity's own terms rather than a path into the
  * output, because only the codec knows the format's vocabulary and the two
  * write paths word the same absence differently. Nothing parses a loss
@@ -91,19 +96,20 @@ export const lossEntrySchema = z.strictObject({
 export type LossEntry = z.infer<typeof lossEntrySchema>;
 
 /**
- * What a write did not carry into its output, in the order the codec
- * recorded it. One type serves both write paths: format-induced loss when
- * projecting into canonical form, edit-induced loss when merging onto a
- * source document. A report with no entries records no loss.
+ * What did not come through, in the order the codec recorded it. One type
+ * serves every path: the keys a read dropped as undeclared, format-induced
+ * loss where a write projects into canonical form, and edit-induced loss
+ * where a write merges onto a source document. A report with no entries
+ * records no loss.
  */
 export const lossReportSchema = z.array(lossEntrySchema).readonly();
 
-/** A write's loss report. */
+/** A read's or a write's loss report. */
 export type LossReport = z.infer<typeof lossReportSchema>;
 
 /**
- * The report of a write that lost nothing. Frozen, so a caller that treats
- * it as a starting point cannot append to the shared value.
+ * The report of a read or a write that lost nothing. Frozen, so a caller
+ * that treats it as a starting point cannot append to the shared value.
  */
 export const emptyLossReport: LossReport = Object.freeze([]);
 
@@ -117,6 +123,7 @@ const reasonPhrases: Record<LossReason, string> = {
   narrowed: 'reduced to fit the format',
   split: 'split by the format',
   'discarded-by-edit': 'removed by an edit',
+  undeclared: 'not declared by the wire schema',
 };
 
 const controlCharacters = /\p{Cc}/gu;

@@ -8,10 +8,9 @@ import { Either } from 'effect';
 import { z } from 'zod';
 import {
   ReadFailure,
-  wireDocumentSchema,
   type Codec,
   type ReadResult,
-  type WireDocument,
+  type WriteResult,
 } from './codec.js';
 import {
   emptyLossReport,
@@ -20,11 +19,37 @@ import {
   type LossEntry,
 } from './loss.js';
 
-const wireSchema = z.looseObject({
+const wireSchema = z.object({
   title: z.string(),
-  contributors: z.array(z.looseObject({ name: z.string() })),
+  contributors: z.array(z.object({ name: z.string(), role: z.string() })),
   diagrams: z.array(diagramIdSchema),
+  layout: z.object({ zOrder: z.array(z.string()) }),
 });
+
+type Wire = z.infer<typeof wireSchema>;
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value);
+
+const strippedKeys = (
+  raw: unknown,
+  kept: unknown,
+  path: readonly string[],
+): string[] => {
+  if (Array.isArray(raw) && Array.isArray(kept)) {
+    return raw.flatMap((value, index) =>
+      strippedKeys(value, kept[index], [...path, String(index)]),
+    );
+  }
+  if (isRecord(raw) && isRecord(kept)) {
+    return Object.keys(raw).flatMap((key) =>
+      key in kept
+        ? strippedKeys(raw[key], kept[key], [...path, key])
+        : [[...path, key].join('.')],
+    );
+  }
+  return [];
+};
 
 const issuesOfError = (error: z.ZodError): ParseIssue[] =>
   error.issues.map((issue) => ({
@@ -35,7 +60,7 @@ const issuesOfError = (error: z.ZodError): ParseIssue[] =>
     code: issue.code,
   }));
 
-const toModel = (wire: z.infer<typeof wireSchema>) =>
+const toModel = (wire: Wire) =>
   parseModel({
     metadata: {
       title: wire.title,
@@ -58,16 +83,8 @@ const parseText = (text: string): Either.Either<unknown, ReadFailure> =>
 
 const mapDocument = (
   value: unknown,
-): Either.Either<ReadResult, ReadFailure> => {
-  const document = wireDocumentSchema.safeParse(value);
-  if (!document.success) {
-    return Either.left(
-      ReadFailure.InvalidWireDocument({
-        issues: issuesOfError(document.error),
-      }),
-    );
-  }
-  const wire = wireSchema.safeParse(document.data);
+): Either.Either<ReadResult<typeof wireSchema>, ReadFailure> => {
+  const wire = wireSchema.safeParse(value);
   if (!wire.success) {
     return Either.left(
       ReadFailure.InvalidWireDocument({ issues: issuesOfError(wire.error) }),
@@ -75,7 +92,15 @@ const mapDocument = (
   }
   return Either.mapBoth(toModel(wire.data), {
     onLeft: (failure) => ReadFailure.InvalidModel({ issues: failure.issues }),
-    onRight: (model) => ({ model, source: document.data }),
+    onRight: (model) => ({
+      model,
+      source: wire.data,
+      loss: strippedKeys(value, wire.data, []).map((key): LossEntry => ({
+        subject: { kind: 'model' },
+        dropped: `the key ${key}`,
+        reason: 'undeclared',
+      })),
+    }),
   });
 };
 
@@ -98,8 +123,8 @@ const sameNames = (
   held.length === wanted.length &&
   held.every((name, index) => name === wanted[index]);
 
-const asContributors = (model: Model): WireDocument[] =>
-  model.metadata.contributors.map((name) => ({ name }));
+const asContributors = (model: Model): Wire['contributors'] =>
+  model.metadata.contributors.map((name) => ({ name, role: '' }));
 
 const standIn: Codec<typeof wireSchema> = {
   wire: wireSchema,
@@ -112,21 +137,17 @@ const standIn: Codec<typeof wireSchema> = {
           title: model.metadata.title,
           contributors: asContributors(model),
           diagrams,
+          layout: { zOrder: [] },
         }),
         loss: [unrepresentableMark],
       };
     }
-    const held = wireSchema.safeParse(source);
-    const contributorsHold =
-      held.success &&
-      sameNames(
-        held.data.contributors.map((contributor) => contributor.name),
-        model.metadata.contributors,
-      );
-    const kept = new Set<string>(diagrams);
-    const removed = (held.success ? held.data.diagrams : []).filter(
-      (id) => !kept.has(id),
+    const contributorsHold = sameNames(
+      source.contributors.map((contributor) => contributor.name),
+      model.metadata.contributors,
     );
+    const kept = new Set<string>(diagrams);
+    const removed = source.diagrams.filter((id) => !kept.has(id));
     return {
       output: JSON.stringify({
         ...source,
@@ -146,16 +167,16 @@ const standIn: Codec<typeof wireSchema> = {
   },
 };
 
-const document: WireDocument = {
+const document: Wire = {
   title: 'Order service',
-  contributors: [{ name: 'Alexandra', handle: 'alexa' }],
-  diagrams: ['diagram-main'],
+  contributors: [{ name: 'Alexandra', role: 'author' }],
+  diagrams: [diagramIdSchema.parse('diagram-main')],
   layout: { zOrder: ['cell-a', 'cell-b'] },
 };
 
 const text = JSON.stringify(document);
 
-const readOrThrow = (input: string): ReadResult =>
+const readOrThrow = (input: string): ReadResult<typeof wireSchema> =>
   Either.getOrThrowWith(
     standIn.read(input),
     (failure) =>
@@ -173,18 +194,43 @@ const failureOf = (input: string): ReadFailure =>
 const issuesOf = (failure: ReadFailure): readonly ParseIssue[] =>
   ReadFailure.$is('MalformedText')(failure) ? [] : failure.issues;
 
-const documentOf = (output: string): WireDocument =>
-  wireDocumentSchema.parse(JSON.parse(output) as unknown);
+const outputOf = (result: WriteResult): unknown =>
+  JSON.parse(result.output) as unknown;
 
 describe('a codec read', () => {
   it('returns the model together with the document it was mapped from', () => {
     const result = readOrThrow(text);
     expect(result.model.metadata.title).toBe('Order service');
     expect(result.model.metadata.contributors).toEqual(['Alexandra']);
+    expect(result.source).toEqual(document);
   });
 
-  it('returns that document raw, keeping what the wire schema never declared', () => {
-    expect(readOrThrow(text).source).toEqual(document);
+  it('reports no loss where the schema declares every key the file holds', () => {
+    expect(isLossless(readOrThrow(text).loss)).toBe(true);
+  });
+
+  it('strips a key the schema does not declare, and says it did', () => {
+    const result = readOrThrow(
+      JSON.stringify({ ...document, mystery: 'held by no schema' }),
+    );
+    expect(result.source).toEqual(document);
+    expect(renderLossReport(result.loss)).toBe(
+      'model: the key mystery (not declared by the wire schema)',
+    );
+  });
+
+  it('names where in the file a stripped key sat', () => {
+    const result = readOrThrow(
+      JSON.stringify({
+        ...document,
+        contributors: [{ name: 'Alexandra', role: 'author', handle: 'alexa' }],
+        layout: { zOrder: [], grid: 10 },
+      }),
+    );
+    expect(renderLossReport(result.loss).split('\n')).toEqual([
+      'model: the key contributors.0.handle (not declared by the wire schema)',
+      'model: the key layout.grid (not declared by the wire schema)',
+    ]);
   });
 
   it('refuses text the format cannot parse at all', () => {
@@ -235,16 +281,17 @@ describe('a codec write', () => {
     const result = standIn.write(model, source);
     expect(isLossless(result.loss)).toBe(true);
     expect(result.loss).toEqual(emptyLossReport);
-    expect(documentOf(result.output)).toEqual(document);
+    expect(outputOf(result)).toEqual(document);
   });
 
   it('projects into canonical form without a source, naming what the format cannot hold', () => {
     const { model } = readOrThrow(text);
     const result = standIn.write(model);
-    expect(documentOf(result.output)).toEqual({
+    expect(outputOf(result)).toEqual({
       title: 'Order service',
-      contributors: [{ name: 'Alexandra' }],
+      contributors: [{ name: 'Alexandra', role: '' }],
       diagrams: ['diagram-main'],
+      layout: { zOrder: [] },
     });
     expect(renderLossReport(result.loss)).toBe(
       'model: the last issued threat number (no place in the format)',
@@ -254,12 +301,15 @@ describe('a codec write', () => {
   it('rewrites a mapped field only where the edit changed it, and says what that cost', () => {
     const { source } = readOrThrow(text);
     const { model } = readOrThrow(
-      JSON.stringify({ ...document, contributors: [{ name: 'Bo' }] }),
+      JSON.stringify({
+        ...document,
+        contributors: [{ name: 'Bo', role: 'author' }],
+      }),
     );
     const result = standIn.write(model, source);
-    expect(documentOf(result.output)).toEqual({
+    expect(outputOf(result)).toEqual({
       ...document,
-      contributors: [{ name: 'Bo' }],
+      contributors: [{ name: 'Bo', role: '' }],
     });
     expect(renderLossReport(result.loss)).toBe(
       'model: what the source held on each contributor beyond the name (removed by an edit)',
@@ -272,7 +322,7 @@ describe('a codec write', () => {
       JSON.stringify({ ...document, diagrams: [] }),
     );
     const result = standIn.write(model, source);
-    expect(documentOf(result.output).diagrams).toEqual([]);
+    expect(outputOf(result)).toEqual({ ...document, diagrams: [] });
     expect(renderLossReport(result.loss)).toBe(
       'diagram "diagram-main": the diagram the source document held (removed by an edit)',
     );

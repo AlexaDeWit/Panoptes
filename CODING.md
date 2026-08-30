@@ -25,13 +25,15 @@ Shared object fields are expressed with zod's own composition: a base
 `z.strictObject` extended per variant with `.extend()`. Never spread raw
 field maps into schema literals.
 
-`strictObject` is the base for the internal model's schemas, where an
-undeclared key is a mistake and reporting it is the point. A format's wire
-schema in `packages/formats` is the exception and stays tolerant: a foreign
-file carries fields Panoptes does not model, and a strict wire schema stops
-reading the file the first time the other tool adds one. Preservation does
-not rest on that tolerance, because a codec writes onto the raw parsed
-document rather than onto its schema's output. The composition rule is
+`strictObject` is the default for every schema whose shape Panoptes owns,
+where an undeclared key is a mistake and reporting it is the point. The one
+exception is a wire schema describing a file another tool wrote, which uses
+plain `z.object`: demanding about what it declares, and dropping what it does
+not. `strictObject` there would refuse the file the first time the other tool
+adds a field, and `looseObject` would carry along data that nothing
+describes. Preservation rests on a wire schema declaring everything its
+format carries, not on that tolerance, and `packages/formats` reports a
+dropped key as loss so an incomplete schema shows up. The composition rule is
 unchanged either way, only the strictness of the base.
 
 ## Comments
