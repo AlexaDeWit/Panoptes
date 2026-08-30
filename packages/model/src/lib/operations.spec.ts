@@ -1,21 +1,17 @@
 import { Either } from 'effect';
 import { elementSchema, type Element, type Flow } from './elements.js';
-import { validModelFixture } from './fixtures.js';
+import { parsedFixture, validModelFixture } from './fixtures.js';
 import { diagramIdSchema, elementIdSchema } from './ids.js';
+import { OperationFailure } from './operation-failures.js';
 import {
   addElement,
   moveElement,
-  OperationFailure,
   removeElement,
   resizeElement,
 } from './operations.js';
 import { parseModel, type Model } from './parse.js';
 
-const parsedFixture = parseModel(validModelFixture);
-if (Either.isLeft(parsedFixture)) {
-  throw new Error('The operations specs need the valid fixture to parse.');
-}
-const base: Model = parsedFixture.right;
+const base = parsedFixture(validModelFixture);
 
 const elementId = (value: string) => elementIdSchema.parse(value);
 const diagramId = (value: string) => diagramIdSchema.parse(value);
@@ -99,11 +95,7 @@ describe('addElement', () => {
   it('leaves diagrams other than the target untouched', () => {
     const draft = structuredClone(validModelFixture);
     draft.diagrams.push({ id: 'diagram-annex', title: 'Annex', elements: [] });
-    const annexed = parseModel(draft);
-    if (Either.isLeft(annexed)) {
-      throw new Error('The two-diagram fixture must parse.');
-    }
-    const next = modelOf(addElement(annexed.right, mainDiagram, cache));
+    const next = modelOf(addElement(parsedFixture(draft), mainDiagram, cache));
     expect(next.diagrams[1]).toEqual({
       id: 'diagram-annex',
       title: 'Annex',
