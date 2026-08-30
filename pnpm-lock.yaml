@@ -275,6 +275,12 @@ importers:
       '@panoptes/model':
         specifier: workspace:*
         version: link:../model
+      effect:
+        specifier: 'catalog:'
+        version: 3.22.1
+      zod:
+        specifier: 'catalog:'
+        version: 4.4.3
 
   packages/model:
     dependencies:

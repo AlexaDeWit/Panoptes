@@ -14,7 +14,9 @@
     "./package.json": "./package.json"
   },
   "dependencies": {
-    "@panoptes/model": "workspace:*"
+    "@panoptes/model": "workspace:*",
+    "effect": "catalog:",
+    "zod": "catalog:"
   },
   "nx": {
     "tags": [
