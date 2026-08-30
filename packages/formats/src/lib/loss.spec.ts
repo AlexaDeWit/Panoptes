@@ -14,6 +14,10 @@ import {
   type LossSubject,
 } from './loss.js';
 
+const escapeChar = String.fromCharCode(27);
+
+const bellChar = String.fromCharCode(7);
+
 const entry = (
   subject: LossSubject,
   dropped: string,
@@ -115,6 +119,22 @@ describe('renderLossReport', () => {
       'model: the thing (reduced to fit the format)',
       'model: the thing (split by the format)',
       'model: the thing (removed by an edit)',
+    ]);
+  });
+
+  it('escapes the control characters an imported id carries into a terminal', () => {
+    const report = [
+      entry(
+        {
+          kind: 'element',
+          id: elementIdSchema.parse(`a\nb${escapeChar}[31m`),
+        },
+        `the port${bellChar} list`,
+        'unrepresentable',
+      ),
+    ];
+    expect(renderLossReport(report).split('\n')).toEqual([
+      'element "a\\u000ab\\u001b[31m": the port\\u0007 list (no place in the format)',
     ]);
   });
 });

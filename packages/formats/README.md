@@ -28,7 +28,8 @@ entity, what was dropped, and why: `unrepresentable` and `narrowed` for what
 a format cannot hold, `split` for a record the format forces into several,
 and `discarded-by-edit` for source material an edited model no longer
 accounts for. A report with no entries records no loss, and
-`renderLossReport` turns a report into lines for a person.
+`renderLossReport` turns a report into lines for a person, escaping the
+control characters an imported id can carry.
 
 `read` returns Effect's `Either` with a package-owned `ReadFailure` on the
 error channel, one variant per place a read stops: text the format's syntax

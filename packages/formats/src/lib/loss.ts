@@ -77,7 +77,9 @@ export type LossReason = z.infer<typeof lossReasonSchema>;
  * One loss: the entity it concerns, what did not reach the output, and why.
  * `dropped` is prose in the entity's own terms rather than a path into the
  * output, because only the codec knows the format's vocabulary and the two
- * write paths word the same absence differently.
+ * write paths word the same absence differently. Nothing parses a loss
+ * entry, so the non-empty bound on `dropped` records the intent rather
+ * than enforcing it at any boundary.
  */
 export const lossEntrySchema = z.strictObject({
   subject: lossSubjectSchema,
@@ -117,10 +119,14 @@ const reasonPhrases: Record<LossReason, string> = {
   'discarded-by-edit': 'removed by an edit',
 };
 
+const controlCharacters = /\p{Cc}/gu;
+
 /**
  * The report as lines for a person, one per entry and in the report's own
  * order. An empty report renders as a line saying so, so the rendering is
- * never blank.
+ * never blank. Control characters in an id or in `dropped` are escaped to
+ * `\uXXXX`, because an id passes through a codec as the foreign file wrote
+ * it and this rendering reaches a terminal.
  */
 export function renderLossReport(report: LossReport): string {
   return isLossless(report)
@@ -129,11 +135,21 @@ export function renderLossReport(report: LossReport): string {
 }
 
 function renderEntry(entry: LossEntry): string {
-  return `${renderSubject(entry.subject)}: ${entry.dropped} (${
+  return `${renderSubject(entry.subject)}: ${escapeControls(entry.dropped)} (${
     reasonPhrases[entry.reason]
   })`;
 }
 
 function renderSubject(subject: LossSubject): string {
-  return subject.kind === 'model' ? 'model' : `${subject.kind} "${subject.id}"`;
+  return subject.kind === 'model'
+    ? 'model'
+    : `${subject.kind} "${escapeControls(subject.id)}"`;
+}
+
+function escapeControls(text: string): string {
+  return text.replace(
+    controlCharacters,
+    (character) =>
+      `\\u${character.charCodeAt(0).toString(16).padStart(4, '0')}`,
+  );
 }
