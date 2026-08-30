@@ -82,11 +82,9 @@ export type WriteResult = {
  * Both are the caller's to get right.
  *
  * `write` returns no `Either` because a model always produces text: what
- * the format cannot hold becomes a report entry rather than a failure. That
- * also makes it the way to find out what saving would cost before saving:
- * call `write`, read the report, and discard the output. Nothing else
- * produces the write-side report, so a warning shown before a save asks
- * this same question rather than a second one that has to be kept in step.
+ * the format cannot hold becomes a report entry rather than a failure.
+ * Nothing else produces the write-side report, so a caller asking what a
+ * save would cost before saving calls `write` and discards the output.
  */
 export interface Codec<WireSchema extends z.ZodType<object>> {
   readonly wire: WireSchema;

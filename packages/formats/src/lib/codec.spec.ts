@@ -31,6 +31,9 @@ type Wire = z.infer<typeof wireSchema>;
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
 
+const joinPath = (path: readonly string[]): string =>
+  path.map((segment) => segment.replace(/[\\.]/g, '\\$&')).join('.');
+
 const strippedKeys = (
   raw: unknown,
   kept: unknown,
@@ -43,9 +46,9 @@ const strippedKeys = (
   }
   if (isRecord(raw) && isRecord(kept)) {
     return Object.keys(raw).flatMap((key) =>
-      key in kept
+      Object.hasOwn(kept, key)
         ? strippedKeys(raw[key], kept[key], [...path, key])
-        : [[...path, key].join('.')],
+        : [joinPath([...path, key])],
     );
   }
   return [];
@@ -230,6 +233,18 @@ describe('a codec read', () => {
     expect(renderLossReport(result.loss).split('\n')).toEqual([
       'model: the key contributors.0.handle (not declared by the wire schema)',
       'model: the key layout.grid (not declared by the wire schema)',
+    ]);
+  });
+
+  it('reports a stripped key whose name is a prototype member', () => {
+    const inherited = Object.fromEntries<unknown>([
+      ['__proto__', { pwn: 1 }],
+      ['toString', 'no'],
+    ]);
+    const result = readOrThrow(JSON.stringify({ ...document, ...inherited }));
+    expect(renderLossReport(result.loss).split('\n')).toEqual([
+      'model: the key __proto__ (not declared by the wire schema)',
+      'model: the key toString (not declared by the wire schema)',
     ]);
   });
 

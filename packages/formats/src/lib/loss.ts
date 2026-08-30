@@ -133,10 +133,11 @@ const escapableId = /["\\]|\p{Cc}/gu;
 /**
  * The report as lines for a person, one per entry and in the report's own
  * order. An empty report renders as a line saying so, so the rendering is
- * never blank. An id reaches this rendering as the foreign file wrote it,
- * so control characters are escaped to `\uXXXX` and a backslash or a quote
- * escapes with a backslash: a newline in an id cannot split one entry into
- * two lines, and no id can render as another. Nothing else is escaped, so
+ * never blank. An id, and the `dropped` text naming what was lost, both
+ * reach this rendering as the foreign file wrote them, so control
+ * characters are escaped to `\uXXXX` and a backslash or a quote escapes
+ * with a backslash: a newline cannot split one entry into two lines, and no
+ * id can render as another. Nothing else is escaped, so
  * an id written with bidirectional or zero-width formatting still displays
  * as something other than what it says.
  */
