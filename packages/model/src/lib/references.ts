@@ -1,4 +1,4 @@
-import type { Flow } from './elements.js';
+import type { Element, Flow } from './elements.js';
 import type { ElementId } from './ids.js';
 import type { Diagram } from './model.js';
 
@@ -44,11 +44,12 @@ export function elementIdsIn(diagram: Diagram): Set<string> {
   return new Set(diagram.elements.map((element) => element.id));
 }
 
+/** Every element the given diagrams own, in diagram order. */
+export function elementsAcross(diagrams: readonly Diagram[]): Element[] {
+  return diagrams.flatMap((diagram) => diagram.elements);
+}
+
 /** Ids of every element across the given diagrams. */
 export function elementIdsAcross(diagrams: readonly Diagram[]): Set<string> {
-  return new Set(
-    diagrams.flatMap((diagram) =>
-      diagram.elements.map((element) => element.id),
-    ),
-  );
+  return new Set(elementsAcross(diagrams).map((element) => element.id));
 }

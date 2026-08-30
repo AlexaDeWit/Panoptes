@@ -84,9 +84,23 @@ describe('parseModel', () => {
     );
   });
 
+  it('rejects a threat number above the last issued', () => {
+    const result = seeded((draft) => {
+      draft.lastIssuedThreatNumber = 0;
+    });
+    expect(issuesOf(result)).toContainEqual(
+      expect.objectContaining({
+        path: ['lastIssuedThreatNumber'],
+        message:
+          'Threat number 1 exceeds lastIssuedThreatNumber 0: no threat carries a number above the last issued.',
+      }),
+    );
+  });
+
   it('rejects a duplicate threat id', () => {
     const result = seeded((draft) => {
       draft.threats.push({ ...structuredClone(draft.threats[0]), number: 2 });
+      draft.lastIssuedThreatNumber = 2;
     });
     expect(issuesOf(result)).toContainEqual(
       expect.objectContaining({

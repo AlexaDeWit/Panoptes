@@ -57,14 +57,15 @@ export const ParseFailure = Data.taggedEnum<ParseFailure>();
  * The only way a Model value comes into existence: the structural schema
  * composed with the cross-entity refinements. Enforced: element ids, diagram
  * ids, and threat numbers unique model-wide; threat, mitigation, and
- * assumption ids each unique among their kind; attached flow endpoints
- * anchored to an element of the flow's own diagram and never to the flow
- * itself; every element and threat reference resolving. Fallible APIs in
- * this project return Effect's Either, so this carries the Model on the
- * success channel and a {@link ParseFailure} on the error channel, and
- * does not throw. Each violation is one issue whose path names the
- * offending entry. The refinements run only after a clean structural
- * parse, so a structurally invalid input reports structural issues alone.
+ * assumption ids each unique among their kind; no threat number above
+ * `lastIssuedThreatNumber`; attached flow endpoints anchored to an element
+ * of the flow's own diagram and never to the flow itself; every element and
+ * threat reference resolving. Fallible APIs in this project return Effect's
+ * Either, so this carries the Model on the success channel and a
+ * {@link ParseFailure} on the error channel, and does not throw. Each
+ * violation is one issue whose path names the offending entry. The
+ * refinements run only after a clean structural parse, so a structurally
+ * invalid input reports structural issues alone.
  */
 export function parseModel(input: unknown): Either.Either<Model, ParseFailure> {
   const result = refinedModelSchema.safeParse(input);
@@ -90,6 +91,7 @@ function collectViolations(model: StructuralModel): Violation[] {
     ...elementIdViolations(model),
     ...diagramIdViolations(model),
     ...threatNumberViolations(model),
+    ...lastIssuedThreatNumberViolations(model),
     ...recordIdViolations(model),
     ...flowEndpointViolations(model),
     ...referenceViolations(model),
@@ -157,6 +159,21 @@ function threatNumberViolations(model: StructuralModel): Violation[] {
       message: `Duplicate threat number ${threat.number}: threat numbers must be unique across the model.`,
     }),
   );
+}
+
+function lastIssuedThreatNumberViolations(model: StructuralModel): Violation[] {
+  const highest = model.threats.reduce(
+    (max, threat) => Math.max(max, threat.number),
+    0,
+  );
+  return highest > model.lastIssuedThreatNumber
+    ? [
+        {
+          path: ['lastIssuedThreatNumber'],
+          message: `Threat number ${highest} exceeds lastIssuedThreatNumber ${model.lastIssuedThreatNumber}: no threat carries a number above the last issued.`,
+        },
+      ]
+    : [];
 }
 
 function recordIdViolations(model: StructuralModel): Violation[] {

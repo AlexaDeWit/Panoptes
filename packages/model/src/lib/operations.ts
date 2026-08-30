@@ -1,40 +1,15 @@
-import { Data, Either } from 'effect';
+import { Either } from 'effect';
 import type { BoundaryShape, Element, Flow, FlowEndpoint } from './elements.js';
 import type { Point, Size } from './geometry.js';
 import type { DiagramId, ElementId } from './ids.js';
 import type { Diagram } from './model.js';
+import { OperationFailure } from './operation-failures.js';
 import type { Model } from './parse.js';
 import {
   elementIdsAcross,
   elementIdsIn,
   endpointViolationsOf,
 } from './references.js';
-
-/**
- * Why a graph operation refused to produce a model: `_tag` discriminates
- * the violation, following Effect's own convention, and the remaining
- * fields carry the offending id or reference. Operation failures are
- * relational facts about the model; structural validity of an input value
- * is its own schema's contract. Each operation's Either narrows its error
- * channel to the members it can actually produce.
- */
-export type OperationFailure = Data.TaggedEnum<{
-  UnknownDiagram: { readonly diagramId: DiagramId };
-  UnknownElement: { readonly elementId: ElementId };
-  DuplicateElementId: { readonly elementId: ElementId };
-  InvalidFlowEndpoint: {
-    readonly side: 'source' | 'target';
-    readonly reference: ElementId;
-  };
-  NotResizable: { readonly elementId: ElementId };
-}>;
-
-/**
- * Constructors for {@link OperationFailure}, one per variant, plus
- * Effect's `$is` and `$match` helpers. Values compare structurally under
- * Effect's Equal and serialize to their plain tagged shape.
- */
-export const OperationFailure = Data.taggedEnum<OperationFailure>();
 
 /** The failures {@link addElement} can produce. */
 export type AddElementFailure = Extract<
