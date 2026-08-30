@@ -15,9 +15,10 @@ const refinedModelSchema = modelSchema.superRefine((model, ctx) => {
 });
 
 /**
- * Threat model root, as constructed by {@link parseModel}. Inferred from the
- * refined schema, so a value of this type has passed the cross-entity
- * refinements as well as the structural parse.
+ * Threat model root. The cross-entity refinements run in {@link parseModel},
+ * the only exported way to obtain a Model; the type itself carries no brand
+ * and is structurally the schema's inference, so it is not proof that a
+ * value passed the refinements.
  */
 export type Model = z.infer<typeof refinedModelSchema>;
 
@@ -30,7 +31,8 @@ export type Model = z.infer<typeof refinedModelSchema>;
  * itself; every element and threat reference resolving. Fallible operations
  * in this project return result unions, so this returns zod's discriminated
  * result and does not throw. Each violation is one issue whose path names
- * the offending entry.
+ * the offending entry. The refinements run only after a clean structural
+ * parse, so a structurally invalid input reports structural issues alone.
  */
 export function parseModel(input: unknown): z.ZodSafeParseResult<Model> {
   return refinedModelSchema.safeParse(input);
@@ -132,8 +134,8 @@ function recordIdViolations(model: StructuralModel): Violation[] {
 
 function duplicateRecordIds(
   ids: readonly string[],
-  collection: string,
-  noun: string,
+  collection: 'threats' | 'mitigations' | 'assumptions',
+  noun: 'threat' | 'mitigation' | 'assumption',
 ): Violation[] {
   return duplicateViolations(
     ids,

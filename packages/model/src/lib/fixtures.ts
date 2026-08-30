@@ -5,8 +5,7 @@ import { modelSchema } from './model.js';
  * Hand-authored valid model exercising every record kind: the five element
  * kinds (the flow anchored at its source and free at its target), a threat
  * attached to two elements, a mitigation, and an assumption. Typed as the
- * schema's input, not as a Model: specs feed it through parseModel. The full
- * Écluse fixture is #22.
+ * schema's input, not as a Model: specs feed it through parseModel.
  */
 export const validModelFixture: z.input<typeof modelSchema> = {
   metadata: {

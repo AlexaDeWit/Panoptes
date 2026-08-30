@@ -21,7 +21,9 @@ describe('parseModel', () => {
 
   it('reports structural violations through the same result union', () => {
     const result = parseModel({ ...validModelFixture, version: '2.6.2' });
-    expect(result.success).toBe(false);
+    expect(issuesOf(result)).toContainEqual(
+      expect.objectContaining({ code: 'unrecognized_keys', path: [] }),
+    );
   });
 
   it('rejects a duplicate element id across diagrams', () => {
