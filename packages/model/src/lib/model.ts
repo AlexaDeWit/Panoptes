@@ -10,8 +10,8 @@ import { threatSchema } from './threats.js';
  * `title`, `owner`, and `description` are free text; empty strings are
  * allowed so a model can be saved before it is described. `contributors`
  * names everyone who worked on the model, one name per entry, and is
- * required with an empty array legal, as every other collection in the
- * model is. Threat Dragon wraps each name in an object of its own; the
+ * required with an empty array legal, so a model can be saved before anyone
+ * is credited. Threat Dragon wraps each name in an object of its own; the
  * internal model is format-independent, so the import codec (M2) flattens
  * that wrapper to the name.
  */

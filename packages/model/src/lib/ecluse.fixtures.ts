@@ -11,11 +11,12 @@ import type { modelSchema } from './model.js';
  * import codec (M2) reproduces this fixture without an id mapping.
  * `lastIssuedThreatNumber` is 102 while the source file's own `threatTop`
  * is 28, below two of the threats it holds, so an import takes the greater
- * of `threatTop` and the highest number in the file. Taking `threatTop`
- * alone drops the gap a removed threat leaves, which is the record the
- * field exists to keep. Mitigations and assumptions are empty because
- * Threat Dragon has no such record. Typed as the schema's input, not as a
- * Model: specs feed it through parseModel.
+ * of `threatTop` and the highest number in the file. Neither half alone is
+ * enough: `threatTop` alone breaks on this file, and the highest number
+ * alone drops the gap left by a removed highest-numbered threat, which is
+ * the record the field exists to keep. Mitigations and assumptions are
+ * empty because Threat Dragon has no such record. Typed as the schema's
+ * input, not as a Model: specs feed it through parseModel.
  */
 export const ecluseFixture: z.input<typeof modelSchema> = {
   metadata: {

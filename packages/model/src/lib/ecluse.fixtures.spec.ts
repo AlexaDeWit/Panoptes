@@ -1,13 +1,6 @@
 import { Either } from 'effect';
 import { assumptionStatusSchema } from './assumptions.js';
-import {
-  ciaCategorySchema,
-  ciaDieCategorySchema,
-  linddunCategorySchema,
-  plot4aiCategorySchema,
-  strideCategorySchema,
-  threatCategorySchema,
-} from './categories.js';
+import { threatCategorySchema } from './categories.js';
 import {
   elementsWithoutThreats,
   openThreatsBySeverity,
@@ -46,6 +39,13 @@ const tally = (values: readonly string[]): Record<string, number> =>
 
 const spanning = (reach: (model: Model) => readonly string[]): Set<string> =>
   new Set(fixtures.flatMap(reach));
+
+const enumeratedCategories = threatCategorySchema.options.flatMap(
+  (option): [string, readonly string[]][] =>
+    'options' in option.shape.category
+      ? [[option.shape.methodology.value, option.shape.category.options]]
+      : [],
+);
 
 const categoriesUnder =
   (methodology: string) =>
@@ -211,6 +211,13 @@ describe('vocabularyComplementFixture', () => {
     ).toEqual(['Held and operated by the records department.']);
   });
 
+  it('credits a longer contributor list than the Écluse model names', () => {
+    expect(complement.metadata.contributors).toEqual([
+      'Alexandra de Wit',
+      'Jonas Lindqvist',
+    ]);
+  });
+
   it('carries the tbd severity and the not-applicable status', () => {
     expect(complement.threats.map((threat) => threat.severity)).toContain(
       'tbd',
@@ -280,15 +287,22 @@ describe('the two fixtures together', () => {
     );
   });
 
-  it.each([
-    ['STRIDE', strideCategorySchema.shape.category.options],
-    ['LINDDUN', linddunCategorySchema.shape.category.options],
-    ['CIA', ciaCategorySchema.shape.category.options],
-    ['CIA-DIE', ciaDieCategorySchema.shape.category.options],
-    ['PLOT4ai', plot4aiCategorySchema.shape.category.options],
-  ])('reach every %s category', (methodology, categories) => {
-    expect(spanning(categoriesUnder(methodology))).toEqual(new Set(categories));
+  it('draw a category vocabulary from every methodology but the custom one', () => {
+    expect(enumeratedCategories.map(([methodology]) => methodology)).toEqual(
+      threatCategorySchema.options
+        .map((option) => option.shape.methodology.value)
+        .filter((methodology) => methodology !== 'custom'),
+    );
   });
+
+  it.each(enumeratedCategories)(
+    'reach every %s category',
+    (methodology, categories) => {
+      expect(spanning(categoriesUnder(methodology))).toEqual(
+        new Set(categories),
+      );
+    },
+  );
 
   it('reach every mitigation status', () => {
     expect(
