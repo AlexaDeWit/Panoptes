@@ -96,6 +96,40 @@ describe('addElement', () => {
     });
   });
 
+  it('leaves diagrams other than the target untouched', () => {
+    const draft = structuredClone(validModelFixture);
+    draft.diagrams.push({ id: 'diagram-annex', title: 'Annex', elements: [] });
+    const annexed = parseModel(draft);
+    if (Either.isLeft(annexed)) {
+      throw new Error('The two-diagram fixture must parse.');
+    }
+    const next = modelOf(addElement(annexed.right, mainDiagram, cache));
+    expect(next.diagrams[1]).toEqual({
+      id: 'diagram-annex',
+      title: 'Annex',
+      elements: [],
+    });
+    expect(elementIds(next)).toContain('element-cache');
+  });
+
+  it('adds a trust boundary', () => {
+    const zone = elementSchema.parse({
+      kind: 'trust-boundary',
+      id: 'element-dmz',
+      name: 'DMZ',
+      description: '',
+      outOfScope: false,
+      reasonOutOfScope: '',
+      shape: {
+        kind: 'box',
+        position: { x: 20, y: 400 },
+        size: { width: 300, height: 140 },
+      },
+    });
+    const next = modelOf(addElement(base, mainDiagram, zone));
+    expect(elementIn(next, 'element-dmz').kind).toBe('trust-boundary');
+  });
+
   it('fails on an unknown diagram', () => {
     expect(
       errorOf(addElement(base, diagramId('diagram-ghost'), cache)),
@@ -158,6 +192,66 @@ describe('removeElement', () => {
     expect(next.threats[0].elements).toEqual(['element-order-flow']);
     const other = modelOf(removeElement(base, elementId('element-db')));
     expect(other.assumptions[0].elements).toEqual([]);
+  });
+
+  it('removes a flow and detaches its threat links', () => {
+    const next = modelOf(removeElement(base, elementId('element-order-flow')));
+    expect(elementIds(next)).not.toContain('element-order-flow');
+    expect(next.threats[0].elements).toEqual(['element-api']);
+  });
+
+  it('removes a trust boundary of either shape', () => {
+    const box = modelOf(removeElement(base, elementId('element-perimeter')));
+    expect(elementIds(box)).not.toContain('element-perimeter');
+    const curve = modelOf(
+      removeElement(base, elementId('element-billing-zone')),
+    );
+    expect(elementIds(curve)).not.toContain('element-billing-zone');
+  });
+
+  it("frees an endpoint at the removed flow's own free endpoint", () => {
+    const spur = elementSchema.parse({
+      ...flowInput,
+      id: 'element-spur-flow',
+      source: { kind: 'free', position: { x: 500, y: 500 } },
+      target: { kind: 'attached', element: 'element-db' },
+    });
+    const tap = elementSchema.parse({
+      ...flowInput,
+      id: 'element-tap-flow',
+      source: { kind: 'attached', element: 'element-spur-flow' },
+      target: { kind: 'free', position: { x: 640, y: 480 } },
+    });
+    const seeded = [spur, tap].reduce(
+      (model, flow) => modelOf(addElement(model, mainDiagram, flow)),
+      base,
+    );
+    const next = modelOf(removeElement(seeded, elementId('element-spur-flow')));
+    expect(flowIn(next, 'element-tap-flow').source).toEqual({
+      kind: 'free',
+      position: { x: 500, y: 500 },
+    });
+  });
+
+  it('frees an endpoint at the canvas origin when the removed flow has no point of its own', () => {
+    const meter = elementSchema.parse({
+      ...flowInput,
+      id: 'element-meter-flow',
+      source: { kind: 'attached', element: 'element-write-flow' },
+      target: { kind: 'free', position: { x: 700, y: 300 } },
+    });
+    const seeded = [writeFlow, meter].reduce(
+      (model, flow) => modelOf(addElement(model, mainDiagram, flow)),
+      base,
+    );
+    const next = modelOf(
+      removeElement(seeded, elementId('element-write-flow')),
+    );
+    expect(flowIn(next, 'element-meter-flow').source).toEqual({
+      kind: 'free',
+      position: { x: 0, y: 0 },
+    });
+    expect(Either.isRight(parseModel(next))).toBe(true);
   });
 
   it('fails on an unknown element', () => {
@@ -268,8 +362,10 @@ describe('resizeElement', () => {
 describe('operation purity', () => {
   it('leaves the input model untouched', () => {
     const pristine = structuredClone(base);
+    addElement(base, mainDiagram, cache);
     removeElement(base, elementId('element-customer'));
     moveElement(base, elementId('element-api'), { x: 1, y: 1 });
+    resizeElement(base, elementId('element-api'), { width: 5, height: 5 });
     expect(base).toEqual(pristine);
   });
 });
