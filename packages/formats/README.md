@@ -18,15 +18,16 @@ The interface is generic over that schema and carries it as a member, so the
 contract cannot describe a codec without one, and `write` accepts only a
 document its own schema describes.
 
-A divergence is any place a file and the model do not correspond exactly, and
-one list of them serves every path. Each entry names the entity, what did not
-correspond, and why: `unrepresentable` for what the format cannot express,
-`undeclared` for a key a read dropped, `narrowed` for a value reduced to fit,
-`split` for one record the format forces into several, `overridden` for a
-value the codec wrote over rather than repeat, and `discarded-by-edit` for
-what an edit removed from the file. An empty list is
-the aligned case, and `renderDivergences` turns the list into lines for a
-person, escaping what an imported id could otherwise do to a line.
+A divergence is any place a file and the model do not correspond exactly, or
+a written file and the source it was merged onto, and one list of them serves
+every path. Each entry names the entity, what did not correspond, and why:
+`unrepresentable` for what the format cannot express, `undeclared` for a key a
+read dropped, `narrowed` for a value reduced to fit, `split` for one record
+the format forces into several, `overridden` for a value the codec wrote over
+rather than repeated, and `discarded-by-edit` for what an edit removed from
+the file. An empty list is the aligned case, and `renderDivergences` turns the
+list into lines for a person, escaping what an imported id could otherwise do
+to a line.
 
 `read` returns Effect's `Either` with a package-owned `ReadFailure` on the
 error channel, one variant per place a read stops: text the format's syntax

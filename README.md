@@ -14,8 +14,8 @@ it on a typed core:
   format, with codecs at the edge.
 - **File formats as codecs**: read and write Threat Dragon v2 JSON, plus a
   YAML format of our own. A model file in git is the source of truth, and a
-  codec names every place a file and the model do not correspond rather than
-  diverging in silence.
+  codec names every place a file and the model do not correspond, rather
+  than passing over it in silence.
 - **A drawing UI** (React) where the diagram is the editor, not a picture
   beside a form.
 - **A CLI** for headless work: validate a model, render it to SVG, markdown,

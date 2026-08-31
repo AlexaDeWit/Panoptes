@@ -293,7 +293,7 @@ describe('a codec read', () => {
 });
 
 describe('a codec write', () => {
-  it('merges an unedited model onto its own source and diverges in nothing', () => {
+  it('merges an unedited model onto its own source, reporting nothing the model caused', () => {
     const { model, source } = readOrThrow(text);
     const result = standIn.write(model, source);
     expect(hasDiverged(result.divergences)).toBe(false);

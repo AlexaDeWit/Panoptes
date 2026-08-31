@@ -45,7 +45,7 @@ describe('divergences', () => {
     expect(Object.isFrozen(noDivergence)).toBe(true);
   });
 
-  it('have diverged once one is recorded', () => {
+  it('count as diverged once one is recorded', () => {
     expect(hasDiverged([splitThreat])).toBe(true);
   });
 });

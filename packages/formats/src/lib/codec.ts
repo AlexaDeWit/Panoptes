@@ -35,7 +35,7 @@ export const ReadFailure = Data.taggedEnum<ReadFailure>();
  * the output: the wire schema declares them, so a merge that does not touch
  * them leaves them as the file had them. `divergences` names the keys the
  * schema did not declare and so did not keep, which is the read side of the
- * same report a write returns.
+ * same list a write returns.
  */
 export type ReadResult<WireSchema extends z.ZodType<object>> = {
   readonly model: Model;
@@ -44,8 +44,8 @@ export type ReadResult<WireSchema extends z.ZodType<object>> = {
 };
 
 /**
- * What a write produced: the output text, and where that text and the model
- * do not correspond.
+ * What a write produced: the output text, and where that text does not
+ * correspond to the model, or to the source it was merged onto.
  */
 export type WriteResult = {
   readonly output: string;
@@ -74,9 +74,12 @@ export type WriteResult = {
  * `write` takes the source document as an option, and that option is the
  * whole difference between the two paths: given one it merges onto it,
  * given none it projects the model into the format's canonical form. Both
- * paths report {@link Divergence} entries, what the format cannot hold when
- * projecting and what an edit cost when merging, and a merge of an unedited
- * model onto the document it was read from is required to report none.
+ * paths report {@link Divergence} entries: what the format cannot hold when
+ * projecting, what an edit cost when merging, and on either path what the
+ * codec decided on its own. A merge of an unedited model onto the document
+ * it was read from is required to report nothing the model or an edit
+ * caused, and a codec may still record its own decision there, such as a
+ * format release it stamps rather than repeats.
  *
  * The type pairs a document with its format, not with a model or a file, so
  * merging onto a document of the right format that some other read produced
@@ -85,9 +88,9 @@ export type WriteResult = {
  * Both are the caller's to get right.
  *
  * `write` returns no `Either` because a model always produces text: what
- * the format cannot hold becomes a report entry rather than a failure.
- * Nothing else produces the write-side report, so a caller asking what a
- * save would cost before saving calls `write` and discards the output.
+ * the format cannot hold becomes a divergence rather than a failure.
+ * Nothing else produces the write-side divergences, so a caller asking what
+ * a save would cost before saving calls `write` and discards the output.
  */
 export interface Codec<WireSchema extends z.ZodType<object>> {
   readonly wire: WireSchema;

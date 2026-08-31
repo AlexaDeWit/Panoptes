@@ -37,9 +37,9 @@ not. `strictObject` there would refuse the file the first time the other tool
 adds a field, and `looseObject` would carry along data that nothing
 describes. Preservation rests on a wire schema declaring everything its
 format carries, not on that tolerance, and the codec contract in
-`packages/formats` requires a read to report a dropped key as a
-divergence, so an incomplete schema shows up. The composition rule is
-unchanged either way, only the strictness of the base.
+`packages/formats` requires a read to report a dropped key as a divergence,
+so an incomplete schema shows up. The composition rule is unchanged either
+way, only the strictness of the base.
 
 ## Comments
 

@@ -54,7 +54,8 @@ export const divergenceSubjectSchema = z.discriminatedUnion('kind', [
 export type DivergenceSubject = z.infer<typeof divergenceSubjectSchema>;
 
 /**
- * Why the file and the model do not correspond. `unrepresentable`: the
+ * Why a file does not correspond to the model, or to the source it was read
+ * from. `unrepresentable`: the
  * model held something the format cannot express. `undeclared`: the file
  * held something the wire schema does not declare, so the read dropped it
  * and neither the model nor the retained document has it. `narrowed`: a
@@ -79,14 +80,14 @@ export const divergenceReasonSchema = z.enum([
   'discarded-by-edit',
 ]);
 
-/** Why the file and the model do not correspond. */
+/** Why a file does not correspond to the model, or to its source. */
 export type DivergenceReason = z.infer<typeof divergenceReasonSchema>;
 
 /**
  * One divergence: the entity it concerns, what did not correspond, and why.
  * `detail` is prose in the entity's own terms rather than a path into the
- * file, because only the codec knows the format's vocabulary, and the read
- * and write paths word the same divergence differently. Nothing parses a
+ * file, because only the codec knows the format's vocabulary, and the
+ * projecting and merging paths word the same reason differently. Nothing parses a
  * divergence, so the non-empty bound on `detail` records the intent rather
  * than enforcing it at any boundary.
  */
@@ -97,9 +98,9 @@ export const divergenceSchema = z.strictObject({
 });
 
 /**
- * One place a file and the model do not correspond exactly. A read or a
- * write returns these in the order it recorded them, and an empty list is
- * the aligned case, where the file and the model say the same thing.
+ * One place a file and the model do not correspond exactly, or a written
+ * file and the source it was merged onto. A read or a write returns these
+ * in the order it recorded them, and an empty list is the aligned case.
  */
 export type Divergence = z.infer<typeof divergenceSchema>;
 
@@ -132,10 +133,10 @@ const escapableId = /["\\]|\p{Cc}/gu;
  * The divergences as lines for a person, one per entry and in the order the
  * codec recorded them. An empty list renders as a line saying so, so the
  * rendering is never blank. An id reaches this rendering as the foreign
- * file wrote it and `detail` can quote what the file said, so both are
- * escaped: control characters to `\uXXXX`, and a backslash or a quote with
- * a backslash. A newline cannot split one entry into two lines, and no id
- * can render as another. Nothing else is escaped, so an id written with
+ * file wrote it and `detail` can quote what the file said, so both escape
+ * control characters to `\uXXXX` and a backslash with a backslash, and an
+ * id, which is rendered in quotes, escapes a quote as well. A newline
+ * cannot split one entry into two lines, and no id can render as another. Nothing else is escaped, so an id written with
  * bidirectional or zero-width formatting still displays as something other
  * than what it says.
  */
