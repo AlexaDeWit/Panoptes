@@ -31,10 +31,12 @@ project has. Two uses:
 - `packages/model` transcribes it into the internal form as
   `ecluseFixture` (`src/lib/ecluse.fixtures.ts`), the fixture behind the
   representability gate that M1's definition of done rests on (issue #22).
-- `packages/formats` will read this file through the Threat Dragon codec and
-  assert the result equals that fixture (M2). The transcription keeps Threat
-  Dragon's own cell and threat ids, so the two sides compare without an id
-  mapping.
+- `packages/formats` reads this file through the Threat Dragon codec
+  (`readThreatDragon`) and pins the counts, vocabularies, and drifts the model
+  fixture pins. The transcription keeps Threat Dragon's own cell and threat
+  ids, so the two sides describe the same records without an id mapping. They
+  are not compared as one value: `ecluseFixture` is internal to
+  `packages/model`, so `packages/formats` has no way to reach it.
 
 One drift to know about before writing that codec: the file's `threatTop` is
 28, while two of its threats are numbered 101 and 102. Threat Dragon does not

@@ -39,6 +39,36 @@ export type ParseIssue = {
 };
 
 /**
+ * One issue as a schema reports it. Declared structurally rather than as a
+ * zod type, so a caller behind its own parse boundary can hand its schema's
+ * issues over without a zod type crossing the package boundary.
+ */
+export type SchemaIssue = {
+  readonly path: readonly PropertyKey[];
+  readonly message: string;
+  readonly code: string;
+};
+
+/**
+ * Schema issues as the plain {@link ParseIssue} data this package reports.
+ * A symbol path segment, which a key of that kind produces and JSON has no
+ * spelling for, becomes its string form. The format codecs map their own
+ * wire-schema issues through this, so issues read the same way whichever
+ * schema produced them.
+ */
+export function toParseIssues(
+  issues: readonly SchemaIssue[],
+): readonly ParseIssue[] {
+  return issues.map((issue) => ({
+    path: issue.path.map((key) =>
+      typeof key === 'symbol' ? String(key) : key,
+    ),
+    message: issue.message,
+    code: issue.code,
+  }));
+}
+
+/**
  * Why parseModel refused an input, as tagged data: zod stays behind the
  * parse boundary, so no zod type appears in the exported surface.
  */
@@ -71,19 +101,11 @@ export function parseModel(input: unknown): Either.Either<Model, ParseFailure> {
   const result = refinedModelSchema.safeParse(input);
   return result.success
     ? Either.right(result.data)
-    : Either.left(toParseFailure(result.error));
-}
-
-function toParseFailure(error: z.ZodError<Model>): ParseFailure {
-  return ParseFailure.InvalidModel({
-    issues: error.issues.map((issue) => ({
-      path: issue.path.map((key) =>
-        typeof key === 'symbol' ? String(key) : key,
-      ),
-      message: issue.message,
-      code: issue.code,
-    })),
-  });
+    : Either.left(
+        ParseFailure.InvalidModel({
+          issues: toParseIssues(result.error.issues),
+        }),
+      );
 }
 
 function collectViolations(model: StructuralModel): Violation[] {

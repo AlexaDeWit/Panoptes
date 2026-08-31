@@ -36,7 +36,22 @@ refuses. The two schema variants carry the model package's `ParseIssue`, so
 issues read the same way whichever boundary produced them. Nothing throws.
 Imports no internal package but `@panoptes/model`.
 
-The codecs themselves come next: Threat Dragon v2 JSON read (#27) and write
-(#28).
+`readThreatDragon` is the Threat Dragon v2 read. Its wire schema declares the
+whole file, the X6 styling, ports, and boundary bookkeeping Panoptes does not
+model included. It accepts any `2.x.y` stamp and refuses anything else
+outright rather than reading part of it, and a key it does not declare is
+dropped and reported through `undeclaredDivergences`, the walk every wire
+codec shares. Threat Dragon's status, severity, and per-methodology category
+vocabularies are bounded unions, and the tables that carry them onto the
+model's own are total over those unions, so a value Threat Dragon adds is a
+compile error rather than a runtime surprise.
+
+Two things Threat Dragon 2.6 writes have no home in the model, and a file
+carrying either is refused rather than read in part: `td-text-block` cells,
+whose `tm.Text` annotation is not an element, and `EOP` threats, which name a
+playing card rather than a category.
+
+The write codec (#28) and the format detection that picks a codec (#84) come
+next.
 
 Unit tests: `pnpm nx test @panoptes/formats`.
