@@ -1,1 +1,2 @@
-export * from './lib/formats.js';
+export * from './lib/codec.js';
+export * from './lib/divergence.js';

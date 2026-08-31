@@ -156,7 +156,8 @@ export type TrustBoundary = z.infer<typeof trustBoundarySchema>;
  * flags (isEncrypted, isPublicNetwork, protocol, privilegeLevel,
  * storesCredentials, and kin) and its persisted boundary membership
  * (trustBoundaryIds, containedElements, crossingFlows) are deliberately not
- * modelled; the import codec reports them as loss (M2).
+ * modelled; M2's wire schema declares them, so they live in the wire
+ * document rather than here.
  */
 export const elementSchema = z.discriminatedUnion('kind', [
   actorSchema,

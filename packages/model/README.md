@@ -12,8 +12,9 @@ back. Coverage queries read a model without changing it: elements no threat
 references, open threats by severity, and the threat count of every element.
 Fallible exports return Effect's `Either`, carrying a package-owned
 `_tag`-discriminated failure on the error channel; an infallible operation
-returns its result bare. Nothing throws and no zod type appears in a fallible
-export's signature. Imports no internal package.
+returns its result bare. Nothing throws, and zod stays behind the parse
+boundary on the terms [`CODING.md`](../../CODING.md) sets. Imports no
+internal package.
 
 The suite carries a representability gate over the whole model vocabulary.
 `ecluseFixture` transcribes Écluse's real Threat Dragon model, one diagram of
