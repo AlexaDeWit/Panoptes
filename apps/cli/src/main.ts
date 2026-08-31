@@ -1,5 +1,5 @@
-import { emptyLossReport, renderLossReport } from '@panoptes/formats';
+import { noDivergence, renderDivergences } from '@panoptes/formats';
 import { render } from '@panoptes/render';
 
-console.log(renderLossReport(emptyLossReport));
+console.log(renderDivergences(noDivergence));
 console.log(render());

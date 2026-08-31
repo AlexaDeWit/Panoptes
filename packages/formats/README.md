@@ -11,20 +11,21 @@ everything the format carries, the parts Panoptes does not model included,
 because that completeness is what preserves them: a merge leaves untouched
 what it does not map, and only a declared key is there to leave alone. The
 schema is demanding about what it declares and drops what it does not, so
-`read` returns its own loss report naming the keys it stripped and an
+`read` returns divergences of its own naming the keys it stripped, and an
 incomplete schema announces itself rather than quietly shortening the file.
 
 The interface is generic over that schema and carries it as a member, so the
-contract cannot describe a codec without one, and a document one format read
-is not a document another format can be asked to write.
+contract cannot describe a codec without one, and `write` accepts only a
+document its own schema describes.
 
-One `LossReport` serves every path. Its entries name the entity, what did not
-come through, and why: `unrepresentable`, `narrowed`, and `split` for what a
-format cannot hold as the model holds it, `discarded-by-edit` for source
-material an edited model no longer accounts for, and `undeclared` for a key a
-read dropped. A report with no entries records no loss, and `renderLossReport`
-turns a report into lines for a person, escaping what an imported id could
-otherwise do to a line.
+A divergence is any place a file and the model do not correspond exactly, and
+one list of them serves every path. Each entry names the entity, what did not
+correspond, and why: `unrepresentable` for what the format cannot express,
+`undeclared` for a key a read dropped, `narrowed` for a value reduced to fit,
+`split` for one record the format forces into several, and
+`discarded-by-edit` for what an edit removed from the file. An empty list is
+the aligned case, and `renderDivergences` turns the list into lines for a
+person, escaping what an imported id could otherwise do to a line.
 
 `read` returns Effect's `Either` with a package-owned `ReadFailure` on the
 error channel, one variant per place a read stops: text the format's syntax

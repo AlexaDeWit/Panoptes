@@ -6,25 +6,25 @@ import {
   threatIdSchema,
 } from '@panoptes/model';
 import {
-  emptyLossReport,
-  isLossless,
-  renderLossReport,
-  type LossEntry,
-  type LossReason,
-  type LossSubject,
-} from './loss.js';
+  hasDiverged,
+  noDivergence,
+  renderDivergences,
+  type Divergence,
+  type DivergenceReason,
+  type DivergenceSubject,
+} from './divergence.js';
 
 const escapeChar = String.fromCharCode(27);
 
 const bellChar = String.fromCharCode(7);
 
 const entry = (
-  subject: LossSubject,
-  dropped: string,
-  reason: LossReason,
-): LossEntry => ({ subject, dropped, reason });
+  subject: DivergenceSubject,
+  detail: string,
+  reason: DivergenceReason,
+): Divergence => ({ subject, detail, reason });
 
-const threatSubject: LossSubject = {
+const threatSubject: DivergenceSubject = {
   kind: 'threat',
   id: threatIdSchema.parse('threat-4'),
 };
@@ -35,28 +35,28 @@ const splitThreat = entry(
   'split',
 );
 
-describe('loss report', () => {
-  it('is empty when nothing was lost', () => {
-    expect(emptyLossReport).toEqual([]);
-    expect(isLossless(emptyLossReport)).toBe(true);
+describe('divergences', () => {
+  it('are empty where the file and the model correspond', () => {
+    expect(noDivergence).toEqual([]);
+    expect(hasDiverged(noDivergence)).toBe(false);
   });
 
-  it('shares the empty report without letting a caller append to it', () => {
-    expect(Object.isFrozen(emptyLossReport)).toBe(true);
+  it('share the aligned value without letting a caller append to it', () => {
+    expect(Object.isFrozen(noDivergence)).toBe(true);
   });
 
-  it('is no longer lossless once it carries an entry', () => {
-    expect(isLossless([splitThreat])).toBe(false);
+  it('have diverged once one is recorded', () => {
+    expect(hasDiverged([splitThreat])).toBe(true);
   });
 });
 
-describe('renderLossReport', () => {
-  it('says so where the report is empty', () => {
-    expect(renderLossReport(emptyLossReport)).toBe('No loss recorded.');
+describe('renderDivergences', () => {
+  it('says so where nothing diverged', () => {
+    expect(renderDivergences(noDivergence)).toBe('No divergence recorded.');
   });
 
-  it('renders one line per entry, in the report order', () => {
-    const report = [
+  it('renders one line per entry, in the recorded order', () => {
+    const divergences = [
       splitThreat,
       entry(
         { kind: 'element', id: elementIdSchema.parse('element-customer') },
@@ -64,7 +64,7 @@ describe('renderLossReport', () => {
         'discarded-by-edit',
       ),
     ];
-    expect(renderLossReport(report)).toBe(
+    expect(renderDivergences(divergences)).toBe(
       [
         'threat "threat-4": one identity across the three elements it is attached to (split by the format)',
         'element "element-customer": the cell ports (removed by an edit)',
@@ -72,9 +72,9 @@ describe('renderLossReport', () => {
     );
   });
 
-  it('names the model as a whole where no record owns the loss', () => {
+  it('names the model as a whole where no record owns the divergence', () => {
     expect(
-      renderLossReport([
+      renderDivergences([
         entry(
           { kind: 'model' },
           'the last issued threat number',
@@ -85,17 +85,17 @@ describe('renderLossReport', () => {
   });
 
   it('names every other entity kind by its kind and id', () => {
-    const subjects: LossSubject[] = [
+    const subjects: DivergenceSubject[] = [
       { kind: 'diagram', id: diagramIdSchema.parse('diagram-main') },
       { kind: 'element', id: elementIdSchema.parse('element-customer') },
       { kind: 'threat', id: threatIdSchema.parse('threat-4') },
       { kind: 'mitigation', id: mitigationIdSchema.parse('mitigation-1') },
       { kind: 'assumption', id: assumptionIdSchema.parse('assumption-1') },
     ];
-    const report = subjects.map((subject) =>
+    const divergences = subjects.map((subject) =>
       entry(subject, 'the record', 'unrepresentable'),
     );
-    expect(renderLossReport(report).split('\n')).toEqual([
+    expect(renderDivergences(divergences).split('\n')).toEqual([
       'diagram "diagram-main": the record (no place in the format)',
       'element "element-customer": the record (no place in the format)',
       'threat "threat-4": the record (no place in the format)',
@@ -105,28 +105,28 @@ describe('renderLossReport', () => {
   });
 
   it('words every reason', () => {
-    const reasons: LossReason[] = [
+    const reasons: DivergenceReason[] = [
       'unrepresentable',
+      'undeclared',
       'narrowed',
       'split',
       'discarded-by-edit',
-      'undeclared',
     ];
-    const report = reasons.map((reason) =>
+    const divergences = reasons.map((reason) =>
       entry({ kind: 'model' }, 'the thing', reason),
     );
-    expect(renderLossReport(report).split('\n')).toEqual([
+    expect(renderDivergences(divergences).split('\n')).toEqual([
       'model: the thing (no place in the format)',
+      'model: the thing (not declared by the wire schema)',
       'model: the thing (reduced to fit the format)',
       'model: the thing (split by the format)',
       'model: the thing (removed by an edit)',
-      'model: the thing (not declared by the wire schema)',
     ]);
   });
 
   it('escapes a backslash, so no id renders as another', () => {
     const rendered = (id: string): string =>
-      renderLossReport([
+      renderDivergences([
         entry(
           { kind: 'element', id: elementIdSchema.parse(id) },
           'the ports',
@@ -141,7 +141,7 @@ describe('renderLossReport', () => {
 
   it('escapes a quote inside the quotes it wraps an id in', () => {
     expect(
-      renderLossReport([
+      renderDivergences([
         entry(
           { kind: 'element', id: elementIdSchema.parse('he said "no"') },
           'the ports',
@@ -152,7 +152,7 @@ describe('renderLossReport', () => {
   });
 
   it('escapes the control characters an imported id carries into a terminal', () => {
-    const report = [
+    const divergences = [
       entry(
         {
           kind: 'element',
@@ -162,7 +162,7 @@ describe('renderLossReport', () => {
         'unrepresentable',
       ),
     ];
-    expect(renderLossReport(report).split('\n')).toEqual([
+    expect(renderDivergences(divergences).split('\n')).toEqual([
       'element "a\\u000ab\\u001b[31m": the port\\u0007 list (no place in the format)',
     ]);
   });

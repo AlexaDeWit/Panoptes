@@ -13,11 +13,11 @@ import {
   type WriteResult,
 } from './codec.js';
 import {
-  emptyLossReport,
-  isLossless,
-  renderLossReport,
-  type LossEntry,
-} from './loss.js';
+  hasDiverged,
+  noDivergence,
+  renderDivergences,
+  type Divergence,
+} from './divergence.js';
 
 const wireSchema = z.object({
   title: z.string(),
@@ -98,24 +98,26 @@ const mapDocument = (
     onRight: (model) => ({
       model,
       source: wire.data,
-      loss: strippedKeys(value, wire.data, []).map((key): LossEntry => ({
-        subject: { kind: 'model' },
-        dropped: `the key ${key}`,
-        reason: 'undeclared',
-      })),
+      divergences: strippedKeys(value, wire.data, []).map(
+        (key): Divergence => ({
+          subject: { kind: 'model' },
+          detail: `the key ${key}`,
+          reason: 'undeclared',
+        }),
+      ),
     }),
   });
 };
 
-const unrepresentableMark: LossEntry = {
+const unrepresentableMark: Divergence = {
   subject: { kind: 'model' },
-  dropped: 'the last issued threat number',
+  detail: 'the last issued threat number',
   reason: 'unrepresentable',
 };
 
-const rewrittenContributors: LossEntry = {
+const rewrittenContributors: Divergence = {
   subject: { kind: 'model' },
-  dropped: 'what the source held on each contributor beyond the name',
+  detail: 'what the source held on each contributor beyond the name',
   reason: 'discarded-by-edit',
 };
 
@@ -142,7 +144,7 @@ const standIn: Codec<typeof wireSchema> = {
           diagrams,
           layout: { zOrder: [] },
         }),
-        loss: [unrepresentableMark],
+        divergences: [unrepresentableMark],
       };
     }
     const contributorsHold = sameNames(
@@ -158,10 +160,10 @@ const standIn: Codec<typeof wireSchema> = {
         diagrams,
         ...(contributorsHold ? {} : { contributors: asContributors(model) }),
       }),
-      loss: [
-        ...removed.map((id): LossEntry => ({
+      divergences: [
+        ...removed.map((id): Divergence => ({
           subject: { kind: 'diagram', id },
-          dropped: 'the diagram the source document held',
+          detail: 'the diagram the source document held',
           reason: 'discarded-by-edit',
         })),
         ...(contributorsHold ? [] : [rewrittenContributors]),
@@ -208,8 +210,8 @@ describe('a codec read', () => {
     expect(result.source).toEqual(document);
   });
 
-  it('reports no loss where the schema declares every key the file holds', () => {
-    expect(isLossless(readOrThrow(text).loss)).toBe(true);
+  it('diverges in nothing where the schema declares every key the file holds', () => {
+    expect(hasDiverged(readOrThrow(text).divergences)).toBe(false);
   });
 
   it('strips a key the schema does not declare, and says it did', () => {
@@ -217,7 +219,7 @@ describe('a codec read', () => {
       JSON.stringify({ ...document, mystery: 'held by no schema' }),
     );
     expect(result.source).toEqual(document);
-    expect(renderLossReport(result.loss)).toBe(
+    expect(renderDivergences(result.divergences)).toBe(
       'model: the key mystery (not declared by the wire schema)',
     );
   });
@@ -230,7 +232,7 @@ describe('a codec read', () => {
         layout: { zOrder: [], grid: 10 },
       }),
     );
-    expect(renderLossReport(result.loss).split('\n')).toEqual([
+    expect(renderDivergences(result.divergences).split('\n')).toEqual([
       'model: the key contributors.0.handle (not declared by the wire schema)',
       'model: the key layout.grid (not declared by the wire schema)',
     ]);
@@ -242,7 +244,7 @@ describe('a codec read', () => {
       ['toString', 'no'],
     ]);
     const result = readOrThrow(JSON.stringify({ ...document, ...inherited }));
-    expect(renderLossReport(result.loss).split('\n')).toEqual([
+    expect(renderDivergences(result.divergences).split('\n')).toEqual([
       'model: the key __proto__ (not declared by the wire schema)',
       'model: the key toString (not declared by the wire schema)',
     ]);
@@ -291,11 +293,11 @@ describe('a codec read', () => {
 });
 
 describe('a codec write', () => {
-  it('merges an unedited model onto its own source and reports no loss', () => {
+  it('merges an unedited model onto its own source and diverges in nothing', () => {
     const { model, source } = readOrThrow(text);
     const result = standIn.write(model, source);
-    expect(isLossless(result.loss)).toBe(true);
-    expect(result.loss).toEqual(emptyLossReport);
+    expect(hasDiverged(result.divergences)).toBe(false);
+    expect(result.divergences).toEqual(noDivergence);
     expect(outputOf(result)).toEqual(document);
   });
 
@@ -308,7 +310,7 @@ describe('a codec write', () => {
       diagrams: ['diagram-main'],
       layout: { zOrder: [] },
     });
-    expect(renderLossReport(result.loss)).toBe(
+    expect(renderDivergences(result.divergences)).toBe(
       'model: the last issued threat number (no place in the format)',
     );
   });
@@ -326,7 +328,7 @@ describe('a codec write', () => {
       ...document,
       contributors: [{ name: 'Bo', role: '' }],
     });
-    expect(renderLossReport(result.loss)).toBe(
+    expect(renderDivergences(result.divergences)).toBe(
       'model: what the source held on each contributor beyond the name (removed by an edit)',
     );
   });
@@ -338,7 +340,7 @@ describe('a codec write', () => {
     );
     const result = standIn.write(model, source);
     expect(outputOf(result)).toEqual({ ...document, diagrams: [] });
-    expect(renderLossReport(result.loss)).toBe(
+    expect(renderDivergences(result.divergences)).toBe(
       'diagram "diagram-main": the diagram the source document held (removed by an edit)',
     );
   });
