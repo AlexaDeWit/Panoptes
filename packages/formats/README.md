@@ -37,19 +37,23 @@ issues read the same way whichever boundary produced them. Nothing throws.
 Imports no internal package but `@panoptes/model`.
 
 `readThreatDragon` is the Threat Dragon v2 read. Its wire schema declares the
-whole file, the X6 styling, ports, and boundary bookkeeping Panoptes does not
-model included. It accepts any `2.x.y` stamp and refuses anything else
-outright rather than reading part of it, and a key it does not declare is
-dropped and reported through `undeclaredDivergences`, the walk every wire
-codec shares. Threat Dragon's status, severity, and per-methodology category
-vocabularies are bounded unions, and the tables that carry them onto the
-model's own are total over those unions, so a value Threat Dragon adds is a
-compile error rather than a runtime surprise.
+whole file, the X6 styling, ports, text blocks, and boundary bookkeeping
+Panoptes does not model included. What it declares it demands, and it demands
+nothing else, because it describes the file rather than the subset Panoptes
+can represent: a threat's status, severity, category and methodology are text,
+since Threat Dragon stores each label in the author's own locale, and a threat
+number is optional, since most threats in Threat Dragon's own demo models
+carry none. `version` accepts `2`, `2.x` and `2.x.y`, and a file from another
+major is refused whole rather than read in part. A key the schema does not
+declare is dropped and reported through `undeclaredDivergences`, the walk every
+wire codec shares, so a schema that has fallen behind the format announces
+itself.
 
-Two things Threat Dragon 2.6 writes have no home in the model, and a file
-carrying either is refused rather than read in part: `td-text-block` cells,
-whose `tm.Text` annotation is not an element, and `EOP` threats, which name a
-playing card rather than a category.
+A value with no home in the internal model therefore reaches the document
+intact, and how it should reach the model is a separate question from how the
+file is read. How a text block, an EOP card, a severity outside the five the
+editor offers, or a translated category label normalizes is not settled, and
+the mapping does not yet compile against the widened document.
 
 The write codec (#28) and the format detection that picks a codec (#84) come
 next.

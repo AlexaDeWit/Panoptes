@@ -1,4 +1,12 @@
 import {
+  ciaCategorySchema,
+  ciaDieCategorySchema,
+  linddunCategorySchema,
+  severitySchema,
+  strideCategorySchema,
+  threatStatusSchema,
+} from '@panoptes/model';
+import {
   toSeverity,
   toThreatCategory,
   toThreatStatus,
@@ -18,6 +26,12 @@ const base = {
 const categoriesOf = (threats: readonly ThreatDragonThreat[]) =>
   threats.map((threat) => toThreatCategory(threat));
 
+const categoryNamesOf = (threats: readonly ThreatDragonThreat[]) =>
+  categoriesOf(threats).map((category) => category.category);
+
+const methodologiesOf = (threats: readonly ThreatDragonThreat[]) =>
+  new Set(categoriesOf(threats).map((category) => category.methodology));
+
 describe('toThreatStatus', () => {
   it('maps every status Threat Dragon writes', () => {
     const statuses = [
@@ -32,6 +46,9 @@ describe('toThreatStatus', () => {
       'mitigated',
       'accepted-risk',
     ]);
+    expect(new Set(statuses.map(toThreatStatus))).toEqual(
+      new Set(threatStatusSchema.options),
+    );
   });
 });
 
@@ -45,6 +62,9 @@ describe('toSeverity', () => {
       'high',
       'critical',
     ]);
+    expect(new Set(severities.map(toSeverity))).toEqual(
+      new Set(severitySchema.options),
+    );
   });
 });
 
@@ -58,19 +78,14 @@ describe('toThreatCategory', () => {
       'Denial of service',
       'Elevation of privilege',
     ] as const;
-    expect(
-      categoriesOf(
-        types.map((type) => ({ ...base, modelType: 'STRIDE', type })),
-      ),
-    ).toEqual(
-      [
-        'spoofing',
-        'tampering',
-        'repudiation',
-        'information-disclosure',
-        'denial-of-service',
-        'elevation-of-privilege',
-      ].map((category) => ({ methodology: 'STRIDE', category })),
+    const threats = types.map((type) => ({
+      ...base,
+      modelType: 'STRIDE' as const,
+      type,
+    }));
+    expect(methodologiesOf(threats)).toEqual(new Set(['STRIDE']));
+    expect(categoryNamesOf(threats)).toEqual(
+      strideCategorySchema.shape.category.options,
     );
   });
 
@@ -84,32 +99,27 @@ describe('toThreatCategory', () => {
       'Unawareness',
       'Non-compliance',
     ] as const;
-    expect(
-      categoriesOf(
-        types.map((type) => ({ ...base, modelType: 'LINDDUN', type })),
-      ),
-    ).toEqual(
-      [
-        'linking',
-        'identifying',
-        'non-repudiation',
-        'detecting',
-        'data-disclosure',
-        'unawareness',
-        'non-compliance',
-      ].map((category) => ({ methodology: 'LINDDUN', category })),
+    const threats = types.map((type) => ({
+      ...base,
+      modelType: 'LINDDUN' as const,
+      type,
+    }));
+    expect(methodologiesOf(threats)).toEqual(new Set(['LINDDUN']));
+    expect(categoryNamesOf(threats)).toEqual(
+      linddunCategorySchema.shape.category.options,
     );
   });
 
   it('maps every CIA category', () => {
     const types = ['Confidentiality', 'Integrity', 'Availability'] as const;
-    expect(
-      categoriesOf(types.map((type) => ({ ...base, modelType: 'CIA', type }))),
-    ).toEqual(
-      ['confidentiality', 'integrity', 'availability'].map((category) => ({
-        methodology: 'CIA',
-        category,
-      })),
+    const threats = types.map((type) => ({
+      ...base,
+      modelType: 'CIA' as const,
+      type,
+    }));
+    expect(methodologiesOf(threats)).toEqual(new Set(['CIA']));
+    expect(categoryNamesOf(threats)).toEqual(
+      ciaCategorySchema.shape.category.options,
     );
   });
 
@@ -122,19 +132,14 @@ describe('toThreatCategory', () => {
       'Immutable',
       'Ephemeral',
     ] as const;
-    expect(
-      categoriesOf(
-        types.map((type) => ({ ...base, modelType: 'CIADIE', type })),
-      ),
-    ).toEqual(
-      [
-        'confidentiality',
-        'integrity',
-        'availability',
-        'distributed',
-        'immutable',
-        'ephemeral',
-      ].map((category) => ({ methodology: 'CIA-DIE', category })),
+    const threats = types.map((type) => ({
+      ...base,
+      modelType: 'CIADIE' as const,
+      type,
+    }));
+    expect(methodologiesOf(threats)).toEqual(new Set(['CIA-DIE']));
+    expect(categoryNamesOf(threats)).toEqual(
+      ciaDieCategorySchema.shape.category.options,
     );
   });
 

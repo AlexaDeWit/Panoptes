@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-const versionSchema = z.string().regex(/^2\.\d+\.\d+$/);
+const versionSchema = z.string().regex(/^2(\.\d+){0,2}$/);
 
 const pointSchema = z.object({ x: z.number(), y: z.number() });
 
@@ -116,93 +116,22 @@ const anchorSchema = z.object({
 
 const endpointSchema = z.union([anchorSchema, pointSchema]);
 
-const threatBaseSchema = z.object({
+const threatSchema = z.object({
   id: z.string().min(1),
-  number: z.int(),
+  number: z.int().optional(),
   title: z.string(),
-  status: z.enum(['NotApplicable', 'Open', 'Mitigated', 'Accepted']),
-  severity: z.enum(['TBD', 'Low', 'Medium', 'High', 'Critical']),
+  type: z.string().nullable().optional(),
+  modelType: z.string().optional(),
+  status: z.string(),
+  severity: z.string(),
   description: z.string(),
   mitigation: z.string(),
   score: z.string().optional(),
   new: z.boolean().optional(),
+  eopGameId: z.string().nullable().optional(),
+  cardSuit: z.string().nullable().optional(),
+  cardNumber: z.string().nullable().optional(),
 });
-
-const strideThreatSchema = threatBaseSchema.extend({
-  modelType: z.literal('STRIDE'),
-  type: z.enum([
-    'Spoofing',
-    'Tampering',
-    'Repudiation',
-    'Information disclosure',
-    'Denial of service',
-    'Elevation of privilege',
-  ]),
-});
-
-const linddunThreatSchema = threatBaseSchema.extend({
-  modelType: z.literal('LINDDUN'),
-  type: z.enum([
-    'Linkability',
-    'Identifiability',
-    'Non-repudiation',
-    'Detectability',
-    'Disclosure of information',
-    'Unawareness',
-    'Non-compliance',
-  ]),
-});
-
-const ciaThreatSchema = threatBaseSchema.extend({
-  modelType: z.literal('CIA'),
-  type: z.enum(['Confidentiality', 'Integrity', 'Availability']),
-});
-
-const ciaDieThreatSchema = threatBaseSchema.extend({
-  modelType: z.literal('CIADIE'),
-  type: z.enum([
-    'Confidentiality',
-    'Integrity',
-    'Availability',
-    'Distributed',
-    'Immutable',
-    'Ephemeral',
-  ]),
-});
-
-const dieThreatSchema = threatBaseSchema.extend({
-  modelType: z.literal('DIE'),
-  type: z.enum(['Distributed', 'Immutable', 'Ephemeral']),
-});
-
-const plot4aiThreatSchema = threatBaseSchema.extend({
-  modelType: z.literal('PLOT4ai'),
-  type: z.enum([
-    'Technique & Processes',
-    'Accessibility',
-    'Identifiability & Linkability',
-    'Security',
-    'Safety',
-    'Unawareness',
-    'Ethics & Human Rights',
-    'Non-compliance',
-  ]),
-});
-
-const genericThreatSchema = threatBaseSchema.extend({
-  modelType: z.enum(['Generic', 'default']),
-  type: z.string().min(1),
-});
-
-const threatSchema = z.discriminatedUnion('modelType', [
-  strideThreatSchema,
-  linddunThreatSchema,
-  ciaThreatSchema,
-  ciaDieThreatSchema,
-  dieThreatSchema,
-  plot4aiThreatSchema,
-  genericThreatSchema,
-]);
 
 const dataBaseSchema = z.object({
   name: z.string().optional(),
@@ -262,6 +191,10 @@ const boundaryCurveDataSchema = boundaryDataSchema.extend({
   type: z.literal('tm.Boundary'),
 });
 
+const textDataSchema = dataBaseSchema.extend({
+  type: z.literal('tm.Text'),
+});
+
 const cellBaseSchema = z.object({
   id: z.string().min(1),
   zIndex: z.int().optional(),
@@ -303,6 +236,10 @@ const cellSchema = z.discriminatedUnion('shape', [
     data: processDataSchema,
   }),
   nodeCellSchema.extend({ shape: z.literal('store'), data: storeDataSchema }),
+  nodeCellSchema.extend({
+    shape: z.literal('td-text-block'),
+    data: textDataSchema,
+  }),
   edgeCellSchema.extend({ shape: z.literal('flow'), data: flowDataSchema }),
   boxCellSchema.extend({
     shape: z.literal('trust-boundary-box'),
@@ -325,22 +262,39 @@ const diagramSchema = z.object({
 
 /**
  * A Threat Dragon v2 file, whole. Every key the format carries is declared,
- * the parts Panoptes does not model included (ports, `attrs` styling,
- * `zIndex`, `tools`, `placeholder`, `thumbnail`, `diagramTop`), because a
- * write merges onto this document and only a declared key is there to leave
- * alone. Nothing is defaulted or transformed here: a key the file omits
- * stays omitted, and the read supplies the model's default instead, so the
- * document keeps saying what the file said.
+ * the parts Panoptes does not model included (text blocks, ports, `attrs`
+ * styling, `zIndex`, `tools`, `placeholder`, `thumbnail`, `diagramTop`),
+ * because a write merges onto this document and only a declared key is
+ * there to leave alone. Nothing is defaulted or transformed here: a key the
+ * file omits stays omitted, and the read supplies the model's default
+ * instead, so the document keeps saying what the file said.
  *
  * Plain `z.object`, so an undeclared key is dropped rather than refused:
  * Threat Dragon owns this shape and may add to it. The read reports each
- * dropped key as an `undeclared` divergence, which with the version pinned
- * is a report that this schema has fallen behind the format.
+ * dropped key as an `undeclared` divergence, so a schema that has fallen
+ * behind the format announces itself rather than quietly shortening a file.
  *
- * `version` accepts `2.x.y` and nothing else: the format is stable within
- * the major, and a file from another major is refused whole rather than
- * read in part. Threat Dragon repeats the stamp on every diagram and
- * rewrites it on open, so a diagram carries the same pin.
+ * What this schema declares, it demands, and it demands nothing else. It
+ * describes the file rather than the subset Panoptes can currently
+ * represent, so a value with no home in the internal model reaches this
+ * document intact and is refused, if it is refused at all, by the mapping
+ * rather than here. That is why a threat's `status`, `severity`, `type`,
+ * and `modelType` are plain text: Threat Dragon stores the label in the
+ * author's own locale, so a German file holds `Manipulation` where an
+ * English one holds `Tampering`, and its own schema types all four as
+ * strings. `number` is optional for the same reason, since Threat Dragon
+ * requires only a threat's description, mitigation, severity, status,
+ * title, and type, and most threats in its shipped demo models carry no
+ * number at all. `diagramType` is text too: its generic value is the word
+ * "Generic" translated. What belongs to the drawing library rather than to
+ * Threat Dragon (stroke colours, dash arrays, marker and connector names,
+ * port visibility) is text for the same reason.
+ *
+ * `version` accepts `2`, `2.x`, and `2.x.y`, and nothing else. Threat
+ * Dragon's own test for a v2 file is that the version is present and does
+ * not start with `1.`, and its models carry `2.0` as well as `2.6.2`, at
+ * the root and on each diagram. A file from another major is refused whole
+ * rather than read in part.
  *
  * The shape is Threat Dragon's `data` payload wrapped around AntV X6's own
  * cell serialization, which is why the styling, port, tool, and label
@@ -348,24 +302,12 @@ const diagramSchema = z.object({
  * shows up as drift from the schema Threat Dragon publishes, which declares
  * `threats` on the cell rather than under `data`, names a threat's id
  * `threatId`, and omits `ports`, `tools`, `labels`, `threatFrequency`, and
- * the boundary bookkeeping. This schema follows what Threat Dragon 2.6.2
- * writes, not what it publishes.
- *
- * Threat Dragon's own vocabularies are bounded unions, and a threat is
- * discriminated on `modelType` so each methodology declares the categories
- * it admits. `diagramType` is not among them: its generic value is the
- * word "Generic" in the author's own locale, and it decides nothing on the
- * way in. What belongs to the drawing library rather than to Threat Dragon
- * (stroke colours, dash arrays, marker and connector names, port
- * visibility) stays plain text for the same reason.
- *
- * Two things Threat Dragon 2.6 writes are absent, and a file carrying
- * either is refused rather than read in part. `td-text-block` cells, whose
- * `tm.Text` annotation the internal model has no element for. And `EOP`
- * threats, which store a null `type` and identify their card in
- * `eopGameId`, `cardSuit`, and `cardNumber`, so they have no category the
- * model can hold. `trust-broundary-curve` is here on purpose: Threat Dragon
- * registers that misspelling itself, for the many models that carry it.
+ * the boundary bookkeeping. This schema follows what Threat Dragon writes,
+ * not what it publishes. `trust-broundary-curve` is here on purpose: Threat
+ * Dragon registers that misspelling itself, for the many models that carry
+ * it. An `EOP` threat's `eopGameId`, `cardSuit`, and `cardNumber` are read
+ * from the threat editor's own bindings, where each is a string or null,
+ * and its `type` is the null that editor writes.
  */
 export const threatDragonWireSchema = z.object({
   version: versionSchema,

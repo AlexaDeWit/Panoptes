@@ -1,6 +1,10 @@
 import { toParseIssues, type ParseIssue } from '@panoptes/model';
 import { threatDragonWireSchema } from './threat-dragon-wire.js';
-import { ecluseText, minimalFixture } from './threat-dragon.fixtures.js';
+import {
+  ecluseText,
+  minimalFixture,
+  unmodelledFixture,
+} from './threat-dragon.fixtures.js';
 import { undeclaredDivergences } from './undeclared.js';
 
 const ecluseDocument = JSON.parse(ecluseText) as unknown;
@@ -18,29 +22,12 @@ const withDiagram = (diagram: unknown): unknown => ({
   detail: { diagrams: [diagram] },
 });
 
-const withCell = (cell: unknown): unknown =>
-  withDiagram({ id: 0, title: 'One', diagramType: 'STRIDE', cells: [cell] });
+const unmodelled = threatDragonWireSchema.parse(unmodelledFixture);
 
-const withThreat = (threat: unknown): unknown =>
-  withCell({
-    id: 'actor-1',
-    shape: 'actor',
-    position: { x: 0, y: 0 },
-    size: { width: 10, height: 10 },
-    data: { type: 'tm.Actor', threats: [threat] },
-  });
+const threatBearer = unmodelled.detail.diagrams[0]?.cells?.[1];
 
-const strideThreat = {
-  id: 'threat-1',
-  number: 1,
-  title: '',
-  modelType: 'STRIDE',
-  type: 'Spoofing',
-  status: 'Open',
-  severity: 'Low',
-  description: '',
-  mitigation: '',
-};
+const threatsOfFixture =
+  threatBearer?.shape === 'process' ? (threatBearer.data.threats ?? []) : [];
 
 describe('threatDragonWireSchema', () => {
   it('declares every key the Écluse file holds, dropping none of it', () => {
@@ -74,61 +61,33 @@ describe('threatDragonWireSchema', () => {
     );
   });
 
-  it('refuses a category a methodology does not admit', () => {
-    expect(
-      issuesOf(withThreat({ ...strideThreat, type: 'Linkability' })),
-    ).toContainEqual(
-      expect.objectContaining({
-        path: [
-          'detail',
-          'diagrams',
-          0,
-          'cells',
-          0,
-          'data',
-          'threats',
-          0,
-          'type',
-        ],
-      }),
+  it('reads a text block, the cell kind the model has no element for', () => {
+    const given = JSON.parse(JSON.stringify(unmodelledFixture)) as unknown;
+    expect(undeclaredDivergences(given, unmodelled)).toEqual([]);
+    expect(unmodelled.detail.diagrams[0]?.cells?.[0]?.shape).toBe(
+      'td-text-block',
     );
   });
 
-  it('refuses a cell kind the model has no element for', () => {
-    expect(
-      issuesOf(
-        withCell({
-          id: 'text-1',
-          shape: 'td-text-block',
-          position: { x: 0, y: 0 },
-          size: { width: 10, height: 10 },
-          data: { type: 'tm.Text' },
-        }),
-      ),
-    ).toContainEqual(
-      expect.objectContaining({
-        path: ['detail', 'diagrams', 0, 'cells', 0, 'shape'],
-      }),
-    );
+  it('reads a threat with no number, an unlisted severity, and a translated category', () => {
+    const threat = threatsOfFixture[0];
+    expect(threat?.number).toBeUndefined();
+    expect(threat?.severity).toBe('TBA');
+    expect(threat?.type).toBe('Manipulation');
   });
 
-  it('refuses a methodology whose threats carry no category to hold', () => {
-    expect(
-      issuesOf(withThreat({ ...strideThreat, modelType: 'EOP', type: null })),
-    ).toContainEqual(
-      expect.objectContaining({
-        path: [
-          'detail',
-          'diagrams',
-          0,
-          'cells',
-          0,
-          'data',
-          'threats',
-          0,
-          'modelType',
-        ],
-      }),
-    );
+  it('reads an EOP threat, whose type is null and whose card is its identity', () => {
+    expect(threatsOfFixture[1]).toMatchObject({
+      modelType: 'EOP',
+      type: null,
+      eopGameId: 'cornucopia',
+      cardSuit: 'Data Validation & Encoding',
+      cardNumber: '3',
+    });
+  });
+
+  it('reads the two-part version Threat Dragon writes as well as the three', () => {
+    expect(unmodelled.version).toBe('2.0');
+    expect(threatDragonWireSchema.parse(minimalFixture).version).toBe('2.9.13');
   });
 });

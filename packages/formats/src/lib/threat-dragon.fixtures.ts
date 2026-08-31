@@ -32,8 +32,10 @@ const ethics: ThreatDragonThreat = {
 /**
  * The Écluse threat model as Threat Dragon 2.6.2 wrote it, read from the
  * file vendored at `test-data/ecluse.json`. It lives at the repository root
- * because `packages/model` transcribes the same file and the layer matrix
- * forbids a package dependency between the two readers.
+ * because `packages/model` transcribes the same file and neither package
+ * owns it. That transcription is not compared against directly: it is
+ * internal to `packages/model` rather than on its entry point, so this
+ * package pins the same counts and vocabularies instead.
  */
 export const ecluseText: string = readFileSync(
   join(import.meta.dirname, '../../../../test-data/ecluse.json'),
@@ -123,4 +125,81 @@ export const minimalFixture: ThreatDragonDocument = {
   version: '2.9.13',
   summary: { title: 'Nothing but a title' },
   detail: { diagrams: [] },
+};
+
+/**
+ * A Threat Dragon document holding what Threat Dragon writes and the
+ * internal model has no home for: a text block, a threat with no number, a
+ * severity outside the five the editor offers, a category label in the
+ * author's own locale, and an EOP threat whose type is null and whose
+ * identity is a playing card. Stamped `2.0`, the two-part version Threat
+ * Dragon's own models carry. The wire schema reads all of it, and how any
+ * of it reaches the model is not settled.
+ */
+export const unmodelledFixture: ThreatDragonDocument = {
+  version: '2.0',
+  summary: { title: 'Beyond the model' },
+  detail: {
+    diagrams: [
+      {
+        id: 0,
+        title: 'Zahlungen',
+        diagramType: 'STRIDE',
+        version: '2.0',
+        cells: [
+          {
+            id: 'text-1',
+            shape: 'td-text-block',
+            position: { x: 0, y: 0 },
+            size: { width: 200, height: 100 },
+            visible: true,
+            attrs: { text: { text: 'Arbitrary Text' } },
+            data: {
+              type: 'tm.Text',
+              name: 'Arbitrary Text',
+              hasOpenThreats: false,
+            },
+          },
+          {
+            id: 'process-1',
+            shape: 'process',
+            position: { x: 0, y: 200 },
+            size: { width: 100, height: 100 },
+            data: {
+              type: 'tm.Process',
+              name: 'Zahlungsdienst',
+              threats: [
+                {
+                  id: 'threat-translated',
+                  title: 'Manipulation der Anfrage',
+                  modelType: 'STRIDE',
+                  type: 'Manipulation',
+                  status: 'Accepted',
+                  severity: 'TBA',
+                  description: '',
+                  mitigation: '',
+                },
+                {
+                  id: 'threat-card',
+                  number: 4,
+                  title: 'The attacker reads the session token',
+                  modelType: 'EOP',
+                  type: null,
+                  eopGameId: 'cornucopia',
+                  cardSuit: 'Data Validation & Encoding',
+                  cardNumber: '3',
+                  status: 'Open',
+                  severity: 'TBD',
+                  description: '',
+                  mitigation: '',
+                  new: true,
+                  score: '',
+                },
+              ],
+            },
+          },
+        ],
+      },
+    ],
+  },
 };
