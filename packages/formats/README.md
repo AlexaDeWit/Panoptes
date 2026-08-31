@@ -50,10 +50,18 @@ wire codec shares, so a schema that has fallen behind the format announces
 itself.
 
 A value with no home in the internal model therefore reaches the document
-intact, and how it should reach the model is a separate question from how the
-file is read. How a text block, an EOP card, a severity outside the five the
-editor offers, or a translated category label normalizes is not settled, and
-the mapping does not yet compile against the widened document.
+intact, and what the mapping then does with it is a separate question from
+how the file is read. A category label is looked up in the language Threat
+Dragon wrote it in before it is read, so a German file and an English one
+describing the same threat reach the same category. A methodology the model
+does not enumerate, an Elevation of Privilege card, and a label from a
+language Threat Dragon has added since all become a custom category, and the
+read reports what it holds less exactly than the file stated it. A threat the
+file leaves unnumbered is issued the next number above the model's own mark.
+
+The corpus in `test-data/threat-dragon` is the gate on all of this: every
+threat model Threat Dragon ships in its own repository reads, with no key the
+wire schema fails to declare.
 
 The write codec (#28) and the format detection that picks a codec (#84) come
 next.

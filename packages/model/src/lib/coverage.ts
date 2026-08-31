@@ -34,7 +34,7 @@ export function openThreatsBySeverity(
     medium: carrying('medium'),
     high: carrying('high'),
     critical: carrying('critical'),
-    tbd: carrying('tbd'),
+    undecided: carrying('undecided'),
   };
 }
 

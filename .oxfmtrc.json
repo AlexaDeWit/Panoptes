@@ -7,5 +7,5 @@
   // provenance checksums stay matched to upstream and a codec reads the
   // real thing. Only the vendored payloads are exempt; prose beside them
   // is formatted like any other document.
-  "ignorePatterns": ["test-data/*.json"]
+  "ignorePatterns": ["test-data/**/*.json"]
 }

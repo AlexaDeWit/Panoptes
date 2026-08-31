@@ -45,3 +45,45 @@ enforce the invariant the internal model does, so the import rule is
 Neither half alone is enough. `threatTop` alone breaks on this file, and the
 highest number alone drops the gap left by a removed highest-numbered threat,
 which is the record the field exists to keep.
+
+## `threat-dragon/`
+
+The threat models OWASP Threat Dragon ships inside its own repository: the
+nine v2 models its demo menu offers, and three more the repository keeps
+beside them. They are the corpus `packages/formats` reads through the Threat
+Dragon codec, which is how a wire schema that has drifted from the format
+announces itself before a user meets it. Every one of them was refused by an
+earlier draft of that schema, which is why they are here rather than
+described.
+
+| Fact           | Value                                                       |
+| -------------- | ----------------------------------------------------------- |
+| Source project | `OWASP/threat-dragon`                                       |
+| Source tag     | `v2.6.2`, commit `10a64f074f70e9c34aca5839d6761f4188c0f6f1` |
+| Licence        | Apache-2.0, Copyright OWASP Foundation                      |
+
+| File                              | Upstream path                                        | MD5                                |
+| --------------------------------- | ---------------------------------------------------- | ---------------------------------- |
+| `demo/cryptocurrency-wallet.json` | `td.vue/src/service/demo/cryptocurrency-wallet.json` | `ac2482cdfd3d54b7da57509b4c3aa9e9` |
+| `demo/generic-cms.json`           | `td.vue/src/service/demo/generic-cms.json`           | `3505e2e3c1168993ad0b9fcf708fb1d3` |
+| `demo/iot-device.json`            | `td.vue/src/service/demo/iot-device.json`            | `c352b5a7d38d9d735b311d8c59812822` |
+| `demo/online-game.json`           | `td.vue/src/service/demo/online-game.json`           | `42bdaa029c59dccc54a15bd21f92d829` |
+| `demo/payment-online.json`        | `td.vue/src/service/demo/payment-online.json`        | `edb36f47da6e5ca27d3c0b3b30c67109` |
+| `demo/renting-car.json`           | `td.vue/src/service/demo/renting-car.json`           | `fffa21af0ae27f1d7abdfce253b3ab32` |
+| `demo/three-tier-web-app.json`    | `td.vue/src/service/demo/three-tier-web-app.json`    | `bad08c9471aa41dd4291b96f912f023f` |
+| `demo/v2-new-model.json`          | `td.vue/src/service/demo/v2-new-model.json`          | `152bdbf8247cd9ff0f66b68b478b51b7` |
+| `demo/v2-threat-model.json`       | `td.vue/src/service/demo/v2-threat-model.json`       | `82b81e47a047eb3992d53bbb94adee9e` |
+| `models/test-reports.json`        | `ThreatDragonModels/test/test-reports.json`          | `6c15a86c29a7cf9c969710a78de1d7c2` |
+| `models/v2-new-model.json`        | `ThreatDragonModels/v2-new-model.json`               | `f4144b040d12668f0c45d1c60b75a6fa` |
+| `models/v2-threat-model.json`     | `ThreatDragonModels/v2-threat-model.json`            | `f456784c069347a48f6568934e8a7571` |
+
+`demo/v2-new-model.json` and `demo/v2-threat-model.json` are not copies of
+the `models/` files of the same name: Threat Dragon keeps both, and they
+differ. `models/v2-threat-model.json` is the only file in the corpus stamped
+`2.0` rather than `2.x.y`, at the root and on each diagram, and
+`models/test-reports.json` the only one whose diagrams carry versions that
+differ from the root's.
+
+`huskyai.tmbom.json` sits in the same upstream directory and is deliberately
+absent: it is a TM-BOM document at version `1.0.1`, not a Threat Dragon v2
+threat model, and the codec has no claim on it.

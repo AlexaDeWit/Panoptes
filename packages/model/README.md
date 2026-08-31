@@ -27,4 +27,7 @@ enumerated methodology, so a construct that stops being representable fails a
 named assertion or the type-check. The source file is vendored at
 [`test-data/ecluse.json`](../../test-data/ecluse.json).
 
+[`SCHEMA.md`](SCHEMA.md) is the whole model expanded from the schemas
+themselves, regenerated and checked on every test run.
+
 Unit tests: `pnpm nx test @panoptes/model`.

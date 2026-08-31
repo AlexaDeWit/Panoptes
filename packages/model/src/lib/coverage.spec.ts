@@ -53,7 +53,7 @@ describe('openThreatsBySeverity', () => {
     expect(idsOfThreats(grouped.medium)).toEqual([]);
     expect(idsOfThreats(grouped.high)).toEqual(['threat-spoof-shopper']);
     expect(idsOfThreats(grouped.critical)).toEqual(['threat-tamper-payment']);
-    expect(idsOfThreats(grouped.tbd)).toEqual([]);
+    expect(idsOfThreats(grouped.undecided)).toEqual([]);
   });
 
   it('returns whole threat records', () => {

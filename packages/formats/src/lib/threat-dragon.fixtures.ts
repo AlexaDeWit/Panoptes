@@ -1,5 +1,5 @@
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { readdirSync, readFileSync } from 'node:fs';
+import { basename, join } from 'node:path';
 import type {
   ThreatDragonDocument,
   ThreatDragonThreat,
@@ -42,8 +42,33 @@ export const ecluseText: string = readFileSync(
   'utf8',
 );
 
+const vendored = join(
+  import.meta.dirname,
+  '../../../../test-data/threat-dragon',
+);
+
+/**
+ * Every Threat Dragon file the repository vendors, named by its path under
+ * `test-data`. The twelve models Threat Dragon ships in its own repository,
+ * described in `test-data/README.md`, plus the Écluse model, read from the
+ * directory rather than from a list, so a file added there is gated without
+ * anything else changing.
+ */
+export const corpusTexts: readonly { name: string; text: string }[] = [
+  { name: 'ecluse.json', text: ecluseText },
+  ...readdirSync(vendored, { recursive: true, withFileTypes: true })
+    .filter((entry) => entry.isFile() && entry.name.endsWith('.json'))
+    .map((entry) => ({
+      name: `threat-dragon/${basename(entry.parentPath)}/${entry.name}`,
+      text: readFileSync(join(entry.parentPath, entry.name), 'utf8'),
+    })),
+];
+
 /**
  * A Threat Dragon document carrying what the Écluse file has no example of:
+ * a text block named in `data`, another named only in `attrs`, and a third
+ * named nowhere, a threat whose status, severity and category are each from
+ * a vocabulary this codec does not know,
  * boundary curves under both the correct shape name and the misspelling
  * Threat Dragon registers for compatibility, a boundary named in `data` and
  * another named nowhere, one threat nested under two cells, a methodology
@@ -161,6 +186,21 @@ export const unmodelledFixture: ThreatDragonDocument = {
             },
           },
           {
+            id: 'text-2',
+            shape: 'td-text-block',
+            position: { x: 0, y: 120 },
+            size: { width: 200, height: 40 },
+            attrs: { text: { text: 'Drawn before the note carried a name' } },
+            data: { type: 'tm.Text' },
+          },
+          {
+            id: 'text-3',
+            shape: 'td-text-block',
+            position: { x: 0, y: 180 },
+            size: { width: 200, height: 40 },
+            data: { type: 'tm.Text' },
+          },
+          {
             id: 'process-1',
             shape: 'process',
             position: { x: 0, y: 200 },
@@ -176,6 +216,16 @@ export const unmodelledFixture: ThreatDragonDocument = {
                   type: 'Manipulation',
                   status: 'Accepted',
                   severity: 'TBA',
+                  description: '',
+                  mitigation: '',
+                },
+                {
+                  id: 'threat-unplaceable',
+                  title: 'Recorded under a vocabulary of its own',
+                  modelType: 'STRIDE',
+                  type: 'F\u00e4lschung',
+                  status: 'Deferred',
+                  severity: 'Catastrophic',
                   description: '',
                   mitigation: '',
                 },

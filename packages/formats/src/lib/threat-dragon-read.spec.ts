@@ -8,6 +8,7 @@ import {
   complementFixture,
   ecluseText,
   minimalFixture,
+  unmodelledFixture,
 } from './threat-dragon.fixtures.js';
 
 const readOrThrow = (text: string): ReadResult<typeof threatDragonWireSchema> =>
@@ -40,6 +41,7 @@ const nested = (depth: number): string =>
 const ecluse = readOrThrow(ecluseText);
 const complement = readOrThrow(JSON.stringify(complementFixture));
 const minimal = readOrThrow(JSON.stringify(minimalFixture));
+const unmodelled = readOrThrow(JSON.stringify(unmodelledFixture));
 
 const ecluseElements = ecluse.model.diagrams.flatMap(
   (diagram) => diagram.elements,
@@ -223,6 +225,51 @@ describe('reading what the Écluse file has no example of', () => {
       mitigations: [],
       assumptions: [],
     });
+  });
+});
+
+describe('reading what the model has only just grown a home for', () => {
+  it('reads a text block as a note on the canvas, its content its text', () => {
+    expect(unmodelled.model.diagrams[0]?.elements[0]).toEqual({
+      kind: 'text',
+      id: 'text-1',
+      name: '',
+      description: '',
+      outOfScope: false,
+      reasonOutOfScope: '',
+      position: { x: 0, y: 0 },
+      size: { width: 200, height: 100 },
+      text: 'Arbitrary Text',
+    });
+  });
+
+  it('issues a number above the mark to a threat the file left unnumbered', () => {
+    expect(
+      unmodelled.model.threats.map((threat) => [threat.id, threat.number]),
+    ).toEqual([
+      ['threat-translated', 5],
+      ['threat-unplaceable', 6],
+      ['threat-card', 4],
+    ]);
+    expect(unmodelled.model.lastIssuedThreatNumber).toBe(6);
+  });
+
+  it('recovers a category its author wrote in another language', () => {
+    expect(unmodelled.model.threats[0]?.category).toEqual({
+      methodology: 'STRIDE',
+      category: 'tampering',
+    });
+    expect(unmodelled.model.threats[0]?.severity).toBe('undecided');
+    expect(unmodelled.model.threats[0]?.status).toBe('accepted-risk');
+  });
+
+  it('reports what the model holds less exactly than the file said it', () => {
+    expect(renderDivergences(unmodelled.divergences).split('\n')).toEqual([
+      'threat "threat-unplaceable": the status "Deferred", which the model has no state for (reduced to fit the format)',
+      'threat "threat-unplaceable": the severity "Catastrophic", which the model has no level for (reduced to fit the format)',
+      'threat "threat-unplaceable": the category "F\u00e4lschung", which no language of Threat Dragon\'s names (reduced to fit the format)',
+      'threat "threat-card": the Elevation of Privilege card, of which the model holds the suit alone (reduced to fit the format)',
+    ]);
   });
 });
 

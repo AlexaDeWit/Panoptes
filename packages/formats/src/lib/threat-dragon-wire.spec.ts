@@ -24,10 +24,15 @@ const withDiagram = (diagram: unknown): unknown => ({
 
 const unmodelled = threatDragonWireSchema.parse(unmodelledFixture);
 
-const threatBearer = unmodelled.detail.diagrams[0]?.cells?.[1];
+const threatBearer = unmodelled.detail.diagrams[0]?.cells?.find(
+  (cell) => cell.shape === 'process',
+);
 
-const threatsOfFixture =
-  threatBearer?.shape === 'process' ? (threatBearer.data.threats ?? []) : [];
+const threatsOfFixture = threatBearer?.data.threats ?? [];
+
+const cardThreat = threatsOfFixture.find(
+  (threat) => threat.modelType === 'EOP',
+);
 
 describe('threatDragonWireSchema', () => {
   it('declares every key the Écluse file holds, dropping none of it', () => {
@@ -77,7 +82,7 @@ describe('threatDragonWireSchema', () => {
   });
 
   it('reads an EOP threat, whose type is null and whose card is its identity', () => {
-    expect(threatsOfFixture[1]).toMatchObject({
+    expect(cardThreat).toMatchObject({
       modelType: 'EOP',
       type: null,
       eopGameId: 'cornucopia',

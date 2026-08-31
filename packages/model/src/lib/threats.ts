@@ -3,16 +3,23 @@ import { threatCategorySchema } from './categories.js';
 import { elementIdSchema, threatIdSchema } from './ids.js';
 
 /**
- * Lifecycle of a threat. Écluse's Open, Mitigated, and Accepted map onto the
- * first three; `not-applicable` exists for Threat Dragon's NotApplicable,
- * making the import (#27) total against Threat Dragon 2.6.2 releases.
- * Threat Dragon's unreleased main adds Transferred, Avoided, and Eliminated,
- * which have no home here.
+ * Where a threat stands. `open` is the threat nobody has dispositioned yet.
+ * The four that follow are the standard risk treatments: reduce it
+ * (`mitigated`), move it to someone else such as an insurer or a supplier
+ * (`transferred`), remove the feature or path that creates it (`avoided`),
+ * or carry it knowingly (`accepted-risk`). `eliminated` is the threat a
+ * change has made impossible rather than merely unlikely, which is a
+ * stronger claim than mitigation and worth recording as one.
+ * `not-applicable` is the threat that never applied to this system, which
+ * is a judgement about the analysis rather than about the risk.
  */
 export const threatStatusSchema = z.enum([
   'open',
   'mitigated',
+  'transferred',
+  'avoided',
   'accepted-risk',
+  'eliminated',
   'not-applicable',
 ]);
 
@@ -20,15 +27,17 @@ export const threatStatusSchema = z.enum([
 export type ThreatStatus = z.infer<typeof threatStatusSchema>;
 
 /**
- * How bad the threat is if realized. Écluse uses the first four; `tbd` is
- * Threat Dragon's fifth value, kept so the import (#27) stays total.
+ * How bad the threat is if realized. `undecided` is a state of its own
+ * rather than a missing value: a threat recorded while the system is still
+ * being designed often has no defensible severity yet, and saying so is
+ * more use than guessing one.
  */
 export const severitySchema = z.enum([
   'low',
   'medium',
   'high',
   'critical',
-  'tbd',
+  'undecided',
 ]);
 
 /** Threat severity. */
