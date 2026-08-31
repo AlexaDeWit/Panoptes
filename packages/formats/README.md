@@ -22,8 +22,9 @@ A divergence is any place a file and the model do not correspond exactly, and
 one list of them serves every path. Each entry names the entity, what did not
 correspond, and why: `unrepresentable` for what the format cannot express,
 `undeclared` for a key a read dropped, `narrowed` for a value reduced to fit,
-`split` for one record the format forces into several, and
-`discarded-by-edit` for what an edit removed from the file. An empty list is
+`split` for one record the format forces into several, `overridden` for a
+value the codec wrote over rather than repeat, and `discarded-by-edit` for
+what an edit removed from the file. An empty list is
 the aligned case, and `renderDivergences` turns the list into lines for a
 person, escaping what an imported id could otherwise do to a line.
 

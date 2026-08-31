@@ -43,7 +43,10 @@ export type ReadResult<WireSchema extends z.ZodType<object>> = {
   readonly divergences: readonly Divergence[];
 };
 
-/** What a write produced: the output text, and where it left the model. */
+/**
+ * What a write produced: the output text, and where that text and the model
+ * do not correspond.
+ */
 export type WriteResult = {
   readonly output: string;
   readonly divergences: readonly Divergence[];

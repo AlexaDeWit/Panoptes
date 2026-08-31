@@ -110,6 +110,7 @@ describe('renderDivergences', () => {
       'undeclared',
       'narrowed',
       'split',
+      'overridden',
       'discarded-by-edit',
     ];
     const divergences = reasons.map((reason) =>
@@ -120,6 +121,7 @@ describe('renderDivergences', () => {
       'model: the thing (not declared by the wire schema)',
       'model: the thing (reduced to fit the format)',
       'model: the thing (split by the format)',
+      'model: the thing (not repeated by the codec)',
       'model: the thing (removed by an edit)',
     ]);
   });

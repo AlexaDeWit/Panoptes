@@ -61,8 +61,12 @@ export type DivergenceSubject = z.infer<typeof divergenceSubjectSchema>;
  * value was reduced to fit what the format holds. `split`: one record
  * became several, as Threat Dragon nests each threat under one cell, so a
  * threat attached to several elements is written once per cell and its
- * single identity is gone. `discarded-by-edit`: an edit removed something
- * the source document had, so the merge did not carry it forward. All but
+ * single identity is gone. `overridden`: the codec wrote a value the source
+ * disagreed with, not because the source value was too much to carry but
+ * because the codec will not repeat a claim it cannot stand behind, as a
+ * write stamping the format release it produces over the one the file
+ * arrived with. `discarded-by-edit`: an edit removed something the source
+ * document had, so the merge did not carry it forward. All but
  * `undeclared` are a write reporting on the file it produced, and
  * `undeclared` is a read reporting on the file it was given.
  */
@@ -71,6 +75,7 @@ export const divergenceReasonSchema = z.enum([
   'undeclared',
   'narrowed',
   'split',
+  'overridden',
   'discarded-by-edit',
 ]);
 
@@ -94,8 +99,7 @@ export const divergenceSchema = z.strictObject({
 /**
  * One place a file and the model do not correspond exactly. A read or a
  * write returns these in the order it recorded them, and an empty list is
- * the aligned case: every key accounted for, nothing reduced, nothing
- * duplicated, nothing dropped.
+ * the aligned case, where the file and the model say the same thing.
  */
 export type Divergence = z.infer<typeof divergenceSchema>;
 
@@ -116,6 +120,7 @@ const reasonPhrases: Record<DivergenceReason, string> = {
   undeclared: 'not declared by the wire schema',
   narrowed: 'reduced to fit the format',
   split: 'split by the format',
+  overridden: 'not repeated by the codec',
   'discarded-by-edit': 'removed by an edit',
 };
 
