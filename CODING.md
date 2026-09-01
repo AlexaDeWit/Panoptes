@@ -26,20 +26,19 @@ where a union is knowable.
 ## Zod composition
 
 Shared object fields are expressed with zod's own composition: a base
-`z.strictObject` extended per variant with `.extend()`. Never spread raw
-field maps into schema literals.
+`z.object` extended per variant with `.extend()`. Never spread raw field
+maps into schema literals.
 
-`strictObject` is the default for every schema whose shape Panoptes owns,
-where an undeclared key is a mistake and reporting it is the point. The one
-exception is a wire schema describing a file another tool wrote, which uses
-plain `z.object`: demanding about what it declares, and dropping what it does
-not. `strictObject` there would refuse the file the first time the other tool
-adds a field, and `looseObject` would carry along data that nothing
-describes. Preservation rests on a wire schema declaring everything its
-format carries, not on that tolerance, and the codec contract in
+`z.object` is the default for every schema, including the ones whose shape
+Panoptes owns: demanding about what it declares, and dropping what it does
+not. `strictObject` is not used. Refusing a whole payload over one unknown
+key is only safe with complete control of the data pipeline, which no
+reader here has, and a file gains a field the first time another tool or a
+later format version adds one. `looseObject` would carry along data that
+nothing describes. Preservation rests on a wire schema declaring everything
+its format carries, not on that tolerance, and the codec contract in
 `packages/formats` requires a read to report a dropped key as a divergence,
-so an incomplete schema shows up. The composition rule is unchanged either
-way, only the strictness of the base.
+so a strip is never silent and an incomplete schema shows up.
 
 ## Comments
 
@@ -62,6 +61,11 @@ Canadian English, no em- or en-dashes, no filler adjectives.
 Single version policy: external dependency versions live only in the
 `pnpm-workspace.yaml` catalog. Leaf manifests use `catalog:` and
 `workspace:*` references.
+
+A package the code imports is declared in the importing package's own
+manifest, test-only ones under `devDependencies`. Never reach a library
+through another package's re-export, or rely on it resolving transitively:
+the version tested against is then someone else's to change.
 
 ## Build targets
 
