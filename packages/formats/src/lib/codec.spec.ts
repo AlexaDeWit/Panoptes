@@ -1,6 +1,7 @@
 import {
   diagramIdSchema,
   parseModel,
+  toParseIssues,
   type Model,
   type ParseIssue,
 } from '@panoptes/model';
@@ -18,6 +19,7 @@ import {
   renderDivergences,
   type Divergence,
 } from './divergence.js';
+import { undeclaredDivergences } from './undeclared.js';
 
 const wireSchema = z.object({
   title: z.string(),
@@ -27,41 +29,6 @@ const wireSchema = z.object({
 });
 
 type Wire = z.infer<typeof wireSchema>;
-
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === 'object' && value !== null && !Array.isArray(value);
-
-const joinPath = (path: readonly string[]): string =>
-  path.map((segment) => segment.replace(/[\\.]/g, '\\$&')).join('.');
-
-const strippedKeys = (
-  raw: unknown,
-  kept: unknown,
-  path: readonly string[],
-): string[] => {
-  if (Array.isArray(raw) && Array.isArray(kept)) {
-    return raw.flatMap((value, index) =>
-      strippedKeys(value, kept[index], [...path, String(index)]),
-    );
-  }
-  if (isRecord(raw) && isRecord(kept)) {
-    return Object.keys(raw).flatMap((key) =>
-      Object.hasOwn(kept, key)
-        ? strippedKeys(raw[key], kept[key], [...path, key])
-        : [joinPath([...path, key])],
-    );
-  }
-  return [];
-};
-
-const issuesOfError = (error: z.ZodError): ParseIssue[] =>
-  error.issues.map((issue) => ({
-    path: issue.path.map((key) =>
-      typeof key === 'symbol' ? String(key) : key,
-    ),
-    message: issue.message,
-    code: issue.code,
-  }));
 
 const toModel = (wire: Wire) =>
   parseModel({
@@ -90,7 +57,9 @@ const mapDocument = (
   const wire = wireSchema.safeParse(value);
   if (!wire.success) {
     return Either.left(
-      ReadFailure.InvalidWireDocument({ issues: issuesOfError(wire.error) }),
+      ReadFailure.InvalidWireDocument({
+        issues: toParseIssues(wire.error.issues),
+      }),
     );
   }
   return Either.mapBoth(toModel(wire.data), {
@@ -98,13 +67,7 @@ const mapDocument = (
     onRight: (model) => ({
       model,
       source: wire.data,
-      divergences: strippedKeys(value, wire.data, []).map(
-        (key): Divergence => ({
-          subject: { kind: 'model' },
-          detail: `the key ${key}`,
-          reason: 'undeclared',
-        }),
-      ),
+      divergences: undeclaredDivergences(value, wire.data),
     }),
   });
 };

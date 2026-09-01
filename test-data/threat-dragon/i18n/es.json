@@ -1,0 +1,57 @@
+{
+  "cia": {
+    "header": "--- CIA ---",
+    "confidentiality": "Confidentiality - Confidencialidad",
+    "integrity": "Integrity - Integridad",
+    "availability": "Availability - Disponibilidad"
+  },
+  "ciadie": {
+    "header": "--- CIA-DIE ---",
+    "confidentiality": "Confidentiality - Confidencialidad",
+    "integrity": "Integrity - Integridad",
+    "availability": "Availability - Disponibilidad",
+    "distributed": "Distributed",
+    "immutable": "Immutable",
+    "ephemeral": "Ephemeral"
+  },
+  "linddun": {
+    "header": "--- LINDDUN ---",
+    "linkability": "Linkability / Facilidad de vinculación",
+    "identifiability": "Identifiability / Identificabilidad",
+    "nonRepudiation": "Non-repudiation / No-repudiación",
+    "detectability": "Detectability / Detectabilidad",
+    "disclosureOfInformation": "Disclosure of information / Brecha de información ",
+    "unawareness": "Unawareness / Falta de Conciencia",
+    "nonCompliance": "Non-compliance / Incumplimiento"
+  },
+  "plot4ai": {
+    "header": "--- PLOT4ai ---",
+    "techniqueProcesses": "Technique & Processes",
+    "accessibility": "Accessibility",
+    "identifiabilityLinkability": "Identifiability & Linkability",
+    "security": "Security",
+    "safety": "Safety",
+    "unawareness": "Unawareness",
+    "ethicsHumanRights": "Ethics & Human Rights",
+    "nonCompliance": "Non-compliance"
+  },
+  "stride": {
+    "header": "--- STRIDE ---",
+    "spoofing": "Spoofing / Spoofing",
+    "tampering": "Tampering / Manipulación",
+    "repudiation": "Repudiation / Repudiación",
+    "informationDisclosure": "Information disclosure / Brecha de información",
+    "denialOfService": "Denial of service / Denegación de servicio",
+    "elevationOfPrivilege": "Elevation of privilege / Elevación de privilegios"
+  },
+  "eop": {
+    "header": "--- EoP ---",
+    "dataValidationAndEncoding": "Data Validation & Encoding / Validación y codificación de datos",
+    "authentication": "Authentication / Autenticación",
+    "sessionManagement": "Session Management / Gestión de Sesión",
+    "authorization": "Authorization / Autorización",
+    "cryptography": "Cryptography / Criptografía",
+    "cornucopia": "Cornucopia / Cornucopia",
+    "wildCard": "Wild Card / Comodín"
+  }
+}

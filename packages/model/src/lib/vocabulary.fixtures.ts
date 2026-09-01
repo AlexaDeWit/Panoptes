@@ -4,10 +4,10 @@ import type { modelSchema } from './model.js';
 /**
  * Hand-authored valid model covering the constructs Écluse's real threat
  * model never reaches: a curve trust boundary, an out-of-scope element with
- * its reason, a multi-name contributor list, the `tbd` severity, the
- * `not-applicable` status, every category of the four enumerated
- * methodologies outside STRIDE, the custom methodology, all three
- * mitigation statuses, and both assumption statuses. The representability
+ * its reason, a canvas note, a multi-name contributor list, the `undecided`
+ * severity, every threat status Écluse does not use, every category of the
+ * four enumerated methodologies outside STRIDE, the custom methodology, all
+ * three mitigation statuses, and both assumption statuses. The representability
  * gate reads it beside `ecluseFixture` (`ecluse.fixtures.ts`) so the two
  * together span the model's whole vocabulary; it stays separate so that
  * fixture remains a faithful transcription of the source file. Typed as the
@@ -42,6 +42,17 @@ export const vocabularyComplementFixture: z.input<typeof modelSchema> = {
           },
         },
         {
+          kind: 'text',
+          id: 'element-archive-note',
+          name: '',
+          description: '',
+          outOfScope: false,
+          reasonOutOfScope: '',
+          position: { x: 40, y: 20 },
+          size: { width: 200, height: 60 },
+          text: 'Tapes are read only on the standby drive.',
+        },
+        {
           kind: 'store',
           id: 'element-tape-archive',
           name: 'Tape archive',
@@ -60,7 +71,7 @@ export const vocabularyComplementFixture: z.input<typeof modelSchema> = {
       number: 1,
       title: 'Archive reads link a reader across visits',
       category: { methodology: 'LINDDUN', category: 'linking' },
-      severity: 'tbd',
+      severity: 'undecided',
       status: 'not-applicable',
       description: 'The archive predates the records it would have to link.',
       mitigation: '',
@@ -358,8 +369,42 @@ export const vocabularyComplementFixture: z.input<typeof modelSchema> = {
       mitigation: '',
       elements: [],
     },
+    {
+      id: 'threat-vocab-transferred',
+      number: 26,
+      title: 'Courier loses a tape between sites',
+      category: { methodology: 'CIA', category: 'confidentiality' },
+      severity: 'medium',
+      status: 'transferred',
+      description: 'Tapes travel by road between the two sites.',
+      mitigation: 'The carriage contract holds the courier liable for loss.',
+      elements: ['element-tape-archive'],
+    },
+    {
+      id: 'threat-vocab-avoided',
+      number: 27,
+      title: 'Self-service restore exposes another reader\u2019s records',
+      category: { methodology: 'LINDDUN', category: 'data-disclosure' },
+      severity: 'high',
+      status: 'avoided',
+      description: 'A self-service restore would read across reader records.',
+      mitigation: 'Self-service restore was dropped from the archive.',
+      elements: ['element-tape-archive'],
+    },
+    {
+      id: 'threat-vocab-eliminated',
+      number: 28,
+      title: 'Ledger credentials sit in the restore script',
+      category: { methodology: 'CIA', category: 'integrity' },
+      severity: 'critical',
+      status: 'eliminated',
+      description: 'The restore script once carried a database password.',
+      mitigation:
+        'The script authenticates by workload identity, with no password to hold.',
+      elements: [],
+    },
   ],
-  lastIssuedThreatNumber: 25,
+  lastIssuedThreatNumber: 28,
   mitigations: [
     {
       id: 'mitigation-vocab-proposed',

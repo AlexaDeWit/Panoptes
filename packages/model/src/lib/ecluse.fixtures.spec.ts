@@ -176,8 +176,8 @@ describe('the coverage queries over the Écluse model', () => {
       medium: grouped.medium.length,
       high: grouped.high.length,
       critical: grouped.critical.length,
-      tbd: grouped.tbd.length,
-    }).toEqual({ low: 0, medium: 4, high: 2, critical: 1, tbd: 0 });
+      undecided: grouped.undecided.length,
+    }).toEqual({ low: 0, medium: 4, high: 2, critical: 1, undecided: 0 });
   });
 
   it('counts the threats on every element, five on the Dredger', () => {
@@ -218,9 +218,9 @@ describe('vocabularyComplementFixture', () => {
     ]);
   });
 
-  it('carries the tbd severity and the not-applicable status', () => {
+  it('carries the undecided severity and the not-applicable status', () => {
     expect(complement.threats.map((threat) => threat.severity)).toContain(
-      'tbd',
+      'undecided',
     );
     expect(complement.threats.map((threat) => threat.status)).toContain(
       'not-applicable',

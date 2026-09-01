@@ -39,7 +39,7 @@ describe('threatStatusSchema', () => {
 
 describe('severitySchema', () => {
   it('parses every severity', () => {
-    for (const severity of ['low', 'medium', 'high', 'critical', 'tbd']) {
+    for (const severity of ['low', 'medium', 'high', 'critical', 'undecided']) {
       expect(severitySchema.safeParse(severity).success).toBe(true);
     }
   });

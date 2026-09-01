@@ -18,9 +18,10 @@
   },
   "rules": {
     // Effect's tagged types discriminate on `_tag` (adopted for the model
-    // package's fallible surface), so reading that member is convention,
-    // not a reach into a private field.
-    "no-underscore-dangle": ["error", { "allow": ["_tag"] }],
+    // package's fallible surface), and zod exposes a schema's own definition
+    // under `_zod` (read by the model package's schema report). Both are the
+    // library's documented member, not a reach into a private field.
+    "no-underscore-dangle": ["error", { "allow": ["_tag", "_zod"] }],
     // The workspace compiles JSX with the automatic runtime ("jsx":
     // "react-jsx"), so React never needs to be in scope.
     "react/react-in-jsx-scope": "off",

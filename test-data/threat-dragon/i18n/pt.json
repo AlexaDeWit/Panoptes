@@ -1,0 +1,57 @@
+{
+  "cia": {
+    "header": "--- CIA ---",
+    "confidentiality": "Confidencialidade",
+    "integrity": "Integridade",
+    "availability": "Disponibilidade"
+  },
+  "ciadie": {
+    "header": "--- CIA-DIE ---",
+    "confidentiality": "Confidencialidade",
+    "integrity": "Integridade",
+    "availability": "Disponibilidade",
+    "distributed": "Distribuído",
+    "immutable": "Imutável",
+    "ephemeral": "Efémero"
+  },
+  "linddun": {
+    "header": "--- LINDDUN ---",
+    "linkability": "Associabilidade",
+    "identifiability": "Identificabilidade",
+    "nonRepudiation": "Não repúdio",
+    "detectability": "Detetabilidade",
+    "disclosureOfInformation": "Divulgação de informações",
+    "unawareness": "Desconhecimento",
+    "nonCompliance": "Não conformidade"
+  },
+  "plot4ai": {
+    "header": "--- PLOT4ai ---",
+    "techniqueProcesses": "Técnica e Processos",
+    "accessibility": "Acessibilidade",
+    "identifiabilityLinkability": "Identificabilidade e Associabilidade",
+    "security": "Segurança",
+    "safety": "Seguro",
+    "unawareness": "Desconhecimento",
+    "ethicsHumanRights": "Ética e Direitos Humanos",
+    "nonCompliance": "Não conformidade"
+  },
+  "stride": {
+    "header": "--- STRIDE ---",
+    "spoofing": "Falsificação",
+    "tampering": "Adulteração",
+    "repudiation": "Repúdio",
+    "informationDisclosure": "Divulgação de informações",
+    "denialOfService": "Negação de serviço",
+    "elevationOfPrivilege": "Elevação de privilégio"
+  },
+  "eop": {
+    "header": "--- EoP ---",
+    "dataValidationAndEncoding": "Data Validation & Encoding",
+    "authentication": "Authentication",
+    "sessionManagement": "Session Management",
+    "authorization": "Authorization",
+    "cryptography": "Cryptography",
+    "cornucopia": "Cornucopia",
+    "wildCard": "Wild Card"
+  }
+}

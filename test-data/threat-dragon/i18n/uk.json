@@ -1,0 +1,57 @@
+{
+  "cia": {
+    "header": "--- CIA ---",
+    "confidentiality": "Confidentiality",
+    "integrity": "Integrity",
+    "availability": "Availability"
+  },
+  "ciadie": {
+    "header": "--- CIA-DIE ---",
+    "confidentiality": "Confidentiality",
+    "integrity": "Integrity",
+    "availability": "Availability",
+    "distributed": "Distributed",
+    "immutable": "Immutable",
+    "ephemeral": "Ephemeral"
+  },
+  "linddun": {
+    "header": "--- LINDDUN ---",
+    "linkability": "Linkability",
+    "identifiability": "Identifiability",
+    "nonRepudiation": "Non-repudiation",
+    "detectability": "Detectability",
+    "disclosureOfInformation": "Disclosure of information",
+    "unawareness": "Unawareness",
+    "nonCompliance": "Non-compliance"
+  },
+  "plot4ai": {
+    "header": "--- PLOT4ai ---",
+    "techniqueProcesses": "Technique & Processes",
+    "accessibility": "Accessibility",
+    "identifiabilityLinkability": "Identifiability & Linkability",
+    "security": "Security",
+    "safety": "Safety",
+    "unawareness": "Unawareness",
+    "ethicsHumanRights": "Ethics & Human Rights",
+    "nonCompliance": "Non-compliance"
+  },
+  "stride": {
+    "header": "--- STRIDE ---",
+    "spoofing": "Spoofing",
+    "tampering": "Tampering",
+    "repudiation": "Repudiation",
+    "informationDisclosure": "Information disclosure",
+    "denialOfService": "Denial of service",
+    "elevationOfPrivilege": "Elevation of privilege"
+  },
+  "eop": {
+    "header": "--- EoP ---",
+    "dataValidationAndEncoding": "Data Validation & Encoding",
+    "authentication": "Authentication",
+    "sessionManagement": "Session Management",
+    "authorization": "Authorization",
+    "cryptography": "Cryptography",
+    "cornucopia": "Cornucopia",
+    "wildCard": "Wild Card"
+  }
+}

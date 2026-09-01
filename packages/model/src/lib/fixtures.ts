@@ -307,7 +307,7 @@ export const threatRegisterFixture: z.input<typeof modelSchema> = {
         methodologyName: 'Process',
         category: 'documentation',
       },
-      severity: 'tbd',
+      severity: 'undecided',
       status: 'accepted-risk',
       description: 'The diagrams fall behind the system they describe.',
       mitigation: '',

@@ -47,6 +47,21 @@ export const storeSchema = nodeBaseSchema.extend({
 export type Store = z.infer<typeof storeSchema>;
 
 /**
+ * A note placed on the canvas, belonging to no other element and carrying
+ * no threats. `text` is the note itself, `name` is what an outline or a
+ * picker shows for it, and the two are separate because a long note makes a
+ * poor label. An import leaves `name` empty where the source file has one
+ * field for both.
+ */
+export const textSchema = nodeBaseSchema.extend({
+  kind: z.literal('text'),
+  text: z.string(),
+});
+
+/** Canvas text element. */
+export type TextElement = z.infer<typeof textSchema>;
+
+/**
  * A flow endpoint fastened to an element, referenced by id. Whether the id
  * resolves to an element of the flow's own diagram is checked by parseModel,
  * not here.
@@ -157,7 +172,9 @@ export type TrustBoundary = z.infer<typeof trustBoundarySchema>;
  * storesCredentials, and kin) and its persisted boundary membership
  * (trustBoundaryIds, containedElements, crossingFlows) are deliberately not
  * modelled; M2's wire schema declares them, so they live in the wire
- * document rather than here.
+ * document rather than here. A threat attaches to any element kind but
+ * `text`, which is a note about the diagram rather than a part of the
+ * system.
  */
 export const elementSchema = z.discriminatedUnion('kind', [
   actorSchema,
@@ -165,6 +182,7 @@ export const elementSchema = z.discriminatedUnion('kind', [
   storeSchema,
   flowSchema,
   trustBoundarySchema,
+  textSchema,
 ]);
 
 /** Any diagram element. */

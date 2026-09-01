@@ -1,0 +1,57 @@
+{
+  "cia": {
+    "header": "--- CIA ---",
+    "confidentiality": "Kerahasiaan",
+    "integrity": "Integritas",
+    "availability": "Ketersediaan"
+  },
+  "ciadie": {
+    "header": "--- CIA-DIE ---",
+    "confidentiality": "Kerahasiaan",
+    "integrity": "Integritas",
+    "availability": "Ketersediaan",
+    "distributed": "Didistribusikan",
+    "immutable": "Tidak dapat diubah",
+    "ephemeral": "Ephemeral"
+  },
+  "linddun": {
+    "header": "--- LINDDUN ---",
+    "linkability": "Linkability",
+    "identifiability": "Identifiability",
+    "nonRepudiation": "Non-repudiation",
+    "detectability": "Detectability",
+    "disclosureOfInformation": "Disclosure of information",
+    "unawareness": "Unawareness",
+    "nonCompliance": "Pelanggaran"
+  },
+  "plot4ai": {
+    "header": "--- PLOT4ai ---",
+    "techniqueProcesses": "Teknik & Proses",
+    "accessibility": "Aksesibilitas",
+    "identifiabilityLinkability": "Identifiability & Linkability",
+    "security": "Keamanan",
+    "safety": "Keselamatan",
+    "unawareness": "Unawareness",
+    "ethicsHumanRights": "Etika & Hak Asasi Manusia",
+    "nonCompliance": "Pelanggaran"
+  },
+  "stride": {
+    "header": "--- STRIDE ---",
+    "spoofing": "Spoofing",
+    "tampering": "Tampering",
+    "repudiation": "Repudiation",
+    "informationDisclosure": "Information disclosure",
+    "denialOfService": "Denial of service",
+    "elevationOfPrivilege": "Elevation of privilege"
+  },
+  "eop": {
+    "header": "--- EoP ---",
+    "dataValidationAndEncoding": "Data Validation & Encoding",
+    "authentication": "Authentication",
+    "sessionManagement": "Session Management",
+    "authorization": "Authorization",
+    "cryptography": "Cryptography",
+    "cornucopia": "Cornucopia",
+    "wildCard": "Wild Card"
+  }
+}

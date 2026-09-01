@@ -1,0 +1,57 @@
+{
+  "cia": {
+    "header": "--- सीआईए ---",
+    "confidentiality": "गोपनीयता",
+    "integrity": "ईमानदारी",
+    "availability": "उपलब्धता"
+  },
+  "ciadie": {
+    "header": "--- CIA-DIE ---",
+    "confidentiality": "गोपनीयता",
+    "integrity": "ईमानदारी",
+    "availability": "उपलब्धता",
+    "distributed": "वितरित",
+    "immutable": "अपरिवर्तनीय",
+    "ephemeral": "क्षणिक"
+  },
+  "linddun": {
+    "header": "--- लिंडडन ---",
+    "linkability": "लिंक करने की क्षमता",
+    "identifiability": "पहचान",
+    "nonRepudiation": "अप्रतिबंध",
+    "detectability": "डिटेक्टेबिलिटी",
+    "disclosureOfInformation": "सूचना का प्रकटीकरण",
+    "unawareness": "अनभिज्ञता",
+    "nonCompliance": "गैर-अनुपालन"
+  },
+  "plot4ai": {
+    "header": "--- PLOT4ai ---",
+    "techniqueProcesses": "तकनीक और प्रक्रियाएँ",
+    "accessibility": "सुलभता",
+    "identifiabilityLinkability": "पहचान योग्यता और संबंधनीयता",
+    "security": "सुरक्षा",
+    "safety": "सुरक्षा",
+    "unawareness": "अनजानी",
+    "ethicsHumanRights": "नैतिकता और मानवाधिकार",
+    "nonCompliance": "अनुपालन न करना"
+  },
+  "stride": {
+    "header": "--- स्ट्राइड ---",
+    "spoofing": "स्पूफिंग",
+    "tampering": "छेड़छाड़",
+    "repudiation": "अस्वीकृति",
+    "informationDisclosure": "सूचना प्रकटीकरण",
+    "denialOfService": "सेवा से इनकार",
+    "elevationOfPrivilege": "विशेषाधिकार का उन्नयन"
+  },
+  "eop": {
+    "header": "--- EoP ---",
+    "dataValidationAndEncoding": "Data Validation & Encoding",
+    "authentication": "Authentication",
+    "sessionManagement": "Session Management",
+    "authorization": "Authorization",
+    "cryptography": "Cryptography",
+    "cornucopia": "Cornucopia",
+    "wildCard": "Wild Card"
+  }
+}
