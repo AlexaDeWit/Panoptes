@@ -1,0 +1,57 @@
+{
+  "cia": {
+    "header": "--- CIA ---",
+    "confidentiality": "Εμπιστευτικότητα",
+    "integrity": "Ακεραιότητα",
+    "availability": "Διαθεσιμότητα"
+  },
+  "ciadie": {
+    "header": "--- CIA-DIE ---",
+    "confidentiality": "Εμπιστευτικότητα",
+    "integrity": "Ακεραιότητα",
+    "availability": "Διαθεσιμότητα",
+    "distributed": "Κατανεμημένο (Distributed)",
+    "immutable": "Αμετάβλητο (Immutable)",
+    "ephemeral": "Εφήμερο (Ephemeral)"
+  },
+  "linddun": {
+    "header": "--- LINDDUN ---",
+    "linkability": "Συνδεσιμότητα",
+    "identifiability": "Αναγνωρισιμότητα",
+    "nonRepudiation": "Μη αποποίηση",
+    "detectability": "Ανιχνευσιμότητα",
+    "disclosureOfInformation": "Αποκάλυψη Πληροφοριών (Information Disclosure)",
+    "unawareness": "Έλλειψη επίγνωσης (Unawareness)",
+    "nonCompliance": "Μη συμμόρφωση (Non-compliance)"
+  },
+  "plot4ai": {
+    "header": "--- PLOT4ai ---",
+    "techniqueProcesses": "Τεχνική & Διαδικασίες (Technique & Processes)",
+    "accessibility": "Προσβασιμότητα (Accessibility)",
+    "identifiabilityLinkability": "Αναγνωρισιμότητα & Συνδεσιμότητα (Identifiability & Linkability)",
+    "security": "Ασφάλεια (Security)",
+    "safety": "Ασφάλεια (Safety)",
+    "unawareness": "Έλλειψη επίγνωσης (Unawareness)",
+    "ethicsHumanRights": "Ηθική και Ανθρώπινα Δικαιώματα (Ethics & Human Rights)",
+    "nonCompliance": "Μη συμμόρφωση (Non-compliance)"
+  },
+  "stride": {
+    "header": "--- STRIDE ---",
+    "spoofing": "Παραπλάνηση (Spoofing)",
+    "tampering": "Παραποίηση (Tampering)",
+    "repudiation": "Αποποίηση (Repudiation)",
+    "informationDisclosure": "Αποκάλυψη Πληροφοριών (Information Disclosure)",
+    "denialOfService": "Άρνηση εκτέλεσης υπηρεσίας (Denial of service)",
+    "elevationOfPrivilege": "Αναβάθμιση προνομίων (Elevation of Priviledge)"
+  },
+  "eop": {
+    "header": "--- EoP ---",
+    "dataValidationAndEncoding": "Data Validation & Encoding",
+    "authentication": "Authentication",
+    "sessionManagement": "Session Management",
+    "authorization": "Authorization",
+    "cryptography": "Cryptography",
+    "cornucopia": "Cornucopia",
+    "wildCard": "Wild Card"
+  }
+}

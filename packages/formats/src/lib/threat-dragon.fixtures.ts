@@ -1,5 +1,6 @@
 import { readdirSync, readFileSync } from 'node:fs';
-import { basename, join } from 'node:path';
+import { z } from 'zod';
+import { join } from 'node:path';
 import type {
   ThreatDragonDocument,
   ThreatDragonThreat,
@@ -48,21 +49,48 @@ const vendored = join(
 );
 
 /**
- * Every Threat Dragon file the repository vendors, named by its path under
- * `test-data`. The twelve models Threat Dragon ships in its own repository,
- * described in `test-data/README.md`, plus the Écluse model, read from the
- * directory rather than from a list, so a file added there is gated without
- * anything else changing.
+ * Every Threat Dragon threat model the repository vendors, named by its
+ * path under `test-data`. The twelve models Threat Dragon ships in its own
+ * repository, described in `test-data/README.md`, plus the Écluse model,
+ * read from the directories rather than from a list, so a model added
+ * beside them is gated without anything else changing. The vendored locale
+ * tables live under the same root and are not threat models, so they are
+ * not read here.
  */
 export const corpusTexts: readonly { name: string; text: string }[] = [
   { name: 'ecluse.json', text: ecluseText },
-  ...readdirSync(vendored, { recursive: true, withFileTypes: true })
-    .filter((entry) => entry.isFile() && entry.name.endsWith('.json'))
-    .map((entry) => ({
-      name: `threat-dragon/${basename(entry.parentPath)}/${entry.name}`,
-      text: readFileSync(join(entry.parentPath, entry.name), 'utf8'),
-    })),
+  ...['demo', 'models'].flatMap((folder) =>
+    readdirSync(join(vendored, folder))
+      .filter((name) => name.endsWith('.json'))
+      .map((name) => ({
+        name: `threat-dragon/${folder}/${name}`,
+        text: readFileSync(join(vendored, folder, name), 'utf8'),
+      })),
+  ),
 ];
+
+/**
+ * Threat Dragon's category labels in every language it ships, keyed by
+ * language and then by methodology, as vendored under
+ * `test-data/threat-dragon/i18n`. The tables in `threat-dragon-locales.ts`
+ * are derived from exactly this, so the derivation is what a test checks
+ * rather than the result.
+ */
+export const localeCategories: Readonly<
+  Record<string, Readonly<Record<string, Readonly<Record<string, string>>>>>
+> = Object.fromEntries(
+  readdirSync(join(vendored, 'i18n'))
+    .filter((name) => name.endsWith('.json'))
+    .map((name) => [
+      name.replace(/\.json$/, ''),
+      categoriesIn(join(vendored, 'i18n', name)),
+    ]),
+);
+
+function categoriesIn(path: string): Record<string, Record<string, string>> {
+  const parsed: unknown = JSON.parse(readFileSync(path, 'utf8'));
+  return z.record(z.string(), z.record(z.string(), z.string())).parse(parsed);
+}
 
 /**
  * A Threat Dragon document carrying what the Écluse file has no example of:

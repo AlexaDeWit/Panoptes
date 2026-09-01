@@ -1,0 +1,57 @@
+{
+  "cia": {
+    "header": "--- CIA ---",
+    "confidentiality": "機密性",
+    "integrity": "完全性",
+    "availability": "可用性"
+  },
+  "ciadie": {
+    "header": "--- CIA-DIE ---",
+    "confidentiality": "機密性",
+    "integrity": "完全性",
+    "availability": "可用性",
+    "distributed": "分散化",
+    "immutable": "不変",
+    "ephemeral": "一時的"
+  },
+  "linddun": {
+    "header": "--- LINDDUN ---",
+    "linkability": "Linkability",
+    "identifiability": "Identifiability",
+    "nonRepudiation": "Non-repudiation",
+    "detectability": "Detectability",
+    "disclosureOfInformation": "Disclosure Of Information",
+    "unawareness": "Unawareness",
+    "nonCompliance": "Non-compliance"
+  },
+  "plot4ai": {
+    "header": "--- PLOT4ai ---",
+    "techniqueProcesses": "Technique & Processes",
+    "accessibility": "Accessibility",
+    "identifiabilityLinkability": "Identifiability & Linkability",
+    "security": "Security",
+    "safety": "Safety",
+    "unawareness": "Unawareness",
+    "ethicsHumanRights": "Ethics & Human Rights",
+    "nonCompliance": "Non-Compliance"
+  },
+  "stride": {
+    "header": "--- STRIDE ---",
+    "spoofing": "なりすまし",
+    "tampering": "改竄",
+    "repudiation": "否認",
+    "informationDisclosure": "情報漏洩",
+    "denialOfService": "サービス拒否",
+    "elevationOfPrivilege": "特権の昇格"
+  },
+  "eop": {
+    "header": "--- EoP ---",
+    "dataValidationAndEncoding": "Data Validation & Encoding",
+    "authentication": "Authentication",
+    "sessionManagement": "Session Management",
+    "authorization": "Authorization",
+    "cryptography": "Cryptography",
+    "cornucopia": "Cornucopia",
+    "wildCard": "Wild Card"
+  }
+}

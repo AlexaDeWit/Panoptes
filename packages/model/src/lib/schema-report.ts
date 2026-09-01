@@ -10,6 +10,7 @@ import { modelSchema } from './model.js';
 type CheckDef = {
   readonly check: string;
   readonly minimum?: number;
+  readonly maximum?: number;
   readonly value?: number;
   readonly inclusive?: boolean;
 };
@@ -130,7 +131,10 @@ function summary(schema: Schema): string {
     return `list of ${listed(def)}${summary(def.element)}`;
   }
   if (def.options) {
-    return `one of ${String(def.options.length)}, told apart by \`${String(def.discriminator)}\``;
+    const total = `one of ${String(def.options.length)}`;
+    return def.discriminator === undefined
+      ? total
+      : `${total}, told apart by \`${def.discriminator}\``;
   }
   if (def.entries) {
     return `one of ${Object.values(def.entries)
@@ -138,14 +142,14 @@ function summary(schema: Schema): string {
       .join(', ')}`;
   }
   if (def.values) {
-    return `\`${def.values.join('')}\``;
+    return def.values.map((value) => `\`${value}\``).join(' or ');
   }
   return scalar(def);
 }
 
 function listed(def: SchemaDef): string {
   const least = (def.checks ?? []).find(
-    (check) => check._zod.def.minimum !== undefined,
+    (check) => check._zod.def.check === 'min_length',
   )?._zod.def.minimum;
   return least === undefined ? '' : `at least ${String(least)} `;
 }
@@ -157,15 +161,34 @@ function scalar(def: SchemaDef): string {
 }
 
 function bound(check: CheckDef): string[] {
-  if (check.minimum !== undefined) {
-    return [`at least ${String(check.minimum)} character`];
+  if (check.check === 'min_length') {
+    return characters('at least', check.minimum);
   }
-  if (check.value !== undefined) {
-    return [
-      check.inclusive === true
-        ? `${String(check.value)} or more`
-        : `greater than ${String(check.value)}`,
-    ];
+  if (check.check === 'max_length') {
+    return characters('at most', check.maximum);
+  }
+  if (check.check === 'greater_than') {
+    return limit(check.value, (amount) =>
+      check.inclusive === true ? `${amount} or more` : `greater than ${amount}`,
+    );
+  }
+  if (check.check === 'less_than') {
+    return limit(check.value, (amount) =>
+      check.inclusive === true ? `${amount} or less` : `less than ${amount}`,
+    );
   }
   return [];
+}
+
+function characters(wording: string, count: number | undefined): string[] {
+  return count === undefined
+    ? []
+    : [`${wording} ${String(count)} character${count === 1 ? '' : 's'}`];
+}
+
+function limit(
+  value: number | undefined,
+  phrase: (amount: string) => string,
+): string[] {
+  return value === undefined ? [] : [phrase(String(value))];
 }

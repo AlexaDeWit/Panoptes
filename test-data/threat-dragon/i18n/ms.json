@@ -1,0 +1,57 @@
+{
+  "cia": {
+    "header": "--- CIA ---",
+    "confidentiality": "Kerahsiaan",
+    "integrity": "Integriti",
+    "availability": "Ketersediaan"
+  },
+  "ciadie": {
+    "header": "--- CIA-DIE ---",
+    "confidentiality": "Kerahsiaan",
+    "integrity": "Integriti",
+    "availability": "Ketersediaan",
+    "distributed": "Teragih",
+    "immutable": "Tidak Berubah",
+    "ephemeral": "Efemeral"
+  },
+  "linddun": {
+    "header": "--- LINDDUN ---",
+    "linkability": "Pautan",
+    "identifiability": "Pengenalpastian",
+    "nonRepudiation": "Tidak boleh menafikan",
+    "detectability": "Ketahuan",
+    "disclosureOfInformation": "Pendedahan maklumat",
+    "unawareness": "Tanpa sedar",
+    "nonCompliance": "Tidak Mematuhi"
+  },
+  "plot4ai": {
+    "header": "--- PLOT4ai ---",
+    "techniqueProcesses": "Teknik & Proses",
+    "accessibility": "Aksesibiliti",
+    "identifiabilityLinkability": "Pengenalpastian & Pautan",
+    "security": "Keselamatan",
+    "safety": "Keselamatan",
+    "unawareness": "Tanpa sedar",
+    "ethicsHumanRights": "Etika & Hak Asasi Manusia",
+    "nonCompliance": "Tidak Mematuhi"
+  },
+  "stride": {
+    "header": "--- STRIDE ---",
+    "spoofing": "Penipuan",
+    "tampering": "Penyelewengan",
+    "repudiation": "Penafian",
+    "informationDisclosure": "Pendedahan maklumat",
+    "denialOfService": "Penafian Perkhidmatan",
+    "elevationOfPrivilege": "Kenaikan Hak"
+  },
+  "eop": {
+    "header": "--- EoP ---",
+    "dataValidationAndEncoding": "Data Validation & Encoding",
+    "authentication": "Authentication",
+    "sessionManagement": "Session Management",
+    "authorization": "Authorization",
+    "cryptography": "Cryptography",
+    "cornucopia": "Cornucopia",
+    "wildCard": "Wild Card"
+  }
+}

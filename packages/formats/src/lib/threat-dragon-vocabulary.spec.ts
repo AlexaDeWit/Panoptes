@@ -76,6 +76,45 @@ describe('toThreatStatus', () => {
   });
 });
 
+describe('a vocabulary named for a prototype member', () => {
+  it('is a status this codec does not know, not Object.prototype.toString', () => {
+    expect(toThreatStatus('toString')).toEqual({ value: 'open', exact: false });
+    expect(toThreatStatus('constructor')).toEqual({
+      value: 'open',
+      exact: false,
+    });
+  });
+
+  it('is a severity this codec does not know either', () => {
+    expect(toSeverity('valueOf')).toEqual({
+      value: 'undecided',
+      exact: false,
+    });
+  });
+
+  it('is a methodology and a category this codec does not know', () => {
+    expect(
+      toThreatCategory(
+        threat({ modelType: 'toString', type: 'hasOwnProperty' }),
+      ),
+    ).toEqual({
+      value: {
+        methodology: 'custom',
+        methodologyName: 'toString',
+        category: 'hasOwnProperty',
+      },
+      exact: true,
+    });
+    expect(
+      toThreatCategory(threat({ modelType: 'STRIDE', type: 'toString' })).value,
+    ).toEqual({
+      methodology: 'custom',
+      methodologyName: 'STRIDE',
+      category: 'toString',
+    });
+  });
+});
+
 describe('toSeverity', () => {
   it('maps every severity Threat Dragon offers, TBA among them', () => {
     const severities = ['Low', 'Medium', 'High', 'Critical', 'TBD', 'TBA'];

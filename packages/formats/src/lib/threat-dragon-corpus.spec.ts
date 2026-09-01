@@ -9,11 +9,12 @@ const readings = corpusTexts.map((file) => ({
 
 const refused = readings.filter((reading) => Either.isLeft(reading.result));
 
-const undeclared = readings.flatMap((reading) =>
+const diverged = readings.flatMap((reading) =>
   Either.isRight(reading.result)
-    ? reading.result.right.divergences
-        .filter((divergence) => divergence.reason === 'undeclared')
-        .map((divergence) => `${reading.name}: ${divergence.detail}`)
+    ? reading.result.right.divergences.map(
+        (divergence) =>
+          `${reading.name}: ${divergence.detail} (${divergence.reason})`,
+      )
     : [],
 );
 
@@ -26,7 +27,7 @@ describe('every Threat Dragon file the repository vendors', () => {
     expect(refused.map((reading) => reading.name)).toEqual([]);
   });
 
-  it('holds no key the wire schema fails to declare', () => {
-    expect(undeclared).toEqual([]);
+  it('reads whole: no key undeclared, no value held less exactly', () => {
+    expect(diverged).toEqual([]);
   });
 });

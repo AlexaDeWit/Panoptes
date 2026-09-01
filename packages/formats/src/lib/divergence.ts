@@ -67,9 +67,11 @@ export type DivergenceSubject = z.infer<typeof divergenceSubjectSchema>;
  * because the codec will not repeat a claim it cannot stand behind, as a
  * write stamping the format release it produces over the one the file
  * arrived with. `discarded-by-edit`: an edit removed something the source
- * document had, so the merge did not carry it forward. All but
- * `undeclared` are a write reporting on the file it produced, and
- * `undeclared` is a read reporting on the file it was given.
+ * document had, so the merge did not carry it forward. A read reports on
+ * the file it was given, and has two of these to report it with:
+ * `undeclared` for what it dropped, and `narrowed` for what the model holds
+ * less exactly than the file stated it. The rest are a write reporting on
+ * the file it produced.
  */
 export const divergenceReasonSchema = z.enum([
   'unrepresentable',

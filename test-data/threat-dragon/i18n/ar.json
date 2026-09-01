@@ -1,0 +1,57 @@
+{
+  "cia": {
+    "header": "--- CIA ---",
+    "confidentiality": "Confidentiality السرية",
+    "integrity": "Integrity النزاهة",
+    "availability": "Availability التوفر"
+  },
+  "ciadie": {
+    "header": "--- CIA-DIE ---",
+    "confidentiality": "Confidentiality السرية",
+    "integrity": "Integrity النزاهة",
+    "availability": "Availability التوفر",
+    "distributed": "Distributed موزع",
+    "immutable": "Immutable لا يمكن تغييره",
+    "ephemeral": "Ephemeral زائل"
+  },
+  "linddun": {
+    "header": "--- LINDDUN ---",
+    "linkability": "Linkability القابلية للربط",
+    "identifiability": "Identifiability التعرف",
+    "nonRepudiation": "Non-repudiation عدم الإنكار",
+    "detectability": "Detectability الكشف",
+    "disclosureOfInformation": "Disclosure of information كشف المعلومات",
+    "unawareness": "Unawareness عدم الوعي",
+    "nonCompliance": "Non-compliance عدم الامتثال"
+  },
+  "plot4ai": {
+    "header": "--- PLOT4ai ---",
+    "techniqueProcesses": "Technique & Processes تقنية وعمليات",
+    "accessibility": "Accessibility التوفر",
+    "identifiabilityLinkability": "Identifiability & Linkability التعرف والربط",
+    "security": "Security الأمان",
+    "safety": "Safety السلامة",
+    "unawareness": "Unawareness عدم الوعي",
+    "ethicsHumanRights": "Ethics & Human Rights الأخلاق وحقوق الإنسان",
+    "nonCompliance": "Non-compliance عدم الامتثال"
+  },
+  "stride": {
+    "header": "--- STRIDE ---",
+    "spoofing": "Spoofing التزييف",
+    "tampering": "Tampering التلاعب",
+    "repudiation": "Repudiation رفض",
+    "informationDisclosure": "Information disclosure كشف المعلومات",
+    "denialOfService": "Denial of service إنكار الخدمة",
+    "elevationOfPrivilege": "Elevation of privilege تسلق الامتياز"
+  },
+  "eop": {
+    "header": "--- EoP ---",
+    "dataValidationAndEncoding": "Data Validation & Encoding",
+    "authentication": "Authentication",
+    "sessionManagement": "Session Management",
+    "authorization": "Authorization",
+    "cryptography": "Cryptography",
+    "cornucopia": "Cornucopia",
+    "wildCard": "Wild Card"
+  }
+}

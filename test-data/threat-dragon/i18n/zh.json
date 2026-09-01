@@ -1,0 +1,57 @@
+{
+  "cia": {
+    "header": "--- CIA ---",
+    "confidentiality": "机密性",
+    "integrity": "完整性",
+    "availability": "可用性"
+  },
+  "ciadie": {
+    "header": "--- CIA-DIE ---",
+    "confidentiality": "机密性",
+    "integrity": "完整性",
+    "availability": "可用性",
+    "distributed": "分布式",
+    "immutable": "不可变性",
+    "ephemeral": "短暂性"
+  },
+  "linddun": {
+    "header": "--- LINDDUN ---",
+    "linkability": "可链接性",
+    "identifiability": "可识别性",
+    "nonRepudiation": "不可否认性",
+    "detectability": "可检测性",
+    "disclosureOfInformation": "信息泄露",
+    "unawareness": "不知情",
+    "nonCompliance": "不合规"
+  },
+  "plot4ai": {
+    "header": "--- PLOT4ai ---",
+    "techniqueProcesses": "技术 & 过程",
+    "accessibility": "可访问性",
+    "identifiabilityLinkability": "可识别性 & 可链接性",
+    "security": "信息安全",
+    "safety": "系统安全",
+    "unawareness": "不知情",
+    "ethicsHumanRights": "伦理 & 人权",
+    "nonCompliance": "不合格"
+  },
+  "stride": {
+    "header": "--- STRIDE ---",
+    "spoofing": "欺骗",
+    "tampering": "篡改",
+    "repudiation": "否认",
+    "informationDisclosure": "信息泄露",
+    "denialOfService": "拒绝服务",
+    "elevationOfPrivilege": "权限提升"
+  },
+  "eop": {
+    "header": "--- EoP ---",
+    "dataValidationAndEncoding": "Data Validation & Encoding",
+    "authentication": "Authentication",
+    "sessionManagement": "Session Management",
+    "authorization": "Authorization",
+    "cryptography": "Cryptography",
+    "cornucopia": "Cornucopia",
+    "wildCard": "Wild Card"
+  }
+}

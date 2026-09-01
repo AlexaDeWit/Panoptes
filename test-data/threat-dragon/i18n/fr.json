@@ -1,0 +1,57 @@
+{
+  "cia": {
+    "header": "--- CIA ---",
+    "confidentiality": "Confidentialité",
+    "integrity": "Intégrité",
+    "availability": "Disponibilité"
+  },
+  "ciadie": {
+    "header": "--- CIA-DIE ---",
+    "confidentiality": "Confidentialité",
+    "integrity": "Intégrité",
+    "availability": "Disponibilité",
+    "distributed": "Distributed",
+    "immutable": "Immutable",
+    "ephemeral": "Ephemeral"
+  },
+  "linddun": {
+    "header": "--- LINDDUN ---",
+    "linkability": "Capacité de liaison",
+    "identifiability": "Identifiabilité",
+    "nonRepudiation": "Non-répudiation",
+    "detectability": "Détectabilité",
+    "disclosureOfInformation": "Divulgation d'information",
+    "unawareness": "Inconscience",
+    "nonCompliance": "Non-conformité"
+  },
+  "plot4ai": {
+    "header": "--- PLOT4ai ---",
+    "techniqueProcesses": "Technique & Processes",
+    "accessibility": "Accessibility",
+    "identifiabilityLinkability": "Identifiability & Linkability",
+    "security": "Security",
+    "safety": "Safety",
+    "unawareness": "Unawareness",
+    "ethicsHumanRights": "Ethics & Human Rights",
+    "nonCompliance": "Non-compliance"
+  },
+  "stride": {
+    "header": "--- STRIDE ---",
+    "spoofing": "Usurpation d'identité",
+    "tampering": "Falsification",
+    "repudiation": "Répudiation",
+    "informationDisclosure": "Divulgation d'information",
+    "denialOfService": "Déni de service",
+    "elevationOfPrivilege": "Élévation de privilège"
+  },
+  "eop": {
+    "header": "--- EoP ---",
+    "dataValidationAndEncoding": "Data Validation & Encoding",
+    "authentication": "Authentication",
+    "sessionManagement": "Session Management",
+    "authorization": "Authorization",
+    "cryptography": "Cryptography",
+    "cornucopia": "Cornucopia",
+    "wildCard": "Wild Card"
+  }
+}

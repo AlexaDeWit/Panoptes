@@ -54,14 +54,21 @@ intact, and what the mapping then does with it is a separate question from
 how the file is read. A category label is looked up in the language Threat
 Dragon wrote it in before it is read, so a German file and an English one
 describing the same threat reach the same category. A methodology the model
-does not enumerate, an Elevation of Privilege card, and a label from a
-language Threat Dragon has added since all become a custom category, and the
-read reports what it holds less exactly than the file stated it. A threat the
-file leaves unnumbered is issued the next number above the model's own mark.
+does not enumerate becomes a custom category carrying Threat Dragon's own
+names unchanged, which is the model's escape hatch working rather than a
+loss, so nothing is reported for it. Two things are reported, because the
+model does hold them less exactly than the file stated them: an Elevation of
+Privilege card, of which only the suit has a home, and a label from a
+language Threat Dragon has added since this codec read its translations. A
+threat the file leaves unnumbered is issued the next number above the model's
+own mark.
 
-The corpus in `test-data/threat-dragon` is the gate on all of this: every
-threat model Threat Dragon ships in its own repository reads, with no key the
-wire schema fails to declare.
+Two corpora under `test-data/threat-dragon` gate this, each a different part
+of it. The twelve threat models Threat Dragon ships in its own v2 format all
+read, with no key undeclared and no value narrowed, which is the gate on the
+wire schema being complete. The label tables it ships in sixteen languages
+are the gate on the recovery above, which those models cannot exercise: every
+one of them is written in English.
 
 The write codec (#28) and the format detection that picks a codec (#84) come
 next.

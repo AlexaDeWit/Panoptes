@@ -33,9 +33,11 @@ export const ReadFailure = Data.taggedEnum<ReadFailure>();
  * later write can merge onto it instead of serializing the model from
  * scratch, which is how the parts of a file Panoptes does not model reach
  * the output: the wire schema declares them, so a merge that does not touch
- * them leaves them as the file had them. `divergences` names the keys the
- * schema did not declare and so did not keep, which is the read side of the
- * same list a write returns.
+ * them leaves them as the file had them. `divergences` is the read side of
+ * the same list a write returns: the keys the schema did not declare and so
+ * did not keep, and the values the model holds less exactly than the file
+ * stated them. A caller that treats every entry as a dropped key will
+ * mistake the second kind for the first.
  */
 export type ReadResult<WireSchema extends z.ZodType<object>> = {
   readonly model: Model;

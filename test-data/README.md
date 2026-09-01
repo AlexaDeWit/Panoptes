@@ -59,7 +59,7 @@ described.
 | Fact           | Value                                                       |
 | -------------- | ----------------------------------------------------------- |
 | Source project | `OWASP/threat-dragon`                                       |
-| Source tag     | `v2.6.2`, commit `10a64f074f70e9c34aca5839d6761f4188c0f6f1` |
+| Source tag     | `v2.6.2`, commit `8c0edb2295a1587684324646c8507fd56ba9a197` |
 | Licence        | Apache-2.0, Copyright OWASP Foundation                      |
 
 | File                              | Upstream path                                        | MD5                                |
@@ -80,10 +80,47 @@ described.
 `demo/v2-new-model.json` and `demo/v2-threat-model.json` are not copies of
 the `models/` files of the same name: Threat Dragon keeps both, and they
 differ. `models/v2-threat-model.json` is the only file in the corpus stamped
-`2.0` rather than `2.x.y`, at the root and on each diagram, and
-`models/test-reports.json` the only one whose diagrams carry versions that
-differ from the root's.
+`2.0` rather than `2.x.y`, at the root and on each diagram. Two files carry a
+diagram version that differs from their root's: `models/test-reports.json`
+holds three that all differ, and `demo/three-tier-web-app.json` is stamped
+`2.3.0` with its one diagram at `2.4.0`.
 
-`huskyai.tmbom.json` sits in the same upstream directory and is deliberately
-absent: it is a TM-BOM document at version `1.0.1`, not a Threat Dragon v2
-threat model, and the codec has no claim on it.
+Three files Threat Dragon ships alongside these are deliberately absent.
+`td.vue/src/service/demo/huskyai.tmbom.json` is a TM-BOM document at version
+`1.0.1` and `ThreatDragonModels/test/malformed-new-model.json` is a v1 model,
+so neither is a Threat Dragon v2 threat model and the codec has no claim on
+either. `ThreatDragonModels/test/v2-malformed-new-model.json` is stamped
+`2.1.3` and so is a v2 file, but it is deliberately malformed, down to
+misspelling `summary` as `titled` and `detail` as `details`. Refusing it is
+the codec working, so it would gate nothing here.
+
+## `threat-dragon/i18n/`
+
+Threat Dragon's category labels in each of the sixteen languages it ships,
+taken from the `threats.model` object of `td.vue/src/i18n/<language>.js` at
+the same tag. The surrounding module is dropped and the labels themselves are
+verbatim, trailing spaces and all: the Spanish LINDDUN label really does end
+in one, and a tidy-up of it would break a real file.
+
+`packages/formats` derives its label recovery tables from exactly these, and
+a test rebuilds the derivation and compares, so a Threat Dragon translation
+update changes the file below and the test says which table fell behind.
+
+| File              | MD5                                |
+| ----------------- | ---------------------------------- |
+| `i18n/ar.json`    | `e9f40d5bae36ce4ca7a1c79d9a59d72d` |
+| `i18n/de.json`    | `87c9ab7574e0f1088251a2a4f2614580` |
+| `i18n/el.json`    | `7382ac7d4f04a158a0245ffa9372a0ad` |
+| `i18n/en.json`    | `a8b964105e692c845e3df3f8575e9951` |
+| `i18n/es.json`    | `8807cbb4111fad7ffc4257a8e3e78770` |
+| `i18n/fi.json`    | `a8b964105e692c845e3df3f8575e9951` |
+| `i18n/fr.json`    | `b341e7b1cf0c7a24137fac567481617a` |
+| `i18n/hi.json`    | `1dc862545f2491a5eda87be8de7e5e06` |
+| `i18n/id.json`    | `2ccbf0569da2f2534eb62309fbf173e0` |
+| `i18n/ja.json`    | `3180365e3510578f099447e21de2f028` |
+| `i18n/ms.json`    | `2b70c26ca11a3ed4bf9fe19c49823ea3` |
+| `i18n/pt-br.json` | `61f7ae5e60bdf4152e82531fdef7ca2a` |
+| `i18n/pt.json`    | `321bb7b29ffeca11b567d92315a2bcfb` |
+| `i18n/ru.json`    | `a8b964105e692c845e3df3f8575e9951` |
+| `i18n/uk.json`    | `a8b964105e692c845e3df3f8575e9951` |
+| `i18n/zh.json`    | `e180efcc9bc292651aac45dc7107d8ed` |
