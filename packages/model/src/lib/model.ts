@@ -15,7 +15,7 @@ import { threatSchema } from './threats.js';
  * internal model is format-independent, so the import codec (M2) flattens
  * that wrapper to the name.
  */
-export const modelMetadataSchema = z.strictObject({
+export const modelMetadataSchema = z.object({
   title: z.string(),
   owner: z.string(),
   description: z.string(),
@@ -31,7 +31,7 @@ export type ModelMetadata = z.infer<typeof modelMetadataSchema>;
  * whole model; parseModel enforces both, so this schema alone accepts
  * duplicates.
  */
-export const diagramSchema = z.strictObject({
+export const diagramSchema = z.object({
   id: diagramIdSchema,
   title: z.string(),
   elements: z.array(elementSchema),
@@ -53,7 +53,7 @@ export type Diagram = z.infer<typeof diagramSchema>;
  * it holds. Internal to the package: parseModel is the only exported way a
  * Model value comes into existence.
  */
-export const modelSchema = z.strictObject({
+export const modelSchema = z.object({
   metadata: modelMetadataSchema,
   diagrams: z.array(diagramSchema),
   threats: z.array(threatSchema),

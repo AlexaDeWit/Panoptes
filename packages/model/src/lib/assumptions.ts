@@ -15,7 +15,7 @@ export type AssumptionStatus = z.infer<typeof assumptionStatusSchema>;
  * it underpins by id. `prose` is markdown. Whether the ids resolve is
  * checked by parseModel, not here.
  */
-export const assumptionSchema = z.strictObject({
+export const assumptionSchema = z.object({
   id: assumptionIdSchema,
   prose: z.string(),
   status: assumptionStatusSchema,

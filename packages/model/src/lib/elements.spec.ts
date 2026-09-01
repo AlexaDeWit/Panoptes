@@ -177,16 +177,6 @@ describe('flowEndpointSchema', () => {
       }).success,
     ).toBe(true);
   });
-
-  it('rejects an attached endpoint carrying a position', () => {
-    expect(
-      flowEndpointSchema.safeParse({
-        kind: 'attached',
-        element: 'a',
-        position: { x: 0, y: 0 },
-      }).success,
-    ).toBe(false);
-  });
 });
 
 describe('flowSchema', () => {
@@ -246,11 +236,5 @@ describe('elementSchema', () => {
     for (const sample of samples) {
       expect(elementSchema.parse(sample).kind).toBe(sample.kind);
     }
-  });
-
-  it('rejects an unknown key instead of dropping it', () => {
-    expect(elementSchema.safeParse({ ...actor, zIndex: 1 }).success).toBe(
-      false,
-    );
   });
 });

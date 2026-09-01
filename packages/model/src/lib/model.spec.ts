@@ -99,12 +99,6 @@ describe('diagramSchema', () => {
   it('parses a diagram owning mixed elements', () => {
     expect(diagramSchema.parse(diagram)).toEqual(diagram);
   });
-
-  it('rejects an unknown key', () => {
-    expect(
-      diagramSchema.safeParse({ ...diagram, thumbnail: './x.jpg' }).success,
-    ).toBe(false);
-  });
 });
 
 describe('modelSchema', () => {
@@ -163,16 +157,5 @@ describe('modelSchema', () => {
         threats: [threat],
       }).success,
     ).toBe(true);
-  });
-
-  it('rejects an unknown root key', () => {
-    expect(
-      modelSchema.safeParse({
-        metadata,
-        diagrams: [],
-        ...emptyRecords,
-        version: '2.6.2',
-      }).success,
-    ).toBe(false);
   });
 });

@@ -31,7 +31,7 @@ describe('renderSchema', () => {
   it('reads a bound from each end rather than from the number alone', () => {
     expect(
       renderSchema(
-        z.strictObject({
+        z.object({
           span: z.number().min(1).max(9),
           open: z.number().gt(1).lt(9),
           text: z.string().min(1).max(8),
@@ -49,7 +49,7 @@ describe('renderSchema', () => {
   it('leaves a constraint it has no words for undescribed', () => {
     expect(
       renderSchema(
-        z.strictObject({
+        z.object({
           stepped: z.number().multipleOf(5),
           matched: z.string().regex(/^a+$/),
         }),
@@ -65,13 +65,13 @@ describe('renderSchema', () => {
 
   it('names a union with no discriminator by its size alone', () => {
     expect(
-      renderSchema(z.strictObject({ either: z.union([z.string(), z.int()]) })),
+      renderSchema(z.object({ either: z.union([z.string(), z.int()]) })),
     ).toBe('- `either`: one of 2');
   });
 
   it('names every value a literal admits', () => {
-    expect(
-      renderSchema(z.strictObject({ side: z.literal(['left', 'right']) })),
-    ).toBe('- `side`: `left` or `right`');
+    expect(renderSchema(z.object({ side: z.literal(['left', 'right']) }))).toBe(
+      '- `side`: `left` or `right`',
+    );
   });
 });

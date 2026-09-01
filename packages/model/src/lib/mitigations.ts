@@ -20,7 +20,7 @@ export type MitigationStatus = z.infer<typeof mitigationStatusSchema>;
  * on the threat regardless. `prose` is markdown. Whether the threat ids
  * resolve is checked by parseModel, not here.
  */
-export const mitigationSchema = z.strictObject({
+export const mitigationSchema = z.object({
   id: mitigationIdSchema,
   title: z.string(),
   prose: z.string(),

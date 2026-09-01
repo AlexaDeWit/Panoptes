@@ -12,6 +12,21 @@ const seeded = (mutate: (draft: typeof validModelFixture) => void) => {
 const issuesOf = (result: ReturnType<typeof parseModel>) =>
   Either.isLeft(result) ? result.left.issues : [];
 
+const plantEverywhere = (value: unknown): unknown =>
+  Array.isArray(value)
+    ? value.map(plantEverywhere)
+    : value !== null && typeof value === 'object'
+      ? {
+          ...Object.fromEntries(
+            Object.entries(value).map(([key, entry]) => [
+              key,
+              plantEverywhere(entry),
+            ]),
+          ),
+          undeclared: 'dropped',
+        }
+      : value;
+
 describe('parseModel', () => {
   it('parses the committed valid fixture', () => {
     expect(Either.getOrNull(parseModel(validModelFixture))).toEqual(
@@ -19,16 +34,22 @@ describe('parseModel', () => {
     );
   });
 
+  it('strips a key no schema declares rather than refusing the model', () => {
+    expect(
+      Either.getOrNull(parseModel(plantEverywhere(validModelFixture))),
+    ).toEqual(validModelFixture);
+  });
+
   it('reports violations through the same Either as plain tagged data', () => {
-    const result = parseModel({ ...validModelFixture, version: '2.6.2' });
+    const result = parseModel({ ...validModelFixture, metadata: 'Panoptes' });
     expect(Either.isLeft(result) && result.left._tag).toBe('InvalidModel');
     expect(issuesOf(result)).toContainEqual(
-      expect.objectContaining({ code: 'unrecognized_keys', path: [] }),
+      expect.objectContaining({ code: 'invalid_type', path: ['metadata'] }),
     );
   });
 
   it('serializes a failure to its plain tagged shape', () => {
-    const result = parseModel({ ...validModelFixture, version: '2.6.2' });
+    const result = parseModel({ ...validModelFixture, metadata: 'Panoptes' });
     if (Either.isRight(result)) {
       throw new Error('The invalid input must fail to parse.');
     }

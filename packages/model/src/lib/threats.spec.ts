@@ -75,11 +75,4 @@ describe('threatSchema', () => {
       threatSchema.safeParse({ ...dredgerDeletion, number: 1.5 }).success,
     ).toBe(false);
   });
-
-  it("rejects Threat Dragon's per-threat modelType key; the methodology lives on the category", () => {
-    expect(
-      threatSchema.safeParse({ ...dredgerDeletion, modelType: 'STRIDE' })
-        .success,
-    ).toBe(false);
-  });
 });

@@ -33,10 +33,4 @@ describe('assumptionSchema', () => {
         .success,
     ).toBe(true);
   });
-
-  it('rejects an unknown key', () => {
-    expect(
-      assumptionSchema.safeParse({ ...osvTrusted, title: 'OSV trust' }).success,
-    ).toBe(false);
-  });
 });

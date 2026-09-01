@@ -4,7 +4,7 @@ import { z } from 'zod';
  * A STRIDE category: one of the six threat classes of Microsoft's STRIDE
  * methodology. Écluse's threats all use this variant.
  */
-export const strideCategorySchema = z.strictObject({
+export const strideCategorySchema = z.object({
   methodology: z.literal('STRIDE'),
   category: z.enum([
     'spoofing',
@@ -23,7 +23,7 @@ export type StrideCategory = z.infer<typeof strideCategorySchema>;
  * A LINDDUN category: one of the seven privacy threat types of the LINDDUN
  * methodology.
  */
-export const linddunCategorySchema = z.strictObject({
+export const linddunCategorySchema = z.object({
   methodology: z.literal('LINDDUN'),
   category: z.enum([
     'linking',
@@ -43,7 +43,7 @@ export type LinddunCategory = z.infer<typeof linddunCategorySchema>;
  * A CIA category: one of the three classic information-security properties
  * the threat endangers.
  */
-export const ciaCategorySchema = z.strictObject({
+export const ciaCategorySchema = z.object({
   methodology: z.literal('CIA'),
   category: z.enum(['confidentiality', 'integrity', 'availability']),
 });
@@ -55,7 +55,7 @@ export type CiaCategory = z.infer<typeof ciaCategorySchema>;
  * A CIA-DIE category: the CIA properties plus the DIE triad (distributed,
  * immutable, ephemeral).
  */
-export const ciaDieCategorySchema = z.strictObject({
+export const ciaDieCategorySchema = z.object({
   methodology: z.literal('CIA-DIE'),
   category: z.enum([
     'confidentiality',
@@ -77,7 +77,7 @@ export type CiaDieCategory = z.infer<typeof ciaDieCategorySchema>;
  * eight-category PLOT4ai set; categories from that set that are absent here
  * are carried by the custom variant instead.
  */
-export const plot4aiCategorySchema = z.strictObject({
+export const plot4aiCategorySchema = z.object({
   methodology: z.literal('PLOT4ai'),
   category: z.enum([
     'accountability-and-human-oversight',
@@ -99,7 +99,7 @@ export type Plot4aiCategory = z.infer<typeof plot4aiCategorySchema>;
  * are free text and non-empty: an unnamed methodology or category carries no
  * information.
  */
-export const customCategorySchema = z.strictObject({
+export const customCategorySchema = z.object({
   methodology: z.literal('custom'),
   methodologyName: z.string().min(1),
   category: z.string().min(1),

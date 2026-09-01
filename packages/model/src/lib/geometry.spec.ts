@@ -4,10 +4,6 @@ describe('pointSchema', () => {
   it('accepts negative and fractional coordinates', () => {
     expect(pointSchema.parse({ x: -3.5, y: 860 })).toEqual({ x: -3.5, y: 860 });
   });
-
-  it('rejects an unknown key', () => {
-    expect(pointSchema.safeParse({ x: 1, y: 2, z: 3 }).success).toBe(false);
-  });
 });
 
 describe('sizeSchema', () => {
