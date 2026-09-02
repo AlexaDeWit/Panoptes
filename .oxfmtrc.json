@@ -5,7 +5,9 @@
   "sortPackageJson": false,
   // Vendored files keep the bytes the foreign tool wrote, so their
   // provenance checksums stay matched to upstream and a codec reads the
-  // real thing. Only the vendored payloads are exempt; prose beside them
-  // is formatted like any other document.
-  "ignorePatterns": ["test-data/**/*.json"]
+  // real thing. The YAML beside them is written by a codec here and
+  // compared byte for byte, so a formatter must leave it alone as well.
+  // Only the payloads are exempt; prose beside them is formatted like any
+  // other document.
+  "ignorePatterns": ["test-data/**/*.json", "test-data/**/*.yaml"]
 }

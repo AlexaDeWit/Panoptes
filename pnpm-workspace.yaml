@@ -107,6 +107,10 @@ catalog:
   effect: ^3.22.0
   esbuild: ^0.28.0
   eslint: ^10.0.0
+  # Declared here rather than reached through effect, which depends on it:
+  # the version the property tests run against is ours to pin. ^3.23.2 is
+  # what effect resolves, so the lockfile keeps one copy.
+  fast-check: ^3.23.2
   jiti: 2.7.0
   jsdom: ^27.1.0
   nx: 23.1.2
@@ -130,6 +134,7 @@ catalog:
   typescript: ~6.0.3
   vite: ^8.0.0
   vitest: ~4.1.0
+  yaml: ^2.9.0
   # Floor below the 4.5 line: it was younger than minimumReleaseAge when
   # adopted (2026-08-29), so the caret resolves to the newest aged release
   # and picks up 4.5.x as it ages.

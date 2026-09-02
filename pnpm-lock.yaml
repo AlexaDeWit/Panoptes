@@ -87,6 +87,9 @@ catalogs:
     eslint:
       specifier: ^10.0.0
       version: 10.9.0
+    fast-check:
+      specifier: ^3.23.2
+      version: 3.23.2
     jiti:
       specifier: 2.7.0
       version: 2.7.0
@@ -123,6 +126,9 @@ catalogs:
     vitest:
       specifier: ~4.1.0
       version: 4.1.11
+    yaml:
+      specifier: ^2.9.0
+      version: 2.9.0
     zod:
       specifier: ^4.4.0
       version: 4.4.3
@@ -275,12 +281,22 @@ importers:
       '@panoptes/model':
         specifier: workspace:*
         version: link:../model
+      '@panoptes/wire-panoptes-yaml':
+        specifier: workspace:*
+        version: link:../wire-panoptes-yaml
       effect:
         specifier: 'catalog:'
         version: 3.22.1
+      yaml:
+        specifier: 'catalog:'
+        version: 2.9.0
       zod:
         specifier: 'catalog:'
         version: 4.4.3
+    devDependencies:
+      fast-check:
+        specifier: 'catalog:'
+        version: 3.23.2
 
   packages/model:
     dependencies:
@@ -296,6 +312,12 @@ importers:
       '@panoptes/model':
         specifier: workspace:*
         version: link:../model
+
+  packages/wire-panoptes-yaml:
+    dependencies:
+      zod:
+        specifier: 'catalog:'
+        version: 4.4.3
 
 packages:
 

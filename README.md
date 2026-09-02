@@ -13,9 +13,9 @@ it on a typed core:
 - **A typed internal model** as the single authority, richer than any one file
   format, with codecs at the edge.
 - **File formats as codecs**: read and write Threat Dragon v2 JSON, plus a
-  YAML format of our own. A model file in git is the source of truth, and a
-  codec names every place a file and the model do not correspond, rather
-  than passing over it in silence.
+  [YAML format of our own](docs/panoptes-yaml.md). A model file in git is the
+  source of truth, and a codec names every place a file and the model do not
+  correspond, rather than passing over it in silence.
 - **A drawing UI** (React) where the diagram is the editor, not a picture
   beside a form.
 - **A CLI** for headless work: validate a model, render it to SVG, markdown,
@@ -30,14 +30,20 @@ Dragon and license it under the same Apache License 2.0. See
 
 ## Structure
 
-| Project            | What it holds                                                    |
-| ------------------ | ---------------------------------------------------------------- |
-| `packages/model`   | The internal data structures and operations on them              |
-| `packages/formats` | File-format codecs (Threat Dragon v2 JSON, Panoptes YAML)        |
-| `packages/canvas`  | React canvas components, shared by the UI and headless rendering |
-| `packages/render`  | Projections of a model: SVG, markdown, PDF                       |
-| `apps/studio`      | The drawing UI                                                   |
-| `apps/cli`         | The command-line interface                                       |
+| Project                       | What it holds                                                     |
+| ----------------------------- | ----------------------------------------------------------------- |
+| `packages/model`              | The internal data structures and operations on them               |
+| `packages/wire-panoptes-yaml` | The Panoptes YAML format, version 1, as a schema and nothing else |
+| `packages/formats`            | File-format codecs, and the mappings between a file and the model |
+| `packages/canvas`             | React canvas components, shared by the UI and headless rendering  |
+| `packages/render`             | Projections of a model: SVG, markdown, PDF                        |
+| `apps/studio`                 | The drawing UI                                                    |
+| `apps/cli`                    | The command-line interface                                        |
+
+A wire package declares one file format and depends on zod alone, so no
+change to the internal model can change what a released format version
+means. `packages/formats` is the only project that knows both a format and
+the model.
 
 ## Development
 

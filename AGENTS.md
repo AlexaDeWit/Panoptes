@@ -23,9 +23,13 @@ suggestions.
 
 - **Coding guidelines**: [`CODING.md`](CODING.md) is binding, for agents
   and humans alike.
-- **Layer boundaries.** `model` imports no internal package; `formats` and
-  `canvas` import only `model`; `render` imports `model` and `canvas`; apps
-  import anything below them.
+- **Layer boundaries.** `model` imports no internal package, and neither
+  does a wire package (`layer:wire`), which declares one file format and
+  depends on zod alone; `formats` imports `model` and the wire packages, and
+  is the only layer that knows more than one of them; `canvas` imports only
+  `model`; `render` imports `model` and `canvas`; apps import anything below
+  them. `eslint.config.mjs` holds the matrix and the `boundaries` target
+  enforces it.
 - **The flake is the toolchain authority.** Work inside `nix develop`. No
   global installs.
 - **Local verification**: `pnpm check`, everything the CI gate runs
