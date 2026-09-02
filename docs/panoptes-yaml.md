@@ -22,15 +22,23 @@ order:
 | ------------------------ | ------------------------------------------------------------ |
 | `formatVersion`          | `1`, exactly                                                 |
 | `metadata`               | Title, owner, description, contributors                      |
+| `assumptions`            | What the analysis rests on, linked to elements and threats   |
 | `diagrams`               | The diagrams, each owning its elements and their geometry    |
+| `mitigations`            | Mitigating work, addressing threats by id                    |
 | `threats`                | The threats, each attached to elements by id                 |
 | `lastIssuedThreatNumber` | The highest threat number ever issued, counting removed ones |
-| `mitigations`            | Mitigating work, addressing threats by id                    |
-| `assumptions`            | What the analysis rests on, linked to elements and threats   |
 
 Every key is required and every list may be empty. Nothing is optional and
 nothing is defaulted: a model saves before it is drawn, and it does so with
 empty strings and empty lists rather than with absent keys.
+
+That order is three tiers, so a key added to the format later has an obvious
+home rather than an argued one. The header comes first, `formatVersion` and
+then `metadata`, because it says what the file is and what it covers. The
+content follows in alphabetical order, since no other order among
+`assumptions`, `diagrams`, `mitigations` and `threats` is more true than the
+rest. The bookkeeping the editor keeps for itself goes last, where it is out
+of the way of a reader.
 
 An element and a threat category are tagged unions, written with the tag
 first: `kind` for an element, a flow endpoint and a boundary shape,
@@ -105,6 +113,7 @@ metadata:
   description: ""
   contributors:
     - Alexandra de Wit
+assumptions: []
 diagrams:
   - id: diagram-1
     title: High level
@@ -121,6 +130,7 @@ diagrams:
         size:
           width: 100
           height: 60
+mitigations: []
 threats:
   - id: threat-1
     number: 1
@@ -135,8 +145,6 @@ threats:
     elements:
       - element-1
 lastIssuedThreatNumber: 1
-mitigations: []
-assumptions: []
 ```
 
 `test-data/panoptes/ecluse.yaml` is a production-scale example: the Écluse

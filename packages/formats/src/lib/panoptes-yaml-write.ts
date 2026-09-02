@@ -90,11 +90,11 @@ function toDocument(model: Model): PanoptesYamlDocument {
   return {
     formatVersion: 1,
     metadata: toWireMetadata(model.metadata),
+    assumptions: model.assumptions.map(toWireAssumption),
     diagrams: model.diagrams.map(toWireDiagram),
+    mitigations: model.mitigations.map(toWireMitigation),
     threats: threats.map(toWireThreat),
     lastIssuedThreatNumber: model.lastIssuedThreatNumber,
-    mitigations: model.mitigations.map(toWireMitigation),
-    assumptions: model.assumptions.map(toWireAssumption),
   };
 }
 

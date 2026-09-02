@@ -245,15 +245,20 @@ const metadataSchema = z.object({
  * an `undeclared` divergence rather than refused, so a file written by a
  * later release of version 1 still reads, minus what this release has no
  * home for.
+ *
+ * The root keys are declared in three tiers, and a write follows this order:
+ * the header (`formatVersion`, then `metadata`), the content in alphabetical
+ * order, and the bookkeeping the editor keeps for itself. A key added to the
+ * format later has an obvious place rather than an argued one.
  */
 export const panoptesYamlWireSchema = z.object({
   formatVersion: z.literal(1),
   metadata: metadataSchema,
+  assumptions: z.array(assumptionSchema),
   diagrams: z.array(diagramSchema),
+  mitigations: z.array(mitigationSchema),
   threats: z.array(threatSchema),
   lastIssuedThreatNumber: z.int().nonnegative(),
-  mitigations: z.array(mitigationSchema),
-  assumptions: z.array(assumptionSchema),
 });
 
 /** A whole Panoptes YAML document. */

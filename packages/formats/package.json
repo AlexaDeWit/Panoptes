@@ -29,7 +29,14 @@
     ],
     "targets": {
       "boundaries": {},
-      "lint": {}
+      "lint": {},
+      "test": {
+        "inputs": [
+          "default",
+          "^default",
+          "{workspaceRoot}/docs/panoptes-yaml.md"
+        ]
+      }
     }
   }
 }
