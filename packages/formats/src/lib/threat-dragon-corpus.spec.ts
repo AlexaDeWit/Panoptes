@@ -33,12 +33,6 @@ const diverged = readings.flatMap((reading) =>
     : [],
 );
 
-/**
- * Every file of the corpus read, written straight back onto the document it
- * was read from, and read once more. The raw parsed text is kept beside the
- * raw parsed output, so the comparison below runs on what each file says
- * rather than on what the wire schema kept of it.
- */
 const roundTrips = corpusTexts.map((file) => {
   const read = Either.getOrThrowWith(
     readThreatDragon(file.text),
@@ -78,7 +72,6 @@ const scalarsOf = (
   return into;
 };
 
-/** Every path a scalar the input carried is missing from or differs at. */
 const moved = (before: unknown, after: unknown): ReadonlySet<string> => {
   const written = scalarsOf(after, '', new Map());
   return new Set(
@@ -97,18 +90,6 @@ const released = (
   reason: 'overridden',
 });
 
-/**
- * What a write of an unedited model may move, read off the two documents
- * rather than off the writer: which path, and the entry that has to claim
- * it. The release stamp moves wherever the file carries another one, and
- * the threat high-water mark moves where the file left a threat unnumbered,
- * since writing that number down is what raises the mark. The mark can rise
- * for one other reason, a model that has issued above every number the file
- * holds, but a straight read of a file sets that mark from the file's own
- * numbers, so a round trip never reaches it. The entries are in the order
- * the writer records them: the document's own stamp, its mark, then each
- * diagram's stamp.
- */
 const stamps = (
   source: ThreatDragonDocument,
   after: ThreatDragonDocument,

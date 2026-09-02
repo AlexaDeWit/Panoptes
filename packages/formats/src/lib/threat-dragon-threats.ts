@@ -27,8 +27,10 @@ import type {
  * and why this write moved it: `issued` where the write put a number in the
  * file that the file did not already carry, `unreachable` where the model
  * has issued above every number the file holds, which is the gap a removed
- * threat left. The two are exclusive, since a number this write issues is
- * written into the file and so is reachable from it.
+ * threat left. Both can happen in one write. What is exclusive is which one
+ * sets the value: a number this write issues is written into the file and so
+ * is reachable from it, which puts it below a mark that is not, so
+ * `unreachable` names the cause wherever it applies.
  */
 export type HighWaterMark = {
   readonly value: number;
@@ -60,7 +62,18 @@ export type ThreatPlan = {
  *
  * A threat the source already holds under a cell is merged onto that copy
  * and the cell's own order is kept, so a threat nobody touched leaves the
- * file exactly as it was.
+ * file exactly as it was. Its status, severity and category stay as the
+ * source spelled them wherever that spelling still reads back as the model's
+ * value, because Threat Dragon writes a category in its author's own
+ * language and reads two spellings of the undecided severity.
+ *
+ * The {@link HighWaterMark} the plan carries is floored on what the file
+ * declared, since a mark the file already carries is its own claim, and on
+ * what the file holds where it declared none, since a zero written onto a
+ * file holding a threat numbered 4 would have Threat Dragon hand 1 to 4 out
+ * again. Above that floor it covers every number this write put in the file
+ * that the file did not already carry, and the model's own mark where the
+ * file's numbers fall short of it.
  */
 export function planThreats(
   model: Model,
@@ -150,20 +163,6 @@ function canHost(
   );
 }
 
-/**
- * The `threatTop` to write. A file that declared one keeps it as its floor,
- * since a mark the file already carries is its own claim and lowering or
- * raising it would rewrite what the file said. A file that declared none is
- * given one that covers the numbers it holds: writing 0 onto a file holding
- * a threat numbered 4 would have Threat Dragon hand 1 to 4 out again, which
- * is the collision this field exists to prevent.
- *
- * Above that floor it rises for two reasons. A number this write put in the
- * file that the file did not already carry has to be covered. And the
- * model's own mark has to be reachable: a read takes the greater of the
- * mark and the highest number in the file, so where the file's numbers fall
- * short of it, the gap a removed threat left would be handed out again.
- */
 function highWaterMark(
   model: Model,
   source: ThreatDragonDocument | undefined,
@@ -200,13 +199,6 @@ function inSourceOrder(
   ];
 }
 
-/**
- * One threat as Threat Dragon nests it, merged onto the copy the source
- * holds. The status, the severity and the category are each left as the
- * source spelled them where that spelling still reads back as the model's
- * value, because Threat Dragon writes a category in its author's own
- * language and reads two spellings of the undecided severity.
- */
 function projectThreat(
   threat: Threat,
   held: ThreatDragonThreat | undefined,

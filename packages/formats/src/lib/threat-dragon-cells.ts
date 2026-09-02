@@ -55,6 +55,20 @@ export type MergedCell = {
  * carried is reported as `discarded-by-edit`. `zIndex` is required of a cell
  * by Threat Dragon's own schema and held by no part of the model, so a cell
  * with none takes its place in the diagram as its plane.
+ *
+ * Four places the two formats hold one fact differently. A boundary curve
+ * keeps whichever of the two shape names the source used, since Threat
+ * Dragon registers the misspelled `trust-broundary-curve` itself and a model
+ * carrying it should not be corrected into a name its author never wrote. A
+ * curve's run of waypoints is the model's one list where Threat Dragon holds
+ * a source, a target, and the vertices between, so a run the source already
+ * draws is left as it drew it. A boundary takes its name from the label on
+ * the cell where `data` holds none, which is where the Écluse model keeps
+ * every boundary name, so a name that still reads back the same leaves both
+ * alone. And `hasOpenThreats` is Threat Dragon's own bookkeeping, which its
+ * own files carry stale, so a cell that declares it keeps what it declared
+ * and only a cell declaring none is given what the threats being written
+ * say.
  */
 export function mergeCell(
   element: Element,
@@ -189,12 +203,6 @@ function boxBoundary(
   };
 }
 
-/**
- * A boundary curve, under whichever of the two shape names the source cell
- * used: Threat Dragon registers `trust-broundary-curve` itself, and a model
- * carrying that misspelling keeps it rather than being corrected into a name
- * its author never wrote.
- */
 function curveBoundary(
   element: TrustBoundary,
   shape: CurveBoundaryShape,
@@ -226,11 +234,6 @@ function curveBoundary(
   };
 }
 
-/**
- * A curve's ends and the points between them. The model draws one run of
- * waypoints where Threat Dragon holds a source, a target, and the vertices
- * between, so a run the source already draws is left as it drew it.
- */
 function curvePoints(
   from: ThreatDragonCurve | undefined,
   shape: CurveBoundaryShape,
@@ -262,12 +265,6 @@ function nodeParts(
   };
 }
 
-/**
- * The `data` fields shared by every cell a threat attaches to.
- * `hasOpenThreats` is Threat Dragon's own bookkeeping and no part of the
- * model, so a cell that declares it keeps what it declared, stale or not,
- * and a cell that declares none is given what the threats being written say.
- */
 function elementData(
   element: Actor | Process | Store | Flow,
   from: ThreatDragonElementData | undefined,
@@ -288,12 +285,6 @@ function elementData(
   };
 }
 
-/**
- * A trust boundary's own fields. Threat Dragon draws a boundary's name from
- * the label on the cell where `data` holds none, which is where the Écluse
- * model keeps every boundary name, so a name that still reads back the same
- * leaves both alone.
- */
 function boundaryData(
   element: TrustBoundary,
   from: ThreatDragonBoundary | undefined,

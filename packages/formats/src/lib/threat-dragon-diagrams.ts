@@ -15,12 +15,6 @@ import type {
   ThreatDragonThreat,
 } from './threat-dragon-wire.js';
 
-/**
- * What Threat Dragon writes for a diagram whose methodology nobody chose,
- * taken from the Generic diagram of the corpus vendored under `test-data`.
- * The internal model records a methodology per threat rather than per
- * diagram, so a projection has none to name.
- */
 const genericDiagramType = 'Generic';
 
 const genericThumbnail = './public/content/images/thumbnail.jpg';
@@ -78,7 +72,11 @@ export function numberDiagrams(
   );
   const divergences: Divergence[] = [];
   const issued: number[] = [];
-  let next = Math.max(declaredTop ?? 0, 0);
+  let next = Math.max(
+    declaredTop ?? 0,
+    ...[...taken].map((number) => number + 1),
+    0,
+  );
   const numbers = model.diagrams.map((diagram, index) => {
     const claim = claimed[index];
     if (claim !== undefined) {
@@ -128,7 +126,8 @@ function claimNumber(
  * One diagram of the model as Threat Dragon draws it. `diagramType` and
  * `thumbnail` are Threat Dragon's own and no part of the model, so a
  * diagram the source holds keeps what it said and one an edit added takes
- * what Threat Dragon writes for a diagram of no methodology. A diagram that
+ * what Threat Dragon writes for a diagram of no methodology, read off the
+ * Generic diagram of the corpus vendored under `test-data`. A diagram that
  * draws nothing and declared no cell list keeps declaring none. The release
  * stamp is the document's rather than the diagram's own decision, so
  * `writeThreatDragon` writes it.

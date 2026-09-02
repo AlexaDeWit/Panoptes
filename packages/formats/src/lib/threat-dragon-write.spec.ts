@@ -20,10 +20,6 @@ import {
   unmodelledFixture,
 } from './threat-dragon.fixtures.js';
 
-/**
- * The pair as the codec contract describes it. Nothing but this assignment
- * holds the read and the write to one interface over one wire schema.
- */
 const threatDragon: Codec<typeof threatDragonWireSchema> = {
   wire: threatDragonWireSchema,
   read: readThreatDragon,
@@ -463,5 +459,114 @@ describe('a merge onto a document an edit has moved out from under', () => {
       'threat-held',
       'threat-added',
     ]);
+  });
+});
+
+const cell = (id: string, score: string, fresh: boolean) => ({
+  id,
+  shape: 'process' as const,
+  zIndex: 1,
+  position: { x: 0, y: 0 },
+  size: { width: 10, height: 10 },
+  data: {
+    type: 'tm.Process' as const,
+    threats: [
+      {
+        id: 'threat-1',
+        number: 1,
+        title: 'Held under both cells',
+        modelType: 'STRIDE',
+        type: 'Tampering',
+        status: 'Open',
+        severity: 'High',
+        description: '',
+        mitigation: '',
+        score,
+        new: fresh,
+      },
+    ],
+  },
+});
+
+const element = (id: string) => ({
+  kind: 'process' as const,
+  id,
+  name: '',
+  description: '',
+  outOfScope: false,
+  reasonOutOfScope: '',
+  position: { x: 0, y: 0 },
+  size: { width: 10, height: 10 },
+});
+
+describe('a threat an edit detached from one of the cells holding it', () => {
+  const source: ThreatDragonDocument = {
+    version: '2.6.2',
+    summary: { title: 'Detached' },
+    detail: {
+      contributors: [],
+      diagramTop: 1,
+      reviewer: '',
+      threatTop: 1,
+      diagrams: [
+        {
+          id: 0,
+          title: 'One',
+          diagramType: 'STRIDE',
+          thumbnail: './public/content/images/thumbnail.stride.jpg',
+          version: '2.6.2',
+          cells: [cell('cell-a', '7', false), cell('cell-b', '9', true)],
+        },
+      ],
+    },
+  };
+
+  const detached = parsedFixture({
+    metadata: {
+      title: 'Detached',
+      owner: '',
+      description: '',
+      contributors: [],
+    },
+    diagrams: [
+      {
+        id: '0',
+        title: 'One',
+        elements: [element('cell-a'), element('cell-b')],
+      },
+    ],
+    threats: [
+      {
+        id: 'threat-1',
+        number: 1,
+        title: 'Held under both cells',
+        category: { methodology: 'STRIDE', category: 'tampering' },
+        severity: 'high',
+        status: 'open',
+        description: '',
+        mitigation: '',
+        elements: ['cell-a'],
+      },
+    ],
+    lastIssuedThreatNumber: 1,
+    mitigations: [],
+    assumptions: [],
+  });
+
+  const written = threatDragon.write(detached, source);
+  const cells = documentOf(written.output).detail.diagrams[0]?.cells ?? [];
+
+  it('keeps the copy under the cell the model still attaches it to', () => {
+    expect(threatsOf(cells[0]).map((threat) => threat.score)).toEqual(['7']);
+  });
+
+  it('drops the copy under the cell it no longer attaches it to', () => {
+    expect(threatsOf(cells[1])).toEqual([]);
+  });
+
+  it('says which cell the copy it dropped was nested under', () => {
+    expect(renderDivergences(written.divergences)).toBe(
+      'threat "threat-1": the copy the source document nested under the cell "cell-b", which the model no longer attaches it to (removed by an edit)',
+    );
   });
 });

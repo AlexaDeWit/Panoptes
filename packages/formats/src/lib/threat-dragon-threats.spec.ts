@@ -69,7 +69,6 @@ const emptyDocument: ThreatDragonDocument = {
   detail: { diagrams: [] },
 };
 
-/** A document holding a numbered threat and declaring no mark of its own. */
 const undeclaredDocument: ThreatDragonDocument = {
   version: '2.6.2',
   summary: { title: '' },

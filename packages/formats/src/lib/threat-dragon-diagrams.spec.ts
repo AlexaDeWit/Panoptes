@@ -59,6 +59,15 @@ describe('numbering the diagrams of a model', () => {
     expect(numbering(['0', '3'], []).numbers).toEqual([0, 3]);
   });
 
+  it('numbers a new diagram above every number in use, never into a gap', () => {
+    const numbered = numbering(['0', '3', 'perimeter'], [0, 3]);
+    expect(numbered.numbers).toEqual([0, 3, 4]);
+  });
+
+  it('numbers two named diagrams consecutively, taking no number twice', () => {
+    expect(numbering(['a', 'b'], [0, 3]).numbers).toEqual([4, 5]);
+  });
+
   it('numbers a diagram the model named, and says the name has no home', () => {
     const numbered = numbering(['0', 'perimeter'], [0], 1);
     expect(numbered.numbers).toEqual([0, 1]);

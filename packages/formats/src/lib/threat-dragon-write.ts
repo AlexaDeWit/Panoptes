@@ -11,12 +11,12 @@ import { equivalent } from './equivalence.js';
 import { preservedText } from './threat-dragon-preservation.js';
 import { planThreats, type HighWaterMark } from './threat-dragon-threats.js';
 import type {
+  ThreatDragonCell,
   ThreatDragonDiagram,
   ThreatDragonDocument,
   ThreatDragonThreat,
 } from './threat-dragon-wire.js';
 
-/** The release this codec models, stamped on the file and every diagram. */
 const writtenVersion = '2.6.2';
 
 /**
@@ -42,13 +42,20 @@ const writtenVersion = '2.6.2';
  * write put in the file that the file did not already carry, so Threat
  * Dragon does not hand that number out again, and neither ever falls. A
  * file that declared no mark of its own is given one that covers the
- * numbers it holds rather than a zero it would reissue from. Issuing the
- * number is not itself a divergence: the file gains a fact rather than
- * losing one.
+ * numbers it holds rather than a zero it would reissue from. Each entry
+ * says which of the two reasons in {@link HighWaterMark} moved the mark,
+ * since one claims a number went into the file and the other claims the
+ * model has issued past everything in it. Issuing the number is not itself
+ * a divergence: the file gains a fact rather than losing one.
  *
  * What the format cannot hold is reported rather than dropped in silence,
  * and a record the source held that an edit has since removed is reported
- * with what it was carrying. Nothing throws.
+ * with what it was carrying: a diagram, a cell, a threat, and the copy of a
+ * threat nested under a cell the model no longer attaches it to, which is a
+ * loss the surviving copies elsewhere would otherwise hide. Each names its
+ * own record, and an id the model's own schema would refuse names the model
+ * instead, rather than a write stopping over a file it can still produce.
+ * Nothing throws.
  */
 export function writeThreatDragon(
   model: Model,
@@ -141,13 +148,6 @@ function restamped(
       ];
 }
 
-/**
- * A mark the file declared and this write raised. The two causes read
- * differently because they are different claims: one says a number went
- * into the file that the file did not carry, the other says the model has
- * issued above every number the file holds, which is the gap a removed
- * record left and the reason the mark is kept at all.
- */
 function overriddenMark(
   name: string,
   from: number | undefined,
@@ -182,14 +182,6 @@ function unrecorded(model: Model): readonly Divergence[] {
   ];
 }
 
-/**
- * What the source document held and the model no longer does: a diagram, a
- * cell of a diagram the model kept, and a threat nested under a cell the
- * model kept. Everything on such a record that the model never mapped goes
- * with it, which is what these entries report. Each names its own record,
- * and an id the model's own schema would refuse names the model instead,
- * rather than a write stopping over a file it can still produce.
- */
 function discarded(
   model: Model,
   source: ThreatDragonDocument | undefined,
@@ -203,20 +195,27 @@ function discarded(
       diagram.elements.map((element) => element.id),
     ),
   );
-  const threats = new Set<string>(model.threats.map((threat) => threat.id));
+  const attached = new Map<string, ReadonlySet<string>>(
+    model.threats.map((threat) => [
+      threat.id,
+      new Set<string>(threat.elements),
+    ]),
+  );
+  const nested = allCells(source)
+    .filter((cell) => elements.has(cell.id))
+    .flatMap((cell) => threatsOf(cell).map((threat) => ({ cell, threat })));
   return [
     ...source.detail.diagrams
       .filter((diagram) => !kept.has(String(diagram.id)))
       .map(discardedDiagram),
-    ...[
-      ...indexById(
-        allCells(source)
-          .filter((cell) => elements.has(cell.id))
-          .flatMap(threatsOf),
-      ).values(),
-    ]
-      .filter((threat) => !threats.has(threat.id))
+    ...[...indexById(nested.map((held) => held.threat)).values()]
+      .filter((threat) => !attached.has(threat.id))
       .map(discardedThreat),
+    ...nested
+      .filter(
+        (held) => attached.get(held.threat.id)?.has(held.cell.id) === false,
+      )
+      .map((held) => detachedThreat(held.threat, held.cell)),
   ];
 }
 
@@ -229,11 +228,26 @@ function discardedDiagram(diagram: ThreatDragonDiagram): Divergence {
   };
 }
 
-function discardedThreat(threat: ThreatDragonThreat): Divergence {
-  const id = threatIdSchema.safeParse(threat.id);
+function detachedThreat(
+  threat: ThreatDragonThreat,
+  cell: ThreatDragonCell,
+): Divergence {
   return {
-    subject: id.success ? { kind: 'threat', id: id.data } : { kind: 'model' },
+    subject: threatSubject(threat),
+    detail: `the copy the source document nested under the cell "${cell.id}", which the model no longer attaches it to`,
+    reason: 'discarded-by-edit',
+  };
+}
+
+function discardedThreat(threat: ThreatDragonThreat): Divergence {
+  return {
+    subject: threatSubject(threat),
     detail: `the threat "${threat.title}" the source document nested under a cell the model kept`,
     reason: 'discarded-by-edit',
   };
+}
+
+function threatSubject(threat: ThreatDragonThreat): Divergence['subject'] {
+  const id = threatIdSchema.safeParse(threat.id);
+  return id.success ? { kind: 'threat', id: id.data } : { kind: 'model' };
 }
