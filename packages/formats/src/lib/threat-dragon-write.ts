@@ -1,25 +1,16 @@
-import {
-  diagramIdSchema,
-  elementIdSchema,
-  threatIdSchema,
-  type Diagram,
-  type DiagramId,
-  type Model,
-} from '@panoptes/model';
+import { diagramIdSchema, threatIdSchema, type Model } from '@panoptes/model';
 import type { WriteResult } from './codec.js';
 import type { Divergence } from './divergence.js';
-import { equivalent } from './equivalence.js';
-import { mergeCell } from './threat-dragon-cells.js';
 import {
-  allCells,
-  cellsOf,
-  indexById,
-  threatsOf,
-} from './threat-dragon-document.js';
+  diagramsById,
+  mergeDiagram,
+  numberDiagrams,
+} from './threat-dragon-diagrams.js';
+import { allCells, indexById, threatsOf } from './threat-dragon-document.js';
+import { equivalent } from './equivalence.js';
 import { preservedText } from './threat-dragon-preservation.js';
-import { planThreats } from './threat-dragon-threats.js';
+import { planThreats, type HighWaterMark } from './threat-dragon-threats.js';
 import type {
-  ThreatDragonCell,
   ThreatDragonDiagram,
   ThreatDragonDocument,
   ThreatDragonThreat,
@@ -27,27 +18,6 @@ import type {
 
 /** The release this codec models, stamped on the file and every diagram. */
 const writtenVersion = '2.6.2';
-
-/**
- * What Threat Dragon writes for a diagram whose methodology nobody chose,
- * taken from the Generic diagram of the corpus vendored under `test-data`.
- * The internal model records a methodology per threat rather than per
- * diagram, so a projection has none to name.
- */
-const genericDiagramType = 'Generic';
-
-const genericThumbnail = './public/content/images/thumbnail.jpg';
-
-type MergedDiagram = {
-  readonly diagram: ThreatDragonDiagram;
-  readonly divergences: readonly Divergence[];
-};
-
-type Numbering = {
-  readonly numbers: readonly number[];
-  readonly diagramTop: number;
-  readonly divergences: readonly Divergence[];
-};
 
 /**
  * The model as a Threat Dragon v2 file, merged onto the document it was
@@ -68,11 +38,13 @@ type Numbering = {
  * Three decisions the codec makes on its own, each an `overridden`
  * divergence where the source said otherwise. The version stamp is the
  * release this codec writes rather than the one the file arrived with.
- * `detail.threatTop` rises to cover a number this write put in the file
- * that the file did not already carry, so Threat Dragon does not hand that
- * number out again, and it never falls. `detail.diagramTop` does the same
- * for a diagram number. Issuing the number is not itself a divergence: the
- * file gains a fact rather than losing one.
+ * `detail.threatTop` and `detail.diagramTop` rise to cover a number this
+ * write put in the file that the file did not already carry, so Threat
+ * Dragon does not hand that number out again, and neither ever falls. A
+ * file that declared no mark of its own is given one that covers the
+ * numbers it holds rather than a zero it would reissue from. Issuing the
+ * number is not itself a divergence: the file gains a fact rather than
+ * losing one.
  *
  * What the format cannot hold is reported rather than dropped in silence,
  * and a record the source held that an edit has since removed is reported
@@ -85,14 +57,18 @@ export function writeThreatDragon(
   const held = diagramsById(source);
   const numbering = numberDiagrams(model, held, source?.detail.diagramTop);
   const plan = planThreats(model, source);
-  const merged = model.diagrams.map((diagram, index) =>
-    mergeDiagram(
+  const merged = model.diagrams.map((diagram, index) => ({
+    ...mergeDiagram(
       diagram,
       held.get(diagram.id),
       numbering.numbers[index],
       plan.byCell,
     ),
-  );
+    stamp: restamped(held.get(diagram.id)?.version, {
+      kind: 'diagram',
+      id: diagram.id,
+    }),
+  }));
   const document: ThreatDragonDocument = {
     version: writtenVersion,
     summary: {
@@ -107,10 +83,13 @@ export function writeThreatDragon(
     detail: {
       ...source?.detail,
       contributors: mergedContributors(model, source),
-      diagrams: merged.map((entry) => entry.diagram),
-      diagramTop: numbering.diagramTop,
+      diagrams: merged.map((entry) => ({
+        ...entry.diagram,
+        version: writtenVersion,
+      })),
+      diagramTop: numbering.diagramTop.value,
       reviewer: source?.detail.reviewer ?? '',
-      threatTop: plan.threatTop,
+      threatTop: plan.threatTop.value,
     },
   };
   return {
@@ -128,24 +107,12 @@ export function writeThreatDragon(
         numbering.diagramTop,
       ),
       ...numbering.divergences,
-      ...merged.flatMap((entry) => entry.divergences),
+      ...merged.flatMap((entry) => [...entry.stamp, ...entry.divergences]),
       ...plan.divergences,
       ...unrecorded(model),
       ...discarded(model, source),
     ],
   };
-}
-
-/** The source document's diagrams under the ids the model gives them. */
-function diagramsById(
-  source: ThreatDragonDocument | undefined,
-): ReadonlyMap<string, ThreatDragonDiagram> {
-  return new Map(
-    (source?.detail.diagrams ?? []).map((diagram) => [
-      String(diagram.id),
-      diagram,
-    ]),
-  );
 }
 
 function mergedContributors(
@@ -157,118 +124,6 @@ function mergedContributors(
   return held !== undefined && equivalent(names, model.metadata.contributors)
     ? [...held]
     : model.metadata.contributors.map((name) => ({ name }));
-}
-
-/**
- * A Threat Dragon number for every diagram of the model. A diagram the
- * source document holds keeps the number that document gave it, and a
- * diagram whose own id reads as a free non-negative integer takes it, so a
- * projection of a model that came from this format numbers the diagrams as
- * the file did. Anything else is numbered from the mark upward and reported
- * as narrowed, since the format numbers a diagram where the model names it.
- */
-function numberDiagrams(
-  model: Model,
-  held: ReadonlyMap<string, ThreatDragonDiagram>,
-  declaredTop: number | undefined,
-): Numbering {
-  const taken = new Set<number>(
-    [...held.values()].map((diagram) => diagram.id),
-  );
-  const claimed = model.diagrams.map((diagram) =>
-    claimNumber(diagram.id, held, taken),
-  );
-  const divergences: Divergence[] = [];
-  const assigned: number[] = [];
-  let next = Math.max(declaredTop ?? 0, 0);
-  const numbers = model.diagrams.map((diagram, index) => {
-    const claim = claimed[index];
-    if (claim !== undefined) {
-      if (!held.has(diagram.id)) {
-        assigned.push(claim);
-      }
-      return claim;
-    }
-    while (taken.has(next)) {
-      next += 1;
-    }
-    taken.add(next);
-    assigned.push(next);
-    divergences.push(renumbered(diagram.id, next));
-    return next;
-  });
-  return {
-    numbers,
-    diagramTop: Math.max(
-      declaredTop ?? 0,
-      ...assigned.map((number) => number + 1),
-      0,
-    ),
-    divergences,
-  };
-}
-
-function claimNumber(
-  id: string,
-  held: ReadonlyMap<string, ThreatDragonDiagram>,
-  taken: Set<number>,
-): number | undefined {
-  const kept = held.get(id);
-  if (kept !== undefined) {
-    return kept.id;
-  }
-  const own = Number(id);
-  if (!/^\d+$/.test(id) || !Number.isSafeInteger(own) || taken.has(own)) {
-    return undefined;
-  }
-  taken.add(own);
-  return own;
-}
-
-/**
- * One diagram of the model as Threat Dragon draws it. `diagramType` and
- * `thumbnail` are Threat Dragon's own and no part of the model, so a
- * diagram the source holds keeps what it said and one an edit added takes
- * what Threat Dragon writes for a diagram of no methodology. A diagram that
- * draws nothing and declared no cell list keeps declaring none.
- */
-function mergeDiagram(
-  diagram: Diagram,
-  held: ThreatDragonDiagram | undefined,
-  id: number,
-  byCell: ReadonlyMap<string, readonly ThreatDragonThreat[]>,
-): MergedDiagram {
-  const cells = indexById(held ? cellsOf(held) : []);
-  const merged = diagram.elements.map((element, index) =>
-    mergeCell(
-      element,
-      cells.get(element.id),
-      byCell.get(element.id) ?? [],
-      index,
-    ),
-  );
-  const kept = new Set<string>(diagram.elements.map((element) => element.id));
-  return {
-    diagram: {
-      ...held,
-      id,
-      title: diagram.title,
-      diagramType: held?.diagramType ?? genericDiagramType,
-      thumbnail: held?.thumbnail ?? genericThumbnail,
-      version: writtenVersion,
-      cells:
-        merged.length === 0 && held?.cells === undefined
-          ? undefined
-          : merged.map((entry) => entry.cell),
-    },
-    divergences: [
-      ...restamped(held?.version, { kind: 'diagram', id: diagram.id }),
-      ...merged.flatMap((entry) => entry.divergences),
-      ...[...cells.values()]
-        .filter((cell) => !kept.has(cell.id))
-        .map(discardedCell),
-    ],
-  };
 }
 
 function restamped(
@@ -286,28 +141,30 @@ function restamped(
       ];
 }
 
+/**
+ * A mark the file declared and this write raised. The two causes read
+ * differently because they are different claims: one says a number went
+ * into the file that the file did not carry, the other says the model has
+ * issued above every number the file holds, which is the gap a removed
+ * record left and the reason the mark is kept at all.
+ */
 function overriddenMark(
   name: string,
   from: number | undefined,
-  written: number,
+  mark: HighWaterMark,
 ): readonly Divergence[] {
-  return from === undefined || from === written
+  return from === undefined || from === mark.value
     ? []
     : [
         {
           subject: { kind: 'model' },
-          detail: `the ${name} ${from}, raised to ${written} to cover a number this write issued`,
+          detail:
+            mark.cause === 'issued'
+              ? `the ${name} ${from}, raised to ${mark.value} to cover a number this write issued`
+              : `the ${name} ${from}, raised to ${mark.value}, the highest number the model has issued and no number in the file reaches`,
           reason: 'overridden',
         },
       ];
-}
-
-function renumbered(id: DiagramId, number: number): Divergence {
-  return {
-    subject: { kind: 'diagram', id },
-    detail: `the identifier, which the format numbers rather than names, written as ${number}`,
-    reason: 'narrowed',
-  };
 }
 
 function unrecorded(model: Model): readonly Divergence[] {
@@ -368,15 +225,6 @@ function discardedDiagram(diagram: ThreatDragonDiagram): Divergence {
   return {
     subject: id.success ? { kind: 'diagram', id: id.data } : { kind: 'model' },
     detail: `the diagram "${diagram.title}" the source document held`,
-    reason: 'discarded-by-edit',
-  };
-}
-
-function discardedCell(cell: ThreatDragonCell): Divergence {
-  const id = elementIdSchema.safeParse(cell.id);
-  return {
-    subject: id.success ? { kind: 'element', id: id.data } : { kind: 'model' },
-    detail: `the ${cell.shape} cell the source document held`,
     reason: 'discarded-by-edit',
   };
 }

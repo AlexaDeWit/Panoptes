@@ -133,7 +133,7 @@ describe('reading the Écluse threat model', () => {
   });
 
   it('lands as the expected internal model, compared as one value', () => {
-    expect(ecluse.model).toEqual(ecluseModel);
+    expect(ecluse.model).toStrictEqual(ecluseModel);
   });
 
   it('diverges in nothing, so the schema declares every key it holds', () => {

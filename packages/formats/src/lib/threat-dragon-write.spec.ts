@@ -66,7 +66,7 @@ describe('writing the Écluse model back onto the file it came from', () => {
 
   it('reads back as the internal model both packages are held to', () => {
     const written = threatDragon.write(ecluse.model, ecluse.source);
-    expect(readOrThrow(written.output).model).toEqual(ecluseModel);
+    expect(readOrThrow(written.output).model).toStrictEqual(ecluseModel);
   });
 
   it('leaves the gap at 19 that a removed threat left, unfilled', () => {
@@ -113,7 +113,7 @@ describe('writing a threat the file left unnumbered', () => {
 describe('projecting a model the format is smaller than', () => {
   it('names every place the model and the file it wrote do not correspond', () => {
     expect(renderDivergences(projected.divergences).split('\n')).toEqual([
-      'diagram "perimeter-review": the identifier, which the format numbers rather than names, written as 1 (reduced to fit the format)',
+      'diagram "perimeter-review": the name, which the format numbers a diagram rather than naming one, written as 1 (no place in the format)',
       'element "element-zone": the out-of-scope marking, which the format records on the elements a threat attaches to alone (no place in the format)',
       'element "element-note": the name "Review note", which the format has one text for a note and no name beside it (no place in the format)',
       'threat "threat-split": the one record, written once under each of the 2 elements it names (split by the format)',
@@ -202,9 +202,9 @@ describe('merging a model onto the document it is written over', () => {
   it('names what the edit cost the document beside what the format cannot hold', () => {
     expect(renderDivergences(merged.divergences).split('\n')).toEqual([
       'model: the release "2.0.0" the source was written by, for the 2.6.2 this codec writes (not repeated by the codec)',
-      'model: the threat high-water mark 3, raised to 9 to cover a number this write issued (not repeated by the codec)',
+      'model: the threat high-water mark 3, raised to 9, the highest number the model has issued and no number in the file reaches (not repeated by the codec)',
       'model: the diagram high-water mark 8, raised to 9 to cover a number this write issued (not repeated by the codec)',
-      'diagram "perimeter-review": the identifier, which the format numbers rather than names, written as 8 (reduced to fit the format)',
+      'diagram "perimeter-review": the name, which the format numbers a diagram rather than naming one, written as 8 (no place in the format)',
       'diagram "0": the release "2.0.0" the source was written by, for the 2.6.2 this codec writes (not repeated by the codec)',
       'element "element-zone": the out-of-scope marking, which the format records on the elements a threat attaches to alone (no place in the format)',
       'element "element-note": the name "Review note", which the format has one text for a note and no name beside it (no place in the format)',
@@ -269,6 +269,31 @@ describe('merging what the Écluse file has no example of', () => {
     const read = readOrThrow(text);
     const written = threatDragon.write(read.model, read.source);
     expect(readOrThrow(written.output).model).toEqual(read.model);
+  });
+
+  it('reports nothing on a threat the document already nested twice', () => {
+    const read = readOrThrow(JSON.stringify(complementFixture));
+    const written = threatDragon.write(read.model, read.source);
+    expect(read.model.threats[0]?.elements).toHaveLength(2);
+    expect(renderDivergences(written.divergences).split('\n')).toEqual([
+      'model: the release "2.0.0" the source was written by, for the 2.6.2 this codec writes (not repeated by the codec)',
+      'diagram "4": the release "2.0.0" the source was written by, for the 2.6.2 this codec writes (not repeated by the codec)',
+    ]);
+  });
+
+  it('marks a document that declared none over the numbers it holds', () => {
+    const read = readOrThrow(JSON.stringify(complementFixture));
+    const written = documentOf(
+      threatDragon.write(read.model, read.source).output,
+    );
+    expect(complementFixture.detail.threatTop).toBeUndefined();
+    expect(complementFixture.detail.diagramTop).toBeUndefined();
+    expect(numbersIn(written)).toEqual([3, 3, 4]);
+    expect(written.detail.diagrams.map((diagram) => diagram.id)).toEqual([
+      4, 5,
+    ]);
+    expect(written.detail.threatTop).toBe(4);
+    expect(written.detail.diagramTop).toBe(6);
   });
 
   it('keeps the misspelled curve shape Threat Dragon registers itself', () => {

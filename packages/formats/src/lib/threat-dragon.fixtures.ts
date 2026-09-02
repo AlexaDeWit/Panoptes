@@ -82,9 +82,10 @@ export const corpusTexts: readonly { name: string; text: string }[] = [
 /**
  * The JSON Schema Threat Dragon validates a v2 model against before it
  * opens one, vendored under `test-data/threat-dragon/schema`. A write is
- * measured against it with the validator Threat Dragon itself runs, so
- * output this codec produces is loadable by that tool rather than merely by
- * this one.
+ * measured against it with the validator Threat Dragon itself runs, which
+ * gates the shape of the document alone: the schema declares a cell's
+ * threats beside `data` rather than under it, so nothing it says reaches
+ * the threats this codec writes.
  */
 export const threatDragonJsonSchema: Readonly<Record<string, unknown>> = z
   .record(z.string(), z.unknown())
@@ -325,12 +326,28 @@ export const unmodelledFixture: ThreatDragonDocument = {
 };
 
 /**
- * The parsed form of a model fixture, for a spec that needs a Model rather
- * than the schema's input. Throws where the fixture stops parsing, since a
- * fixture that no longer parses is a broken suite rather than a case under
- * test, and the message carries the issues so the failure names what it lost.
+ * A whole model as `parseModel` takes it, typed from the schemas the model
+ * package exports rather than from the model schema itself, which stays
+ * internal to that package.
  */
-export function parsedFixture(input: unknown): Model {
+export type ModelInput = {
+  metadata: z.input<typeof modelMetadataSchema>;
+  diagrams: z.input<typeof diagramSchema>[];
+  threats: z.input<typeof threatSchema>[];
+  lastIssuedThreatNumber: number;
+  mitigations: z.input<typeof mitigationSchema>[];
+  assumptions: z.input<typeof assumptionSchema>[];
+};
+
+/**
+ * The parsed form of a model fixture, for a spec that needs a Model rather
+ * than the schema's input. Typed as that input, so a fixture literal is
+ * checked where it is written rather than only where it is parsed. Throws
+ * where the fixture stops parsing, since a fixture that no longer parses is
+ * a broken suite rather than a case under test, and the message carries the
+ * issues so the failure names what it lost.
+ */
+export function parsedFixture(input: ModelInput): Model {
   return Either.getOrThrowWith(
     parseModel(input),
     (failure) =>
@@ -341,20 +358,6 @@ export function parsedFixture(input: unknown): Model {
       ),
   );
 }
-
-/**
- * A whole model as `parseModel` takes it, typed from the schemas the model
- * package exports rather than from the model schema itself, which stays
- * internal to that package.
- */
-type ModelInput = {
-  metadata: z.input<typeof modelMetadataSchema>;
-  diagrams: z.input<typeof diagramSchema>[];
-  threats: z.input<typeof threatSchema>[];
-  lastIssuedThreatNumber: number;
-  mitigations: z.input<typeof mitigationSchema>[];
-  assumptions: z.input<typeof assumptionSchema>[];
-};
 
 /**
  * A model holding what Threat Dragon has no place for, so that a write of

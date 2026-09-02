@@ -23,25 +23,44 @@ import type {
 } from './threat-dragon-wire.js';
 
 /**
+ * A mark a file carries so a number already in use is not handed out again,
+ * and why this write moved it: `issued` where the write put a number in the
+ * file that the file did not already carry, `unreachable` where the model
+ * has issued above every number the file holds, which is the gap a removed
+ * threat left. The two are exclusive, since a number this write issues is
+ * written into the file and so is reachable from it.
+ */
+export type HighWaterMark = {
+  readonly value: number;
+  readonly cause: 'issued' | 'unreachable';
+};
+
+/**
  * Where every threat of the model goes: the wire threat to nest under each
  * cell that hosts it, keyed by cell id; the `threatTop` the file needs; and
  * what the format could not hold of them.
  */
 export type ThreatPlan = {
   readonly byCell: ReadonlyMap<string, readonly ThreatDragonThreat[]>;
-  readonly threatTop: number;
+  readonly threatTop: HighWaterMark;
   readonly divergences: readonly Divergence[];
 };
 
 /**
  * The model's threats as Threat Dragon nests them. Ours attach to any
  * number of elements and Threat Dragon nests each under one cell, so a
- * threat naming several is written under each of them and reported as
- * `split`, and one naming a trust boundary, a note, or nothing at all is
- * reported as unrepresentable, since those are not cells a threat attaches
- * to. A threat the source already holds under a cell is merged onto that
- * copy and the cell's own order is kept, so a threat nobody touched leaves
- * the file exactly as it was.
+ * threat naming several is written under each of them, and one naming a
+ * trust boundary, a note, or nothing at all is reported as unrepresentable,
+ * since those are not cells a threat attaches to.
+ *
+ * `split` is reported for the record this write is the one to divide. A
+ * source that already nests the threat under every cell the model names was
+ * split before this write ran, and nothing became several here, so a merge
+ * of an unedited model onto that document reports nothing.
+ *
+ * A threat the source already holds under a cell is merged onto that copy
+ * and the cell's own order is kept, so a threat nobody touched leaves the
+ * file exactly as it was.
  */
 export function planThreats(
   model: Model,
@@ -76,7 +95,10 @@ export function planThreats(
       divergences.push(unplaceable(threat.id));
       continue;
     }
-    if (placed.length > 1) {
+    if (
+      placed.length > 1 &&
+      !placed.every((id) => nested.get(id)?.has(threat.id) === true)
+    ) {
       divergences.push(split(threat.id, placed.length));
     }
     written.push(threat.number);
@@ -129,25 +151,35 @@ function canHost(
 }
 
 /**
- * The `threatTop` to write: never below what the source declared, above
- * every number this write put in the file that the file did not already
- * carry, and above the model's own mark where the numbers in the file
- * cannot recover it, since a read takes the greater of the two and the mark
- * is what keeps the gap a removed threat left from being handed out again.
+ * The `threatTop` to write. A file that declared one keeps it as its floor,
+ * since a mark the file already carries is its own claim and lowering or
+ * raising it would rewrite what the file said. A file that declared none is
+ * given one that covers the numbers it holds: writing 0 onto a file holding
+ * a threat numbered 4 would have Threat Dragon hand 1 to 4 out again, which
+ * is the collision this field exists to prevent.
+ *
+ * Above that floor it rises for two reasons. A number this write put in the
+ * file that the file did not already carry has to be covered. And the
+ * model's own mark has to be reachable: a read takes the greater of the
+ * mark and the highest number in the file, so where the file's numbers fall
+ * short of it, the gap a removed threat left would be handed out again.
  */
 function highWaterMark(
   model: Model,
   source: ThreatDragonDocument | undefined,
   written: readonly number[],
   issued: readonly number[],
-): number {
-  const declared = source?.detail.threatTop ?? 0;
-  const recovered = Math.max(declared, ...written, 0);
-  return Math.max(
-    declared,
-    ...issued,
-    recovered < model.lastIssuedThreatNumber ? model.lastIssuedThreatNumber : 0,
-  );
+): HighWaterMark {
+  const held = Math.max(0, ...written);
+  const floor = source?.detail.threatTop ?? held;
+  const unreachable =
+    Math.max(floor, held) < model.lastIssuedThreatNumber
+      ? model.lastIssuedThreatNumber
+      : 0;
+  return {
+    value: Math.max(floor, ...issued, unreachable),
+    cause: unreachable > 0 ? 'unreachable' : 'issued',
+  };
 }
 
 function inSourceOrder(

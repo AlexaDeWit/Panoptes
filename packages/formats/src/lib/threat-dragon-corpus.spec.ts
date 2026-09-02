@@ -1,5 +1,7 @@
+import { diagramIdSchema } from '@panoptes/model';
 import { Ajv } from 'ajv';
 import { Either } from 'effect';
+import type { Divergence } from './divergence.js';
 import { allThreats } from './threat-dragon-document.js';
 import { readThreatDragon } from './threat-dragon-read.js';
 import type { ThreatDragonDocument } from './threat-dragon-wire.js';
@@ -43,6 +45,7 @@ const roundTrips = corpusTexts.map((file) => {
     () => new Error(`The corpus file ${file.name} no longer reads.`),
   );
   const written = writeThreatDragon(read.model, read.source);
+  const reread = readThreatDragon(written.output);
   return {
     name: file.name,
     source: read.source,
@@ -50,7 +53,11 @@ const roundTrips = corpusTexts.map((file) => {
     written,
     before: JSON.parse(file.text) as unknown,
     after: JSON.parse(written.output) as unknown,
-    reread: readThreatDragon(written.output),
+    document: Either.getOrThrowWith(
+      reread,
+      () => new Error(`The write of ${file.name} no longer reads back.`),
+    ).source,
+    reread,
   };
 });
 
@@ -81,24 +88,71 @@ const moved = (before: unknown, after: unknown): ReadonlySet<string> => {
   );
 };
 
+const released = (
+  from: string,
+  subject: Divergence['subject'],
+): Divergence => ({
+  subject,
+  detail: `the release "${from}" the source was written by, for the ${writtenVersion} this codec writes`,
+  reason: 'overridden',
+});
+
 /**
- * The paths a write of an unedited model may move, read off the source
- * document rather than off the writer: the release stamp wherever the file
- * carries another one, and the threat high-water mark where the file left a
- * threat unnumbered, since writing that number down is what raises the mark.
+ * What a write of an unedited model may move, read off the two documents
+ * rather than off the writer: which path, and the entry that has to claim
+ * it. The release stamp moves wherever the file carries another one, and
+ * the threat high-water mark moves where the file left a threat unnumbered,
+ * since writing that number down is what raises the mark. The mark can rise
+ * for one other reason, a model that has issued above every number the file
+ * holds, but a straight read of a file sets that mark from the file's own
+ * numbers, so a round trip never reaches it. The entries are in the order
+ * the writer records them: the document's own stamp, its mark, then each
+ * diagram's stamp.
  */
-const stamps = (source: ThreatDragonDocument): ReadonlySet<string> =>
-  new Set([
-    ...(source.version === writtenVersion ? [] : ['version']),
-    ...source.detail.diagrams.flatMap((diagram, index) =>
-      diagram.version === undefined || diagram.version === writtenVersion
-        ? []
-        : [`detail.diagrams.${index}.version`],
-    ),
-    ...(allThreats(source).some((threat) => threat.number === undefined)
-      ? ['detail.threatTop']
-      : []),
-  ]);
+const stamps = (
+  source: ThreatDragonDocument,
+  after: ThreatDragonDocument,
+): readonly { path: string; divergence: Divergence }[] => [
+  ...(source.version === writtenVersion
+    ? []
+    : [
+        {
+          path: 'version',
+          divergence: released(source.version, { kind: 'model' }),
+        },
+      ]),
+  ...(allThreats(source).some((threat) => threat.number === undefined)
+    ? [
+        {
+          path: 'detail.threatTop',
+          divergence: {
+            subject: { kind: 'model' as const },
+            detail: `the threat high-water mark ${source.detail.threatTop}, raised to ${after.detail.threatTop} to cover a number this write issued`,
+            reason: 'overridden' as const,
+          },
+        },
+      ]
+    : []),
+  ...source.detail.diagrams.flatMap((diagram, index) =>
+    diagram.version === undefined || diagram.version === writtenVersion
+      ? []
+      : [
+          {
+            path: `detail.diagrams.${index}.version`,
+            divergence: released(diagram.version, {
+              kind: 'diagram' as const,
+              id: diagramIdSchema.parse(String(diagram.id)),
+            }),
+          },
+        ],
+  ),
+];
+
+const stampedPaths = (
+  source: ThreatDragonDocument,
+  after: ThreatDragonDocument,
+): ReadonlySet<string> =>
+  new Set(stamps(source, after).map((held) => held.path));
 
 describe('every Threat Dragon file the repository vendors', () => {
   it('is the corpus the codec claims to read', () => {
@@ -117,17 +171,17 @@ describe('every Threat Dragon file the repository vendors', () => {
 describe('writing every vendored file back onto its own document', () => {
   it.each(roundTrips)(
     'moves no scalar of $name but the stamp this codec writes',
-    ({ source, before, after }) => {
-      expect(moved(before, after)).toEqual(stamps(source));
+    ({ source, document, before, after }) => {
+      expect(moved(before, after)).toEqual(stampedPaths(source, document));
     },
   );
 
   it.each(roundTrips)(
-    'reports every scalar it moved in $name, and nothing besides',
-    ({ source, written }) => {
-      expect(
-        written.divergences.map((divergence) => divergence.reason),
-      ).toEqual([...stamps(source)].map(() => 'overridden'));
+    'names every scalar it moved in $name, and claims nothing besides',
+    ({ source, document, written }) => {
+      expect(written.divergences).toEqual(
+        stamps(source, document).map((held) => held.divergence),
+      );
     },
   );
 
@@ -158,6 +212,7 @@ describe('the Écluse model, the one file this codec preserves whole', () => {
 
   it('comes back with every scalar it went in with, and no stamp moved', () => {
     expect(moved(ecluse.before, ecluse.after)).toEqual(new Set());
+    expect(stamps(ecluse.source, ecluse.document)).toEqual([]);
   });
 
   it('reports no divergence at all', () => {

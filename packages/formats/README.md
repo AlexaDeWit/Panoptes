@@ -133,8 +133,12 @@ where the source said otherwise. It stamps the release it models, 2.6.2,
 rather than repeating the one the file arrived with. It raises
 `detail.threatTop` to cover a number it wrote that the file did not already
 carry, so Threat Dragon issues no number twice, and never lowers it: the mark
-is what keeps the gap a removed threat left from being handed out again.
-`detail.diagramTop` follows the same rule for a diagram number. Issuing a
+is what keeps the gap a removed threat left from being handed out again. The
+mark rises for one other reason, and says which: a model that has issued
+above every number the file holds would otherwise lose that gap on the way
+back in. A file that declared no mark at all is given one covering the
+numbers it holds, since a zero there is a number Threat Dragon would reissue.
+`detail.diagramTop` follows the same rules for a diagram number. Issuing a
 number is not itself a divergence, since the file gains a fact rather than
 losing one.
 
@@ -142,12 +146,17 @@ What the format cannot hold is named rather than dropped in silence: a
 mitigation or an assumption, which Threat Dragon keeps no record of; a threat
 attached to a trust boundary or a note, which it nests threats under neither;
 a note's name, which it holds one text for; an out-of-scope marking on a
-boundary or a note; a PLOT4ai category, since Threat Dragon ships an older
-eight-category set that names something else; and a diagram the model named
-rather than numbered. A threat attached to several elements is written under
-each and reported as `split`. Where a merge meets a document an edit has
-moved out from under, the diagram, cell, or threat that went is reported as
-`discarded-by-edit` with what it was carrying.
+boundary or a note; and a diagram's name, which the format replaces with a
+number. A value that does reach the file and comes back holding less is
+narrowed rather than unrepresentable, which is where a PLOT4ai category
+lands: the label is written whole, and reads back as a custom category
+because Threat Dragon ships an older eight-category set naming something
+else. A threat this write is the one to divide across several cells is
+reported as `split`, and a document that already nested it under each of them
+was split before this write ran, so a merge onto it reports nothing. Where a
+merge meets a document an edit has moved out from under, the diagram, cell,
+or threat that went is reported as `discarded-by-edit` with what it was
+carrying.
 
 Three oracles gate the write, all of them over the vendored corpus rather
 than over invented input. Every file is written straight back onto its own
@@ -159,8 +168,11 @@ reported. Every file then reads back as the model it was written from, and
 `ecluse.json` reads back as the internal model vendored at
 `test-data/ecluse.model.json`, which `packages/model` regenerates from its own
 fixture. And every written file validates against the JSON Schema Threat
-Dragon validates with, run through ajv as that tool runs it, so a file this
-codec writes is loadable by the tool that owns the format.
+Dragon ships, run through ajv as that tool runs it. That schema describes
+the file Threat Dragon writes only in part, and threats least of all: it
+declares them beside `data` rather than under it, and constrains nothing
+this codec puts there. So the oracle gates the shape of the document, and
+the two oracles above are what gate its threats.
 
 The format detection that picks a codec (#84) comes next.
 

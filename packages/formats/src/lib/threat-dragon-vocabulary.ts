@@ -265,6 +265,12 @@ export function fromSeverity(severity: Severity): string {
  * methodology rather than as custom. The caller sees both by reading its own
  * projection back with {@link toThreatCategory}.
  *
+ * Narrowed rather than unrepresentable is the distinction the divergence
+ * vocabulary draws: the category reaches the file whole and comes back
+ * holding less, where something unrepresentable never reaches the file at
+ * all. A diagram's name, which the format replaces with a number, is the
+ * second kind.
+ *
  * An Elevation of Privilege threat is the one category written somewhere
  * other than `type`: Threat Dragon's own editor writes the suit to
  * `cardSuit` and leaves `type` null, and the model holds the suit alone.

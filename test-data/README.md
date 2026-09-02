@@ -138,8 +138,10 @@ the codec working, so it would gate nothing here.
 The JSON Schema Threat Dragon validates a v2 file against before it opens
 one. `packages/formats` runs the write codec's output through it with ajv,
 configured as Threat Dragon configures it, so what this project writes is
-loadable by the tool that owns the format rather than only by the codec that
-wrote it.
+measured against the format's own description of itself rather than only
+against the codec that wrote it. It gates the shape of the document: a
+threat is not something it describes, so nothing it says holds one to
+anything.
 
 It is not the schema `threat-dragon-wire.ts` follows. That one describes what
 Threat Dragon writes, and the two differ: the published schema puts a cell's
