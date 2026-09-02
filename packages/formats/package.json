@@ -21,6 +21,7 @@
     "zod": "catalog:"
   },
   "devDependencies": {
+    "ajv": "catalog:",
     "fast-check": "catalog:"
   },
   "nx": {

@@ -12,6 +12,18 @@ import { categoryTranslations } from './threat-dragon-locales.js';
 import type { ThreatDragonThreat } from './threat-dragon-wire.js';
 
 /**
+ * The fields of a Threat Dragon threat that name its category: the
+ * methodology, the label in whatever language its author saw, and, for an
+ * Elevation of Privilege threat, the suit of the card it was drawn from.
+ * Reading and writing a category both work in these terms alone, so a write
+ * can hand its own projection back to the read to see what it would say.
+ */
+export type ThreatDragonCategoryFields = Pick<
+  ThreatDragonThreat,
+  'modelType' | 'type' | 'cardSuit'
+>;
+
+/**
  * A Threat Dragon value as the internal model holds it, and whether the
  * model holds it exactly. `exact` is false where the codec had to fall
  * back, which is a read's cue to report a divergence.
@@ -23,6 +35,8 @@ export type Reading<Value> = {
 
 const unspecified = 'unspecified';
 
+const eop = 'EOP';
+
 const statuses = {
   Open: 'open',
   Mitigated: 'mitigated',
@@ -33,6 +47,16 @@ const statuses = {
   NotApplicable: 'not-applicable',
 } as const satisfies Record<string, ThreatStatus>;
 
+const statusLabels = {
+  open: 'Open',
+  mitigated: 'Mitigated',
+  transferred: 'Transferred',
+  avoided: 'Avoided',
+  'accepted-risk': 'Accepted',
+  eliminated: 'Eliminated',
+  'not-applicable': 'NotApplicable',
+} as const satisfies Record<ThreatStatus, string>;
+
 const severities = {
   Low: 'low',
   Medium: 'medium',
@@ -42,6 +66,14 @@ const severities = {
   TBA: 'undecided',
 } as const satisfies Record<string, Severity>;
 
+const severityLabels = {
+  low: 'Low',
+  medium: 'Medium',
+  high: 'High',
+  critical: 'Critical',
+  undecided: 'TBD',
+} as const satisfies Record<Severity, string>;
+
 const strideCategories = {
   Spoofing: 'spoofing',
   Tampering: 'tampering',
@@ -50,6 +82,15 @@ const strideCategories = {
   'Denial of service': 'denial-of-service',
   'Elevation of privilege': 'elevation-of-privilege',
 } as const satisfies Record<string, StrideCategory['category']>;
+
+const strideLabels = {
+  spoofing: 'Spoofing',
+  tampering: 'Tampering',
+  repudiation: 'Repudiation',
+  'information-disclosure': 'Information disclosure',
+  'denial-of-service': 'Denial of service',
+  'elevation-of-privilege': 'Elevation of privilege',
+} as const satisfies Record<StrideCategory['category'], string>;
 
 const linddunCategories = {
   Linkability: 'linking',
@@ -61,11 +102,27 @@ const linddunCategories = {
   'Non-compliance': 'non-compliance',
 } as const satisfies Record<string, LinddunCategory['category']>;
 
+const linddunLabels = {
+  linking: 'Linkability',
+  identifying: 'Identifiability',
+  'non-repudiation': 'Non-repudiation',
+  detecting: 'Detectability',
+  'data-disclosure': 'Disclosure of information',
+  unawareness: 'Unawareness',
+  'non-compliance': 'Non-compliance',
+} as const satisfies Record<LinddunCategory['category'], string>;
+
 const ciaCategories = {
   Confidentiality: 'confidentiality',
   Integrity: 'integrity',
   Availability: 'availability',
 } as const satisfies Record<string, CiaCategory['category']>;
+
+const ciaLabels = {
+  confidentiality: 'Confidentiality',
+  integrity: 'Integrity',
+  availability: 'Availability',
+} as const satisfies Record<CiaCategory['category'], string>;
 
 const ciaDieCategories = {
   ...ciaCategories,
@@ -73,6 +130,13 @@ const ciaDieCategories = {
   Immutable: 'immutable',
   Ephemeral: 'ephemeral',
 } as const satisfies Record<string, CiaDieCategory['category']>;
+
+const ciaDieLabels = {
+  ...ciaLabels,
+  distributed: 'Distributed',
+  immutable: 'Immutable',
+  ephemeral: 'Ephemeral',
+} as const satisfies Record<CiaDieCategory['category'], string>;
 
 const ciaDieTranslations = {
   ...categoryTranslations.cia,
@@ -147,10 +211,10 @@ export function toSeverity(severity: string): Reading<Severity> {
  * empty names.
  */
 export function toThreatCategory(
-  threat: ThreatDragonThreat,
+  threat: ThreatDragonCategoryFields,
 ): Reading<ThreatCategory> {
   const methodology = threat.modelType ?? unspecified;
-  if (methodology === 'EOP') {
+  if (methodology === eop) {
     return {
       value: custom(methodology, threat.cardSuit ?? unspecified),
       exact: false,
@@ -165,6 +229,73 @@ export function toThreatCategory(
   return category === undefined
     ? { value: custom(methodology, label), exact: false }
     : { value: category, exact: true };
+}
+
+/**
+ * The internal status as Threat Dragon spells it. Every state the model
+ * holds has a spelling, so nothing is lost, and the spec walks the schema's
+ * own options to hold this table and the reading table above to each other.
+ */
+export function fromThreatStatus(status: ThreatStatus): string {
+  return statusLabels[status];
+}
+
+/**
+ * The internal severity as Threat Dragon spells it. `undecided` is written
+ * TBD, the one of the two spellings Threat Dragon's own editor offers; a
+ * file that said TBA keeps saying it, because a write leaves a value the
+ * source already holds alone where it still reads back the same.
+ */
+export function fromSeverity(severity: Severity): string {
+  return severityLabels[severity];
+}
+
+/**
+ * The internal category as the fields a Threat Dragon threat names it with.
+ * The methodologies the model enumerates are written in Threat Dragon's own
+ * English labels, since the file has no language of its own to write and a
+ * translated label reaches the same category on the way back.
+ *
+ * Two of them do not survive the return trip, and a write reports each as
+ * narrowed rather than this function claiming otherwise. PLOT4ai is written
+ * under the model's own category names because Threat Dragon ships an older
+ * eight-category set that names something else, so the label reaches the
+ * file whole but reads back as a custom category. A custom category whose
+ * methodology name is one Threat Dragon enumerates reads back as that
+ * methodology rather than as custom. The caller sees both by reading its own
+ * projection back with {@link toThreatCategory}.
+ *
+ * Narrowed rather than unrepresentable is the distinction the divergence
+ * vocabulary draws: the category reaches the file whole and comes back
+ * holding less, where something unrepresentable never reaches the file at
+ * all. A diagram's name, which the format replaces with a number, is the
+ * second kind.
+ *
+ * An Elevation of Privilege threat is the one category written somewhere
+ * other than `type`: Threat Dragon's own editor writes the suit to
+ * `cardSuit` and leaves `type` null, and the model holds the suit alone.
+ */
+export function fromThreatCategory(
+  category: ThreatCategory,
+): ThreatDragonCategoryFields {
+  if (category.methodology === 'STRIDE') {
+    return { modelType: 'STRIDE', type: strideLabels[category.category] };
+  }
+  if (category.methodology === 'LINDDUN') {
+    return { modelType: 'LINDDUN', type: linddunLabels[category.category] };
+  }
+  if (category.methodology === 'CIA') {
+    return { modelType: 'CIA', type: ciaLabels[category.category] };
+  }
+  if (category.methodology === 'CIA-DIE') {
+    return { modelType: 'CIADIE', type: ciaDieLabels[category.category] };
+  }
+  if (category.methodology === 'PLOT4ai') {
+    return { modelType: 'PLOT4ai', type: category.category };
+  }
+  return category.methodologyName === eop
+    ? { modelType: eop, type: null, cardSuit: category.category }
+    : { modelType: category.methodologyName, type: category.category };
 }
 
 function custom(methodologyName: string, category: string): CustomCategory {

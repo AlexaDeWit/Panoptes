@@ -14,6 +14,14 @@ import type { z } from 'zod';
 import { ReadFailure, type ReadResult } from './codec.js';
 import type { Divergence } from './divergence.js';
 import {
+  cellsOf,
+  isAnchored,
+  threatsOf,
+  type ThreatDragonBoundary,
+  type ThreatDragonFlow,
+  type ThreatDragonNode,
+} from './threat-dragon-document.js';
+import {
   toSeverity,
   toThreatCategory,
   toThreatStatus,
@@ -33,23 +41,6 @@ type DiagramInput = z.input<typeof diagramSchema>;
 type ElementInput = z.input<typeof elementSchema>;
 type EndpointInput = z.input<typeof flowEndpointSchema>;
 type ThreatInput = z.input<typeof threatSchema>;
-
-type NodeCell = Extract<
-  ThreatDragonCell,
-  { shape: 'actor' | 'process' | 'store' }
->;
-
-type FlowCell = Extract<ThreatDragonCell, { shape: 'flow' }>;
-
-type BoundaryCell = Extract<
-  ThreatDragonCell,
-  {
-    shape:
-      | 'trust-boundary-box'
-      | 'trust-boundary-curve'
-      | 'trust-broundary-curve';
-  }
->;
 
 type ThreatEntry = {
   readonly threat: ThreatDragonThreat;
@@ -184,7 +175,7 @@ function toDiagram(diagram: ThreatDragonDiagram): DiagramInput {
   return {
     id: String(diagram.id),
     title: diagram.title,
-    elements: (diagram.cells ?? []).map(toElement),
+    elements: cellsOf(diagram).map(toElement),
   };
 }
 
@@ -237,11 +228,11 @@ function toElement(cell: ThreatDragonCell): ElementInput {
   };
 }
 
-function toNode(cell: NodeCell) {
+function toNode(cell: ThreatDragonNode) {
   return { ...toCommon(cell), position: cell.position, size: cell.size };
 }
 
-function toCommon(cell: NodeCell | FlowCell) {
+function toCommon(cell: ThreatDragonNode | ThreatDragonFlow) {
   return {
     id: cell.id,
     name: cell.data.name ?? '',
@@ -251,7 +242,7 @@ function toCommon(cell: NodeCell | FlowCell) {
   };
 }
 
-function toBoundaryCommon(cell: BoundaryCell) {
+function toBoundaryCommon(cell: ThreatDragonBoundary) {
   return {
     id: cell.id,
     name: cell.data.name ?? cell.attrs?.label?.text ?? '',
@@ -265,12 +256,6 @@ function toEndpoint(endpoint: ThreatDragonEndpoint): EndpointInput {
   return isAnchored(endpoint)
     ? { kind: 'attached', element: endpoint.cell }
     : { kind: 'free', position: endpoint };
-}
-
-function isAnchored(
-  endpoint: ThreatDragonEndpoint,
-): endpoint is Extract<ThreatDragonEndpoint, { cell: string }> {
-  return Object.hasOwn(endpoint, 'cell');
 }
 
 function toThreatEntries(document: ThreatDragonDocument): {
@@ -300,7 +285,7 @@ function groupThreats(
     { threat: ThreatDragonThreat; elements: string[] }
   >();
   for (const diagram of diagrams) {
-    for (const cell of diagram.cells ?? []) {
+    for (const cell of cellsOf(diagram)) {
       for (const threat of threatsOf(cell)) {
         const held = attached.get(threat.id);
         if (held) {
@@ -312,19 +297,6 @@ function groupThreats(
     }
   }
   return [...attached.values()];
-}
-
-function threatsOf(cell: ThreatDragonCell): readonly ThreatDragonThreat[] {
-  return carriesThreats(cell) ? (cell.data.threats ?? []) : [];
-}
-
-function carriesThreats(cell: ThreatDragonCell): cell is NodeCell | FlowCell {
-  return (
-    cell.shape === 'actor' ||
-    cell.shape === 'process' ||
-    cell.shape === 'store' ||
-    cell.shape === 'flow'
-  );
 }
 
 function toThreat(entry: ThreatEntry): {

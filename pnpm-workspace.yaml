@@ -104,6 +104,10 @@ catalog:
   '@vitejs/plugin-react': ^6.0.0
   '@vitest/coverage-v8': ~4.1.0
   '@vitest/ui': ~4.1.0
+  # Threat Dragon validates a threat model with ajv against the JSON Schema
+  # vendored under test-data, so the write codec's oracle runs the validator
+  # that tool runs.
+  ajv: ^8.17.1
   effect: ^3.22.0
   esbuild: ^0.28.0
   eslint: ^10.0.0

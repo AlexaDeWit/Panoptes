@@ -78,6 +78,9 @@ catalogs:
     '@vitest/ui':
       specifier: ~4.1.0
       version: 4.1.11
+    ajv:
+      specifier: ^8.17.1
+      version: 8.20.0
     effect:
       specifier: ^3.22.0
       version: 3.22.1
@@ -294,6 +297,9 @@ importers:
         specifier: 'catalog:'
         version: 4.4.3
     devDependencies:
+      ajv:
+        specifier: 'catalog:'
+        version: 8.20.0
       fast-check:
         specifier: 'catalog:'
         version: 3.23.2

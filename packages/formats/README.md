@@ -110,7 +110,70 @@ a change to what the format writes arrives as a diff on that file. Models
 generated over the model's own shape gate the rest: each survives a write
 and a read as itself, with its threats in number order.
 
-The Threat Dragon write (#28) and the format detection that picks a codec
-(#84) come next.
+`writeThreatDragon` is the other half. Given the document a read returned it
+merges the model onto it, and given none it projects the model into Threat
+Dragon's own canonical form. Output is built through the wire schema's
+inferred types, so the writer cannot emit a shape that schema would refuse,
+and the path down to a threat, which Threat Dragon nests eight levels deep at
+`detail.diagrams[i].cells[j].data.threats[k]`, is walked with the typed
+helpers in `threat-dragon-document.ts` rather than with casts.
+
+The merge writes over the mapped fields and leaves the document otherwise as
+it found it, which is how ports, `attrs` styling, `zIndex`, `tools`, and the
+per-type flags Panoptes does not model survive a save. A mapped field is
+rewritten only where what the source says no longer reads back as what the
+model says, because the mapping is not injective in two places the corpus
+holds: Threat Dragon stores a category as the label its author saw, so a
+German file says `Manipulation` where an English one says `Tampering`, and it
+reads both `TBD` and `TBA` as the one undecided severity. Overwriting either
+would record a user's edit where the read merely normalized.
+
+Three decisions the codec makes on its own, each reported as `overridden`
+where the source said otherwise. It stamps the release it models, 2.6.2,
+rather than repeating the one the file arrived with. It raises
+`detail.threatTop` to cover a number it wrote that the file did not already
+carry, so Threat Dragon issues no number twice, and never lowers it: the mark
+is what keeps the gap a removed threat left from being handed out again. The
+mark rises for one other reason, and says which: a model that has issued
+above every number the file holds would otherwise lose that gap on the way
+back in. A file that declared no mark at all is given one covering the
+numbers it holds, since a zero there is a number Threat Dragon would reissue.
+`detail.diagramTop` follows the same rules for a diagram number. Issuing a
+number is not itself a divergence, since the file gains a fact rather than
+losing one.
+
+What the format cannot hold is named rather than dropped in silence: a
+mitigation or an assumption, which Threat Dragon keeps no record of; a threat
+attached to a trust boundary or a note, which it nests threats under neither;
+a note's name, which it holds one text for; an out-of-scope marking on a
+boundary or a note; and a diagram's name, which the format replaces with a
+number. A value that does reach the file and comes back holding less is
+narrowed rather than unrepresentable, which is where a PLOT4ai category
+lands: the label is written whole, and reads back as a custom category
+because Threat Dragon ships an older eight-category set naming something
+else. A threat this write is the one to divide across several cells is
+reported as `split`, and a document that already nested it under each of them
+was split before this write ran, so a merge onto it reports nothing. Where a
+merge meets a document an edit has moved out from under, the diagram, cell,
+or threat that went is reported as `discarded-by-edit` with what it was
+carrying.
+
+Three oracles gate the write, all of them over the vendored corpus rather
+than over invented input. Every file is written straight back onto its own
+document and compared raw parsed input against raw parsed output: no scalar
+moves but the stamps above, and each one that moves is matched by the
+divergence that claims it. On `ecluse.json`, which is already stamped 2.6.2
+and already numbers every threat, nothing moves at all and nothing is
+reported. Every file then reads back as the model it was written from, and
+`ecluse.json` reads back as the internal model vendored at
+`test-data/ecluse.model.json`, which `packages/model` regenerates from its own
+fixture. And every written file validates against the JSON Schema Threat
+Dragon ships, run through ajv as that tool runs it. That schema describes
+the file Threat Dragon writes only in part, and threats least of all: it
+declares them beside `data` rather than under it, and constrains nothing
+this codec puts there. So the oracle gates the shape of the document, and
+the two oracles above are what gate its threats.
+
+The format detection that picks a codec (#84) comes next.
 
 Unit tests: `pnpm nx test @panoptes/formats`.

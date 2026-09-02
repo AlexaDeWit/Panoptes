@@ -6,6 +6,7 @@ import { readThreatDragon } from './threat-dragon-read.js';
 import type { threatDragonWireSchema } from './threat-dragon-wire.js';
 import {
   complementFixture,
+  ecluseModel,
   ecluseText,
   minimalFixture,
   unmodelledFixture,
@@ -129,6 +130,10 @@ describe('reading the Écluse threat model', () => {
     expect(
       routed.map((element) => element.kind === 'flow' && element.waypoints),
     ).toEqual([[{ x: 1180, y: 1065 }]]);
+  });
+
+  it('lands as the expected internal model, compared as one value', () => {
+    expect(ecluse.model).toStrictEqual(ecluseModel);
   });
 
   it('diverges in nothing, so the schema declares every key it holds', () => {
