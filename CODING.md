@@ -73,6 +73,18 @@ Targets are root-defined: nx plugins and `targetDefaults` own task
 configuration. A leaf project opts in with a config file or an
 executor-only marker, and deviations need a stated reason.
 
+Nx replays a cached task result when the hash of its declared inputs is
+unchanged, and the default inputs are the project's own files plus
+`sharedGlobals`. A task that reads a file outside its project root does
+not see that file change, so an edited fixture can report green from the
+run before the edit. Every such path is named in `sharedGlobals` or in the
+target's `inputs` (`test-data/` is the case in the tree). The same holds
+for what a task produces and consumes: files a task writes are restored
+from cache only when listed in its `outputs`, and a task that needs another
+project's output reaches it through the project graph, a `workspace:*`
+dependency or `dependsOn`, never a relative path the graph cannot see. CI
+restores no cache, so a hole shows only in local runs.
+
 ## Workflows and CI
 
 Pin every GitHub Action to a full commit SHA, never a tag, with the
