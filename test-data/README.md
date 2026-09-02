@@ -13,6 +13,10 @@ tool wrote, which is what a codec has to read, and the written one keeps the
 bytes the codec produced, which is what a test compares against. This note is
 formatted like any other document.
 
+`nx.json` names this directory in `sharedGlobals`, so editing a file below
+invalidates the cached result of every task that reads it. Without that a
+suite reading these files reports the green it cached before the edit.
+
 ## `ecluse.json`
 
 The threat model of [Écluse](https://github.com/AlexaDeWit/Ecluse), a
@@ -36,9 +40,8 @@ project has. Two uses:
 - `packages/formats` reads this file through the Threat Dragon codec
   (`readThreatDragon`) and pins the counts, vocabularies, and drifts the model
   fixture pins. The transcription keeps Threat Dragon's own cell and threat
-  ids, so the two sides describe the same records without an id mapping. They
-  are not compared as one value: `ecluseFixture` is internal to
-  `packages/model`, so `packages/formats` has no way to reach it.
+  ids, so the two sides describe the same records without an id mapping, and
+  `ecluse.model.json` below is where the two are compared as one value.
 
 One drift to know about before writing that codec: the file's `threatTop` is
 28, while two of its threats are numbered 101 and 102. Threat Dragon does not
@@ -62,6 +65,25 @@ format's output by definition, so a change to it is a change to the format.
 
 The committed bytes are read back as well, and have to parse to the model
 they were written from, so the file gates more than its own regeneration.
+
+## `ecluse.model.json`
+
+The Écluse model in the internal form: `ecluseFixture` as `packages/model`
+writes it out. Not vendored. This repository generates it, from the fixture
+that carries the representability gate.
+
+It is here because the two descriptions of that one threat model were never
+held to each other. `packages/model` owned the transcription and
+`packages/formats` pinned the same counts and vocabularies beside it, so a
+drift in an element description, an endpoint, or `outOfScope` passed both
+suites. Three assertions now read this file. `packages/model` regenerates it
+on every test run with `toMatchFileSnapshot` and reds where the fixture and
+the file differ. `packages/formats` compares the whole read of `ecluse.json`
+against it, and compares again what a write of that read reads back.
+
+Regenerate it with `pnpm nx test @panoptes/model -- -u`, in the same commit as
+the change that moved it, and read the diff: it is what the model core holds
+of a real threat model.
 
 ## `threat-dragon/`
 
@@ -110,6 +132,27 @@ either. `ThreatDragonModels/test/v2-malformed-new-model.json` is stamped
 `2.1.3` and so is a v2 file, but it is deliberately malformed, down to
 misspelling `summary` as `titled` and `detail` as `details`. Refusing it is
 the codec working, so it would gate nothing here.
+
+## `threat-dragon/schema/`
+
+The JSON Schema Threat Dragon validates a v2 file against before it opens
+one. `packages/formats` runs the write codec's output through it with ajv,
+configured as Threat Dragon configures it, so what this project writes is
+loadable by the tool that owns the format rather than only by the codec that
+wrote it.
+
+It is not the schema `threat-dragon-wire.ts` follows. That one describes what
+Threat Dragon writes, and the two differ: the published schema puts a cell's
+threats beside `data` rather than under it, names a threat's id `threatId`,
+and declares neither ports nor tools nor labels nor the boundary bookkeeping.
+What it does pin, and what a written file therefore has to carry, is
+`contributors`, `diagramTop`, `reviewer` and `threatTop` on the detail, a
+`thumbnail` and a `version` on every diagram, and a `zIndex` and a
+`data.hasOpenThreats` on every cell.
+
+| File                                  | Upstream path                                           | MD5                                |
+| ------------------------------------- | ------------------------------------------------------- | ---------------------------------- |
+| `schema/threat-dragon-v2.schema.json` | `td.vue/src/assets/schema/threat-dragon-v2.schema.json` | `72b130d31edd31c6408186281586f98d` |
 
 ## `threat-dragon/i18n/`
 

@@ -2,11 +2,17 @@ import {
   ciaCategorySchema,
   ciaDieCategorySchema,
   linddunCategorySchema,
+  plot4aiCategorySchema,
   severitySchema,
   strideCategorySchema,
+  threatCategorySchema,
   threatStatusSchema,
 } from '@panoptes/model';
+import { equivalent } from './equivalence.js';
 import {
+  fromSeverity,
+  fromThreatCategory,
+  fromThreatStatus,
   toSeverity,
   toThreatCategory,
   toThreatStatus,
@@ -26,6 +32,24 @@ const threat = (part: Partial<ThreatDragonThreat>): ThreatDragonThreat => ({
   ...base,
   ...part,
 });
+
+const enumeratedCategories = threatCategorySchema.options.flatMap(
+  (option): [string, readonly string[]][] =>
+    'options' in option.shape.category
+      ? [[option.shape.methodology.value, option.shape.category.options]]
+      : [],
+);
+
+const written = (methodology: string, category: string) => {
+  const held = threatCategorySchema.parse({ methodology, category });
+  return equivalent(toThreatCategory(fromThreatCategory(held)).value, held);
+};
+
+const unrecovered = enumeratedCategories.flatMap(([methodology, categories]) =>
+  categories
+    .filter((category) => !written(methodology, category))
+    .map((category) => `${methodology}/${category}`),
+);
 
 const categoriesUnder = (
   modelType: string,
@@ -294,5 +318,72 @@ describe('toThreatCategory', () => {
       methodologyName: 'EOP',
       category: 'unspecified',
     });
+  });
+});
+
+describe('writing a vocabulary back out', () => {
+  it.each(threatStatusSchema.options)(
+    'spells %s so the read recovers it',
+    (status) => {
+      expect(toThreatStatus(fromThreatStatus(status)).value).toBe(status);
+    },
+  );
+
+  it.each(severitySchema.options)(
+    'spells %s so the read recovers it',
+    (severity) => {
+      expect(toSeverity(fromSeverity(severity)).value).toBe(severity);
+    },
+  );
+
+  it('spells the undecided severity TBD, of the two the read takes', () => {
+    expect(fromSeverity('undecided')).toBe('TBD');
+  });
+
+  it('names every enumerated category but PLOT4ai in labels the read recovers', () => {
+    expect(unrecovered).toEqual(
+      plot4aiCategorySchema.shape.category.options.map(
+        (category) => `PLOT4ai/${category}`,
+      ),
+    );
+  });
+
+  it('writes a PLOT4ai category under the model own name for it', () => {
+    expect(
+      fromThreatCategory({
+        methodology: 'PLOT4ai',
+        category: 'cybersecurity',
+      }),
+    ).toEqual({ modelType: 'PLOT4ai', type: 'cybersecurity' });
+  });
+
+  it('writes a custom category under the methodology name it carries', () => {
+    expect(
+      fromThreatCategory({
+        methodology: 'custom',
+        methodologyName: 'Process',
+        category: 'documentation',
+      }),
+    ).toEqual({ modelType: 'Process', type: 'documentation' });
+  });
+
+  it('writes an Elevation of Privilege suit where that editor reads one', () => {
+    expect(
+      fromThreatCategory({
+        methodology: 'custom',
+        methodologyName: 'EOP',
+        category: 'Data Validation & Encoding',
+      }),
+    ).toEqual({
+      modelType: 'EOP',
+      type: null,
+      cardSuit: 'Data Validation & Encoding',
+    });
+  });
+
+  it('writes CIA-DIE under CIADIE, the name Threat Dragon stores', () => {
+    expect(
+      fromThreatCategory({ methodology: 'CIA-DIE', category: 'ephemeral' }),
+    ).toEqual({ modelType: 'CIADIE', type: 'Ephemeral' });
   });
 });

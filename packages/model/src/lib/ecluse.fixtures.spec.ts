@@ -69,6 +69,12 @@ describe('ecluseFixture', () => {
     expect(issuesOf(ecluseFixture)).toEqual([]);
   });
 
+  it('matches the expected internal model both packages read against', async () => {
+    await expect(`${JSON.stringify(ecluse, null, 2)}\n`).toMatchFileSnapshot(
+      '../../../../test-data/ecluse.model.json',
+    );
+  });
+
   it('credits the one contributor the source file names', () => {
     expect(ecluse.metadata.contributors).toEqual(['Alexandra de Wit']);
   });

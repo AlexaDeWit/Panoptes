@@ -336,6 +336,19 @@ export type ThreatDragonDiagram = z.infer<typeof diagramSchema>;
 /** One cell of a Threat Dragon diagram. */
 export type ThreatDragonCell = z.infer<typeof cellSchema>;
 
+/**
+ * The `data` fields every cell carries, whatever it draws. A merge writes
+ * onto these on a cell no threat can attach to, a trust boundary or a note.
+ */
+export type ThreatDragonBaseData = z.infer<typeof dataBaseSchema>;
+
+/**
+ * The `data` fields a cell a threat can attach to carries beyond the base:
+ * the scoping pair and the nested threats. Every such cell's own data
+ * extends this, so a merge writes the group once rather than per shape.
+ */
+export type ThreatDragonElementData = z.infer<typeof elementDataSchema>;
+
 /** One threat, as Threat Dragon nests it under the cell it concerns. */
 export type ThreatDragonThreat = z.infer<typeof threatSchema>;
 
