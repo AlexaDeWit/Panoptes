@@ -7,29 +7,29 @@ import {
 } from '@panoptes/model';
 import { z } from 'zod';
 
-const modelSubjectSchema = z.strictObject({ kind: z.literal('model') });
+const modelSubjectSchema = z.object({ kind: z.literal('model') });
 
-const diagramSubjectSchema = z.strictObject({
+const diagramSubjectSchema = z.object({
   kind: z.literal('diagram'),
   id: diagramIdSchema,
 });
 
-const elementSubjectSchema = z.strictObject({
+const elementSubjectSchema = z.object({
   kind: z.literal('element'),
   id: elementIdSchema,
 });
 
-const threatSubjectSchema = z.strictObject({
+const threatSubjectSchema = z.object({
   kind: z.literal('threat'),
   id: threatIdSchema,
 });
 
-const mitigationSubjectSchema = z.strictObject({
+const mitigationSubjectSchema = z.object({
   kind: z.literal('mitigation'),
   id: mitigationIdSchema,
 });
 
-const assumptionSubjectSchema = z.strictObject({
+const assumptionSubjectSchema = z.object({
   kind: z.literal('assumption'),
   id: assumptionIdSchema,
 });
@@ -93,7 +93,7 @@ export type DivergenceReason = z.infer<typeof divergenceReasonSchema>;
  * divergence, so the non-empty bound on `detail` records the intent rather
  * than enforcing it at any boundary.
  */
-export const divergenceSchema = z.strictObject({
+export const divergenceSchema = z.object({
   subject: divergenceSubjectSchema,
   detail: z.string().min(1),
   reason: divergenceReasonSchema,

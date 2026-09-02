@@ -51,7 +51,7 @@ export type Severity = z.infer<typeof severitySchema>;
  * element ids must resolve; parseModel enforces both, so this schema alone
  * accepts duplicates and dangling ids.
  */
-export const threatSchema = z.strictObject({
+export const threatSchema = z.object({
   id: threatIdSchema,
   number: z.int().positive(),
   title: z.string(),

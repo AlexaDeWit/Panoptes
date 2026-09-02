@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { pointSchema, sizeSchema, waypointsSchema } from './geometry.js';
 import { elementIdSchema } from './ids.js';
 
-const elementBaseSchema = z.strictObject({
+const elementBaseSchema = z.object({
   id: elementIdSchema,
   name: z.string(),
   description: z.string(),
@@ -66,7 +66,7 @@ export type TextElement = z.infer<typeof textSchema>;
  * resolves to an element of the flow's own diagram is checked by parseModel,
  * not here.
  */
-export const attachedEndpointSchema = z.strictObject({
+export const attachedEndpointSchema = z.object({
   kind: z.literal('attached'),
   element: elementIdSchema,
 });
@@ -79,7 +79,7 @@ export type AttachedEndpoint = z.infer<typeof attachedEndpointSchema>;
  * Imported diagrams contain these: Threat Dragon lets a flow start or end on
  * empty canvas.
  */
-export const freeEndpointSchema = z.strictObject({
+export const freeEndpointSchema = z.object({
   kind: z.literal('free'),
   position: pointSchema,
 });
@@ -116,7 +116,7 @@ export type Flow = z.infer<typeof flowSchema>;
 /**
  * Rectangular trust boundary shape. Size extents are strictly positive.
  */
-export const boxBoundaryShapeSchema = z.strictObject({
+export const boxBoundaryShapeSchema = z.object({
   kind: z.literal('box'),
   position: pointSchema,
   size: sizeSchema,
@@ -130,7 +130,7 @@ export type BoxBoundaryShape = z.infer<typeof boxBoundaryShapeSchema>;
  * waypoints (a curve through fewer cannot be drawn). Threat Dragon draws
  * boundary curves as well as boxes, so both variants are part of the model.
  */
-export const curveBoundaryShapeSchema = z.strictObject({
+export const curveBoundaryShapeSchema = z.object({
   kind: z.literal('curve'),
   waypoints: waypointsSchema.min(2),
 });

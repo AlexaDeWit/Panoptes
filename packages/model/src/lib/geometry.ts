@@ -4,7 +4,7 @@ import { z } from 'zod';
  * A location on the diagram canvas, in canvas units. Coordinates may be
  * negative: the origin is a reference point, not an edge.
  */
-export const pointSchema = z.strictObject({
+export const pointSchema = z.object({
   x: z.number(),
   y: z.number(),
 });
@@ -16,7 +16,7 @@ export type Point = z.infer<typeof pointSchema>;
  * Extent of an element on the canvas, in canvas units. Width and height are
  * strictly positive: a zero-extent element cannot be drawn or picked.
  */
-export const sizeSchema = z.strictObject({
+export const sizeSchema = z.object({
   width: z.number().positive(),
   height: z.number().positive(),
 });

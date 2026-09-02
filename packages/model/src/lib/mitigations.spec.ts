@@ -36,10 +36,4 @@ describe('mitigationSchema', () => {
       mitigationSchema.safeParse({ ...consentTag, threats: [] }).success,
     ).toBe(true);
   });
-
-  it('rejects an unknown key', () => {
-    expect(
-      mitigationSchema.safeParse({ ...consentTag, owner: 'alexa' }).success,
-    ).toBe(false);
-  });
 });
