@@ -42,8 +42,16 @@ export default [
               bannedExternalImports: ['react', 'react-dom'],
             },
             {
+              // A wire schema is a contract with files in the wild, so it
+              // is built out of zod alone: an internal package it could
+              // reuse would turn its own change into a silent format
+              // change. The empty list is the rule (issue #91).
+              sourceTag: 'layer:wire',
+              onlyDependOnLibsWithTags: [],
+            },
+            {
               sourceTag: 'layer:formats',
-              onlyDependOnLibsWithTags: ['layer:model'],
+              onlyDependOnLibsWithTags: ['layer:model', 'layer:wire'],
             },
             {
               sourceTag: 'layer:canvas',

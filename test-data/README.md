@@ -1,15 +1,17 @@
 # test-data
 
-Files vendored from other projects, verbatim, as inputs to the test suites.
-They live at the repository root rather than inside one package because more
-than one package reads them and the layer matrix forbids a package
-dependency between the readers: `packages/formats` may import
-`packages/model` and nothing else, so a fixture file owned by `model` would
-be out of reach.
+Inputs to the test suites: files vendored from other projects, verbatim, and
+one file this repository writes itself. They live at the repository root
+rather than inside one package because more than one package reads them and
+the layer matrix forbids a package dependency between the readers:
+`packages/model` may import no internal package at all, so a fixture file
+owned by `model` would be out of reach of the packages that read it.
 
-The vendored payloads are not formatted. `.oxfmtrc.json` ignores
-`test-data/*.json` so each keeps the bytes the foreign tool wrote, which is
-what a codec has to read. This note is formatted like any other document.
+No payload here is formatted. `.oxfmtrc.json` ignores `test-data/**/*.json`
+and `test-data/**/*.yaml`, so a vendored file keeps the bytes the foreign
+tool wrote, which is what a codec has to read, and the written one keeps the
+bytes the codec produced, which is what a test compares against. This note is
+formatted like any other document.
 
 ## `ecluse.json`
 
@@ -45,6 +47,21 @@ enforce the invariant the internal model does, so the import rule is
 Neither half alone is enough. `threatTop` alone breaks on this file, and the
 highest number alone drops the gap left by a removed highest-numbered threat,
 which is the record the field exists to keep.
+
+## `panoptes/ecluse.yaml`
+
+Not vendored: this one is written here. It is the Écluse model above, read
+through the Threat Dragon codec and written through the Panoptes YAML codec,
+committed so a change to what the native format writes arrives as a diff on a
+file rather than as a test that still passes.
+
+`packages/formats` compares the write against it on every run, as a vitest
+file snapshot, so it cannot fall behind the codec. Regenerate it with
+`pnpm nx test @panoptes/formats -- -u`, and read the diff: the file is the
+format's output by definition, so a change to it is a change to the format.
+
+The committed bytes are read back as well, and have to parse to the model
+they were written from, so the file gates more than its own regeneration.
 
 ## `threat-dragon/`
 

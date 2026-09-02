@@ -70,7 +70,47 @@ wire schema being complete. The label tables it ships in sixteen languages
 are the gate on the recovery above, which those models cannot exercise: every
 one of them is written in English.
 
-The write codec (#28) and the format detection that picks a codec (#84) come
-next.
+`readPanoptesYaml` and `writePanoptesYaml` are the Panoptes YAML format,
+version 1, paired as `panoptesYamlCodec`. It is the native format: it holds
+the whole model, so a read maps nothing away, a write leaves nothing out, and
+both report an empty divergence list on every valid file.
+[`docs/panoptes-yaml.md`](../../docs/panoptes-yaml.md) describes the file
+itself.
+
+The format is declared by [`@panoptes/wire-panoptes-yaml`](../wire-panoptes-yaml/README.md),
+which imports zod and nothing else. A file is a contract with people who
+already have one and the model is ours to change, so the two are separate
+declarations that happen to say the same thing today, and this package is the
+only one that knows both. The mapping is written out record by record in both
+directions, and every vocabulary crosses through the tables in
+`panoptes-yaml-vocabulary.ts`, each annotated with the whole `Record` of the
+side it reads: a member added to either vocabulary is a compile error in the
+mapping. Ids cross as the plain strings a file holds and are branded by
+`parseModel`, the same way the Threat Dragon read hands them over.
+
+`formatVersion` is a zod literal, so a file stamped with anything else fails
+at that path rather than reaching the mapping, which is what will let the
+detection layer tell a Panoptes file from a JSON one without the extension.
+Within version 1 a key the schema does not declare is dropped and reported
+through `undeclaredDivergences`, the same walk the Threat Dragon read uses,
+so a file from a later release still reads.
+
+Two writes of one model are byte-identical, which is what makes a model file
+in git worth diffing. `canonicalOrder` puts each object's keys in the order
+its schema declares them, with the tag of a tagged union first; threats are
+written in number order, a number being unique and never reissued; and no
+line is wrapped, so an edited sentence changes its own line rather than
+reflowing the paragraph. Every other list keeps the model's order. `write`
+takes the contract's source document and cannot be changed by it: there is
+nothing for a merge to preserve when the format holds the whole model.
+
+The Écluse model written as YAML is committed at
+`test-data/panoptes/ecluse.yaml` and compared byte for byte on every run, so
+a change to what the format writes arrives as a diff on that file. Models
+generated over the model's own shape gate the rest: each survives a write
+and a read as itself, with its threats in number order.
+
+The Threat Dragon write (#28) and the format detection that picks a codec
+(#84) come next.
 
 Unit tests: `pnpm nx test @panoptes/formats`.

@@ -1,5 +1,5 @@
 {
-  "name": "@panoptes/formats",
+  "name": "@panoptes/wire-panoptes-yaml",
   "version": "0.0.1",
   "private": true,
   "type": "module",
@@ -14,18 +14,11 @@
     "./package.json": "./package.json"
   },
   "dependencies": {
-    "@panoptes/model": "workspace:*",
-    "@panoptes/wire-panoptes-yaml": "workspace:*",
-    "effect": "catalog:",
-    "yaml": "catalog:",
     "zod": "catalog:"
-  },
-  "devDependencies": {
-    "fast-check": "catalog:"
   },
   "nx": {
     "tags": [
-      "layer:formats"
+      "layer:wire"
     ],
     "targets": {
       "boundaries": {},

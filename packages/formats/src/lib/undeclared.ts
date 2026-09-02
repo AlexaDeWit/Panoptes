@@ -1,4 +1,5 @@
 import type { Divergence } from './divergence.js';
+import { isRecord } from './records.js';
 
 const escapableSegment = /[\\.]/g;
 
@@ -46,10 +47,6 @@ function undeclaredKeys(
     );
   }
   return [];
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 function joinPath(path: readonly string[]): string {
