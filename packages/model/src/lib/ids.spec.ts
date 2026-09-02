@@ -12,94 +12,52 @@ import {
   threatIdSchema,
 } from './ids.js';
 
-describe('elementIdSchema', () => {
-  it('passes a Threat Dragon cell id through unchanged', () => {
-    const foreign = '4e565871-45cc-4987-abba-24859ee2cf60';
-    expect(elementIdSchema.parse(foreign)).toBe(foreign);
+const twoCharacterMinimum = [
+  ['element', elementIdSchema],
+  ['threat', threatIdSchema],
+  ['mitigation', mitigationIdSchema],
+  ['assumption', assumptionIdSchema],
+] as const;
+
+describe('id schemas', () => {
+  it('pass a foreign id through unchanged', () => {
+    const cell = '4e565871-45cc-4987-abba-24859ee2cf60';
+    expect(elementIdSchema.parse(cell)).toBe(cell);
+    const threat = 'c87367bd-fc3f-4792-94b6-8db459011823';
+    expect(threatIdSchema.parse(threat)).toBe(threat);
   });
 
-  it('accepts an id that is not a UUID', () => {
+  it('accept an id that is not a UUID', () => {
     expect(elementIdSchema.safeParse('store::metadata-cache').success).toBe(
       true,
     );
-  });
-
-  it('rejects the empty string', () => {
-    expect(elementIdSchema.safeParse('').success).toBe(false);
-  });
-});
-
-describe('diagramIdSchema', () => {
-  it('accepts any non-empty string', () => {
-    expect(diagramIdSchema.safeParse('high-level').success).toBe(true);
-  });
-
-  it('rejects the empty string', () => {
-    expect(diagramIdSchema.safeParse('').success).toBe(false);
-  });
-});
-
-describe('threatIdSchema', () => {
-  it('passes an Écluse threat id through unchanged', () => {
-    const foreign = 'c87367bd-fc3f-4792-94b6-8db459011823';
-    expect(threatIdSchema.parse(foreign)).toBe(foreign);
-  });
-
-  it('rejects the empty string', () => {
-    expect(threatIdSchema.safeParse('').success).toBe(false);
-  });
-});
-
-describe('mitigationIdSchema', () => {
-  it('accepts any non-empty string', () => {
     expect(mitigationIdSchema.safeParse('dredger-consent-tag').success).toBe(
       true,
     );
   });
 
-  it('rejects the empty string', () => {
-    expect(mitigationIdSchema.safeParse('').success).toBe(false);
+  it.each(twoCharacterMinimum)(
+    'refuse a one-character %s id, which Threat Dragon cannot hold',
+    (_kind, schema) => {
+      expect(schema.safeParse('7').success).toBe(false);
+      expect(schema.safeParse('07').success).toBe(true);
+    },
+  );
+
+  it('let a diagram id be one character, as Threat Dragon numbers diagrams from zero', () => {
+    expect(diagramIdSchema.safeParse('0').success).toBe(true);
+    expect(diagramIdSchema.safeParse('').success).toBe(false);
   });
 });
 
-describe('assumptionIdSchema', () => {
-  it('accepts any non-empty string', () => {
-    expect(assumptionIdSchema.safeParse('osv-is-trusted').success).toBe(true);
-  });
-
-  it('rejects the empty string', () => {
-    expect(assumptionIdSchema.safeParse('').success).toBe(false);
-  });
-});
-
-describe('generateElementId', () => {
-  it('produces an id the schema accepts', () => {
+describe('id generators', () => {
+  it('produce ids their schemas accept', () => {
     expect(elementIdSchema.safeParse(generateElementId()).success).toBe(true);
-  });
-});
-
-describe('generateDiagramId', () => {
-  it('produces an id the schema accepts', () => {
     expect(diagramIdSchema.safeParse(generateDiagramId()).success).toBe(true);
-  });
-});
-
-describe('generateThreatId', () => {
-  it('produces an id the schema accepts', () => {
     expect(threatIdSchema.safeParse(generateThreatId()).success).toBe(true);
-  });
-});
-
-describe('generateMitigationId', () => {
-  it('produces an id the schema accepts', () => {
     expect(mitigationIdSchema.safeParse(generateMitigationId()).success).toBe(
       true,
     );
-  });
-});
-
-describe('generateAssumptionId', () => {
-  it('produces an id the schema accepts', () => {
     expect(assumptionIdSchema.safeParse(generateAssumptionId()).success).toBe(
       true,
     );

@@ -22,7 +22,7 @@ every test run, so it cannot fall behind them. Regenerate it with
   - `title`: string
   - `elements`: list of one of 6, told apart by `kind`
     - when `kind` is `actor`
-      - `id`: ElementId (string, at least 1 character)
+      - `id`: ElementId (string, at least 2 characters)
       - `name`: string
       - `description`: string
       - `outOfScope`: boolean
@@ -34,7 +34,7 @@ every test run, so it cannot fall behind them. Regenerate it with
         - `width`: number, greater than 0
         - `height`: number, greater than 0
     - when `kind` is `process`
-      - `id`: ElementId (string, at least 1 character)
+      - `id`: ElementId (string, at least 2 characters)
       - `name`: string
       - `description`: string
       - `outOfScope`: boolean
@@ -46,7 +46,7 @@ every test run, so it cannot fall behind them. Regenerate it with
         - `width`: number, greater than 0
         - `height`: number, greater than 0
     - when `kind` is `store`
-      - `id`: ElementId (string, at least 1 character)
+      - `id`: ElementId (string, at least 2 characters)
       - `name`: string
       - `description`: string
       - `outOfScope`: boolean
@@ -58,21 +58,21 @@ every test run, so it cannot fall behind them. Regenerate it with
         - `width`: number, greater than 0
         - `height`: number, greater than 0
     - when `kind` is `flow`
-      - `id`: ElementId (string, at least 1 character)
+      - `id`: ElementId (string, at least 2 characters)
       - `name`: string
       - `description`: string
       - `outOfScope`: boolean
       - `reasonOutOfScope`: string
       - `source`: one of 2, told apart by `kind`
         - when `kind` is `attached`
-          - `element`: ElementId (string, at least 1 character)
+          - `element`: ElementId (string, at least 2 characters)
         - when `kind` is `free`
           - `position`: object
             - `x`: number
             - `y`: number
       - `target`: one of 2, told apart by `kind`
         - when `kind` is `attached`
-          - `element`: ElementId (string, at least 1 character)
+          - `element`: ElementId (string, at least 2 characters)
         - when `kind` is `free`
           - `position`: object
             - `x`: number
@@ -81,7 +81,7 @@ every test run, so it cannot fall behind them. Regenerate it with
         - `x`: number
         - `y`: number
     - when `kind` is `trust-boundary`
-      - `id`: ElementId (string, at least 1 character)
+      - `id`: ElementId (string, at least 2 characters)
       - `name`: string
       - `description`: string
       - `outOfScope`: boolean
@@ -99,7 +99,7 @@ every test run, so it cannot fall behind them. Regenerate it with
             - `x`: number
             - `y`: number
     - when `kind` is `text`
-      - `id`: ElementId (string, at least 1 character)
+      - `id`: ElementId (string, at least 2 characters)
       - `name`: string
       - `description`: string
       - `outOfScope`: boolean
@@ -112,7 +112,7 @@ every test run, so it cannot fall behind them. Regenerate it with
         - `height`: number, greater than 0
       - `text`: string
 - `threats`: list of object
-  - `id`: ThreatId (string, at least 1 character)
+  - `id`: ThreatId (string, at least 2 characters)
   - `number`: integer, greater than 0
   - `title`: string
   - `category`: one of 6, told apart by `methodology`
@@ -133,17 +133,17 @@ every test run, so it cannot fall behind them. Regenerate it with
   - `status`: one of `open`, `mitigated`, `transferred`, `avoided`, `accepted-risk`, `eliminated`, `not-applicable`
   - `description`: string
   - `mitigation`: string
-  - `elements`: list of ElementId (string, at least 1 character)
+  - `elements`: list of ElementId (string, at least 2 characters)
 - `lastIssuedThreatNumber`: integer, 0 or more
 - `mitigations`: list of object
-  - `id`: MitigationId (string, at least 1 character)
+  - `id`: MitigationId (string, at least 2 characters)
   - `title`: string
   - `prose`: string
   - `status`: one of `proposed`, `implemented`, `verified`
-  - `threats`: list of ThreatId (string, at least 1 character)
+  - `threats`: list of ThreatId (string, at least 2 characters)
 - `assumptions`: list of object
-  - `id`: AssumptionId (string, at least 1 character)
+  - `id`: AssumptionId (string, at least 2 characters)
   - `prose`: string
   - `status`: one of `valid`, `invalidated`
-  - `elements`: list of ElementId (string, at least 1 character)
-  - `threats`: list of ThreatId (string, at least 1 character)
+  - `elements`: list of ElementId (string, at least 2 characters)
+  - `threats`: list of ThreatId (string, at least 2 characters)

@@ -165,7 +165,8 @@ describe('storeSchema', () => {
 describe('flowEndpointSchema', () => {
   it('parses an attached endpoint', () => {
     expect(
-      flowEndpointSchema.safeParse({ kind: 'attached', element: 'a' }).success,
+      flowEndpointSchema.safeParse({ kind: 'attached', element: 'api' })
+        .success,
     ).toBe(true);
   });
 
