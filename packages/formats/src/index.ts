@@ -4,6 +4,5 @@ export * from './lib/panoptes-yaml-read.js';
 export * from './lib/panoptes-yaml-write.js';
 export * from './lib/panoptes-yaml.js';
 export * from './lib/threat-dragon-read.js';
-export * from './lib/threat-dragon-wire.js';
 export * from './lib/threat-dragon-write.js';
 export * from './lib/undeclared.js';

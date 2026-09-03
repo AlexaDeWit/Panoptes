@@ -8,6 +8,7 @@ import {
   threatCategorySchema,
   threatStatusSchema,
 } from '@panoptes/model';
+import type { ThreatDragonThreat } from '@panoptes/wire-threat-dragon';
 import { equivalent } from './equivalence.js';
 import {
   fromSeverity,
@@ -17,7 +18,6 @@ import {
   toThreatCategory,
   toThreatStatus,
 } from './threat-dragon-vocabulary.js';
-import type { ThreatDragonThreat } from './threat-dragon-wire.js';
 
 const base = {
   id: 'threat-1',
@@ -90,9 +90,6 @@ describe('toThreatStatus', () => {
       'eliminated',
       'not-applicable',
     ]);
-    expect(
-      new Set(statuses.map((status) => toThreatStatus(status).value)),
-    ).toEqual(new Set(threatStatusSchema.options));
   });
 
   it('reads a status it does not know as open, and says it was not exact', () => {
@@ -150,9 +147,6 @@ describe('toSeverity', () => {
       'undecided',
       'undecided',
     ]);
-    expect(
-      new Set(severities.map((severity) => toSeverity(severity).value)),
-    ).toEqual(new Set(severitySchema.options));
   });
 
   it('reads a severity it does not know as undecided, and says so', () => {

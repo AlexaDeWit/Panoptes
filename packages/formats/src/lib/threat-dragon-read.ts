@@ -9,6 +9,14 @@ import {
   type Model,
   type ThreatCategory,
 } from '@panoptes/model';
+import {
+  threatDragonWireSchema,
+  type ThreatDragonCell,
+  type ThreatDragonDiagram,
+  type ThreatDragonDocument,
+  type ThreatDragonEndpoint,
+  type ThreatDragonThreat,
+} from '@panoptes/wire-threat-dragon';
 import { Either } from 'effect';
 import type { z } from 'zod';
 import { ReadFailure, type ReadResult } from './codec.js';
@@ -18,6 +26,7 @@ import {
   isAnchored,
   threatsOf,
   type ThreatDragonBoundary,
+  type ThreatDragonCurve,
   type ThreatDragonFlow,
   type ThreatDragonNode,
 } from './threat-dragon-document.js';
@@ -26,14 +35,6 @@ import {
   toThreatCategory,
   toThreatStatus,
 } from './threat-dragon-vocabulary.js';
-import {
-  threatDragonWireSchema,
-  type ThreatDragonCell,
-  type ThreatDragonDiagram,
-  type ThreatDragonDocument,
-  type ThreatDragonEndpoint,
-  type ThreatDragonThreat,
-} from './threat-dragon-wire.js';
 import { undeclaredDivergences } from './undeclared.js';
 
 type MetadataInput = z.input<typeof modelMetadataSchema>;
@@ -218,6 +219,10 @@ function toElement(cell: ThreatDragonCell): ElementInput {
       shape: { kind: 'box', position: cell.position, size: cell.size },
     };
   }
+  return toCurveBoundary(cell);
+}
+
+function toCurveBoundary(cell: ThreatDragonCurve): ElementInput {
   return {
     kind: 'trust-boundary',
     ...toBoundaryCommon(cell),

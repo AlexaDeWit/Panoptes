@@ -16,6 +16,7 @@
   "dependencies": {
     "@panoptes/model": "workspace:*",
     "@panoptes/wire-panoptes-yaml": "workspace:*",
+    "@panoptes/wire-threat-dragon": "workspace:*",
     "effect": "catalog:",
     "yaml": "catalog:",
     "zod": "catalog:"

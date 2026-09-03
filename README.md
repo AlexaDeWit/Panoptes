@@ -34,6 +34,7 @@ Dragon and license it under the same Apache License 2.0. See
 | ----------------------------- | ----------------------------------------------------------------- |
 | `packages/model`              | The internal data structures and operations on them               |
 | `packages/wire-panoptes-yaml` | The Panoptes YAML format, version 1, as a schema and nothing else |
+| `packages/wire-threat-dragon` | The Threat Dragon v2 format as a schema and nothing else          |
 | `packages/formats`            | File-format codecs, and the mappings between a file and the model |
 | `packages/canvas`             | React canvas components, shared by the UI and headless rendering  |
 | `packages/render`             | Projections of a model: SVG, markdown, PDF                        |

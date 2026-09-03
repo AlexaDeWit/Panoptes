@@ -13,6 +13,9 @@
       "path": "./packages/wire-panoptes-yaml"
     },
     {
+      "path": "./packages/wire-threat-dragon"
+    },
+    {
       "path": "./packages/render"
     },
     {

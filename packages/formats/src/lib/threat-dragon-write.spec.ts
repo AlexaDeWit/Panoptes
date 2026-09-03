@@ -1,13 +1,13 @@
+import {
+  threatDragonWireSchema,
+  type ThreatDragonDocument,
+} from '@panoptes/wire-threat-dragon';
 import { Ajv } from 'ajv';
 import { Either } from 'effect';
 import type { Codec } from './codec.js';
 import { renderDivergences } from './divergence.js';
 import { allThreats, threatsOf } from './threat-dragon-document.js';
 import { readThreatDragon } from './threat-dragon-read.js';
-import {
-  threatDragonWireSchema,
-  type ThreatDragonDocument,
-} from './threat-dragon-wire.js';
 import { writeThreatDragon } from './threat-dragon-write.js';
 import {
   complementFixture,

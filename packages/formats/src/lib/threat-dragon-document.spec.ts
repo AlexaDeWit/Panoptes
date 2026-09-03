@@ -1,3 +1,4 @@
+import type { ThreatDragonDocument } from '@panoptes/wire-threat-dragon';
 import { Either } from 'effect';
 import {
   allCells,
@@ -9,7 +10,6 @@ import {
   threatsOf,
 } from './threat-dragon-document.js';
 import { readThreatDragon } from './threat-dragon-read.js';
-import type { ThreatDragonDocument } from './threat-dragon-wire.js';
 import { complementFixture, ecluseText } from './threat-dragon.fixtures.js';
 
 const documentOf = (text: string): ThreatDragonDocument =>

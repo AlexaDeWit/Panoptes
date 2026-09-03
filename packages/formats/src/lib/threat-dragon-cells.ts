@@ -13,6 +13,13 @@ import type {
   TextElement,
   TrustBoundary,
 } from '@panoptes/model';
+import type {
+  ThreatDragonBaseData,
+  ThreatDragonCell,
+  ThreatDragonElementData,
+  ThreatDragonEndpoint,
+  ThreatDragonThreat,
+} from '@panoptes/wire-threat-dragon';
 import type { Divergence } from './divergence.js';
 import { equivalent } from './equivalence.js';
 import {
@@ -27,13 +34,6 @@ import {
   preservedText,
 } from './threat-dragon-preservation.js';
 import { fromThreatStatus } from './threat-dragon-vocabulary.js';
-import type {
-  ThreatDragonBaseData,
-  ThreatDragonCell,
-  ThreatDragonElementData,
-  ThreatDragonEndpoint,
-  ThreatDragonThreat,
-} from './threat-dragon-wire.js';
 
 const openStatus = fromThreatStatus('open');
 

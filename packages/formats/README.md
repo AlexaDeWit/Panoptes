@@ -34,20 +34,26 @@ error channel, one variant per place a read stops: text the format's syntax
 refuses, a document the wire schema refuses, and a mapping `parseModel`
 refuses. The two schema variants carry the model package's `ParseIssue`, so
 issues read the same way whichever boundary produced them. Nothing throws.
-Imports no internal package but `@panoptes/model`.
+Imports `@panoptes/model` and the two wire packages, and no other internal
+package.
 
-`readThreatDragon` is the Threat Dragon v2 read. Its wire schema declares the
-whole file, the X6 styling, ports, text blocks, and boundary bookkeeping
-Panoptes does not model included. What it declares it demands, and it demands
-nothing else, because it describes the file rather than the subset Panoptes
-can represent: a threat's status, severity, category and methodology are text,
-since Threat Dragon stores each label in the author's own locale, and a threat
-number is optional, since most threats in Threat Dragon's own demo models
-carry none. `version` accepts `2`, `2.x` and `2.x.y`, and a file from another
-major is refused whole rather than read in part. A key the schema does not
-declare is dropped and reported through `undeclaredDivergences`, the walk every
-wire codec shares, so a schema that has fallen behind the format announces
-itself.
+`readThreatDragon` is the Threat Dragon v2 read. The format is declared by
+[`@panoptes/wire-threat-dragon`](../wire-threat-dragon/README.md), which
+imports zod and nothing else, and this package is the only one that maps
+between it and the model. That wire schema declares the whole file, the X6
+styling, ports, text blocks, and boundary bookkeeping Panoptes does not model
+included. What it declares it demands, and it demands nothing else, because it
+describes the file rather than the subset Panoptes can represent: a threat's
+status, severity, category and methodology are text, since Threat Dragon
+stores each label in the author's own locale, and a threat number is optional,
+since most threats in Threat Dragon's own demo models carry none. `version`
+accepts `2`, `2.x` and `2.x.y`, and a file from another major is refused whole
+rather than read in part. A cell id and a threat id are two characters or
+more, the bound Threat Dragon's own schema states, so a file that breaks it
+stops as `InvalidWireDocument` with a path into the file rather than as
+`InvalidModel` one layer later. A key the schema does not declare is dropped
+and reported through `undeclaredDivergences`, the walk every wire codec
+shares, so a schema that has fallen behind the format announces itself.
 
 A value with no home in the internal model therefore reaches the document
 intact, and what the mapping then does with it is a separate question from

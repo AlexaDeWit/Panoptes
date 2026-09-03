@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+const idSchema = z.string().min(2);
+
 const versionSchema = z.string().regex(/^2(\.\d+){0,2}$/);
 
 const pointSchema = z.object({ x: z.number(), y: z.number() });
@@ -110,14 +112,14 @@ const labelSchema = z.union([
 ]);
 
 const anchorSchema = z.object({
-  cell: z.string().min(1),
+  cell: idSchema,
   port: z.string().optional(),
 });
 
 const endpointSchema = z.union([anchorSchema, pointSchema]);
 
 const threatSchema = z.object({
-  id: z.string().min(1),
+  id: idSchema,
   number: z.int().optional(),
   title: z.string(),
   type: z.string().nullable().optional(),
@@ -196,7 +198,7 @@ const textDataSchema = dataBaseSchema.extend({
 });
 
 const cellBaseSchema = z.object({
-  id: z.string().min(1),
+  id: idSchema,
   zIndex: z.int().optional(),
   visible: z.boolean().optional(),
   attrs: attrsSchema.optional(),
@@ -261,34 +263,35 @@ const diagramSchema = z.object({
 });
 
 /**
- * A Threat Dragon v2 file, whole. Every key the format carries is declared,
- * the parts Panoptes does not model included (text blocks, ports, `attrs`
- * styling, `zIndex`, `tools`, `placeholder`, `thumbnail`, `diagramTop`),
- * because a write merges onto this document and only a declared key is
- * there to leave alone. Nothing is defaulted or transformed here: a key the
- * file omits stays omitted, and the read supplies the model's default
- * instead, so the document keeps saying what the file said.
+ * A Threat Dragon v2 file, whole, and the whole of what this package
+ * declares. Every key the format carries is here, the parts Panoptes does
+ * not model included (text blocks, ports, `attrs` styling, `zIndex`,
+ * `tools`, `placeholder`, `thumbnail`, `diagramTop`), because a write
+ * merges onto this document and only a declared key is there to leave
+ * alone. Nothing is defaulted and nothing is transformed: a key the file
+ * omits stays omitted, so the document keeps saying what the file said.
  *
- * Plain `z.object`, so an undeclared key is dropped rather than refused:
- * Threat Dragon owns this shape and may add to it. The read reports each
- * dropped key as an `undeclared` divergence, so a schema that has fallen
- * behind the format announces itself rather than quietly shortening a file.
+ * What this schema declares, it demands, and it demands nothing else. An
+ * undeclared key is dropped rather than refused, since Threat Dragon owns
+ * this shape and may add to it, and `@panoptes/formats` reports each
+ * dropped key, so a schema that has fallen behind the format announces
+ * itself rather than quietly shortening a file.
  *
- * What this schema declares, it demands, and it demands nothing else. It
- * describes the file rather than the subset Panoptes can currently
- * represent, so a value with no home in the internal model reaches this
- * document intact and is refused, if it is refused at all, by the mapping
- * rather than here. That is why a threat's `status`, `severity`, `type`,
- * and `modelType` are plain text: Threat Dragon stores the label in the
- * author's own locale, so a German file holds `Manipulation` where an
- * English one holds `Tampering`, and its own schema types all four as
- * strings. `number` is optional for the same reason, since Threat Dragon
- * requires only a threat's description, mitigation, severity, status,
- * title, and type, and most threats in its shipped demo models carry no
- * number at all. `diagramType` is text too: its generic value is the word
- * "Generic" translated. What belongs to the drawing library rather than to
- * Threat Dragon (stroke colours, dash arrays, marker and connector names,
- * port visibility) is text for the same reason.
+ * A threat's `status`, `severity`, `type`, and `modelType` are plain text
+ * because Threat Dragon stores each label in the author's own locale: a
+ * German file holds `Manipulation` where an English one holds `Tampering`,
+ * and its own schema types all four as strings. `number` is optional
+ * because Threat Dragon requires only a threat's description, mitigation,
+ * severity, status, title, and type, and most threats in its shipped demo
+ * models carry no number at all. `diagramType` is text too, its generic
+ * value being the word "Generic" translated, and so is what belongs to the
+ * drawing library rather than to Threat Dragon: stroke colours, dash
+ * arrays, marker and connector names, port visibility.
+ *
+ * A cell id, a threat id, and the cell an edge anchors to are two
+ * characters or more. Threat Dragon's own schema puts that bound on a cell
+ * id and on the `threatId` it names a threat by, and an anchor names a
+ * cell, so one character there names no cell a file can hold.
  *
  * `version` accepts `2`, `2.x`, and `2.x.y`, and nothing else. Threat
  * Dragon's own test for a v2 file is that the version is present and does
@@ -298,16 +301,12 @@ const diagramSchema = z.object({
  *
  * The shape is Threat Dragon's `data` payload wrapped around AntV X6's own
  * cell serialization, which is why the styling, port, tool, and label
- * shapes are here at all: Threat Dragon saves whatever X6 hands it. It also
- * shows up as drift from the schema Threat Dragon publishes, which declares
- * `threats` on the cell rather than under `data`, names a threat's id
- * `threatId`, and omits `ports`, `tools`, `labels`, `threatFrequency`, and
- * the boundary bookkeeping. This schema follows what Threat Dragon writes,
- * not what it publishes. `trust-broundary-curve` is here on purpose: Threat
- * Dragon registers that misspelling itself, for the many models that carry
- * it. An `EOP` threat's `eopGameId`, `cardSuit`, and `cardNumber` are read
- * from the threat editor's own bindings, where each is a string or null,
- * and its `type` is the null that editor writes.
+ * shapes are here at all: Threat Dragon saves whatever X6 hands it.
+ * `trust-broundary-curve` is here on purpose, since Threat Dragon registers
+ * that misspelling itself and one of the models it ships carries it. An `EOP`
+ * threat's `eopGameId`, `cardSuit`, and `cardNumber` are read from the
+ * threat editor's own bindings, where each is a string or null, and its
+ * `type` is the null that editor writes.
  */
 export const threatDragonWireSchema = z.object({
   version: versionSchema,
