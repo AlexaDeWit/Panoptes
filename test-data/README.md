@@ -1,23 +1,25 @@
 # test-data
 
-Inputs to the test suites: files vendored from other projects, verbatim, and
-the files this repository writes itself. They live at the repository root
-rather than inside one package because more than one package reads them and
-the layer matrix forbids a package dependency between the readers:
-`packages/model` may import no internal package at all, so a fixture file
-owned by `model` would be out of reach of the packages that read it.
+Inputs to the test suites: files vendored from other projects, verbatim, the
+files this repository writes itself, and a few small payloads built here to
+break a bound. They live at the repository root rather than inside one
+package because more than one package reads them and the layer matrix
+forbids a package dependency between the readers: `packages/model` may
+import no internal package at all, so a fixture file owned by `model` would
+be out of reach of the packages that read it.
 
 No payload here is formatted. `.oxfmtrc.json` ignores `test-data/**/*.json`,
-`test-data/**/*.yaml` and `test-data/**/*.register.md`, so a vendored file
-keeps the bytes the foreign tool wrote, which is what a codec has to read,
-and a written one keeps the bytes it was written with, which is what a test
-compares against. The markdown pattern names the register suffix rather than
-every `.md` file below, so prose like this note is formatted like any other
-document. That puts a rule on the next generated markdown payload: name it
-`*.register.md`, or widen the pattern in the same commit. A `.md` file below
-under any other name is formatted, and a byte comparison against a formatted
-file flaps. A payload in a format none of the three patterns names needs the
-same decision.
+`test-data/**/*.yaml` and `test-data/**/*.register.md`, at any depth below
+this directory, so a vendored file keeps the bytes the foreign tool wrote,
+which is what a codec has to read, a written one keeps the bytes it was
+written with, which is what a test compares against, and an adversarial
+payload keeps the shape that makes it adversarial. The markdown pattern
+names the register suffix rather than every `.md` file below, so prose like
+this note is formatted like any other document. That puts a rule on the next
+generated markdown payload: name it `*.register.md`, or widen the pattern in
+the same commit. A `.md` file below under any other name is formatted, and a
+byte comparison against a formatted file flaps. A payload in a format none of
+the three patterns names needs the same decision.
 
 `nx.json` names this directory in `sharedGlobals`, so editing a file below
 invalidates the cached result of every task that reads it. Without that a
@@ -214,3 +216,55 @@ update changes the file below and the test says which table fell behind.
 | `i18n/ru.json`    | `a8b964105e692c845e3df3f8575e9951` |
 | `i18n/uk.json`    | `a8b964105e692c845e3df3f8575e9951` |
 | `i18n/zh.json`    | `e180efcc9bc292651aac45dc7107d8ed` |
+
+## `adversarial/`
+
+Small payloads built to break one of the read bounds `@panoptes/formats`
+exports as `readLimits`, so each bound is pinned by an input rather than by
+its own definition. Nothing here is a threat model, none of it is vendored,
+and none of it is large: an oversized text is generated in the spec instead,
+since committing megabytes to prove a size bound would be the wrong trade.
+`read-limits.spec.ts` hands every one of them to both reads, the Panoptes
+YAML read and the Threat Dragon read, because YAML is a superset of JSON and
+a hostile file arrives with whatever extension its author chose.
+
+| File                   | Bytes | What it is                                                                          | How it was built                                                                |
+| ---------------------- | ----- | ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| `deep-nesting.json`    | 6,000 | 3,000 nested empty arrays, the reproducer found during #26                          | `'['.repeat(3000) + ']'.repeat(3000)`                                           |
+| `deep-block.yaml`      | 9,287 | A YAML block mapping 128 deep, one space of indent per level                        | `nested:` at rising indent, then `bottom`                                       |
+| `cyclic-anchor.yaml`   | 48    | An anchor on `metadata` and an alias to it underneath, a cycle in 3 lines           | Written by hand                                                                 |
+| `alias-expansion.yaml` | 88    | A seed scalar and three anchors, each a sequence of three aliases to the one before | Written by hand, sized to land between our alias bound and the parser's default |
+| `branching-cycle.yaml` | 15    | A sequence anchored to itself twice, so every level of it branches in two           | Written by hand                                                                 |
+| `wide-cycle.yaml`      | 2,408 | The same sequence anchored to itself 800 times                                      | `a: &a [` then `*a` 800 times, comma-joined, then `]`                           |
+
+`deep-nesting.json` is the known reproducer: 6 KB of JSON parses without
+complaint and then overflows the stack of anything that walks it, which is
+how it was found, inside a recursive `z.lazy` schema that has since been
+withdrawn. `cyclic-anchor.yaml` costs three lines to say the same
+thing, and nothing bounds its depth at all. The two together are why the
+nesting bound is checked on the parsed value rather than on the text.
+
+`branching-cycle.yaml` is fifteen bytes and closes its cycle through two
+aliases rather than one, so a walk that counted paths instead of nodes would
+double its work at every level and never reach the depth that would stop it.
+The parser's alias bound does not catch it, because a self-referential anchor
+is scored while it is still being composed and scores nothing. It is here so
+that the walk's work bound has a fixture of its own, the way each of the
+three numbers does.
+
+`deep-block.yaml` is the same class through the other kind of YAML nesting.
+It is the largest file here because block nesting costs a square of its depth
+in bytes, one space of indent per level, which is also why a flow document is
+the cheaper attack and why both are here.
+
+`wide-cycle.yaml` is the width of that cycle rather than its branching. Every
+bound admits it on paper: two kilobytes, two levels deep, and an alias score
+of nothing, because the parser scores a self-referential anchor while it is
+still composing it. Resolving it is what costs, about a cube of the alias
+count, and reading it took a minute before the alias count was moved ahead of
+resolution. It is the fixture for that ordering.
+
+`alias-expansion.yaml` is refused by the alias bound this project sets and
+accepted by the one the `yaml` package defaults to, which is what makes it
+proof that the bound is ours. Raising the bound to the parser's default
+turns the spec over it red.

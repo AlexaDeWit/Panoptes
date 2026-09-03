@@ -30,12 +30,49 @@ list into lines for a person, escaping what an imported id could otherwise do
 to a line.
 
 `read` returns Effect's `Either` with a package-owned `ReadFailure` on the
-error channel, one variant per place a read stops: text the format's syntax
-refuses, a document the wire schema refuses, and a mapping `parseModel`
-refuses. The two schema variants carry the model package's `ParseIssue`, so
-issues read the same way whichever boundary produced them. Nothing throws.
-Imports `@panoptes/model` and the two wire packages, and no other internal
-package.
+error channel, one variant per place a read stops: a text past a read limit,
+text the format's syntax refuses, a document the wire schema refuses, and a
+mapping `parseModel` refuses. The two schema variants carry the model
+package's `ParseIssue`, so issues read the same way whichever boundary
+produced them, and `readFailureIssues` folds any failure to the issues it
+carries. Nothing throws. Imports `@panoptes/model` and the two wire packages,
+and no other internal package.
+
+`readLimits` is what a read may spend on a text before it refuses it. It is
+one exported value, so a caller that checks a file before handing it over
+enforces the numbers the codecs enforce rather than numbers of its own. Three
+bounds today, each with headroom over the largest file the repository vendors
+and each justified by a fixture under `test-data/adversarial` built to break
+it: the size of the text in UTF-8 bytes, 4 MiB and about thirty times that
+file; how far below the root a value may sit, 64 levels; and how many times
+the YAML parser may expand an alias, 50.
+
+Both reads pass their text through `parseWithinLimits`. The size is measured
+before a parser sees the text, since that bound is what keeps the parse itself
+finite, and the nesting of what it parsed to is measured after, by a walk
+carrying its own stack that stops one level past the bound. The walk bounds
+its own work as well as its depth: it goes level by level and expands a node
+only when it reaches that node deeper than it has before, so a value reachable
+along many paths costs its own size rather than the number of paths through
+it, and it holds every distinct node it has expanded while it runs, so a
+document costs about its own parsed size again. A cycle an alias closed is
+unbounded depth, which the walk climbs to the bound and refuses there rather
+than following, and one that branches costs its width rather than multiplying
+by it at every level.
+
+The YAML read takes the alias bound in two places, because between composing a
+document and resolving it is the only place the cheap check exists. Aliases are
+counted on the composed document before any of them is resolved, since
+resolving is what an alias costs and the parser scores a self-referential
+anchor at nothing: a sequence aliasing itself a few hundred times passes the
+parser's own accounting and costs a cube of that count to resolve. The parser
+is handed the bound all the same, so an expansion it does count is refused at
+the same number, and a nesting it has no stack for is reported as the bound
+that stopped the read. `JSON.parse` needs no such handling, since it
+builds a value of any depth without recursing, which leaves the walk as the
+only thing standing between a 3,000-deep payload and whatever would have
+recursed over it. A text within the bounds reads exactly as it did before they
+existed.
 
 `readThreatDragon` is the Threat Dragon v2 read. The format is declared by
 [`@panoptes/wire-threat-dragon`](../wire-threat-dragon/README.md), which
@@ -205,6 +242,10 @@ Once a codec claims, its answer stands: a claimed file that then fails comes
 back as that codec's own `ReadFailure`, where it broke, rather than falling
 through to the next codec.
 
+A read bound stops detection outright, ahead of any question of claiming: what
+a text costs to read is a property of the text rather than of a format, so an
+`ExceededReadLimit` is the answer and no further codec is offered the text.
+
 Threat Dragon is tried first, and the order is a cost decision rather than a
 correctness one. JSON is YAML, so trying Panoptes YAML first would run the
 YAML parser over the whole of every Threat Dragon file before the schema
@@ -229,8 +270,8 @@ member's source with the other member's codec does not compile. Which document
 belongs to which codec is what a caller cannot check by looking at the
 document, which is why the codec comes back and not the model alone.
 
-Nothing here parses a text of its own. Detection is the codec reads, so
-whatever bounds those reads put on size, nesting and aliases (#51) bound a
-detected read too.
+Nothing here parses a text of its own. Detection is the codec reads, so the
+bounds those reads put on size, nesting and aliases bound a detected read
+too.
 
 Unit tests: `pnpm nx test @panoptes/formats`.

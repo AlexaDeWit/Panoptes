@@ -1,7 +1,6 @@
-import type { ParseIssue } from '@panoptes/model';
 import type { threatDragonWireSchema } from '@panoptes/wire-threat-dragon';
 import { Either } from 'effect';
-import { ReadFailure, type ReadResult } from './codec.js';
+import { readFailureIssues, ReadFailure, type ReadResult } from './codec.js';
 import { renderDivergences } from './divergence.js';
 import { readThreatDragon } from './threat-dragon-read.js';
 import {
@@ -26,9 +25,6 @@ const failureOf = (text: string): ReadFailure =>
       throw new Error('The codec accepted a text it must refuse.');
     },
   });
-
-const issuesOf = (failure: ReadFailure): readonly ParseIssue[] =>
-  ReadFailure.$is('MalformedText')(failure) ? [] : failure.issues;
 
 const tally = (values: readonly string[]): Record<string, number> =>
   values.reduce<Record<string, number>>(
@@ -282,7 +278,7 @@ describe('a Threat Dragon read that stops', () => {
   it('refuses text that is not JSON at all', () => {
     const failure = failureOf('{');
     expect(failure._tag).toBe('MalformedText');
-    expect(issuesOf(failure)).toEqual([]);
+    expect(readFailureIssues(failure)).toEqual([]);
   });
 
   it('refuses a version outside the major it reads', () => {
@@ -290,7 +286,7 @@ describe('a Threat Dragon read that stops', () => {
       JSON.stringify({ ...minimalFixture, version: '1.9.9' }),
     );
     expect(failure._tag).toBe('InvalidWireDocument');
-    expect(issuesOf(failure)).toContainEqual(
+    expect(readFailureIssues(failure)).toContainEqual(
       expect.objectContaining({ path: ['version'] }),
     );
   });
@@ -304,7 +300,7 @@ describe('a Threat Dragon read that stops', () => {
       }).replace('"diagramType":"STRIDE"', '"diagramType":""'),
     );
     expect(failure._tag).toBe('InvalidWireDocument');
-    expect(issuesOf(failure)).toContainEqual(
+    expect(readFailureIssues(failure)).toContainEqual(
       expect.objectContaining({
         path: ['detail', 'diagrams', 0, 'diagramType'],
       }),
@@ -337,7 +333,7 @@ describe('a Threat Dragon read that stops', () => {
       }),
     );
     expect(failure._tag).toBe('InvalidWireDocument');
-    expect(issuesOf(failure)).toContainEqual(
+    expect(readFailureIssues(failure)).toContainEqual(
       expect.objectContaining({
         path: ['detail', 'diagrams', 0, 'cells', 0, 'id'],
       }),
@@ -370,7 +366,7 @@ describe('a Threat Dragon read that stops', () => {
       }),
     );
     expect(failure._tag).toBe('InvalidModel');
-    expect(issuesOf(failure)).toContainEqual(
+    expect(readFailureIssues(failure)).toContainEqual(
       expect.objectContaining({
         path: ['diagrams', 0, 'elements', 0, 'source', 'element'],
       }),
@@ -399,7 +395,7 @@ describe('a Threat Dragon read that strips a key', () => {
 
   it('reports a stripped value without walking into it', () => {
     const result = readOrThrow(
-      `{"version":"2.6.2","summary":{"title":""},"detail":{"diagrams":[]},"mystery":${nested(3000)}}`,
+      `{"version":"2.6.2","summary":{"title":""},"detail":{"diagrams":[]},"mystery":${nested(8)}}`,
     );
     expect(renderDivergences(result.divergences)).toBe(
       'model: the key mystery (not declared by the wire schema)',

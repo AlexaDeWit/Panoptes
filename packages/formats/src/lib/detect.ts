@@ -20,6 +20,8 @@ export type FormatName = z.infer<typeof formatNameSchema>;
 
 type DiscriminatorPath = readonly string[];
 
+type Verdict = 'bounded' | 'claimed' | 'declined';
+
 type Answer<
   Name extends FormatName,
   WireSchema extends z.ZodType<object>,
@@ -109,6 +111,12 @@ const registry: readonly Attempt[] = [
  * failure rather than falling through to the next codec, so a broken file
  * of a known format is reported where it broke.
  *
+ * A read bound stops detection outright, ahead of any question of
+ * claiming. What a text costs to read is a property of the text and not of
+ * a format, so an `ExceededReadLimit` comes back as the answer and no
+ * further codec is offered the text: the next codec would spend the same
+ * cost to learn the same thing.
+ *
  * The order is a cost decision and either order is correct. JSON is YAML,
  * so trying Panoptes YAML first runs the YAML parser over every Threat
  * Dragon file before the schema refuses it at `formatVersion`, where trying
@@ -149,26 +157,29 @@ function attempt<Name extends FormatName, WireSchema extends z.ZodType<object>>(
       if (Either.isRight(reading)) {
         return Either.right({ format, codec, ...reading.right });
       }
-      return claims(reading.left, discriminators)
-        ? Either.left(reading.left)
-        : undefined;
+      return verdictOn(reading.left, discriminators) === 'declined'
+        ? undefined
+        : Either.left(reading.left);
     },
   };
 }
 
-function claims(
+function verdictOn(
   failure: ReadFailure,
   discriminators: readonly DiscriminatorPath[],
-): boolean {
+): Verdict {
   return ReadFailure.$match(failure, {
-    MalformedText: () => false,
-    InvalidWireDocument: ({ issues }) =>
-      !issues.some((issue) =>
+    ExceededReadLimit: (): Verdict => 'bounded',
+    MalformedText: (): Verdict => 'declined',
+    InvalidWireDocument: ({ issues }): Verdict =>
+      issues.some((issue) =>
         discriminators.some((discriminator) =>
           atOrAbove(issue.path, discriminator),
         ),
-      ),
-    InvalidModel: () => true,
+      )
+        ? 'declined'
+        : 'claimed',
+    InvalidModel: (): Verdict => 'claimed',
   });
 }
 
