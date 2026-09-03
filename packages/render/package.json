@@ -14,7 +14,16 @@
     "./package.json": "./package.json"
   },
   "dependencies": {
-    "@panoptes/model": "workspace:*"
+    "@panoptes/model": "workspace:*",
+    "@types/mdast": "catalog:",
+    "remark-gfm": "catalog:",
+    "remark-parse": "catalog:",
+    "remark-stringify": "catalog:",
+    "unified": "catalog:",
+    "unist-util-visit": "catalog:"
+  },
+  "devDependencies": {
+    "effect": "catalog:"
   },
   "nx": {
     "tags": [

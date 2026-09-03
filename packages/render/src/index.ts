@@ -1,1 +1,1 @@
-export * from './lib/render.js';
+export * from './lib/markdown-register.js';

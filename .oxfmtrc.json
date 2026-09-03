@@ -5,9 +5,14 @@
   "sortPackageJson": false,
   // Vendored files keep the bytes the foreign tool wrote, so their
   // provenance checksums stay matched to upstream and a codec reads the
-  // real thing. The YAML beside them is written by a codec here and
-  // compared byte for byte, so a formatter must leave it alone as well.
-  // Only the payloads are exempt; prose beside them is formatted like any
-  // other document.
-  "ignorePatterns": ["test-data/**/*.json", "test-data/**/*.yaml"]
+  // real thing. The YAML and the markdown registers beside them are written
+  // here and compared byte for byte, so a formatter must leave them alone as
+  // well. Only the payloads are exempt; prose beside them is formatted like
+  // any other document, which is why the markdown pattern names the register
+  // suffix rather than every `.md` file under test-data.
+  "ignorePatterns": [
+    "test-data/**/*.json",
+    "test-data/**/*.yaml",
+    "test-data/**/*.register.md"
+  ]
 }
