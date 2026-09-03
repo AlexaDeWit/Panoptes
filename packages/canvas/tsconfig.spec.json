@@ -14,6 +14,7 @@
     "moduleResolution": "bundler"
   },
   "include": [
+    "src/lib/*.fixtures.ts",
     "src/**/*.test.ts",
     "src/**/*.spec.ts",
     "src/**/*.test.tsx",

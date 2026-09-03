@@ -1,6 +1,8 @@
 {
   "name": "@panoptes/canvas",
   "version": "0.0.1",
+  "private": true,
+  "type": "module",
   "main": "./src/index.ts",
   "types": "./src/index.ts",
   "exports": {
@@ -12,7 +14,16 @@
     "./package.json": "./package.json"
   },
   "dependencies": {
-    "@panoptes/model": "workspace:*"
+    "@panoptes/model": "workspace:*",
+    "@xyflow/react": "catalog:",
+    "react": "catalog:"
+  },
+  "devDependencies": {
+    "@testing-library/react": "catalog:",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "effect": "catalog:",
+    "react-dom": "catalog:"
   },
   "nx": {
     "tags": [
