@@ -1,9 +1,9 @@
 import type { ParseIssue } from '@panoptes/model';
+import type { threatDragonWireSchema } from '@panoptes/wire-threat-dragon';
 import { Either } from 'effect';
 import { ReadFailure, type ReadResult } from './codec.js';
 import { renderDivergences } from './divergence.js';
 import { readThreatDragon } from './threat-dragon-read.js';
-import type { threatDragonWireSchema } from './threat-dragon-wire.js';
 import {
   complementFixture,
   ecluseModel,
@@ -307,6 +307,39 @@ describe('a Threat Dragon read that stops', () => {
     expect(issuesOf(failure)).toContainEqual(
       expect.objectContaining({
         path: ['detail', 'diagrams', 0, 'diagramType'],
+      }),
+    );
+  });
+
+  it('refuses a one-character cell id at the file, not at the model', () => {
+    const failure = failureOf(
+      JSON.stringify({
+        version: '2.6.2',
+        summary: { title: 'Shortened' },
+        detail: {
+          diagrams: [
+            {
+              id: 0,
+              title: 'One',
+              diagramType: 'STRIDE',
+              cells: [
+                {
+                  id: 'a',
+                  shape: 'process',
+                  position: { x: 0, y: 0 },
+                  size: { width: 100, height: 100 },
+                  data: { type: 'tm.Process' },
+                },
+              ],
+            },
+          ],
+        },
+      }),
+    );
+    expect(failure._tag).toBe('InvalidWireDocument');
+    expect(issuesOf(failure)).toContainEqual(
+      expect.objectContaining({
+        path: ['detail', 'diagrams', 0, 'cells', 0, 'id'],
       }),
     );
   });

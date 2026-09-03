@@ -4,7 +4,7 @@ import type {
   ThreatDragonDocument,
   ThreatDragonEndpoint,
   ThreatDragonThreat,
-} from './threat-dragon-wire.js';
+} from '@panoptes/wire-threat-dragon';
 
 /** A cell drawn as a box on the canvas: an actor, a process, or a store. */
 export type ThreatDragonNode = Extract<

@@ -1,15 +1,21 @@
-import type {
-  CiaCategory,
-  CiaDieCategory,
-  CustomCategory,
-  LinddunCategory,
-  Severity,
-  StrideCategory,
-  ThreatCategory,
-  ThreatStatus,
+import {
+  ciaCategorySchema,
+  ciaDieCategorySchema,
+  linddunCategorySchema,
+  severitySchema,
+  strideCategorySchema,
+  threatStatusSchema,
+  type CiaCategory,
+  type CiaDieCategory,
+  type CustomCategory,
+  type LinddunCategory,
+  type Severity,
+  type StrideCategory,
+  type ThreatCategory,
+  type ThreatStatus,
 } from '@panoptes/model';
+import type { ThreatDragonThreat } from '@panoptes/wire-threat-dragon';
 import { categoryTranslations } from './threat-dragon-locales.js';
-import type { ThreatDragonThreat } from './threat-dragon-wire.js';
 
 /**
  * The fields of a Threat Dragon threat that name its category: the
@@ -37,16 +43,6 @@ const unspecified = 'unspecified';
 
 const eop = 'EOP';
 
-const statuses = {
-  Open: 'open',
-  Mitigated: 'mitigated',
-  Transferred: 'transferred',
-  Avoided: 'avoided',
-  Accepted: 'accepted-risk',
-  Eliminated: 'eliminated',
-  NotApplicable: 'not-applicable',
-} as const satisfies Record<string, ThreatStatus>;
-
 const statusLabels = {
   open: 'Open',
   mitigated: 'Mitigated',
@@ -57,14 +53,7 @@ const statusLabels = {
   'not-applicable': 'NotApplicable',
 } as const satisfies Record<ThreatStatus, string>;
 
-const severities = {
-  Low: 'low',
-  Medium: 'medium',
-  High: 'high',
-  Critical: 'critical',
-  TBD: 'undecided',
-  TBA: 'undecided',
-} as const satisfies Record<string, Severity>;
+const undecidedAlias = 'TBA';
 
 const severityLabels = {
   low: 'Low',
@@ -74,14 +63,7 @@ const severityLabels = {
   undecided: 'TBD',
 } as const satisfies Record<Severity, string>;
 
-const strideCategories = {
-  Spoofing: 'spoofing',
-  Tampering: 'tampering',
-  Repudiation: 'repudiation',
-  'Information disclosure': 'information-disclosure',
-  'Denial of service': 'denial-of-service',
-  'Elevation of privilege': 'elevation-of-privilege',
-} as const satisfies Record<string, StrideCategory['category']>;
+const strideCategories = strideCategorySchema.shape.category.options;
 
 const strideLabels = {
   spoofing: 'Spoofing',
@@ -92,15 +74,7 @@ const strideLabels = {
   'elevation-of-privilege': 'Elevation of privilege',
 } as const satisfies Record<StrideCategory['category'], string>;
 
-const linddunCategories = {
-  Linkability: 'linking',
-  Identifiability: 'identifying',
-  'Non-repudiation': 'non-repudiation',
-  Detectability: 'detecting',
-  'Disclosure of information': 'data-disclosure',
-  Unawareness: 'unawareness',
-  'Non-compliance': 'non-compliance',
-} as const satisfies Record<string, LinddunCategory['category']>;
+const linddunCategories = linddunCategorySchema.shape.category.options;
 
 const linddunLabels = {
   linking: 'Linkability',
@@ -112,11 +86,7 @@ const linddunLabels = {
   'non-compliance': 'Non-compliance',
 } as const satisfies Record<LinddunCategory['category'], string>;
 
-const ciaCategories = {
-  Confidentiality: 'confidentiality',
-  Integrity: 'integrity',
-  Availability: 'availability',
-} as const satisfies Record<string, CiaCategory['category']>;
+const ciaCategories = ciaCategorySchema.shape.category.options;
 
 const ciaLabels = {
   confidentiality: 'Confidentiality',
@@ -124,12 +94,7 @@ const ciaLabels = {
   availability: 'Availability',
 } as const satisfies Record<CiaCategory['category'], string>;
 
-const ciaDieCategories = {
-  ...ciaCategories,
-  Distributed: 'distributed',
-  Immutable: 'immutable',
-  Ephemeral: 'ephemeral',
-} as const satisfies Record<string, CiaDieCategory['category']>;
+const ciaDieCategories = ciaDieCategorySchema.shape.category.options;
 
 const ciaDieLabels = {
   ...ciaLabels,
@@ -149,19 +114,38 @@ const enumeratedCategories: Readonly<
   STRIDE: (label) =>
     paired(
       'STRIDE',
-      resolve(strideCategories, categoryTranslations.stride, label),
+      resolve(
+        strideCategories,
+        strideLabels,
+        categoryTranslations.stride,
+        label,
+      ),
     ),
   LINDDUN: (label) =>
     paired(
       'LINDDUN',
-      resolve(linddunCategories, categoryTranslations.linddun, label),
+      resolve(
+        linddunCategories,
+        linddunLabels,
+        categoryTranslations.linddun,
+        label,
+      ),
     ),
   CIA: (label) =>
-    paired('CIA', resolve(ciaCategories, categoryTranslations.cia, label)),
+    paired(
+      'CIA',
+      resolve(ciaCategories, ciaLabels, categoryTranslations.cia, label),
+    ),
   CIADIE: (label) =>
-    paired('CIA-DIE', resolve(ciaDieCategories, ciaDieTranslations, label)),
+    paired(
+      'CIA-DIE',
+      resolve(ciaDieCategories, ciaDieLabels, ciaDieTranslations, label),
+    ),
   DIE: (label) =>
-    paired('CIA-DIE', resolve(ciaDieCategories, ciaDieTranslations, label)),
+    paired(
+      'CIA-DIE',
+      resolve(ciaDieCategories, ciaDieLabels, ciaDieTranslations, label),
+    ),
 };
 
 /**
@@ -170,20 +154,30 @@ const enumeratedCategories: Readonly<
  * unreleased main adds the other three treatments. A status this codec does
  * not know reads as open, the state of a threat nobody has dispositioned,
  * and says it was not exact.
+ *
+ * The reading searches the spelling table {@link fromThreatStatus} writes
+ * from rather than a second table of its own, so every state the model holds
+ * is reachable from a file by construction: that table is declared over the
+ * model's own states, and the search runs over the model's own options.
  */
 export function toThreatStatus(status: string): Reading<ThreatStatus> {
-  const known = lookup(statuses, status);
+  const known = readBack(threatStatusSchema.options, statusLabels, status);
   return { value: known ?? 'open', exact: known !== undefined };
 }
 
 /**
- * A Threat Dragon severity as the model's own. Threat Dragon offers TBD and
- * has shipped TBA in a demo model, and both are the model's `undecided`. A
- * severity this codec does not know reads as `undecided` too, which is what
- * an unreadable level amounts to, and says it was not exact.
+ * A Threat Dragon severity as the model's own, read off the spelling table
+ * on the terms {@link toThreatStatus} sets. Threat Dragon offers TBD and has
+ * shipped TBA in a demo model, and both are the model's `undecided`, so TBA
+ * is named here as the one spelling that table does not carry. A severity
+ * this codec does not know reads as `undecided` too, which is what an
+ * unreadable level amounts to, and says it was not exact.
  */
 export function toSeverity(severity: string): Reading<Severity> {
-  const known = lookup(severities, severity);
+  const known =
+    severity === undecidedAlias
+      ? 'undecided'
+      : readBack(severitySchema.options, severityLabels, severity);
   return { value: known ?? 'undecided', exact: known !== undefined };
 }
 
@@ -234,7 +228,8 @@ export function toThreatCategory(
 /**
  * The internal status as Threat Dragon spells it. Every state the model
  * holds has a spelling, so nothing is lost, and the spec walks the schema's
- * own options to hold this table and the reading table above to each other.
+ * own options through this table and back, so one spelling used for two
+ * states is caught.
  */
 export function fromThreatStatus(status: ThreatStatus): string {
   return statusLabels[status];
@@ -310,11 +305,20 @@ function paired<Methodology extends ThreatCategory['methodology'], Category>(
 }
 
 function resolve<Category extends string>(
-  categories: Readonly<Record<string, Category>>,
+  categories: readonly Category[],
+  labels: Readonly<Record<Category, string>>,
   translations: Readonly<Record<string, string>>,
   label: string,
 ): Category | undefined {
-  return lookup(categories, lookup(translations, label) ?? label);
+  return readBack(categories, labels, lookup(translations, label) ?? label);
+}
+
+function readBack<Value extends string>(
+  values: readonly Value[],
+  labels: Readonly<Record<Value, string>>,
+  label: string,
+): Value | undefined {
+  return values.find((value) => labels[value] === label);
 }
 
 function lookup<Value>(

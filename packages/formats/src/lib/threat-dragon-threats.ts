@@ -1,4 +1,8 @@
 import type { Element, Model, Threat, ThreatId } from '@panoptes/model';
+import type {
+  ThreatDragonDocument,
+  ThreatDragonThreat,
+} from '@panoptes/wire-threat-dragon';
 import type { Divergence } from './divergence.js';
 import { equivalent } from './equivalence.js';
 import {
@@ -17,10 +21,6 @@ import {
   toThreatStatus,
   type ThreatDragonCategoryFields,
 } from './threat-dragon-vocabulary.js';
-import type {
-  ThreatDragonDocument,
-  ThreatDragonThreat,
-} from './threat-dragon-wire.js';
 
 /**
  * A mark a file carries so a number already in use is not handed out again,

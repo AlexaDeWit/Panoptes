@@ -7,14 +7,14 @@ import {
   threatSchema,
   type Model,
 } from '@panoptes/model';
+import type {
+  ThreatDragonDocument,
+  ThreatDragonThreat,
+} from '@panoptes/wire-threat-dragon';
 import { Either } from 'effect';
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { z } from 'zod';
-import type {
-  ThreatDragonDocument,
-  ThreatDragonThreat,
-} from './threat-dragon-wire.js';
 
 const linkability: ThreatDragonThreat = {
   id: 'threat-linkability',

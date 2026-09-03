@@ -1,21 +1,21 @@
 import { diagramIdSchema, threatIdSchema, type Model } from '@panoptes/model';
+import type {
+  ThreatDragonCell,
+  ThreatDragonDiagram,
+  ThreatDragonDocument,
+  ThreatDragonThreat,
+} from '@panoptes/wire-threat-dragon';
 import type { WriteResult } from './codec.js';
 import type { Divergence } from './divergence.js';
+import { equivalent } from './equivalence.js';
 import {
   diagramsById,
   mergeDiagram,
   numberDiagrams,
 } from './threat-dragon-diagrams.js';
 import { allCells, indexById, threatsOf } from './threat-dragon-document.js';
-import { equivalent } from './equivalence.js';
 import { preservedText } from './threat-dragon-preservation.js';
 import { planThreats, type HighWaterMark } from './threat-dragon-threats.js';
-import type {
-  ThreatDragonCell,
-  ThreatDragonDiagram,
-  ThreatDragonDocument,
-  ThreatDragonThreat,
-} from './threat-dragon-wire.js';
 
 const writtenVersion = '2.6.2';
 

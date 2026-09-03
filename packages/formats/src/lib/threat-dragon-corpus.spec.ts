@@ -1,10 +1,10 @@
 import { diagramIdSchema } from '@panoptes/model';
+import type { ThreatDragonDocument } from '@panoptes/wire-threat-dragon';
 import { Ajv } from 'ajv';
 import { Either } from 'effect';
 import type { Divergence } from './divergence.js';
 import { allThreats } from './threat-dragon-document.js';
 import { readThreatDragon } from './threat-dragon-read.js';
-import type { ThreatDragonDocument } from './threat-dragon-wire.js';
 import { writeThreatDragon } from './threat-dragon-write.js';
 import {
   corpusTexts,

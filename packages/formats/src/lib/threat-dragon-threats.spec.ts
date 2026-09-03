@@ -1,8 +1,8 @@
+import type { ThreatDragonDocument } from '@panoptes/wire-threat-dragon';
 import { Either } from 'effect';
 import { renderDivergences } from './divergence.js';
 import { readThreatDragon } from './threat-dragon-read.js';
 import { planThreats } from './threat-dragon-threats.js';
-import type { ThreatDragonDocument } from './threat-dragon-wire.js';
 import {
   complementFixture,
   ecluseText,

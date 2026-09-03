@@ -1,13 +1,13 @@
+import type {
+  ThreatDragonDiagram,
+  ThreatDragonThreat,
+} from '@panoptes/wire-threat-dragon';
 import { renderDivergences } from './divergence.js';
 import {
   diagramsById,
   mergeDiagram,
   numberDiagrams,
 } from './threat-dragon-diagrams.js';
-import type {
-  ThreatDragonDiagram,
-  ThreatDragonThreat,
-} from './threat-dragon-wire.js';
 import { parsedFixture, type ModelInput } from './threat-dragon.fixtures.js';
 
 const diagram = (id: string): ModelInput['diagrams'][number] => ({

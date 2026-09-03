@@ -4,16 +4,16 @@ import {
   type DiagramId,
   type Model,
 } from '@panoptes/model';
-import type { Divergence } from './divergence.js';
-import { mergeCell } from './threat-dragon-cells.js';
-import { cellsOf, indexById } from './threat-dragon-document.js';
-import type { HighWaterMark } from './threat-dragon-threats.js';
 import type {
   ThreatDragonCell,
   ThreatDragonDiagram,
   ThreatDragonDocument,
   ThreatDragonThreat,
-} from './threat-dragon-wire.js';
+} from '@panoptes/wire-threat-dragon';
+import type { Divergence } from './divergence.js';
+import { mergeCell } from './threat-dragon-cells.js';
+import { cellsOf, indexById } from './threat-dragon-document.js';
+import type { HighWaterMark } from './threat-dragon-threats.js';
 
 const genericDiagramType = 'Generic';
 

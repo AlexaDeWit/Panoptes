@@ -287,6 +287,9 @@ importers:
       '@panoptes/wire-panoptes-yaml':
         specifier: workspace:*
         version: link:../wire-panoptes-yaml
+      '@panoptes/wire-threat-dragon':
+        specifier: workspace:*
+        version: link:../wire-threat-dragon
       effect:
         specifier: 'catalog:'
         version: 3.22.1
@@ -320,6 +323,12 @@ importers:
         version: link:../model
 
   packages/wire-panoptes-yaml:
+    dependencies:
+      zod:
+        specifier: 'catalog:'
+        version: 4.4.3
+
+  packages/wire-threat-dragon:
     dependencies:
       zod:
         specifier: 'catalog:'
