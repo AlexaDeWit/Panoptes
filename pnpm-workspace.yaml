@@ -92,6 +92,10 @@ catalog:
   '@swc/helpers': 0.5.23
   '@testing-library/dom': 10.4.1
   '@testing-library/react': 16.3.3
+  # mdast node types. remark builds and serializes the trees but publishes no
+  # types for their nodes, so the register's tree builders are typed from
+  # here.
+  '@types/mdast': ^4.0.4
   '@types/node': ^24.0.0
   '@types/react': ^19.0.0
   '@types/react-dom': ^19.0.0
@@ -129,6 +133,12 @@ catalog:
   oxlint-tsgolint: 7.0.2001
   react: ^19.0.0
   react-dom: ^19.0.0
+  # The markdown half of the unified ecosystem, held as one wave: remark-gfm
+  # carries a micromark extension for the parser and a to-markdown extension
+  # for the serializer, so a bump that moves one moves the other.
+  remark-gfm: ^4.0.1
+  remark-parse: ^11.0.0
+  remark-stringify: ^11.0.0
   tslib: ^2.3.0
   # TypeScript stays on 6.x: nx's @nx/js/typescript plugin drives the compiler
   # through the programmatic API, which the Go-native 7.0 line does not ship
@@ -136,6 +146,8 @@ catalog:
   # lint speed comes from oxlint's tsgolint, which carries its own Go checker.
   # Revisit at 7.1.
   typescript: ~6.0.3
+  unified: ^11.0.5
+  unist-util-visit: ^5.1.0
   vite: ^8.0.0
   vitest: ~4.1.0
   yaml: ^2.9.0

@@ -19,6 +19,8 @@
   },
   "dependencies": {
     "@panoptes/formats": "workspace:*",
-    "@panoptes/render": "workspace:*"
+    "@panoptes/model": "workspace:*",
+    "@panoptes/render": "workspace:*",
+    "effect": "catalog:"
   }
 }

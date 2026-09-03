@@ -13,6 +13,9 @@
       "path": "../../packages/render/tsconfig.lib.json"
     },
     {
+      "path": "../../packages/model/tsconfig.lib.json"
+    },
+    {
       "path": "../../packages/formats/tsconfig.lib.json"
     }
   ]

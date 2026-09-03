@@ -1,17 +1,23 @@
 # test-data
 
 Inputs to the test suites: files vendored from other projects, verbatim, and
-one file this repository writes itself. They live at the repository root
+the files this repository writes itself. They live at the repository root
 rather than inside one package because more than one package reads them and
 the layer matrix forbids a package dependency between the readers:
 `packages/model` may import no internal package at all, so a fixture file
 owned by `model` would be out of reach of the packages that read it.
 
-No payload here is formatted. `.oxfmtrc.json` ignores `test-data/**/*.json`
-and `test-data/**/*.yaml`, so a vendored file keeps the bytes the foreign
-tool wrote, which is what a codec has to read, and the written one keeps the
-bytes the codec produced, which is what a test compares against. This note is
-formatted like any other document.
+No payload here is formatted. `.oxfmtrc.json` ignores `test-data/**/*.json`,
+`test-data/**/*.yaml` and `test-data/**/*.register.md`, so a vendored file
+keeps the bytes the foreign tool wrote, which is what a codec has to read,
+and a written one keeps the bytes it was written with, which is what a test
+compares against. The markdown pattern names the register suffix rather than
+every `.md` file below, so prose like this note is formatted like any other
+document. That puts a rule on the next generated markdown payload: name it
+`*.register.md`, or widen the pattern in the same commit. A `.md` file below
+under any other name is formatted, and a byte comparison against a formatted
+file flaps. A payload in a format none of the three patterns names needs the
+same decision.
 
 `nx.json` names this directory in `sharedGlobals`, so editing a file below
 invalidates the cached result of every task that reads it. Without that a
@@ -76,14 +82,36 @@ It is here because the two descriptions of that one threat model were never
 held to each other. `packages/model` owned the transcription and
 `packages/formats` pinned the same counts and vocabularies beside it, so a
 drift in an element description, an endpoint, or `outOfScope` passed both
-suites. Three assertions now read this file. `packages/model` regenerates it
-on every test run with `toMatchFileSnapshot` and reds where the fixture and
-the file differ. `packages/formats` compares the whole read of `ecluse.json`
-against it, and compares again what a write of that read reads back.
+suites. Three assertions now hold the two to each other. `packages/model`
+regenerates it on every test run with `toMatchFileSnapshot` and reds where the
+fixture and the file differ. `packages/formats` compares the whole read of
+`ecluse.json` against it, and compares again what a write of that read reads
+back.
 
 Regenerate it with `pnpm nx test @panoptes/model -- -u`, in the same commit as
 the change that moved it, and read the diff: it is what the model core holds
 of a real threat model.
+
+`packages/render` reads it too, as the input its markdown register is
+rendered from, so this file is where a projection meets the model core
+without either package importing the other's fixtures.
+
+## `render/ecluse.register.md`
+
+The Écluse model as `packages/render` writes its threat register: an overview
+table of the 29 threats, then one section each. Not vendored. This repository
+generates it, from `ecluse.model.json` above read through `parseModel`.
+
+It is committed so a change to what the register writes arrives as a diff on
+a file rather than as a test that still passes. `packages/render` regenerates
+it on every test run with `toMatchFileSnapshot`, and it is the only place the
+register's whole shape, escaping and prose handling included, is held against
+a production-scale model.
+
+Regenerate it with `pnpm nx test @panoptes/render -- -u`, in the same commit
+as the change that moved it, and read the diff: the file is the register's
+output by definition, so a change to it is a change to what every consumer of
+the register sees.
 
 ## `threat-dragon/`
 

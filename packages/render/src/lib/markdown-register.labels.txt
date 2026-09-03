@@ -1,0 +1,43 @@
+severity low: Low
+severity medium: Medium
+severity high: High
+severity critical: Critical
+severity undecided: Undecided
+status open: Open
+status mitigated: Mitigated
+status transferred: Transferred
+status avoided: Avoided
+status accepted-risk: Accepted risk
+status eliminated: Eliminated
+status not-applicable: Not applicable
+category STRIDE spoofing: Spoofing (STRIDE)
+category STRIDE tampering: Tampering (STRIDE)
+category STRIDE repudiation: Repudiation (STRIDE)
+category STRIDE information-disclosure: Information disclosure (STRIDE)
+category STRIDE denial-of-service: Denial of service (STRIDE)
+category STRIDE elevation-of-privilege: Elevation of privilege (STRIDE)
+category LINDDUN linking: Linking (LINDDUN)
+category LINDDUN identifying: Identifying (LINDDUN)
+category LINDDUN non-repudiation: Non-repudiation (LINDDUN)
+category LINDDUN detecting: Detecting (LINDDUN)
+category LINDDUN data-disclosure: Data disclosure (LINDDUN)
+category LINDDUN unawareness: Unawareness (LINDDUN)
+category LINDDUN non-compliance: Non-compliance (LINDDUN)
+category CIA confidentiality: Confidentiality (CIA)
+category CIA integrity: Integrity (CIA)
+category CIA availability: Availability (CIA)
+category CIA-DIE confidentiality: Confidentiality (CIA-DIE)
+category CIA-DIE integrity: Integrity (CIA-DIE)
+category CIA-DIE availability: Availability (CIA-DIE)
+category CIA-DIE distributed: Distributed (CIA-DIE)
+category CIA-DIE immutable: Immutable (CIA-DIE)
+category CIA-DIE ephemeral: Ephemeral (CIA-DIE)
+category PLOT4ai accountability-and-human-oversight: Accountability and human oversight (PLOT4ai)
+category PLOT4ai bias-fairness-and-discrimination: Bias, fairness and discrimination (PLOT4ai)
+category PLOT4ai cybersecurity: Cybersecurity (PLOT4ai)
+category PLOT4ai data-and-data-governance: Data and data governance (PLOT4ai)
+category PLOT4ai ethics-and-human-rights: Ethics and human rights (PLOT4ai)
+category PLOT4ai privacy-and-data-protection: Privacy and data protection (PLOT4ai)
+category PLOT4ai safety-and-environmental-impact: Safety and environmental impact (PLOT4ai)
+category PLOT4ai transparency-and-accessibility: Transparency and accessibility (PLOT4ai)
+category custom Prompt injection: Prompt injection (OWASP LLM Top 10)
