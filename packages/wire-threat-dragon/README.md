@@ -15,13 +15,12 @@ JSON Schema that project ships describes the same format and the two differ:
 the published one puts a cell's threats beside `data` rather than under it,
 names a threat's id `threatId`, and declares neither ports nor tools nor
 labels nor `threatFrequency` nor the boundary bookkeeping. Where the two agree
-on a bound this schema takes the published one, which is where a cell id and a
-threat id of at least two characters come from. Two published bounds it does
-not take. `diagramType` is `minLength: 3` there and one character here,
-because that value is a display label Threat Dragon translates and a
-two-character label in some language is not far-fetched. The string branch of
-`summary.id` is `minLength: 2` there and unbounded here, a bound this schema
-has yet to take. `test-data/README.md` records the same difference from the
+on a bound this schema takes the published one, which is where the
+two-character minimum on a cell id, a threat id, and the string branch of
+`summary.id` comes from. The published bound on `diagramType` it does not
+take is `minLength: 3`, one character here, because that value is a display
+label Threat Dragon translates and a two-character label in some language is
+not far-fetched. `test-data/README.md` records the same difference from the
 other side, beside the vendored copy.
 
 The schema declares every key the format carries, the parts Panoptes does not

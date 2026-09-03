@@ -105,6 +105,10 @@ function withCells(cells: readonly unknown[]): unknown {
   };
 }
 
+function withSummaryId(id: unknown): unknown {
+  return { ...minimal, summary: { ...minimal.summary, id } };
+}
+
 function processCell(id: string, threats: readonly unknown[]): unknown {
   return {
     id,
@@ -211,5 +215,14 @@ describe('the Threat Dragon wire schema', () => {
         ]),
       ),
     ).toEqual([['detail', 'diagrams', 0, 'cells', 0, 'source', 'cell']]);
+  });
+
+  it('refuses a summary id of one character, at that path', () => {
+    expect(issuePathsOf(withSummaryId('a'))).toEqual([['summary', 'id']]);
+  });
+
+  it('reads a summary id written as an integer and one written as a string', () => {
+    expect(parsedOf(withSummaryId(0))?.summary.id).toBe(0);
+    expect(parsedOf(withSummaryId('ab'))?.summary.id).toBe('ab');
   });
 });

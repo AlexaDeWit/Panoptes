@@ -288,10 +288,11 @@ const diagramSchema = z.object({
  * drawing library rather than to Threat Dragon: stroke colours, dash
  * arrays, marker and connector names, port visibility.
  *
- * A cell id, a threat id, and the cell an edge anchors to are two
- * characters or more. Threat Dragon's own schema puts that bound on a cell
- * id and on the `threatId` it names a threat by, and an anchor names a
- * cell, so one character there names no cell a file can hold.
+ * A cell id, a threat id, the cell an edge anchors to, and the string form
+ * of `summary.id` are two characters or more. Threat Dragon's own schema
+ * puts that bound on a cell id, on the `threatId` it names a threat by, and
+ * on `summary.id`, and an anchor names a cell, so one character there names
+ * no cell a file can hold.
  *
  * `version` accepts `2`, `2.x`, and `2.x.y`, and nothing else. Threat
  * Dragon's own test for a v2 file is that the version is present and does
@@ -314,7 +315,7 @@ export const threatDragonWireSchema = z.object({
     title: z.string(),
     owner: z.string().optional(),
     description: z.string().optional(),
-    id: z.union([z.int(), z.string()]).optional(),
+    id: z.union([z.int(), idSchema]).optional(),
     tags: z.array(z.string()).optional(),
   }),
   detail: z.object({
