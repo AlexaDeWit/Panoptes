@@ -116,9 +116,10 @@ a change to what the format writes arrives as a diff on that file. Models
 generated over the model's own shape gate the rest: each survives a write
 and a read as itself, with its threats in number order.
 
-`writeThreatDragon` is the other half. Given the document a read returned it
-merges the model onto it, and given none it projects the model into Threat
-Dragon's own canonical form. Output is built through the wire schema's
+`writeThreatDragon` is the other half, and the two are paired as
+`threatDragonCodec`. Given the document a read returned it merges the model
+onto it, and given none it projects the model into Threat Dragon's own
+canonical form. Output is built through the wire schema's
 inferred types, so the writer cannot emit a shape that schema would refuse,
 and the path down to a threat, which Threat Dragon nests eight levels deep at
 `detail.diagrams[i].cells[j].data.threats[k]`, is walked with the typed
@@ -180,6 +181,56 @@ declares them beside `data` rather than under it, and constrains nothing
 this codec puts there. So the oracle gates the shape of the document, and
 the two oracles above are what gate its threats.
 
-The format detection that picks a codec (#84) comes next.
+`readAnyFormat` opens a text without being told which format it is, and
+answers with the codec that read it beside everything that read produced. The
+CLI, Studio and the MCP load tool will each open files, so the choice is made
+here once rather than three times.
+
+Detection is the reads themselves: the registered codecs are tried in order,
+and each is tried by reading. A codec claims a text when its read succeeds,
+when the mapping fails, or when its wire schema refuses the document over
+something other than the root keys that name the format, which `detect.ts`
+lists beside each codec. It does not claim when the text is not the format's
+syntax at all, when the schema's complaint is at one of those naming keys or
+above them, or when the complaint is about the document as a whole, a text
+that is no mapping at all being no format's file.
+
+A document that has lost a whole naming key at the root is therefore claimed
+by nobody, where the same document broken one level under a naming key is
+claimed and then refused. That is where the line falls: a version-stamped JSON
+file carrying no summary section at all is likelier a file of another tool
+than a Threat Dragon file that lost one, and a file holding a cell the schema
+refuses is a broken file of a known format rather than a file of some other.
+Once a codec claims, its answer stands: a claimed file that then fails comes
+back as that codec's own `ReadFailure`, where it broke, rather than falling
+through to the next codec.
+
+Threat Dragon is tried first, and the order is a cost decision rather than a
+correctness one. JSON is YAML, so trying Panoptes YAML first would run the
+YAML parser over the whole of every Threat Dragon file before the schema
+refused it at `formatVersion`, where trying Threat Dragon first stops on a
+YAML file at the first character JSON cannot begin with. A file name is never
+consulted in either direction, so a Panoptes model saved as `.json` opens as a
+Panoptes model.
+
+Where no codec claims, the failure is `NoFormatClaimed`, which names every
+format tried, in the order tried, and carries no codec's issues: a codec that
+did not claim was refusing a format the text was never in, and its complaints
+describe a document nobody wrote. A file from a release neither codec models
+lands there, a `formatVersion` other than 1 and a Threat Dragon version
+outside major 2 among them, so a later release of either format needs a codec
+of its own rather than a looser reader, and until there is one the person
+holding the file is told what was tried.
+
+The result is a union with one member per codec, discriminated by `format`, so
+narrowing on the name pairs a source document with the codec that produced it:
+`codec.write(model, source)` type-checks inside a member, and pairing one
+member's source with the other member's codec does not compile. Which document
+belongs to which codec is what a caller cannot check by looking at the
+document, which is why the codec comes back and not the model alone.
+
+Nothing here parses a text of its own. Detection is the codec reads, so
+whatever bounds those reads put on size, nesting and aliases (#51) bound a
+detected read too.
 
 Unit tests: `pnpm nx test @panoptes/formats`.
