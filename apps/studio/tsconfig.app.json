@@ -3,7 +3,7 @@
   "compilerOptions": {
     "outDir": "dist",
     "tsBuildInfoFile": "dist/tsconfig.app.tsbuildinfo",
-    "lib": ["dom"],
+    "lib": ["dom", "es2022"],
     "types": [
       "node",
       "@nx/react/typings/cssmodule.d.ts",
@@ -32,6 +32,12 @@
   ],
   "include": ["src/**/*.js", "src/**/*.jsx", "src/**/*.ts", "src/**/*.tsx"],
   "references": [
+    {
+      "path": "../../packages/model/tsconfig.lib.json"
+    },
+    {
+      "path": "../../packages/formats/tsconfig.lib.json"
+    },
     {
       "path": "../../packages/canvas/tsconfig.lib.json"
     }
