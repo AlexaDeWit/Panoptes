@@ -7,7 +7,7 @@ const audit = async (
   within?: string,
 ): Promise<void> => {
   const builder = new AxeBuilder({ page });
-  const { violations } = await (
+  const { violations, incomplete } = await (
     within === undefined ? builder : builder.include(within)
   ).analyze();
   const report = violations
@@ -18,10 +18,11 @@ const audit = async (
           .join(', ')}`,
     )
     .join('\n');
+  const undecided = incomplete.map((result) => result.id).join(', ');
 
   expect(
     violations.map((violation) => violation.id),
-    `axe-core reported, with the studio ${state}:\n${report}`,
+    `axe-core reported, with the studio ${state}:\n${report}\nnot gated, axe could not settle: ${undecided || 'nothing'}`,
   ).toEqual([]);
 };
 
@@ -33,14 +34,9 @@ test('the studio page carries no axe-core accessibility violation', async ({
 
   await audit(page, 'at rest');
 
-  // The open listbox is audited on its own. Radix hides the rest of the page
-  // from assistive technology while a listbox is open (`aria-hidden` on every
-  // element outside it), which is the behaviour a listbox should have and
-  // which axe's page-level rules, landmark-one-main and page-has-heading-one
-  // among them, read as a page that has lost its main and its heading. Every
-  // rule still applies to the overlay itself, contrast and roles included,
-  // and the control portals its content inside the panel's landmark so the
-  // region rule holds there too.
+  // The open listbox is audited on its own because Radix hides the rest of
+  // the page from assistive technology while it is open, which axe's
+  // page-level rules read as a page that has lost its main and its heading.
   await page.getByRole('combobox', { name: 'Severity' }).press('Enter');
   await expect(page.getByRole('listbox')).toBeVisible();
 

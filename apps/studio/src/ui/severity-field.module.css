@@ -67,10 +67,12 @@
 
 /* Radix puts real DOM focus on the highlighted item, so the app's focus
    indicator belongs here too. The offset is negative so the ring stays inside
-   the item rather than over its neighbour, and it survives forced colours,
-   which the background swap above does not. */
+   the item rather than over its neighbour, and the colour is the one the item
+   draws its text in, because the accent the ring token carries is the
+   background it would be drawn on. It survives forced colours, which the
+   background swap above does not. */
 .item[data-highlighted]:focus-visible {
-  outline: var(--pn-focus-ring);
+  outline: var(--pn-focus-ring-width) solid var(--pn-colour-accent-text);
   outline-offset: calc(-1 * var(--pn-focus-ring-offset));
 }
 

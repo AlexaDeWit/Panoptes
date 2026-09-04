@@ -10,19 +10,20 @@ CSS-in-JS, no Tailwind, and no second stylesheet.
 
 ## Tokens
 
-| Token                                                    | What it decides                    |
-| -------------------------------------------------------- | ---------------------------------- |
-| `--pn-font-family`, `--pn-font-size`, `--pn-line-height` | The type scale                     |
-| `--pn-colour-surface`, `--pn-colour-surface-raised`      | What a control sits on             |
-| `--pn-colour-text`, `--pn-colour-text-muted`             | Text, at WCAG AA on either surface |
-| `--pn-colour-border`                                     | Every hairline                     |
-| `--pn-colour-accent`, `--pn-colour-accent-text`          | Selection and the focus indicator  |
-| `--pn-space-1` to `--pn-space-4`                         | Every gap and every pad            |
-| `--pn-radius`                                            | Every corner                       |
-| `--pn-focus-ring`, `--pn-focus-ring-offset`              | The one visible focus indicator    |
+| Token                                                                | What it decides                    |
+| -------------------------------------------------------------------- | ---------------------------------- |
+| `--pn-font-family`, `--pn-font-size`, `--pn-line-height`             | The type scale                     |
+| `--pn-colour-surface`, `--pn-colour-surface-raised`                  | What a control sits on             |
+| `--pn-colour-text`, `--pn-colour-text-muted`                         | Text, at WCAG AA on either surface |
+| `--pn-colour-border`                                                 | Every hairline                     |
+| `--pn-colour-accent`, `--pn-colour-accent-text`                      | Selection and the focus indicator  |
+| `--pn-space-1` to `--pn-space-4`                                     | Every gap and every pad            |
+| `--pn-radius`                                                        | Every corner                       |
+| `--pn-focus-ring`, `--pn-focus-ring-width`, `--pn-focus-ring-offset` | The one visible focus indicator    |
 
 A control never suppresses the focus indicator and never invents its own: it
-applies the two focus tokens in `:focus-visible`.
+applies the focus tokens in `:focus-visible`, swapping the ring's colour only
+where the accent is the background it would be drawn on.
 
 ## Adding a control
 
@@ -30,8 +31,9 @@ applies the two focus tokens in `:focus-visible`.
    rather than retyping them.
 2. Add a CSS module beside it, built from the tokens above.
 3. Give it a visible `<label>` tied to the primitive's own control element.
-4. Portal an overlay into the control's own element rather than the document
-   body, so it stays inside whichever landmark the panel declares.
+4. Keep an overlay inside the control's own element rather than letting the
+   primitive send it to the document body, so it sits in whichever landmark
+   the panel declares.
 5. Add a spec beside it.
 
 ## What a composed control owes

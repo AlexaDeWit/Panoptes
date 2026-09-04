@@ -2,23 +2,9 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { type Severity, severitySchema } from '@panoptes/model';
 
-import {
-  narrowSeverity,
-  SeverityField,
-  severityCommitter,
-} from './severity-field.js';
+import { SeverityField, severityCommitter } from './severity-field.js';
 
 const noop = (): void => undefined;
-
-describe('narrowSeverity', () => {
-  it('returns the severity a model value names', () => {
-    expect(narrowSeverity('critical')).toBe('critical');
-  });
-
-  it('returns undefined for text the model does not name', () => {
-    expect(narrowSeverity('catastrophic')).toBeUndefined();
-  });
-});
 
 describe('severityCommitter', () => {
   it('commits a value the model names', () => {

@@ -33,9 +33,12 @@
 
   /*
    * One focus indicator for the whole app. A control never removes it and
-   * never invents its own: it applies these two properties in `:focus-visible`.
+   * never invents its own: it applies these properties in `:focus-visible`.
+   * The width is a token of its own so a control drawing the ring in another
+   * colour, over an accent background say, still draws it at the one width.
    */
-  --pn-focus-ring: 2px solid var(--pn-colour-accent);
+  --pn-focus-ring-width: 2px;
+  --pn-focus-ring: var(--pn-focus-ring-width) solid var(--pn-colour-accent);
   --pn-focus-ring-offset: 2px;
 }
 
