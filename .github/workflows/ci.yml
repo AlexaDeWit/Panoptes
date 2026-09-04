@@ -102,6 +102,16 @@ jobs:
         if: ${{ !startsWith(github.ref, 'refs/tags/v') }}
         run: nix develop .#ci --command scripts/package-cli.sh
 
+      # The step above only runs --version and one validate. This runs the
+      # CLI's whole scenario table through the executable it just compiled,
+      # which the Check step could not: dist/cli does not exist yet then, and
+      # nx does not hash it, so the run has to skip the cache. The
+      # environment variable makes a missing executable fail the suite rather
+      # than drop a runner in silence.
+      - name: Run the CLI tests against the compiled executable
+        if: ${{ !startsWith(github.ref, 'refs/tags/v') }}
+        run: nix develop .#ci --command env PANOPTES_COMPILED_RUNNER=required pnpm nx test @panoptes/cli --skip-nx-cache
+
       - name: Compile every target and run the host one
         if: startsWith(github.ref, 'refs/tags/v')
         run: nix develop .#ci --command scripts/package-cli.sh --all

@@ -3,42 +3,33 @@ import {
   ReadFailure,
   hasDiverged,
   readAnyFormat,
+  readLimits,
   renderDivergences,
   type DetectedRead,
   type Divergence,
 } from '@panoptes/formats';
 import type { ParseIssue } from '@panoptes/model';
 import { Either } from 'effect';
-import { readTextFile } from './files.js';
+import { readTextFile, sizeOf } from './files.js';
 import {
+  escaped,
   invalidInput,
   lines,
   usageError,
   type CommandOutcome,
 } from './outcome.js';
 
-const laterRelease =
-  'A formatVersion other than 1, and a Threat Dragon version outside major ' +
-  '2, land here: a later release of either format needs a codec of its own ' +
-  'rather than a looser reader.';
-
 /**
  * The file read as whichever format claims its content, or the outcome the
  * edge reports instead. A path the process cannot read is the invocation's
- * fault and exits 2. A text no codec claims, or one a codec read and
- * refused, is the input's and exits 1. Both commands start here, so the two
- * of them cannot word the same failure differently.
+ * fault and exits 2. A text no codec claims, one past a read bound, or one
+ * a codec read and refused, is the input's and exits 1. Both commands start
+ * here, so the two of them cannot word the same failure differently.
  */
 export function readModel(
   file: string,
 ): Either.Either<DetectedRead, CommandOutcome> {
-  return Either.match(readTextFile(file), {
-    onLeft: (reason) => Either.left(usageError(lines(`error: ${reason}`))),
-    onRight: (text) =>
-      Either.mapLeft(readAnyFormat(text), (failure) =>
-        invalidInput(describeReadFailure(failure)),
-      ),
-  });
+  return Either.flatMap(withinSizeBound(file), () => detected(file));
 }
 
 /**
@@ -54,7 +45,6 @@ export function describeReadFailure(
   return DetectionFailure.$is('NoFormatClaimed')(failure)
     ? lines(
         `No format claimed the file. Panoptes tried ${failure.tried.join(', ')}.`,
-        laterRelease,
       )
     : ReadFailure.$match(failure, {
         ExceededReadLimit: ({ limit, bound, observed }) =>
@@ -96,8 +86,37 @@ export function describeDivergences(
     : '';
 }
 
+function withinSizeBound(file: string): Either.Either<void, CommandOutcome> {
+  const size = sizeOf(file);
+  return size === undefined || size <= readLimits.maxTextBytes
+    ? Either.right(undefined)
+    : Either.left(
+        invalidInput(
+          describeReadFailure(
+            ReadFailure.ExceededReadLimit({
+              limit: 'maxTextBytes',
+              bound: readLimits.maxTextBytes,
+              observed: size,
+            }),
+          ),
+        ),
+      );
+}
+
+function detected(file: string): Either.Either<DetectedRead, CommandOutcome> {
+  return Either.match(readTextFile(file), {
+    onLeft: (reason) => Either.left(usageError(lines(`error: ${reason}`))),
+    onRight: (text) =>
+      Either.mapLeft(readAnyFormat(text), (failure) =>
+        invalidInput(describeReadFailure(failure)),
+      ),
+  });
+}
+
 function issueLines(issues: readonly ParseIssue[]): readonly string[] {
-  return issues.map((issue) => `${pathOf(issue.path)}: ${issue.message}`);
+  return issues.map((issue) =>
+    escaped(`${pathOf(issue.path)}: ${issue.message}`),
+  );
 }
 
 function pathOf(path: readonly (string | number)[]): string {

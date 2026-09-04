@@ -1,21 +1,18 @@
 import type { Diagram, Model } from '@panoptes/model';
-import { renderRegister, renderSvg } from '@panoptes/render';
+import { renderRegister, renderSvg, type SvgDocument } from '@panoptes/render';
 import { Either } from 'effect';
 import { z } from 'zod';
 import { writeTextFile } from './files.js';
 import { readModel } from './input.js';
 import {
+  escaped,
   lines,
   succeeded,
   usageError,
   type CommandOutcome,
 } from './outcome.js';
 
-type UnplacedFlow = {
-  readonly flow: string;
-  readonly side: string;
-  readonly element: string;
-};
+type UnplacedFlow = SvgDocument['unplaced'][number];
 
 /**
  * What `render` needs, and the one gate on the option bag the parser hands
@@ -138,8 +135,8 @@ function theNamedDiagram(
 }
 
 function diagramList(model: Model): readonly string[] {
-  return model.diagrams.map(
-    (diagram) => `  ${diagram.id}: ${collapsed(diagram.title)}`,
+  return model.diagrams.map((diagram) =>
+    escaped(`  ${diagram.id}: ${collapsed(diagram.title)}`),
   );
 }
 

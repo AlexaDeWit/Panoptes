@@ -6,7 +6,7 @@ import {
   fixtureFile,
   noDiagramYaml,
   unplacedFlowYaml,
-} from './fixtures.js';
+} from './cli.fixtures.js';
 import { render, type RenderOptions } from './render.js';
 
 const repositoryRoot = join(import.meta.dirname, '../../..');
@@ -14,6 +14,8 @@ const repositoryRoot = join(import.meta.dirname, '../../..');
 const directory = mkdtempSync(join(tmpdir(), 'panoptes-cli-render-'));
 
 const ecluse = join(repositoryRoot, 'test-data/ecluse.json');
+
+const ecluseYaml = join(repositoryRoot, 'test-data/panoptes/ecluse.yaml');
 
 const panoptes = join(repositoryRoot, 'threat-modelling/panoptes.yaml');
 
@@ -57,6 +59,19 @@ describe('render', () => {
 
   it('draws to standard output for an out of -', () => {
     expect(render(ecluse, options({ format: 'svg', out: '-' }))).toEqual({
+      code: 0,
+      out: golden('ecluse.svg'),
+      err: '',
+    });
+  });
+
+  it('projects the same model out of the native format, byte for byte', () => {
+    expect(render(ecluseYaml, options({ format: 'md', out: '-' }))).toEqual({
+      code: 0,
+      out: golden('ecluse.register.md'),
+      err: '',
+    });
+    expect(render(ecluseYaml, options({ format: 'svg', out: '-' }))).toEqual({
       code: 0,
       out: golden('ecluse.svg'),
       err: '',

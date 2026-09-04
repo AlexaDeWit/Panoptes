@@ -24,7 +24,7 @@ const oneThreat = `threats:
 lastIssuedThreatNumber: 1
 `;
 
-const process = (id: string, x: number): string => `      - kind: process
+const processElement = (id: string, x: number): string => `      - kind: process
         id: ${id}
         name: ${id}
         description: ''
@@ -45,16 +45,11 @@ const flow = (id: string, target: string): string => `      - kind: flow
         waypoints: []
 `;
 
-/**
- * A native file whose one threat names an element no diagram holds. The
- * document is valid and the model it maps to is not, which is the failure
- * that carries a path into the model rather than into the file.
- */
-export const danglingReferenceYaml = `${heading}diagrams:
+const referencing = (element: string): string => `${heading}diagrams:
   - id: only
     title: Only
     elements:
-${process('element-1', 0)}threats:
+${processElement('element-1', 0)}threats:
   - id: threat-1
     number: 1
     title: Spoofed caller
@@ -63,9 +58,23 @@ ${process('element-1', 0)}threats:
     status: open
     description: ''
     mitigation: ''
-    elements: [element-2]
+    elements: [${element}]
 lastIssuedThreatNumber: 1
 `;
+
+/**
+ * A native file whose one threat names an element no diagram holds. The
+ * document is valid and the model it maps to is not, which is the failure
+ * that carries a path into the model rather than into the file.
+ */
+export const danglingReferenceYaml = referencing('element-2');
+
+/**
+ * A native file whose one threat names an element id built out of ANSI
+ * escapes, which the model refuses and then quotes back in the sentence
+ * saying the reference resolves to nothing.
+ */
+export const ansiElementIdYaml = referencing('"\\e[31mBOOM\\e[0m"');
 
 /**
  * A native file carrying a key the wire schema does not declare, which a
@@ -95,7 +104,7 @@ export const unplacedFlowYaml = `${heading}diagrams:
   - id: only
     title: Only
     elements:
-${process('element-1', 0)}${process('element-2', 100)}${flow(
+${processElement('element-1', 0)}${processElement('element-2', 100)}${flow(
   'flow-1',
   'element-2',
 )}${flow('flow-2', 'flow-1')}${oneThreat}`;

@@ -1,10 +1,8 @@
 /**
- * What the process answers with. 0 is the command doing what it was asked.
- * 1 is the input being invalid, which is a file Panoptes read and refused.
- * 2 is the invocation not being usable, which covers an unknown flag, a
- * missing argument, a file the process cannot read or write, and a choice
- * that names nothing. The README states the same three, and nothing else is
- * ever returned.
+ * What the process answers with. 0 is the command doing what it was asked,
+ * 1 is a file Panoptes read and refused, and 2 is an invocation it cannot
+ * carry out. The README states the same three, and nothing else is ever
+ * returned.
  */
 export type ExitCode = 0 | 1 | 2;
 
@@ -30,7 +28,11 @@ export function invalidInput(err: string): CommandOutcome {
   return { code: 1, out: '', err };
 }
 
-/** The invocation cannot be carried out as given. */
+/**
+ * The invocation cannot be carried out as given: the parser or the option
+ * schema refused it, a file cannot be read or written, a choice names no
+ * diagram, or a stream would not take the output.
+ */
 export function usageError(err: string): CommandOutcome {
   return { code: 2, out: '', err };
 }
@@ -41,4 +43,19 @@ export function usageError(err: string): CommandOutcome {
  */
 export function lines(...texts: readonly string[]): string {
   return texts.map((text) => `${text}\n`).join('');
+}
+
+/**
+ * A text with every control character written as `\uXXXX`. Text out of a
+ * model file reaches a terminal through standard error, and an escape it
+ * carries would otherwise move the cursor or set the colours rather than
+ * being read. The whole `Cc` category is covered, not the subset
+ * `JSON.stringify` escapes, so the C1 range is closed too.
+ */
+export function escaped(text: string): string {
+  return text.replace(
+    /\p{Cc}/gu,
+    (character) =>
+      `\\u${character.charCodeAt(0).toString(16).padStart(4, '0')}`,
+  );
 }

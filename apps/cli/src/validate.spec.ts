@@ -7,7 +7,7 @@ import {
   fixtureFile,
   unclaimedYaml,
   undeclaredKeyYaml,
-} from './fixtures.js';
+} from './cli.fixtures.js';
 import { validate } from './validate.js';
 
 const repositoryRoot = join(import.meta.dirname, '../../..');

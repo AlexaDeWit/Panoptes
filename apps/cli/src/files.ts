@@ -1,5 +1,5 @@
 import { Either } from 'effect';
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync, statSync, writeFileSync } from 'node:fs';
 
 /**
  * What a thrown value says. Node's file calls throw an Error carrying the
@@ -12,14 +12,22 @@ export function reasonOf(error: unknown): string {
 
 /**
  * A file as UTF-8 text, or a sentence naming the path and the system's
- * reason. The file calls are the one place the CLI meets a channel that
- * throws, and it is contained here so no command has to.
+ * reason. Node's file calls throw, and they are contained here so no
+ * command has to.
  */
 export function readTextFile(path: string): Either.Either<string, string> {
   return Either.try({
     try: () => readFileSync(path, 'utf8'),
     catch: (error) => `cannot read ${path}: ${reasonOf(error)}`,
   });
+}
+
+/**
+ * How many bytes a path holds, or nothing where it cannot be measured, in
+ * which case the read that follows says why the path was no good.
+ */
+export function sizeOf(path: string): number | undefined {
+  return Either.getOrUndefined(Either.try(() => statSync(path).size));
 }
 
 /**

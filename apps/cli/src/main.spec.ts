@@ -1,18 +1,25 @@
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdtempSync, readFileSync } from 'node:fs';
+import {
+  closeSync,
+  existsSync,
+  mkdtempSync,
+  openSync,
+  readFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
   danglingReferenceYaml,
   fixtureFile,
   undeclaredKeyYaml,
-} from './fixtures.js';
+} from './cli.fixtures.js';
 import { cliVersion } from './version.js';
 
 type Runner = {
   readonly name: string;
   readonly command: string;
   readonly leading: readonly string[];
+  readonly absence: string | undefined;
 };
 
 type Scenario = {
@@ -33,6 +40,7 @@ const bundle: Runner = {
   name: 'the bundle under node',
   command: process.execPath,
   leading: [bundlePath],
+  absence: undefined,
 };
 
 const hostTarget = (): string | undefined => {
@@ -42,22 +50,29 @@ const hostTarget = (): string | undefined => {
   return probe.status === 0 ? probe.stdout.trim() : undefined;
 };
 
-const compiledRunner = (): Runner | undefined => {
-  const target = hostTarget();
-  const path = join(
-    repositoryRoot,
-    'dist/cli',
-    `panoptes-${cliVersion}-${String(target)}`,
-  );
-  return target !== undefined && existsSync(path)
-    ? { name: 'the compiled executable', command: path, leading: [] }
-    : undefined;
+const executablePath = join(
+  repositoryRoot,
+  'dist/cli',
+  `panoptes-${cliVersion}-${hostTarget() ?? 'unknown-host-target'}`,
+);
+
+const compiled: Runner = {
+  name: 'the compiled executable',
+  command: executablePath,
+  leading: [],
+  absence: existsSync(executablePath)
+    ? undefined
+    : `nothing is at ${executablePath}, which scripts/package-cli.sh writes`,
 };
 
-const executable = compiledRunner();
+const runners: readonly Runner[] = [bundle, compiled];
 
-const runners: readonly Runner[] =
-  executable === undefined ? [bundle] : [bundle, executable];
+const titleOf = (runner: Runner): string =>
+  runner.absence === undefined
+    ? `the CLI, run as ${runner.name}`
+    : `the CLI, run as ${runner.name}, skipped because ${runner.absence}`;
+
+const fullDevice = '/dev/full';
 
 const ran = (runner: Runner, args: readonly string[]) => {
   const result = spawnSync(runner.command, [...runner.leading, ...args], {
@@ -167,106 +182,142 @@ describe('the CLI as it is packaged', () => {
   it('has a bundle to run, which the build target produced', () => {
     expect(existsSync(bundlePath)).toBe(true);
   });
+
+  it('has the compiled executable wherever the environment demands one', () => {
+    expect(
+      process.env.PANOPTES_COMPILED_RUNNER === 'required'
+        ? compiled.absence
+        : undefined,
+    ).toBeUndefined();
+  });
 });
 
-describe.each(runners)('the CLI, run as $name', (runner) => {
-  it.each(scenarios)('$name', (scenario) => {
-    expect(text(runner, scenario.args)).toEqual({
-      code: scenario.code,
-      out: scenario.out,
-      err: scenario.err,
+for (const runner of runners) {
+  const register = runner.absence === undefined ? describe : describe.skip;
+  register(titleOf(runner), () => {
+    it.each(scenarios)('$name', (scenario) => {
+      expect(text(runner, scenario.args)).toEqual({
+        code: scenario.code,
+        out: scenario.out,
+        err: scenario.err,
+      });
     });
-  });
 
-  it('answers no arguments with the usage text and no output', () => {
-    const result = text(runner, []);
-    expect(result.code).toEqual(2);
-    expect(result.out).toEqual('');
-    expect(result.err).toContain('Usage: panoptes [options] [command]');
-  });
-
-  it('writes the register of the Écluse fixture as the golden file', () => {
-    const out = join(directory, `${runner.name}.register.md`);
-    expect(
-      text(runner, [
-        'render',
-        'test-data/ecluse.json',
-        '--format',
-        'md',
-        '--out',
-        out,
-      ]),
-    ).toEqual({ code: 0, out: '', err: '' });
-    expect(readFileSync(out)).toEqual(golden('ecluse.register.md'));
-  });
-
-  it('draws the Écluse fixture as the golden file', () => {
-    const out = join(directory, `${runner.name}.svg`);
-    expect(
-      text(runner, [
-        'render',
-        'test-data/ecluse.json',
-        '--format',
-        'svg',
-        '--out',
-        out,
-      ]),
-    ).toEqual({ code: 0, out: '', err: '' });
-    expect(readFileSync(out)).toEqual(golden('ecluse.svg'));
-  });
-
-  it('draws to standard output for an out of -', () => {
-    const result = ran(runner, [
-      'render',
-      'test-data/ecluse.json',
-      '--format',
-      'svg',
-      '--out',
-      '-',
-    ]);
-    expect(result.code).toEqual(0);
-    expect(result.out).toEqual(golden('ecluse.svg'));
-    expect(result.err.toString('utf8')).toEqual('');
-  });
-
-  it('lists the diagrams where a model of several names none', () => {
-    expect(
-      text(runner, [
-        'render',
-        'threat-modelling/panoptes.yaml',
-        '--format',
-        'svg',
-        '--out',
-        '-',
-      ]),
-    ).toEqual({
-      code: 2,
-      out: '',
-      err:
-        'error: --diagram chooses which diagram to draw, and the model holds several:\n' +
-        '  read-and-render: Reading a file and rendering it\n' +
-        '  agent-and-desktop: Agents and the desktop shell\n',
+    it('answers no arguments with the usage text and no output', () => {
+      const result = text(runner, []);
+      expect(result.code).toEqual(2);
+      expect(result.out).toEqual('');
+      expect(result.err).toContain('Usage: panoptes [options] [command]');
     });
-  });
 
-  it('draws each diagram a model of several names', () => {
-    const chosen = [
-      ['read-and-render', 'panoptes-read-and-render.svg'],
-      ['Agents and the desktop shell', 'panoptes-agent-and-desktop.svg'],
-    ];
-    for (const [name, file] of chosen) {
+    it('writes the register of the Écluse fixture as the golden file', () => {
+      const out = join(directory, `${runner.name}.register.md`);
+      expect(
+        text(runner, [
+          'render',
+          'test-data/ecluse.json',
+          '--format',
+          'md',
+          '--out',
+          out,
+        ]),
+      ).toEqual({ code: 0, out: '', err: '' });
+      expect(readFileSync(out)).toEqual(golden('ecluse.register.md'));
+    });
+
+    it('draws the Écluse fixture as the golden file', () => {
+      const out = join(directory, `${runner.name}.svg`);
+      expect(
+        text(runner, [
+          'render',
+          'test-data/ecluse.json',
+          '--format',
+          'svg',
+          '--out',
+          out,
+        ]),
+      ).toEqual({ code: 0, out: '', err: '' });
+      expect(readFileSync(out)).toEqual(golden('ecluse.svg'));
+    });
+
+    it('draws to standard output for an out of -', () => {
       const result = ran(runner, [
         'render',
-        'threat-modelling/panoptes.yaml',
+        'test-data/ecluse.json',
         '--format',
         'svg',
         '--out',
         '-',
-        '--diagram',
-        name,
       ]);
       expect(result.code).toEqual(0);
-      expect(result.out).toEqual(golden(file));
-    }
+      expect(result.out).toEqual(golden('ecluse.svg'));
+      expect(result.err.toString('utf8')).toEqual('');
+    });
+
+    it('lists the diagrams where a model of several names none', () => {
+      expect(
+        text(runner, [
+          'render',
+          'threat-modelling/panoptes.yaml',
+          '--format',
+          'svg',
+          '--out',
+          '-',
+        ]),
+      ).toEqual({
+        code: 2,
+        out: '',
+        err:
+          'error: --diagram chooses which diagram to draw, and the model holds several:\n' +
+          '  read-and-render: Reading a file and rendering it\n' +
+          '  agent-and-desktop: Agents and the desktop shell\n',
+      });
+    });
+
+    it('draws each diagram a model of several names', () => {
+      const chosen = [
+        ['read-and-render', 'panoptes-read-and-render.svg'],
+        ['Agents and the desktop shell', 'panoptes-agent-and-desktop.svg'],
+      ];
+      for (const [name, file] of chosen) {
+        const result = ran(runner, [
+          'render',
+          'threat-modelling/panoptes.yaml',
+          '--format',
+          'svg',
+          '--out',
+          '-',
+          '--diagram',
+          name,
+        ]);
+        expect(result.code).toEqual(0);
+        expect(result.out).toEqual(golden(file));
+      }
+    });
+
+    it('says one line and exits 2 where standard output will not take it', (ctx) => {
+      if (!existsSync(fullDevice)) {
+        ctx.skip(`this platform has no ${fullDevice}`);
+      }
+      const device = openSync(fullDevice, 'w');
+      const result = spawnSync(
+        runner.command,
+        [
+          ...runner.leading,
+          'render',
+          'test-data/ecluse.json',
+          '--format',
+          'svg',
+          '--out',
+          '-',
+        ],
+        { cwd: repositoryRoot, stdio: ['ignore', device, 'pipe'] },
+      );
+      closeSync(device);
+      const reported = result.stderr.toString('utf8');
+      expect(result.status).toEqual(2);
+      expect(reported).toContain('error: cannot write to standard output: ');
+      expect(reported.split('\n')).toHaveLength(2);
+    });
   });
-});
+}

@@ -1,6 +1,9 @@
-import { DetectionFailure, ReadFailure } from '@panoptes/formats';
+import { DetectionFailure, ReadFailure, readLimits } from '@panoptes/formats';
 import { Either } from 'effect';
+import { mkdtempSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { ansiElementIdYaml, fixtureFile } from './cli.fixtures.js';
 import {
   describeDivergences,
   describeReadFailure,
@@ -8,6 +11,8 @@ import {
 } from './input.js';
 
 const repositoryRoot = join(import.meta.dirname, '../../..');
+
+const directory = mkdtempSync(join(tmpdir(), 'panoptes-cli-input-'));
 
 describe('a model file read at the edge', () => {
   it('gives the read back where a codec claimed the file', () => {
@@ -22,6 +27,35 @@ describe('a model file read at the edge', () => {
         code: 2,
         out: '',
         err: `error: cannot read ${path}: ENOENT: no such file or directory, open '${path}'\n`,
+      }),
+    );
+  });
+
+  it('refuses a file past the size bound without reading it', () => {
+    const path = join(directory, 'huge.yaml');
+    const size = readLimits.maxTextBytes + 1;
+    writeFileSync(path, 'x'.repeat(size));
+    expect(readModel(path)).toEqual(
+      Either.left({
+        code: 1,
+        out: '',
+        err:
+          'The file is past a read bound, so nothing read it.\n' +
+          `maxTextBytes: the bound is ${String(readLimits.maxTextBytes)}, the file reached ${String(size)}.\n`,
+      }),
+    );
+  });
+
+  it('escapes the control characters a model file put in an issue', () => {
+    const path = fixtureFile(directory, 'ansi-id.yaml', ansiElementIdYaml);
+    expect(readModel(path)).toEqual(
+      Either.left({
+        code: 1,
+        out: '',
+        err:
+          'The file is a valid document, and the model it maps to is not:\n' +
+          'threats.0.elements.0: Text carries a character the model does not accept.\n' +
+          'threats.0.elements.0: Threat elements references unknown element id "\\u001b[31mBOOM\\u001b[0m".\n',
       }),
     );
   });
@@ -93,8 +127,7 @@ describe('why a read produced nothing', () => {
         }),
       ),
     ).toEqual(
-      'No format claimed the file. Panoptes tried threat-dragon, panoptes-yaml.\n' +
-        'A formatVersion other than 1, and a Threat Dragon version outside major 2, land here: a later release of either format needs a codec of its own rather than a looser reader.\n',
+      'No format claimed the file. Panoptes tried threat-dragon, panoptes-yaml.\n',
     );
   });
 });

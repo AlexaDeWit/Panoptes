@@ -7,7 +7,7 @@
     "tsBuildInfoFile": "dist/tsconfig.app.tsbuildinfo"
   },
   "include": ["src/**/*.ts"],
-  "exclude": ["src/**/*.test.ts", "src/**/*.spec.ts"],
+  "exclude": ["src/**/*.fixtures.ts", "src/**/*.test.ts", "src/**/*.spec.ts"],
   "references": [
     {
       "path": "../../packages/render/tsconfig.lib.json"

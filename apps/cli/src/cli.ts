@@ -1,4 +1,6 @@
 import { Command } from 'commander';
+import { Either } from 'effect';
+import { reasonOf } from './files.js';
 import {
   lines,
   succeeded,
@@ -23,55 +25,73 @@ type ParseState = {
   out: string;
   err: string;
   exitCode: number;
-  request: Request;
-};
-
-/** Where the edge puts what a command produced. */
-export type CliStreams = {
-  readonly out: (text: string) => void;
-  readonly err: (text: string) => void;
+  request: Request | undefined;
 };
 
 /**
- * The arguments as the outcome they ask for. Commander tokenizes argv and
- * writes its own help and usage text, and it is held to that: what it
- * recognizes becomes a typed request, the request runs after parsing is
- * over, and a command is reached with typed arguments alone. Commander
- * reports by exiting, which `exitOverride` turns into a value here, so
- * `--version` and `--help` come back as text with code 0 and everything
- * else it refuses comes back as code 2. The request a parse leaves behind
- * is the one that runs, and the value it starts as covers a parse that
- * dispatches nothing, which is a state commander does not reach.
+ * Where the edge puts what a command produced. A write comes back as the
+ * system's reason where the stream would not take the text.
+ */
+export type CliStreams = {
+  readonly out: (text: string) => Either.Either<void, string>;
+  readonly err: (text: string) => Either.Either<void, string>;
+};
+
+/**
+ * The arguments as the outcome they ask for. Commander reports by exiting,
+ * which `exitOverride` turns into a value here, and what it recognizes
+ * becomes a typed request that runs once parsing is over, so a command is
+ * reached with typed arguments alone.
  */
 export function runCli(argv: readonly string[]): CommandOutcome {
   const state: ParseState = {
     out: '',
     err: '',
     exitCode: 1,
-    request: { kind: 'usage', text: lines('error: no command given.') },
+    request: undefined,
   };
   try {
     programFor(state).parse([...argv], { from: 'user' });
-  } catch {
-    return state.exitCode === 0
-      ? succeeded(state.out, state.err)
-      : usageError(state.err);
+  } catch (error) {
+    return parseStopped(state, error);
   }
-  return outcomeOf(state.request);
+  return state.request === undefined
+    ? usageError(state.err)
+    : outcomeOf(state.request);
 }
 
 /**
  * An outcome onto the streams, giving back the code the process is to exit
  * with. Both texts are written as they are, so nothing is added to a
- * document a command wrote to standard output.
+ * document a command wrote to standard output. A stream that will not take
+ * its text exits 2: standard output's reason is reported on standard error,
+ * and standard error's has nowhere left to go.
  */
 export function writeOutcome(
   outcome: CommandOutcome,
   streams: CliStreams,
 ): ExitCode {
-  streams.out(outcome.out);
-  streams.err(outcome.err);
-  return outcome.code;
+  return Either.match(streams.out(outcome.out), {
+    onLeft: (reason) => lostOutput(streams, reason),
+    onRight: () =>
+      Either.match(streams.err(outcome.err), {
+        onLeft: (): ExitCode => 2,
+        onRight: () => outcome.code,
+      }),
+  });
+}
+
+function lostOutput(streams: CliStreams, reason: string): ExitCode {
+  streams.err(lines(`error: cannot write to standard output: ${reason}`));
+  return 2;
+}
+
+function parseStopped(state: ParseState, error: unknown): CommandOutcome {
+  return state.exitCode === 0
+    ? succeeded(state.out, state.err)
+    : usageError(
+        state.err === '' ? lines(`error: ${reasonOf(error)}`) : state.err,
+      );
 }
 
 function programFor(state: ParseState): Command {
