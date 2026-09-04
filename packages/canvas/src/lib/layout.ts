@@ -9,7 +9,17 @@ import type {
   Size,
   TrustBoundary,
 } from '@panoptes/model';
-import { badgesByElement, type ThreatBadge } from './badges.js';
+import {
+  badgeAnchor,
+  badgeExtent,
+  badgesByElement,
+  type ThreatBadge,
+} from './badges.js';
+import {
+  flowLabelPlacement,
+  nodeTextPlacement,
+  textPlacementCorners,
+} from './label-placement.js';
 import {
   centreOf,
   handlePositions,
@@ -17,6 +27,7 @@ import {
   type HandleSide,
   type NodeBox,
 } from './handles.js';
+import { arrowheadPoints, smoothSegments } from './paths.js';
 import { boundaryStrokeWidth } from './stylesheet.js';
 
 type CanvasNodeBase = {
@@ -83,7 +94,22 @@ export type UnplacedEndpoint = {
   readonly element: ElementId;
 };
 
-/** The smallest box holding every point the layout draws. */
+/**
+ * The smallest box holding the ink a diagram lays down: node outlines, a
+ * boundary curve's cubics, the text inside and beside them, the badges
+ * hanging off them, the flow lines with their arrowheads and names, and a
+ * free end that belongs to no node. Every part is measured with the function
+ * that draws that part, so the picture and the box around it cannot drift.
+ * A curve is bounded by the convex hull of the control points
+ * {@link smoothSegments} resolves, which holds the curve and a little more,
+ * since a sharp turn throws a control point outside the box the waypoints
+ * span while the ink stays inside the hull.
+ *
+ * Stroke widths are the one thing outside it, since a stroke straddles the
+ * line it paints, so a caller sizing a viewBox leaves whitespace for them.
+ * It leaves nothing else: this is ink rather than geometry, and padding it
+ * again for badges or labels pads what is already counted.
+ */
 export type CanvasBounds = {
   readonly x: number;
   readonly y: number;
@@ -95,9 +121,8 @@ export type CanvasBounds = {
  * A diagram ready to draw: the boundaries first, so they sit behind what
  * they enclose, then the remaining nodes in diagram order, then the flows.
  * Painting `nodes` and then `edges` gives that order, since a flow ends on
- * the outline of the node it points at rather than under it. `bounds` is
- * geometry alone and carries no room for the stroke widths and badges the
- * stylesheet adds, so a caller sizing a viewBox pads it.
+ * the outline of the node it points at rather than under it. `bounds` holds
+ * everything that painting draws, on the terms of {@link CanvasBounds}.
  */
 export type CanvasLayout = {
   readonly nodes: readonly CanvasNode[];
@@ -312,15 +337,66 @@ function boundsOf(
   edges: readonly CanvasEdge[],
 ): CanvasBounds {
   return boundsOfPoints([
-    ...nodes.flatMap((node) => [
-      node.position,
-      {
-        x: node.position.x + node.size.width,
-        y: node.position.y + node.size.height,
-      },
-    ]),
-    ...edges.flatMap((edge) => [edge.source, ...edge.waypoints, edge.target]),
+    ...nodes.flatMap((node) => drawnNodePoints(node)),
+    ...edges.flatMap((edge) => drawnEdgePoints(edge)),
   ]);
+}
+
+function drawnNodePoints(node: CanvasNode): Point[] {
+  return [
+    node.position,
+    {
+      x: node.position.x + node.size.width,
+      y: node.position.y + node.size.height,
+    },
+    ...textPlacementCorners(nodeTextPlacement(node)).map((corner) =>
+      shiftedBy(corner, node.position),
+    ),
+    ...outlinePoints(node).map((point) => shiftedBy(point, node.position)),
+    ...badgePoints(
+      shiftedBy(badgeAnchor(node.size), node.position),
+      node.badge,
+    ),
+  ];
+}
+
+function outlinePoints(node: CanvasNode): Point[] {
+  if (node.kind !== 'boundary-curve') {
+    return [];
+  }
+  return smoothSegments(node.waypoints).flatMap((segment) => [
+    segment.firstControl,
+    segment.secondControl,
+    segment.end,
+  ]);
+}
+
+function drawnEdgePoints(edge: CanvasEdge): Point[] {
+  const points = [edge.source, ...edge.waypoints, edge.target];
+  const placement = flowLabelPlacement(points, edge.name, edge.badge);
+  return [
+    ...points,
+    ...arrowheadPoints(edge.target, points[points.length - 2]),
+    ...textPlacementCorners(placement.name),
+    ...(placement.badge === undefined
+      ? []
+      : badgePoints(placement.badge, edge.badge)),
+  ];
+}
+
+function badgePoints(at: Point, badge: ThreatBadge | undefined): Point[] {
+  if (badge === undefined) {
+    return [];
+  }
+  const extent = badgeExtent(badge);
+  return [
+    { x: at.x - extent.radius, y: at.y - extent.radius },
+    { x: at.x + extent.radius, y: at.y + extent.depth },
+  ];
+}
+
+function shiftedBy(point: Point, origin: Point): Point {
+  return { x: point.x + origin.x, y: point.y + origin.y };
 }
 
 function boundsOfPoints(points: readonly Point[]): CanvasBounds {

@@ -17,6 +17,7 @@ describe('the package barrel', () => {
       'severityToneClass',
       'boundaryStrokeWidth',
       'badgesByElement',
+      'badgeAnchor',
       'badgeExtent',
       'severityRank',
       'ThreatBadgeGlyph',
@@ -27,9 +28,12 @@ describe('the package barrel', () => {
       'translate',
       'polylinePath',
       'smoothPath',
+      'smoothSegments',
       'arrowheadPath',
+      'arrowheadPoints',
       'svgNumber',
       'wrapText',
+      'xmlSafeText',
       'textExtent',
       'innerWidth',
       'lineHeight',
@@ -38,6 +42,9 @@ describe('the package barrel', () => {
       'textPadding',
       'looseLabelWidth',
       'flowLabelClearance',
+      'nodeTextPlacement',
+      'flowLabelPlacement',
+      'textPlacementCorners',
       'canvasNodeTypes',
       'canvasEdgeTypes',
       'CanvasNodeBody',
@@ -45,6 +52,7 @@ describe('the package barrel', () => {
       'toReactFlowNodes',
       'PanoptesCanvas',
     ];
+    expect(new Set(promised).size).toBe(promised.length);
     expect(promised.filter((name) => !exported.has(name))).toEqual([]);
   });
 

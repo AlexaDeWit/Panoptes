@@ -8,8 +8,11 @@
     "forceConsistentCasingInFileNames": true,
     "types": ["node"]
   },
-  "include": ["src/**/*.ts"],
+  "include": ["src/**/*.ts", "src/**/*.tsx"],
   "references": [
+    {
+      "path": "../canvas/tsconfig.lib.json"
+    },
     {
       "path": "../model/tsconfig.lib.json"
     }

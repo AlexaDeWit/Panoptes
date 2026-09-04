@@ -9,7 +9,6 @@
       "node",
       "vitest"
     ],
-    "jsx": "react-jsx",
     "module": "esnext",
     "moduleResolution": "bundler"
   },

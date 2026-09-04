@@ -6,6 +6,7 @@ import {
   textExtent,
   textPadding,
   wrapText,
+  xmlSafeText,
 } from './typography.js';
 
 const columnsFor = (columns: number): number =>
@@ -33,6 +34,14 @@ describe('wrapText', () => {
       '',
       'second',
     ]);
+  });
+
+  it('breaks a word of astral characters between them, never through one', () => {
+    const padlock = '\u{1F510}';
+    const word = padlock.repeat(6);
+    const lines = wrapText(word, 10, columnsFor(4));
+    expect(lines).toEqual([padlock.repeat(4), padlock.repeat(2)]);
+    expect(lines.join('')).toBe(word);
   });
 
   it('breaks a word wider than the whole line', () => {
@@ -107,5 +116,36 @@ describe('innerWidth', () => {
 describe('lineHeight', () => {
   it('scales the font size by the shared ratio', () => {
     expect(lineHeight(12)).toBe(12 * lineHeightRatio);
+  });
+});
+
+describe('xmlSafeText', () => {
+  it('replaces every character XML 1.0 forbids, one for one', () => {
+    for (const forbidden of [
+      '\u0000',
+      '\u0001',
+      '\u0008',
+      '\u000B',
+      '\u000C',
+      '\u000E',
+      '\u001F',
+      '\uD800',
+      '\uDFFF',
+      '\uFFFE',
+      '\uFFFF',
+    ]) {
+      expect(xmlSafeText(`a${forbidden}b`)).toBe('a\uFFFDb');
+    }
+  });
+
+  it('keeps the characters XML allows, astral planes included', () => {
+    expect(xmlSafeText('a\tb\nc\rd')).toBe('a\tb\nc\rd');
+    expect(xmlSafeText('\u{1F600} \u00E9 \uFFFD')).toBe(
+      '\u{1F600} \u00E9 \uFFFD',
+    );
+  });
+
+  it('reaches every run of text the canvas wraps', () => {
+    expect(wrapText('a\u0000b', 10, columnsFor(40))).toEqual(['a\uFFFDb']);
   });
 });

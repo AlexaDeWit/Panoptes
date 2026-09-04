@@ -1,33 +1,22 @@
-import type { Point } from '@panoptes/model';
 import type { ReactElement } from 'react';
-import { badgeExtent, ThreatBadgeGlyph, type ThreatBadge } from './badges.js';
+import { badgeAnchor, ThreatBadgeGlyph } from './badges.js';
 import { WrappedText } from './labels.js';
+import { flowLabelPlacement, nodeTextPlacement } from './label-placement.js';
 import type { CanvasEdge, CanvasNode } from './layout.js';
 import { svgNumber } from './numbers.js';
 import { arrowheadPath, polylinePath, smoothPath, translate } from './paths.js';
-import { canvasClassNames, wrappedTextStyles } from './stylesheet.js';
-import {
-  flowLabelClearance,
-  innerWidth,
-  lineHeight,
-  looseLabelWidth,
-  textExtent,
-  textPadding,
-  wrapText,
-  type TextExtent,
-} from './typography.js';
+import { canvasClassNames } from './stylesheet.js';
 
 type NodeOf<Kind extends CanvasNode['kind']> = Extract<
   CanvasNode,
   { kind: Kind }
 >;
 
-type Segment = { readonly from: Point; readonly to: Point };
-
 /**
  * One element's glyph in the element's own coordinates, its origin at the
- * element's position. React Flow places a node itself; the headless render
- * places it with {@link PlacedElementGlyph}.
+ * element's position: its outline, its run of text, and its badge, in that
+ * order. React Flow places a node itself; the headless render places it with
+ * {@link PlacedElementGlyph}.
  */
 export function ElementGlyph({
   node,
@@ -36,12 +25,10 @@ export function ElementGlyph({
 }): ReactElement {
   return (
     <g className={groupClass(node.outOfScope)}>
-      {shapeOf(node)}
+      {outlineOf(node)}
+      <WrappedText {...nodeTextPlacement(node)} />
       {node.badge === undefined ? null : (
-        <ThreatBadgeGlyph
-          badge={node.badge}
-          at={{ x: node.size.width, y: 0 }}
-        />
+        <ThreatBadgeGlyph badge={node.badge} at={badgeAnchor(node.size)} />
       )}
     </g>
   );
@@ -66,16 +53,8 @@ export function PlacedElementGlyph({
 /**
  * One flow, in the diagram's own coordinates rather than a node's: straight
  * segments from its source through its waypoints to its target, an arrowhead
- * at the target, and its name beside the midpoint of its longest segment,
- * with its badge on the other side of the line.
- *
- * Both are offset along that segment's own unit normal rather than down the
- * y axis, by {@link flowLabelClearance} plus their own extent projected onto
- * that normal, so a vertical or diagonal flow carries its name beside its
- * line instead of along it. Of the two normals the one with a non-negative y
- * is taken, and where that y is zero the one with a positive x, so the side
- * a name takes is fixed by the segment and not by which end the flow runs
- * from.
+ * at the target, and its name and badge where {@link flowLabelPlacement}
+ * puts them, which is also where a caller sizing a picture bounds them.
  */
 export function FlowGlyph({
   edge,
@@ -83,14 +62,7 @@ export function FlowGlyph({
   readonly edge: CanvasEdge;
 }): ReactElement {
   const points = [edge.source, ...edge.waypoints, edge.target];
-  const segment = longestSegment(points);
-  const midpoint = midpointOf(segment);
-  const normal = labelNormal(segment);
-  const fontSize = wrappedTextStyles.flowLabel.fontSize;
-  const extent = textExtent(
-    wrapText(edge.name, fontSize, looseLabelWidth),
-    fontSize,
-  );
+  const placement = flowLabelPlacement(points, edge.name, edge.badge);
   return (
     <g className={groupClass(edge.outOfScope)}>
       <path
@@ -101,26 +73,9 @@ export function FlowGlyph({
         className={canvasClassNames.flowArrow}
         d={arrowheadPath(edge.target, points[points.length - 2])}
       />
-      <WrappedText
-        text={edge.name}
-        at={offsetBy(
-          midpoint,
-          normal,
-          flowLabelClearance + projectedHalfExtent(extent, normal),
-        )}
-        anchor="centre"
-        width={looseLabelWidth}
-        textStyle="flowLabel"
-      />
-      {edge.badge === undefined ? null : (
-        <ThreatBadgeGlyph
-          badge={edge.badge}
-          at={offsetBy(
-            midpoint,
-            negated(normal),
-            flowLabelClearance + badgeReach(edge.badge, normal),
-          )}
-        />
+      <WrappedText {...placement.name} />
+      {edge.badge === undefined || placement.badge === undefined ? null : (
+        <ThreatBadgeGlyph badge={edge.badge} at={placement.badge} />
       )}
     </g>
   );
@@ -136,58 +91,47 @@ function shapeClass(outline: string): string {
   return `${canvasClassNames.shape} ${outline}`;
 }
 
-function shapeOf(node: CanvasNode): ReactElement {
+function outlineOf(node: CanvasNode): ReactElement | null {
   if (node.kind === 'actor') {
-    return actorShape(node);
+    return actorOutline(node);
   }
   if (node.kind === 'process') {
-    return processShape(node);
+    return processOutline(node);
   }
   if (node.kind === 'store') {
-    return storeShape(node);
-  }
-  if (node.kind === 'text') {
-    return noteShape(node);
+    return storeOutline(node);
   }
   if (node.kind === 'boundary-box') {
-    return boundaryBoxShape(node);
+    return boundaryBoxOutline(node);
   }
-  return boundaryCurveShape(node);
+  if (node.kind === 'boundary-curve') {
+    return boundaryCurveOutline(node);
+  }
+  return null;
 }
 
-function actorShape(node: NodeOf<'actor'>): ReactElement {
+function actorOutline(node: NodeOf<'actor'>): ReactElement {
   return (
-    <>
-      <rect
-        className={shapeClass(canvasClassNames.actor)}
-        width={svgNumber(node.size.width)}
-        height={svgNumber(node.size.height)}
-      />
-      {nameLabel(node.name, boxCentre(node), innerWidth(node.size.width))}
-    </>
+    <rect
+      className={shapeClass(canvasClassNames.actor)}
+      width={svgNumber(node.size.width)}
+      height={svgNumber(node.size.height)}
+    />
   );
 }
 
-function processShape(node: NodeOf<'process'>): ReactElement {
-  const diameter = Math.min(node.size.width, node.size.height);
+function processOutline(node: NodeOf<'process'>): ReactElement {
   return (
-    <>
-      <circle
-        className={shapeClass(canvasClassNames.process)}
-        cx={svgNumber(node.size.width / 2)}
-        cy={svgNumber(node.size.height / 2)}
-        r={svgNumber(diameter / 2)}
-      />
-      {nameLabel(
-        node.name,
-        boxCentre(node),
-        innerWidth(diameter * Math.SQRT1_2),
-      )}
-    </>
+    <circle
+      className={shapeClass(canvasClassNames.process)}
+      cx={svgNumber(node.size.width / 2)}
+      cy={svgNumber(node.size.height / 2)}
+      r={svgNumber(Math.min(node.size.width, node.size.height) / 2)}
+    />
   );
 }
 
-function storeShape(node: NodeOf<'store'>): ReactElement {
+function storeOutline(node: NodeOf<'store'>): ReactElement {
   const right = svgNumber(node.size.width);
   const bottom = svgNumber(node.size.height);
   return (
@@ -206,136 +150,25 @@ function storeShape(node: NodeOf<'store'>): ReactElement {
         x2={right}
         y2={bottom}
       />
-      {nameLabel(node.name, boxCentre(node), innerWidth(node.size.width))}
     </>
   );
 }
 
-function noteShape(node: NodeOf<'text'>): ReactElement {
+function boundaryBoxOutline(node: NodeOf<'boundary-box'>): ReactElement {
   return (
-    <WrappedText
-      text={node.text}
-      at={boxCentre(node)}
-      anchor="centre"
-      width={innerWidth(node.size.width)}
-      textStyle="note"
+    <rect
+      className={shapeClass(canvasClassNames.boundaryBox)}
+      width={svgNumber(node.size.width)}
+      height={svgNumber(node.size.height)}
     />
   );
 }
 
-function boundaryBoxShape(node: NodeOf<'boundary-box'>): ReactElement {
+function boundaryCurveOutline(node: NodeOf<'boundary-curve'>): ReactElement {
   return (
-    <>
-      <rect
-        className={shapeClass(canvasClassNames.boundaryBox)}
-        width={svgNumber(node.size.width)}
-        height={svgNumber(node.size.height)}
-      />
-      <WrappedText
-        text={node.name}
-        at={{
-          x: node.size.width / 2,
-          y: textPadding + wrappedTextStyles.label.fontSize / 2,
-        }}
-        anchor="top"
-        width={innerWidth(node.size.width)}
-        textStyle="label"
-      />
-    </>
-  );
-}
-
-function boundaryCurveShape(node: NodeOf<'boundary-curve'>): ReactElement {
-  const middle = node.waypoints[Math.floor(node.waypoints.length / 2)];
-  return (
-    <>
-      <path
-        className={shapeClass(canvasClassNames.boundaryCurve)}
-        d={smoothPath(node.waypoints)}
-      />
-      {nameLabel(
-        node.name,
-        {
-          x: middle.x,
-          y: middle.y - lineHeight(wrappedTextStyles.label.fontSize),
-        },
-        looseLabelWidth,
-      )}
-    </>
-  );
-}
-
-function nameLabel(name: string, at: Point, width: number): ReactElement {
-  return (
-    <WrappedText
-      text={name}
-      at={at}
-      anchor="centre"
-      width={width}
-      textStyle="label"
+    <path
+      className={shapeClass(canvasClassNames.boundaryCurve)}
+      d={smoothPath(node.waypoints)}
     />
   );
-}
-
-function boxCentre(node: CanvasNode): Point {
-  return { x: node.size.width / 2, y: node.size.height / 2 };
-}
-
-function longestSegment(points: readonly Point[]): Segment {
-  let longest = 0;
-  let at = 0;
-  for (let index = 0; index + 1 < points.length; index += 1) {
-    const run =
-      (points[index + 1].x - points[index].x) ** 2 +
-      (points[index + 1].y - points[index].y) ** 2;
-    if (run > longest) {
-      longest = run;
-      at = index;
-    }
-  }
-  return { from: points[at], to: points[at + 1] };
-}
-
-function midpointOf(segment: Segment): Point {
-  return {
-    x: (segment.from.x + segment.to.x) / 2,
-    y: (segment.from.y + segment.to.y) / 2,
-  };
-}
-
-function labelNormal(segment: Segment): Point {
-  const run = {
-    x: segment.to.x - segment.from.x,
-    y: segment.to.y - segment.from.y,
-  };
-  const length = Math.hypot(run.x, run.y);
-  const along =
-    length === 0 ? { x: 1, y: 0 } : { x: run.x / length, y: run.y / length };
-  const normal = { x: -along.y, y: along.x };
-  return normal.y < 0 || (normal.y === 0 && normal.x < 0)
-    ? negated(normal)
-    : normal;
-}
-
-function negated(point: Point): Point {
-  return { x: -point.x, y: -point.y };
-}
-
-function offsetBy(at: Point, direction: Point, distance: number): Point {
-  return {
-    x: at.x + direction.x * distance,
-    y: at.y + direction.y * distance,
-  };
-}
-
-function projectedHalfExtent(extent: TextExtent, normal: Point): number {
-  return (
-    (extent.width / 2) * Math.abs(normal.x) +
-    (extent.height / 2) * Math.abs(normal.y)
-  );
-}
-
-function badgeReach(badge: ThreatBadge, normal: Point): number {
-  const extent = badgeExtent(badge);
-  return extent.radius * Math.abs(normal.x) + extent.depth * normal.y;
 }

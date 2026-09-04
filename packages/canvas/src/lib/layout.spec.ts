@@ -1,4 +1,5 @@
 import { elementIdSchema, type Model } from '@panoptes/model';
+import { badgeExtent } from './badges.js';
 import { everyGlyphModel, parsedFixture } from './canvas.fixtures.js';
 import { handlePositions } from './handles.js';
 import { layoutDiagram, type CanvasEdge, type CanvasNode } from './layout.js';
@@ -87,7 +88,7 @@ const twoBoxDiagram = (flow: unknown, extra: unknown[] = []) =>
 
 const attached = (element: string) => ({ kind: 'attached', element });
 
-const curveBoundary = (waypoints: unknown[]): CanvasNode =>
+const curveLayout = (waypoints: unknown[]) =>
   layoutOf(
     parsedFixture({
       metadata: { title: 't', owner: '', description: '', contributors: [] },
@@ -113,14 +114,17 @@ const curveBoundary = (waypoints: unknown[]): CanvasNode =>
       mitigations: [],
       assumptions: [],
     }),
-  ).nodes[0];
+  );
+
+const curveBoundary = (waypoints: unknown[]): CanvasNode =>
+  curveLayout(waypoints).nodes[0];
 
 describe('layoutDiagram', () => {
   it('lays out a node of every kind the canvas draws as a box', () => {
     expect(new Set(layout.nodes.map((node) => node.kind))).toEqual(
       new Set<string>(Object.keys(canvasNodeTypes)),
     );
-    expect(layout.edges).toHaveLength(2);
+    expect(layout.edges).toHaveLength(3);
   });
 
   it('takes a node position and size from the model and nowhere else', () => {
@@ -190,8 +194,37 @@ describe('layoutDiagram', () => {
     expect(edge.sourceElement).toBeUndefined();
   });
 
+  it('reports the fixture flow whose endpoint names another flow', () => {
+    expect(layout.unplaced).toEqual([
+      { flow: id('el-replay'), side: 'source', element: id('el-request') },
+    ]);
+  });
+
   it('bounds everything it draws', () => {
-    expect(layout.bounds).toEqual({ x: 0, y: 0, width: 640, height: 410 });
+    expect(layout.bounds).toEqual({ x: 0, y: -11, width: 651, height: 421 });
+  });
+
+  it('reaches past a node box for the badge hanging off its corner', () => {
+    const zone = nodeNamed('el-zone');
+    const reach = zone.badge === undefined ? 0 : badgeExtent(zone.badge).radius;
+    expect(reach).toBeGreaterThan(0);
+    expect(layout.bounds.y).toBe(zone.position.y - reach);
+    expect(layout.bounds.x + layout.bounds.width).toBe(
+      zone.position.x + zone.size.width + reach,
+    );
+  });
+
+  it('bounds a sharp curve by the cubics that draw it, not by its box', () => {
+    const sharp = curveLayout([
+      { x: 0, y: 0 },
+      { x: 400, y: 0 },
+      { x: 400, y: 400 },
+    ]);
+    const node = sharp.nodes[0];
+    expect(sharp.bounds.x + sharp.bounds.width).toBeGreaterThan(
+      node.position.x + node.size.width,
+    );
+    expect(sharp.bounds.y).toBeLessThan(node.position.y);
   });
 
   it('gives a straight curve boundary an extent to pick', () => {
