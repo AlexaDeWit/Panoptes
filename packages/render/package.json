@@ -14,8 +14,11 @@
     "./package.json": "./package.json"
   },
   "dependencies": {
+    "@panoptes/canvas": "workspace:*",
     "@panoptes/model": "workspace:*",
     "@types/mdast": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:",
     "remark-gfm": "catalog:",
     "remark-parse": "catalog:",
     "remark-stringify": "catalog:",
@@ -23,7 +26,11 @@
     "unist-util-visit": "catalog:"
   },
   "devDependencies": {
-    "effect": "catalog:"
+    "@types/jsdom": "catalog:",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "effect": "catalog:",
+    "jsdom": "catalog:"
   },
   "nx": {
     "tags": [

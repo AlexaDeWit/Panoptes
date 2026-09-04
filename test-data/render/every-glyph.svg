@@ -1,0 +1,94 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-8 -19 667 437" width="667" height="437"><title>Main data flow</title><style>.pn-element {
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+}
+.pn-shape {
+  fill: #ffffff;
+  stroke: #1f2937;
+  stroke-width: 1.5;
+}
+.pn-actor {
+  fill: #eef2ff;
+}
+.pn-process {
+  fill: #f0fdf4;
+}
+.pn-store {
+  fill: none;
+  stroke-width: 2;
+}
+.pn-boundary-box,
+.pn-boundary-curve {
+  fill: none;
+  stroke: #6b7280;
+  stroke-width: 2;
+  stroke-dasharray: 8 6;
+}
+.pn-out-of-scope {
+  opacity: 0.5;
+}
+.pn-out-of-scope .pn-shape {
+  stroke-dasharray: 6 4;
+}
+.pn-label {
+  fill: #111827;
+  font-size: 12px;
+  font-weight: 500;
+  text-anchor: middle;
+  dominant-baseline: central;
+}
+.pn-note {
+  fill: #374151;
+  font-size: 12px;
+  text-anchor: middle;
+  dominant-baseline: central;
+}
+.pn-flow {
+  fill: none;
+}
+.pn-flow-arrow {
+  fill: #1f2937;
+  stroke: none;
+}
+.pn-flow-label {
+  fill: #374151;
+  font-size: 11px;
+  text-anchor: middle;
+  dominant-baseline: central;
+  paint-order: stroke;
+  stroke: #ffffff;
+  stroke-width: 3;
+  stroke-linejoin: round;
+}
+.pn-badge {
+  stroke: #ffffff;
+  stroke-width: 1.5;
+}
+.pn-badge-count {
+  fill: #ffffff;
+  stroke: none;
+  font-weight: 600;
+  text-anchor: middle;
+  dominant-baseline: central;
+}
+.pn-badge-primary .pn-badge-count {
+  font-size: 11px;
+}
+.pn-badge-secondary .pn-badge-count {
+  font-size: 9px;
+}
+.pn-tone-critical {
+  fill: #7f1d1d;
+}
+.pn-tone-high {
+  fill: #b91c1c;
+}
+.pn-tone-medium {
+  fill: #b45309;
+}
+.pn-tone-low {
+  fill: #1d4ed8;
+}
+.pn-tone-neutral {
+  fill: #52525b;
+}
+</style><g transform="translate(0, 0)"><g class="pn-element"><rect class="pn-shape pn-boundary-box" width="640" height="260"></rect><text class="pn-label" x="320" y="12"><tspan x="320" dy="0">Service perimeter</tspan></text><g class="pn-badge" transform="translate(640, 0)"><g class="pn-badge-primary"><circle class="pn-tone-neutral" r="11"></circle><text class="pn-badge-count">1</text></g></g></g></g><g transform="translate(298, 298)"><g class="pn-element"><path class="pn-shape pn-boundary-curve" d="M 2 2 C 22 8.667 82 42 122 42 C 162 42 222 8.667 242 2"></path><text class="pn-label" x="122" y="27"><tspan x="122" dy="0">Edge zone</tspan></text></g></g><g transform="translate(40, 60)"><g class="pn-element"><rect class="pn-shape pn-actor" width="160" height="80"></rect><text class="pn-label" x="80" y="32.5"><tspan x="80" dy="0">Customer</tspan><tspan x="80" dy="15">browser</tspan></text><g class="pn-badge" transform="translate(160, 0)"><g class="pn-badge-primary"><circle class="pn-tone-critical" r="11"></circle><text class="pn-badge-count">1</text></g></g></g></g><g transform="translate(280, 60)"><g class="pn-element"><circle class="pn-shape pn-process" cx="60" cy="60" r="60"></circle><text class="pn-label" x="60" y="60"><tspan x="60" dy="0">Order API</tspan></text><g class="pn-badge" transform="translate(120, 0)"><g class="pn-badge-primary"><circle class="pn-tone-high" r="11"></circle><text class="pn-badge-count">2</text></g><g class="pn-badge-secondary" transform="translate(0, 22)"><circle class="pn-tone-neutral" r="8"></circle><text class="pn-badge-count">1</text></g></g></g></g><g transform="translate(460, 60)"><g class="pn-element pn-out-of-scope"><line class="pn-shape pn-store" x1="0" y1="0" x2="160" y2="0"></line><line class="pn-shape pn-store" x1="0" y1="80" x2="160" y2="80"></line><text class="pn-label" x="80" y="40"><tspan x="80" dy="0">Order database</tspan></text><g class="pn-badge" transform="translate(160, 0)"><g class="pn-badge-primary"><circle class="pn-tone-medium" r="11"></circle><text class="pn-badge-count">1</text></g></g></g></g><g transform="translate(40, 320)"><g class="pn-element"><text class="pn-note" x="100" y="37.5"><tspan x="100" dy="0">Orders are kept for seven</tspan><tspan x="100" dy="15">years.</tspan></text></g></g><g class="pn-element"><path class="pn-shape pn-flow" d="M 200 100 L 240 100 L 280 120"></path><path class="pn-flow-arrow" d="M 280 120 L 267.031 119.106 L 271.503 110.161 Z"></path><text class="pn-flow-label" x="244.279" y="141.442"><tspan x="244.279" dy="0">Submit order</tspan></text><g class="pn-badge" transform="translate(272.861, 84.278)"><g class="pn-badge-primary"><circle class="pn-tone-low" r="11"></circle><text class="pn-badge-count">1</text></g></g></g><g class="pn-element"><path class="pn-shape pn-flow" d="M 400 120 L 460 100"></path><path class="pn-flow-arrow" d="M 460 100 L 450.197 108.538 L 447.035 99.051 Z"></path><text class="pn-flow-label" x="439.405" y="138.214"><tspan x="439.405" dy="0">Store order</tspan></text></g><g class="pn-element"><path class="pn-shape pn-flow" d="M 620 320 L 540 140"></path><path class="pn-flow-arrow" d="M 540 140 L 549.443 148.935 L 540.305 152.996 Z"></path><text class="pn-flow-label" x="514.645" y="259.047"><tspan x="514.645" dy="0">Nightly backup probe</tspan></text></g></svg>

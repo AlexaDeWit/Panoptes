@@ -1,8 +1,59 @@
 # @panoptes/render
 
-Projections of a model. `renderRegister` is the first: the threat register as
-GFM markdown, shaped to replace a register a downstream site generator builds
-by hand.
+Projections of a model. `renderSvg` draws one diagram as a standalone SVG
+document, and `renderRegister` writes the threat register as GFM markdown,
+shaped to replace a register a downstream site generator builds by hand.
+
+## A diagram as an SVG document
+
+`renderSvg(diagram, model)` lays the diagram out with `@panoptes/canvas`,
+draws the canvas primitives once through `renderToStaticMarkup`, and returns
+the document as text beside the flow endpoints the layout could not place.
+The studio will mount those same primitives in React Flow (M4), so what the
+CLI writes and what a browser draws come out of one set of glyphs and one
+path maths.
+
+The document holds an `svg` root in the SVG namespace, the diagram's title in
+a `title` element, which is the accessible name a reader hears and the name a
+browser puts on the tab, the canvas stylesheet verbatim inside a `style`
+element, and the diagram's glyphs in painting order, and it ends in a newline
+so the bytes are a text file. Nothing else is in it: no script, no external
+stylesheet, no font file, no reference of any kind to anything outside the
+document. The bytes therefore open on their own, embed in a PDF, and survive
+a content policy that forbids fetching.
+
+The viewBox is the layout's bounds grown by a margin of 8 on every side, and
+`width` and `height` are that box. The canvas measures those bounds over
+everything a diagram draws, the text and badges that hang outside a node's
+own box included, so the margin here is whitespace and the room a stroke
+takes on the outside of the line it paints. It is not an allowance for a
+label of unknown size: a flow name wrapping to four lines under a node used
+to run past a fixed margin and rasterize cut off, which is why the extent is
+the canvas's to report rather than this package's to guess.
+
+A name, a title, and a note are free text the model takes as it finds it, and
+a file written elsewhere can carry a character XML 1.0 forbids. Every run of
+text goes through the canvas's `xmlSafeText` on its way into the document,
+the title element included, so one C0 control in a name cannot cost a reader
+the whole picture.
+
+The projection is per diagram: a model holding several is iterated by whoever
+calls, since which diagram to draw is that caller's decision.
+
+Ordering is the model's own. A diagram's element order decides painting order
+and so decides the bytes, and moving an element in the file moves it in the
+output. That is the design rather than a gap in it: the layout has no key to
+sort by that the model does not already carry. Past that the output is a
+function of the model alone, with no clock, no randomness, no locale, and no
+generated id, so two runs write the same bytes.
+
+`unplaced` is what the drawing left out. A flow endpoint may name any element
+id the model holds, another flow's included, and a flow is drawn as no box,
+so a flow ending on one is reported rather than given invented geometry. It
+is absent from the markup and named in `unplaced`, and a caller that drops
+that list drops the only notice of it.
+
+## The threat register
 
 The document opens on the model's title, then an overview table of every
 threat (number, title, elements, category, severity, status), then one
@@ -44,16 +95,26 @@ the same model always renders the same bytes.
   does not carry reads `None recorded.`, and a model holding no threats says
   so in place of an empty table.
 
-## The golden register
+## The goldens
 
-[`test-data/render/ecluse.register.md`](../../test-data/render/ecluse.register.md)
-is the Écluse model rendered by this package, committed so a change to the
-output arrives as a diff on a file rather than as a test that still passes.
-The suite compares it on every run as a vitest file snapshot and reds where
-the two differ. A deleted golden is a hole in that gate rather than a
-failure: vitest writes a missing snapshot back and passes, and only a CI run,
-where writing is refused, reports it. Regenerate it with
-`pnpm nx test @panoptes/render -- -u` in the commit that moved it, and read
+Three files under [`test-data/render/`](../../test-data/render) are this
+package's output, committed so a change to what it writes arrives as a diff
+on a file rather than as a test that still passes:
+
+- `ecluse.register.md`, the Écluse model as a threat register.
+- `ecluse.svg`, the one diagram of that model.
+- `every-glyph.svg`, the diagram of `test-data/every-glyph.model.json`,
+  drawing one of every glyph the canvas knows. Écluse carries no text
+  element, no boundary curve, and no flow the layout refuses, so without it
+  those would have no committed picture. `@panoptes/canvas` draws the same
+  model into a golden of its own, which is why the model sits under
+  `test-data` rather than inside either package.
+
+The suite compares all three on every run as vitest file snapshots and reds
+where a file and the output differ. A deleted golden is a hole in that gate
+rather than a failure: vitest writes a missing snapshot back and passes, and
+only a CI run, where writing is refused, reports it. Regenerate them with
+`pnpm nx test @panoptes/render -- -u` in the commit that moved them, and read
 the diff.
 
 Unit tests: `pnpm nx test @panoptes/render`.

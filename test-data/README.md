@@ -19,7 +19,10 @@ this note is formatted like any other document. That puts a rule on the next
 generated markdown payload: name it `*.register.md`, or widen the pattern in
 the same commit. A `.md` file below under any other name is formatted, and a
 byte comparison against a formatted file flaps. A payload in a format none of
-the three patterns names needs the same decision.
+the three patterns names needs the same decision, and the SVG diagrams below
+are where it was made once: oxfmt does not format SVG, so they need no fourth
+pattern. Whoever adds a payload in a further format runs `pnpm fix` over it
+and checks the bytes before deciding it needs none either.
 
 `nx.json` names this directory in `sharedGlobals`, so editing a file below
 invalidates the cached result of every task that reads it. Without that a
@@ -114,6 +117,37 @@ Regenerate it with `pnpm nx test @panoptes/render -- -u`, in the same commit
 as the change that moved it, and read the diff: the file is the register's
 output by definition, so a change to it is a change to what every consumer of
 the register sees.
+
+## `every-glyph.model.json`
+
+One of every glyph the canvas knows, in the internal form, written here by
+hand rather than generated: the six element kinds, a trust boundary in both
+shapes, an out-of-scope element, a flow with a waypoint, a flow with a free
+end, a flow whose endpoint names another flow, and open threats spread so that
+one element carries the stacked pair of badges and another the neutral badge
+alone. Écluse holds none of the last four, so a drawing of Écluse alone leaves
+those cases uncommitted.
+
+`packages/canvas` and `packages/render` both read it through `parseModel` and
+both keep a golden drawn from it. It is here rather than inside either
+package because the layer matrix forbids a package dependency between the two
+readers, which is the same reason `ecluse.model.json` is here.
+
+## `render/ecluse.svg` and `render/every-glyph.svg`
+
+The two diagrams `packages/render` draws as standalone SVG documents. Not
+vendored: this repository generates both.
+
+`ecluse.svg` is the `High Level` diagram of `ecluse.model.json` above, read
+through `parseModel`, so the drawing and the register come from the one model
+the model core and the codecs are held to. `every-glyph.svg` is
+`every-glyph.model.json` above drawn the same way.
+
+Both are committed for the reason the register above is, and gated the same
+way: `packages/render` regenerates them on every test run with
+`toMatchFileSnapshot` and reds where a file and the drawing differ.
+Regenerate them with `pnpm nx test @panoptes/render -- -u`, in the same commit
+as the change that moved them.
 
 ## `threat-dragon/`
 

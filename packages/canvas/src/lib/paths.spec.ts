@@ -1,4 +1,10 @@
-import { arrowheadPath, polylinePath, smoothPath, translate } from './paths.js';
+import {
+  arrowheadPath,
+  polylinePath,
+  smoothPath,
+  smoothSegments,
+  translate,
+} from './paths.js';
 
 describe('translate', () => {
   it('writes the point as an SVG transform', () => {
@@ -76,5 +82,21 @@ describe('arrowheadPath', () => {
     expect(arrowheadPath({ x: 40, y: 40 }, { x: 40, y: 40 })).toBe(
       'M 40 40 L 28 45 L 28 35 Z',
     );
+  });
+});
+
+describe('smoothSegments', () => {
+  it('leaves a run of fewer than two points unsmoothed', () => {
+    expect(smoothSegments([{ x: 5, y: 5 }])).toEqual([]);
+  });
+
+  it('throws a control point outside the box a sharp turn spans', () => {
+    const [first, second] = smoothSegments([
+      { x: 0, y: 0 },
+      { x: 400, y: 0 },
+      { x: 400, y: 400 },
+    ]);
+    expect(first.secondControl.y).toBeLessThan(0);
+    expect(second.firstControl.x).toBeGreaterThan(400);
   });
 });

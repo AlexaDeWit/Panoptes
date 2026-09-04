@@ -5,6 +5,10 @@
     "emitDeclarationOnly": true,
     "importHelpers": true,
     "isolatedModules": true,
+    // Set here rather than per project: a package exports its TypeScript
+    // source, so every consumer of a library that draws (canvas, render)
+    // compiles that library's .tsx files as part of its own program.
+    "jsx": "react-jsx",
     "lib": ["es2022"],
     "module": "nodenext",
     "moduleResolution": "nodenext",

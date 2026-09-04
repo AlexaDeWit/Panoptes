@@ -15,7 +15,7 @@ describe('parsedFixture', () => {
   });
 });
 
-describe('everyGlyphFixture', () => {
+describe('everyGlyphModel', () => {
   it('carries one element of every kind the model declares', () => {
     expect(
       new Set(

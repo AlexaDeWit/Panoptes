@@ -24,15 +24,31 @@ without naming a diagram.
 
 Nodes come back with the boundaries first, so they sit behind what they
 enclose, and painting `nodes` and then `edges` gives the right order: a flow
-ends on the outline of the node it points at rather than under it. `bounds` is
-geometry alone and carries no room for stroke widths or badges, so a caller
-sizing a viewBox pads it.
+ends on the outline of the node it points at rather than under it. `bounds`
+holds the ink that painting lays down: the outlines, a boundary curve's
+cubics, the text inside and beside them, the badges hanging off their corners,
+the flow lines with their arrowheads and names, and a free end belonging to no
+node. Every part is measured with the function that draws that part,
+`nodeTextPlacement`, `flowLabelPlacement`, `textPlacementCorners`,
+`badgeAnchor`, `badgeExtent`, `arrowheadPoints` and `smoothSegments`, so the
+picture and the box around it cannot drift. A curve is bounded by the convex
+hull of its control points, which holds the curve and a little more, because a
+sharp turn throws a control point outside the box its waypoints span while the
+ink stays inside the hull.
 
-A glyph draws in its own coordinates, its origin at the element's position,
-because React Flow places a node itself. `PlacedElementGlyph` translates one
-to its model position and `DiagramGlyphs` does that for a whole layout, in
-painting order, with no root element of its own. The `<svg>` around it, its
-viewBox and the `<style>` inside it belong to whoever composes the document.
+Stroke widths are the one thing outside `bounds`, since a stroke straddles the
+line it paints, so a caller sizing a viewBox leaves whitespace for them. It
+leaves nothing else. `bounds` covered the geometry alone until #31 and covers
+the ink now, which is the same type carrying a different promise: a consumer
+that padded it for badges and labels pads what is already counted.
+
+A glyph draws its outline, then its run of text where `nodeTextPlacement` puts
+it, then its badge, and it draws in its own coordinates, its origin at the
+element's position, because React Flow places a node itself.
+`PlacedElementGlyph` translates one to its model position and `DiagramGlyphs`
+does that for a whole layout, in painting order, with no root element of its
+own. The `<svg>` around it, its viewBox and the `<style>` inside it belong to
+whoever composes the document.
 
 A boundary curve is the one element the model gives no box. The layout derives
 one, the span of its waypoints grown by the stroke width on every side, so the
@@ -86,8 +102,9 @@ Of the two normals the one with a non-negative y is taken, and where that y is
 zero the one with a positive x, so the side a name takes is fixed by the
 segment and not by which end the flow runs from. A flow name is also stroked
 in the ground colour under `paint-order: stroke`, so names that converge on
-one element read in layers rather than as one blot. An out-of-scope element draws dimmed with a dashed
-outline; the reason it is out of scope stays in the register.
+one element read in layers rather than as one blot. An out-of-scope element
+draws dimmed with a dashed outline; the reason it is out of scope stays in the
+register.
 
 ## Measuring nothing, and the same bytes every time
 
@@ -102,8 +119,23 @@ the size the text renders at by construction rather than by a pair kept in
 step at four call sites. Every number reaching an SVG attribute goes through
 `svgNumber`, which is locale-free, of fixed precision, and free of exponents
 at every magnitude, so one model gives one set of bytes on every run and
-platform. The suite pins that with golden files for the Écluse model and for a
-fixture that draws one of everything.
+platform. The suite pins that with golden files for the Écluse model and for
+`test-data/every-glyph.model.json`, the model that draws one of everything,
+which lives beside Écluse because `packages/render` draws it too and the layer
+matrix allows no package dependency between the two readers.
+
+A name, a title and a note are free text the model takes as it finds it, and a
+file written elsewhere can carry a character XML 1.0 forbids: a C0 control
+other than tab, newline or carriage return, an unpaired surrogate, U+FFFE or
+U+FFFF. A document holding one is refused whole by every XML parser rather
+than drawn with a gap, so `wrapText` puts every run of text through
+`xmlSafeText`, which replaces each of them with U+FFFD. Replacing rather than
+dropping keeps the character count, so the wrap that was estimated is the wrap
+that is drawn. Whoever composes a document around these glyphs applies the
+same function to text of their own, a title element for instance. A wrap
+counts columns in code points and breaks a long word between them, never
+through a surrogate pair, since half a pair on each of two lines is two lone
+surrogates and the same refusal arrived at after the replacement has run.
 
 ## React Flow
 

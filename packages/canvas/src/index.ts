@@ -2,6 +2,7 @@ export * from './lib/badges.js';
 export * from './lib/canvas.js';
 export * from './lib/glyphs.js';
 export * from './lib/handles.js';
+export * from './lib/label-placement.js';
 export * from './lib/labels.js';
 export * from './lib/layout.js';
 export * from './lib/numbers.js';

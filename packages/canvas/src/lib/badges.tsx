@@ -5,6 +5,7 @@ import {
   type Model,
   type Point,
   type Severity,
+  type Size,
 } from '@panoptes/model';
 import type { ReactElement } from 'react';
 import { svgNumber } from './numbers.js';
@@ -65,6 +66,16 @@ export function badgesByElement(model: Model): Map<ElementId, ThreatBadge> {
   return new Map(
     [...counted].map(([element, bySeverity]) => [element, badgeOf(bySeverity)]),
   );
+}
+
+/**
+ * Where an element's badge hangs on its box: the top-right corner, in the
+ * coordinates the caller draws the box in. A caller bounding the badge and
+ * the glyph that draws it take the corner from here rather than each
+ * naming it.
+ */
+export function badgeAnchor(size: Size): Point {
+  return { x: size.width, y: 0 };
 }
 
 /** How far a badge reaches from the point it hangs on. */
