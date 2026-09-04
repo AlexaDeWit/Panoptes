@@ -1,3 +1,4 @@
+import { emptyModel } from '@panoptes/model';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { initialState, placeholderModel } from '../store/state.js';
 import { modelStore } from '../store/store.js';
@@ -29,6 +30,12 @@ describe('App', () => {
     expect(elementsShown()).toBe('3');
     fireEvent.click(undoButton());
     expect(elementsShown()).toBe('2');
+  });
+
+  it('offers no add where the model holds no diagram to add to', () => {
+    modelStore.setState(initialState(emptyModel), true);
+    render(<App />);
+    expect(addButton()).toHaveProperty('disabled', true);
   });
 
   it('offers undo only once there is something to undo', () => {

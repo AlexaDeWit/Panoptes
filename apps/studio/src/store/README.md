@@ -54,15 +54,20 @@ close belongs in the view (#37).
   operation and folding its `Either`. Never assign into `state.present` or
   into anything it holds: the stacks share those objects, so one write in
   place rewrites every snapshot at once and takes undo, redo and unsaved work
-  down together.
+  down together. The spec that holds this clones the state with
+  `structuredClone`, so `State` holds plain data: no function, class instance
+  or ref goes in it.
 - A new mutation is a new action tag, a reducer arm, and a spec. Never a store
   method that edits the state beside the reducer, and never a copy of model
   state held in a component.
 - A new kind of refusal is a `StudioFailure` member, not a second field beside
   `lastFailure`, so a view renders one value however the refusal arose.
-- The switch carries no default arm, so a tag added without one leaves
-  `reduce` without an ending return statement and `noImplicitReturns` refuses
-  it. Keep it that way.
+- `reduce` folds the action with Effect's `$match`, whose cases object is typed
+  by the union, so a tag with no arm beside it does not compile and an arm for
+  a tag the union does not declare does not either. Keep it that way.
+- The spec tables are typed over every model tag too, so a new operation cannot
+  land without its happy-path case, its refusal, its undo round-trip and its
+  purity case.
 - Views read by selector. A selector that builds a fresh array or object needs
   zustand's `useShallow` at the call site, or the component re-renders on every
   dispatch.

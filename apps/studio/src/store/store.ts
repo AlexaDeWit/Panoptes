@@ -12,11 +12,10 @@ import { initialState, placeholderModel, type State } from './state.js';
 export const modelStore = createStore(() => initialState(placeholderModel));
 
 /**
- * Applies `action` through {@link reduce}, the one way the state moves
- * outside a spec's reset.
- * The result replaces the state whole rather than merging into it, so an arm
- * that drops a field shows up as a missing field instead of being papered
- * over by the old value.
+ * Applies `action` through {@link reduce}, the one way the state moves outside
+ * a spec's reset. The result replaces the state whole rather than merging into
+ * it, so an arm that drops a field shows up as a missing field instead of
+ * being papered over by the old value.
  */
 export function dispatch(action: Action): void {
   modelStore.setState((state) => reduce(state, action), true);

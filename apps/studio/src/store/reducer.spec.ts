@@ -1,7 +1,7 @@
 import { emptyModel } from '@panoptes/model';
 import { Action } from './actions.js';
 import { reduce } from './reducer.js';
-import { FileLifecycle, initialState } from './state.js';
+import { FileLifecycle, initialState, type State } from './state.js';
 import {
   actorElement,
   diagramId,
@@ -90,12 +90,33 @@ const refused: ActionsByTag = {
   }),
 };
 
+const withPast: State = { ...start, past: [emptyModel] };
+
+const withFuture: State = { ...start, future: [emptyModel] };
+
+const purityCases: readonly (readonly [State, Action])[] = [
+  ...Object.values(applied).map((action) => [start, action] as const),
+  ...Object.values(refused).map((action) => [start, action] as const),
+  [withPast, Action.Undo()],
+  [withFuture, Action.Redo()],
+  [start, Action.Select({ elementId: actorElement })],
+  [
+    start,
+    Action.Opened({
+      model: emptyModel,
+      name: 'model.yaml',
+      format: 'panoptes-yaml',
+    }),
+  ],
+  [start, Action.Saved({ name: 'model.yaml', format: 'panoptes-yaml' })],
+];
+
 describe('purity', () => {
-  for (const action of [...Object.values(applied), ...Object.values(refused)]) {
+  for (const [state, action] of purityCases) {
     it(`leaves the state it was handed untouched while reducing ${action._tag}`, () => {
-      const before = structuredClone(start);
-      reduce(start, action);
-      expect(start).toStrictEqual(before);
+      const before = structuredClone(state);
+      reduce(state, action);
+      expect(state).toStrictEqual(before);
     });
   }
 });
