@@ -58,14 +58,27 @@ export type TextPlacement = {
  *
  * A curve's name hangs off the unit normal of the curve's own tangent at
  * that waypoint, a clearance plus the name's extent projected onto that
- * normal, so a curve dividing two lanes carries its name beside the dashes
- * rather than under them, whatever way it runs and however it bows. The
- * tangent is the drawn curve's, the run from the waypoint before to the one
- * after with the ends repeated where a neighbour is missing, which is the
- * tangent Catmull-Rom gives the cubic there. Of the two normals the one with
- * a non-negative y is the curve's own, and where that y is zero the one with
- * a positive x, the rule a flow's name follows, so the side is fixed by the
- * waypoints and not by the end the curve is drawn from.
+ * normal, so its box clears the tangent there by the clearance and a curve
+ * dividing two lanes carries its name beside the dashes rather than under
+ * them. The tangent is the drawn curve's, the run from the waypoint before
+ * to the one after with the ends repeated where a neighbour is missing,
+ * which is the tangent Catmull-Rom gives the cubic there.
+ *
+ * Of the two normals the name takes the one pointing away from the bend, so
+ * it sits on the convex side and the arms of the curve lead away from it
+ * rather than back across it. The bend is the second difference of the three
+ * waypoints, and where it lies along the tangent, which a straight run gives,
+ * the normal with a non-negative y is the curve's own and where that y is
+ * zero the one with a positive x, the rule a flow's name follows. Reversing
+ * the waypoints leaves both the bend and that normal alone, so the side is
+ * fixed by the waypoints and not by the end the curve is drawn from.
+ *
+ * What the offset guarantees is the standoff from that tangent. Clearance
+ * from the drawn curve follows from the side, since the arms lead away on
+ * the convex one, and holds for every shape the suite draws or probes:
+ * arches, bowls, hairpins, S bends, and the runs the fixtures hold. A curve
+ * that doubled back over its own bend inside half the name's width could
+ * still cross the box.
  */
 export function nodeTextPlacement(node: CanvasNode): TextPlacement {
   if (node.kind === 'text') {
@@ -135,31 +148,6 @@ export function textPlacementCorners(
     { x: placement.at.x - extent.width / 2, y: top },
     { x: placement.at.x + extent.width / 2, y: top + extent.height },
   ];
-}
-
-function curveNamePlacement(
-  name: string,
-  waypoints: readonly Point[],
-): TextPlacement {
-  const middle = Math.floor(waypoints.length / 2);
-  return nameBeside(
-    name,
-    waypoints[middle],
-    labelNormal(curveTangent(waypoints, middle)),
-    flowLabelClearance,
-    'label',
-  );
-}
-
-function curveTangent(waypoints: readonly Point[], at: number): Segment {
-  return {
-    from: waypoints[Math.max(0, at - 1)],
-    to: waypoints[Math.min(waypoints.length - 1, at + 1)],
-  };
-}
-
-function boxCentre(size: Size): Point {
-  return { x: size.width / 2, y: size.height / 2 };
 }
 
 /**
@@ -247,6 +235,46 @@ type Obstacles = {
   readonly boxes: readonly Box[];
   readonly lines: readonly Segment[];
 };
+
+type Bend = {
+  readonly before: Point;
+  readonly middle: Point;
+  readonly after: Point;
+};
+
+function curveNamePlacement(
+  name: string,
+  waypoints: readonly Point[],
+): TextPlacement {
+  const bend = bendAt(waypoints, Math.floor(waypoints.length / 2));
+  return nameBeside(
+    name,
+    bend.middle,
+    convexNormal(bend),
+    flowLabelClearance,
+    'label',
+  );
+}
+
+function bendAt(waypoints: readonly Point[], at: number): Bend {
+  return {
+    before: waypoints[Math.max(0, at - 1)],
+    middle: waypoints[at],
+    after: waypoints[Math.min(waypoints.length - 1, at + 1)],
+  };
+}
+
+function convexNormal(bend: Bend): Point {
+  const normal = labelNormal({ from: bend.before, to: bend.after });
+  const into =
+    (bend.after.x + bend.before.x - bend.middle.x * 2) * normal.x +
+    (bend.after.y + bend.before.y - bend.middle.y * 2) * normal.y;
+  return into > 0 ? negated(normal) : normal;
+}
+
+function boxCentre(size: Size): Point {
+  return { x: size.width / 2, y: size.height / 2 };
+}
 
 function byIdAscending(one: FlowGeometry, other: FlowGeometry): number {
   if (one.id === other.id) {

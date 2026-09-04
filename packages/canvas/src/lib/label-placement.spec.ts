@@ -246,8 +246,11 @@ const nameStruckBy = (node: CanvasNode): string[] => {
         .map(() => `${node.name} over its own curve`);
 };
 
-const layoutOfCurve = (waypoints: readonly Point[]): CanvasLayout =>
-  layoutOf(diagramOf([curveOf('el-divider', waypoints, dividerName)]));
+const layoutOfCurve = (
+  waypoints: readonly Point[],
+  name = dividerName,
+): CanvasLayout =>
+  layoutOf(diagramOf([curveOf('el-divider', waypoints, name)]));
 
 const rightEdge = (bounds: CanvasBounds): number => bounds.x + bounds.width;
 
@@ -259,6 +262,7 @@ const curveOrientations = [
       { x: 60, y: 200 },
       { x: 0, y: 400 },
     ],
+    dividerName,
   ],
   [
     'horizontal',
@@ -267,6 +271,7 @@ const curveOrientations = [
       { x: 200, y: 60 },
       { x: 400, y: 0 },
     ],
+    dividerName,
   ],
   [
     'diagonal',
@@ -275,20 +280,51 @@ const curveOrientations = [
       { x: 200, y: 140 },
       { x: 400, y: 400 },
     ],
+    dividerName,
+  ],
+  [
+    'arched, 300 wide and 100 tall',
+    [
+      { x: 0, y: 100 },
+      { x: 150, y: 0 },
+      { x: 300, y: 100 },
+    ],
+    'Untrusted callers',
+  ],
+  [
+    'arched, 120 wide and 40 tall under a long name',
+    [
+      { x: 0, y: 40 },
+      { x: 60, y: 0 },
+      { x: 120, y: 40 },
+    ],
+    'a boundary with a fairly long name',
+  ],
+  [
+    'vertical and opening to the right',
+    [
+      { x: 40, y: 0 },
+      { x: 0, y: 200 },
+      { x: 40, y: 400 },
+    ],
+    dividerName,
   ],
 ] as const;
 
 describe(`a curve boundary's name, over every cubic sampled ${curveSamples} times`, () => {
   it.each(curveOrientations)(
-    'clears the curve it names at a %s middle segment',
-    (_orientation, waypoints) => {
-      expect(nameStruckBy(layoutOfCurve(waypoints).nodes[0])).toEqual([]);
+    'clears a curve %s',
+    (_orientation, waypoints, name) => {
+      expect(nameStruckBy(layoutOfCurve(waypoints, name).nodes[0])).toEqual([]);
     },
   );
 
-  it.each(scenes)('clears every curve $name draws', ({ layout }) => {
-    expect(layout.nodes.flatMap(nameStruckBy)).toEqual([]);
-  });
+  it.each(scenes)(
+    'clears every curve $name draws, and some draw none',
+    ({ layout }) => {
+      expect(layout.nodes.flatMap(nameStruckBy)).toEqual([]);
+    },
+  );
 
   it('takes its side from the waypoints, not the end drawn from', () => {
     const down = layoutOfCurve([
@@ -307,6 +343,17 @@ describe(`a curve boundary's name, over every cubic sampled ${curveSamples} time
   it('is reached by the bounds the layout reports', () => {
     const layout = layoutOfCurve(curveOrientations[0][1]);
     expect(rightEdge(layout.bounds)).toBe(textBoxOf(layout.nodes[0])?.maxX);
+  });
+
+  it('sits on the outside of the bend, not inside it', () => {
+    const arch = layoutOfCurve(curveOrientations[3][1], 'Untrusted callers');
+    const bowl = layoutOfCurve([
+      { x: 0, y: 0 },
+      { x: 150, y: 100 },
+      { x: 300, y: 0 },
+    ]);
+    expect(nodeTextPlacement(arch.nodes[0]).at.y).toBeLessThan(0);
+    expect(nodeTextPlacement(bowl.nodes[0]).at.y).toBeGreaterThan(100);
   });
 });
 

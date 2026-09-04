@@ -98,22 +98,38 @@ and a curve trust boundary a smooth dashed open curve through its waypoints,
 Catmull-Rom converted to cubic segments, with its name beside the middle
 waypoint. A flow is straight segments from its source through its waypoints to
 its target, with a filled arrowhead at the target, and its name and badge
-beside the line where `flowLabelPlacements` settled them. All three are offset
-along a unit normal rather than down the y axis, by a standoff plus their own
-extent projected onto that normal, so a vertical or diagonal flow carries its
-name beside its line rather than along it, whatever the height of the block, a
-curve dividing two lanes carries its name clear of the dashes rather than under
-them, and a flow's badge takes the other side of the line from its name. The
-normal is a flow segment's own, and a curve's is taken from the tangent the
-drawn curve has at that waypoint, the run from the waypoint before it to the
-one after with the ends repeated where a neighbour is missing. Of the two
-normals the one with a non-negative y is the run's own, and where that y is
-zero the one with a positive x, so the side a name takes is fixed by the
-geometry and not by which end the flow or the curve is drawn from. A flow name
-is also stroked in the ground colour under `paint-order: stroke`, so names that
-converge on one element read in layers rather than as one blot. An
-out-of-scope element draws dimmed with a dashed outline; the reason it is out
-of scope stays in the register.
+beside the line where `flowLabelPlacements` settled them. Each hangs off a
+unit normal rather than straight down the y axis: a name at a standoff plus
+its own extent projected onto that normal, a badge at the standoff plus its
+own reach that way, which is not symmetric since a badge stacks its secondary
+below its primary. So a vertical or diagonal flow carries its name beside its
+line rather than along it, whatever the height of the block, a curve carries
+its name clear of the dashes rather than under them, and a flow's badge takes
+the other side of the line from its name. A flow name is also stroked in the
+ground colour under `paint-order: stroke`, so names that converge on one
+element read in layers rather than as one blot. An out-of-scope element draws
+dimmed with a dashed outline; the reason it is out of scope stays in the
+register.
+
+A flow's normal is its own segment's. A curve's is the normal of the tangent
+the drawn curve has at the middle waypoint, the run from the waypoint before
+it to the one after with the ends repeated where a neighbour is missing, and
+of the two normals it takes the one pointing away from the bend, so the name
+sits on the outside of the turn and the arms lead away from it. Where the bend
+lies along the tangent, which a straight middle gives, and for a flow
+throughout, the normal with a non-negative y is the run's own, and where that
+y is zero the one with a positive x. The side is therefore fixed by the
+waypoints rather than by which end the flow or the curve is drawn from, and it
+carries nothing beyond that: which side of a divider its name sits on says
+nothing about which side the name describes. What the offset guarantees is a
+standoff from the tangent at the middle waypoint, and the outside of the turn
+is what carries that over to the drawn curve, for every shape the suite draws
+or probes: arches, bowls, hairpins, S bends, and the runs the fixtures hold. A
+curve that doubled back over its own bend inside half the name's width could
+still cross it. Nothing else is consulted either: a curve's name clears its
+own curve and searches for nothing, so an element or a name already drawn
+where it lands stays where it is, while a flow label does move aside, since a
+curve's text box is one of the obstacles that search reads.
 
 **Flow labels are placed where nothing else is drawn.** A flow's name printed
 beside its own midpoint lands on another flow's line, inside an element, or on
