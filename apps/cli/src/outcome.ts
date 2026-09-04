@@ -29,9 +29,9 @@ export function invalidInput(err: string): CommandOutcome {
 }
 
 /**
- * The invocation cannot be carried out as given: the parser or the option
- * schema refused it, a file cannot be read or written, a choice names no
- * diagram, or a stream would not take the output.
+ * The invocation cannot be carried out: the parser or the option schema
+ * refused it, a file cannot be read or written, a choice names no diagram,
+ * or a stream refused the output, a pipe whose reader closed aside.
  */
 export function usageError(err: string): CommandOutcome {
   return { code: 2, out: '', err };
@@ -46,16 +46,19 @@ export function lines(...texts: readonly string[]): string {
 }
 
 /**
- * A text with every control character written as `\uXXXX`. Text out of a
- * model file reaches a terminal through standard error, and an escape it
- * carries would otherwise move the cursor or set the colours rather than
- * being read. The whole `Cc` category is covered, not the subset
- * `JSON.stringify` escapes, so the C1 range is closed too.
+ * A text with every control character written as `\uXXXX` and every
+ * backslash doubled. Text out of a model file reaches a terminal through
+ * standard error, and an escape it carries would otherwise move the cursor
+ * or set the colours rather than being read. The whole `Cc` category is
+ * covered, not the subset `JSON.stringify` escapes, so the C1 range is
+ * closed too, and doubling the backslash is what keeps a file spelling an
+ * escape out of literal characters distinguishable from one carrying the
+ * escape itself.
  */
 export function escaped(text: string): string {
-  return text.replace(
-    /\p{Cc}/gu,
-    (character) =>
-      `\\u${character.charCodeAt(0).toString(16).padStart(4, '0')}`,
+  return text.replace(/\\|\p{Cc}/gu, (character) =>
+    character === '\\'
+      ? '\\\\'
+      : `\\u${character.charCodeAt(0).toString(16).padStart(4, '0')}`,
   );
 }

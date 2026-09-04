@@ -77,6 +77,13 @@ export const danglingReferenceYaml = referencing('element-2');
 export const ansiElementIdYaml = referencing('"\\e[31mBOOM\\e[0m"');
 
 /**
+ * A native file whose one threat names an element id spelling those same
+ * escapes out of literal characters. The model accepts the text, and what
+ * a user reads has to tell it apart from the file above.
+ */
+export const literalEscapeIdYaml = referencing('"\\\\e[31mBOOM\\\\e[0m"');
+
+/**
  * A native file carrying a key the wire schema does not declare, which a
  * read drops and reports as a divergence rather than passing over.
  */

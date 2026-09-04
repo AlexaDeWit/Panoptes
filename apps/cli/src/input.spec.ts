@@ -3,7 +3,12 @@ import { Either } from 'effect';
 import { mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { ansiElementIdYaml, fixtureFile } from './cli.fixtures.js';
+import {
+  ansiElementIdYaml,
+  fixtureFile,
+  literalEscapeIdYaml,
+} from './cli.fixtures.js';
+import * as files from './files.js';
 import {
   describeDivergences,
   describeReadFailure,
@@ -14,7 +19,13 @@ const repositoryRoot = join(import.meta.dirname, '../../..');
 
 const directory = mkdtempSync(join(tmpdir(), 'panoptes-cli-input-'));
 
+const refusedModel = (err: string) => Either.left({ code: 1, out: '', err });
+
 describe('a model file read at the edge', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it('gives the read back where a codec claimed the file', () => {
     const read = readModel(join(repositoryRoot, 'test-data/ecluse.json'));
     expect(Either.isRight(read)).toBe(true);
@@ -35,28 +46,34 @@ describe('a model file read at the edge', () => {
     const path = join(directory, 'huge.yaml');
     const size = readLimits.maxTextBytes + 1;
     writeFileSync(path, 'x'.repeat(size));
+    const read = vi.spyOn(files, 'readTextFile');
     expect(readModel(path)).toEqual(
-      Either.left({
-        code: 1,
-        out: '',
-        err:
-          'The file is past a read bound, so nothing read it.\n' +
+      refusedModel(
+        'The file is past a read bound, so nothing read it.\n' +
           `maxTextBytes: the bound is ${String(readLimits.maxTextBytes)}, the file reached ${String(size)}.\n`,
-      }),
+      ),
     );
+    expect(read).not.toHaveBeenCalled();
   });
 
   it('escapes the control characters a model file put in an issue', () => {
     const path = fixtureFile(directory, 'ansi-id.yaml', ansiElementIdYaml);
     expect(readModel(path)).toEqual(
-      Either.left({
-        code: 1,
-        out: '',
-        err:
-          'The file is a valid document, and the model it maps to is not:\n' +
+      refusedModel(
+        'The file is a valid document, and the model it maps to is not:\n' +
           'threats.0.elements.0: Text carries a character the model does not accept.\n' +
           'threats.0.elements.0: Threat elements references unknown element id "\\u001b[31mBOOM\\u001b[0m".\n',
-      }),
+      ),
+    );
+  });
+
+  it('tells a text spelling an escape apart from one carrying it', () => {
+    const path = fixtureFile(directory, 'literal.yaml', literalEscapeIdYaml);
+    expect(readModel(path)).toEqual(
+      refusedModel(
+        'The file is a valid document, and the model it maps to is not:\n' +
+          'threats.0.elements.0: Threat elements references unknown element id "\\\\e[31mBOOM\\\\e[0m".\n',
+      ),
     );
   });
 });

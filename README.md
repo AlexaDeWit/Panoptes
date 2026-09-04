@@ -121,11 +121,11 @@ chooses where the model holds more than one, and which a model of one does
 not have to name. `--out -` writes to standard output. PDF output lands with
 issue #34.
 
-| Exit code | What it means                                                                                                                                                                         |
-| --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 0         | The command did what it was asked.                                                                                                                                                    |
-| 1         | Panoptes read the file and refused it: no format claimed it, or one did and either the document or the model it maps to is not valid.                                                 |
-| 2         | The invocation cannot be carried out: the parser or the option schema refused it, a file cannot be read or written, a choice names no diagram, or a stream would not take the output. |
+| Exit code | What it means                                                                                                                                                                                                    |
+| --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0         | The command did what it was asked.                                                                                                                                                                               |
+| 1         | Panoptes read the file and refused it: no format claimed it, or one did and either the document or the model it maps to is not valid.                                                                            |
+| 2         | The invocation cannot be carried out: the parser or the option schema refused it, a file cannot be read or written, a choice names no diagram, or a stream refused the output, a pipe whose reader closed aside. |
 
 Errors go to standard error, path-precise where a schema refused something,
 and no failure prints a stack trace.
