@@ -29,6 +29,7 @@ import {
   type CanvasNode,
 } from './layout.js';
 import { controlPolygon, smoothSegments, type CubicSegment } from './paths.js';
+import { flowLabelClearance } from './typography.js';
 
 const id = (value: string) => elementIdSchema.parse(value);
 
@@ -65,10 +66,9 @@ const textBoxOf = (node: CanvasNode): Box | undefined =>
     ),
   );
 
-const elementSolids = (layout: CanvasLayout): Drawn[] =>
-  layout.nodes.flatMap((node) => [
-    ...(isEnclosure(node) ? [] : [{ of: node.name, box: boxOf(node) }]),
-    ...(node.badge === undefined
+const elementBadges = (layout: CanvasLayout): Drawn[] =>
+  layout.nodes.flatMap((node) =>
+    node.badge === undefined
       ? []
       : [
           {
@@ -78,8 +78,15 @@ const elementSolids = (layout: CanvasLayout): Drawn[] =>
               node.badge,
             ),
           },
-        ]),
-  ]);
+        ],
+  );
+
+const elementSolids = (layout: CanvasLayout): Drawn[] => [
+  ...layout.nodes.flatMap((node) =>
+    isEnclosure(node) ? [] : [{ of: node.name, box: boxOf(node) }],
+  ),
+  ...elementBadges(layout),
+];
 
 const elementNames = (layout: CanvasLayout): Drawn[] =>
   layout.nodes.flatMap((node) => {
@@ -99,21 +106,43 @@ const drawnLines = (layout: CanvasLayout): Segment[] => [
   ),
 ];
 
-const labelBoxes = (layout: CanvasLayout): Drawn[] =>
-  layout.edges.flatMap((edge) => {
+const flowBadges = (layout: CanvasLayout): Drawn[] =>
+  layout.edges.flatMap((edge) =>
+    edge.badge === undefined || edge.label.badge === undefined
+      ? []
+      : [
+          {
+            of: `"${edge.name}" badge`,
+            box: badgeBox(edge.label.badge, edge.badge),
+          },
+        ],
+  );
+
+const labelBoxes = (layout: CanvasLayout): Drawn[] => [
+  ...layout.edges.flatMap((edge) => {
     const name = boxOfPoints(textPlacementCorners(edge.label.name));
-    return [
-      ...(name === undefined ? [] : [{ of: `"${edge.name}"`, box: name }]),
-      ...(edge.badge === undefined || edge.label.badge === undefined
-        ? []
-        : [
-            {
-              of: `"${edge.name}" badge`,
-              box: badgeBox(edge.label.badge, edge.badge),
-            },
-          ]),
-    ];
-  });
+    return name === undefined ? [] : [{ of: `"${edge.name}"`, box: name }];
+  }),
+  ...flowBadges(layout),
+];
+
+const grownBy = (box: Box, by: number): Box => ({
+  minX: box.minX - by,
+  minY: box.minY - by,
+  maxX: box.maxX + by,
+  maxY: box.maxY + by,
+});
+
+const crowdedElementBadges = (layout: CanvasLayout): string[] => {
+  const elements = elementBadges(layout);
+  return flowBadges(layout).flatMap((flow) =>
+    elements
+      .filter((element) =>
+        boxesOverlap(flow.box, grownBy(element.box, flowLabelClearance)),
+      )
+      .map((element) => `${flow.of} within a clearance of ${element.of}`),
+  );
+};
 
 const collisionsIn = (layout: CanvasLayout): string[] => {
   const elements = elementBoxes(layout);
@@ -180,9 +209,9 @@ const curveOf = (value: string, waypoints: readonly Point[], name: string) => ({
   shape: { kind: 'curve', waypoints },
 });
 
-const openThreatOn = (element: string) => ({
+const openThreatOn = (element: string, number = 1) => ({
   id: `th-${element}`,
-  number: 1,
+  number,
   title: 'Session theft',
   category: { methodology: 'STRIDE', category: 'spoofing' },
   severity: 'high',
@@ -491,6 +520,34 @@ describe('the flow labels of a whole diagram', () => {
     expect(labelBoxes(layout).length).toBeGreaterThanOrEqual(
       layout.edges.length,
     );
+  });
+
+  it.each(scenes)(
+    'holds every flow badge of $name a clearance off an element badge',
+    ({ layout }) => {
+      expect(crowdedElementBadges(layout)).toEqual([]);
+    },
+  );
+});
+
+describe("a flow whose badge would land beside an element's badge", () => {
+  const layout = layoutOf(
+    diagramOf(
+      [
+        boxAt('el-top', 0, 0),
+        boxAt('el-bottom', 0, 300),
+        boxAt('el-tag', -115, 190),
+        flowFrom('el-carry', 'el-top', 'el-bottom', 'ship the parcel'),
+      ],
+      [openThreatOn('el-carry'), openThreatOn('el-tag', 2)],
+    ),
+  );
+
+  it('takes another anchor, so the two do not read as one pair', () => {
+    expect(flowBadges(layout).map((badge) => badge.of)).toEqual([
+      '"ship the parcel" badge',
+    ]);
+    expect(crowdedElementBadges(layout)).toEqual([]);
   });
 });
 
