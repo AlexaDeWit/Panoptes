@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { renderModelSchema, renderSchema } from './schema-report.js';
+import { acceptedTextSchema } from './text.js';
 
 const malformed = {
   def: {
@@ -43,6 +44,19 @@ describe('renderSchema', () => {
         '- `open`: number, greater than 1, less than 9',
         '- `text`: string, at least 1 character, at most 8 characters',
       ].join('\n'),
+    );
+  });
+
+  it('names the shared character rule rather than printing its pattern', () => {
+    expect(
+      renderSchema(
+        z.object({
+          prose: acceptedTextSchema,
+          named: acceptedTextSchema.min(1),
+        }),
+      ),
+    ).toBe(
+      ['- `prose`: text', '- `named`: text, at least 1 character'].join('\n'),
     );
   });
 

@@ -1,3 +1,4 @@
+export { acceptedTextSchema, firstRefusedCharacter } from './lib/text.js';
 export * from './lib/ids.js';
 export * from './lib/geometry.js';
 export * from './lib/elements.js';

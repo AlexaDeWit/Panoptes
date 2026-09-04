@@ -1,4 +1,5 @@
 import {
+  acceptedTextSchema,
   assumptionSchema,
   assumptionStatusSchema,
   diagramSchema,
@@ -142,16 +143,23 @@ const awkwardText = [
   'tab\there',
 ];
 
-const textArbitrary = fc.oneof(
-  fc.string(),
-  fc.string({ unit: 'grapheme' }),
-  fc.constantFrom(...awkwardText),
-);
+const acceptedByTheModel = (text: string): boolean =>
+  acceptedTextSchema.safeParse(text).success;
 
-const namedTextArbitrary = fc.oneof(
-  fc.string({ minLength: 1 }),
-  fc.constantFrom(...awkwardText.filter((text) => text.length > 0)),
-);
+const textArbitrary = fc
+  .oneof(
+    fc.string(),
+    fc.string({ unit: 'grapheme' }),
+    fc.constantFrom(...awkwardText),
+  )
+  .filter(acceptedByTheModel);
+
+const namedTextArbitrary = fc
+  .oneof(
+    fc.string({ minLength: 1 }),
+    fc.constantFrom(...awkwardText.filter((text) => text.length > 0)),
+  )
+  .filter(acceptedByTheModel);
 
 const coordinateArbitrary = fc
   .double({ min: -1000, max: 1000, noNaN: true, noDefaultInfinity: true })
@@ -173,14 +181,6 @@ const sizeArbitrary = fc.record({
 
 type CategoryVariant = (typeof threatCategorySchema)['options'][number];
 
-/**
- * A category from every methodology the model declares, read from the union
- * rather than listed, so a methodology added there is generated without an
- * edit here. Each candidate is built loosely and handed back through the
- * schema, which is what pairs a methodology with its own categories again:
- * the derivation cannot state that correlation, and a candidate that broke
- * it would fail the parse rather than reach a model.
- */
 const categoryArbitrary: fc.Arbitrary<ThreatCategory> = fc
   .oneof(...threatCategorySchema.options.map(categoryCandidatesOf))
   .map((candidate) => threatCategorySchema.parse(candidate));
@@ -208,11 +208,6 @@ const metadataArbitrary: fc.Arbitrary<MetadataInput> = fc.record({
   contributors: fc.array(textArbitrary, { maxLength: 3 }),
 });
 
-/**
- * Threat numbers, distinct and never already in ascending order where there
- * is more than one, so a model reaches the write in an order the write has
- * to change rather than one it can leave alone.
- */
 const threatNumbersArbitrary = fc
   .uniqueArray(fc.integer({ min: 1, max: 999 }), { maxLength: 5 })
   .filter((numbers) => numbers.length < 2 || !isAscending(numbers));
@@ -221,7 +216,17 @@ const threatNumbersArbitrary = fc
  * Models covering every record kind the internal model has, as `parseModel`
  * input rather than as models: a spec parses them, so a generator that
  * strays outside what the model accepts fails the run that produced it
- * rather than passing quietly.
+ * rather than passing quietly. Text is drawn through the model's own
+ * character rule for that reason, the grapheme unit reaching a private use
+ * or format character now and again.
+ *
+ * Categories are read from the union rather than listed, so a methodology
+ * added there is generated without an edit here, and each candidate is
+ * built loosely and handed back through the schema, which is what pairs a
+ * methodology with its own categories again. Threat numbers are distinct
+ * and never already ascending where there is more than one, so a model
+ * reaches the write in an order the write has to change rather than one it
+ * can leave alone.
  *
  * Ids are positional, so uniqueness across the model comes free and the
  * references, which are drawn from the ids already laid out, always resolve.

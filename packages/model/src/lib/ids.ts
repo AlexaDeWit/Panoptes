@@ -1,25 +1,21 @@
 import { z } from 'zod';
+import { acceptedTextSchema } from './text.js';
 
-/**
- * Shortest id the model accepts. Threat Dragon's schema refuses a cell id
- * under two characters, and an id is a reference that every threat and
- * flow repeats, so padding one on write would rename it everywhere and
- * break the round trip. Refusing at the parse boundary keeps the codecs
- * free of the case.
- */
 const minimumIdLength = 2;
 
 /**
- * Identifier of one element in a model. Any string of two or more
- * characters parses: ids from foreign files (Threat Dragon cell ids, for
- * example) pass through unchanged, and UUIDs appear only in generation,
- * never as a parse constraint. Element ids must be unique across the whole
- * model, not just one diagram; parseModel enforces that refinement. The
- * brand exists at compile time only; at runtime the value is a plain
- * string.
+ * Identifier of one element in a model. Any {@link acceptedTextSchema} of
+ * two or more characters parses: ids from foreign files (Threat Dragon cell
+ * ids, for example) pass through unchanged, and UUIDs appear only in
+ * generation, never as a parse constraint. Two is the bound Threat
+ * Dragon's own schema puts on a cell id, and an id is a reference that
+ * every threat and flow repeats, so padding a shorter one on write would
+ * rename it everywhere: refusing it here keeps the codecs free of the case.
+ * Element ids must be unique across the whole model, not just one diagram;
+ * parseModel enforces that refinement. The brand exists at compile time
+ * only; at runtime the value is a plain string.
  */
-export const elementIdSchema = z
-  .string()
+export const elementIdSchema = acceptedTextSchema
   .min(minimumIdLength)
   .brand<'ElementId'>();
 
@@ -32,7 +28,7 @@ export type ElementId = z.infer<typeof elementIdSchema>;
  * diagrams from zero and the read codec keeps that number as the id, so a
  * single character must parse here.
  */
-export const diagramIdSchema = z.string().min(1).brand<'DiagramId'>();
+export const diagramIdSchema = acceptedTextSchema.min(1).brand<'DiagramId'>();
 
 /** Branded diagram id. */
 export type DiagramId = z.infer<typeof diagramIdSchema>;
@@ -42,8 +38,7 @@ export type DiagramId = z.infer<typeof diagramIdSchema>;
  * {@link elementIdSchema}; uniqueness among threats is parseModel's
  * refinement.
  */
-export const threatIdSchema = z
-  .string()
+export const threatIdSchema = acceptedTextSchema
   .min(minimumIdLength)
   .brand<'ThreatId'>();
 
@@ -55,8 +50,7 @@ export type ThreatId = z.infer<typeof threatIdSchema>;
  * {@link elementIdSchema}; uniqueness among mitigations is parseModel's
  * refinement.
  */
-export const mitigationIdSchema = z
-  .string()
+export const mitigationIdSchema = acceptedTextSchema
   .min(minimumIdLength)
   .brand<'MitigationId'>();
 
@@ -68,8 +62,7 @@ export type MitigationId = z.infer<typeof mitigationIdSchema>;
  * {@link elementIdSchema}; uniqueness among assumptions is parseModel's
  * refinement.
  */
-export const assumptionIdSchema = z
-  .string()
+export const assumptionIdSchema = acceptedTextSchema
   .min(minimumIdLength)
   .brand<'AssumptionId'>();
 

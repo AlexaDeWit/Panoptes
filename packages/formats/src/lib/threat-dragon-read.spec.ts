@@ -373,6 +373,19 @@ describe('a Threat Dragon read that stops', () => {
     );
   });
 
+  it('refuses a title carrying a character the model refuses, pathed into the model', () => {
+    const failure = failureOf(
+      JSON.stringify({
+        ...minimalFixture,
+        summary: { ...minimalFixture.summary, title: 'Ledger\u202E' },
+      }),
+    );
+    expect(failure._tag).toBe('InvalidModel');
+    expect(readFailureIssues(failure)).toContainEqual(
+      expect.objectContaining({ path: ['metadata', 'title'] }),
+    );
+  });
+
   it('returns a failure rather than throwing on a text nested past any stack', () => {
     expect(
       Either.isLeft(readThreatDragon(`${'['.repeat(3000)}${']'.repeat(3000)}`)),

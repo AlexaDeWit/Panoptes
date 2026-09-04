@@ -1,13 +1,14 @@
 import { z } from 'zod';
 import { pointSchema, sizeSchema, waypointsSchema } from './geometry.js';
 import { elementIdSchema } from './ids.js';
+import { acceptedTextSchema } from './text.js';
 
 const elementBaseSchema = z.object({
   id: elementIdSchema,
-  name: z.string(),
-  description: z.string(),
+  name: acceptedTextSchema,
+  description: acceptedTextSchema,
   outOfScope: z.boolean(),
-  reasonOutOfScope: z.string(),
+  reasonOutOfScope: acceptedTextSchema,
 });
 
 const nodeBaseSchema = elementBaseSchema.extend({
@@ -55,7 +56,7 @@ export type Store = z.infer<typeof storeSchema>;
  */
 export const textSchema = nodeBaseSchema.extend({
   kind: z.literal('text'),
-  text: z.string(),
+  text: acceptedTextSchema,
 });
 
 /** Canvas text element. */

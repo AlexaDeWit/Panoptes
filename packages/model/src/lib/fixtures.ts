@@ -9,7 +9,12 @@ import {
   type ThreatId,
 } from './ids.js';
 import { modelSchema } from './model.js';
-import { parseModel, type Model } from './parse.js';
+import {
+  parseModel,
+  type Model,
+  type ParseFailure,
+  type ParseIssue,
+} from './parse.js';
 
 /** Parses a spec's literal string into a branded element id. */
 export const elementId = (value: string): ElementId =>
@@ -40,6 +45,26 @@ export function parsedFixture(input: z.input<typeof modelSchema>): Model {
           .join('; ')}`,
       ),
   );
+}
+
+/**
+ * The valid fixture with one edit applied, parsed. The draft is a deep copy,
+ * so a spec that plants a violation hands the next spec the fixture it
+ * expects.
+ */
+export function seededModel(
+  mutate: (draft: typeof validModelFixture) => void,
+): Either.Either<Model, ParseFailure> {
+  const draft = structuredClone(validModelFixture);
+  mutate(draft);
+  return parseModel(draft);
+}
+
+/** The issues a parse reported, empty where it reported none. */
+export function issuesOf(
+  result: Either.Either<Model, ParseFailure>,
+): readonly ParseIssue[] {
+  return Either.isLeft(result) ? result.left.issues : [];
 }
 
 /**

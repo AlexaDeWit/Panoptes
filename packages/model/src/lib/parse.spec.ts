@@ -1,16 +1,7 @@
 import { Either } from 'effect';
 import * as api from '../index.js';
-import { validModelFixture } from './fixtures.js';
+import { issuesOf, seededModel, validModelFixture } from './fixtures.js';
 import { parseModel, toParseIssues } from './parse.js';
-
-const seeded = (mutate: (draft: typeof validModelFixture) => void) => {
-  const draft = structuredClone(validModelFixture);
-  mutate(draft);
-  return parseModel(draft);
-};
-
-const issuesOf = (result: ReturnType<typeof parseModel>) =>
-  Either.isLeft(result) ? result.left.issues : [];
 
 const plantEverywhere = (value: unknown): unknown =>
   Array.isArray(value)
@@ -60,7 +51,7 @@ describe('parseModel', () => {
   });
 
   it('rejects a duplicate element id across diagrams', () => {
-    const result = seeded((draft) => {
+    const result = seededModel((draft) => {
       draft.diagrams.push({
         id: 'diagram-second',
         title: 'Second',
@@ -77,7 +68,7 @@ describe('parseModel', () => {
   });
 
   it('rejects a duplicate diagram id', () => {
-    const result = seeded((draft) => {
+    const result = seededModel((draft) => {
       draft.diagrams.push({ id: 'diagram-main', title: 'Copy', elements: [] });
     });
     expect(issuesOf(result)).toContainEqual(
@@ -90,7 +81,7 @@ describe('parseModel', () => {
   });
 
   it('rejects a duplicate threat number', () => {
-    const result = seeded((draft) => {
+    const result = seededModel((draft) => {
       draft.threats.push({
         ...structuredClone(draft.threats[0]),
         id: 'threat-second',
@@ -106,7 +97,7 @@ describe('parseModel', () => {
   });
 
   it('rejects a threat number above the last issued', () => {
-    const result = seeded((draft) => {
+    const result = seededModel((draft) => {
       draft.lastIssuedThreatNumber = 0;
     });
     expect(issuesOf(result)).toContainEqual(
@@ -119,7 +110,7 @@ describe('parseModel', () => {
   });
 
   it('rejects a duplicate threat id', () => {
-    const result = seeded((draft) => {
+    const result = seededModel((draft) => {
       draft.threats.push({ ...structuredClone(draft.threats[0]), number: 2 });
       draft.lastIssuedThreatNumber = 2;
     });
@@ -133,7 +124,7 @@ describe('parseModel', () => {
   });
 
   it('rejects a duplicate mitigation id', () => {
-    const result = seeded((draft) => {
+    const result = seededModel((draft) => {
       draft.mitigations.push(structuredClone(draft.mitigations[0]));
     });
     expect(issuesOf(result)).toContainEqual(
@@ -146,7 +137,7 @@ describe('parseModel', () => {
   });
 
   it('rejects a duplicate assumption id', () => {
-    const result = seeded((draft) => {
+    const result = seededModel((draft) => {
       draft.assumptions.push(structuredClone(draft.assumptions[0]));
     });
     expect(issuesOf(result)).toContainEqual(
@@ -159,7 +150,7 @@ describe('parseModel', () => {
   });
 
   it('rejects a flow anchored outside its own diagram', () => {
-    const result = seeded((draft) => {
+    const result = seededModel((draft) => {
       draft.diagrams.push({
         id: 'diagram-second',
         title: 'Second',
@@ -186,7 +177,7 @@ describe('parseModel', () => {
   });
 
   it('rejects a flow anchored to itself', () => {
-    const result = seeded((draft) => {
+    const result = seededModel((draft) => {
       for (const element of draft.diagrams[0].elements) {
         if (element.kind === 'flow') {
           element.target = { kind: 'attached', element: element.id };
@@ -203,7 +194,7 @@ describe('parseModel', () => {
   });
 
   it('rejects a threat attachment naming an unknown element', () => {
-    const result = seeded((draft) => {
+    const result = seededModel((draft) => {
       draft.threats[0].elements.push('element-ghost');
     });
     expect(issuesOf(result)).toContainEqual(
@@ -216,7 +207,7 @@ describe('parseModel', () => {
   });
 
   it('rejects an assumption naming an unknown element', () => {
-    const result = seeded((draft) => {
+    const result = seededModel((draft) => {
       draft.assumptions[0].elements.push('element-ghost');
     });
     expect(issuesOf(result)).toContainEqual(
@@ -229,7 +220,7 @@ describe('parseModel', () => {
   });
 
   it('rejects a mitigation naming an unknown threat', () => {
-    const result = seeded((draft) => {
+    const result = seededModel((draft) => {
       draft.mitigations[0].threats.push('threat-ghost');
     });
     expect(issuesOf(result)).toContainEqual(
@@ -242,7 +233,7 @@ describe('parseModel', () => {
   });
 
   it('rejects an assumption naming an unknown threat', () => {
-    const result = seeded((draft) => {
+    const result = seededModel((draft) => {
       draft.assumptions[0].threats.push('threat-ghost');
     });
     expect(issuesOf(result)).toContainEqual(
@@ -255,7 +246,7 @@ describe('parseModel', () => {
   });
 
   it('surfaces multiple violations in one parse', () => {
-    const result = seeded((draft) => {
+    const result = seededModel((draft) => {
       draft.diagrams.push({ id: 'diagram-main', title: 'Copy', elements: [] });
       draft.threats[0].elements.push('element-ghost');
     });
