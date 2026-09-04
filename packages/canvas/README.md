@@ -167,10 +167,24 @@ than drawn with a gap, so `wrapText` puts every run of text through
 `xmlSafeText`, which replaces each of them with U+FFFD. Replacing rather than
 dropping keeps the character count, so the wrap that was estimated is the wrap
 that is drawn. Whoever composes a document around these glyphs applies the
-same function to text of their own, a title element for instance. A wrap
-counts columns in code points and breaks a long word between them, never
-through a surrogate pair, since half a pair on each of two lines is two lone
-surrogates and the same refusal arrived at after the replacement has run.
+same function to text of their own, a title element for instance.
+
+A wrap counts columns in grapheme clusters and breaks a long word between
+them, never through a surrogate pair, since half a pair on each of two lines
+is two lone surrogates and the same refusal arrived at after the replacement
+has run, and never through a cluster, since a regional-indicator flag broken
+across lines is two letters and a family joined by zero-width joiners is four
+people. A cluster is settled by an explicit rule over code points rather than
+by `Intl.Segmenter`, whose segmentation data moves with the runtime's ICU and
+would move a golden on a Node bump: a combining mark, a variation selector
+among them, an emoji skin tone modifier and a tag character all join what
+precedes them, a zero-width joiner takes what follows it, and a pair of
+regional indicators is one cluster, on its own or after a joiner. Tag
+characters are what spell out a subdivision flag such as Scotland. Outside the
+rule, and so still breaking, are a Hangul jamo sequence, a prepended
+concatenation mark, an Indic conjunct joined through a virama, and the Thai
+and Lao vowel signs U+0E33 and U+0EB3. A cluster counts as one column, so a
+flag is as wide as a letter in the estimate.
 
 ## React Flow
 

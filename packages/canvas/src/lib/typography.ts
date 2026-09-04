@@ -36,8 +36,9 @@ export function lineHeight(fontSize: number): number {
 /**
  * The box the given lines occupy, estimated with the same ratio the wrap
  * used, so a caller placing a block clear of something measures it the way
- * the wrap laid it out. A column is one code point, as it is in the wrap.
- * The height runs from the top of the first line to the bottom of the last.
+ * the wrap laid it out. A column is one grapheme cluster, as it is in
+ * {@link wrapText}, so a flag counts as wide as a letter. The height runs
+ * from the top of the first line to the bottom of the last.
  */
 export function textExtent(
   lines: readonly string[],
@@ -101,10 +102,26 @@ function allowedInXml(character: string): boolean {
  * back is {@link xmlSafeText} of the input, so no line carries a character
  * the document it lands in cannot hold.
  *
- * A column is one code point rather than one UTF-16 unit, so a break falls
- * between characters and never through a surrogate pair: half a pair on each
- * of two lines is two lone surrogates, which is the document refused whole
- * that {@link xmlSafeText} exists to prevent, arrived at after it has run.
+ * A column is one grapheme cluster, so a break falls between clusters: a
+ * regional-indicator flag stays one flag rather than two letters, a family
+ * joined by zero-width joiners stays one family, and half a surrogate pair
+ * never lands on a line of its own, which is the document refused whole that
+ * {@link xmlSafeText} exists to prevent, arrived at after it has run.
+ *
+ * A cluster is settled by an explicit rule over code points rather than by
+ * `Intl.Segmenter`, whose segmentation data moves with the runtime's ICU and
+ * would move a golden on a Node bump. A code point joins the one before it
+ * where it is a combining mark, a variation selector among them, an emoji
+ * skin tone modifier, or a tag character, which is what spells out a
+ * subdivision flag such as Scotland. A zero-width joiner takes what follows
+ * it into the same cluster, and a pair of regional indicators is one cluster,
+ * on its own or after a joiner. What the rule reads is general category and
+ * the regional indicator property, not a segmentation table.
+ *
+ * What it does not cover, and so still breaks, is a Hangul jamo sequence, a
+ * prepended concatenation mark such as U+0600, an Indic conjunct joined
+ * through a virama, and the Thai and Lao vowel signs U+0E33 and U+0EB3, which
+ * UAX #29 holds to their base but which carry no mark category.
  */
 export function wrapText(
   text: string,
@@ -130,7 +147,7 @@ function wrapParagraph(paragraph: string, columns: number): string[] {
   for (const chunk of chunksOf(paragraph, columns)) {
     if (line === '') {
       line = chunk;
-    } else if (columnsOf(line) + 1 + columnsOf(chunk) <= columns) {
+    } else if (columnsOf(`${line} ${chunk}`) <= columns) {
       line = `${line} ${chunk}`;
     } else {
       lines.push(line);
@@ -149,14 +166,33 @@ function chunksOf(paragraph: string, columns: number): string[] {
 }
 
 function brokenWord(word: string, columns: number): string[] {
-  const characters = Array.from(word);
+  const clusters = clustersOf(word);
   const pieces: string[] = [];
-  for (let at = 0; at < characters.length; at += columns) {
-    pieces.push(characters.slice(at, at + columns).join(''));
+  for (let at = 0; at < clusters.length; at += columns) {
+    pieces.push(clusters.slice(at, at + columns).join(''));
   }
   return pieces;
 }
 
 function columnsOf(text: string): number {
-  return Array.from(text).length;
+  const clusters = text.matchAll(graphemeCluster);
+  let columns = 0;
+  while (clusters.next().done !== true) {
+    columns += 1;
+  }
+  return columns;
+}
+
+const anyCodePoint = '[\\s\\S]';
+const flagPair = '\\p{Regional_Indicator}{2}';
+const attachedToPrevious =
+  '[\\p{M}\\u{1F3FB}-\\u{1F3FF}\\u{E0020}-\\u{E007F}]*';
+const joinedToPrevious = `\\u200D(?:${flagPair}|${anyCodePoint})${attachedToPrevious}`;
+const graphemeCluster = new RegExp(
+  `(?:${flagPair}|${anyCodePoint})${attachedToPrevious}(?:${joinedToPrevious})*`,
+  'gu',
+);
+
+function clustersOf(text: string): string[] {
+  return Array.from(text.matchAll(graphemeCluster), (match) => match[0]);
 }
