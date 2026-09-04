@@ -97,18 +97,30 @@ const placeholderDocument = {
       ],
     },
   ],
-  threats: [],
-  lastIssuedThreatNumber: 0,
+  threats: [
+    {
+      id: 'placeholder-threat',
+      number: 1,
+      title: 'A reader edits a model they may only read',
+      category: { methodology: 'STRIDE', category: 'tampering' },
+      severity: 'medium',
+      status: 'open',
+      description: '',
+      mitigation: '',
+      elements: ['placeholder-actor'],
+    },
+  ],
+  lastIssuedThreatNumber: 1,
   mitigations: [],
   assumptions: [],
 };
 
 /**
- * The model the studio starts on, so the walking skeleton has a diagram to
- * edit before anything can be opened. Issue #37 replaces it with the model a
- * file carries, dispatched as an `Opened` action. It comes through
- * parseModel, and folds to the model package's empty model rather than
- * throwing if the literal ever stops parsing.
+ * The model the studio starts on, so the walking skeleton has a diagram and a
+ * threat to edit before anything can be opened. Issue #37 replaces it with
+ * the model a file carries, dispatched as an `Opened` action. It comes
+ * through parseModel, and folds to the model package's empty model rather
+ * than throwing if the literal ever stops parsing.
  */
 export const placeholderModel: Model = Either.getOrElse(
   parseModel(placeholderDocument),

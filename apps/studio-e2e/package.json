@@ -2,6 +2,10 @@
   "name": "@panoptes/studio-e2e",
   "version": "0.0.1",
   "private": true,
+  "devDependencies": {
+    "@axe-core/playwright": "catalog:",
+    "@playwright/test": "catalog:"
+  },
   "nx": {
     "tags": [
       "layer:app"

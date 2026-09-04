@@ -1,0 +1,88 @@
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pn-space-1);
+}
+
+.label {
+  color: var(--pn-colour-text-muted);
+  font-weight: 600;
+}
+
+.trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--pn-space-2);
+  padding: var(--pn-space-2) var(--pn-space-3);
+  border: 1px solid var(--pn-colour-border);
+  border-radius: var(--pn-radius);
+  background: var(--pn-colour-surface);
+  color: var(--pn-colour-text);
+  font: inherit;
+  /* The chosen value reads in the model's own vocabulary; only the case is
+     presentation, so the accessible name stays the value itself. */
+  text-transform: capitalize;
+}
+
+.trigger:focus-visible {
+  outline: var(--pn-focus-ring);
+  outline-offset: var(--pn-focus-ring-offset);
+}
+
+.icon {
+  color: var(--pn-colour-text-muted);
+}
+
+.content {
+  border: 1px solid var(--pn-colour-border);
+  border-radius: var(--pn-radius);
+  background: var(--pn-colour-surface);
+  overflow: hidden;
+}
+
+.viewport {
+  padding: var(--pn-space-1);
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--pn-space-2);
+  padding: var(--pn-space-2) var(--pn-space-3);
+  border-radius: var(--pn-radius);
+  color: var(--pn-colour-text);
+  text-transform: capitalize;
+  user-select: none;
+}
+
+/* Radix reports the pointer or keyboard cursor through `data-highlighted` and
+   the chosen value through `data-state`, which is where a state is styled
+   from rather than a class the component would have to keep in step. */
+.item[data-highlighted] {
+  background: var(--pn-colour-accent);
+  color: var(--pn-colour-accent-text);
+}
+
+/* Radix puts real DOM focus on the highlighted item, so the app's focus
+   indicator belongs here too. The offset is negative so the ring stays inside
+   the item rather than over its neighbour, and the colour is the one the item
+   draws its text in, because the accent the ring token carries is the
+   background it would be drawn on. It survives forced colours, which the
+   background swap above does not. */
+.item[data-highlighted]:focus-visible {
+  outline: var(--pn-focus-ring-width) solid var(--pn-colour-accent-text);
+  outline-offset: calc(-1 * var(--pn-focus-ring-offset));
+}
+
+/* The chosen value keeps a cue of its own once the highlight moves off it:
+   the indicator glyph Radix renders for it, and this weight, neither of which
+   is colour. */
+.item[data-state='checked'] {
+  font-weight: 600;
+}
+
+.indicator {
+  font-size: 0.75rem;
+}
