@@ -22,7 +22,6 @@ import { wrappedTextStyles, type WrappedTextStyle } from './stylesheet.js';
 import {
   flowLabelClearance,
   innerWidth,
-  lineHeight,
   looseLabelWidth,
   textExtent,
   textPadding,
@@ -53,9 +52,20 @@ export type TextPlacement = {
 /**
  * The run of text one node's glyph draws, in the node's own coordinates: a
  * text element's prose, a box boundary's name below its top edge, a curve
- * boundary's name a line above its middle waypoint, and every other kind's
- * name centred in its box. A process wraps to the width of the square
- * inscribed in its circle rather than to its box.
+ * boundary's name beside its middle waypoint, and every other kind's name
+ * centred in its box. A process wraps to the width of the square inscribed
+ * in its circle rather than to its box.
+ *
+ * A curve's name hangs off the unit normal of the curve's own tangent at
+ * that waypoint, a clearance plus the name's extent projected onto that
+ * normal, so a curve dividing two lanes carries its name beside the dashes
+ * rather than under them, whatever way it runs and however it bows. The
+ * tangent is the drawn curve's, the run from the waypoint before to the one
+ * after with the ends repeated where a neighbour is missing, which is the
+ * tangent Catmull-Rom gives the cubic there. Of the two normals the one with
+ * a non-negative y is the curve's own, and where that y is zero the one with
+ * a positive x, the rule a flow's name follows, so the side is fixed by the
+ * waypoints and not by the end the curve is drawn from.
  */
 export function nodeTextPlacement(node: CanvasNode): TextPlacement {
   if (node.kind === 'text') {
@@ -80,17 +90,7 @@ export function nodeTextPlacement(node: CanvasNode): TextPlacement {
     };
   }
   if (node.kind === 'boundary-curve') {
-    const middle = node.waypoints[Math.floor(node.waypoints.length / 2)];
-    return {
-      text: node.name,
-      at: {
-        x: middle.x,
-        y: middle.y - lineHeight(wrappedTextStyles.label.fontSize),
-      },
-      anchor: 'centre',
-      width: looseLabelWidth,
-      textStyle: 'label',
-    };
+    return curveNamePlacement(node.name, node.waypoints);
   }
   if (node.kind === 'process') {
     return {
@@ -135,6 +135,31 @@ export function textPlacementCorners(
     { x: placement.at.x - extent.width / 2, y: top },
     { x: placement.at.x + extent.width / 2, y: top + extent.height },
   ];
+}
+
+function curveNamePlacement(
+  name: string,
+  waypoints: readonly Point[],
+): TextPlacement {
+  const middle = Math.floor(waypoints.length / 2);
+  return nameBeside(
+    name,
+    waypoints[middle],
+    labelNormal(curveTangent(waypoints, middle)),
+    flowLabelClearance,
+    'label',
+  );
+}
+
+function curveTangent(waypoints: readonly Point[], at: number): Segment {
+  return {
+    from: waypoints[Math.max(0, at - 1)],
+    to: waypoints[Math.min(waypoints.length - 1, at + 1)],
+  };
+}
+
+function boxCentre(size: Size): Point {
+  return { x: size.width / 2, y: size.height / 2 };
 }
 
 /**
@@ -277,7 +302,7 @@ function candidateAt(
   const anchor = alongSegment(segment, fraction);
   const normal = scaledBy(labelNormal(segment), side);
   const standoff = flowLabelClearance * (step + 1);
-  const name = namePlacement(flow.name, anchor, normal, standoff);
+  const name = nameBeside(flow.name, anchor, normal, standoff, 'flowLabel');
   const nameBox = boxOfPoints(textPlacementCorners(name));
   const badge = badgeBeside(flow.badge, anchor, negated(normal), standoff);
   return {
@@ -287,30 +312,6 @@ function candidateAt(
       ...(badge === undefined ? [] : [badge.box]),
     ],
     fromMiddle: Math.hypot(name.at.x - middle.x, name.at.y - middle.y),
-  };
-}
-
-function namePlacement(
-  name: string,
-  anchor: Point,
-  normal: Point,
-  standoff: number,
-): TextPlacement {
-  const fontSize = wrappedTextStyles.flowLabel.fontSize;
-  const extent = textExtent(
-    wrapText(name, fontSize, looseLabelWidth),
-    fontSize,
-  );
-  return {
-    text: name,
-    at: offsetBy(
-      anchor,
-      normal,
-      standoff + projectedHalfExtent(extent, normal),
-    ),
-    anchor: 'centre',
-    width: looseLabelWidth,
-    textStyle: 'flowLabel',
   };
 }
 
@@ -405,10 +406,6 @@ function nodeBox(node: CanvasNode): Box {
   };
 }
 
-function boxCentre(size: Size): Point {
-  return { x: size.width / 2, y: size.height / 2 };
-}
-
 function homeSegment(
   points: readonly [Point, ...Point[]],
   segments: readonly Segment[],
@@ -461,6 +458,31 @@ function offsetBy(at: Point, direction: Point, distance: number): Point {
   return {
     x: at.x + direction.x * distance,
     y: at.y + direction.y * distance,
+  };
+}
+
+function nameBeside(
+  name: string,
+  anchor: Point,
+  normal: Point,
+  standoff: number,
+  textStyle: WrappedTextStyle,
+): TextPlacement {
+  const fontSize = wrappedTextStyles[textStyle].fontSize;
+  const extent = textExtent(
+    wrapText(name, fontSize, looseLabelWidth),
+    fontSize,
+  );
+  return {
+    text: name,
+    at: offsetBy(
+      anchor,
+      normal,
+      standoff + projectedHalfExtent(extent, normal),
+    ),
+    anchor: 'centre',
+    width: looseLabelWidth,
+    textStyle,
   };
 }
 

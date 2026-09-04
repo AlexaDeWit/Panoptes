@@ -22,8 +22,13 @@ import {
   textPlacementCorners,
   type FlowGeometry,
 } from './label-placement.js';
-import { layoutDiagram, type CanvasLayout, type CanvasNode } from './layout.js';
-import { controlPolygon } from './paths.js';
+import {
+  layoutDiagram,
+  type CanvasBounds,
+  type CanvasLayout,
+  type CanvasNode,
+} from './layout.js';
+import { controlPolygon, smoothSegments, type CubicSegment } from './paths.js';
 
 const id = (value: string) => elementIdSchema.parse(value);
 
@@ -158,6 +163,16 @@ const flowFrom = (
   waypoints: [],
 });
 
+const curveOf = (value: string, waypoints: readonly Point[], name: string) => ({
+  kind: 'trust-boundary',
+  id: value,
+  name,
+  description: '',
+  outOfScope: false,
+  reasonOutOfScope: '',
+  shape: { kind: 'curve', waypoints },
+});
+
 const diagramOf = (elements: unknown[]): Model =>
   parsedFixture({
     metadata: { title: 't', owner: '', description: '', contributors: [] },
@@ -185,6 +200,115 @@ const scenes: readonly {
     layout: layoutOf(panoptesModel, 1),
   },
 ];
+
+const curveSamples = 64;
+
+const dividerName = 'a divider named at length, over more than one line';
+
+const onCubic = (from: Point, cubic: CubicSegment, at: number): Point => {
+  const rest = 1 - at;
+  const weights = [rest ** 3, 3 * rest ** 2 * at, 3 * rest * at ** 2, at ** 3];
+  const controls = [from, cubic.firstControl, cubic.secondControl, cubic.end];
+  return {
+    x: controls.reduce(
+      (sum, point, index) => sum + point.x * weights[index],
+      0,
+    ),
+    y: controls.reduce(
+      (sum, point, index) => sum + point.y * weights[index],
+      0,
+    ),
+  };
+};
+
+const drawnCurve = (waypoints: readonly Point[]): Point[] =>
+  smoothSegments(waypoints).flatMap((cubic, index) =>
+    Array.from({ length: curveSamples + 1 }, (_unused, step) =>
+      onCubic(waypoints[index], cubic, step / curveSamples),
+    ),
+  );
+
+const curveRuns = (node: CanvasNode): Segment[] =>
+  node.kind === 'boundary-curve'
+    ? segmentsOfPolyline(
+        drawnCurve(node.waypoints).map((point) =>
+          shiftedBy(point, node.position),
+        ),
+      )
+    : [];
+
+const nameStruckBy = (node: CanvasNode): string[] => {
+  const box = textBoxOf(node);
+  return box === undefined
+    ? []
+    : curveRuns(node)
+        .filter((run) => segmentMeetsBox(run, box))
+        .map(() => `${node.name} over its own curve`);
+};
+
+const layoutOfCurve = (waypoints: readonly Point[]): CanvasLayout =>
+  layoutOf(diagramOf([curveOf('el-divider', waypoints, dividerName)]));
+
+const rightEdge = (bounds: CanvasBounds): number => bounds.x + bounds.width;
+
+const curveOrientations = [
+  [
+    'vertical',
+    [
+      { x: 0, y: 0 },
+      { x: 60, y: 200 },
+      { x: 0, y: 400 },
+    ],
+  ],
+  [
+    'horizontal',
+    [
+      { x: 0, y: 0 },
+      { x: 200, y: 60 },
+      { x: 400, y: 0 },
+    ],
+  ],
+  [
+    'diagonal',
+    [
+      { x: 0, y: 0 },
+      { x: 200, y: 140 },
+      { x: 400, y: 400 },
+    ],
+  ],
+] as const;
+
+describe(`a curve boundary's name, over every cubic sampled ${curveSamples} times`, () => {
+  it.each(curveOrientations)(
+    'clears the curve it names at a %s middle segment',
+    (_orientation, waypoints) => {
+      expect(nameStruckBy(layoutOfCurve(waypoints).nodes[0])).toEqual([]);
+    },
+  );
+
+  it.each(scenes)('clears every curve $name draws', ({ layout }) => {
+    expect(layout.nodes.flatMap(nameStruckBy)).toEqual([]);
+  });
+
+  it('takes its side from the waypoints, not the end drawn from', () => {
+    const down = layoutOfCurve([
+      { x: 0, y: 0 },
+      { x: 60, y: 200 },
+      { x: 0, y: 400 },
+    ]).nodes[0];
+    const up = layoutOfCurve([
+      { x: 0, y: 400 },
+      { x: 60, y: 200 },
+      { x: 0, y: 0 },
+    ]).nodes[0];
+    expect(nodeTextPlacement(up).at).toEqual(nodeTextPlacement(down).at);
+  });
+
+  it('is reached by the bounds the layout reports', () => {
+    const layout = layoutOfCurve(curveOrientations[0][1]);
+    expect(rightEdge(layout.bounds)).toBe(textBoxOf(layout.nodes[0])?.maxX);
+  });
+});
 
 describe('the flow labels of a whole diagram', () => {
   it.each(scenes)('leaves nothing overlapping on $name', ({ layout }) => {
