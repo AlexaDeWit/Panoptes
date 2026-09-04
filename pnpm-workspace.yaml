@@ -120,6 +120,10 @@ catalog:
   # vendored under test-data, so the write codec's oracle runs the validator
   # that tool runs.
   ajv: ^8.17.1
+  # Argument parsing for the CLI, behind a typed wrapper of the app's own:
+  # commander tokenizes argv and a zod schema is the one gate on what a
+  # command needs (issue #33).
+  commander: ^15.0.0
   effect: ^3.22.0
   esbuild: ^0.28.0
   eslint: ^10.0.0

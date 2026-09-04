@@ -97,6 +97,39 @@ On macOS the executables are unsigned, so Gatekeeper holds the first run:
 `xattr -cr ~/.local/bin/panoptes` clears the quarantine flag. Signing and
 notarization are deferred, not overlooked.
 
+## Usage
+
+```sh
+panoptes validate threat-model.yaml
+panoptes render threat-model.yaml --format md --out register.md
+panoptes render threat-model.yaml --format svg --out diagram.svg
+panoptes render threat-model.yaml --format svg --out -
+```
+
+Both commands read Threat Dragon v2 JSON and Panoptes YAML, and the content
+decides which: the file name is never consulted, so a model saved under any
+extension reads.
+
+`validate` prints one line naming the format and what the model holds, and
+warns on standard error wherever the file and the model do not correspond
+exactly, which is what a read dropped or held less exactly than the file
+stated it.
+
+`render` writes a projection. `--format md` writes the whole threat
+register. `--format svg` draws one diagram, which `--diagram <id or title>`
+chooses where the model holds more than one, and which a model of one does
+not have to name. `--out -` writes to standard output. PDF output lands with
+issue #34.
+
+| Exit code | What it means                                                                                                                                |
+| --------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0         | The command did what it was asked.                                                                                                           |
+| 1         | Panoptes read the file and refused it: no format claimed it, or one did and either the document or the model it maps to is not valid.        |
+| 2         | The invocation is not usable: an unknown flag, a missing argument, a file that cannot be read or written, or a choice that names no diagram. |
+
+Errors go to standard error, path-precise where a schema refused something,
+and no failure prints a stack trace.
+
 ## Development
 
 Nix with flakes provides the toolchain (node, pnpm, deno). With

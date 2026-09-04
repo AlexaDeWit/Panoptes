@@ -6,9 +6,11 @@
 #
 # Input is apps/cli/dist/main.js, which `nx build @panoptes/cli` writes.
 # Output is dist/cli/panoptes-<version>-<target>[.exe] and SHA256SUMS beside
-# them. The host executable is then run with --version and its output compared
-# with the workspace version, so a bundle deno cannot compile, or an executable
-# that cannot report its own version, fails here rather than at release time.
+# them. The host executable is then run twice: with --version, whose output is
+# compared with the workspace version, and over a committed fixture with
+# validate, so a bundle deno cannot compile, an executable that cannot report
+# its own version, and one that carries no working command, all fail here
+# rather than at release time.
 #
 # Linux only: the compile runs in a network namespace, which is a Linux
 # facility. Nothing may be fetched, so this script needs the flake's pinned
@@ -166,7 +168,16 @@ if [ "${reported}" != "${version}" ]; then
   echo "the executable reports ${reported}, the workspace carries ${version}" >&2
   exit 1
 fi
-echo "panoptes --version reports ${reported}, and every target compiled twice"
-echo "to the same bytes"
+
+# A command, not only the version: reading a file needs the bundled codecs and
+# the read bounds, which is the part of the CLI a packaging change can break
+# while --version still answers. The fixture is committed, so this needs no
+# network and no fixture written here.
+readonly fixture='test-data/ecluse.json'
+summary="$("${host_binary}" validate "${fixture}")"
+readonly summary
+
+echo "panoptes --version reports ${reported}, panoptes validate ${fixture}"
+echo "reports ${summary}, and every target compiled twice to the same bytes"
 
 ls -l -- "${out_dir}"
