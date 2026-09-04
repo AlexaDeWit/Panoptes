@@ -47,4 +47,9 @@ the page at rest and every open overlay in its own scope.
 
 A control holds no state of its own and no form library holds it either. It
 takes its value as a prop and reports an edit through one commit callback, so
-the edit becomes a store action and is undoable.
+the edit becomes a store action and is undoable. `SeverityField` is the worked
+example: `App` reads its value through the `editedThreat` selector and its
+`onCommit` dispatches `Action.ReplaceThreat`, which the Undo control takes
+back with nothing added. A commit that would not change the value dispatches
+nothing, because a no-op operation still returns a new model and so marks the
+file dirty ([the store's README](../store/README.md)).
