@@ -68,11 +68,29 @@ Download yours and the `SHA256SUMS` file beside it, then:
 
 ```sh
 sha256sum --check --ignore-missing SHA256SUMS
+gh attestation verify panoptes-* --repo AlexaDeWit/Panoptes \
+  --signer-workflow AlexaDeWit/Panoptes/.github/workflows/ci.yml
 chmod +x panoptes-*
 mkdir -p ~/.local/bin
 mv panoptes-* ~/.local/bin/panoptes
 panoptes --version                 # prints the release's version
 ```
+
+The checksum says the file arrived whole. The attestation says where it came
+from: a signed statement, recorded when the executable was built, that this
+exact file came out of a named workflow in a named repository. The two flags
+are what make that a check rather than a display. `--repo` enforces the
+repository, `--signer-workflow` enforces that the signer was this repository's
+CI workflow, and the command fails if either is not so. Without
+`--signer-workflow` the workflow is printed but not enforced, and any workflow
+in the repository able to write attestations would satisfy the check.
+
+What it does not tell you is which commit the file was built from: the
+attestation carries that, and `gh attestation verify` prints it, but no flag
+makes it a condition. An asset with no attestation, or one naming another
+repository or another workflow, is not ours, whatever it is attached to. The
+command needs [the GitHub CLI](https://cli.github.com/) and reads the
+attestation from GitHub, not from the download.
 
 On Windows, rename the file to `panoptes.exe` and put it somewhere on `PATH`.
 On macOS the executables are unsigned, so Gatekeeper holds the first run:

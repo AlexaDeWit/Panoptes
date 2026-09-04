@@ -10,9 +10,15 @@ Edit here when the process changes, in the same PR as the change.
   [`.github/workflows/ci.yml`](../.github/workflows/ci.yml); its `needs` list
   and verdict step define the gating set. Wire a new gating job into both.
 - That workflow also runs on a `v*` tag, where it builds the release: the
-  `publish` job after the gate `needs` it and runs on a tag ref alone. It is a
-  consequence of a green gate, not a member of the gating set, so it belongs
-  in neither the gate's `needs` nor its verdict.
+  `attest` and `publish` jobs after the gate both need it, and run only on a
+  push to a tag ref. They are a consequence of a green gate, not members of
+  the gating set, so they belong in neither the gate's `needs` nor its
+  verdict.
+- `publish` names the **`release`** GitHub environment, whose policy admits
+  `v*` tags only. That and the tag rulesets are repository settings rather
+  than workflow config, so a change to them is invisible in the diff;
+  [`docs/release.md`](../docs/release.md) records the live configuration and
+  the commands that read it back.
 - A code scanning rule on `main` additionally requires a Semgrep OSS analysis
   per PR (alerts at `errors_and_warnings`, security alerts at
   `medium_or_higher`). The CI gate's semgrep step remains the strict

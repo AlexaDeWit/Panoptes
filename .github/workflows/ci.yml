@@ -123,7 +123,7 @@ jobs:
             exit 1
           fi
 
-      - name: Hand the executables to the publish job
+      - name: Hand the executables to the attest and publish jobs
         if: startsWith(github.ref, 'refs/tags/v')
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
@@ -258,17 +258,67 @@ jobs:
           fi
           exit "$verdict"
 
-  # A release, made only when the gate above is green on a v* tag. It hangs
-  # off the gate rather than joining it: the gate's `needs` and verdict are
-  # the required check and stay as they are, and publishing is a consequence
-  # of a green gate, not a condition of one. Nothing is installed or compiled
-  # here, so the write permission never sits beside a dependency tree.
-  publish:
-    name: Publish the release
+  # A provenance attestation over every file the release will carry, so
+  # anyone can check an asset was built by this workflow, on this repository,
+  # at this commit: `gh attestation verify <asset> --repo AlexaDeWit/Panoptes`
+  # (issue #114, and the README's install section).
+  #
+  # The event is tested as well as the ref: this workflow accepts
+  # workflow_dispatch, and a dispatch aimed at an existing tag would otherwise
+  # re-drive attest and publish with no push behind them.
+  #
+  # Its own job, rather than a step in build-test, so `attestations: write`
+  # exists on tag runs alone instead of on every pull request. The predicate
+  # names the workflow run and the commit rather than the job, so attesting
+  # the artifact here says exactly what attesting it where it was compiled
+  # would; the cost is downloading it twice, once here and once to publish.
+  attest:
+    name: Attest the executables
     needs: gate
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: >-
+      github.event_name == 'push'
+      && startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    permissions:
+      contents: read
+      id-token: write # OIDC identity the attestation is signed against
+      attestations: write # write the attestation to this repository
+    steps:
+      - name: Take the executables from build-test
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: cli-executables
+          path: cli
+
+      - name: Attest every asset
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: |
+            cli/panoptes-*
+            cli/SHA256SUMS
+
+  # A release, made only when the gate above is green on a v* tag and every
+  # asset is attested. It hangs off the gate rather than joining it: the
+  # gate's `needs` and verdict are the required check and stay as they are,
+  # and publishing is a consequence of a green gate, not a condition of one.
+  # Nothing is installed or compiled here, so the write permission never sits
+  # beside a dependency tree.
+  #
+  # The `release` environment admits v* tags and nothing else, so a run on any
+  # other ref cannot reach it even if the condition above were edited wrong.
+  # Its rules are repository settings rather than workflow config, and
+  # docs/release.md, "What the rules guarantee, and what they cannot", records
+  # what they are and how to check them.
+  publish:
+    name: Publish the release
+    needs: [gate, attest]
+    if: >-
+      github.event_name == 'push'
+      && startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: release
     permissions:
       contents: write # create or update the release and its assets
     steps:
