@@ -11,14 +11,17 @@ import type {
 } from '@panoptes/model';
 import {
   badgeAnchor,
-  badgeExtent,
+  badgeBox,
   badgesByElement,
   type ThreatBadge,
 } from './badges.js';
+import { cornersOfBox, shiftedBy } from './geometry.js';
 import {
-  flowLabelPlacement,
+  flowLabelPlacements,
   nodeTextPlacement,
   textPlacementCorners,
+  type FlowGeometry,
+  type FlowLabelPlacement,
 } from './label-placement.js';
 import {
   centreOf,
@@ -27,7 +30,7 @@ import {
   type HandleSide,
   type NodeBox,
 } from './handles.js';
-import { arrowheadPoints, smoothSegments } from './paths.js';
+import { arrowheadPoints, controlPolygon } from './paths.js';
 import { boundaryStrokeWidth } from './stylesheet.js';
 
 type CanvasNodeBase = {
@@ -62,13 +65,7 @@ export type CanvasNode =
 /** What kind of box an element takes on the canvas. */
 export type CanvasNodeKind = CanvasNode['kind'];
 
-/**
- * One flow laid out in the diagram's own coordinates: each end resolved to a
- * handle midpoint or to its own free position, and the side an attached end
- * uses. `sourceElement` and `targetElement` are absent for a free end, which
- * belongs to no element.
- */
-export type CanvasEdge = {
+type CanvasEdgeGeometry = {
   readonly id: ElementId;
   readonly name: string;
   readonly outOfScope: boolean;
@@ -80,6 +77,20 @@ export type CanvasEdge = {
   readonly sourceElement: ElementId | undefined;
   readonly targetElement: ElementId | undefined;
   readonly waypoints: readonly Point[];
+};
+
+/**
+ * One flow laid out in the diagram's own coordinates: each end resolved to a
+ * handle midpoint or to its own free position, the side an attached end
+ * uses, and where its name and badge hang. `sourceElement` and
+ * `targetElement` are absent for a free end, which belongs to no element.
+ *
+ * `label` is settled once, over the whole diagram, by
+ * {@link flowLabelPlacements}, so the glyph that draws the name and the
+ * bounds that hold it read one placement rather than each deriving its own.
+ */
+export type CanvasEdge = CanvasEdgeGeometry & {
+  readonly label: FlowLabelPlacement;
 };
 
 /**
@@ -101,7 +112,7 @@ export type UnplacedEndpoint = {
  * free end that belongs to no node. Every part is measured with the function
  * that draws that part, so the picture and the box around it cannot drift.
  * A curve is bounded by the convex hull of the control points
- * {@link smoothSegments} resolves, which holds the curve and a little more,
+ * {@link controlPolygon} traces, which holds the curve and a little more,
  * since a sharp turn throws a control point outside the box the waypoints
  * span while the ink stays inside the hull.
  *
@@ -152,9 +163,11 @@ export function layoutDiagram(diagram: Diagram, model: Model): CanvasLayout {
     ...nodes.filter((node) => isBoundary(node)),
     ...nodes.filter((node) => !isBoundary(node)),
   ];
-  const edges = placed.flatMap((flow) =>
+  const drawn = placed.flatMap((flow) =>
     flow.edge === undefined ? [] : [flow.edge],
   );
+  const labels = flowLabelPlacements(drawn.map(flowGeometry), ordered);
+  const edges = drawn.map((edge, index) => ({ ...edge, label: labels[index] }));
   return {
     nodes: ordered,
     edges,
@@ -182,9 +195,22 @@ type Anchor = {
 };
 
 type PlacedFlow = {
-  readonly edge: CanvasEdge | undefined;
+  readonly edge: CanvasEdgeGeometry | undefined;
   readonly unplaced: readonly UnplacedEndpoint[];
 };
+
+function flowGeometry(edge: CanvasEdgeGeometry): FlowGeometry {
+  return {
+    id: edge.id,
+    name: edge.name,
+    badge: edge.badge,
+    points: edgePoints(edge),
+  };
+}
+
+function edgePoints(edge: CanvasEdgeGeometry): readonly [Point, ...Point[]] {
+  return [edge.source, ...edge.waypoints, edge.target];
+}
 
 function isBoundary(node: CanvasNode): boolean {
   return node.kind === 'boundary-box' || node.kind === 'boundary-curve';
@@ -364,39 +390,23 @@ function outlinePoints(node: CanvasNode): Point[] {
   if (node.kind !== 'boundary-curve') {
     return [];
   }
-  return smoothSegments(node.waypoints).flatMap((segment) => [
-    segment.firstControl,
-    segment.secondControl,
-    segment.end,
-  ]);
+  return [...controlPolygon(node.waypoints)];
 }
 
 function drawnEdgePoints(edge: CanvasEdge): Point[] {
-  const points = [edge.source, ...edge.waypoints, edge.target];
-  const placement = flowLabelPlacement(points, edge.name, edge.badge);
+  const points = edgePoints(edge);
   return [
     ...points,
     ...arrowheadPoints(edge.target, points[points.length - 2]),
-    ...textPlacementCorners(placement.name),
-    ...(placement.badge === undefined
+    ...textPlacementCorners(edge.label.name),
+    ...(edge.label.badge === undefined
       ? []
-      : badgePoints(placement.badge, edge.badge)),
+      : badgePoints(edge.label.badge, edge.badge)),
   ];
 }
 
 function badgePoints(at: Point, badge: ThreatBadge | undefined): Point[] {
-  if (badge === undefined) {
-    return [];
-  }
-  const extent = badgeExtent(badge);
-  return [
-    { x: at.x - extent.radius, y: at.y - extent.radius },
-    { x: at.x + extent.radius, y: at.y + extent.depth },
-  ];
-}
-
-function shiftedBy(point: Point, origin: Point): Point {
-  return { x: point.x + origin.x, y: point.y + origin.y };
+  return badge === undefined ? [] : cornersOfBox(badgeBox(at, badge));
 }
 
 function boundsOfPoints(points: readonly Point[]): CanvasBounds {
