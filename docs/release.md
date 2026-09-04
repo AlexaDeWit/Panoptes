@@ -32,8 +32,12 @@ The repository's rulesets, not preference, set the shape:
 - **Signed Commits**, **PR Status Checks** and **Pull Requests Review** carry
   the rest of the requirements on `main`. Each of those three does name a
   bypass actor (the repository's admin role), so they are the maintainer's
-  discipline rather than a wall; the three above are the wall, and they alone
-  are what this procedure is shaped around.
+  discipline rather than a wall; the three above are the wall, and the shape of
+  this procedure follows from them.
+- **Tag Creation** restricts who may create a tag and names the admin role as
+  its bypass, because the owner has to be able to cut one. It is a separate
+  ruleset on purpose: a bypass in one ruleset does not bypass another, so Tag
+  Integrity's empty list keeps standing over the same tags.
 
 So `nx release` writes files and touches git not at all
 ([`nx.json`](../nx.json), `release`), the owner lands them like any change, and
@@ -98,24 +102,137 @@ workflow artifact. Those three steps are the only ones the tag adds, and they
 are skipped on every other run.
 
 The **CI gate** then passes or fails exactly as it does on a pull request: its
-jobs and its verdict do not change on a tag. A final **publish** job hangs off
-the gate, runs only on a `v*` ref, takes the artifact, and creates or updates
-the GitHub release with the executables and their `SHA256SUMS`. So a release
-exists only where the whole gate was green on that tag.
+jobs and its verdict do not change on a tag. Two jobs hang off it, both on a
+`v*` ref alone. **attest** takes the artifact and records a build provenance
+attestation over every executable and over `SHA256SUMS`. **publish** waits for
+that, then creates or updates the GitHub release with the same files. So a
+release exists only where the whole gate was green on that tag, and nothing is
+attached before it is attested.
 
-Only that publish job holds `contents: write`, and it installs nothing and
-compiles nothing, so the write permission never sits beside a dependency tree.
-No job reads a secret: the workflow's own `GITHUB_TOKEN` is what talks to the
-release API. If `CHANGELOG.md` has no section for the version, the notes fall
-back to GitHub's generated ones rather than failing, because a tag cannot be
-moved and a stopped release would leave the version unshippable.
+Neither job installs or compiles anything, so no write permission sits beside
+a dependency tree, and neither job's permissions exist on a run that is not a
+tag. Publish holds `contents: write` and nothing else. Attest holds the two
+the attestation needs, `id-token: write` for the OIDC identity it is signed
+against and `attestations: write` to record it, plus `contents: read`. No job
+reads a secret: the workflow's own `GITHUB_TOKEN` is what talks to the release
+API. Publish also names the `release` environment, whose deployment policy
+admits `v*` tags only; the section below records that and the rest of the
+configuration. If `CHANGELOG.md` has no section for the version, the notes
+fall back to GitHub's generated ones rather than failing, because a tag cannot
+be moved and a stopped release would leave the version unshippable.
 
 ### 5. Check what shipped (owner)
 
 Download one executable from the release page, verify it against
-`SHA256SUMS`, and run `panoptes --version`. The
+`SHA256SUMS`, check its provenance with both flags, and run
+`panoptes --version`:
+
+```sh
+gh attestation verify panoptes-* --repo AlexaDeWit/Panoptes \
+  --signer-workflow AlexaDeWit/Panoptes/.github/workflows/ci.yml
+```
+
+The
 [README's install section](../README.md#install) is the instruction a user
 follows, so following it is the test of it.
+
+## What the rules guarantee, and what they cannot
+
+GitHub has no single switch that forbids a release from outside CI, so the
+guarantee is assembled from rules that are each verifiable (issue #114). The
+repository settings among them are applied. This section records what is
+configured, and the commands that check it has not drifted.
+
+- **Tag Integrity** requires a signature on every tag and forbids deleting,
+  updating or force-moving one, with an empty bypass list.
+- **Tag Creation** restricts who may create a tag, naming the admin role as
+  its bypass because the owner has to be able to cut one. It is a second
+  ruleset on purpose: rulesets are additive and a bypass in one does not
+  bypass another, so the owner can create tags while nobody, admin included,
+  can move, delete or unsign one. The bypass names a role because the rulesets
+  API has no `User` actor type; role id 5 is admin, which here is the owner.
+- The **`release` environment**, which `ci.yml`'s publish job names, admits
+  `v*` tags and nothing else. That is defence in depth rather than the control
+  itself: the jobs already test the ref and the event, and the policy is what
+  still holds if a future edit to those conditions is wrong. No required
+  reviewer is set, so a green gate publishes without a human click; adding one
+  would put the owner between the gate and a public release.
+- Every asset carries a **build provenance attestation** from the `attest`
+  job, which needs no repository setting and which a stranger can check. The
+  [README's install section](../README.md#install) has the command and what
+  its two flags do and do not enforce.
+
+### Checking the configuration has not drifted
+
+Each command is followed by what it printed on 2026-09-04, with the settings
+applied.
+
+```sh
+for id in $(gh api repos/AlexaDeWit/Panoptes/rulesets \
+              --jq '.[] | select(.target == "tag") | .id'); do
+  gh api "repos/AlexaDeWit/Panoptes/rulesets/$id" \
+    --jq '{name, rules: [.rules[].type], bypass_actors}'
+done
+```
+
+```
+{"bypass_actors":[{"actor_id":5,"actor_type":"RepositoryRole","bypass_mode":"always"}],"name":"Tag Creation","rules":["creation"]}
+{"bypass_actors":[],"name":"Tag Integrity","rules":["deletion","non_fast_forward","update","required_signatures"]}
+```
+
+Tag Integrity's empty bypass is the part to watch: a bypass actor there, or a
+`creation` rule, would mean the two rulesets had been folded together.
+
+```sh
+gh api repos/AlexaDeWit/Panoptes/environments/release \
+  --jq '{name, protection_rules: [.protection_rules[].type],
+         deployment_branch_policy}'
+gh api \
+  repos/AlexaDeWit/Panoptes/environments/release/deployment-branch-policies \
+  --jq '[.branch_policies[] | {id, name, type}]'
+```
+
+```
+{"deployment_branch_policy":{"custom_branch_policies":true,"protected_branches":false},"name":"release","protection_rules":["branch_policy"]}
+[{"id":59133693,"name":"v*","type":"tag"}]
+```
+
+`protection_rules` holding `branch_policy` alone is what says no reviewer is
+required; a `required_reviewers` entry would appear there.
+
+```sh
+gh api repos/AlexaDeWit/Panoptes/actions/permissions/workflow \
+  --jq '{default_workflow_permissions, can_approve_pull_request_reviews}'
+```
+
+```
+{"can_approve_pull_request_reviews":false,"default_workflow_permissions":"read"}
+```
+
+A workflow token therefore starts read-only, so the `contents: write` on
+publish is the only write any job in `ci.yml` holds.
+
+### What none of this can do
+
+A collaborator with write access can still create a release object through the
+API and attach anything to it. No GitHub rule prevents that. What the rules
+give is narrower: write access is the owner's alone and tag creation with it,
+a release from this pipeline exists only where the gate was green on a tag the
+owner signed and pushed, and every genuine asset is attested, so an imposter
+is distinguishable by anyone rather than only by us.
+
+`ci.yml` accepts `workflow_dispatch`, and both tag jobs once tested the ref
+alone, so a dispatch aimed at an existing `v*` tag could re-drive attest and
+publish with no push behind them. Both now require
+`github.event_name == 'push'` as well, so a dispatch runs the checks and
+stops.
+
+Immutable releases, the fourth rule #114 proposed, is conditioned there on the
+setting being available on this plan; it is not, so assets can still be
+replaced after a release is published and `upload --clobber` keeps working.
+
+The attestation is the part that does not depend on these settings staying as
+they are, which is why the README teaches it rather than the checksum alone.
 
 ## Maintenance: the runtime inside an executable
 
