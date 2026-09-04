@@ -69,13 +69,19 @@ if [ -z "${PANOPTES_DENORT_CACHE-}" ]; then
   exit 1
 fi
 
+# Everything this run writes outside dist/: deno's caches, and the staged
+# entry point deno compiles.
+scratch="$(mktemp -d)"
+readonly scratch
+trap 'rm -rf -- "${scratch}"' EXIT
+
 # Deno writes its own caches into DENO_DIR and the flake's pinned runtimes sit
 # on a read-only store path, so DENO_DIR is a writable directory with the
 # store's dl/ tree linked in, rather than 160 MB of zips copied. It is set
 # before deno runs at all, so no invocation here touches the host's own cache.
-deno_dir="$(mktemp -d)"
+deno_dir="${scratch}/deno"
 readonly deno_dir
-trap 'rm -rf -- "${deno_dir}"' EXIT
+mkdir -p -- "${deno_dir}"
 ln -s -- "${PANOPTES_DENORT_CACHE}/dl" "${deno_dir}/dl"
 export DENO_DIR="${deno_dir}"
 
@@ -110,6 +116,15 @@ fi
 version="$(node -p 'require("./package.json").version')"
 readonly version
 
+# deno records the entry file's modification time in the virtual file system
+# it embeds, so an executable would otherwise carry the minute its bundle was
+# written and two machines building one commit would differ by those bytes.
+# Compile a copy stamped to the epoch instead. Anything else deno is told to
+# embed has to be staged here too, for the same reason (#106).
+readonly entry="${scratch}/main.js"
+cp -- "${bundle}" "${entry}"
+touch -m -d '@0' -- "${entry}"
+
 compile_into() {
   local target="$1"
   local output="$2"
@@ -126,7 +141,7 @@ compile_into() {
     --allow-env \
     --target "${target}" \
     --output "${output}" \
-    "${bundle}"
+    "${entry}"
 }
 
 rm -rf -- "${out_dir}" "${repeat_dir}"
@@ -180,4 +195,8 @@ readonly summary
 echo "panoptes --version reports ${reported}, panoptes validate ${fixture}"
 echo "reports ${summary}, and every target compiled twice to the same bytes"
 
-ls -l -- "${out_dir}"
+# The input's hash and then the outputs', so a run's log carries what a
+# rebuild elsewhere has to match and says which half drifted when it does not
+# (docs/release.md, "Rebuilding a released executable").
+sha256sum -- "${bundle}"
+cat -- "${out_dir}/SHA256SUMS"

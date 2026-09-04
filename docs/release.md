@@ -249,9 +249,15 @@ replace that:
   `--cached-only`, and refuses to run where no network namespace can be made.
   The workflow sets `DENO_NO_UPDATE_CHECK` and `DENO_NO_PROMPT`. A runtime
   that is not pinned therefore fails the compile; it cannot become a download.
-- **Every target is built twice.** The script compiles each into two
-  directories and fails unless the two are byte for byte the same, on a pull
-  request as well as on a release.
+- **The output is a function of the bundle alone.** The script compiles every
+  target into two directories and fails unless the two are byte for byte the
+  same, on a pull request as well as on a release. That catches what varies
+  within one machine. What varied between two was the entry file's
+  modification time, which `deno compile` records in the virtual file system
+  it embeds, so the script compiles a copy of the bundle stamped to the epoch
+  (#106). Nothing else about the host reaches the output: the entry's path is
+  not embedded, and the metadata deno writes beside it names no user, host or
+  clock.
 
 **Bumping deno.** The URL version is `pkgs.deno.version`, so a nixpkgs bump
 moves all five URLs while the hashes stay behind, and the build fails on a
@@ -281,6 +287,30 @@ than compiling with the network reachable. Cross-compiling every target from
 one Linux machine is the point of the design, so a Linux checkout, a VM or a
 container is enough; nothing needs a Mac or a Windows box. The script also
 refuses to run outside the flake shell, which is what sets the pins.
+
+## Rebuilding a released executable
+
+The executables are a function of the commit, so the same tag rebuilt on any
+Linux machine inside the flake gives the SHA-256 the release page carries.
+Anyone can run this:
+
+```sh
+git switch --detach "v<version>"
+nix develop --command pnpm install --frozen-lockfile
+nix develop --command pnpm nx build @panoptes/cli
+nix develop --command scripts/package-cli.sh
+```
+
+Its last lines are the bundle's SHA-256 and then the `SHA256SUMS` it wrote for
+the executables. Compare the host target's line with the release's
+`SHA256SUMS`. Every CI run prints the same two things, so a runner build and a
+local build can be compared from the logs alone, without downloading either.
+
+A mismatch belongs to one of the two steps, and the bundle's hash says which.
+A bundle hash that already differs puts it in the esbuild build: the checkout
+is not the tag, or the toolchain is not the flake's. A matching bundle under a
+differing executable puts it in `deno compile`: the denort pins moved, or
+something environment-dependent has reached the output again.
 
 ## When something goes wrong
 
