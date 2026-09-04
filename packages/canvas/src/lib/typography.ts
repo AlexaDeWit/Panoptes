@@ -19,7 +19,10 @@ export const textPadding = 6;
  */
 export const looseLabelWidth = 140;
 
-/** Distance a flow's name and its badge keep clear of the flow's own line. */
+/**
+ * Distance a flow's name and its badge keep clear of the flow's own line,
+ * and a curve boundary's name of the tangent to its own curve.
+ */
 export const flowLabelClearance = 14;
 
 /** The box a run of lines occupies, in canvas units. */
