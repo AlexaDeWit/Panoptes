@@ -1,5 +1,6 @@
 import { Either } from 'effect';
 import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { ReadFailure } from './codec.js';
 import {
   DetectionFailure,
@@ -10,10 +11,19 @@ import {
 import { goldenPath } from './panoptes-yaml.fixtures.js';
 import { panoptesYamlCodec } from './panoptes-yaml.js';
 import { readPanoptesYaml } from './panoptes-yaml-read.js';
+import { readLimits } from './read-limits.js';
 import { corpusTexts, ecluseText } from './threat-dragon.fixtures.js';
 import { threatDragonCodec } from './threat-dragon.js';
 
 const nativeText = readFileSync(goldenPath, 'utf8');
+
+const branchingCycle = readFileSync(
+  join(
+    import.meta.dirname,
+    '../../../../test-data/adversarial/branching-cycle.yaml',
+  ),
+  'utf8',
+);
 
 const nativeMinimal = `formatVersion: 1
 metadata:
@@ -190,6 +200,22 @@ describe('a text no codec claims', () => {
         tried: ['threat-dragon', 'panoptes-yaml'],
       }),
     );
+  });
+});
+
+describe('a text past a read limit', () => {
+  it('answers with the bound rather than with what detection tried', () => {
+    expect(outcome(branchingCycle)).toMatchObject({
+      _tag: 'ExceededReadLimit',
+      limit: 'maxNestingDepth',
+    });
+  });
+
+  it('stops at the first codec to meet it, offering the text to no other', () => {
+    expect(outcome('a'.repeat(readLimits.maxTextBytes + 1))).toMatchObject({
+      _tag: 'ExceededReadLimit',
+      limit: 'maxTextBytes',
+    });
   });
 });
 

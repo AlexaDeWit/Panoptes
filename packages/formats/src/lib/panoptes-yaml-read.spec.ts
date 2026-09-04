@@ -1,4 +1,5 @@
 import { Either } from 'effect';
+import { readFailureIssues } from './codec.js';
 import { readPanoptesYaml } from './panoptes-yaml-read.js';
 
 const minimalDocument = [
@@ -75,9 +76,9 @@ function failureOf(text: string) {
 
 function issuePathsOf(text: string) {
   const failure = failureOf(text);
-  return failure !== undefined && failure._tag !== 'MalformedText'
-    ? failure.issues.map((issue) => issue.path)
-    : [];
+  return failure === undefined
+    ? []
+    : readFailureIssues(failure).map((issue) => issue.path);
 }
 
 describe('a Panoptes YAML read', () => {
@@ -111,7 +112,7 @@ describe('a Panoptes YAML read', () => {
           '\n',
         ),
       )?._tag,
-    ).toBe('InvalidWireDocument');
+    ).toBe('ExceededReadLimit');
   });
 
   it('refuses a document the model refuses, with a path into the model', () => {

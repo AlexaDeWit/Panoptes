@@ -1,0 +1,4 @@
+seed: &a expansion
+k0: &k0 [*a, *a, *a]
+k1: &k1 [*k0, *k0, *k0]
+k2: &k2 [*k1, *k1, *k1]

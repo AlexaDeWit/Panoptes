@@ -23,6 +23,14 @@ truth, TypeScript types are inferred from them, and unions are
 well-bounded. No hand-written types beside schemas, no unbounded strings
 where a union is knowable.
 
+No recursive schema whose depth the input decides rather than the schema:
+a file names the depth, and a walk that follows it runs out of stack inside
+a function typed as returning a result union. Every path that reads foreign
+text is bounded against the numbers `@panoptes/formats` exports as
+`readLimits`: its size before it is parsed, its aliases as it is parsed, and
+how deeply it nests once it has been. A text past a bound comes back as a
+failure rather than throwing.
+
 ## Zod composition
 
 Shared object fields are expressed with zod's own composition: a base

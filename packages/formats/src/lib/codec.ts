@@ -2,9 +2,16 @@ import type { Model, ParseIssue } from '@panoptes/model';
 import { Data, type Either } from 'effect';
 import type { z } from 'zod';
 import type { Divergence } from './divergence.js';
+import type { ReadLimit } from './read-limits.js';
 
 /**
- * Why a codec refused a text, one variant per place a read stops.
+ * Why a codec refused a text, one variant per place a read stops, in the
+ * order a read reaches them.
+ *
+ * `ExceededReadLimit` is the text costing more than `readLimits` allows,
+ * naming which bound and what the read had measured when it stopped. It is
+ * the one variant that says nothing about whether the text was a threat
+ * model, since the read stopped before it could tell.
  * `MalformedText` is the text failing the format's own syntax, before any
  * path into a document exists, so it carries the parser's message alone.
  * `InvalidWireDocument` is the text parsing but the format's wire schema
@@ -15,6 +22,11 @@ import type { Divergence } from './divergence.js';
  * produced them.
  */
 export type ReadFailure = Data.TaggedEnum<{
+  ExceededReadLimit: {
+    readonly limit: ReadLimit;
+    readonly bound: number;
+    readonly observed: number;
+  };
   MalformedText: { readonly message: string };
   InvalidWireDocument: { readonly issues: readonly ParseIssue[] };
   InvalidModel: { readonly issues: readonly ParseIssue[] };
@@ -26,6 +38,21 @@ export type ReadFailure = Data.TaggedEnum<{
  * Equal and serialize to their plain tagged shape.
  */
 export const ReadFailure = Data.taggedEnum<ReadFailure>();
+
+/**
+ * The issues a failure carries, and an empty list for the two that carry
+ * none: a text stopped by a bound and a text the format's own parser
+ * refused have no document for a path to point into. A caller rendering a
+ * failure folds it here rather than narrowing the variants itself.
+ */
+export function readFailureIssues(failure: ReadFailure): readonly ParseIssue[] {
+  return ReadFailure.$match(failure, {
+    ExceededReadLimit: () => [],
+    MalformedText: () => [],
+    InvalidWireDocument: ({ issues }) => issues,
+    InvalidModel: ({ issues }) => issues,
+  });
+}
 
 /**
  * What a read produced: the internal model, the wire document it was mapped

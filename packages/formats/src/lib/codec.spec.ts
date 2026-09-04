@@ -3,11 +3,11 @@ import {
   parseModel,
   toParseIssues,
   type Model,
-  type ParseIssue,
 } from '@panoptes/model';
 import { Either } from 'effect';
 import { z } from 'zod';
 import {
+  readFailureIssues,
   ReadFailure,
   type Codec,
   type ReadResult,
@@ -159,9 +159,6 @@ const failureOf = (input: string): ReadFailure =>
     },
   });
 
-const issuesOf = (failure: ReadFailure): readonly ParseIssue[] =>
-  ReadFailure.$is('MalformedText')(failure) ? [] : failure.issues;
-
 const outputOf = (result: WriteResult): unknown =>
   JSON.parse(result.output) as unknown;
 
@@ -216,7 +213,16 @@ describe('a codec read', () => {
   it('refuses text the format cannot parse at all', () => {
     const failure = failureOf('{');
     expect(failure._tag).toBe('MalformedText');
-    expect(issuesOf(failure)).toEqual([]);
+    expect(readFailureIssues(failure)).toEqual([]);
+  });
+
+  it('carries no issues on a text a bound stopped before any document', () => {
+    const failure = ReadFailure.ExceededReadLimit({
+      limit: 'maxNestingDepth',
+      bound: 64,
+      observed: 65,
+    });
+    expect(readFailureIssues(failure)).toEqual([]);
   });
 
   it('refuses a text that parses to something other than a document', () => {
@@ -228,7 +234,7 @@ describe('a codec read', () => {
       JSON.stringify({ ...document, contributors: 'Alexandra' }),
     );
     expect(failure._tag).toBe('InvalidWireDocument');
-    expect(issuesOf(failure)).toContainEqual(
+    expect(readFailureIssues(failure)).toContainEqual(
       expect.objectContaining({ path: ['contributors'] }),
     );
   });
@@ -241,7 +247,7 @@ describe('a codec read', () => {
       }),
     );
     expect(failure._tag).toBe('InvalidModel');
-    expect(issuesOf(failure)).toContainEqual(
+    expect(readFailureIssues(failure)).toContainEqual(
       expect.objectContaining({ path: ['diagrams', 1, 'id'] }),
     );
   });

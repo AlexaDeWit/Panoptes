@@ -21,6 +21,7 @@ import { Either } from 'effect';
 import type { z } from 'zod';
 import { ReadFailure, type ReadResult } from './codec.js';
 import type { Divergence } from './divergence.js';
+import { parseWithinLimits } from './read-limits.js';
 import {
   cellsOf,
   isAnchored,
@@ -84,11 +85,15 @@ type ThreatEntry = {
  * a category label from no language Threat Dragon ships, and an Elevation
  * of Privilege card, of which only the suit has a home.
  *
- * Nothing throws. Text that is not JSON is `MalformedText`, a document the
- * wire schema refuses is `InvalidWireDocument` with paths into the file,
- * and a mapping `parseModel` refuses, an unresolved flow endpoint or a
- * repeated threat number among them, is `InvalidModel` with paths into the
- * model.
+ * Nothing throws. A text past a bound in `readLimits` is
+ * `ExceededReadLimit`, which for nesting is the read's own walk rather
+ * than the parser: `JSON.parse` builds a value of any depth without
+ * recursing, so a document nested past any stack parses without complaint
+ * and is stopped by the walk after. Text that is not JSON is
+ * `MalformedText`, a document the wire schema refuses is
+ * `InvalidWireDocument` with paths into the file, and a mapping
+ * `parseModel` refuses, an unresolved flow endpoint or a repeated threat
+ * number among them, is `InvalidModel` with paths into the model.
  */
 export function readThreatDragon(
   text: string,
@@ -97,10 +102,12 @@ export function readThreatDragon(
 }
 
 function parseJson(text: string): Either.Either<unknown, ReadFailure> {
-  return Either.try({
-    try: () => JSON.parse(text) as unknown,
-    catch: (error) => ReadFailure.MalformedText({ message: String(error) }),
-  });
+  return parseWithinLimits(text, (bounded) =>
+    Either.try({
+      try: () => JSON.parse(bounded) as unknown,
+      catch: (error) => ReadFailure.MalformedText({ message: String(error) }),
+    }),
+  );
 }
 
 function mapDocument(
