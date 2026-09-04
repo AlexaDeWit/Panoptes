@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { threatCategorySchema } from './categories.js';
 import { elementIdSchema, threatIdSchema } from './ids.js';
+import { acceptedTextSchema } from './text.js';
 
 /**
  * Where a threat stands. `open` is the threat nobody has dispositioned yet.
@@ -54,12 +55,12 @@ export type Severity = z.infer<typeof severitySchema>;
 export const threatSchema = z.object({
   id: threatIdSchema,
   number: z.int().positive(),
-  title: z.string(),
+  title: acceptedTextSchema,
   category: threatCategorySchema,
   severity: severitySchema,
   status: threatStatusSchema,
-  description: z.string(),
-  mitigation: z.string(),
+  description: acceptedTextSchema,
+  mitigation: acceptedTextSchema,
   elements: z.array(elementIdSchema),
 });
 

@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { assumptionIdSchema, elementIdSchema, threatIdSchema } from './ids.js';
+import { acceptedTextSchema } from './text.js';
 
 /**
  * Whether the assumption still holds. An invalidated assumption flags its
@@ -17,7 +18,7 @@ export type AssumptionStatus = z.infer<typeof assumptionStatusSchema>;
  */
 export const assumptionSchema = z.object({
   id: assumptionIdSchema,
-  prose: z.string(),
+  prose: acceptedTextSchema,
   status: assumptionStatusSchema,
   elements: z.array(elementIdSchema),
   threats: z.array(threatIdSchema),

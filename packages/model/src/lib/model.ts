@@ -4,6 +4,7 @@ import { elementSchema } from './elements.js';
 import { diagramIdSchema } from './ids.js';
 import { mitigationSchema } from './mitigations.js';
 import { threatSchema } from './threats.js';
+import { acceptedTextSchema } from './text.js';
 
 /**
  * Facts about the model as a whole: what it covers and who answers for it.
@@ -16,10 +17,10 @@ import { threatSchema } from './threats.js';
  * that wrapper to the name.
  */
 export const modelMetadataSchema = z.object({
-  title: z.string(),
-  owner: z.string(),
-  description: z.string(),
-  contributors: z.array(z.string()),
+  title: acceptedTextSchema,
+  owner: acceptedTextSchema,
+  description: acceptedTextSchema,
+  contributors: z.array(acceptedTextSchema),
 });
 
 /** Model metadata. */
@@ -33,7 +34,7 @@ export type ModelMetadata = z.infer<typeof modelMetadataSchema>;
  */
 export const diagramSchema = z.object({
   id: diagramIdSchema,
-  title: z.string(),
+  title: acceptedTextSchema,
   elements: z.array(elementSchema),
 });
 

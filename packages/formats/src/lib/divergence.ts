@@ -138,9 +138,16 @@ const escapableId = /["\\]|\p{Cc}/gu;
  * file wrote it and `detail` can quote what the file said, so both escape
  * control characters to `\uXXXX` and a backslash with a backslash, and an
  * id, which is rendered in quotes, escapes a quote as well. A newline
- * cannot split one entry into two lines, and no id can render as another. Nothing else is escaped, so an id written with
- * bidirectional or zero-width formatting still displays as something other
- * than what it says.
+ * cannot split one entry into two lines, and no id can render as another.
+ * Nothing else is escaped, so bidirectional or zero-width formatting a
+ * `detail` quotes from a file still displays as something other than what
+ * it says. An id carries less of it than a `detail` can, the model refusing
+ * every control character but tab, line feed and carriage return: what is
+ * left to an id is the zero width joiner and non-joiner, the format
+ * characters a script owns and the three Arabic marks the model accepts by
+ * name, some of them invisible and some drawn as an ornament over the text
+ * that follows, and the Arabic letter mark U+061C, which is a bidirectional
+ * control the model accepts.
  */
 export function renderDivergences(divergences: readonly Divergence[]): string {
   return hasDiverged(divergences)

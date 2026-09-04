@@ -1,0 +1,40 @@
+Format characters (general category Cf) the model accepts, from the
+rule in `src/lib/text.ts` as this runtime's Unicode data has it:
+33 of the 170 Cf code points it knows. An upgrade that
+moves the set arrives as a diff on this file, and the model README
+says what to make of one. Regenerate with
+`pnpm nx test @panoptes/model -- -u`.
+
+U+0600
+U+0601
+U+0602
+U+0603
+U+0604
+U+0605
+U+061C
+U+06DD
+U+070F
+U+0890
+U+0891
+U+08E2
+U+180E
+U+200C
+U+200D
+U+110BD
+U+110CD
+U+13430
+U+13431
+U+13432
+U+13433
+U+13434
+U+13435
+U+13436
+U+13437
+U+13438
+U+13439
+U+1343A
+U+1343B
+U+1343C
+U+1343D
+U+1343E
+U+1343F

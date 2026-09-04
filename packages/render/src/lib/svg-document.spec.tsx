@@ -5,7 +5,12 @@ import {
   wrappedTextStyles,
   type TextStyleRule,
 } from '@panoptes/canvas';
-import { parseModel, type Diagram, type Model } from '@panoptes/model';
+import {
+  parseModel,
+  type Diagram,
+  type Element as DiagramElement,
+  type Model,
+} from '@panoptes/model';
 import { Either } from 'effect';
 import { JSDOM } from 'jsdom';
 import { readFileSync } from 'node:fs';
@@ -114,11 +119,11 @@ const forbidden = forbiddenCharacters.join('');
 
 const replaced = '\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD';
 
-const forbiddenCharacterModel = modelOf(
+const cleanCharacterModel = modelOf(
   [
-    boxAt('el-left', `name${forbidden}`, 0),
+    boxAt('el-left', 'name', 0),
     boxAt('el-right', 'Right', 400),
-    flowNamed(`flow${forbidden}`),
+    flowNamed('flow'),
     {
       kind: 'text',
       id: 'el-note',
@@ -128,11 +133,31 @@ const forbiddenCharacterModel = modelOf(
       reasonOutOfScope: '',
       position: { x: 0, y: 200 },
       size: { width: 200, height: 90 },
-      text: `note${forbidden}`,
+      text: 'note',
     },
   ],
-  `title${forbidden}`,
+  'title',
 );
+
+const carryingForbidden = (element: DiagramElement): DiagramElement =>
+  element.kind === 'text'
+    ? { ...element, text: `${element.text}${forbidden}` }
+    : element.name === 'Right'
+      ? element
+      : { ...element, name: `${element.name}${forbidden}` };
+
+const forbiddenCharacterModel: Model = {
+  ...cleanCharacterModel,
+  metadata: {
+    ...cleanCharacterModel.metadata,
+    title: `${cleanCharacterModel.metadata.title}${forbidden}`,
+  },
+  diagrams: cleanCharacterModel.diagrams.map((diagram) => ({
+    ...diagram,
+    title: `${diagram.title}${forbidden}`,
+    elements: diagram.elements.map(carryingForbidden),
+  })),
+};
 
 const twoDiagramModel = Either.getOrThrow(
   parseModel({
@@ -502,7 +527,7 @@ describe('a word longer than the line it wraps to', () => {
   });
 });
 
-describe('free text carrying what XML forbids', () => {
+describe('free text carrying what XML forbids, never parsed', () => {
   it('draws the replacement character in the title and in every run of text', () => {
     expect(titleOf(forbiddenCharacterSvg)).toBe(`title${replaced}`);
     const drawn = textsOf(forbiddenCharacterSvg).map(

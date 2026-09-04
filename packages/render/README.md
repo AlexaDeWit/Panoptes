@@ -31,11 +31,17 @@ label of unknown size: a flow name wrapping to four lines under a node used
 to run past a fixed margin and rasterize cut off, which is why the extent is
 the canvas's to report rather than this package's to guess.
 
-A name, a title, and a note are free text the model takes as it finds it, and
-a file written elsewhere can carry a character XML 1.0 forbids. Every run of
-text goes through the canvas's `xmlSafeText` on its way into the document,
-the title element included, so one C0 control in a name cannot cost a reader
-the whole picture.
+A name, a title, and a note are free text, and a character XML 1.0 forbids
+can reach one. Every run of text goes through the canvas's `xmlSafeText` on
+its way into the document, the title element included, so one C0 control in
+a name cannot cost a reader the whole picture. `@panoptes/model` refuses
+those characters at its own parse boundary, so a model read from a file
+carries none of them, and this replacement is the defence behind that one:
+`parseModel` is the only gate the model has, the edit operations taking a
+caller's strings as given, so a model assembled in memory reaches this
+package with whatever its caller put in it. The spec builds its
+forbidden-character model that way, spreading the text into a parsed model
+rather than through a parse that would now refuse it.
 
 The projection is per diagram: a model holding several is iterated by whoever
 calls, since which diagram to draw is that caller's decision.

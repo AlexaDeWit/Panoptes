@@ -124,6 +124,15 @@ describe('a Panoptes YAML read', () => {
     expect(issuePathsOf(dangling)).toEqual([['threats', 0, 'elements', 0]]);
   });
 
+  it('refuses a title carrying a character the model refuses, pathed into the model', () => {
+    const overridden = minimalDocument.replace(
+      '  title: Minimal',
+      '  title: "Minimal\u202E"',
+    );
+    expect(failureOf(overridden)?._tag).toBe('InvalidModel');
+    expect(issuePathsOf(overridden)).toEqual([['metadata', 'title']]);
+  });
+
   it('reads a valid file with nothing to report', () => {
     expect(readingOf(minimalDocument)?.divergences).toEqual([]);
   });

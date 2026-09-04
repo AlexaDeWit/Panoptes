@@ -153,19 +153,16 @@ describe('renderDivergences', () => {
     ).toBe('element "he said \\"no\\"": the ports (no place in the format)');
   });
 
-  it('escapes the control characters an imported id carries into a terminal', () => {
+  it('escapes the control characters a foreign file carries into a terminal', () => {
     const divergences = [
       entry(
-        {
-          kind: 'element',
-          id: elementIdSchema.parse(`a\nb${escapeChar}[31m`),
-        },
-        `the port${bellChar} list`,
+        { kind: 'element', id: elementIdSchema.parse('a\nb') },
+        `the key summary${escapeChar}[31m${bellChar}`,
         'unrepresentable',
       ),
     ];
     expect(renderDivergences(divergences).split('\n')).toEqual([
-      'element "a\\u000ab\\u001b[31m": the port\\u0007 list (no place in the format)',
+      'element "a\\u000ab": the key summary\\u001b[31m\\u0007 (no place in the format)',
     ]);
   });
 });

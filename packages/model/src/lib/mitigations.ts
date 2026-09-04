@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { mitigationIdSchema, threatIdSchema } from './ids.js';
+import { acceptedTextSchema } from './text.js';
 
 /**
  * Progress of a mitigation: proposed on paper, implemented in the system, or
@@ -22,8 +23,8 @@ export type MitigationStatus = z.infer<typeof mitigationStatusSchema>;
  */
 export const mitigationSchema = z.object({
   id: mitigationIdSchema,
-  title: z.string(),
-  prose: z.string(),
+  title: acceptedTextSchema,
+  prose: acceptedTextSchema,
   status: mitigationStatusSchema,
   threats: z.array(threatIdSchema),
 });

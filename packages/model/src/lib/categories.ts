@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { acceptedTextSchema } from './text.js';
 
 /**
  * A STRIDE category: one of the six threat classes of Microsoft's STRIDE
@@ -101,8 +102,8 @@ export type Plot4aiCategory = z.infer<typeof plot4aiCategorySchema>;
  */
 export const customCategorySchema = z.object({
   methodology: z.literal('custom'),
-  methodologyName: z.string().min(1),
-  category: z.string().min(1),
+  methodologyName: acceptedTextSchema.min(1),
+  category: acceptedTextSchema.min(1),
 });
 
 /** Custom category. */
