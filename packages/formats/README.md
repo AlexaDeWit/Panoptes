@@ -163,11 +163,20 @@ reflowing the paragraph. Every other list keeps the model's order. `write`
 takes the contract's source document and cannot be changed by it: there is
 nothing for a merge to preserve when the format holds the whole model.
 
-The Écluse model written as YAML is committed at
-`test-data/panoptes/ecluse.yaml` and compared byte for byte on every run, so
-a change to what the format writes arrives as a diff on that file. Models
-generated over the model's own shape gate the rest: each survives a write
-and a read as itself, with its threats in number order.
+Two files in this format are committed and compared byte for byte on every
+run, so a change to what the format writes arrives as a diff on a file.
+`test-data/panoptes/ecluse.yaml` is the Écluse model, read from Threat Dragon
+and written here. [`threat-modelling/panoptes.yaml`](../../threat-modelling/README.md)
+is Panoptes' own threat model, authored in this format rather than read out
+of another, and it is its own golden: the read of the committed bytes is
+written back and compared against the file itself. `nativeFixtures` is the
+list of them, and the reads, the detection and the read-limit gates all
+iterate it, so a third file joins all of them by being added there. Each
+entry also names where its internal model is written out for the packages
+that cannot import a codec, or names none where another package is that
+file's producer. Models generated over the model's own shape gate the rest:
+each survives a write and a read as itself, with its threats in number
+order.
 
 `writeThreatDragon` is the other half, and the two are paired as
 `threatDragonCodec`. Given the document a read returned it merges the model

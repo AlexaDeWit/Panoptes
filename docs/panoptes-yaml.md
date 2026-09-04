@@ -147,5 +147,9 @@ threats:
 lastIssuedThreatNumber: 1
 ```
 
-`test-data/panoptes/ecluse.yaml` is a production-scale example: the Écluse
-threat model, read from its Threat Dragon file and written here.
+Two production-scale examples are committed.
+[`threat-modelling/panoptes.yaml`](../threat-modelling/README.md) is Panoptes'
+own threat model, the file to read first, because it was authored in this
+format rather than converted into it. `test-data/panoptes/ecluse.yaml` is the
+Écluse threat model, read from its Threat Dragon file and written here, which
+is what a conversion into this format looks like.

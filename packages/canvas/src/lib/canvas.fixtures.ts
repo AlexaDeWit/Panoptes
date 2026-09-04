@@ -46,3 +46,12 @@ export const everyGlyphModel: Model = parsedFixture(
  * and format suites read, so the canvas draws the same corpus they check.
  */
 export const ecluseModel: Model = parsedFixture(modelFile('ecluse.model.json'));
+
+/**
+ * Panoptes' own threat model in the internal form, written out of
+ * `threat-modelling/panoptes.yaml` by the formats suite. Two diagrams, so
+ * the canvas draws a model that holds more than one.
+ */
+export const panoptesModel: Model = parsedFixture(
+  modelFile('panoptes.model.json'),
+);

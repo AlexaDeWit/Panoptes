@@ -7,8 +7,10 @@ import { join } from 'node:path';
 import { panoptesYamlCodec } from './panoptes-yaml.js';
 import {
   ecluseModel,
+  emittedModels,
   goldenPath,
   modelInputArbitrary,
+  nativeFixtures,
 } from './panoptes-yaml.fixtures.js';
 
 const golden = readFileSync(goldenPath, 'utf8');
@@ -48,12 +50,6 @@ describe('the Panoptes YAML codec', () => {
     expect(reading.divergences).toEqual([]);
   });
 
-  it('is a fixed point: writing what it read reproduces the file', () => {
-    expect(panoptesYamlCodec.write(readOrThrow(golden).model).output).toBe(
-      golden,
-    );
-  });
-
   it('wrote the example the format description prints, to the byte', () => {
     const reading = readOrThrow(documentedExample);
     expect(reading.divergences).toEqual([]);
@@ -66,6 +62,27 @@ describe('the Panoptes YAML codec', () => {
     expect(readOrThrow(golden).source.formatVersion).toBe(1);
   });
 });
+
+describe.each(nativeFixtures)('the committed $name', ({ path, text }) => {
+  it('reads with nothing diverging, and writes back the bytes committed', async () => {
+    const reading = readOrThrow(text);
+    expect(reading.divergences).toEqual([]);
+    await expect(
+      panoptesYamlCodec.write(reading.model).output,
+    ).toMatchFileSnapshot(path);
+  });
+});
+
+describe.each(emittedModels)(
+  'the internal model of the $name',
+  ({ text, modelJsonPath }) => {
+    it('is written out for the render and canvas suites to read', async () => {
+      await expect(
+        `${JSON.stringify(readOrThrow(text).model, null, 2)}\n`,
+      ).toMatchFileSnapshot(modelJsonPath);
+    });
+  },
+);
 
 describe('any model at all', () => {
   it('survives a write and a read as itself, threats in number order', () => {

@@ -119,10 +119,14 @@ the size the text renders at by construction rather than by a pair kept in
 step at four call sites. Every number reaching an SVG attribute goes through
 `svgNumber`, which is locale-free, of fixed precision, and free of exponents
 at every magnitude, so one model gives one set of bytes on every run and
-platform. The suite pins that with golden files for the Écluse model and for
+platform. The suite pins that with a golden file per scene: the Écluse model,
 `test-data/every-glyph.model.json`, the model that draws one of everything,
-which lives beside Écluse because `packages/render` draws it too and the layer
-matrix allows no package dependency between the two readers.
+and each of the two diagrams of
+[Panoptes' own threat model](../../threat-modelling/README.md). The
+every-glyph model lives beside Écluse because `packages/render` draws it too
+and the layer matrix allows no package dependency between the two readers.
+`scene.spec.tsx` holds the scenes as one list, so a further one joins every
+check in it by being added there.
 
 A name, a title and a note are free text the model takes as it finds it, and a
 file written elsewhere can carry a character XML 1.0 forbids: a C0 control

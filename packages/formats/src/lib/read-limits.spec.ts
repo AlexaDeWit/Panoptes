@@ -5,7 +5,7 @@ import { parse, parseDocument } from 'yaml';
 import type { ReadFailure } from './codec.js';
 import { aliasCostIn } from './panoptes-yaml-document.js';
 import { readPanoptesYaml } from './panoptes-yaml-read.js';
-import { goldenPath } from './panoptes-yaml.fixtures.js';
+import { nativeFixtures } from './panoptes-yaml.fixtures.js';
 import { parseWithinLimits, readLimits } from './read-limits.js';
 import { readThreatDragon } from './threat-dragon-read.js';
 import { corpusTexts } from './threat-dragon.fixtures.js';
@@ -143,10 +143,13 @@ describe('the read limits against the files the repository vendors', () => {
     expect(stopped).toEqual([]);
   });
 
-  it('stop neither the Panoptes YAML file this repository writes', () => {
-    expect(refusalOf(readPanoptesYaml, readFileSync(goldenPath, 'utf8'))).toBe(
-      'accepted',
-    );
+  it('stop none of the Panoptes YAML files this repository writes', () => {
+    expect(
+      nativeFixtures.map((file) => [
+        file.name,
+        refusalOf(readPanoptesYaml, file.text),
+      ]),
+    ).toEqual(nativeFixtures.map((file) => [file.name, 'accepted']));
   });
 
   it('keep the size bound ten times above the largest of them', () => {

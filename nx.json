@@ -8,7 +8,10 @@
       "!{projectRoot}/tsconfig.spec.json",
       "!{projectRoot}/src/test-setup.[jt]s"
     ],
-    "sharedGlobals": ["{workspaceRoot}/test-data/**/*"]
+    "sharedGlobals": [
+      "{workspaceRoot}/test-data/**/*",
+      "{workspaceRoot}/threat-modelling/**/*"
+    ]
   },
   "plugins": [
     {

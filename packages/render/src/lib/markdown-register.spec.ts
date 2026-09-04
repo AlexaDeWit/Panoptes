@@ -24,17 +24,32 @@ import { renderRegister } from './markdown-register.js';
 
 const repositoryRoot = join(import.meta.dirname, '../../../..');
 
-const goldenPath = join(repositoryRoot, 'test-data/render/ecluse.register.md');
-
 const labelsPath = join(import.meta.dirname, 'markdown-register.labels.txt');
 
-const ecluseModel: Model = Either.getOrThrow(
-  parseModel(
-    JSON.parse(
-      readFileSync(join(repositoryRoot, 'test-data/ecluse.model.json'), 'utf8'),
-    ),
-  ),
-);
+function committedModel(name: string): Model {
+  return Either.getOrThrow(
+    parseModel(JSON.parse(readFileSync(join(repositoryRoot, name), 'utf8'))),
+  );
+}
+
+const ecluseModel: Model = committedModel('test-data/ecluse.model.json');
+
+const registers: readonly {
+  readonly name: string;
+  readonly model: Model;
+  readonly golden: string;
+}[] = [
+  {
+    name: 'Écluse',
+    model: ecluseModel,
+    golden: join(repositoryRoot, 'test-data/render/ecluse.register.md'),
+  },
+  {
+    name: 'Panoptes',
+    model: committedModel('test-data/panoptes.model.json'),
+    golden: join(repositoryRoot, 'test-data/render/panoptes.register.md'),
+  },
+];
 
 const reader = unified().use(remarkParse).use(remarkGfm);
 
@@ -179,21 +194,21 @@ function sectionsOf(document: string): string[] {
   return document.split(/^(?=## Threat )/m).slice(1);
 }
 
-describe('the Écluse register', () => {
+describe.each(registers)('the $name register', ({ model, golden }) => {
   it('matches the golden file committed under test-data', async () => {
-    await expect(renderRegister(ecluseModel)).toMatchFileSnapshot(goldenPath);
+    await expect(renderRegister(model)).toMatchFileSnapshot(golden);
   });
 
   it('carries one section per threat, in number order', () => {
-    const numbers = ecluseModel.threats.map((threat) => threat.number);
+    const numbers = model.threats.map((threat) => threat.number);
     numbers.sort((left, right) => left - right);
     expect(
-      headingsOf(renderRegister(ecluseModel))
+      headingsOf(renderRegister(model))
         .filter((entry) => entry.depth === 2)
         .map((entry) => entry.text),
     ).toEqual(
       numbers.map((number) => {
-        const threat = ecluseModel.threats.find(
+        const threat = model.threats.find(
           (candidate) => candidate.number === number,
         );
         return `Threat ${number}: ${threat?.title ?? ''}`;
@@ -202,7 +217,7 @@ describe('the Écluse register', () => {
   });
 
   it('carries one overview row per threat, under the six column headings', () => {
-    const rows = tableRowsOf(renderRegister(ecluseModel));
+    const rows = tableRowsOf(renderRegister(model));
     expect(rows[0]).toEqual([
       'Number',
       'Title',
@@ -211,7 +226,7 @@ describe('the Écluse register', () => {
       'Severity',
       'Status',
     ]);
-    expect(rows.length).toBe(ecluseModel.threats.length + 1);
+    expect(rows.length).toBe(model.threats.length + 1);
   });
 });
 
