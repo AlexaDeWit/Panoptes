@@ -19,6 +19,7 @@ import { cornersOfBox, shiftedBy } from './geometry.js';
 import {
   flowLabelPlacements,
   nodeTextPlacement,
+  settledCurveNames,
   textPlacementCorners,
   type FlowGeometry,
   type FlowLabelPlacement,
@@ -49,7 +50,9 @@ type CanvasNodeBase = {
  * waypoints span, grown by the stroke width on every side, so the drawn
  * stroke falls inside the node and a straight run or a pair of repeated
  * waypoints still has an extent to pick. Its waypoints are held again
- * relative to that box, so the glyph draws in the node's own coordinates.
+ * relative to that box, so the glyph draws in the node's own coordinates,
+ * and `nameMirrored` carries which of the two sides of the curve
+ * {@link settledCurveNames} put its name on.
  */
 export type CanvasNode =
   | (CanvasNodeBase & { readonly kind: 'actor' })
@@ -60,6 +63,7 @@ export type CanvasNode =
   | (CanvasNodeBase & {
       readonly kind: 'boundary-curve';
       readonly waypoints: readonly Point[];
+      readonly nameMirrored: boolean;
     });
 
 /** What kind of box an element takes on the canvas. */
@@ -159,10 +163,10 @@ export function layoutDiagram(diagram: Diagram, model: Model): CanvasLayout {
   const placed = diagram.elements.flatMap((element) =>
     element.kind === 'flow' ? [placeFlow(element, boxes, badges)] : [],
   );
-  const ordered = [
+  const ordered = settledCurveNames([
     ...nodes.filter((node) => isBoundary(node)),
     ...nodes.filter((node) => !isBoundary(node)),
-  ];
+  ]);
   const drawn = placed.flatMap((flow) =>
     flow.edge === undefined ? [] : [flow.edge],
   );
@@ -260,6 +264,7 @@ function boundaryNode(
     return {
       ...base,
       kind: 'boundary-curve',
+      nameMirrored: false,
       position: origin,
       size: {
         width: box.width + boundaryStrokeWidth * 2,

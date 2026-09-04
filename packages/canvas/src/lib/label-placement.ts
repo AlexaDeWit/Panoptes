@@ -72,13 +72,18 @@ export type TextPlacement = {
  * zero the one with a positive x, the rule a flow's name follows. Reversing
  * the waypoints leaves both the bend and that normal alone, so the side is
  * fixed by the waypoints and not by the end the curve is drawn from.
+ * {@link settledCurveNames} flips a name to the mirror of that side where
+ * the convex one is covered, and the node carries which side it took, so
+ * this stays a function of the node alone and the glyph and the drawn extent
+ * read one placement.
  *
- * What the offset guarantees is the standoff from that tangent. Clearance
- * from the drawn curve follows from the side, since the arms lead away on
- * the convex one, and holds for every shape the suite draws or probes:
- * arches, bowls, hairpins, S bends, and the runs the fixtures hold. A curve
- * that doubled back over its own bend inside half the name's width could
- * still cross the box.
+ * What the offset guarantees on either side is the standoff from that
+ * tangent. Clearance from the drawn curve follows from the convex side,
+ * since the arms lead away on it, and holds for every shape the suite draws
+ * or probes: arches, bowls, hairpins, S bends, and the runs the fixtures
+ * hold. A curve that doubled back over its own bend inside half the name's
+ * width could still cross the box, and so could one whose name is pushed to
+ * the mirror side, which sits inside the turn where the arms lead back.
  */
 export function nodeTextPlacement(node: CanvasNode): TextPlacement {
   if (node.kind === 'text') {
@@ -103,7 +108,7 @@ export function nodeTextPlacement(node: CanvasNode): TextPlacement {
     };
   }
   if (node.kind === 'boundary-curve') {
-    return curveNamePlacement(node.name, node.waypoints);
+    return curveNamePlacement(node);
   }
   if (node.kind === 'process') {
     return {
@@ -148,6 +153,31 @@ export function textPlacementCorners(
     { x: placement.at.x - extent.width / 2, y: top },
     { x: placement.at.x + extent.width / 2, y: top + extent.height },
   ];
+}
+
+/**
+ * The given nodes with every curve boundary's name settled on one side of
+ * its curve. A curve's name takes the convex side, and where that box would
+ * lie over an element's own box or an element's badge it takes the mirror of
+ * that side instead; where both are covered the convex side stands, since a
+ * name has to be drawn somewhere and that side is the one that clears the
+ * curve. Element names are not consulted, and neither are the flow labels,
+ * which are placed after this and already count a curve's text box among
+ * their obstacles.
+ *
+ * Both candidates are fixed by the waypoints and the obstacles are the
+ * model's own boxes, so reversing a curve's waypoints, or holding the
+ * elements in another order, gives the same side.
+ */
+export function settledCurveNames(
+  nodes: readonly CanvasNode[],
+): readonly CanvasNode[] {
+  const blocked = elementSolids(nodes);
+  return nodes.map((node) =>
+    node.kind === 'boundary-curve'
+      ? { ...node, nameMirrored: nameIsBlocked(node, blocked) }
+      : node,
+  );
 }
 
 /**
@@ -236,21 +266,21 @@ type Obstacles = {
   readonly lines: readonly Segment[];
 };
 
+type BoundaryCurve = Extract<CanvasNode, { readonly kind: 'boundary-curve' }>;
+
 type Bend = {
   readonly before: Point;
   readonly middle: Point;
   readonly after: Point;
 };
 
-function curveNamePlacement(
-  name: string,
-  waypoints: readonly Point[],
-): TextPlacement {
-  const bend = bendAt(waypoints, Math.floor(waypoints.length / 2));
+function curveNamePlacement(node: BoundaryCurve): TextPlacement {
+  const bend = bendAt(node.waypoints, Math.floor(node.waypoints.length / 2));
+  const convex = convexNormal(bend);
   return nameBeside(
-    name,
+    node.name,
     bend.middle,
-    convexNormal(bend),
+    node.nameMirrored ? negated(convex) : convex,
     flowLabelClearance,
     'label',
   );
@@ -274,6 +304,26 @@ function convexNormal(bend: Bend): Point {
 
 function boxCentre(size: Size): Point {
   return { x: size.width / 2, y: size.height / 2 };
+}
+
+function nameIsBlocked(node: BoundaryCurve, blocked: readonly Box[]): boolean {
+  const [convex] = ownTextBox({ ...node, nameMirrored: false });
+  if (convex === undefined || !meetsAny(convex, blocked)) {
+    return false;
+  }
+  const [mirror] = ownTextBox({ ...node, nameMirrored: true });
+  return mirror !== undefined && !meetsAny(mirror, blocked);
+}
+
+function elementSolids(nodes: readonly CanvasNode[]): Box[] {
+  return nodes.flatMap((node) => [
+    ...(isEnclosure(node) ? [] : [nodeBox(node)]),
+    ...ownBadgeBox(node),
+  ]);
+}
+
+function meetsAny(box: Box, others: readonly Box[]): boolean {
+  return others.some((other) => boxesOverlap(box, other));
 }
 
 function byIdAscending(one: FlowGeometry, other: FlowGeometry): number {
@@ -389,6 +439,10 @@ function drawnObstacles(
     lines.push(...segmentsOfPolyline(flow.points));
   }
   return { boxes, lines };
+}
+
+function isEnclosure(node: CanvasNode): boolean {
+  return node.kind === 'boundary-box' || node.kind === 'boundary-curve';
 }
 
 function nodeObstacles(node: CanvasNode): Obstacles {

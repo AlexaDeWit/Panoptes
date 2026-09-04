@@ -121,15 +121,24 @@ throughout, the normal with a non-negative y is the run's own, and where that
 y is zero the one with a positive x. The side is therefore fixed by the
 waypoints rather than by which end the flow or the curve is drawn from, and it
 carries nothing beyond that: which side of a divider its name sits on says
-nothing about which side the name describes. What the offset guarantees is a
-standoff from the tangent at the middle waypoint, and the outside of the turn
-is what carries that over to the drawn curve, for every shape the suite draws
-or probes: arches, bowls, hairpins, S bends, and the runs the fixtures hold. A
-curve that doubled back over its own bend inside half the name's width could
-still cross it. Nothing else is consulted either: a curve's name clears its
-own curve and searches for nothing, so an element or a name already drawn
-where it lands stays where it is, while a flow label does move aside, since a
-curve's text box is one of the obstacles that search reads.
+nothing about which side the name describes.
+
+A curve's name has the mirror of that side as its one other candidate, and it
+takes it where the convex side would put the box over an element's own box or
+an element's badge, since a name drawn under a badge cannot be read. Where
+both sides are covered the convex one stands, a name having to be drawn
+somewhere. Element names are not consulted and nothing else is searched, so a
+curve's name chooses between two places rather than looking for a third, and
+it is the flow labels that move aside around it, since a curve's text box is
+one of the obstacles that search reads. Both candidates are fixed by the
+waypoints and the obstacles are the model's own boxes, so neither the order
+the model holds its elements in nor the end the curve is drawn from changes
+the answer. What the offset guarantees on either side is a standoff from the
+tangent at the middle waypoint. The outside of the turn is what carries that
+over to the drawn curve, for every shape the suite draws or probes: arches,
+bowls, hairpins, S bends, and the runs the fixtures hold. A curve that doubled
+back over its own bend inside half the name's width could still cross it, and
+so could one pushed to the mirror side, which sits inside the turn.
 
 **Flow labels are placed where nothing else is drawn.** A flow's name printed
 beside its own midpoint lands on another flow's line, inside an element, or on

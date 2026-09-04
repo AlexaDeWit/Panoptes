@@ -65,25 +65,32 @@ const textBoxOf = (node: CanvasNode): Box | undefined =>
     ),
   );
 
-const elementBoxes = (layout: CanvasLayout): Drawn[] =>
+const elementSolids = (layout: CanvasLayout): Drawn[] =>
+  layout.nodes.flatMap((node) => [
+    ...(isEnclosure(node) ? [] : [{ of: node.name, box: boxOf(node) }]),
+    ...(node.badge === undefined
+      ? []
+      : [
+          {
+            of: `${node.name} badge`,
+            box: badgeBox(
+              shiftedBy(badgeAnchor(node.size), node.position),
+              node.badge,
+            ),
+          },
+        ]),
+  ]);
+
+const elementNames = (layout: CanvasLayout): Drawn[] =>
   layout.nodes.flatMap((node) => {
     const text = textBoxOf(node);
-    return [
-      ...(isEnclosure(node) ? [] : [{ of: node.name, box: boxOf(node) }]),
-      ...(text === undefined ? [] : [{ of: `${node.name} name`, box: text }]),
-      ...(node.badge === undefined
-        ? []
-        : [
-            {
-              of: `${node.name} badge`,
-              box: badgeBox(
-                shiftedBy(badgeAnchor(node.size), node.position),
-                node.badge,
-              ),
-            },
-          ]),
-    ];
+    return text === undefined ? [] : [{ of: `${node.name} name`, box: text }];
   });
+
+const elementBoxes = (layout: CanvasLayout): Drawn[] => [
+  ...elementSolids(layout),
+  ...elementNames(layout),
+];
 
 const drawnLines = (layout: CanvasLayout): Segment[] => [
   ...layout.nodes.filter(isEnclosure).flatMap(outlineOf),
@@ -173,12 +180,24 @@ const curveOf = (value: string, waypoints: readonly Point[], name: string) => ({
   shape: { kind: 'curve', waypoints },
 });
 
-const diagramOf = (elements: unknown[]): Model =>
+const openThreatOn = (element: string) => ({
+  id: `th-${element}`,
+  number: 1,
+  title: 'Session theft',
+  category: { methodology: 'STRIDE', category: 'spoofing' },
+  severity: 'high',
+  status: 'open',
+  description: '',
+  mitigation: '',
+  elements: [element],
+});
+
+const diagramOf = (elements: unknown[], threats: unknown[] = []): Model =>
   parsedFixture({
     metadata: { title: 't', owner: '', description: '', contributors: [] },
     diagrams: [{ id: 'd', title: 'Diagram', elements }],
-    threats: [],
-    lastIssuedThreatNumber: 0,
+    threats,
+    lastIssuedThreatNumber: threats.length,
     mitigations: [],
     assumptions: [],
   });
@@ -251,6 +270,23 @@ const layoutOfCurve = (
   name = dividerName,
 ): CanvasLayout =>
   layoutOf(diagramOf([curveOf('el-divider', waypoints, name)]));
+
+const curveNameOverlaps = (layout: CanvasLayout): string[] => {
+  const solids = elementSolids(layout);
+  return layout.nodes.flatMap((node) => {
+    const box = node.kind === 'boundary-curve' ? textBoxOf(node) : undefined;
+    return box === undefined
+      ? []
+      : solids
+          .filter((solid) => boxesOverlap(box, solid.box))
+          .map((solid) => `${node.name} over ${solid.of}`);
+  });
+};
+
+const middleWaypointOf = (node: CanvasNode): Point =>
+  node.kind === 'boundary-curve'
+    ? node.waypoints[Math.floor(node.waypoints.length / 2)]
+    : { x: 0, y: 0 };
 
 const rightEdge = (bounds: CanvasBounds): number => bounds.x + bounds.width;
 
@@ -345,6 +381,10 @@ describe(`a curve boundary's name, over every cubic sampled ${curveSamples} time
     expect(rightEdge(layout.bounds)).toBe(textBoxOf(layout.nodes[0])?.maxX);
   });
 
+  it.each(scenes)('lands on no element box or badge of $name', ({ layout }) => {
+    expect(curveNameOverlaps(layout)).toEqual([]);
+  });
+
   it('sits on the outside of the bend, not inside it', () => {
     const arch = layoutOfCurve(curveOrientations[3][1], 'Untrusted callers');
     const bowl = layoutOfCurve([
@@ -354,6 +394,65 @@ describe(`a curve boundary's name, over every cubic sampled ${curveSamples} time
     ]);
     expect(nodeTextPlacement(arch.nodes[0]).at.y).toBeLessThan(0);
     expect(nodeTextPlacement(bowl.nodes[0]).at.y).toBeGreaterThan(100);
+  });
+});
+
+const dividerWaypoints = [
+  { x: 0, y: 0 },
+  { x: 60, y: 200 },
+  { x: 0, y: 400 },
+];
+
+const dividerBeside = (
+  elements: unknown[],
+  threats: unknown[] = [],
+): CanvasLayout =>
+  layoutOf(
+    diagramOf(
+      [curveOf('el-divider', dividerWaypoints, dividerName), ...elements],
+      threats,
+    ),
+  );
+
+const dividerNameX = (layout: CanvasLayout): number =>
+  nodeTextPlacement(layout.nodes[0]).at.x;
+
+describe("a curve boundary's name beside what the diagram already draws", () => {
+  it('stays on the convex side where nothing is drawn there', () => {
+    const layout = dividerBeside([]);
+    expect(dividerNameX(layout)).toBeGreaterThan(
+      middleWaypointOf(layout.nodes[0]).x,
+    );
+    expect(curveNameOverlaps(layout)).toEqual([]);
+  });
+
+  it('takes the mirror side where an element box covers the convex one', () => {
+    const clear = dividerBeside([]);
+    const blocked = dividerBeside([boxAt('el-block', 100, 150)]);
+    const middle = middleWaypointOf(blocked.nodes[0]);
+    expect(dividerNameX(blocked)).toBeLessThan(middle.x);
+    expect(dividerNameX(blocked) + dividerNameX(clear)).toBe(middle.x * 2);
+    expect(curveNameOverlaps(blocked)).toEqual([]);
+  });
+
+  it('takes the mirror side where a badge alone covers the convex one', () => {
+    const badged = boxAt('el-badged', 0, 226);
+    const clear = dividerBeside([badged]);
+    const blocked = dividerBeside([badged], [openThreatOn('el-badged')]);
+    const middle = middleWaypointOf(blocked.nodes[0]);
+    expect(dividerNameX(clear)).toBeGreaterThan(middle.x);
+    expect(dividerNameX(blocked)).toBeLessThan(middle.x);
+  });
+
+  it('keeps the convex side where both sides are covered', () => {
+    const boxed = dividerBeside([
+      boxAt('el-block', 100, 150),
+      boxAt('el-other', -80, 150),
+    ]);
+    expect(dividerNameX(boxed)).toBeGreaterThan(
+      middleWaypointOf(boxed.nodes[0]).x,
+    );
+    expect(curveNameOverlaps(boxed)).not.toEqual([]);
   });
 });
 
