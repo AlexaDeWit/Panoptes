@@ -62,7 +62,11 @@ export type TextPlacement = {
  * dividing two lanes carries its name beside the dashes rather than under
  * them. The tangent is the drawn curve's, the run from the waypoint before
  * to the one after with the ends repeated where a neighbour is missing,
- * which is the tangent Catmull-Rom gives the cubic there.
+ * which is the tangent Catmull-Rom gives the cubic there. The middle
+ * waypoint is the central one of an odd run, and of an even run's two
+ * central ones the one nearer the origin, by x and then by y, which is a
+ * waypoint rather than a point between two, so the anchor lies on the curve
+ * and a reversed run anchors the name on the same one.
  *
  * Of the two normals the name takes the one pointing away from the bend, so
  * it sits on the convex side and the arms of the curve lead away from it
@@ -70,8 +74,9 @@ export type TextPlacement = {
  * waypoints, and where it lies along the tangent, which a straight run gives,
  * the normal with a non-negative y is the curve's own and where that y is
  * zero the one with a positive x, the rule a flow's name follows. Reversing
- * the waypoints leaves both the bend and that normal alone, so the side is
- * fixed by the waypoints and not by the end the curve is drawn from.
+ * the waypoints leaves the anchor, the bend and that normal alone, so the
+ * placement is fixed by the waypoints and not by the end the curve is drawn
+ * from.
  * {@link settledCurveNames} flips a name to the mirror of that side where
  * the convex one is covered, and the node carries which side it took, so
  * this stays a function of the node alone and the glyph and the drawn extent
@@ -275,7 +280,7 @@ type Bend = {
 };
 
 function curveNamePlacement(node: BoundaryCurve): TextPlacement {
-  const bend = bendAt(node.waypoints, Math.floor(node.waypoints.length / 2));
+  const bend = bendAt(node.waypoints, middleWaypoint(node.waypoints));
   const convex = convexNormal(bend);
   return nameBeside(
     node.name,
@@ -284,6 +289,18 @@ function curveNamePlacement(node: BoundaryCurve): TextPlacement {
     flowLabelClearance,
     'label',
   );
+}
+
+function middleWaypoint(waypoints: readonly Point[]): number {
+  const at = Math.floor(waypoints.length / 2);
+  if (waypoints.length % 2 === 1) {
+    return at;
+  }
+  const before = waypoints[at - 1];
+  const middle = waypoints[at];
+  return before.x < middle.x || (before.x === middle.x && before.y < middle.y)
+    ? at - 1
+    : at;
 }
 
 function bendAt(waypoints: readonly Point[], at: number): Bend {

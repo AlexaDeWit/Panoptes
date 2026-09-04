@@ -112,8 +112,11 @@ dimmed with a dashed outline; the reason it is out of scope stays in the
 register.
 
 A flow's normal is its own segment's. A curve's is the normal of the tangent
-the drawn curve has at the middle waypoint, the run from the waypoint before
-it to the one after with the ends repeated where a neighbour is missing, and
+the drawn curve has at the middle waypoint, the central waypoint of an odd run
+and of an even run's two central ones the one nearer the origin, by x and then
+by y, so the anchor is a waypoint on the curve and a reversed run anchors the
+name on the same one. That tangent is the run from the waypoint before it to
+the one after with the ends repeated where a neighbour is missing, and
 of the two normals it takes the one pointing away from the bend, so the name
 sits on the outside of the turn and the arms lead away from it. Where the bend
 lies along the tangent, which a straight middle gives, and for a flow

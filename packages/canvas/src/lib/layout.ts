@@ -52,7 +52,9 @@ type CanvasNodeBase = {
  * waypoints still has an extent to pick. Its waypoints are held again
  * relative to that box, so the glyph draws in the node's own coordinates,
  * and `nameMirrored` carries which of the two sides of the curve
- * {@link settledCurveNames} put its name on.
+ * {@link settledCurveNames} put its name on. A node is built on the convex
+ * side, `false`, and settling flips it only where that side is covered, so
+ * an unsettled node draws the side that clears its own curve.
  */
 export type CanvasNode =
   | (CanvasNodeBase & { readonly kind: 'actor' })

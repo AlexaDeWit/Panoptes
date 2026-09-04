@@ -347,6 +347,37 @@ const curveOrientations = [
   ],
 ] as const;
 
+const reversedRuns = [
+  [
+    'a run of three waypoints',
+    [
+      { x: 0, y: 0 },
+      { x: 60, y: 200 },
+      { x: 0, y: 400 },
+    ],
+    [
+      { x: 0, y: 400 },
+      { x: 60, y: 200 },
+      { x: 0, y: 0 },
+    ],
+  ],
+  [
+    'a run of four waypoints',
+    [
+      { x: 300, y: 60 },
+      { x: 340, y: 250 },
+      { x: 300, y: 470 },
+      { x: 340, y: 680 },
+    ],
+    [
+      { x: 340, y: 680 },
+      { x: 300, y: 470 },
+      { x: 340, y: 250 },
+      { x: 300, y: 60 },
+    ],
+  ],
+] as const;
+
 describe(`a curve boundary's name, over every cubic sampled ${curveSamples} times`, () => {
   it.each(curveOrientations)(
     'clears a curve %s',
@@ -362,19 +393,14 @@ describe(`a curve boundary's name, over every cubic sampled ${curveSamples} time
     },
   );
 
-  it('takes its side from the waypoints, not the end drawn from', () => {
-    const down = layoutOfCurve([
-      { x: 0, y: 0 },
-      { x: 60, y: 200 },
-      { x: 0, y: 400 },
-    ]).nodes[0];
-    const up = layoutOfCurve([
-      { x: 0, y: 400 },
-      { x: 60, y: 200 },
-      { x: 0, y: 0 },
-    ]).nodes[0];
-    expect(nodeTextPlacement(up).at).toEqual(nodeTextPlacement(down).at);
-  });
+  it.each(reversedRuns)(
+    'takes its side from the waypoints of %s, not the end drawn from',
+    (_shape, forwards, backwards) => {
+      expect(nodeTextPlacement(layoutOfCurve(backwards).nodes[0]).at).toEqual(
+        nodeTextPlacement(layoutOfCurve(forwards).nodes[0]).at,
+      );
+    },
+  );
 
   it('is reached by the bounds the layout reports', () => {
     const layout = layoutOfCurve(curveOrientations[0][1]);
