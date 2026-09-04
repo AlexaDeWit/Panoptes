@@ -12,6 +12,21 @@ import {
 const columnsFor = (columns: number): number =>
   columns * 10 * averageGlyphWidthRatio;
 
+const graphemeClusters = [
+  { name: 'a regional indicator flag', cluster: '\u{1F1E8}\u{1F1E6}' },
+  {
+    name: 'a family joined by zero-width joiners',
+    cluster: '\u{1F468}\u200D\u{1F469}\u200D\u{1F467}\u200D\u{1F466}',
+  },
+  { name: 'a letter carrying one combining mark', cluster: 'e\u0301' },
+  { name: 'a letter carrying two combining marks', cluster: 'e\u0327\u0301' },
+  { name: 'an emoji carrying a variation selector', cluster: '\u2764\uFE0F' },
+  {
+    name: 'an emoji carrying a skin tone modifier',
+    cluster: '\u{1F44D}\u{1F3FB}',
+  },
+];
+
 describe('wrapText', () => {
   it('fits as many words on a line as the estimated width allows', () => {
     expect(wrapText('one two three four', 10, columnsFor(9))).toEqual([
@@ -43,6 +58,16 @@ describe('wrapText', () => {
     expect(lines).toEqual([padlock.repeat(4), padlock.repeat(2)]);
     expect(lines.join('')).toBe(word);
   });
+
+  it.each(graphemeClusters)(
+    'keeps $name whole where the word is wider than the box',
+    ({ cluster }) => {
+      const word = cluster.repeat(6);
+      const lines = wrapText(word, 10, columnsFor(4));
+      expect(lines).toEqual([cluster.repeat(4), cluster.repeat(2)]);
+      expect(lines.join('')).toBe(word);
+    },
+  );
 
   it('breaks a word wider than the whole line', () => {
     expect(wrapText('abcdefghij', 10, columnsFor(4))).toEqual([
@@ -87,6 +112,13 @@ describe('textExtent', () => {
   it('takes up no room at all where there are no lines', () => {
     expect(textExtent([], 10)).toEqual({ width: 0, height: 0 });
   });
+
+  it.each(graphemeClusters)(
+    'counts $name as one column, the width of a letter',
+    ({ cluster }) => {
+      expect(textExtent([cluster], 10)).toEqual(textExtent(['a'], 10));
+    },
+  );
 
   it('measures what the wrap produced, by the ratio the wrap used', () => {
     const lines = wrapText('one two three', 10, columnsFor(5));

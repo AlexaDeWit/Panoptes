@@ -167,10 +167,21 @@ than drawn with a gap, so `wrapText` puts every run of text through
 `xmlSafeText`, which replaces each of them with U+FFFD. Replacing rather than
 dropping keeps the character count, so the wrap that was estimated is the wrap
 that is drawn. Whoever composes a document around these glyphs applies the
-same function to text of their own, a title element for instance. A wrap
-counts columns in code points and breaks a long word between them, never
-through a surrogate pair, since half a pair on each of two lines is two lone
-surrogates and the same refusal arrived at after the replacement has run.
+same function to text of their own, a title element for instance.
+
+A wrap counts columns in grapheme clusters and breaks a long word between
+them, never through a surrogate pair, since half a pair on each of two lines
+is two lone surrogates and the same refusal arrived at after the replacement
+has run, and never through a cluster, since a regional-indicator flag broken
+across lines is two letters and a family joined by zero-width joiners is four
+people. A cluster is settled by an explicit rule over code points rather than
+by `Intl.Segmenter`, whose segmentation data moves with the runtime's ICU and
+would move a golden on a node bump: a combining mark, a variation selector, an
+emoji skin tone modifier, a zero-width joiner and the code point after one all
+join what precedes them, and a pair of regional indicators is one cluster. A
+Hangul jamo sequence, a prepended concatenation mark and an Indic conjunct
+joined through a virama are outside the rule and still break. A cluster counts
+as one column, so a flag is as wide as a letter in the estimate.
 
 ## React Flow
 
