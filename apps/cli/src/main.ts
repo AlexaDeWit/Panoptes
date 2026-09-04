@@ -1,23 +1,38 @@
-import { noDivergence, renderDivergences } from '@panoptes/formats';
-import { parseModel } from '@panoptes/model';
-import { renderRegister } from '@panoptes/render';
 import { Either } from 'effect';
-import { cliVersion } from './version.js';
+import { runCli, writeOutcome } from './cli.js';
+import { reasonOf } from './files.js';
+import { lines } from './outcome.js';
 
-if (process.argv[2] === '--version') {
-  console.log(cliVersion);
-} else {
-  const empty = parseModel({
-    metadata: { title: '', owner: '', description: '', contributors: [] },
-    diagrams: [],
-    threats: [],
-    lastIssuedThreatNumber: 0,
-    mitigations: [],
-    assumptions: [],
+const wrote =
+  (stream: NodeJS.WriteStream) =>
+  (text: string): Either.Either<void, string> =>
+    Either.try({
+      try: () => {
+        stream.write(text);
+      },
+      catch: (error) => reasonOf(error),
+    });
+
+const watchForLostWrites = (
+  stream: NodeJS.WriteStream,
+  report: (reason: string) => void,
+): void => {
+  stream.on('error', (error: NodeJS.ErrnoException) => {
+    if (error.code !== 'EPIPE') {
+      process.exitCode = 2;
+      report(reasonOf(error));
+    }
   });
+};
 
-  console.log(renderDivergences(noDivergence));
-  console.log(
-    Either.map(empty, renderRegister).pipe(Either.getOrElse(() => '')),
+watchForLostWrites(process.stdout, (reason) => {
+  wrote(process.stderr)(
+    lines(`error: cannot write to standard output: ${reason}`),
   );
-}
+});
+watchForLostWrites(process.stderr, () => undefined);
+
+process.exitCode = writeOutcome(runCli(process.argv.slice(2)), {
+  out: wrote(process.stdout),
+  err: wrote(process.stderr),
+});

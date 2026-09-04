@@ -97,6 +97,39 @@ On macOS the executables are unsigned, so Gatekeeper holds the first run:
 `xattr -cr ~/.local/bin/panoptes` clears the quarantine flag. Signing and
 notarization are deferred, not overlooked.
 
+## Usage
+
+```sh
+panoptes validate threat-model.yaml
+panoptes render threat-model.yaml --format md --out register.md
+panoptes render threat-model.yaml --format svg --out diagram.svg
+panoptes render threat-model.yaml --format svg --out -
+```
+
+Both commands read Threat Dragon v2 JSON and Panoptes YAML, and the content
+decides which: the file name is never consulted, so a model saved under any
+extension reads.
+
+`validate` prints one line naming the format and what the model holds, and
+warns on standard error wherever the file and the model do not correspond
+exactly, which is what a read dropped or held less exactly than the file
+stated it.
+
+`render` writes a projection. `--format md` writes the whole threat
+register. `--format svg` draws one diagram, which `--diagram <id or title>`
+chooses where the model holds more than one, and which a model of one does
+not have to name. `--out -` writes to standard output. PDF output lands with
+issue #34.
+
+| Exit code | What it means                                                                                                                                                                                                    |
+| --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0         | The command did what it was asked.                                                                                                                                                                               |
+| 1         | Panoptes read the file and refused it: no format claimed it, or one did and either the document or the model it maps to is not valid.                                                                            |
+| 2         | The invocation cannot be carried out: the parser or the option schema refused it, a file cannot be read or written, a choice names no diagram, or a stream refused the output, a pipe whose reader closed aside. |
+
+Errors go to standard error, path-precise where a schema refused something,
+and no failure prints a stack trace.
+
 ## Development
 
 Nix with flakes provides the toolchain (node, pnpm, deno). With
@@ -129,11 +162,18 @@ across the workspace.
 
 [`scripts/package-cli.sh`](scripts/package-cli.sh) turns that bundle into
 standalone executables with `deno compile`, cross-compiling every target from
-any one of them, and runs the host executable to check the version it reports.
-CI runs it for the host target on every pull request, and over the whole
-matrix when the ref is a `v*` tag, which is how a release is built: one
-workflow, not a second pipeline beside it. Deno is a packaging tool only: it
-never resolves the workspace, and node stays the development and test runtime.
+any one of them, and runs the host executable twice: once for the version it
+reports, once to validate a vendored model file. CI runs the script for the
+host target on every pull request, and over the whole matrix when the ref is a
+`v*` tag, which is how a release is built: one workflow, not a second pipeline
+beside it. Deno is a packaging tool only: it never resolves the workspace, and
+node stays the development and test runtime.
+
+The pull request run then puts the CLI's whole scenario table through that
+executable, with `PANOPTES_COMPILED_RUNNER=required` so a missing executable
+fails the suite rather than dropping a runner in silence. `dist/cli` is
+gitignored and therefore no nx input, so that run skips the nx cache, and so
+should a local one after a recompile.
 
 Around 33 MB of every executable is a runtime deno embeds, which the nixpkgs
 deno pin does not cover. The flake pins it by hash, the compile runs with no

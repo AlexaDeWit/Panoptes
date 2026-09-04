@@ -6,7 +6,9 @@
   "//": [
     "The build deviates from the root esbuild defaults (CODING.md, Build targets) because its output is not something node runs from this checkout: `deno compile` turns it into the executables a release attaches (docs/release.md).",
     "bundle with thirdParty inlines every workspace package and every npm dependency, so the executable carries no node_modules. format esm because deno reads a bare .js file as an ES module. esbuild.config.mts stamps the workspace version in, which no static option can express.",
-    "declarationRootDir puts the declarations where tsconfig.app.json's own rootDir and outDir say they go. Without it the executor emits them under dist/apps/cli/src, and the typecheck target then reports TS6305 for a module imported from a sibling file."
+    "declarationRootDir puts the declarations where tsconfig.app.json's own rootDir and outDir say they go. Without it the executor emits them under dist/apps/cli/src, and the typecheck target then reports TS6305 for a module imported from a sibling file.",
+    "test depends on this project's own build, not only on its dependencies, because main.spec.ts runs the bundle the build writes rather than the source (issue #33). Without the edge the spec reads whatever dist/main.js was left from an earlier run, or none at all.",
+    "The second runner main.spec.ts uses, the deno-compiled executable in dist/cli, is no nx input: dist/cli is gitignored, so it can be neither a fileset input nor a task output, and nx replays a cached result whether or not that runner took part. Run scripts/package-cli.sh and then `pnpm nx test @panoptes/cli --skip-nx-cache` after recompiling. CI runs that command with PANOPTES_COMPILED_RUNNER=required, which fails the suite where the executable is missing."
   ],
   "nx": {
     "tags": [
@@ -27,6 +29,12 @@
       },
       "boundaries": {},
       "lint": {},
+      "test": {
+        "dependsOn": [
+          "^build",
+          "build"
+        ]
+      },
       "serve": {
         "executor": "@nx/js:node"
       }
@@ -36,6 +44,8 @@
     "@panoptes/formats": "workspace:*",
     "@panoptes/model": "workspace:*",
     "@panoptes/render": "workspace:*",
-    "effect": "catalog:"
+    "commander": "catalog:",
+    "effect": "catalog:",
+    "zod": "catalog:"
   }
 }
