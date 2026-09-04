@@ -15,6 +15,14 @@ const columnsFor = (columns: number): number =>
 const graphemeClusters = [
   { name: 'a regional indicator flag', cluster: '\u{1F1E8}\u{1F1E6}' },
   {
+    name: 'a subdivision flag spelled out in tag characters',
+    cluster: '\u{1F3F4}\u{E0067}\u{E0062}\u{E0073}\u{E0063}\u{E0074}\u{E007F}',
+  },
+  {
+    name: 'a letter joined to a flag',
+    cluster: 'a\u200D\u{1F1E8}\u{1F1E6}',
+  },
+  {
     name: 'a family joined by zero-width joiners',
     cluster: '\u{1F468}\u200D\u{1F469}\u200D\u{1F467}\u200D\u{1F466}',
   },
@@ -69,6 +77,10 @@ describe('wrapText', () => {
     },
   );
 
+  it('measures the joined line rather than adding up its parts', () => {
+    expect(wrapText('a \u0301b', 10, columnsFor(3))).toEqual(['a \u0301b']);
+  });
+
   it('breaks a word wider than the whole line', () => {
     expect(wrapText('abcdefghij', 10, columnsFor(4))).toEqual([
       'abcd',
@@ -120,13 +132,15 @@ describe('textExtent', () => {
     },
   );
 
-  it('measures what the wrap produced, by the ratio the wrap used', () => {
-    const lines = wrapText('one two three', 10, columnsFor(5));
-    expect(textExtent(lines, 10).width).toBe(
-      Math.max(...lines.map((line) => line.length)) *
-        10 *
-        averageGlyphWidthRatio,
+  it('measures what the wrap produced, in the columns the wrap counted', () => {
+    const flag = '\u{1F1E8}\u{1F1E6}';
+    const lines = wrapText(
+      `${flag.repeat(3)} ${flag.repeat(5)}`,
+      10,
+      columnsFor(5),
     );
+    expect(lines).toEqual([flag.repeat(3), flag.repeat(5)]);
+    expect(textExtent(lines, 10).width).toBe(columnsFor(5));
   });
 });
 

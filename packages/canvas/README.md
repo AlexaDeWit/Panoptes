@@ -176,12 +176,15 @@ has run, and never through a cluster, since a regional-indicator flag broken
 across lines is two letters and a family joined by zero-width joiners is four
 people. A cluster is settled by an explicit rule over code points rather than
 by `Intl.Segmenter`, whose segmentation data moves with the runtime's ICU and
-would move a golden on a node bump: a combining mark, a variation selector, an
-emoji skin tone modifier, a zero-width joiner and the code point after one all
-join what precedes them, and a pair of regional indicators is one cluster. A
-Hangul jamo sequence, a prepended concatenation mark and an Indic conjunct
-joined through a virama are outside the rule and still break. A cluster counts
-as one column, so a flag is as wide as a letter in the estimate.
+would move a golden on a Node bump: a combining mark, a variation selector
+among them, an emoji skin tone modifier and a tag character all join what
+precedes them, a zero-width joiner takes what follows it, and a pair of
+regional indicators is one cluster, on its own or after a joiner. Tag
+characters are what spell out a subdivision flag such as Scotland. Outside the
+rule, and so still breaking, are a Hangul jamo sequence, a prepended
+concatenation mark, an Indic conjunct joined through a virama, and the Thai
+and Lao vowel signs U+0E33 and U+0EB3. A cluster counts as one column, so a
+flag is as wide as a letter in the estimate.
 
 ## React Flow
 

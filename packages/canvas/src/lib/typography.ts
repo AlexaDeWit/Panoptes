@@ -110,14 +110,18 @@ function allowedInXml(character: string): boolean {
  *
  * A cluster is settled by an explicit rule over code points rather than by
  * `Intl.Segmenter`, whose segmentation data moves with the runtime's ICU and
- * would move a golden on a node bump. A code point joins the one before it
- * where it is a combining mark, a variation selector, an emoji skin tone
- * modifier, a zero-width joiner, or the code point after a zero-width
- * joiner, and a pair of regional indicators is one cluster. What it reads is
- * general category and the regional indicator property, not a segmentation
- * table. What it does not cover, and so still breaks, is a Hangul jamo
- * sequence, a prepended concatenation mark such as U+0600, and an Indic
- * conjunct joined through a virama.
+ * would move a golden on a Node bump. A code point joins the one before it
+ * where it is a combining mark, a variation selector among them, an emoji
+ * skin tone modifier, or a tag character, which is what spells out a
+ * subdivision flag such as Scotland. A zero-width joiner takes what follows
+ * it into the same cluster, and a pair of regional indicators is one cluster,
+ * on its own or after a joiner. What the rule reads is general category and
+ * the regional indicator property, not a segmentation table.
+ *
+ * What it does not cover, and so still breaks, is a Hangul jamo sequence, a
+ * prepended concatenation mark such as U+0600, an Indic conjunct joined
+ * through a virama, and the Thai and Lao vowel signs U+0E33 and U+0EB3, which
+ * UAX #29 holds to their base but which carry no mark category.
  */
 export function wrapText(
   text: string,
@@ -143,7 +147,7 @@ function wrapParagraph(paragraph: string, columns: number): string[] {
   for (const chunk of chunksOf(paragraph, columns)) {
     if (line === '') {
       line = chunk;
-    } else if (columnsOf(line) + 1 + columnsOf(chunk) <= columns) {
+    } else if (columnsOf(`${line} ${chunk}`) <= columns) {
       line = `${line} ${chunk}`;
     } else {
       lines.push(line);
@@ -171,13 +175,19 @@ function brokenWord(word: string, columns: number): string[] {
 }
 
 function columnsOf(text: string): number {
-  return clustersOf(text).length;
+  const clusters = text.matchAll(graphemeCluster);
+  let columns = 0;
+  while (clusters.next().done !== true) {
+    columns += 1;
+  }
+  return columns;
 }
 
 const anyCodePoint = '[\\s\\S]';
 const flagPair = '\\p{Regional_Indicator}{2}';
-const attachedToPrevious = '[\\p{M}\\uFE0E\\uFE0F\\u{1F3FB}-\\u{1F3FF}]*';
-const joinedToPrevious = `\\u200D${anyCodePoint}${attachedToPrevious}`;
+const attachedToPrevious =
+  '[\\p{M}\\u{1F3FB}-\\u{1F3FF}\\u{E0020}-\\u{E007F}]*';
+const joinedToPrevious = `\\u200D(?:${flagPair}|${anyCodePoint})${attachedToPrevious}`;
 const graphemeCluster = new RegExp(
   `(?:${flagPair}|${anyCodePoint})${attachedToPrevious}(?:${joinedToPrevious})*`,
   'gu',
