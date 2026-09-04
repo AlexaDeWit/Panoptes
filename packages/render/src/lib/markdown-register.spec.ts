@@ -24,7 +24,10 @@ import { renderRegister } from './markdown-register.js';
 
 const repositoryRoot = join(import.meta.dirname, '../../../..');
 
-const labelsPath = join(import.meta.dirname, 'markdown-register.labels.txt');
+const labelsPath = join(
+  import.meta.dirname,
+  'markdown-register.labels.snapshot.txt',
+);
 
 function committedModel(name: string): Model {
   return Either.getOrThrow(
@@ -42,12 +45,18 @@ const registers: readonly {
   {
     name: 'Écluse',
     model: ecluseModel,
-    golden: join(repositoryRoot, 'test-data/render/ecluse.register.md'),
+    golden: join(
+      repositoryRoot,
+      'test-data/render/ecluse.register.snapshot.md',
+    ),
   },
   {
     name: 'Panoptes',
     model: committedModel('test-data/panoptes.model.json'),
-    golden: join(repositoryRoot, 'test-data/render/panoptes.register.md'),
+    golden: join(
+      repositoryRoot,
+      'test-data/render/panoptes.register.snapshot.md',
+    ),
   },
 ];
 

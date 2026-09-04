@@ -95,11 +95,11 @@ the same model always renders the same bytes.
 - **Nothing goes missing.** An enum crosses to its display label through a
   table the compiler checks for totality, so a severity, status, or
   methodology added to `@panoptes/model` stops this package compiling rather
-  than rendering blank, and `markdown-register.labels.txt` beside the spec
-  pins the label text of every member the model declares, rendered rather
-  than restated. A threat attached to no element reads `None`, prose a threat
-  does not carry reads `None recorded.`, and a model holding no threats says
-  so in place of an empty table.
+  than rendering blank, and `markdown-register.labels.snapshot.txt` beside
+  the spec pins the label text of every member the model declares, rendered
+  rather than restated. A threat attached to no element reads `None`, prose
+  a threat does not carry reads `None recorded.`, and a model holding no
+  threats says so in place of an empty table.
 
 ## The goldens
 
@@ -107,21 +107,21 @@ Six files under [`test-data/render/`](../../test-data/render) are this
 package's output, committed so a change to what it writes arrives as a diff
 on a file rather than as a test that still passes:
 
-- `ecluse.register.md`, the Écluse model as a threat register.
-- `panoptes.register.md`, the same of
+- `ecluse.register.snapshot.md`, the Écluse model as a threat register.
+- `panoptes.register.snapshot.md`, the same of
   [Panoptes' own threat model](../../threat-modelling/README.md), which
   carries what Écluse does not: a custom methodology, a CIA category, threats
   attached to no element, and a mitigation written as a markdown list.
-- `ecluse.svg`, the one diagram of the Écluse model.
-- `every-glyph.svg`, the diagram of `test-data/every-glyph.model.json`,
-  drawing one of every glyph the canvas knows. Écluse carries no text
-  element, no boundary curve, and no flow the layout refuses, so without it
-  those would have no committed picture. `@panoptes/canvas` draws the same
-  model into a golden of its own, which is why the model sits under
-  `test-data` rather than inside either package.
-- `panoptes-read-and-render.svg` and `panoptes-agent-and-desktop.svg`, the
-  two diagrams of the Panoptes model, which is the only committed model
-  holding more than one.
+- `ecluse.snapshot.svg`, the one diagram of the Écluse model.
+- `every-glyph.snapshot.svg`, the diagram of
+  `test-data/every-glyph.model.json`, drawing one of every glyph the canvas
+  knows. Écluse carries no text element, no boundary curve, and no flow the
+  layout refuses, so without it those would have no committed picture.
+  `@panoptes/canvas` draws the same model into a golden of its own, which is
+  why the model sits under `test-data` rather than inside either package.
+- `panoptes-read-and-render.snapshot.svg` and
+  `panoptes-agent-and-desktop.snapshot.svg`, the two diagrams of the Panoptes
+  model, which is the only committed model holding more than one.
 
 Each list is one list in the spec, the registers and the documents alike, so
 a further model or diagram joins every check over them by being added there.

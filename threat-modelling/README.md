@@ -32,7 +32,7 @@ rather than read out of Threat Dragon's.
 | ------------------ | ------------------------------------------------------------------------------------------------------- |
 | `packages/formats` | It reads with no divergence, it is its own golden, and it is opened as Panoptes YAML without being told |
 | `packages/formats` | No read bound refuses it, alongside the Écluse file and the Threat Dragon corpus                        |
-| `packages/render`  | `test-data/render/panoptes.register.md` is its threat register                                          |
+| `packages/render`  | `test-data/render/panoptes.register.snapshot.md` is its threat register                                 |
 | `packages/render`  | One standalone SVG document per diagram, under `test-data/render/`                                      |
 | `packages/canvas`  | One committed scene per diagram, beside `scene.spec.tsx`                                                |
 

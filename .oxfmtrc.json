@@ -8,7 +8,7 @@
   // real thing. The YAML and the markdown registers beside them are written
   // here and compared byte for byte, so a formatter must leave them alone as
   // well. Only the payloads are exempt; prose beside them is formatted like
-  // any other document, which is why the markdown pattern names the register
+  // any other document, which is why the markdown pattern names the snapshot
   // suffix rather than every `.md` file under test-data.
   //
   // threat-modelling/ holds Panoptes' own threat model. The codec writes
@@ -18,7 +18,7 @@
   "ignorePatterns": [
     "test-data/**/*.json",
     "test-data/**/*.yaml",
-    "test-data/**/*.register.md",
+    "test-data/**/*.snapshot.md",
     "threat-modelling/**/*.yaml"
   ]
 }

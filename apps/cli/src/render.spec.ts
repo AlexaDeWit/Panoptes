@@ -40,19 +40,19 @@ describe('render', () => {
   it('writes the register of the Écluse fixture as the golden file', () => {
     const run = written('ecluse.register.md', ecluse, { format: 'md' });
     expect(run.outcome).toEqual({ code: 0, out: '', err: '' });
-    expect(run.text()).toEqual(golden('ecluse.register.md'));
+    expect(run.text()).toEqual(golden('ecluse.register.snapshot.md'));
   });
 
   it('draws the Écluse fixture as the golden file', () => {
     const run = written('ecluse.svg', ecluse, { format: 'svg' });
     expect(run.outcome).toEqual({ code: 0, out: '', err: '' });
-    expect(run.text()).toEqual(golden('ecluse.svg'));
+    expect(run.text()).toEqual(golden('ecluse.snapshot.svg'));
   });
 
   it('writes the register to standard output for an out of -', () => {
     expect(render(ecluse, options({ format: 'md', out: '-' }))).toEqual({
       code: 0,
-      out: golden('ecluse.register.md'),
+      out: golden('ecluse.register.snapshot.md'),
       err: '',
     });
   });
@@ -60,7 +60,7 @@ describe('render', () => {
   it('draws to standard output for an out of -', () => {
     expect(render(ecluse, options({ format: 'svg', out: '-' }))).toEqual({
       code: 0,
-      out: golden('ecluse.svg'),
+      out: golden('ecluse.snapshot.svg'),
       err: '',
     });
   });
@@ -68,12 +68,12 @@ describe('render', () => {
   it('projects the same model out of the native format, byte for byte', () => {
     expect(render(ecluseYaml, options({ format: 'md', out: '-' }))).toEqual({
       code: 0,
-      out: golden('ecluse.register.md'),
+      out: golden('ecluse.register.snapshot.md'),
       err: '',
     });
     expect(render(ecluseYaml, options({ format: 'svg', out: '-' }))).toEqual({
       code: 0,
-      out: golden('ecluse.svg'),
+      out: golden('ecluse.snapshot.svg'),
       err: '',
     });
   });
@@ -81,7 +81,7 @@ describe('render', () => {
   it('draws the diagram a model of several names by id', () => {
     expect(render(panoptes, options({ diagram: 'read-and-render' }))).toEqual({
       code: 0,
-      out: golden('panoptes-read-and-render.svg'),
+      out: golden('panoptes-read-and-render.snapshot.svg'),
       err: '',
     });
   });
@@ -91,7 +91,7 @@ describe('render', () => {
       render(panoptes, options({ diagram: 'Agents and the desktop shell' })),
     ).toEqual({
       code: 0,
-      out: golden('panoptes-agent-and-desktop.svg'),
+      out: golden('panoptes-agent-and-desktop.snapshot.svg'),
       err: '',
     });
   });
