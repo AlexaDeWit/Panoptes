@@ -1,18 +1,24 @@
 name: CI
 
 # Push-to-main and pull_request, so a feature-branch push never double-runs
-# beside its PR.
+# beside its PR. A v* tag runs the same workflow: a release is what this
+# pipeline produces when the ref is a tag, not a second pipeline that would
+# drift from this one (docs/release.md).
 on:
   push:
     branches: [main]
+    tags: ['v*']
   pull_request:
   workflow_dispatch:
 
-# Never cancel on main: it keeps the complete build history of every commit
-# that lands.
+# Never cancel on main or on a tag: main keeps the complete build history of
+# every commit that lands, and a cancelled tag run would leave a release
+# half made.
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+  cancel-in-progress: >-
+    ${{ github.ref != 'refs/heads/main'
+    && !startsWith(github.ref, 'refs/tags/v') }}
 
 # Least privilege by default. Jobs that need more widen it at the job level.
 permissions:
@@ -22,6 +28,10 @@ env:
   # One deterministic pnpm store location, shared with the cache in
   # .github/actions/setup-toolchain.
   npm_config_store_dir: ${{ github.workspace }}/.pnpm-store
+  # Deno packages the CLI and is told to reach for nothing: no update check,
+  # and no prompt that could hang a run waiting for an answer.
+  DENO_NO_UPDATE_CHECK: '1'
+  DENO_NO_PROMPT: '1'
 
 jobs:
   build-test:
@@ -61,6 +71,66 @@ jobs:
         with:
           use_oidc: true # tokenless upload via GitHub OIDC, no CODECOV_TOKEN secret
           fail_ci_if_error: true # a lost upload must not silently skip the gate
+
+      # GitHub's ubuntu-latest image is Ubuntu 24.04, which ships
+      # kernel.apparmor_restrict_unprivileged_userns=1 and so denies the
+      # unprivileged `unshare -rn` that scripts/package-cli.sh compiles
+      # inside. Lift it here rather than let a compile reach the network:
+      # the script refuses to run at all where the namespace cannot be made,
+      # so a runner that keeps the restriction fails the compile instead of
+      # quietly fetching a runtime nobody pinned. A no-op where the knob does
+      # not exist.
+      - name: Allow the unprivileged user namespace the compile runs in
+        run: |
+          knob=/proc/sys/kernel/apparmor_restrict_unprivileged_userns
+          if [ -e "$knob" ]; then
+            sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+          else
+            echo "no apparmor_restrict_unprivileged_userns on this runner"
+          fi
+
+      # Check above built the CLI bundle; this compiles it with deno twice,
+      # in a network namespace with no route out, fails unless the two agree
+      # byte for byte, and runs the executable. A change the packaged build
+      # cannot carry therefore fails on the pull request that makes it,
+      # rather than once a tag is pushed and the ruleset forbids moving it.
+      #
+      # The host target alone off a tag, so the common run stays short. The
+      # tag run compiles the whole matrix, and those are the executables the
+      # release carries.
+      - name: Compile the CLI and run it
+        if: ${{ !startsWith(github.ref, 'refs/tags/v') }}
+        run: nix develop .#ci --command scripts/package-cli.sh
+
+      - name: Compile every target and run the host one
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: nix develop .#ci --command scripts/package-cli.sh --all
+
+      # The executables are named after the version in the manifests, so an
+      # executable that answers with the tag's version proves the tag, the
+      # manifests and the binary agree. A tag cut on the wrong commit fails
+      # here, before anything is published. The executable is standalone, so
+      # this step needs nothing from the flake.
+      - name: Check the Linux executable against the tag
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          version="${TAG#v}"
+          reported="$("./dist/cli/panoptes-${version}-x86_64-unknown-linux-gnu" --version)"
+          if [ "$reported" != "$version" ]; then
+            echo "the executable reports ${reported}, the tag names ${version}" >&2
+            exit 1
+          fi
+
+      - name: Hand the executables to the publish job
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: cli-executables
+          path: dist/cli/
+          if-no-files-found: error
+          retention-days: 7
 
       # Restore-everywhere, save-on-main-only, one writer: the same policy as
       # the Nix store, applied to the pnpm store.
@@ -187,3 +257,82 @@ jobs:
             verdict=1
           fi
           exit "$verdict"
+
+  # A release, made only when the gate above is green on a v* tag. It hangs
+  # off the gate rather than joining it: the gate's `needs` and verdict are
+  # the required check and stay as they are, and publishing is a consequence
+  # of a green gate, not a condition of one. Nothing is installed or compiled
+  # here, so the write permission never sits beside a dependency tree.
+  publish:
+    name: Publish the release
+    needs: gate
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write # create or update the release and its assets
+    steps:
+      # For CHANGELOG.md alone.
+      - name: Checkout the tag
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Take the executables from build-test
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: cli-executables
+          path: cli
+
+      # The section CHANGELOG.md carries for this version, which nx release
+      # wrote before the version landed on main. nx renders a major release
+      # as an H1 and everything else as an H2, so a heading is either, and
+      # the next heading of either level ends the section. The version is
+      # compared as a field rather than matched as a regex: a dot would
+      # otherwise match any character, and awk implementations disagree over
+      # backslashes passed through -v.
+      #
+      # A tag whose version has no section falls back to GitHub's generated
+      # notes rather than failing: the ruleset forbids deleting or moving a
+      # tag, so a release that stopped here could not be retried from a
+      # corrected one. This step and the next use the runner's own awk and
+      # gh, which the flake does not carry and which no build depends on.
+      - name: Take the changelog section for this version
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          version="${TAG#v}"
+          : >release-notes.md
+          if [ -f CHANGELOG.md ]; then
+            awk -v version="$version" '
+              /^#?# / {
+                if (inside) exit
+                if ($2 == version) { inside = 1; print }
+                next
+              }
+              inside { print }
+            ' CHANGELOG.md >release-notes.md
+          fi
+          if [ ! -s release-notes.md ]; then
+            echo "no CHANGELOG.md section for ${version}" >&2
+          fi
+
+      # Idempotent: re-running this workflow on a tag that already carries a
+      # release replaces the assets instead of failing. A tag cannot be moved
+      # or deleted, so a re-run is the only recovery there is.
+      - name: Create or update the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" --clobber cli/panoptes-* cli/SHA256SUMS
+          else
+            notes=(--generate-notes)
+            if [ -s release-notes.md ]; then
+              notes=(--notes-file release-notes.md)
+            fi
+            gh release create "$TAG" --title "$TAG" --verify-tag \
+              "${notes[@]}" cli/panoptes-* cli/SHA256SUMS
+          fi

@@ -2,13 +2,28 @@
   "name": "@panoptes/cli",
   "version": "0.0.1",
   "private": true,
+  "type": "module",
+  "//": [
+    "The build deviates from the root esbuild defaults (CODING.md, Build targets) because its output is not something node runs from this checkout: `deno compile` turns it into the executables a release attaches (docs/release.md).",
+    "bundle with thirdParty inlines every workspace package and every npm dependency, so the executable carries no node_modules. format esm because deno reads a bare .js file as an ES module. esbuild.config.mts stamps the workspace version in, which no static option can express.",
+    "declarationRootDir puts the declarations where tsconfig.app.json's own rootDir and outDir say they go. Without it the executor emits them under dist/apps/cli/src, and the typecheck target then reports TS6305 for a module imported from a sibling file."
+  ],
   "nx": {
     "tags": [
       "layer:app"
     ],
     "targets": {
       "build": {
-        "executor": "@nx/esbuild:esbuild"
+        "executor": "@nx/esbuild:esbuild",
+        "options": {
+          "bundle": true,
+          "declarationRootDir": "apps/cli/src",
+          "thirdParty": true,
+          "format": [
+            "esm"
+          ],
+          "esbuildConfig": "apps/cli/esbuild.config.mts"
+        }
       },
       "boundaries": {},
       "lint": {},

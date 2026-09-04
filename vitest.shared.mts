@@ -4,6 +4,7 @@
 import { defineConfig } from 'vitest/config';
 import { readFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
+import { versionDefine } from './workspace-version.mts';
 
 const workspaceRoot = import.meta.dirname;
 
@@ -40,5 +41,8 @@ export const nodeTest = (projectRoot: string) =>
   defineConfig({
     root: projectRoot,
     cacheDir: cacheDir(projectRoot),
+    // The same substitution the CLI bundle is built with, so a test reads the
+    // constant a release ships rather than a value invented for the test.
+    define: versionDefine(),
     test: sharedTest(projectRoot, 'node'),
   });
