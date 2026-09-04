@@ -1,5 +1,4 @@
 import { modelMetadataSchema } from '@panoptes/model';
-import styles from './canvas.module.css';
 
 const placeholderMetadata = modelMetadataSchema.parse({
   title: 'model',
@@ -9,14 +8,10 @@ const placeholderMetadata = modelMetadataSchema.parse({
 });
 
 /**
- * Placeholder canvas that reaches the model layer until its own slice lands.
- * data-testid anchors the e2e smoke spec: the CSS module class name is
- * hashed, so it cannot anchor a selector.
+ * Placeholder canvas the studio mounts until the interactive canvas wires
+ * React Flow to the primitives beside it. data-testid anchors the browser
+ * smoke, and the text gives the element a box for that smoke to see.
  */
 export function PanoptesCanvas() {
-  return (
-    <div className={styles['container']} data-testid="canvas-container">
-      {placeholderMetadata.title}
-    </div>
-  );
+  return <div data-testid="canvas-container">{placeholderMetadata.title}</div>;
 }
