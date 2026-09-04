@@ -1,9 +1,5 @@
-import {
-  FileLifecycle,
-  emptyModel,
-  initialState,
-  placeholderModel,
-} from './state.js';
+import { emptyModel } from '@panoptes/model';
+import { FileLifecycle, initialState, placeholderModel } from './state.js';
 
 describe('initialState', () => {
   it('starts clean, with the model as its own saved copy', () => {

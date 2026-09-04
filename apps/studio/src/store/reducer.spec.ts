@@ -1,4 +1,7 @@
+import { emptyModel } from '@panoptes/model';
 import { Action } from './actions.js';
+import { reduce } from './reducer.js';
+import { FileLifecycle, initialState } from './state.js';
 import {
   actorElement,
   diagramId,
@@ -10,9 +13,7 @@ import {
   sampleModel,
   sampleThreat,
   threatId,
-} from './fixtures.js';
-import { reduce, unmatchedAction } from './reducer.js';
-import { FileLifecycle, emptyModel, initialState } from './state.js';
+} from './store.fixtures.js';
 
 const start = initialState(sampleModel);
 
@@ -89,6 +90,16 @@ const refused: ActionsByTag = {
   }),
 };
 
+describe('purity', () => {
+  for (const action of [...Object.values(applied), ...Object.values(refused)]) {
+    it(`leaves the state it was handed untouched while reducing ${action._tag}`, () => {
+      const before = structuredClone(start);
+      reduce(start, action);
+      expect(start).toStrictEqual(before);
+    });
+  }
+});
+
 describe('a model operation', () => {
   for (const action of Object.values(applied)) {
     it(`pushes the model ${action._tag} replaced onto the past`, () => {
@@ -119,7 +130,7 @@ describe('an operation the model refuses', () => {
       expect(next.present).toBe(start.present);
       expect(next.past).toEqual([]);
       expect(next.future).toEqual([]);
-      expect(next.lastFailure).toBeDefined();
+      expect(next.lastFailure?._tag).toBe('Operation');
     });
   }
 
@@ -187,17 +198,36 @@ describe('the file lifecycle', () => {
     );
   });
 
-  it('marks the model on screen as the one the file holds when it is saved', () => {
+  it('names the file a first save writes to, having had none', () => {
     const working = reduce(start, applied.AddElement);
-    const saved = reduce(working, Action.Saved());
+    const saved = reduce(
+      working,
+      Action.Saved({ name: 'new.yaml', format: 'panoptes-yaml' }),
+    );
     expect(saved.saved).toBe(working.present);
     expect(saved.past).toBe(working.past);
+    expect(saved.file).toEqual(
+      FileLifecycle.Opened({ name: 'new.yaml', format: 'panoptes-yaml' }),
+    );
   });
-});
 
-describe('exhaustiveness', () => {
-  it('leaves only `never` for a tag with no arm of its own', () => {
-    // @ts-expect-error unmatchedAction takes `never`, so an action the switch stops handling fails to compile here
-    expect(unmatchedAction(Action.Saved(), start)).toBe(start);
+  it('moves the open file when a save writes somewhere else', () => {
+    const opened = reduce(
+      start,
+      Action.Opened({
+        model: sampleModel,
+        name: 'model.json',
+        format: 'threat-dragon',
+      }),
+    );
+    const working = reduce(opened, applied.AddElement);
+    const saved = reduce(
+      working,
+      Action.Saved({ name: 'model.yaml', format: 'panoptes-yaml' }),
+    );
+    expect(saved.saved).toBe(working.present);
+    expect(saved.file).toEqual(
+      FileLifecycle.Opened({ name: 'model.yaml', format: 'panoptes-yaml' }),
+    );
   });
 });

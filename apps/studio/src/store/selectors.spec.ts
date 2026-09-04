@@ -1,5 +1,5 @@
+import { emptyModel } from '@panoptes/model';
 import { Action } from './actions.js';
-import { mainDiagram, newProcess, sampleModel } from './fixtures.js';
 import { reduce } from './reducer.js';
 import {
   canRedo,
@@ -8,7 +8,8 @@ import {
   firstDiagramId,
   isDirty,
 } from './selectors.js';
-import { emptyModel, initialState } from './state.js';
+import { initialState } from './state.js';
+import { mainDiagram, newProcess, sampleModel } from './store.fixtures.js';
 
 const start = initialState(sampleModel);
 

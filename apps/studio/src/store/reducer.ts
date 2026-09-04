@@ -13,8 +13,13 @@ import {
   type OperationFailure,
 } from '@panoptes/model';
 import { Either } from 'effect';
-import type { Action } from './actions.js';
-import { FileLifecycle, initialState, type State } from './state.js';
+import { Action } from './actions.js';
+import {
+  FileLifecycle,
+  StudioFailure,
+  initialState,
+  type State,
+} from './state.js';
 
 /**
  * The one place the studio's state changes. Every arm is total: an operation
@@ -22,73 +27,41 @@ import { FileLifecycle, initialState, type State } from './state.js';
  * were and records why, so no dispatch can fail and no caller has a failure
  * to handle.
  *
- * The switch is exhaustive over {@link Action}. A tag with no arm reaches
- * {@link unmatchedAction}, which takes `never`, so the omission is a compile
- * error.
+ * Effect's `$match` takes one arm per member of {@link Action} and the type
+ * of the cases object names every tag, so a tag added to the union without
+ * an arm beside it is a compile error.
  */
 export function reduce(state: State, action: Action): State {
-  switch (action._tag) {
-    case 'AddElement':
-      return edited(
-        state,
-        addElement(state.present, action.diagramId, action.element),
-      );
-    case 'RemoveElement':
-      return removedElement(state, action.elementId);
-    case 'MoveElement':
-      return edited(
-        state,
-        moveElement(state.present, action.elementId, action.offset),
-      );
-    case 'ResizeElement':
-      return edited(
-        state,
-        resizeElement(state.present, action.elementId, action.size),
-      );
-    case 'AddThreat':
-      return edited(state, addThreat(state.present, action.threat));
-    case 'RemoveThreat':
-      return edited(state, removeThreat(state.present, action.threatId));
-    case 'ReplaceThreat':
-      return edited(state, replaceThreat(state.present, action.threat));
-    case 'AttachThreat':
-      return edited(
-        state,
-        attachThreat(state.present, action.threatId, action.elementId),
-      );
-    case 'DetachThreat':
-      return edited(
-        state,
-        detachThreat(state.present, action.threatId, action.elementId),
-      );
-    case 'Undo':
-      return undone(state);
-    case 'Redo':
-      return redone(state);
-    case 'Select':
-      return { ...state, selection: action.elementId };
-    case 'Opened':
-      return {
-        ...initialState(action.model),
-        file: FileLifecycle.Opened({
-          name: action.name,
-          format: action.format,
-        }),
-      };
-    case 'Saved':
-      return { ...state, saved: state.present };
-    default:
-      return unmatchedAction(action, state);
-  }
-}
-
-/**
- * Where a tag no arm claimed would land. The action parameter is `never`,
- * so an action added to the union without an arm beside it stops the
- * compiler here. The state comes back unchanged, the reducer being total.
- */
-export function unmatchedAction(action: never, state: State): State {
-  return state;
+  return Action.$match(action, {
+    AddElement: ({ diagramId, element }) =>
+      edited(state, addElement(state.present, diagramId, element)),
+    RemoveElement: ({ elementId }) => removedElement(state, elementId),
+    MoveElement: ({ elementId, offset }) =>
+      edited(state, moveElement(state.present, elementId, offset)),
+    ResizeElement: ({ elementId, size }) =>
+      edited(state, resizeElement(state.present, elementId, size)),
+    AddThreat: ({ threat }) => edited(state, addThreat(state.present, threat)),
+    RemoveThreat: ({ threatId }) =>
+      edited(state, removeThreat(state.present, threatId)),
+    ReplaceThreat: ({ threat }) =>
+      edited(state, replaceThreat(state.present, threat)),
+    AttachThreat: ({ threatId, elementId }) =>
+      edited(state, attachThreat(state.present, threatId, elementId)),
+    DetachThreat: ({ threatId, elementId }) =>
+      edited(state, detachThreat(state.present, threatId, elementId)),
+    Undo: () => undone(state),
+    Redo: () => redone(state),
+    Select: ({ elementId }) => ({ ...state, selection: elementId }),
+    Opened: ({ model, name, format }) => ({
+      ...initialState(model),
+      file: FileLifecycle.Opened({ name, format }),
+    }),
+    Saved: ({ name, format }) => ({
+      ...state,
+      saved: state.present,
+      file: FileLifecycle.Opened({ name, format }),
+    }),
+  });
 }
 
 function edited(
@@ -96,7 +69,10 @@ function edited(
   outcome: Either.Either<Model, OperationFailure>,
 ): State {
   return Either.match(outcome, {
-    onLeft: (failure) => ({ ...state, lastFailure: failure }),
+    onLeft: (failure) => ({
+      ...state,
+      lastFailure: StudioFailure.Operation({ failure }),
+    }),
     onRight: (present) => ({
       ...state,
       present,

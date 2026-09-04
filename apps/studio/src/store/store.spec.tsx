@@ -6,7 +6,7 @@ import {
   mainDiagram,
   newProcess,
   sampleModel,
-} from './fixtures.js';
+} from './store.fixtures.js';
 import { elementCount } from './selectors.js';
 import { initialState } from './state.js';
 import { dispatch, modelStore, useModelStore } from './store.js';

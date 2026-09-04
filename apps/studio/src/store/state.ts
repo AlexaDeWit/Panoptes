@@ -1,5 +1,6 @@
 import type { FormatName } from '@panoptes/formats';
 import {
+  emptyModel,
   parseModel,
   type ElementId,
   type Model,
@@ -25,17 +26,28 @@ export type FileLifecycle = Data.TaggedEnum<{
 export const FileLifecycle = Data.taggedEnum<FileLifecycle>();
 
 /**
- * Everything the studio holds. `present` is the model on screen, `past` and
- * `future` the undo and redo stacks, each entry a whole model: the model's
- * operations return new models sharing everything they did not change, so a
- * snapshot costs a few objects rather than a copy of the model.
- *
- * The stacks hold models alone. Selection and the file lifecycle stay out of
- * them, so an undo moves the model and leaves the user where they were.
- * `saved` is the model the file holds, which is what makes unsaved work a
- * selector over identity rather than a flag to keep in step. `lastFailure`
- * is the operation the model refused, and clears on the next change to the
- * model.
+ * Why the studio could not do what a view asked of it. One member today, the
+ * model refusing an operation. Issue #37's read and write failures join it
+ * as members of this union rather than as a second field beside it, so a
+ * view renders one value however the refusal arose.
+ */
+export type StudioFailure = Data.TaggedEnum<{
+  Operation: { readonly failure: OperationFailure };
+}>;
+
+/**
+ * Constructors for {@link StudioFailure}, plus Effect's `$is` and `$match`
+ * helpers.
+ */
+export const StudioFailure = Data.taggedEnum<StudioFailure>();
+
+/**
+ * Everything the studio holds. `present` is the model on screen, and `past`
+ * and `future` are the undo and redo stacks, each entry a whole model and
+ * nothing else. `saved` is the model the open file holds, `selection` names
+ * an element of `present`, and `lastFailure` is the last refusal, cleared by
+ * the next change to the model. The reasoning behind the shape is in this
+ * directory's README.
  *
  * The state is never parsed and never written to a file, so it is the one
  * shape here with no schema behind it.
@@ -47,21 +59,7 @@ export type State = {
   readonly saved: Model;
   readonly selection: ElementId | undefined;
   readonly file: FileLifecycle;
-  readonly lastFailure: OperationFailure | undefined;
-};
-
-/**
- * A model with nothing in it. Written out rather than parsed because every
- * collection is empty: no id to collide, no reference to resolve, so no
- * refinement parseModel adds has anything to check.
- */
-export const emptyModel: Model = {
-  metadata: { title: '', owner: '', description: '', contributors: [] },
-  diagrams: [],
-  threats: [],
-  lastIssuedThreatNumber: 0,
-  mitigations: [],
-  assumptions: [],
+  readonly lastFailure: StudioFailure | undefined;
 };
 
 const placeholderDocument = {
@@ -107,10 +105,10 @@ const placeholderDocument = {
 
 /**
  * The model the studio starts on, so the walking skeleton has a diagram to
- * edit before anything can be opened. Issue #37 replaces it with the model
- * a file carries, dispatched as an `Opened` action. It comes through
- * parseModel, the only way a model comes into existence, and folds to
- * {@link emptyModel} rather than throwing if the literal ever stops parsing.
+ * edit before anything can be opened. Issue #37 replaces it with the model a
+ * file carries, dispatched as an `Opened` action. It comes through
+ * parseModel, and folds to the model package's empty model rather than
+ * throwing if the literal ever stops parsing.
  */
 export const placeholderModel: Model = Either.getOrElse(
   parseModel(placeholderDocument),

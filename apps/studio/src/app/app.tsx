@@ -27,25 +27,20 @@ export function App() {
   const elements = useModelStore(elementCount);
   const undoable = useModelStore(canUndo);
   const diagram = useModelStore(firstDiagramId);
+  const add =
+    diagram === undefined
+      ? undefined
+      : () => {
+          dispatch(
+            Action.AddElement({ diagramId: diagram, element: freshProcess() }),
+          );
+        };
   return (
     <main>
       <p>
         Elements: <span data-testid="element-count">{elements}</span>
       </p>
-      <button
-        type="button"
-        disabled={diagram === undefined}
-        onClick={() => {
-          if (diagram !== undefined) {
-            dispatch(
-              Action.AddElement({
-                diagramId: diagram,
-                element: freshProcess(),
-              }),
-            );
-          }
-        }}
-      >
+      <button type="button" disabled={add === undefined} onClick={add}>
         Add a process
       </button>
       <button

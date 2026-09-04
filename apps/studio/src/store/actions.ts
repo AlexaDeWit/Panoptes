@@ -16,7 +16,9 @@ import { Data } from 'effect';
  * operation and nothing else, each holding exactly the arguments that
  * operation takes, so the reducer applies one and folds its answer. The
  * remaining five are the studio's own: the two history moves, selection, and
- * the two ends of the file lifecycle.
+ * the two ends of the file lifecycle. `Opened` and `Saved` both name a file,
+ * because a first save is a save-as and settles which file the model lives
+ * in.
  *
  * The union is bounded and the reducer is exhaustive over it, so a tag added
  * here without an arm beside it is a compile error rather than a silent
@@ -41,7 +43,7 @@ export type Action = Data.TaggedEnum<{
     readonly name: string;
     readonly format: FormatName;
   };
-  Saved: {};
+  Saved: { readonly name: string; readonly format: FormatName };
 }>;
 
 /**
