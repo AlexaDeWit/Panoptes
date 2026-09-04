@@ -97,20 +97,29 @@ the same model always renders the same bytes.
 
 ## The goldens
 
-Three files under [`test-data/render/`](../../test-data/render) are this
+Six files under [`test-data/render/`](../../test-data/render) are this
 package's output, committed so a change to what it writes arrives as a diff
 on a file rather than as a test that still passes:
 
 - `ecluse.register.md`, the Écluse model as a threat register.
-- `ecluse.svg`, the one diagram of that model.
+- `panoptes.register.md`, the same of
+  [Panoptes' own threat model](../../threat-modelling/README.md), which
+  carries what Écluse does not: a custom methodology, a CIA category, threats
+  attached to no element, and a mitigation written as a markdown list.
+- `ecluse.svg`, the one diagram of the Écluse model.
 - `every-glyph.svg`, the diagram of `test-data/every-glyph.model.json`,
   drawing one of every glyph the canvas knows. Écluse carries no text
   element, no boundary curve, and no flow the layout refuses, so without it
   those would have no committed picture. `@panoptes/canvas` draws the same
   model into a golden of its own, which is why the model sits under
   `test-data` rather than inside either package.
+- `panoptes-read-and-render.svg` and `panoptes-agent-and-desktop.svg`, the
+  two diagrams of the Panoptes model, which is the only committed model
+  holding more than one.
 
-The suite compares all three on every run as vitest file snapshots and reds
+Each list is one list in the spec, the registers and the documents alike, so
+a further model or diagram joins every check over them by being added there.
+The suite compares all six on every run as vitest file snapshots and reds
 where a file and the output differ. A deleted golden is a hole in that gate
 rather than a failure: vitest writes a missing snapshot back and passes, and
 only a CI run, where writing is refused, reports it. Regenerate them with

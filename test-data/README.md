@@ -101,6 +101,28 @@ of a real threat model.
 rendered from, so this file is where a projection meets the model core
 without either package importing the other's fixtures.
 
+## `panoptes.model.json`
+
+Panoptes' own threat model in the internal form, from
+[`threat-modelling/panoptes.yaml`](../threat-modelling/README.md) read through
+the native codec. Not vendored, and derived: that file is the source.
+
+It is here for the reason `ecluse.model.json` is. `packages/render` and
+`packages/canvas` gate on the model, and the layer matrix keeps them from
+importing the codec that reads a YAML file, so a codec writes the model out
+and they read it as data.
+
+The producer differs, though, and that is the whole difference between the
+two files. `ecluse.model.json` comes from `packages/model`, out of the hand
+transcription that carries the representability gate, and `packages/formats`
+compares its read against it. This one has no transcription to come from,
+because nobody wrote the model twice: `packages/formats` reads the YAML and
+is its only producer. Which path a native fixture's model goes to is a field
+on its `nativeFixtures` entry, and Écluse's entry names none.
+
+Regenerate it with `pnpm nx test @panoptes/formats -- -u`, in the same commit
+as the edit to the YAML that moved it.
+
 ## `render/ecluse.register.md`
 
 The Écluse model as `packages/render` writes its threat register: an overview
@@ -118,6 +140,16 @@ as the change that moved it, and read the diff: the file is the register's
 output by definition, so a change to it is a change to what every consumer of
 the register sees.
 
+## `render/panoptes.register.md`
+
+Panoptes' own threat model as the same register, from `panoptes.model.json`
+above. It is the second model that register is held against, and the one that
+carries a custom methodology, a CIA category, two threats attached to no
+element, and a mitigation written as a markdown list, none of which the
+Écluse model has.
+
+Regenerate it the same way, with `pnpm nx test @panoptes/render -- -u`.
+
 ## `every-glyph.model.json`
 
 One of every glyph the canvas knows, in the internal form, written here by
@@ -133,17 +165,21 @@ both keep a golden drawn from it. It is here rather than inside either
 package because the layer matrix forbids a package dependency between the two
 readers, which is the same reason `ecluse.model.json` is here.
 
-## `render/ecluse.svg` and `render/every-glyph.svg`
+## `render/*.svg`
 
-The two diagrams `packages/render` draws as standalone SVG documents. Not
-vendored: this repository generates both.
+The diagrams `packages/render` draws as standalone SVG documents. Not
+vendored: this repository generates all four.
 
 `ecluse.svg` is the `High Level` diagram of `ecluse.model.json` above, read
 through `parseModel`, so the drawing and the register come from the one model
 the model core and the codecs are held to. `every-glyph.svg` is
 `every-glyph.model.json` above drawn the same way.
+`panoptes-read-and-render.svg` and `panoptes-agent-and-desktop.svg` are the
+two diagrams of `panoptes.model.json`, which is the only committed model that
+holds more than one, so they are also where a model of several diagrams is
+drawn at all.
 
-Both are committed for the reason the register above is, and gated the same
+All are committed for the reason the registers above are, and gated the same
 way: `packages/render` regenerates them on every test run with
 `toMatchFileSnapshot` and reds where a file and the drawing differ.
 Regenerate them with `pnpm nx test @panoptes/render -- -u`, in the same commit

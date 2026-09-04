@@ -46,6 +46,10 @@ change to the internal model can change what a released format version
 means. `packages/formats` is the only project that knows both a format and
 the model.
 
+[`threat-modelling/`](threat-modelling/README.md) holds Panoptes' own threat
+model, in the native format, kept valid by the same suites that read it as a
+fixture.
+
 ## Development
 
 Nix with flakes provides the toolchain (node, pnpm). With

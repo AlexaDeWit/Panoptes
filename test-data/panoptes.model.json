@@ -1,0 +1,1263 @@
+{
+  "metadata": {
+    "title": "Panoptes",
+    "owner": "Alexandra de Wit",
+    "description": "The threat model of Panoptes itself, in Panoptes' own format. Two diagrams: the path a model file takes from disk through the codecs into a register or a diagram, and the path an agent or the desktop shell takes to the same core. Every status is true to the tree at the time of writing. Mitigated means a mechanism is on main and the mitigation prose names it. Open means the surface is designed and its issue is named, with nothing built yet. An undecided severity means there is nothing built to assess. The model is also a fixture: the codec round trip, the format detection, the read-limit corpus, the markdown register, the standalone SVG documents and the canvas scenes all gate on it.",
+    "contributors": [
+      "Alexandra de Wit"
+    ]
+  },
+  "diagrams": [
+    {
+      "id": "read-and-render",
+      "title": "Reading a file and rendering it",
+      "elements": [
+        {
+          "id": "tb-foreign",
+          "name": "Foreign input",
+          "description": "Anything Panoptes did not write itself. A file from a colleague, from a repository, or from another tool.",
+          "outOfScope": false,
+          "reasonOutOfScope": "",
+          "kind": "trust-boundary",
+          "shape": {
+            "kind": "box",
+            "position": {
+              "x": 0,
+              "y": 60
+            },
+            "size": {
+              "width": 260,
+              "height": 360
+            }
+          }
+        },
+        {
+          "id": "tb-panoptes",
+          "name": "Panoptes process",
+          "description": "One process, whether the CLI, the studio, or the MCP server started it. Everything inside runs with the privileges of the person who started it.",
+          "outOfScope": false,
+          "reasonOutOfScope": "",
+          "kind": "trust-boundary",
+          "shape": {
+            "kind": "box",
+            "position": {
+              "x": 500,
+              "y": 0
+            },
+            "size": {
+              "width": 760,
+              "height": 660
+            }
+          }
+        },
+        {
+          "id": "el-author",
+          "name": "Model author or upstream tool",
+          "description": "Writes the file. Panoptes has no way to tell a careful author from a hostile one, so it tells neither apart and bounds both.",
+          "outOfScope": false,
+          "reasonOutOfScope": "",
+          "position": {
+            "x": 40,
+            "y": 100
+          },
+          "size": {
+            "width": 200,
+            "height": 70
+          },
+          "kind": "actor"
+        },
+        {
+          "id": "el-model-file",
+          "name": "Threat model file",
+          "description": "Panoptes YAML or Threat Dragon v2 JSON. The file name is never consulted in either direction, so the format is whatever the bytes turn out to be.",
+          "outOfScope": false,
+          "reasonOutOfScope": "",
+          "position": {
+            "x": 40,
+            "y": 300
+          },
+          "size": {
+            "width": 200,
+            "height": 80
+          },
+          "kind": "store"
+        },
+        {
+          "id": "el-read",
+          "name": "Codec read",
+          "description": "readAnyFormat in packages/formats. The read limits first, then each registered codec tried by reading, then the format's wire schema, then the mapping onto the internal model through parseModel.",
+          "outOfScope": false,
+          "reasonOutOfScope": "",
+          "position": {
+            "x": 540,
+            "y": 270
+          },
+          "size": {
+            "width": 140,
+            "height": 140
+          },
+          "kind": "process"
+        },
+        {
+          "id": "el-model",
+          "name": "Internal model",
+          "description": "The typed model parseModel returns, and the single authority every projection reads. Richer than any one file format, which is why the codecs report where a file and it do not correspond.",
+          "outOfScope": false,
+          "reasonOutOfScope": "",
+          "position": {
+            "x": 780,
+            "y": 300
+          },
+          "size": {
+            "width": 200,
+            "height": 80
+          },
+          "kind": "store"
+        },
+        {
+          "id": "el-register",
+          "name": "Markdown register",
+          "description": "renderRegister in packages/render. An overview table of every threat, then one section each, as GFM markdown a downstream site generator can publish.",
+          "outOfScope": false,
+          "reasonOutOfScope": "",
+          "position": {
+            "x": 1080,
+            "y": 60
+          },
+          "size": {
+            "width": 140,
+            "height": 140
+          },
+          "kind": "process"
+        },
+        {
+          "id": "el-diagram",
+          "name": "Canvas glyphs and SVG",
+          "description": "packages/canvas draws every glyph from model data alone, measuring nothing. The standalone SVG document that composes them into a file is issue #31, and is not on main.",
+          "outOfScope": false,
+          "reasonOutOfScope": "",
+          "position": {
+            "x": 1080,
+            "y": 270
+          },
+          "size": {
+            "width": 140,
+            "height": 140
+          },
+          "kind": "process"
+        },
+        {
+          "id": "el-write",
+          "name": "Codec write",
+          "description": "The write half of each codec. The native format projects the whole model, and the Threat Dragon write merges onto the document its own read returned so that what Panoptes does not model survives a save.",
+          "outOfScope": false,
+          "reasonOutOfScope": "",
+          "position": {
+            "x": 1080,
+            "y": 480
+          },
+          "size": {
+            "width": 140,
+            "height": 140
+          },
+          "kind": "process"
+        },
+        {
+          "id": "el-output",
+          "name": "Rendered and saved files",
+          "description": "What a run leaves on disk. A register, a diagram, and the model file a save wrote back.",
+          "outOfScope": false,
+          "reasonOutOfScope": "",
+          "position": {
+            "x": 1440,
+            "y": 300
+          },
+          "size": {
+            "width": 220,
+            "height": 80
+          },
+          "kind": "store"
+        },
+        {
+          "id": "el-site",
+          "name": "Downstream site generator",
+          "description": "Whatever renders the register for readers, such as the docs build of the project the model describes.",
+          "outOfScope": true,
+          "reasonOutOfScope": "Whatever publishes the register belongs to somebody else. Panoptes states what it does not decide, the handling of raw HTML in prose among it, and stops at the markdown.",
+          "position": {
+            "x": 1760,
+            "y": 270
+          },
+          "size": {
+            "width": 140,
+            "height": 140
+          },
+          "kind": "process"
+        },
+        {
+          "id": "el-limits-note",
+          "name": "Read limits note",
+          "description": "",
+          "outOfScope": false,
+          "reasonOutOfScope": "",
+          "position": {
+            "x": 540,
+            "y": 470
+          },
+          "size": {
+            "width": 260,
+            "height": 130
+          },
+          "kind": "text",
+          "text": "Every read is bounded before anything trusts it. 4 MiB of text, 64 levels of nesting, 50 aliases, and 100,000 nodes those aliases may reach."
+        },
+        {
+          "id": "fl-authoring",
+          "name": "Writes the file",
+          "description": "",
+          "outOfScope": false,
+          "reasonOutOfScope": "",
+          "kind": "flow",
+          "source": {
+            "kind": "attached",
+            "element": "el-author"
+          },
+          "target": {
+            "kind": "attached",
+            "element": "el-model-file"
+          },
+          "waypoints": []
+        },
+        {
+          "id": "fl-open",
+          "name": "A text of unknown format",
+          "description": "",
+          "outOfScope": false,
+          "reasonOutOfScope": "",
+          "kind": "flow",
+          "source": {
+            "kind": "attached",
+            "element": "el-model-file"
+          },
+          "target": {
+            "kind": "attached",
+            "element": "el-read"
+          },
+          "waypoints": []
+        },
+        {
+          "id": "fl-mapped",
+          "name": "Mapped records\nand divergences",
+          "description": "",
+          "outOfScope": false,
+          "reasonOutOfScope": "",
+          "kind": "flow",
+          "source": {
+            "kind": "attached",
+            "element": "el-read"
+          },
+          "target": {
+            "kind": "attached",
+            "element": "el-model"
+          },
+          "waypoints": []
+        },
+        {
+          "id": "fl-prose",
+          "name": "Threat prose",
+          "description": "",
+          "outOfScope": false,
+          "reasonOutOfScope": "",
+          "kind": "flow",
+          "source": {
+            "kind": "attached",
+            "element": "el-model"
+          },
+          "target": {
+            "kind": "attached",
+            "element": "el-register"
+          },
+          "waypoints": [
+            {
+              "x": 1030,
+              "y": 130
+            }
+          ]
+        },
+        {
+          "id": "fl-geometry",
+          "name": "Elements\nand geometry",
+          "description": "",
+          "outOfScope": false,
+          "reasonOutOfScope": "",
+          "kind": "flow",
+          "source": {
+            "kind": "attached",
+            "element": "el-model"
+          },
+          "target": {
+            "kind": "attached",
+            "element": "el-diagram"
+          },
+          "waypoints": []
+        },
+        {
+          "id": "fl-save",
+          "name": "Save",
+          "description": "",
+          "outOfScope": false,
+          "reasonOutOfScope": "",
+          "kind": "flow",
+          "source": {
+            "kind": "attached",
+            "element": "el-model"
+          },
+          "target": {
+            "kind": "attached",
+            "element": "el-write"
+          },
+          "waypoints": [
+            {
+              "x": 1030,
+              "y": 550
+            }
+          ]
+        },
+        {
+          "id": "fl-markdown",
+          "name": "Register markdown",
+          "description": "",
+          "outOfScope": false,
+          "reasonOutOfScope": "",
+          "kind": "flow",
+          "source": {
+            "kind": "attached",
+            "element": "el-register"
+          },
+          "target": {
+            "kind": "attached",
+            "element": "el-output"
+          },
+          "waypoints": [
+            {
+              "x": 1550,
+              "y": 180
+            }
+          ]
+        },
+        {
+          "id": "fl-svg",
+          "name": "Diagram SVG",
+          "description": "",
+          "outOfScope": false,
+          "reasonOutOfScope": "",
+          "kind": "flow",
+          "source": {
+            "kind": "attached",
+            "element": "el-diagram"
+          },
+          "target": {
+            "kind": "attached",
+            "element": "el-output"
+          },
+          "waypoints": []
+        },
+        {
+          "id": "fl-written",
+          "name": "Saved model file",
+          "description": "",
+          "outOfScope": false,
+          "reasonOutOfScope": "",
+          "kind": "flow",
+          "source": {
+            "kind": "attached",
+            "element": "el-write"
+          },
+          "target": {
+            "kind": "attached",
+            "element": "el-output"
+          },
+          "waypoints": [
+            {
+              "x": 1550,
+              "y": 500
+            }
+          ]
+        },
+        {
+          "id": "fl-publish",
+          "name": "Published register",
+          "description": "",
+          "outOfScope": false,
+          "reasonOutOfScope": "",
+          "kind": "flow",
+          "source": {
+            "kind": "attached",
+            "element": "el-output"
+          },
+          "target": {
+            "kind": "attached",
+            "element": "el-site"
+          },
+          "waypoints": []
+        }
+      ]
+    },
+    {
+      "id": "agent-and-desktop",
+      "title": "Agents and the desktop shell",
+      "elements": [
+        {
+          "id": "tb-untrusted",
+          "name": "Untrusted callers",
+          "description": "An agent's context and a browser renderer are both filled by whoever is driving them. Everything on the left of this line is input.",
+          "outOfScope": false,
+          "reasonOutOfScope": "",
+          "kind": "trust-boundary",
+          "shape": {
+            "kind": "curve",
+            "waypoints": [
+              {
+                "x": 300,
+                "y": 60
+              },
+              {
+                "x": 340,
+                "y": 250
+              },
+              {
+                "x": 300,
+                "y": 470
+              },
+              {
+                "x": 340,
+                "y": 680
+              }
+            ]
+          }
+        },
+        {
+          "id": "tb-desktop",
+          "name": "Electron main process",
+          "description": "The privileged half of the desktop shell, issue #42. Window, menu and file plumbing, importing nothing from packages/, which the layer matrix enforces.",
+          "outOfScope": false,
+          "reasonOutOfScope": "",
+          "kind": "trust-boundary",
+          "shape": {
+            "kind": "box",
+            "position": {
+              "x": 1030,
+              "y": 420
+            },
+            "size": {
+              "width": 220,
+              "height": 220
+            }
+          }
+        },
+        {
+          "id": "el-agent",
+          "name": "Agent and its harness",
+          "description": "An agent reaching Panoptes through the MCP server, issue #46. Its context holds whatever it has read, model files among that.",
+          "outOfScope": true,
+          "reasonOutOfScope": "The harness that runs the agent belongs to whoever is running it. Panoptes trusts nothing it sends and models only its own side of the connection.",
+          "position": {
+            "x": 30,
+            "y": 190
+          },
+          "size": {
+            "width": 200,
+            "height": 80
+          },
+          "kind": "actor"
+        },
+        {
+          "id": "el-renderer",
+          "name": "Studio renderer",
+          "description": "The studio running in a browser or in an Electron renderer. On main it is a skeleton that mounts the canvas and nothing else, with no editing, no file access and no Electron around it. What it will hold is the model core and the canvas, and still no file access of its own.",
+          "outOfScope": false,
+          "reasonOutOfScope": "",
+          "position": {
+            "x": 60,
+            "y": 460
+          },
+          "size": {
+            "width": 140,
+            "height": 140
+          },
+          "kind": "process"
+        },
+        {
+          "id": "el-mcp",
+          "name": "MCP server and tools",
+          "description": "panoptes mcp over stdio. Read and query tools in issue #47, and edit tools that write back through the codecs in issue #48. Not built.",
+          "outOfScope": false,
+          "reasonOutOfScope": "",
+          "position": {
+            "x": 630,
+            "y": 160
+          },
+          "size": {
+            "width": 140,
+            "height": 140
+          },
+          "kind": "process"
+        },
+        {
+          "id": "el-core",
+          "name": "Model core and codecs",
+          "description": "parseModel, the model operations, and the codecs. The same code the CLI path runs, reached here by a caller that is not a person at a keyboard.",
+          "outOfScope": false,
+          "reasonOutOfScope": "",
+          "position": {
+            "x": 910,
+            "y": 160
+          },
+          "size": {
+            "width": 140,
+            "height": 140
+          },
+          "kind": "process"
+        },
+        {
+          "id": "el-bridge",
+          "name": "Preload and IPC bridge",
+          "description": "The typed file bridge of issue #43. Bounded channel definitions, zod-validated messages, and the one adapter the studio's file access goes behind, with a web implementation and a desktop one. Not built.",
+          "outOfScope": false,
+          "reasonOutOfScope": "",
+          "position": {
+            "x": 630,
+            "y": 460
+          },
+          "size": {
+            "width": 140,
+            "height": 140
+          },
+          "kind": "process"
+        },
+        {
+          "id": "el-main",
+          "name": "Electron main",
+          "description": "Native open and save dialogs, and the only side of the shell with a filesystem. Not built.",
+          "outOfScope": false,
+          "reasonOutOfScope": "",
+          "position": {
+            "x": 1070,
+            "y": 460
+          },
+          "size": {
+            "width": 140,
+            "height": 140
+          },
+          "kind": "process"
+        },
+        {
+          "id": "el-fs",
+          "name": "Local filesystem",
+          "description": "The real files on the machine, which a save overwrites in place.",
+          "outOfScope": false,
+          "reasonOutOfScope": "",
+          "position": {
+            "x": 1430,
+            "y": 320
+          },
+          "size": {
+            "width": 200,
+            "height": 90
+          },
+          "kind": "store"
+        },
+        {
+          "id": "fl-tool-call",
+          "name": "Tool calls over stdio",
+          "description": "",
+          "outOfScope": false,
+          "reasonOutOfScope": "",
+          "kind": "flow",
+          "source": {
+            "kind": "attached",
+            "element": "el-agent"
+          },
+          "target": {
+            "kind": "attached",
+            "element": "el-mcp"
+          },
+          "waypoints": []
+        },
+        {
+          "id": "fl-mcp-core",
+          "name": "Parsed operations",
+          "description": "",
+          "outOfScope": false,
+          "reasonOutOfScope": "",
+          "kind": "flow",
+          "source": {
+            "kind": "attached",
+            "element": "el-mcp"
+          },
+          "target": {
+            "kind": "attached",
+            "element": "el-core"
+          },
+          "waypoints": []
+        },
+        {
+          "id": "fl-core-fs",
+          "name": "Reads and writes\nmodel files",
+          "description": "",
+          "outOfScope": false,
+          "reasonOutOfScope": "",
+          "kind": "flow",
+          "source": {
+            "kind": "attached",
+            "element": "el-core"
+          },
+          "target": {
+            "kind": "attached",
+            "element": "el-fs"
+          },
+          "waypoints": [
+            {
+              "x": 1130,
+              "y": 230
+            }
+          ]
+        },
+        {
+          "id": "fl-renderer-bridge",
+          "name": "Open and save requests",
+          "description": "",
+          "outOfScope": false,
+          "reasonOutOfScope": "",
+          "kind": "flow",
+          "source": {
+            "kind": "attached",
+            "element": "el-renderer"
+          },
+          "target": {
+            "kind": "attached",
+            "element": "el-bridge"
+          },
+          "waypoints": []
+        },
+        {
+          "id": "fl-bridge-main",
+          "name": "Validated IPC messages",
+          "description": "",
+          "outOfScope": false,
+          "reasonOutOfScope": "",
+          "kind": "flow",
+          "source": {
+            "kind": "attached",
+            "element": "el-bridge"
+          },
+          "target": {
+            "kind": "attached",
+            "element": "el-main"
+          },
+          "waypoints": []
+        },
+        {
+          "id": "fl-main-fs",
+          "name": "Native dialogs,\nreal paths",
+          "description": "",
+          "outOfScope": false,
+          "reasonOutOfScope": "",
+          "kind": "flow",
+          "source": {
+            "kind": "attached",
+            "element": "el-main"
+          },
+          "target": {
+            "kind": "attached",
+            "element": "el-fs"
+          },
+          "waypoints": [
+            {
+              "x": 1530,
+              "y": 530
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "threats": [
+    {
+      "id": "th-oversize",
+      "number": 1,
+      "title": "An oversized file exhausts the reader",
+      "category": {
+        "methodology": "STRIDE",
+        "category": "denial-of-service"
+      },
+      "severity": "medium",
+      "status": "mitigated",
+      "description": "A file large enough to fill memory is handed to Panoptes, and the parse itself is what costs, so a check after parsing arrives too late.",
+      "mitigation": "The size is measured in UTF-8 bytes before a parser sees the text, against `readLimits.maxTextBytes`, which is 4 MiB and about thirty times the largest file this repository vendors. Past it the read comes back as `ExceededReadLimit` naming the bound and what it had measured. A generated text one byte over the bound gates it in `read-limits.spec.ts`, since committing megabytes to prove a size bound would be the wrong trade.",
+      "elements": [
+        "el-model-file",
+        "el-read"
+      ]
+    },
+    {
+      "id": "th-nesting",
+      "number": 2,
+      "title": "A deeply nested document exhausts the stack",
+      "category": {
+        "methodology": "STRIDE",
+        "category": "denial-of-service"
+      },
+      "severity": "medium",
+      "status": "mitigated",
+      "description": "6 KB of JSON nests 3,000 deep, parses without complaint, and then overflows the stack of anything that walks it. This is not hypothetical here. It is the reproducer found during issue #26, inside a recursive schema that has since been withdrawn.",
+      "mitigation": "The nesting of the parsed value is measured by a walk carrying its own stack, which stops one level past `readLimits.maxNestingDepth` of 64. The walk goes level by level and expands a node only when it reaches that node deeper than it has before, so a value reachable along many paths costs its own size rather than the number of paths through it. `test-data/adversarial/deep-nesting.json` and `deep-block.yaml` gate it, one per kind of nesting.",
+      "elements": [
+        "el-read"
+      ]
+    },
+    {
+      "id": "th-alias",
+      "number": 3,
+      "title": "A few hundred bytes of aliases expand into gigabytes",
+      "category": {
+        "methodology": "STRIDE",
+        "category": "denial-of-service"
+      },
+      "severity": "medium",
+      "status": "mitigated",
+      "description": "The billion laughs attack in the form YAML gives it. A seed scalar and a handful of anchors, each a sequence of aliases to the one before, cost almost nothing to write and everything to resolve.",
+      "mitigation": "Aliases are counted on the composed document before any of them is resolved, against `readLimits.maxAliasCount` of 50, because resolving is where the cost is and a cycle expands without end. The count is this package's own rather than the parser's: `toJS` is handed `maxAliasCount: -1` and the expansion is measured here, since the parser's own accounting resolves an alias by scanning the whole document once per anchor and so costs more than the thing it bounds. A fourth bound, `maxAliasExpansion` of 100,000, holds how much of a document its aliases may reach, because the count alone bounds the cost only where anchors are alike, and a one-node anchor is as cheap to alias as a two-million-node one. Four fixtures gate the four shapes: `alias-expansion.yaml`, `wide-cycle.yaml`, `nested-anchors.yaml` and `shared-anchor.yaml`. The first is refused here and admitted by the parser's own default, which is what makes it proof that the bound is this project's.",
+      "elements": [
+        "el-read"
+      ]
+    },
+    {
+      "id": "th-cycle",
+      "number": 4,
+      "title": "A cyclic anchor gives the reader no bottom to reach",
+      "category": {
+        "methodology": "STRIDE",
+        "category": "denial-of-service"
+      },
+      "severity": "medium",
+      "status": "mitigated",
+      "description": "An anchor on a mapping and an alias to it underneath is a cycle in three lines and 48 bytes. Nothing in the file bounds its depth, and a cycle closed through two aliases doubles the work of a walk that counts paths at every level.",
+      "mitigation": "The depth walk climbs a cycle to the bound and refuses it there rather than following it. Because it holds every node it has already expanded, a branching cycle costs its width rather than a multiple of that width per level. `cyclic-anchor.yaml`, `branching-cycle.yaml` at fifteen bytes, and `wide-cycle.yaml` gate the three shapes.",
+      "elements": [
+        "el-read"
+      ]
+    },
+    {
+      "id": "th-throw",
+      "number": 5,
+      "title": "A read throws instead of returning a failure",
+      "category": {
+        "methodology": "STRIDE",
+        "category": "denial-of-service"
+      },
+      "severity": "medium",
+      "status": "mitigated",
+      "description": "A hostile file that makes a library throw takes down whatever called the read. In a CLI that is an exit code nobody can act on, and in the studio or the MCP server it is the process.",
+      "mitigation": "Throwing is not an error channel in this project's TypeScript. Every read returns `Either` with a `ReadFailure` on the error channel, and the adversarial corpus is asserted to read to a failure through both reads and to throw out of neither.",
+      "elements": [
+        "el-read"
+      ]
+    },
+    {
+      "id": "th-undeclared",
+      "number": 6,
+      "title": "A key the schema does not declare disappears in silence",
+      "category": {
+        "methodology": "STRIDE",
+        "category": "tampering"
+      },
+      "severity": "low",
+      "status": "mitigated",
+      "description": "A file written by a later release of a format, or by another tool, carries a key this release has no home for. Dropping it quietly loses an author's work, and refusing the file over it makes every format extension a breaking change.",
+      "mitigation": "A wire schema is a `z.object`, so it strips what it does not declare rather than refusing the payload, and the read reports every stripped key as an `undeclared` divergence naming its path. A schema that has fallen behind its format therefore announces itself rather than quietly shortening files.",
+      "elements": [
+        "el-read"
+      ]
+    },
+    {
+      "id": "th-references",
+      "number": 7,
+      "title": "A file builds a model whose references do not resolve",
+      "category": {
+        "methodology": "STRIDE",
+        "category": "tampering"
+      },
+      "severity": "medium",
+      "status": "mitigated",
+      "description": "A threat naming an element no diagram holds, a duplicate id, a threat numbered above the mark the file keeps, or a flow anchored to an element in another diagram. Each one reaches a renderer or an editor as a model that cannot be drawn or counted.",
+      "mitigation": "`parseModel` is the only way a model value comes into existence, and it enforces more than the shapes: ids unique where they must be, threat numbers unique and never above `lastIssuedThreatNumber`, flow endpoints anchored inside their own diagram and never to the flow itself, and every element and threat reference resolving. A refusal comes back with a path into the model, and `detect.spec.ts` pins the dangling case.",
+      "elements": [
+        "el-read",
+        "el-model"
+      ]
+    },
+    {
+      "id": "th-version",
+      "number": 8,
+      "title": "A file from a release Panoptes does not model is read in part",
+      "category": {
+        "methodology": "STRIDE",
+        "category": "tampering"
+      },
+      "severity": "medium",
+      "status": "mitigated",
+      "description": "A file stamped with a later format version is read by a reader that understands only some of it, and the parts it did not understand are lost on the next save.",
+      "mitigation": "`formatVersion` is a zod literal, so a Panoptes file stamped anything but 1 fails at that path rather than reaching the mapping, and a Threat Dragon file outside major 2 is refused whole. Where no codec claims a text the failure names every format tried, in the order tried, so the person holding the file is told what was attempted rather than handed a partial read.",
+      "elements": [
+        "el-read"
+      ]
+    },
+    {
+      "id": "th-save-loss",
+      "number": 9,
+      "title": "A save drops what the file carried",
+      "category": {
+        "methodology": "STRIDE",
+        "category": "tampering"
+      },
+      "severity": "high",
+      "status": "mitigated",
+      "description": "Threat Dragon's format holds styling, ports, and per-type flags the internal model has no place for. A save that serialized the model alone would drop all of it, and a model file in git would then show an edit nobody made.",
+      "mitigation": "A format is adopted completely or not at all. The wire schema declares everything the format carries, the parts Panoptes does not model included, and a write merges onto the document the read returned, so what it does not map is left as the file had it. Where the model does hold something less exactly than the file stated it, the write reports that rather than overwriting. Three oracles gate this over the vendored corpus, among them a comparison of raw parsed input against raw parsed output in which no scalar may move unclaimed.",
+      "elements": [
+        "el-write"
+      ]
+    },
+    {
+      "id": "th-register-forge",
+      "number": 10,
+      "title": "Threat prose forges the register's own structure",
+      "category": {
+        "methodology": "STRIDE",
+        "category": "tampering"
+      },
+      "severity": "high",
+      "status": "mitigated",
+      "description": "A threat title carrying a line that reads like another threat's heading takes that threat's anchor, so a link meant for one threat lands on another. A heading inside a description breaks out of its section and reparents everything under it.",
+      "mitigation": "The tree is built out of mdast nodes and serialized by remark, never concatenated, so a pipe, a backtick or a leading hash in a title lands in the table and in the heading as that text. Line breaks are collapsed in a heading, since an ATX heading holds one line, and a heading inside prose is demoted below the section heading. The register spec pins the forging case directly.",
+      "elements": [
+        "el-register"
+      ]
+    },
+    {
+      "id": "th-register-html",
+      "number": 11,
+      "title": "Raw HTML in threat prose reaches a published page",
+      "category": {
+        "methodology": "STRIDE",
+        "category": "tampering"
+      },
+      "severity": "high",
+      "status": "transferred",
+      "description": "A threat description carrying a script tag or an event handler renders as markup wherever the register is published, so the author of a model file reaches the readers of a site that publishes it.",
+      "mitigation": "Risk treatment: transferred to whatever consumes the register. Raw HTML passes through as written, because what to do about it depends on where the markdown is published and by what. The register's promises name this rather than implying a sanitizer that is not there. A site generator publishing a register from a file it did not write sanitizes it.",
+      "elements": [
+        "el-register",
+        "el-site"
+      ]
+    },
+    {
+      "id": "th-register-depth",
+      "number": 12,
+      "title": "Prose nested past the serializer's depth stops the render",
+      "category": {
+        "methodology": "STRIDE",
+        "category": "denial-of-service"
+      },
+      "severity": "low",
+      "status": "mitigated",
+      "description": "A description that opens four thousand block quotes recurses the markdown serializer once per level, and a render that throws is a render nobody gets.",
+      "mitigation": "Prose nested deeper than 32 levels is rendered as one paragraph of the author's own bytes. The text still reaches the reader, the structure does not, and the package reports no failure and does not throw.",
+      "elements": [
+        "el-register"
+      ]
+    },
+    {
+      "id": "th-svg-text",
+      "number": 13,
+      "title": "An element name reaches an SVG document as markup",
+      "category": {
+        "methodology": "STRIDE",
+        "category": "tampering"
+      },
+      "severity": "high",
+      "status": "mitigated",
+      "description": "A name, a text element, or a threat title written into an SVG that a browser then opens is markup in a document with its own script rules.",
+      "mitigation": "Issue #31 landed, so the standalone document exists and is gated. The glyphs are React elements rendered to static markup, so their text is escaped by the renderer, and every number reaching an attribute goes through `svgNumber`, which is locale-free and free of exponents. `renderSvg` puts every run of free text through `xmlSafeText`, the diagram title included, which replaces each character XML 1.0 forbids rather than dropping it, since a document holding one is refused whole by every XML parser. A spec opens each committed document as XML and holds it to one `svg` root in the SVG namespace, no `script`, `image`, `use` or `foreignObject`, no `href` reaching outside the document, no `url(` and no `@import`. The severity stays high: that is what the mechanism holds off.",
+      "elements": [
+        "el-diagram"
+      ]
+    },
+    {
+      "id": "th-pdf",
+      "number": 14,
+      "title": "The PDF path carries prose and fonts from a file nobody vetted",
+      "category": {
+        "methodology": "STRIDE",
+        "category": "tampering"
+      },
+      "severity": "medium",
+      "status": "open",
+      "description": "A PDF of the diagram and the register has to turn foreign prose into glyphs, and it does so inside the process that ran the command. The owner ruled the pipeline on 2026-09-03, on issue #34: Typst through its WebAssembly build, embedded in the CLI binary with a default font set, and no browser anywhere in the render path. So the surface is a compiler and a font shaper reading text the file's author wrote, rather than a scripting engine.",
+      "mitigation": "Nothing is built. Issue #34 carries the work and requires the landing pull request to record the pipeline and how it reaches end users. The severity is medium rather than undecided because the ruling removed the browser, and with it the scripting context that would have made it worse; what is left is foreign text reaching a compiler inside the caller's own process.",
+      "elements": [
+        "el-register",
+        "el-diagram"
+      ]
+    },
+    {
+      "id": "th-badge-drift",
+      "number": 15,
+      "title": "The diagram and the register disagree about what is open",
+      "category": {
+        "methodology": "CIA",
+        "category": "integrity"
+      },
+      "severity": "low",
+      "status": "mitigated",
+      "description": "A reader who counts badges on the diagram and rows in the register and gets two answers trusts neither. Two definitions of an open threat, one in the canvas and one in the register, is how that happens.",
+      "mitigation": "Badges count open threats on the model's own definition of open, and the register and the coverage queries read that same definition, so one model gives one count on every surface.",
+      "elements": [
+        "el-diagram",
+        "el-register"
+      ]
+    },
+    {
+      "id": "th-renderer-fs",
+      "number": 16,
+      "title": "The renderer reaches the filesystem directly",
+      "category": {
+        "methodology": "STRIDE",
+        "category": "elevation-of-privilege"
+      },
+      "severity": "high",
+      "status": "open",
+      "description": "An Electron renderer with node integration on, or with a preload that hands it a filesystem module, turns any code running in the page into code running on the machine. That page holds foreign markdown and foreign element names.",
+      "mitigation": "Nothing is built. Issue #42 asks for context isolation on, node integration off, the sandbox, and a content security policy, with Electron's own security checklist asserted by a test, and for a boundary rule that keeps the shell importing nothing from packages/. Issue #43 keeps file access behind one adapter rather than in the renderer.",
+      "elements": [
+        "el-renderer",
+        "el-bridge"
+      ]
+    },
+    {
+      "id": "th-ipc",
+      "number": 17,
+      "title": "An unvalidated IPC message reaches the main process",
+      "category": {
+        "methodology": "STRIDE",
+        "category": "tampering"
+      },
+      "severity": "high",
+      "status": "open",
+      "description": "An open channel that forwards whatever the renderer sends makes the main process an executor for the page. A path, a file mode, or a channel name chosen by the sender is enough.",
+      "mitigation": "Nothing is built. Issue #43 treats the IPC surface as a wire like any other, with bounded channel definitions, zod-validated messages, and a closed surface. The renderer is untrusted there by design rather than by exception.",
+      "elements": [
+        "el-bridge",
+        "el-main"
+      ]
+    },
+    {
+      "id": "th-path",
+      "number": 18,
+      "title": "A save writes a path the person never chose",
+      "category": {
+        "methodology": "STRIDE",
+        "category": "tampering"
+      },
+      "severity": "medium",
+      "status": "open",
+      "description": "A save that takes its destination from the model, or from a message, rather than from a dialog overwrites a file the person never named.",
+      "mitigation": "Nothing is built. The milestone requires open and save to go through native dialogs on real local files, and the shell to hold window, menu and file plumbing alone. What a save may be handed, and what it must be asked, is settled when issue #43 lands.",
+      "elements": [
+        "el-main",
+        "el-fs"
+      ]
+    },
+    {
+      "id": "th-agent-write",
+      "number": 19,
+      "title": "An edit tool writes an invalid model over a good file",
+      "category": {
+        "methodology": "STRIDE",
+        "category": "tampering"
+      },
+      "severity": "high",
+      "status": "open",
+      "description": "An agent calling an edit tool with an operation that does not hold leaves a file that no longer parses, and the model it replaced is gone. The workflow that started this project was an agent hand-editing JSON, which is this failure without the tool.",
+      "mitigation": "Nothing is built. Issue #48 requires every mutation to go through `parseModel` and the model operations, and requires proof in tests that an invalid operation cannot modify the file. The mechanism it rests on, a parse that is the only way a model comes into existence, is on main already.",
+      "elements": [
+        "el-mcp",
+        "el-fs"
+      ]
+    },
+    {
+      "id": "th-agent-loss",
+      "number": 20,
+      "title": "A lossy save through an agent tool drops records without saying so",
+      "category": {
+        "methodology": "STRIDE",
+        "category": "tampering"
+      },
+      "severity": "medium",
+      "status": "open",
+      "description": "An agent saving a model with mitigations and assumptions into Threat Dragon's format loses both, since that format keeps no record of either. An agent that is not told cannot tell the person who asked.",
+      "mitigation": "Nothing is built. The divergence list that names every such loss is on main, and `renderDivergences` already turns it into lines for a person. Issue #48 requires that report to reach the tool result on a lossy write, which is what remains.",
+      "elements": [
+        "el-mcp",
+        "el-core"
+      ]
+    },
+    {
+      "id": "th-prompt",
+      "number": 21,
+      "title": "Prose in a model file steers the agent that read it",
+      "category": {
+        "methodology": "custom",
+        "methodologyName": "OWASP LLM Top 10",
+        "category": "Prompt injection"
+      },
+      "severity": "undecided",
+      "status": "open",
+      "description": "A threat description is free text that an agent reads as part of its context. A model file is passed between people and pulled from repositories, so its prose is an input channel into an agent that can also write files.",
+      "mitigation": "Nothing is built, and nothing here can be assessed yet. The tools do not exist, and the harness that decides what an agent does with what it reads is out of scope. What Panoptes owns is the return path, where issue #48 puts every write through the model operations. The severity stays undecided until there is a tool surface to assess.",
+      "elements": [
+        "el-mcp",
+        "el-core"
+      ]
+    },
+    {
+      "id": "th-supply-chain",
+      "number": 22,
+      "title": "A substituted dependency or action reaches the build",
+      "category": {
+        "methodology": "STRIDE",
+        "category": "tampering"
+      },
+      "severity": "high",
+      "status": "mitigated",
+      "description": "A threat modelling tool that ships executables is worth attacking through its build rather than through its parser. A moved action tag, a dependency resolved at install time, or an unpinned toolchain is enough. This threat names the build rather than any element on the diagrams above, and it names substitution alone: an upstream release that is hostile when it is published is threat 25.",
+      "mitigation": "Three mechanisms, all of them on main.\n\n- The flake is the toolchain authority, and CI runs every step through `nix develop .#ci` rather than through whatever the runner ships.\n- `pnpm install --frozen-lockfile` installs the lockfile rather than resolving against a registry, and external versions live only in the `pnpm-workspace.yaml` catalog.\n- Every GitHub Action is pinned to a full commit SHA with the version in a trailing comment. zizmor's hash-pin policy fails an unpinned one, and Renovate bumps them.",
+      "elements": []
+    },
+    {
+      "id": "th-pdf-html",
+      "number": 23,
+      "title": "Raw HTML in prose reaches Panoptes' own PDF composition",
+      "category": {
+        "methodology": "STRIDE",
+        "category": "tampering"
+      },
+      "severity": "medium",
+      "status": "open",
+      "description": "Threat prose is markdown, and markdown carries raw HTML. The register hands the decision about that to whatever publishes it, because a register is markdown somebody else renders. The PDF path is Panoptes composing a document itself, so there is nobody to hand it to.",
+      "mitigation": "Nothing is built. Issue #34 carries a criterion of its own for this: a hostile fixture holding a script tag and event-handler HTML in threat prose has to come out of the PDF path inert. This one is owned rather than transferred, because here Panoptes is the composer rather than the author of an intermediate. Medium for the reason threat 14 is medium: the ruled pipeline is Typst compiled to WebAssembly with no browser, so the markup reaches a typesetter rather than a scripting engine.",
+      "elements": [
+        "el-register",
+        "el-diagram"
+      ]
+    },
+    {
+      "id": "th-detection-claim",
+      "number": 24,
+      "title": "A text is claimed by the wrong codec, or declined by its own",
+      "category": {
+        "methodology": "STRIDE",
+        "category": "tampering"
+      },
+      "severity": "medium",
+      "status": "mitigated",
+      "description": "Two codecs are offered every text, and exactly one should own it. Claim on the wrong signal and a broken Panoptes file is reported as a refused Threat Dragon document, or a broken file of a known format falls through to nobody and its holder is told that no format was recognized. Either way the paths into the file point at a document nobody wrote.",
+      "mitigation": "The claim rule is the discriminator lists in `detect.ts`, and `detect.spec.ts` pins both halves of it. Seven texts that no codec may claim, three of them stamping a version inside major 2 and one of those carrying a detail but no summary. A document broken one level below a naming key, which is claimed and then refused with a path into the file. A Panoptes model saved as JSON, which opens as a Panoptes model because no file name is consulted. And the smallest file of each release the codecs do model, against a Threat Dragon major above 2 and a `formatVersion` other than 1, which are claimed by nobody.",
+      "elements": [
+        "el-read"
+      ]
+    },
+    {
+      "id": "th-upstream-release",
+      "number": 25,
+      "title": "A compromised upstream release is pinned as it stands",
+      "category": {
+        "methodology": "STRIDE",
+        "category": "tampering"
+      },
+      "severity": "high",
+      "status": "open",
+      "description": "A pin makes a dependency unable to change under the build. It does not make the dependency trustworthy at the moment it was pinned. An attacker who reaches a package or an action at its source publishes a release, Renovate proposes the bump like any other, and the pin then holds the compromised version steady.",
+      "mitigation": "Partly held. `pnpm-workspace.yaml` sets `minimumReleaseAge` to 10,080 minutes and `renovate.json5` sets the same seven days with `internalChecksFilter: 'strict'`, so a freshly published version neither resolves nor is proposed until it has aged, and the quarantine lifts only for an OSV vulnerability fix, where waiting is the greater risk. What it does not cover is a release nobody catches inside those seven days, and no check of provenance or attestation exists at all: not npm provenance statements, not a sigstore or SLSA attestation, and no gate asking a person to read a dependency diff. Issue #113 is where that work lives. The severity stays high because the quarantine narrows the window rather than the blast radius, and what gets through runs in the build and ships in a binary.",
+      "elements": []
+    }
+  ],
+  "lastIssuedThreatNumber": 25,
+  "mitigations": [
+    {
+      "id": "mit-read-limits",
+      "title": "Bounded reads",
+      "prose": "`readLimits` in `@panoptes/formats` is one exported value carrying four numbers: 4 MiB of text measured in UTF-8 bytes before a parser sees it, 64 levels of nesting measured afterwards by a walk that carries its own stack, 50 aliases counted on the composed document before any of them is resolved, and 100,000 nodes those aliases may reach between them. Both reads pass their text through `parseWithinLimits`, and detection is the reads themselves, so the bounds hold whether or not the caller knows the format. Each number has a fixture under `test-data/adversarial` built to break it, and `read-limits.spec.ts` hands every one of them to both reads.",
+      "status": "verified",
+      "threats": [
+        "th-oversize",
+        "th-nesting",
+        "th-alias",
+        "th-cycle"
+      ]
+    },
+    {
+      "id": "mit-failures-are-values",
+      "title": "A read fails as a value",
+      "prose": "`CODING.md` makes throwing not an error channel in this project. A read returns Effect's `Either` with a package-owned `ReadFailure` on the error channel, one variant per place a read stops, and `read-limits.spec.ts` asserts of every adversarial fixture that both reads come back with a failure and that neither throws.",
+      "status": "verified",
+      "threats": [
+        "th-throw"
+      ]
+    },
+    {
+      "id": "mit-nothing-dropped-silently",
+      "title": "Nothing is dropped without a word",
+      "prose": "A wire schema is a `z.object`, so it drops a key it does not declare rather than refusing the whole file, and `undeclaredDivergences` reports every key it dropped with the path it sat at. The same list carries `unrepresentable`, `narrowed`, `split`, `overridden` and `discarded-by-edit`, so every place a file and the model fail to correspond is named rather than passed over in silence.",
+      "status": "verified",
+      "threats": [
+        "th-undeclared",
+        "th-save-loss",
+        "th-agent-loss"
+      ]
+    },
+    {
+      "id": "mit-detection-is-the-reads",
+      "title": "Detection is the reads themselves",
+      "prose": "No format is guessed from a file name or sniffed from a prefix. Each registered codec is offered the text and reads it, and a codec claims on three outcomes only: the read succeeded, the mapping failed, or its wire schema refused the document below the root keys that name the format, which `detect.ts` lists beside each codec. It declines on the format's own syntax refusing the text, and on a schema complaint at or above a naming key, a text that is no mapping at all being no format's file. Once a codec claims, its answer stands.",
+      "status": "verified",
+      "threats": [
+        "th-version",
+        "th-detection-claim"
+      ]
+    },
+    {
+      "id": "mit-register-is-a-tree",
+      "title": "The register is built as nodes",
+      "prose": "`renderRegister` builds mdast nodes and hands them to remark, and concatenates no markdown anywhere. A heading inside a threat's prose is demoted below the section heading, a title's line breaks are collapsed so that no title can forge another threat's heading, and prose nested past 32 levels is written out as the author's own bytes in one paragraph rather than recursed over.",
+      "status": "verified",
+      "threats": [
+        "th-register-forge",
+        "th-register-depth"
+      ]
+    },
+    {
+      "id": "mit-one-definition-of-open",
+      "title": "One definition of an open threat",
+      "prose": "A canvas badge counts open threats on the model's own definition of open, which is the definition the register and the coverage queries read, so a diagram and a register rendered from one model cannot disagree about what an element carries.",
+      "status": "implemented",
+      "threats": [
+        "th-badge-drift"
+      ]
+    },
+    {
+      "id": "mit-pinned-toolchain",
+      "title": "The toolchain is pinned",
+      "prose": "The flake is the toolchain authority and CI runs every step through `nix develop .#ci`. `pnpm install --frozen-lockfile` installs the lockfile rather than resolving against a registry, external versions live only in the `pnpm-workspace.yaml` catalog, and every GitHub Action is pinned to a full commit SHA with zizmor's hash-pin policy failing an unpinned one.",
+      "status": "implemented",
+      "threats": [
+        "th-supply-chain"
+      ]
+    },
+    {
+      "id": "mit-parse-is-the-only-door",
+      "title": "A model exists only through the parse",
+      "prose": "`parseModel` is the only way a model value comes into existence, and it enforces what no schema states: element, diagram, threat, mitigation and assumption ids unique where they must be, threat numbers unique and never above `lastIssuedThreatNumber`, flow endpoints anchored inside their own diagram and never to the flow itself, and every element and threat reference resolving. A refusal comes back as a failure carrying a path into the model rather than as an exception, and `detect.spec.ts` pins the dangling case end to end.",
+      "status": "verified",
+      "threats": [
+        "th-references"
+      ]
+    },
+    {
+      "id": "mit-svg-is-inert",
+      "title": "The SVG document reaches outside itself for nothing",
+      "prose": "A standalone document is composed by `renderSvg` rather than assembled from strings, so its text is escaped by the renderer and every character XML 1.0 forbids is replaced by `xmlSafeText` instead of refusing the whole document. A spec parses each committed document and holds it to one `svg` root in the SVG namespace, with no script, no reference reaching outside itself, and no two elements sharing an id.",
+      "status": "verified",
+      "threats": [
+        "th-svg-text"
+      ]
+    },
+    {
+      "id": "mit-release-quarantine",
+      "title": "A release is quarantined for seven days",
+      "prose": "`pnpm-workspace.yaml` sets `minimumReleaseAge` to 10,080 minutes and `renovate.json5` sets the same seven days beside `internalChecksFilter: 'strict'`, so a version neither resolves nor reaches a pull request until it has aged, and a poisoned release is likely pulled first. The one exception is a fix for a known vulnerability, where `vulnerabilityAlerts` lifts the delay because waiting is then the greater risk. It bounds the window rather than closing it, which is why the threat it addresses stays open.",
+      "status": "implemented",
+      "threats": [
+        "th-upstream-release"
+      ]
+    },
+    {
+      "id": "mit-ipc-is-schema-first",
+      "title": "The IPC surface is schema-first",
+      "prose": "Issue #43 asks of the file bridge what the codecs already do of a file: bounded channel definitions, zod-validated messages, no direct filesystem access from the renderer, and one adapter interface with a web implementation and a desktop one. Nothing of it is written.",
+      "status": "proposed",
+      "threats": [
+        "th-renderer-fs",
+        "th-ipc",
+        "th-path"
+      ]
+    },
+    {
+      "id": "mit-agent-writes-through-the-core",
+      "title": "An agent edit goes through the core",
+      "prose": "Issue #48 asks that every mutation an edit tool makes goes through `parseModel` and the model operations, that an invalid operation return a typed error and leave the file untouched, and that a lossy write carry its loss report into the tool result. Nothing of it is written.",
+      "status": "proposed",
+      "threats": [
+        "th-agent-write",
+        "th-agent-loss"
+      ]
+    }
+  ],
+  "assumptions": [
+    {
+      "id": "as-hostile-input",
+      "prose": "Every file Panoptes opens is treated as hostile, whatever its extension and whoever sent it. A threat model is passed between people, generated by tools, and committed to repositories by strangers, so the read path assumes nothing at all about who wrote the bytes.",
+      "status": "valid",
+      "elements": [
+        "el-model-file",
+        "el-read"
+      ],
+      "threats": [
+        "th-oversize",
+        "th-nesting",
+        "th-alias",
+        "th-cycle",
+        "th-throw",
+        "th-undeclared",
+        "th-references",
+        "th-version"
+      ]
+    },
+    {
+      "id": "as-planned-surfaces",
+      "prose": "The desktop shell and the MCP server are designs rather than code. Every threat on them is assessed against the acceptance criteria of its own issue, not against anything on main, and each one is assessed again when the code lands. The studio renderer is left out of this assumption because part of it is built, and its own description says which part.",
+      "status": "valid",
+      "elements": [
+        "el-bridge",
+        "el-main",
+        "el-mcp"
+      ],
+      "threats": [
+        "th-renderer-fs",
+        "th-ipc",
+        "th-path",
+        "th-agent-write",
+        "th-agent-loss",
+        "th-prompt"
+      ]
+    },
+    {
+      "id": "as-hand-written",
+      "prose": "This model is kept true by hand. CI proves that it parses, that it stays in the writer's canonical form, and that every projection of it still matches its golden. Nothing proves that its content still describes the tool, so it is read again whenever a milestone closes.",
+      "status": "valid",
+      "elements": [],
+      "threats": []
+    }
+  ]
+}

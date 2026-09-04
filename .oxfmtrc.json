@@ -10,9 +10,15 @@
   // well. Only the payloads are exempt; prose beside them is formatted like
   // any other document, which is why the markdown pattern names the register
   // suffix rather than every `.md` file under test-data.
+  //
+  // threat-modelling/ holds Panoptes' own threat model. The codec writes
+  // that file and a spec compares it byte for byte, so the formatter leaves
+  // the YAML there alone for the same reason. The README beside it is prose
+  // and is formatted like any other document.
   "ignorePatterns": [
     "test-data/**/*.json",
     "test-data/**/*.yaml",
-    "test-data/**/*.register.md"
+    "test-data/**/*.register.md",
+    "threat-modelling/**/*.yaml"
   ]
 }

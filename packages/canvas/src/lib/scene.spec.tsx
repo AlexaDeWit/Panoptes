@@ -1,6 +1,10 @@
 import type { Model } from '@panoptes/model';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { ecluseModel, everyGlyphModel } from './canvas.fixtures.js';
+import {
+  ecluseModel,
+  everyGlyphModel,
+  panoptesModel,
+} from './canvas.fixtures.js';
 import { layoutDiagram } from './layout.js';
 import { svgNumber } from './numbers.js';
 import { DiagramGlyphs } from './scene.js';
@@ -8,8 +12,45 @@ import { canvasStylesheet } from './stylesheet.js';
 
 const margin = 24;
 
-const documentOf = (model: Model): string => {
-  const layout = layoutDiagram(model.diagrams[0], model);
+const scenes: readonly {
+  readonly name: string;
+  readonly model: Model;
+  readonly diagram: number;
+  readonly golden: string;
+  readonly unplaced: number;
+}[] = [
+  {
+    name: 'the Écluse model',
+    model: ecluseModel,
+    diagram: 0,
+    golden: './ecluse-diagram.svg',
+    unplaced: 0,
+  },
+  {
+    name: 'every glyph',
+    model: everyGlyphModel,
+    diagram: 0,
+    golden: './every-glyph-diagram.svg',
+    unplaced: 1,
+  },
+  {
+    name: 'the Panoptes read and render diagram',
+    model: panoptesModel,
+    diagram: 0,
+    golden: './panoptes-read-and-render-diagram.svg',
+    unplaced: 0,
+  },
+  {
+    name: 'the Panoptes agent and desktop diagram',
+    model: panoptesModel,
+    diagram: 1,
+    golden: './panoptes-agent-and-desktop-diagram.svg',
+    unplaced: 0,
+  },
+];
+
+const documentOf = (model: Model, diagram: number): string => {
+  const layout = layoutDiagram(model.diagrams[diagram], model);
   const box = [
     layout.bounds.x - margin,
     layout.bounds.y - margin,
@@ -27,31 +68,28 @@ const documentOf = (model: Model): string => {
 };
 
 describe('a diagram drawn from model data alone', () => {
-  it('draws the Écluse model the same bytes twice over', () => {
-    expect(documentOf(ecluseModel)).toBe(documentOf(ecluseModel));
-  });
+  it.each(scenes)(
+    'draws $name the same bytes twice over',
+    ({ model, diagram }) => {
+      expect(documentOf(model, diagram)).toBe(documentOf(model, diagram));
+    },
+  );
 
-  it('draws the Écluse model as the committed golden file', async () => {
-    await expect(documentOf(ecluseModel)).toMatchFileSnapshot(
-      './ecluse-diagram.svg',
-    );
-  });
+  it.each(scenes)(
+    'draws $name as the committed golden file',
+    async ({ model, diagram, golden }) => {
+      await expect(documentOf(model, diagram)).toMatchFileSnapshot(golden);
+    },
+  );
 
-  it('draws every glyph the same bytes twice over', () => {
-    expect(documentOf(everyGlyphModel)).toBe(documentOf(everyGlyphModel));
-  });
-
-  it('draws every glyph as the committed golden file', async () => {
-    await expect(documentOf(everyGlyphModel)).toMatchFileSnapshot(
-      './every-glyph-diagram.svg',
-    );
-  });
-
-  it('places every element of the Écluse diagram', () => {
-    const layout = layoutDiagram(ecluseModel.diagrams[0], ecluseModel);
-    expect(layout.nodes.length + layout.edges.length).toBe(
-      ecluseModel.diagrams[0].elements.length,
-    );
-    expect(layout.unplaced).toEqual([]);
-  });
+  it.each(scenes)(
+    'draws or reports every element of $name',
+    ({ model, diagram, unplaced }) => {
+      const layout = layoutDiagram(model.diagrams[diagram], model);
+      expect(layout.unplaced).toHaveLength(unplaced);
+      expect(
+        layout.nodes.length + layout.edges.length + layout.unplaced.length,
+      ).toBe(model.diagrams[diagram].elements.length);
+    },
+  );
 });

@@ -16,10 +16,13 @@ import {
 } from '@panoptes/model';
 import { Either } from 'effect';
 import fc from 'fast-check';
+import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { z } from 'zod';
 import { readThreatDragon } from './threat-dragon-read.js';
 import { ecluseText } from './threat-dragon.fixtures.js';
+
+const repositoryRoot = join(import.meta.dirname, '../../../..');
 
 /**
  * The Écluse model, read from the Threat Dragon file the repository
@@ -37,8 +40,79 @@ export const ecluseModel: Model = Either.getOrThrow(
  * still passes.
  */
 export const goldenPath: string = join(
-  import.meta.dirname,
-  '../../../../test-data/panoptes/ecluse.yaml',
+  repositoryRoot,
+  'test-data/panoptes/ecluse.yaml',
+);
+
+const panoptesModelPath = join(
+  repositoryRoot,
+  'threat-modelling/panoptes.yaml',
+);
+
+const panoptesModelJsonPath = join(
+  repositoryRoot,
+  'test-data/panoptes.model.json',
+);
+
+/**
+ * A Panoptes YAML file this repository commits, with its committed bytes and,
+ * where this suite is the producer of one, the path it writes the file's
+ * internal model out to.
+ */
+export type NativeFixture = {
+  readonly name: string;
+  readonly path: string;
+  readonly text: string;
+  readonly modelJsonPath: string | undefined;
+};
+
+/** A {@link NativeFixture} whose internal model this suite writes out. */
+export type EmittedModel = {
+  readonly name: string;
+  readonly text: string;
+  readonly modelJsonPath: string;
+};
+
+/**
+ * Every Panoptes YAML file this repository commits. Each is a fixed point of
+ * the codec: what a read of the committed bytes writes back is those bytes
+ * again. The suites that gate a native file read this list rather than a
+ * path, so a third file joins all of them by being added here.
+ *
+ * `modelJsonPath` is where a file's internal model is written out for
+ * `packages/render` and `packages/canvas`, which gate on a model and cannot
+ * import a codec. Écluse names none, because `packages/model` writes that
+ * one from its own transcription of the Threat Dragon file and this suite
+ * compares against it rather than producing it. A file this suite is the
+ * only reader of names its own.
+ */
+export const nativeFixtures: readonly NativeFixture[] = [
+  {
+    name: 'Écluse model',
+    path: goldenPath,
+    text: readFileSync(goldenPath, 'utf8'),
+    modelJsonPath: undefined,
+  },
+  {
+    name: 'Panoptes model',
+    path: panoptesModelPath,
+    text: readFileSync(panoptesModelPath, 'utf8'),
+    modelJsonPath: panoptesModelJsonPath,
+  },
+];
+
+/** The fixtures of {@link nativeFixtures} this suite writes a model out for. */
+export const emittedModels: readonly EmittedModel[] = nativeFixtures.flatMap(
+  (fixture) =>
+    fixture.modelJsonPath === undefined
+      ? []
+      : [
+          {
+            name: fixture.name,
+            text: fixture.text,
+            modelJsonPath: fixture.modelJsonPath,
+          },
+        ],
 );
 
 type ElementInput = z.input<typeof elementSchema>;

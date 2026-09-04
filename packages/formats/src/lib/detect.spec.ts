@@ -8,7 +8,7 @@ import {
   readAnyFormat,
   type DetectedRead,
 } from './detect.js';
-import { goldenPath } from './panoptes-yaml.fixtures.js';
+import { goldenPath, nativeFixtures } from './panoptes-yaml.fixtures.js';
 import { panoptesYamlCodec } from './panoptes-yaml.js';
 import { readPanoptesYaml } from './panoptes-yaml-read.js';
 import { readLimits } from './read-limits.js';
@@ -144,8 +144,8 @@ describe('opening a text without being told its format', () => {
     expect(answer.codec).toBe(threatDragonCodec);
   });
 
-  it('reads the native file as Panoptes YAML', () => {
-    const answer = opened(nativeText);
+  it.each(nativeFixtures)('reads the $name as Panoptes YAML', ({ text }) => {
+    const answer = opened(text);
     expect(answer.format).toBe('panoptes-yaml');
     expect(answer.codec).toBe(panoptesYamlCodec);
   });

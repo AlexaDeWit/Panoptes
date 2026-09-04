@@ -29,6 +29,8 @@ const ecluseModel = modelFile('ecluse.model.json');
 
 const everyGlyphModel = modelFile('every-glyph.model.json');
 
+const panoptesModel = modelFile('panoptes.model.json');
+
 const modelOf = (elements: unknown[], title = 'Diagram'): Model =>
   Either.getOrThrow(
     parseModel({
@@ -407,33 +409,59 @@ function drawnOutsideTheViewBox(svg: string): Box[] {
   );
 }
 
-const ecluseSvg = svgOf(ecluseModel);
+const documents: readonly {
+  readonly name: string;
+  readonly model: Model;
+  readonly diagram: number;
+  readonly golden: string;
+}[] = [
+  {
+    name: 'the Écluse diagram',
+    model: ecluseModel,
+    diagram: 0,
+    golden: 'test-data/render/ecluse.svg',
+  },
+  {
+    name: 'every glyph',
+    model: everyGlyphModel,
+    diagram: 0,
+    golden: 'test-data/render/every-glyph.svg',
+  },
+  {
+    name: "Panoptes' read and render diagram",
+    model: panoptesModel,
+    diagram: 0,
+    golden: 'test-data/render/panoptes-read-and-render.svg',
+  },
+  {
+    name: "Panoptes' agent and desktop diagram",
+    model: panoptesModel,
+    diagram: 1,
+    golden: 'test-data/render/panoptes-agent-and-desktop.svg',
+  },
+];
 
-const everyGlyphSvg = svgOf(everyGlyphModel);
+const svgOfEntry = (entry: (typeof documents)[number]): string =>
+  renderSvg(entry.model.diagrams[entry.diagram], entry.model).svg;
 
 const forbiddenCharacterSvg = svgOf(forbiddenCharacterModel);
 
 describe('a diagram as a standalone SVG document', () => {
-  it('writes the Écluse diagram as the committed golden file', async () => {
-    await expect(ecluseSvg).toMatchFileSnapshot(
-      join(repositoryRoot, 'test-data/render/ecluse.svg'),
-    );
+  it.each(documents)(
+    'writes $name as the committed golden file',
+    async (entry) => {
+      await expect(svgOfEntry(entry)).toMatchFileSnapshot(
+        join(repositoryRoot, entry.golden),
+      );
+    },
+  );
+
+  it.each(documents)('writes $name the same bytes on a second run', (entry) => {
+    expect(svgOfEntry(entry)).toBe(svgOfEntry(entry));
   });
 
-  it('writes every glyph as the committed golden file', async () => {
-    await expect(everyGlyphSvg).toMatchFileSnapshot(
-      join(repositoryRoot, 'test-data/render/every-glyph.svg'),
-    );
-  });
-
-  it('writes the same bytes on a second run', () => {
-    expect(svgOf(ecluseModel)).toBe(ecluseSvg);
-    expect(svgOf(everyGlyphModel)).toBe(everyGlyphSvg);
-  });
-
-  it('ends the document with a newline', () => {
-    expect(ecluseSvg.endsWith('</svg>\n')).toBe(true);
-    expect(everyGlyphSvg.endsWith('</svg>\n')).toBe(true);
+  it.each(documents)('ends $name with a newline', (entry) => {
+    expect(svgOfEntry(entry).endsWith('</svg>\n')).toBe(true);
   });
 
   it('renders each diagram of a model as a document of its own', () => {
@@ -484,9 +512,8 @@ describe('the viewBox around what a diagram draws', () => {
     expect(drawnOutsideTheViewBox(svg)).toEqual([]);
   });
 
-  it('holds everything both goldens draw', () => {
-    expect(drawnOutsideTheViewBox(ecluseSvg)).toEqual([]);
-    expect(drawnOutsideTheViewBox(everyGlyphSvg)).toEqual([]);
+  it.each(documents)('holds everything $name draws', (entry) => {
+    expect(drawnOutsideTheViewBox(svgOfEntry(entry))).toEqual([]);
   });
 });
 
@@ -523,8 +550,7 @@ describe('free text carrying what XML forbids', () => {
 });
 
 describe.each([
-  { name: 'the Écluse diagram', svg: ecluseSvg },
-  { name: 'every glyph', svg: everyGlyphSvg },
+  ...documents.map((entry) => ({ name: entry.name, svg: svgOfEntry(entry) })),
   { name: 'text XML forbids', svg: forbiddenCharacterSvg },
 ])('$name as a document a reader can open', ({ svg }) => {
   it('parses as well-formed XML with one svg root in the SVG namespace', () => {
