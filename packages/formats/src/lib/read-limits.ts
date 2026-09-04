@@ -39,18 +39,49 @@ export const readLimits = Object.freeze({
    */
   maxNestingDepth: 64,
   /**
-   * How many aliases a document may hold, and how many times the YAML
-   * parser may expand one: half the parser's own default of 100, which it
-   * is still handed. The count is taken from the composed document before
-   * any alias is resolved, because resolving is where the cost is. The
-   * parser scores a self-referential anchor at nothing, so a sequence
-   * aliasing itself a few hundred times passes its accounting and costs a
-   * cube of that count to resolve. No file the repository vendors carries
-   * an anchor at all, and the format's own writer emits none, so the bound
-   * reaches hand-written files alone: 50 leaves room for a repeated value
-   * and refuses a bomb the default admits.
+   * How many aliases resolving a document works through: one for each alias
+   * it holds, plus the expanded aliases inside that alias's anchor. It
+   * stands in for the `yaml` package's option of this name rather than
+   * reproducing it, bounding the quantity that option exists to bound:
+   * counted here as a sum over the whole document, where the parser takes a
+   * product per anchor against a maximum over its children, so the two
+   * report different numbers for the same file. This package measures it
+   * rather than handing the parser a bound, because that accounting
+   * resolves an alias by scanning the whole
+   * document and takes that scan once per anchor, which costs more than
+   * what it bounds: fifty aliases arranged as anchors within anchors in a
+   * 4 MiB text spend 147 seconds inside the parser, where measuring them
+   * here costs a fifth of a millisecond. The count is taken on the composed
+   * document before any alias is resolved, since resolving is where the
+   * cost is, and a cycle expands without end, so it is refused here rather
+   * than further on.
+   *
+   * 50, half the parser's own default of 100. No file the repository
+   * vendors carries an anchor at all, and the format's own writer emits
+   * none, so the bound reaches hand-written files alone: it leaves room for
+   * a repeated value and refuses a bomb that default admits.
    */
   maxAliasCount: 50,
+  /**
+   * How much of a document its aliases may reach: the nodes under each
+   * alias's anchor, summed over the aliases. The count of them bounds what
+   * they cost only where they are alike, and they are not: a one-node
+   * anchor is as cheap to alias as a two-million-node one. Forty aliases to
+   * a sequence of two million elements sit inside every other bound, and
+   * the nesting walk then spends six seconds on that sequence, walking it
+   * again once per depth an alias reaches it from, where resolving the
+   * whole document costs under half a second.
+   *
+   * 100,000 leaves what a hand-written file shares far below it: a repeated
+   * threat record of twenty nodes reaches 1,000 across all fifty aliases
+   * the count admits, and a repeated diagram of five hundred nodes reaches
+   * 5,000 across ten. No file the repository vendors carries an anchor at
+   * all, and the format's own writer emits none, so this bound reaches
+   * hand-written files alone. What a file sitting at it can still cost is
+   * this many nodes walked once per level of the nesting bound, which is
+   * under what the size bound already admits.
+   */
+  maxAliasExpansion: 100_000,
 });
 
 /** Which bound a read stopped on, named as {@link readLimits} names it. */
@@ -61,10 +92,10 @@ export type ReadLimit = keyof typeof readLimits;
  * the read had measured when it stopped. For `maxTextBytes` the
  * measurement is the text's UTF-8 byte count, or its UTF-16 length where
  * that alone breaks the bound, since a text that long is refused without
- * being measured further and its UTF-8 length is never below it. For
- * `maxAliasCount` it is the number of aliases the composed document holds.
- * Where a read stops rather than measuring on, which is the nesting walk
- * and the parser's own accounting, it is one past the bound.
+ * being measured further and its UTF-8 length is never below it. Where a
+ * read stops rather than measuring on, which is the nesting walk and both
+ * alias measurements, it is one past the bound: none of the three is taken
+ * further than the answer needs.
  */
 export function exceededReadLimit(
   limit: ReadLimit,

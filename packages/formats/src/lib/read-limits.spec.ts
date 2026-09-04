@@ -1,11 +1,12 @@
 import { Either } from 'effect';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { parse } from 'yaml';
+import { parse, parseDocument } from 'yaml';
 import type { ReadFailure } from './codec.js';
+import { aliasCostIn } from './panoptes-yaml-document.js';
 import { readPanoptesYaml } from './panoptes-yaml-read.js';
 import { goldenPath } from './panoptes-yaml.fixtures.js';
-import { readLimits } from './read-limits.js';
+import { parseWithinLimits, readLimits } from './read-limits.js';
 import { readThreatDragon } from './threat-dragon-read.js';
 import { corpusTexts } from './threat-dragon.fixtures.js';
 
@@ -21,6 +22,33 @@ const vendored = (name: string): string =>
 
 const nestedBy = (steps: number): string =>
   `${'['.repeat(steps + 1)}${']'.repeat(steps + 1)}`;
+
+const sharedFromDepths = (elements: number, depths: number): string =>
+  [
+    `shared: &shared [${'x,'.repeat(elements - 1)}x]`,
+    'deep:',
+    ...Array.from(
+      { length: depths },
+      (_, step) =>
+        `${' '.repeat(step + 1)}at: *shared\n${' '.repeat(step + 1)}in:`,
+    ),
+    `${' '.repeat(depths + 1)}end: done`,
+    '',
+  ].join('\n');
+
+const nestedAnchors = (anchors: number): string => {
+  const named = Array.from({ length: anchors }, (_, step) => step + 1);
+  return [
+    ...named.map((step) => `n${String(step)}: &n${String(step)} x`),
+    'nest: &c1',
+    ...named
+      .slice(1)
+      .map((step) => `${' '.repeat(step - 1)}in: &c${String(step)}`),
+    `${' '.repeat(anchors)}[${named.map((step) => `*n${String(step)}`).join(', ')}]`,
+    `use: [${named.map((step) => `*c${String(step)}`).join(', ')}]`,
+    '',
+  ].join('\n');
+};
 
 const fixtures: readonly {
   readonly name: string;
@@ -43,7 +71,7 @@ const fixtures: readonly {
   {
     name: 'cyclic-anchor.yaml',
     text: vendored('cyclic-anchor.yaml'),
-    asYaml: 'maxNestingDepth',
+    asYaml: 'maxAliasCount',
     asJson: 'MalformedText',
   },
   {
@@ -55,7 +83,7 @@ const fixtures: readonly {
   {
     name: 'branching-cycle.yaml',
     text: vendored('branching-cycle.yaml'),
-    asYaml: 'maxNestingDepth',
+    asYaml: 'maxAliasCount',
     asJson: 'MalformedText',
   },
   {
@@ -65,9 +93,21 @@ const fixtures: readonly {
     asJson: 'MalformedText',
   },
   {
+    name: 'shared-anchor.yaml',
+    text: vendored('shared-anchor.yaml'),
+    asYaml: 'maxAliasExpansion',
+    asJson: 'MalformedText',
+  },
+  {
+    name: 'nested-anchors.yaml',
+    text: vendored('nested-anchors.yaml'),
+    asYaml: 'maxAliasCount',
+    asJson: 'MalformedText',
+  },
+  {
     name: 'a branching cycle written as a block mapping',
     text: 'a: &a\n  l: *a\n  r: *a\n',
-    asYaml: 'maxNestingDepth',
+    asYaml: 'maxAliasCount',
     asJson: 'MalformedText',
   },
   {
@@ -119,6 +159,7 @@ describe('the read limits against the files the repository vendors', () => {
       maxTextBytes: 4_194_304,
       maxNestingDepth: 64,
       maxAliasCount: 50,
+      maxAliasExpansion: 100_000,
     });
   });
 });
@@ -196,10 +237,21 @@ describe('the nesting bound', () => {
     ).toBe('InvalidWireDocument');
   });
 
-  it('refuses a cycle an alias branched, in work its width cannot grow', () => {
-    expect(refusalOf(readPanoptesYaml, vendored('branching-cycle.yaml'))).toBe(
-      'maxNestingDepth',
-    );
+  it('refuses a value that branches back into itself, in work its width cannot grow', () => {
+    const loop: Record<string, unknown> = {};
+    loop['l'] = loop;
+    loop['r'] = loop;
+    expect(
+      failureOf(
+        (text) => parseWithinLimits(text, () => Either.right(loop)),
+        '{}',
+      ),
+    ).toEqual({
+      _tag: 'ExceededReadLimit',
+      limit: 'maxNestingDepth',
+      bound: readLimits.maxNestingDepth,
+      observed: readLimits.maxNestingDepth + 1,
+    });
   });
 
   it('measures a shared subtree from the deepest place it is reached', () => {
@@ -227,20 +279,90 @@ describe('the nesting bound', () => {
 });
 
 describe('the alias bound', () => {
-  it('counts what a document holds before an alias is resolved', () => {
+  it('counts an alias and the aliases its anchor expands to', () => {
+    const document = parseDocument(vendored('alias-expansion.yaml'));
+    expect(
+      aliasCostIn(document, { expanded: 1_000, reached: 1_000 }).expanded,
+    ).toBe(54);
+  });
+
+  it('stops that count where it holds, before an alias is resolved', () => {
+    expect(
+      failureOf(readPanoptesYaml, vendored('alias-expansion.yaml')),
+    ).toEqual({
+      _tag: 'ExceededReadLimit',
+      limit: 'maxAliasCount',
+      bound: readLimits.maxAliasCount,
+      observed: readLimits.maxAliasCount + 1,
+    });
+  });
+
+  it('refuses a cycle, which expands without end', () => {
     expect(failureOf(readPanoptesYaml, vendored('wide-cycle.yaml'))).toEqual({
       _tag: 'ExceededReadLimit',
       limit: 'maxAliasCount',
       bound: readLimits.maxAliasCount,
-      observed: 800,
+      observed: readLimits.maxAliasCount + 1,
     });
   });
 
-  it('is the one this package sets and not the parser default', () => {
+  it('refuses anchors within anchors, which the parser charges per anchor', () => {
+    expect(
+      failureOf(readPanoptesYaml, vendored('nested-anchors.yaml')),
+    ).toEqual({
+      _tag: 'ExceededReadLimit',
+      limit: 'maxAliasCount',
+      bound: readLimits.maxAliasCount,
+      observed: readLimits.maxAliasCount + 1,
+    });
+  });
+
+  it('is this package measuring, where the parser is now handed nothing', () => {
     const text = vendored('alias-expansion.yaml');
     expect(refusalOf(readPanoptesYaml, text)).toBe('maxAliasCount');
     expect(() => {
       parse(text);
     }).not.toThrow();
+  });
+});
+
+describe('the alias expansion bound', () => {
+  it('counts what the aliases reach, and stops counting where it holds', () => {
+    expect(failureOf(readPanoptesYaml, vendored('shared-anchor.yaml'))).toEqual(
+      {
+        _tag: 'ExceededReadLimit',
+        limit: 'maxAliasExpansion',
+        bound: readLimits.maxAliasExpansion,
+        observed: readLimits.maxAliasExpansion + 1,
+      },
+    );
+  });
+
+  it('is what an alias reaches rather than how many aliases there are', () => {
+    expect(refusalOf(readPanoptesYaml, sharedFromDepths(1, 40))).toBe(
+      'InvalidWireDocument',
+    );
+  });
+
+  it('counts a mapping anchor by its keys and its values alike', () => {
+    const document = parseDocument(
+      'shared: &shared { a: 1, b: 2 }\nuse: [*shared, *shared]\n',
+    );
+    expect(
+      aliasCostIn(document, { expanded: 1_000, reached: 1_000 }).reached,
+    ).toBe(10);
+  });
+
+  it('leaves an alias with no anchor to the parser', () => {
+    expect(refusalOf(readPanoptesYaml, 'a: *missing\n')).toBe('MalformedText');
+  });
+});
+
+describe('a generated fixture', () => {
+  it('is the bytes its generator writes, so the file cannot drift', () => {
+    expect([sharedFromDepths(3_000, 40), nestedAnchors(25)]).toEqual([
+      vendored('shared-anchor.yaml'),
+      vendored('nested-anchors.yaml'),
+    ]);
   });
 });

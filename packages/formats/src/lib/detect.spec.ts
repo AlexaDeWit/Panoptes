@@ -207,7 +207,7 @@ describe('a text past a read limit', () => {
   it('answers with the bound rather than with what detection tried', () => {
     expect(outcome(branchingCycle)).toMatchObject({
       _tag: 'ExceededReadLimit',
-      limit: 'maxNestingDepth',
+      limit: 'maxAliasCount',
     });
   });
 

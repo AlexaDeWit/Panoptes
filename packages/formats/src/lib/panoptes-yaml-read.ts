@@ -23,9 +23,13 @@ import {
   type PanoptesYamlThreat,
 } from '@panoptes/wire-panoptes-yaml';
 import { Either } from 'effect';
-import { parseDocument, visit, YAMLParseError } from 'yaml';
+import { parseDocument, YAMLParseError } from 'yaml';
 import type { z } from 'zod';
 import { ReadFailure, type ReadResult } from './codec.js';
+import {
+  aliasCostIn,
+  type ComposedDocument,
+} from './panoptes-yaml-document.js';
 import {
   assumptionStatusesToModel,
   mitigationStatusesToModel,
@@ -48,11 +52,6 @@ type BoundaryShapeInput = z.input<typeof boundaryShapeSchema>;
 type ThreatInput = z.input<typeof threatSchema>;
 type MitigationInput = z.input<typeof mitigationSchema>;
 type AssumptionInput = z.input<typeof assumptionSchema>;
-
-const aliasLimitMessage =
-  'Excessive alias count indicates a resource exhaustion attack';
-
-type ComposedDocument = ReturnType<typeof parseDocument>;
 
 /**
  * A Panoptes YAML file as the internal model, the document it was mapped
@@ -85,24 +84,19 @@ type ComposedDocument = ReturnType<typeof parseDocument>;
  *
  * Nothing throws. A text past a bound in `readLimits` is
  * `ExceededReadLimit`. The read is in three steps rather than one call to
- * the parser, because the alias bound has to be checked between two of
- * them: the text is composed into a document, the aliases that document
- * holds are counted before any of them is resolved, and only then is the
- * document turned into a value. Resolving is where an alias costs
- * anything, and the parser's own accounting scores a self-referential
- * anchor at nothing, so a sequence that aliases itself a few hundred times
- * passes every bound the parser has and costs a cube of that count to
- * resolve. Counting first is what makes it cheap to refuse.
+ * the parser, because the two alias bounds have to be taken between two of
+ * them: the text is composed into a document, how many aliases resolving it
+ * works through and how much of the document they repeat are measured
+ * before any of them is resolved, and only then is the document turned into
+ * a value. Resolving is where an alias costs anything, and
+ * `panoptes-yaml-document.ts` carries what each measurement bounds.
  *
- * The parser's own guards land on the same failure. It is still handed the
- * alias bound as its `maxAliasCount`, and it reports an expansion past
- * that bound as a `ReferenceError` carrying a message of its own, which is
- * the second gate on anything the count admits. A nesting it has no stack
- * for arrives as a parse error coded `RESOURCE_EXHAUSTION`, reported as
- * the depth bound because the parser catches its composer's overflow whole
- * and reports nothing finer than that it ran out. Reading that message is
- * what a spec over the alias fixture pins, so a parser that reworded it
- * says so rather than passing the refusal off as malformed text.
+ * The parser's alias accounting is turned off rather than tuned, since it
+ * costs more than what it bounds: `toJS` is given `maxAliasCount: -1`, and
+ * both alias bounds are this package's own. A nesting the parser has no
+ * stack for still arrives as a parse error coded `RESOURCE_EXHAUSTION`,
+ * reported as the depth bound because it catches its composer's overflow
+ * whole and reports nothing finer than that it ran out.
  *
  * Text that is not YAML is `MalformedText`. A document the wire schema
  * refuses, a missing or wrong `formatVersion` among them, is
@@ -117,7 +111,10 @@ export function readPanoptesYaml(
 
 function parseYaml(text: string): Either.Either<unknown, ReadFailure> {
   return parseWithinLimits(text, (bounded) =>
-    Either.flatMap(Either.flatMap(compose(bounded), withinAliasLimit), toValue),
+    Either.flatMap(
+      Either.flatMap(compose(bounded), withinAliasLimits),
+      toValue,
+    ),
   );
 }
 
@@ -133,31 +130,26 @@ function compose(text: string): Either.Either<ComposedDocument, ReadFailure> {
   );
 }
 
-function withinAliasLimit(
+function withinAliasLimits(
   document: ComposedDocument,
 ): Either.Either<ComposedDocument, ReadFailure> {
-  const held = aliasesIn(document);
-  return held > readLimits.maxAliasCount
-    ? Either.left(exceededReadLimit('maxAliasCount', held))
-    : Either.right(document);
-}
-
-function aliasesIn(document: ComposedDocument): number {
-  let held = 0;
-  visit(document, {
-    Alias: () => {
-      held += 1;
-    },
+  const cost = aliasCostIn(document, {
+    expanded: readLimits.maxAliasCount + 1,
+    reached: readLimits.maxAliasExpansion + 1,
   });
-  return held;
+  if (cost.expanded > readLimits.maxAliasCount) {
+    return Either.left(exceededReadLimit('maxAliasCount', cost.expanded));
+  }
+  return cost.reached > readLimits.maxAliasExpansion
+    ? Either.left(exceededReadLimit('maxAliasExpansion', cost.reached))
+    : Either.right(document);
 }
 
 function toValue(
   document: ComposedDocument,
 ): Either.Either<unknown, ReadFailure> {
   return Either.try({
-    try: () =>
-      document.toJS({ maxAliasCount: readLimits.maxAliasCount }) as unknown,
+    try: () => document.toJS({ maxAliasCount: -1 }) as unknown,
     catch: toReadFailure,
   });
 }
@@ -165,9 +157,6 @@ function toValue(
 function toReadFailure(error: unknown): ReadFailure {
   if (error instanceof YAMLParseError && error.code === 'RESOURCE_EXHAUSTION') {
     return exceededReadLimit('maxNestingDepth', readLimits.maxNestingDepth + 1);
-  }
-  if (error instanceof ReferenceError && error.message === aliasLimitMessage) {
-    return exceededReadLimit('maxAliasCount', readLimits.maxAliasCount + 1);
   }
   return ReadFailure.MalformedText({ message: String(error) });
 }

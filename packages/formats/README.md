@@ -40,12 +40,13 @@ and no other internal package.
 
 `readLimits` is what a read may spend on a text before it refuses it. It is
 one exported value, so a caller that checks a file before handing it over
-enforces the numbers the codecs enforce rather than numbers of its own. Three
+enforces the numbers the codecs enforce rather than numbers of its own. Four
 bounds today, each with headroom over the largest file the repository vendors
 and each justified by a fixture under `test-data/adversarial` built to break
 it: the size of the text in UTF-8 bytes, 4 MiB and about thirty times that
-file; how far below the root a value may sit, 64 levels; and how many times
-the YAML parser may expand an alias, 50.
+file; how far below the root a value may sit, 64 levels; how many aliases
+resolving a document works through, 50; and how much of a document those
+aliases reach, 100,000 nodes.
 
 Both reads pass their text through `parseWithinLimits`. The size is measured
 before a parser sees the text, since that bound is what keeps the parse itself
@@ -60,19 +61,34 @@ unbounded depth, which the walk climbs to the bound and refuses there rather
 than following, and one that branches costs its width rather than multiplying
 by it at every level.
 
-The YAML read takes the alias bound in two places, because between composing a
-document and resolving it is the only place the cheap check exists. Aliases are
-counted on the composed document before any of them is resolved, since
-resolving is what an alias costs and the parser scores a self-referential
-anchor at nothing: a sequence aliasing itself a few hundred times passes the
-parser's own accounting and costs a cube of that count to resolve. The parser
-is handed the bound all the same, so an expansion it does count is refused at
-the same number, and a nesting it has no stack for is reported as the bound
-that stopped the read. `JSON.parse` needs no such handling, since it
-builds a value of any depth without recursing, which leaves the walk as the
-only thing standing between a 3,000-deep payload and whatever would have
-recursed over it. A text within the bounds reads exactly as it did before they
-existed.
+The YAML read takes both alias bounds between composing a document and
+resolving it, which is the only place the cheap measurement exists, and it
+takes them itself: `toJS` is called with `maxAliasCount: -1`, so the parser
+accounts for nothing. Its accounting resolves an alias by scanning the whole
+document and takes that scan once per anchor, so a document nesting anchors
+within anchors pays it once per level: fifty aliases arranged that way in a
+4 MiB text cost 147 seconds inside the parser, where measuring them here costs
+a fifth of a millisecond. A nesting the parser has no stack for is still
+reported as the bound that stopped the read.
+
+One traversal of the composed document takes both numbers. How many aliases
+resolution works through is one for each alias plus the expanded aliases
+inside its anchor, weighed bottom up, so a cycle is an anchor reached from
+inside itself and is refused there rather than by the nesting walk further on.
+How much of the document those aliases reach is the nodes under each alias's
+anchor summed over the aliases, because a count says nothing about size: a
+one-node anchor is as cheap to alias as a two-million-node one. What an alias
+costs there is not a copy, since `toJS` hands every alias to one anchor the
+same value: it is that the nesting walk expands a node again for each depth an
+alias reaches it from. The traversal costs the document, once, and the
+counting after it costs the ceilings: a node is counted once under an anchor,
+an anchor is walked once however many aliases repeat it, and neither walk
+holds more than one node's children past what it can still count.
+
+`JSON.parse` needs no such handling, since it builds a value of any depth
+without recursing, which leaves the walk as the only thing standing between a
+3,000-deep payload and whatever would have recursed over it. A text within the
+bounds reads exactly as it did before they existed.
 
 `readThreatDragon` is the Threat Dragon v2 read. The format is declared by
 [`@panoptes/wire-threat-dragon`](../wire-threat-dragon/README.md), which

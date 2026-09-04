@@ -228,29 +228,32 @@ since committing megabytes to prove a size bound would be the wrong trade.
 YAML read and the Threat Dragon read, because YAML is a superset of JSON and
 a hostile file arrives with whatever extension its author chose.
 
-| File                   | Bytes | What it is                                                                          | How it was built                                                                |
-| ---------------------- | ----- | ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
-| `deep-nesting.json`    | 6,000 | 3,000 nested empty arrays, the reproducer found during #26                          | `'['.repeat(3000) + ']'.repeat(3000)`                                           |
-| `deep-block.yaml`      | 9,287 | A YAML block mapping 128 deep, one space of indent per level                        | `nested:` at rising indent, then `bottom`                                       |
-| `cyclic-anchor.yaml`   | 48    | An anchor on `metadata` and an alias to it underneath, a cycle in 3 lines           | Written by hand                                                                 |
-| `alias-expansion.yaml` | 88    | A seed scalar and three anchors, each a sequence of three aliases to the one before | Written by hand, sized to land between our alias bound and the parser's default |
-| `branching-cycle.yaml` | 15    | A sequence anchored to itself twice, so every level of it branches in two           | Written by hand                                                                 |
-| `wide-cycle.yaml`      | 2,408 | The same sequence anchored to itself 800 times                                      | `a: &a [` then `*a` 800 times, comma-joined, then `]`                           |
+| File                   | Bytes | What it is                                                                                                                                     | How it was built                                                                |
+| ---------------------- | ----- | ---------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| `deep-nesting.json`    | 6,000 | 3,000 nested empty arrays, the reproducer found during #26                                                                                     | `'['.repeat(3000) + ']'.repeat(3000)`                                           |
+| `deep-block.yaml`      | 9,287 | A YAML block mapping 128 deep, one space of indent per level                                                                                   | `nested:` at rising indent, then `bottom`                                       |
+| `cyclic-anchor.yaml`   | 48    | An anchor on `metadata` and an alias to it underneath, a cycle in 3 lines                                                                      | Written by hand                                                                 |
+| `alias-expansion.yaml` | 88    | A seed scalar and three anchors, each a sequence of three aliases to the one before                                                            | Written by hand, sized to land between our alias bound and the parser's default |
+| `branching-cycle.yaml` | 15    | A sequence anchored to itself twice, so every level of it branches in two                                                                      | Written by hand                                                                 |
+| `wide-cycle.yaml`      | 2,408 | The same sequence anchored to itself 800 times                                                                                                 | `a: &a [` then `*a` 800 times, comma-joined, then `]`                           |
+| `shared-anchor.yaml`   | 8,355 | One anchored sequence of 3,000 scalars, aliased from forty rising depths                                                                       | Written by a generator the spec re-runs, `sharedFromDepths(3000, 40)`           |
+| `nested-anchors.yaml`  | 1,114 | Twenty-five anchors nested in each other, the innermost holding an alias to each of twenty-five one-node anchors, all twenty-five then aliased | Written by a generator the spec re-runs, `nestedAnchors(25)`                    |
 
 `deep-nesting.json` is the known reproducer: 6 KB of JSON parses without
 complaint and then overflows the stack of anything that walks it, which is
 how it was found, inside a recursive `z.lazy` schema that has since been
-withdrawn. `cyclic-anchor.yaml` costs three lines to say the same
-thing, and nothing bounds its depth at all. The two together are why the
-nesting bound is checked on the parsed value rather than on the text.
+withdrawn. It is why the nesting bound is checked on the parsed value rather
+than on the text. `cyclic-anchor.yaml` costs three lines to say the same
+thing about depth, and is refused ahead of that walk now, as an alias count:
+an anchor an alias reaches from inside itself expands without end.
 
 `branching-cycle.yaml` is fifteen bytes and closes its cycle through two
 aliases rather than one, so a walk that counted paths instead of nodes would
 double its work at every level and never reach the depth that would stop it.
-The parser's alias bound does not catch it, because a self-referential anchor
-is scored while it is still being composed and scores nothing. It is here so
-that the walk's work bound has a fixture of its own, the way each of the
-three numbers does.
+It is refused before that walk now, as an alias count, because an anchor
+reached from inside itself expands without end; the walk's own handling of a
+value like it is pinned in `read-limits.spec.ts` on a JavaScript object built
+to reach itself, since no YAML read reaches the walk with one any more.
 
 `deep-block.yaml` is the same class through the other kind of YAML nesting.
 It is the largest file here because block nesting costs a square of its depth
@@ -258,13 +261,34 @@ in bytes, one space of indent per level, which is also why a flow document is
 the cheaper attack and why both are here.
 
 `wide-cycle.yaml` is the width of that cycle rather than its branching. Every
-bound admits it on paper: two kilobytes, two levels deep, and an alias score
+bound admitted it on paper: two kilobytes, two levels deep, and an alias score
 of nothing, because the parser scores a self-referential anchor while it is
 still composing it. Resolving it is what costs, about a cube of the alias
-count, and reading it took a minute before the alias count was moved ahead of
-resolution. It is the fixture for that ordering.
+count, and reading it took a minute before the alias measurement was moved
+ahead of resolution. It is the fixture for that ordering.
 
 `alias-expansion.yaml` is refused by the alias bound this project sets and
 accepted by the one the `yaml` package defaults to, which is what makes it
 proof that the bound is ours. Raising the bound to the parser's default
-turns the spec over it red.
+turns the spec over it red. It expands to 54 aliases out of the nine it
+holds, which is the number the spec pins.
+
+`shared-anchor.yaml` is one large anchored node aliased many times, and
+every other bound admits it: eight kilobytes, and forty aliases against a
+bound of fifty with nothing inside the anchor for any of them to expand to.
+What it costs is not a copy, because `toJS` hands every alias the same
+value: it is that the nesting walk expands a node again each time it
+reaches that node deeper than before, so the sequence is walked once per
+depth an alias reaches it from. At the size it was found, a 4 MiB text
+holding a two-million-element sequence aliased from forty depths, the nesting
+walk spent six seconds on that one sequence where resolving the whole document
+cost under half a second. This is that shape at a size worth committing.
+
+`nested-anchors.yaml` is what the parser's own alias accounting costs rather
+than what an alias costs. `yaml` resolves an alias by scanning the whole
+document, and its accounting takes that scan once per anchor, so anchors
+nested in each other pay it once per level: this shape padded to 4 MiB spent
+147 seconds inside `toJS` before this package took the accounting over, and
+none of it was visible from outside the parser. It is refused as an alias
+count now, in a fifth of a millisecond of measurement, and it is the fixture
+for handing the parser `maxAliasCount: -1`.
