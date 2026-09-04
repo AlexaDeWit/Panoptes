@@ -35,7 +35,7 @@ readable, and [`SCHEMA.md`](SCHEMA.md) states it in full.
 
 Which format characters that rule reaches depends on the Unicode data the
 runtime carries, so
-[`src/lib/text.format-characters.txt`](src/lib/text.format-characters.txt)
+[`src/lib/text.format-characters.snapshot.txt`](src/lib/text.format-characters.snapshot.txt)
 pins the set. The suite walks every Cf code point the runtime knows and
 writes the accepted ones there as a file snapshot, so a Node or ICU upgrade
 that moves the set arrives as a diff on that file rather than as a silent

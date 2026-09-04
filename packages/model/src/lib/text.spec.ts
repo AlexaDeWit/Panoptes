@@ -261,7 +261,7 @@ describe('the format characters the rule reaches', () => {
         ),
         '',
       ].join('\n'),
-    ).toMatchFileSnapshot('./text.format-characters.txt');
+    ).toMatchFileSnapshot('./text.format-characters.snapshot.txt');
   });
 });
 

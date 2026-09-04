@@ -222,7 +222,7 @@ for (const runner of runners) {
           out,
         ]),
       ).toEqual({ code: 0, out: '', err: '' });
-      expect(readFileSync(out)).toEqual(golden('ecluse.register.md'));
+      expect(readFileSync(out)).toEqual(golden('ecluse.register.snapshot.md'));
     });
 
     it('draws the Écluse fixture as the golden file', () => {
@@ -237,7 +237,7 @@ for (const runner of runners) {
           out,
         ]),
       ).toEqual({ code: 0, out: '', err: '' });
-      expect(readFileSync(out)).toEqual(golden('ecluse.svg'));
+      expect(readFileSync(out)).toEqual(golden('ecluse.snapshot.svg'));
     });
 
     it('draws to standard output for an out of -', () => {
@@ -250,7 +250,7 @@ for (const runner of runners) {
         '-',
       ]);
       expect(result.code).toEqual(0);
-      expect(result.out).toEqual(golden('ecluse.svg'));
+      expect(result.out).toEqual(golden('ecluse.snapshot.svg'));
       expect(result.err.toString('utf8')).toEqual('');
     });
 
@@ -276,8 +276,11 @@ for (const runner of runners) {
 
     it('draws each diagram a model of several names', () => {
       const chosen = [
-        ['read-and-render', 'panoptes-read-and-render.svg'],
-        ['Agents and the desktop shell', 'panoptes-agent-and-desktop.svg'],
+        ['read-and-render', 'panoptes-read-and-render.snapshot.svg'],
+        [
+          'Agents and the desktop shell',
+          'panoptes-agent-and-desktop.snapshot.svg',
+        ],
       ];
       for (const [name, file] of chosen) {
         const result = ran(runner, [

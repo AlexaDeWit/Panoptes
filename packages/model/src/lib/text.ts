@@ -53,10 +53,10 @@ export function acceptsEveryCharacter(text: string): boolean {
  * and the tag characters, so a subdivision flag built from tags is refused
  * where every other emoji sequence is not; the line and paragraph separators
  * U+2028 and U+2029; private use; unassigned code points; and an unpaired
- * surrogate. Which
- * format characters the rule reaches is pinned beside its spec, in
- * `src/lib/text.format-characters.txt`, so a Unicode upgrade under the
- * runtime arrives as a diff rather than as a silent change.
+ * surrogate. Which format characters the rule reaches is pinned beside its
+ * spec, in `src/lib/text.format-characters.snapshot.txt`, so a Unicode
+ * upgrade under the runtime arrives as a diff rather than as a silent
+ * change.
  */
 export const acceptedTextSchema = z
   .string()

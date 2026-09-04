@@ -444,25 +444,25 @@ const documents: readonly {
     name: 'the Écluse diagram',
     model: ecluseModel,
     diagram: 0,
-    golden: 'test-data/render/ecluse.svg',
+    golden: 'test-data/render/ecluse.snapshot.svg',
   },
   {
     name: 'every glyph',
     model: everyGlyphModel,
     diagram: 0,
-    golden: 'test-data/render/every-glyph.svg',
+    golden: 'test-data/render/every-glyph.snapshot.svg',
   },
   {
     name: "Panoptes' read and render diagram",
     model: panoptesModel,
     diagram: 0,
-    golden: 'test-data/render/panoptes-read-and-render.svg',
+    golden: 'test-data/render/panoptes-read-and-render.snapshot.svg',
   },
   {
     name: "Panoptes' agent and desktop diagram",
     model: panoptesModel,
     diagram: 1,
-    golden: 'test-data/render/panoptes-agent-and-desktop.svg',
+    golden: 'test-data/render/panoptes-agent-and-desktop.snapshot.svg',
   },
 ];
 

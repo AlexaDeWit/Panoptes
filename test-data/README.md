@@ -9,14 +9,14 @@ import no internal package at all, so a fixture file owned by `model` would
 be out of reach of the packages that read it.
 
 No payload here is formatted. `.oxfmtrc.json` ignores `test-data/**/*.json`,
-`test-data/**/*.yaml` and `test-data/**/*.register.md`, at any depth below
+`test-data/**/*.yaml` and `test-data/**/*.snapshot.md`, at any depth below
 this directory, so a vendored file keeps the bytes the foreign tool wrote,
 which is what a codec has to read, a written one keeps the bytes it was
 written with, which is what a test compares against, and an adversarial
 payload keeps the shape that makes it adversarial. The markdown pattern
-names the register suffix rather than every `.md` file below, so prose like
+names the snapshot suffix rather than every `.md` file below, so prose like
 this note is formatted like any other document. That puts a rule on the next
-generated markdown payload: name it `*.register.md`, or widen the pattern in
+generated markdown payload: name it `*.snapshot.md`, or widen the pattern in
 the same commit. A `.md` file below under any other name is formatted, and a
 byte comparison against a formatted file flaps. A payload in a format none of
 the three patterns names needs the same decision, and the SVG diagrams below
@@ -123,7 +123,7 @@ on its `nativeFixtures` entry, and Écluse's entry names none.
 Regenerate it with `pnpm nx test @panoptes/formats -- -u`, in the same commit
 as the edit to the YAML that moved it.
 
-## `render/ecluse.register.md`
+## `render/ecluse.register.snapshot.md`
 
 The Écluse model as `packages/render` writes its threat register: an overview
 table of the 29 threats, then one section each. Not vendored. This repository
@@ -140,7 +140,7 @@ as the change that moved it, and read the diff: the file is the register's
 output by definition, so a change to it is a change to what every consumer of
 the register sees.
 
-## `render/panoptes.register.md`
+## `render/panoptes.register.snapshot.md`
 
 Panoptes' own threat model as the same register, from `panoptes.model.json`
 above. It is the second model that register is held against, and the one that
@@ -165,17 +165,18 @@ both keep a golden drawn from it. It is here rather than inside either
 package because the layer matrix forbids a package dependency between the two
 readers, which is the same reason `ecluse.model.json` is here.
 
-## `render/*.svg`
+## `render/*.snapshot.svg`
 
 The diagrams `packages/render` draws as standalone SVG documents. Not
 vendored: this repository generates all four.
 
-`ecluse.svg` is the `High Level` diagram of `ecluse.model.json` above, read
-through `parseModel`, so the drawing and the register come from the one model
-the model core and the codecs are held to. `every-glyph.svg` is
-`every-glyph.model.json` above drawn the same way.
-`panoptes-read-and-render.svg` and `panoptes-agent-and-desktop.svg` are the
-two diagrams of `panoptes.model.json`, which is the only committed model that
+`ecluse.snapshot.svg` is the `High Level` diagram of `ecluse.model.json`
+above, read through `parseModel`, so the drawing and the register come from
+the one model the model core and the codecs are held to.
+`every-glyph.snapshot.svg` is `every-glyph.model.json` above drawn the same
+way. `panoptes-read-and-render.snapshot.svg` and
+`panoptes-agent-and-desktop.snapshot.svg` are the two diagrams of
+`panoptes.model.json`, which is the only committed model that
 holds more than one, so they are also where a model of several diagrams is
 drawn at all.
 
