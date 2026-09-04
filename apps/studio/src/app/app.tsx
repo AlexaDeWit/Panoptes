@@ -1,8 +1,10 @@
 import { PanoptesCanvas } from '@panoptes/canvas';
 import {
   generateElementId,
+  threatSchema,
   type Element,
   type Severity,
+  type Threat,
 } from '@panoptes/model';
 import { Action } from '../store/actions.js';
 import {
@@ -15,6 +17,8 @@ import { dispatch, useModelStore } from '../store/store.js';
 import { SeverityField } from '../ui/severity-field.js';
 import styles from './app.module.css';
 
+const threatFields = threatSchema.keyof().options;
+
 function freshProcess(): Element {
   return {
     kind: 'process',
@@ -25,6 +29,31 @@ function freshProcess(): Element {
     reasonOutOfScope: '',
     position: { x: 40, y: 160 },
     size: { width: 120, height: 60 },
+  };
+}
+
+/**
+ * The panel's commit handler, bound to the threat on screen. A control hands
+ * it the fields it changed and the change leaves as one `ReplaceThreat`, so
+ * every field of the panel commits the same way and issue #40 adds controls
+ * rather than dispatch sites. A patch that leaves every field as it was
+ * dispatches nothing: a model operation returns a new model whatever it was
+ * asked to do, so the store would push an undo entry and mark the file dirty
+ * over an edit nobody made. Fields are compared by identity, which is exact
+ * for the threat's scalars and reads a rebuilt `elements` array as a change.
+ */
+export function threatCommitter(
+  send: (action: Action) => void,
+  threat: Threat | undefined,
+): (patch: Partial<Threat>) => void {
+  return (patch) => {
+    if (threat === undefined) {
+      return;
+    }
+    const edited = { ...threat, ...patch };
+    if (threatFields.some((field) => edited[field] !== threat[field])) {
+      send(Action.ReplaceThreat({ threat: edited }));
+    }
   };
 }
 
@@ -49,10 +78,9 @@ export function App() {
             Action.AddElement({ diagramId: diagram, element: freshProcess() }),
           );
         };
+  const commitThreat = threatCommitter(dispatch, threat);
   const commitSeverity = (severity: Severity): void => {
-    if (threat !== undefined && severity !== threat.severity) {
-      dispatch(Action.ReplaceThreat({ threat: { ...threat, severity } }));
-    }
+    commitThreat({ severity });
   };
 
   return (
