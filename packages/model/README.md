@@ -3,18 +3,19 @@
 Zod schemas and inferred types for the threat model core: ids, geometry,
 elements, diagrams, threats, mitigations, assumptions, and model metadata.
 `parseModel` is the parse boundary and the only exported way a `Model` value
-comes into existence. Operations are pure functions returning new models:
-graph edits (add, remove, move, resize) and threat register edits (add,
-remove, replace, attach, detach). A threat number is issued once and never
-moves: the model carries the highest number it has ever issued, so a removed
-threat leaves a permanent gap and `nextThreatNumber` never hands its number
-back. Coverage queries read a model without changing it: elements no threat
-references, open threats by severity, and the threat count of every element.
-Fallible exports return Effect's `Either`, carrying a package-owned
-`_tag`-discriminated failure on the error channel; an infallible operation
-returns its result bare. Nothing throws, and zod stays behind the parse
-boundary on the terms [`CODING.md`](../../CODING.md) sets. Imports no
-internal package.
+comes into existence, `emptyModel` being the one the package parses for you,
+where a model that has not been drawn starts. Operations are pure functions
+returning new models: graph edits (add, remove, move, resize) and threat
+register edits (add, remove, replace, attach, detach). A threat number is
+issued once and never moves: the model carries the highest number it has ever
+issued, so a removed threat leaves a permanent gap and `nextThreatNumber`
+never hands its number back. Coverage queries read a model without changing
+it: elements no threat references, open threats by severity, and the threat
+count of every element. Fallible exports return Effect's `Either`, carrying a
+package-owned `_tag`-discriminated failure on the error channel; an
+infallible operation returns its result bare. No export throws to report a
+failure, and zod stays behind the parse boundary on the terms
+[`CODING.md`](../../CODING.md) sets. Imports no internal package.
 
 Every string the model holds is text of a defined character set: every
 letter, mark, number, punctuation, symbol and space separator Unicode

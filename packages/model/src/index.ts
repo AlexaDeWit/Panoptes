@@ -13,6 +13,7 @@ export {
   type ModelMetadata,
 } from './lib/model.js';
 export * from './lib/parse.js';
+export * from './lib/empty.js';
 export * from './lib/operation-failures.js';
 export * from './lib/operations.js';
 export * from './lib/threat-operations.js';

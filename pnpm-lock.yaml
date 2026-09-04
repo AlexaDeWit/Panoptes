@@ -162,6 +162,9 @@ catalogs:
     zod:
       specifier: ^4.4.0
       version: 4.4.3
+    zustand:
+      specifier: ^5.0.15
+      version: 5.0.15
 
 importers:
 
@@ -309,6 +312,34 @@ importers:
       '@panoptes/canvas':
         specifier: workspace:*
         version: link:../../packages/canvas
+      '@panoptes/formats':
+        specifier: workspace:*
+        version: link:../../packages/formats
+      '@panoptes/model':
+        specifier: workspace:*
+        version: link:../../packages/model
+      effect:
+        specifier: 'catalog:'
+        version: 3.22.1
+      react:
+        specifier: 'catalog:'
+        version: 19.2.8
+      react-dom:
+        specifier: 'catalog:'
+        version: 19.2.8(react@19.2.8)
+      zustand:
+        specifier: 'catalog:'
+        version: 5.0.15(@types/react@19.2.18)(react@19.2.8)(use-sync-external-store@1.6.0(react@19.2.8))
+    devDependencies:
+      '@testing-library/react':
+        specifier: 'catalog:'
+        version: 16.3.3(@testing-library/dom@10.4.1)(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      '@types/react':
+        specifier: 'catalog:'
+        version: 19.2.18
+      '@types/react-dom':
+        specifier: 'catalog:'
+        version: 19.2.4(@types/react@19.2.18)
 
   apps/studio-e2e: {}
 
@@ -5206,6 +5237,24 @@ packages:
       immer:
         optional: true
       react:
+        optional: true
+
+  zustand@5.0.15:
+    resolution: {integrity: sha512-MpSEjRiBkA9crSYeOUH32rJC7SVqAbm0Fqcqge/bUi2PPoLcBWKOsG+C8mevmpr8TwXHBVkChbbJiyvkE+i/3A==}
+    engines: {node: '>=12.20.0'}
+    peerDependencies:
+      '@types/react': '>=18.0.0'
+      immer: '>=9.0.6'
+      react: '>=18.0.0'
+      use-sync-external-store: '>=1.2.0'
+    peerDependenciesMeta:
+      '@types/react':
+        optional: true
+      immer:
+        optional: true
+      react:
+        optional: true
+      use-sync-external-store:
         optional: true
 
   zwitch@2.0.4:
@@ -10569,5 +10618,11 @@ snapshots:
     optionalDependencies:
       '@types/react': 19.2.18
       react: 19.2.8
+
+  zustand@5.0.15(@types/react@19.2.18)(react@19.2.8)(use-sync-external-store@1.6.0(react@19.2.8)):
+    optionalDependencies:
+      '@types/react': 19.2.18
+      react: 19.2.8
+      use-sync-external-store: 1.6.0(react@19.2.8)
 
   zwitch@2.0.4: {}
