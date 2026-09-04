@@ -1,7 +1,7 @@
 import type { ReactElement } from 'react';
 import { badgeAnchor, ThreatBadgeGlyph } from './badges.js';
 import { WrappedText } from './labels.js';
-import { flowLabelPlacement, nodeTextPlacement } from './label-placement.js';
+import { nodeTextPlacement } from './label-placement.js';
 import type { CanvasEdge, CanvasNode } from './layout.js';
 import { svgNumber } from './numbers.js';
 import { arrowheadPath, polylinePath, smoothPath, translate } from './paths.js';
@@ -53,8 +53,8 @@ export function PlacedElementGlyph({
 /**
  * One flow, in the diagram's own coordinates rather than a node's: straight
  * segments from its source through its waypoints to its target, an arrowhead
- * at the target, and its name and badge where {@link flowLabelPlacement}
- * puts them, which is also where a caller sizing a picture bounds them.
+ * at the target, and its name and badge where the layout settled them, which
+ * is also where a caller sizing a picture bounds them.
  */
 export function FlowGlyph({
   edge,
@@ -62,7 +62,6 @@ export function FlowGlyph({
   readonly edge: CanvasEdge;
 }): ReactElement {
   const points = [edge.source, ...edge.waypoints, edge.target];
-  const placement = flowLabelPlacement(points, edge.name, edge.badge);
   return (
     <g className={groupClass(edge.outOfScope)}>
       <path
@@ -73,9 +72,9 @@ export function FlowGlyph({
         className={canvasClassNames.flowArrow}
         d={arrowheadPath(edge.target, points[points.length - 2])}
       />
-      <WrappedText {...placement.name} />
-      {edge.badge === undefined || placement.badge === undefined ? null : (
-        <ThreatBadgeGlyph badge={edge.badge} at={placement.badge} />
+      <WrappedText {...edge.label.name} />
+      {edge.badge === undefined || edge.label.badge === undefined ? null : (
+        <ThreatBadgeGlyph badge={edge.badge} at={edge.label.badge} />
       )}
     </g>
   );

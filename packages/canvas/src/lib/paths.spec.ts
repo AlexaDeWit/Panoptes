@@ -1,5 +1,6 @@
 import {
   arrowheadPath,
+  controlPolygon,
   polylinePath,
   smoothPath,
   smoothSegments,
@@ -98,5 +99,29 @@ describe('smoothSegments', () => {
     ]);
     expect(first.secondControl.y).toBeLessThan(0);
     expect(second.firstControl.x).toBeGreaterThan(400);
+  });
+});
+
+describe('controlPolygon', () => {
+  it('traces the first point and then each cubic control point in turn', () => {
+    const waypoints = [
+      { x: 0, y: 0 },
+      { x: 100, y: 40 },
+      { x: 200, y: 0 },
+    ];
+    const drawn = smoothSegments(waypoints);
+    expect(controlPolygon(waypoints)).toEqual([
+      waypoints[0],
+      ...drawn.flatMap((segment) => [
+        segment.firstControl,
+        segment.secondControl,
+        segment.end,
+      ]),
+    ]);
+  });
+
+  it('gives back the points where there is nothing to smooth', () => {
+    expect(controlPolygon([{ x: 5, y: 5 }])).toEqual([{ x: 5, y: 5 }]);
+    expect(controlPolygon([])).toEqual([]);
   });
 });

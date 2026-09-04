@@ -57,6 +57,30 @@ export function smoothSegments(points: readonly Point[]): CubicSegment[] {
 }
 
 /**
+ * The polygon the control points of {@link smoothSegments} trace, starting
+ * at the first of the given points: each cubic's two control points and its
+ * end, in order. A cubic lies inside the convex hull of its own four control
+ * points, so a caller bounding the drawn curve or keeping a label clear of
+ * it measures this rather than the points alone, which a sharp turn throws
+ * the ink outside of. Fewer than two points leave nothing to smooth and come
+ * back as the points themselves.
+ */
+export function controlPolygon(points: readonly Point[]): readonly Point[] {
+  const drawn = smoothSegments(points);
+  if (drawn.length === 0) {
+    return points;
+  }
+  return [
+    points[0],
+    ...drawn.flatMap((segment) => [
+      segment.firstControl,
+      segment.secondControl,
+      segment.end,
+    ]),
+  ];
+}
+
+/**
  * A smooth open curve through the given points, as the cubic segments
  * {@link smoothSegments} resolves. Fewer than two points leave nothing to
  * smooth and come back as {@link polylinePath}.

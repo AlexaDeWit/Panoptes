@@ -8,6 +8,7 @@ import {
   type Size,
 } from '@panoptes/model';
 import type { ReactElement } from 'react';
+import type { Box } from './geometry.js';
 import { svgNumber } from './numbers.js';
 import { translate } from './paths.js';
 import { canvasClassNames, severityToneClass } from './stylesheet.js';
@@ -96,6 +97,21 @@ export function badgeExtent(badge: ThreatBadge): BadgeExtent {
       badge.secondary === 0
         ? primaryRadius
         : primaryRadius + badgeGap + secondaryRadius * 2,
+  };
+}
+
+/**
+ * The box a badge fills when it hangs on `at`, in the coordinates the caller
+ * draws it in. A caller bounding a badge or keeping a label clear of one
+ * takes the box from here rather than composing {@link badgeExtent} itself.
+ */
+export function badgeBox(at: Point, badge: ThreatBadge): Box {
+  const extent = badgeExtent(badge);
+  return {
+    minX: at.x - extent.radius,
+    minY: at.y - extent.radius,
+    maxX: at.x + extent.radius,
+    maxY: at.y + extent.depth,
   };
 }
 

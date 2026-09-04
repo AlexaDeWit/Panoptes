@@ -3,7 +3,8 @@
 The drawing primitives a diagram is made of, shared by the interactive studio
 and by headless rendering: one glyph component per element kind, the flow edge
 and its path maths, the threat badges, the handle geometry, the text wrapping,
-and one stylesheet. Everything is presentational and stateless, and every
+the box and segment arithmetic label placement is settled with, and one
+stylesheet. Everything is presentational and stateless, and every
 number it draws comes out of the model. Imports `@panoptes/model` and no other
 internal package.
 
@@ -18,9 +19,9 @@ the CLI writes.
 
 `layoutDiagram(diagram, model)` turns one diagram plus the whole model into
 the props every primitive needs: `nodes` (an element as a box, with its
-badge), `edges` (a flow with its ends resolved to points), `unplaced` and
-`bounds`. Badges come from the whole model because a threat names elements
-without naming a diagram.
+badge), `edges` (a flow with its ends resolved to points and its label
+placed), `unplaced` and `bounds`. Badges come from the whole model because a
+threat names elements without naming a diagram.
 
 Nodes come back with the boundaries first, so they sit behind what they
 enclose, and painting `nodes` and then `edges` gives the right order: a flow
@@ -29,12 +30,15 @@ holds the ink that painting lays down: the outlines, a boundary curve's
 cubics, the text inside and beside them, the badges hanging off their corners,
 the flow lines with their arrowheads and names, and a free end belonging to no
 node. Every part is measured with the function that draws that part,
-`nodeTextPlacement`, `flowLabelPlacement`, `textPlacementCorners`,
-`badgeAnchor`, `badgeExtent`, `arrowheadPoints` and `smoothSegments`, so the
-picture and the box around it cannot drift. A curve is bounded by the convex
+`nodeTextPlacement`, `textPlacementCorners`, `badgeAnchor`, `badgeBox`,
+`arrowheadPoints` and `controlPolygon`, and a flow's name and badge are read
+off the placement the layout settled on that edge, so the picture and the box
+around it cannot drift. A curve is bounded by the convex
 hull of its control points, which holds the curve and a little more, because a
 sharp turn throws a control point outside the box its waypoints span while the
-ink stays inside the hull.
+ink stays inside the hull. `controlPolygon` is the one derivation of those
+points, so the bounds, the placement and the specs that check them read the
+curve alike.
 
 Stroke widths are the one thing outside `bounds`, since a stroke straddles the
 line it paints, so a caller sizing a viewBox leaves whitespace for them. It
@@ -55,7 +59,7 @@ one, the span of its waypoints grown by the stroke width on every side, so the
 stroke falls inside the node and a straight run, or a pair of repeated
 waypoints, still has an extent to pick.
 
-## The four rules the drawing follows
+## The five rules the drawing follows
 
 **Presentation is one stylesheet.** `canvasStylesheet` is the only styling
 there is, and `canvasClassNames` is the typed map of every class it defines.
@@ -93,18 +97,45 @@ its box, with no outline or fill. A box trust boundary is a dashed rectangle
 and a curve trust boundary a smooth dashed open curve through its waypoints,
 Catmull-Rom converted to cubic segments. A flow is straight segments from its
 source through its waypoints to its target, with a filled arrowhead at the
-target, its name beside the midpoint of its longest segment and its badge on
-the other side of the line. Both are offset along that segment's own unit
-normal rather than down the y axis, by a stated clearance plus their own
-extent projected onto that normal, so a vertical or diagonal flow carries its
-name beside its line rather than along it, whatever the height of the block.
-Of the two normals the one with a non-negative y is taken, and where that y is
-zero the one with a positive x, so the side a name takes is fixed by the
-segment and not by which end the flow runs from. A flow name is also stroked
-in the ground colour under `paint-order: stroke`, so names that converge on
-one element read in layers rather than as one blot. An out-of-scope element
-draws dimmed with a dashed outline; the reason it is out of scope stays in the
-register.
+target, and its name and badge beside the line where `flowLabelPlacements`
+settled them. Both are offset along a segment's own unit normal rather than
+down the y axis, by a standoff plus their own extent projected onto that
+normal, so a vertical or diagonal flow carries its name beside its line rather
+than along it, whatever the height of the block, and the badge takes the other
+side of the line from the name. Of the two normals the one with a non-negative
+y is the segment's own, and where that y is zero the one with a positive x, so
+the side a name takes is fixed by the segment and not by which end the flow
+runs from. A flow name is also stroked in the ground colour under
+`paint-order: stroke`, so names that converge on one element read in layers
+rather than as one blot. An out-of-scope element draws dimmed with a dashed
+outline; the reason it is out of scope stays in the register.
+
+**Flow labels are placed where nothing else is drawn.** A flow's name printed
+beside its own midpoint lands on another flow's line, inside an element, or on
+top of another name often enough that the picture stops reading as a diagram,
+so `layoutDiagram` settles every flow label over the whole diagram at once and
+stores the result on the edge. `flowLabelPlacements` offers each flow the
+midpoint and the quarter points of each of its segments, on either side of
+that segment's normal, at three standoffs a clearance apart. A candidate
+costs one for every element box, element name and element badge its own name
+or badge box overlaps, one for every straight run of a drawn line that meets
+either box, and one for every name or badge already placed that either box
+overlaps. An element the canvas draws as a box occupies its box, its run of
+text and its badge, so a label over an element's name costs both; a trust
+boundary occupies its outline alone, its four sides or the polygon its
+curve's control points trace, since it encloses what it is drawn around and a
+label inside it is where it belongs. The drawn lines are those outlines and
+every flow's own polyline.
+Flows are placed in ascending order of their ids, so the order the model holds
+its elements in decides nothing, and a tie goes to the candidate nearest the
+midpoint of the flow's longest segment, then to the flow's own placement
+beside that midpoint, then to the first candidate in the order above. Nothing
+is measured, so the interactive canvas and the headless render agree and a
+golden holds byte for byte. Two flows between one pair of elements share a
+segment and therefore a candidate list; the first by id takes its own side of
+the line and the second is pushed to the other side by the name already there.
+A label with no clear candidate anywhere takes the cheapest one rather than
+being dropped, so a dense diagram still draws every name it carries.
 
 ## Measuring nothing, and the same bytes every time
 

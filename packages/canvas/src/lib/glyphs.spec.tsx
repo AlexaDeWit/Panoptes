@@ -12,6 +12,8 @@ import {
 } from './stylesheet.js';
 import { badgeExtent, type ThreatBadge } from './badges.js';
 import type { Point } from '@panoptes/model';
+import { segmentMeetsBox, type Box } from './geometry.js';
+import { flowLabelPlacements } from './label-placement.js';
 import {
   flowLabelClearance,
   looseLabelWidth,
@@ -184,13 +186,6 @@ describe('the primitives, measuring nothing', () => {
   });
 });
 
-type Box = {
-  readonly minX: number;
-  readonly maxX: number;
-  readonly minY: number;
-  readonly maxY: number;
-};
-
 const flowFontSize = wrappedTextStyles.flowLabel.fontSize;
 
 const orientations = [
@@ -203,13 +198,15 @@ const orientations = [
 
 const wordyBadge: ThreatBadge = { count: 4, severity: 'high', secondary: 2 };
 
+const probeName = 'a name long enough to wrap over several lines of its own';
+
 const probeFlow = (
   from: Point,
   to: Point,
   badge: ThreatBadge | undefined,
 ): CanvasEdge => ({
   id: id('el-probe'),
-  name: 'a name long enough to wrap over several lines of its own',
+  name: probeName,
   outOfScope: false,
   badge,
   source: from,
@@ -219,6 +216,10 @@ const probeFlow = (
   sourceElement: undefined,
   targetElement: undefined,
   waypoints: [],
+  label: flowLabelPlacements(
+    [{ id: id('el-probe'), name: probeName, badge, points: [from, to] }],
+    [],
+  )[0],
 });
 
 const labelBoxOf = (markup: string): Box => {
@@ -260,35 +261,6 @@ const badgeBoxOf = (markup: string, badge: ThreatBadge): Box => {
   };
 };
 
-const sideOf = (from: Point, to: Point, of: Point): number =>
-  Math.sign(
-    (to.x - from.x) * (of.y - from.y) - (to.y - from.y) * (of.x - from.x),
-  );
-
-const segmentsCross = (a: Point, b: Point, c: Point, d: Point): boolean =>
-  sideOf(a, b, c) !== sideOf(a, b, d) && sideOf(c, d, a) !== sideOf(c, d, b);
-
-const holds = (box: Box, point: Point): boolean =>
-  point.x >= box.minX &&
-  point.x <= box.maxX &&
-  point.y >= box.minY &&
-  point.y <= box.maxY;
-
-const segmentMeetsBox = (from: Point, to: Point, box: Box): boolean => {
-  if (holds(box, from) || holds(box, to)) {
-    return true;
-  }
-  const corners = [
-    { x: box.minX, y: box.minY },
-    { x: box.maxX, y: box.minY },
-    { x: box.maxX, y: box.maxY },
-    { x: box.minX, y: box.maxY },
-  ];
-  return corners.some((corner, index) =>
-    segmentsCross(from, to, corner, corners[(index + 1) % corners.length]),
-  );
-};
-
 describe('FlowGlyph, keeping its label off its own line', () => {
   it.each(orientations)(
     'draws the name clear of a %s segment',
@@ -297,7 +269,7 @@ describe('FlowGlyph, keeping its label off its own line', () => {
         <FlowGlyph edge={probeFlow(from, to, undefined)} />,
       );
       expect(markup.match(/<tspan/gu)?.length).toBeGreaterThanOrEqual(3);
-      expect(segmentMeetsBox(from, to, labelBoxOf(markup))).toBe(false);
+      expect(segmentMeetsBox({ from, to }, labelBoxOf(markup))).toBe(false);
     },
   );
 
@@ -307,9 +279,9 @@ describe('FlowGlyph, keeping its label off its own line', () => {
       const markup = renderToStaticMarkup(
         <FlowGlyph edge={probeFlow(from, to, wordyBadge)} />,
       );
-      expect(segmentMeetsBox(from, to, badgeBoxOf(markup, wordyBadge))).toBe(
-        false,
-      );
+      expect(
+        segmentMeetsBox({ from, to }, badgeBoxOf(markup, wordyBadge)),
+      ).toBe(false);
     },
   );
 
