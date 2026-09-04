@@ -65,9 +65,9 @@ export function App() {
         </button>
         <PanoptesCanvas />
       </main>
-      <aside aria-label="Threat details" className={styles.panel}>
+      <section aria-label="Threat details" className={styles.panel}>
         <SeverityField onCommit={setSeverity} value={severity} />
-      </aside>
+      </section>
     </div>
   );
 }

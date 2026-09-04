@@ -46,6 +46,10 @@
 }
 
 .item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--pn-space-2);
   padding: var(--pn-space-2) var(--pn-space-3);
   border-radius: var(--pn-radius);
   color: var(--pn-colour-text);
@@ -53,11 +57,30 @@
   user-select: none;
 }
 
-/* Radix reports the pointer or keyboard cursor through `data-highlighted`,
-   which is the attribute a state is styled from rather than a class the
-   component would have to keep in step. */
+/* Radix reports the pointer or keyboard cursor through `data-highlighted` and
+   the chosen value through `data-state`, which is where a state is styled
+   from rather than a class the component would have to keep in step. */
 .item[data-highlighted] {
   background: var(--pn-colour-accent);
   color: var(--pn-colour-accent-text);
-  outline: none;
+}
+
+/* Radix puts real DOM focus on the highlighted item, so the app's focus
+   indicator belongs here too. The offset is negative so the ring stays inside
+   the item rather than over its neighbour, and it survives forced colours,
+   which the background swap above does not. */
+.item[data-highlighted]:focus-visible {
+  outline: var(--pn-focus-ring);
+  outline-offset: calc(-1 * var(--pn-focus-ring-offset));
+}
+
+/* The chosen value keeps a cue of its own once the highlight moves off it:
+   the indicator glyph Radix renders for it, and this weight, neither of which
+   is colour. */
+.item[data-state='checked'] {
+  font-weight: 600;
+}
+
+.indicator {
+  font-size: 0.75rem;
 }

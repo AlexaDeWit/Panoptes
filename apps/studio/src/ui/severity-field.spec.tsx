@@ -2,9 +2,41 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { type Severity, severitySchema } from '@panoptes/model';
 
-import { SeverityField } from './severity-field.js';
+import {
+  narrowSeverity,
+  SeverityField,
+  severityCommitter,
+} from './severity-field.js';
 
 const noop = (): void => undefined;
+
+describe('narrowSeverity', () => {
+  it('returns the severity a model value names', () => {
+    expect(narrowSeverity('critical')).toBe('critical');
+  });
+
+  it('returns undefined for text the model does not name', () => {
+    expect(narrowSeverity('catastrophic')).toBeUndefined();
+  });
+});
+
+describe('severityCommitter', () => {
+  it('commits a value the model names', () => {
+    const onCommit = vi.fn<(severity: Severity) => void>();
+
+    severityCommitter(onCommit)('critical');
+
+    expect(onCommit).toHaveBeenCalledWith('critical');
+  });
+
+  it('commits nothing for a value the model does not name', () => {
+    const onCommit = vi.fn<(severity: Severity) => void>();
+
+    severityCommitter(onCommit)('catastrophic');
+
+    expect(onCommit).toHaveBeenCalledTimes(0);
+  });
+});
 
 describe('SeverityField', () => {
   it('names the trigger from its visible label, as a combobox', () => {
@@ -45,5 +77,29 @@ describe('SeverityField', () => {
 
     expect(onCommit).toHaveBeenCalledTimes(1);
     expect(onCommit).toHaveBeenCalledWith('medium');
+  });
+
+  it('commits nothing when the listbox is dismissed', async () => {
+    const user = userEvent.setup();
+    const onCommit = vi.fn<(severity: Severity) => void>();
+    render(<SeverityField onCommit={onCommit} value="low" />);
+
+    await user.tab();
+    await user.keyboard('{Enter}');
+    await user.keyboard('{ArrowDown}{Escape}');
+
+    expect(onCommit).toHaveBeenCalledTimes(0);
+  });
+
+  it('commits nothing when the value already set is chosen again', async () => {
+    const user = userEvent.setup();
+    const onCommit = vi.fn<(severity: Severity) => void>();
+    render(<SeverityField onCommit={onCommit} value="low" />);
+
+    await user.tab();
+    await user.keyboard('{Enter}');
+    await user.keyboard('{Enter}');
+
+    expect(onCommit).toHaveBeenCalledTimes(0);
   });
 });

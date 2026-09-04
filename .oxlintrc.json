@@ -26,10 +26,11 @@
     // The workspace compiles JSX with the automatic runtime ("jsx":
     // "react-jsx"), so React never needs to be in scope.
     "react/react-in-jsx-scope": "off",
-    // The jsx-a11y plugin above puts 35 of its 36 rules into correctness,
-    // which the categories already deny. anchor-ambiguous-text is the one
-    // exception: it sits in restriction, which this config does not enable,
-    // so it is named here. No jsx-a11y rule is off.
+    // 35 of the jsx-a11y plugin's 36 rules sit in the categories this config
+    // denies above, so listing the plugin is enough to turn them on.
+    // anchor-ambiguous-text is the one exception: it sits in restriction,
+    // which this config does not enable, so it is named here. No jsx-a11y
+    // rule is off.
     "jsx-a11y/anchor-ambiguous-text": "error",
     // Type-aware rules the categories above do not reach (they sit in
     // pedantic or restriction). Rules already denied by correctness or
