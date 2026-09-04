@@ -8,9 +8,18 @@
       "!{projectRoot}/tsconfig.spec.json",
       "!{projectRoot}/src/test-setup.[jt]s"
     ],
+    // Files every task reads from outside its own project root. Nx follows no
+    // import from a config file, so a root config a leaf composes is named
+    // here or an edit to it replays a stale cache entry (CODING.md, Build
+    // targets). The root manifest is named by its version field alone: the
+    // number the build stamps into the CLI, which nx release writes.
     "sharedGlobals": [
       "{workspaceRoot}/test-data/**/*",
-      "{workspaceRoot}/threat-modelling/**/*"
+      "{workspaceRoot}/threat-modelling/**/*",
+      "{workspaceRoot}/vite.shared.mts",
+      "{workspaceRoot}/vitest.shared.mts",
+      "{workspaceRoot}/workspace-version.mts",
+      { "json": "{workspaceRoot}/package.json", "fields": ["version"] }
     ]
   },
   "plugins": [
@@ -112,6 +121,10 @@
         }
       ]
     },
+    // Sourcemaps go through the executor's own option rather than through
+    // esbuildOptions: the executor refuses esbuildOptions and esbuildConfig
+    // together, and a project whose bundle needs a value computed at build
+    // time (apps/cli stamps the workspace version) has only the config file.
     "@nx/esbuild:esbuild": {
       "cache": true,
       "dependsOn": ["^build"],
@@ -133,18 +146,12 @@
         "main": "{projectRoot}/src/main.ts",
         "tsConfig": "{projectRoot}/tsconfig.app.json",
         "assets": ["{projectRoot}/src/assets"],
-        "esbuildOptions": {
-          "sourcemap": true,
-          "outExtension": { ".js": ".js" }
-        }
+        "sourcemap": true
       },
       "configurations": {
         "development": {},
         "production": {
-          "esbuildOptions": {
-            "sourcemap": false,
-            "outExtension": { ".js": ".js" }
-          }
+          "sourcemap": false
         }
       }
     },
@@ -177,6 +184,68 @@
       },
       "component": {
         "style": "css"
+      }
+    }
+  },
+  // The workspace version authority (issue #50). One fixed group, so every
+  // manifest carries the same number and the CLI can stamp it without asking
+  // which package it belongs to. The bump comes from the conventional-commit
+  // subjects since the last tag, which for a squash merge is the PR title.
+  //
+  // Nothing here touches git: the repository's rulesets let no actor push to
+  // main outside a pull request, and every tag needs a signature with no
+  // bypass. So `nx release version` writes files only, the owner lands them
+  // through a PR, and the owner signs and pushes the tag by hand
+  // (docs/release.md).
+  "release": {
+    // Named explicitly, because nx release versions only the non-private
+    // projects by default. With every package private that set is empty;
+    // with one package not private it versions that one alone and the other
+    // manifests keep the old number with nothing said. The list versions all
+    // nine. Nothing is published; the version is what a release needs.
+    "projects": ["*"],
+    "projectsRelationship": "fixed",
+    "releaseTag": {
+      "pattern": "v{version}"
+    },
+    "conventionalCommits": {
+      // Scopes here name a layer ("cli", "model"), not a project, so scope
+      // matching would read every subject as a patch.
+      "useCommitScope": false
+    },
+    "version": {
+      "conventionalCommits": true,
+      "git": {
+        "commit": false,
+        "tag": false,
+        "push": false,
+        "stageChanges": false
+      },
+      // No tag exists before the first release, and the disk fallback lets
+      // that first run resolve the current version from the manifests.
+      "fallbackCurrentVersionResolver": "disk",
+      // The root manifest holds the number the CLI build reads, and it is no
+      // project, so each project writes it alongside its own manifest. Under
+      // a fixed group they all write the same version.
+      "manifestRootsToUpdate": ["{projectRoot}", "."]
+    },
+    "changelog": {
+      "projectChangelogs": false,
+      // No tag exists before the first release, so the first changelog runs
+      // from the first commit instead of needing a one-off flag.
+      "automaticFromRef": true,
+      "git": {
+        "commit": false,
+        "tag": false,
+        "push": false,
+        "stageChanges": false
+      },
+      "workspaceChangelog": {
+        "file": "CHANGELOG.md",
+        // ci.yml's publish job creates the GitHub release from this file's
+        // section for the tag, because nx would need a token and a git
+        // identity the rulesets do not grant it.
+        "createRelease": false
       }
     }
   }

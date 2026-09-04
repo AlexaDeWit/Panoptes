@@ -50,9 +50,38 @@ the model.
 model, in the native format, kept valid by the same suites that read it as a
 fixture.
 
+## Install
+
+The CLI ships as one executable per platform, attached to every
+[release](https://github.com/AlexaDeWit/Panoptes/releases). It carries its own
+runtime, so there is nothing else to install: no node, no npm, no browser.
+
+| Executable                                      | Platform              |
+| ----------------------------------------------- | --------------------- |
+| `panoptes-<version>-x86_64-unknown-linux-gnu`   | Linux, Intel or AMD   |
+| `panoptes-<version>-aarch64-unknown-linux-gnu`  | Linux, 64-bit ARM     |
+| `panoptes-<version>-x86_64-apple-darwin`        | macOS, Intel          |
+| `panoptes-<version>-aarch64-apple-darwin`       | macOS, Apple silicon  |
+| `panoptes-<version>-x86_64-pc-windows-msvc.exe` | Windows, Intel or AMD |
+
+Download yours and the `SHA256SUMS` file beside it, then:
+
+```sh
+sha256sum --check --ignore-missing SHA256SUMS
+chmod +x panoptes-*
+mkdir -p ~/.local/bin
+mv panoptes-* ~/.local/bin/panoptes
+panoptes --version                 # prints the release's version
+```
+
+On Windows, rename the file to `panoptes.exe` and put it somewhere on `PATH`.
+On macOS the executables are unsigned, so Gatekeeper holds the first run:
+`xattr -cr ~/.local/bin/panoptes` clears the quarantine flag. Signing and
+notarization are deferred, not overlooked.
+
 ## Development
 
-Nix with flakes provides the toolchain (node, pnpm). With
+Nix with flakes provides the toolchain (node, pnpm, deno). With
 [direnv](https://direnv.net/), `cd` into the checkout and it loads itself.
 
 ```sh
@@ -70,6 +99,39 @@ The live loop: `pnpm nx serve studio` hot-reloads the studio app, and
 workspace TypeScript and wires format-on-save to the oxc extension
 (`oxc.oxc-vscode`), which formats through the repository's pinned oxfmt,
 so the editor and the format check inside `pnpm check` agree.
+
+### Packaging the CLI
+
+`nx build @panoptes/cli` bundles the CLI into one ESM file with every
+workspace package and every dependency inlined, which is why that project's
+build deviates from the root esbuild defaults (the reasons sit in
+[`apps/cli/package.json`](apps/cli/package.json)). The bundle carries the
+version stamped in from the root manifest, the one number `nx release` writes
+across the workspace.
+
+[`scripts/package-cli.sh`](scripts/package-cli.sh) turns that bundle into
+standalone executables with `deno compile`, cross-compiling every target from
+any one of them, and runs the host executable to check the version it reports.
+CI runs it for the host target on every pull request, and over the whole
+matrix when the ref is a `v*` tag, which is how a release is built: one
+workflow, not a second pipeline beside it. Deno is a packaging tool only: it
+never resolves the workspace, and node stays the development and test runtime.
+
+Around 33 MB of every executable is a runtime deno embeds, which the nixpkgs
+deno pin does not cover. The flake pins it by hash, the compile runs with no
+network, and every target is built twice and compared, so a release is
+reproducible from the flake alone and needs Linux. What each control is for,
+and how to bump the hashes when deno moves, is in
+[the release procedure](docs/release.md#maintenance-the-runtime-inside-an-executable).
+
+A file the executables must carry, such as the Typst WebAssembly module and
+its fonts for PDF output (issue #34), rides along as an argument to
+`deno compile --include <path>` in that script, and the code reaches it at run
+time through `import.meta.dirname`. Anything not included, and not inlined
+into the bundle by esbuild, does not exist for a user who has only the
+executable.
+
+[`docs/release.md`](docs/release.md) is the release procedure.
 
 See [`CODING.md`](CODING.md) for the coding guidelines,
 [`CONTRIBUTING.md`](CONTRIBUTING.md) for the contribution process,

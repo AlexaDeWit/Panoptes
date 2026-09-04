@@ -93,7 +93,10 @@ commitment. A weekend of rework is not serious commitment. Two more rules:
 - **Use [Conventional Commits](https://www.conventionalcommits.org/)**.
   Subjects are `type(scope): summary`. `type` is one of `feat`, `fix`,
   `docs`, `chore`, `ci`, `refactor`, `test`, `build`, `perf`. The scope is
-  optional. Keep the summary short and imperative.
+  optional. Keep the summary short and imperative. A merge squashes to the
+  pull request title, and `nx release` derives the next version from those
+  subjects, so **the title decides the version bump**
+  ([the release procedure](docs/release.md)).
 - **Commits are GPG-signed and DCO signed off** (see above). Disclose
   non-trivial AI assistance with an `Assisted-by:` trailer.
 - **The engineering rules live in [`CODING.md`](CODING.md)**.

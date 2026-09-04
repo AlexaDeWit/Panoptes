@@ -30,9 +30,14 @@ export default [
       '@nx/enforce-module-boundaries': [
         'error',
         {
-          // Project config files compose the shared vite and vitest bases
-          // from the workspace root. Tooling wiring, not a layer crossing.
-          allow: ['../../vite.shared.mts', '../../vitest.shared.mts'],
+          // Project config files compose the shared vite, vitest and version
+          // bases from the workspace root. Tooling wiring, not a layer
+          // crossing.
+          allow: [
+            '../../vite.shared.mts',
+            '../../vitest.shared.mts',
+            '../../workspace-version.mts',
+          ],
           depConstraints: [
             {
               sourceTag: 'layer:model',

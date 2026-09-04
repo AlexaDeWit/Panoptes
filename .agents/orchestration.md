@@ -6,9 +6,13 @@ Edit here when the process changes, in the same PR as the change.
 ## Gating CI
 
 - Required checks on `main`: **CI gate** and **codecov/project**.
-- "CI gate" is the terminal job in
+- "CI gate" is the gating job in
   [`.github/workflows/ci.yml`](../.github/workflows/ci.yml); its `needs` list
   and verdict step define the gating set. Wire a new gating job into both.
+- That workflow also runs on a `v*` tag, where it builds the release: the
+  `publish` job after the gate `needs` it and runs on a tag ref alone. It is a
+  consequence of a green gate, not a member of the gating set, so it belongs
+  in neither the gate's `needs` nor its verdict.
 - A code scanning rule on `main` additionally requires a Semgrep OSS analysis
   per PR (alerts at `errors_and_warnings`, security alerts at
   `medium_or_higher`). The CI gate's semgrep step remains the strict

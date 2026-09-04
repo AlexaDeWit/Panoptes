@@ -28,7 +28,58 @@
           pkgs.bashInteractive
           pkgs.nodejs_24
           pkgs.pnpm
+          # Packaging only: `deno compile` turns the CLI's esbuild bundle into
+          # the standalone executables a release attaches
+          # (scripts/package-cli.sh). Deno never resolves the workspace, never
+          # runs a test, and never drives a build; node stays the development
+          # and test runtime. Deno never upgrades itself: its version is
+          # this binary's, and the runtime it embeds in an executable is
+          # pinned separately by denortHashes below.
+          pkgs.deno
         ];
+
+        # The denort runtime `deno compile` embeds in an executable, one entry
+        # per target scripts/package-cli.sh builds. The URL version is
+        # pkgs.deno's, so a deno bump moves all five URLs while the hashes
+        # stay behind and the build fails on a mismatch. Renovate does not
+        # know this fetch: refetch the hashes by hand, per the maintenance
+        # section of docs/release.md, which says why they are pinned at all.
+        denortVersion = pkgs.deno.version;
+
+        denortHashes = {
+          "x86_64-unknown-linux-gnu" =
+            "sha256-IU0KQBDJxEMmqC6n/DeFwYmkPNg1Z9kaqk3OOWR1mVQ=";
+          "aarch64-unknown-linux-gnu" =
+            "sha256-Wsx0pLGhkaiKnOC2bPp+B3tQNSwSRinVGGxXEd9GJBU=";
+          "x86_64-apple-darwin" =
+            "sha256-/aDX6ZbQjvzpDSUhyYyETwHv3Kt3McES+7T+gQA849k=";
+          "aarch64-apple-darwin" =
+            "sha256-8miD/vuQqN4LdBHxzcVB8UIR8H1HPHxBW23xz87Gjso=";
+          "x86_64-pc-windows-msvc" =
+            "sha256-Mvuc5Bm042v7VtLTiXgma+6kNT5D84SmgPnSa9hbV28=";
+        };
+
+        # The layout deno reads before it reaches for the network:
+        # $DENO_DIR/dl/release/v<version>/denort-<target>.zip.
+        denortCache = pkgs.linkFarm "denort-cache-${denortVersion}"
+          (pkgs.lib.mapAttrsToList (target: hash: {
+            name = "dl/release/v${denortVersion}/denort-${target}.zip";
+            path = pkgs.fetchurl {
+              url =
+                "https://dl.deno.land/release/v${denortVersion}/denort-${target}.zip";
+              inherit hash;
+            };
+          }) denortHashes);
+
+        # DENO_DIR is not set here: deno writes its own caches into it and this
+        # path is read-only, so scripts/package-cli.sh points DENO_DIR at a
+        # writable directory and links this tree in. unshare is named by path
+        # rather than added to PATH, where util-linux would shadow tools
+        # coreutils already provides.
+        denortEnv = {
+          PANOPTES_DENORT_CACHE = denortCache;
+          PANOPTES_UNSHARE = "${pkgs.util-linux}/bin/unshare";
+        };
 
         # Workflow linters. CI's static-checks job gates on these, and they
         # live in both shells so a local run matches the gate.
@@ -56,16 +107,20 @@
           PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS = "true";
         };
       in {
+        # The pinned denort runtimes, buildable on their own so a cache can
+        # be warmed without entering a shell.
+        packages.denort-cache = denortCache;
+
         devShells = {
           # The shell every CI job enters: one closure, one cache entry.
-          ci = pkgs.mkShell (shellEnv // playwrightEnv // {
+          ci = pkgs.mkShell (shellEnv // playwrightEnv // denortEnv // {
             name = "panoptes-ci";
             buildInputs = toolchainInputs ++ workflowLintInputs ++ sastInputs;
           });
 
           # The shell for humans. Currently identical to ci; interactive-only
           # tooling joins here, never in ci, so CI's closure stays lean.
-          default = pkgs.mkShell (shellEnv // playwrightEnv // {
+          default = pkgs.mkShell (shellEnv // playwrightEnv // denortEnv // {
             name = "panoptes";
             buildInputs = toolchainInputs ++ workflowLintInputs ++ sastInputs;
           });
