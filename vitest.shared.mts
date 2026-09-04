@@ -22,12 +22,15 @@ export const cacheDir = (projectRoot: string): string =>
 export const sharedTest = (
   projectRoot: string,
   environment: 'node' | 'jsdom',
+  setupFiles: string[] = [],
 ) => ({
   name: projectName(projectRoot),
   watch: false,
   globals: true,
   environment,
   include: ['{src,tests}/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
+  // Paths relative to the project root, for the browser APIs jsdom leaves out.
+  setupFiles,
   reporters: ['default'],
   coverage: {
     reportsDirectory: join(projectRoot, 'test-output/vitest/coverage'),

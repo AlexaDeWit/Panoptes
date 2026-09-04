@@ -1,1 +1,22 @@
-/* Your styles goes here. */
+.shell {
+  display: flex;
+  align-items: stretch;
+  min-height: 100vh;
+}
+
+.diagram {
+  flex: 1;
+  padding: var(--pn-space-4);
+}
+
+.title {
+  margin: 0 0 var(--pn-space-4);
+  font-size: 1.125rem;
+}
+
+.panel {
+  width: 16rem;
+  padding: var(--pn-space-4);
+  border-left: 1px solid var(--pn-colour-border);
+  background: var(--pn-colour-surface-raised);
+}

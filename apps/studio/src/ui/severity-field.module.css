@@ -1,0 +1,63 @@
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pn-space-1);
+}
+
+.label {
+  color: var(--pn-colour-text-muted);
+  font-weight: 600;
+}
+
+.trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--pn-space-2);
+  padding: var(--pn-space-2) var(--pn-space-3);
+  border: 1px solid var(--pn-colour-border);
+  border-radius: var(--pn-radius);
+  background: var(--pn-colour-surface);
+  color: var(--pn-colour-text);
+  font: inherit;
+  /* The chosen value reads in the model's own vocabulary; only the case is
+     presentation, so the accessible name stays the value itself. */
+  text-transform: capitalize;
+}
+
+.trigger:focus-visible {
+  outline: var(--pn-focus-ring);
+  outline-offset: var(--pn-focus-ring-offset);
+}
+
+.icon {
+  color: var(--pn-colour-text-muted);
+}
+
+.content {
+  border: 1px solid var(--pn-colour-border);
+  border-radius: var(--pn-radius);
+  background: var(--pn-colour-surface);
+  overflow: hidden;
+}
+
+.viewport {
+  padding: var(--pn-space-1);
+}
+
+.item {
+  padding: var(--pn-space-2) var(--pn-space-3);
+  border-radius: var(--pn-radius);
+  color: var(--pn-colour-text);
+  text-transform: capitalize;
+  user-select: none;
+}
+
+/* Radix reports the pointer or keyboard cursor through `data-highlighted`,
+   which is the attribute a state is styled from rather than a class the
+   component would have to keep in step. */
+.item[data-highlighted] {
+  background: var(--pn-colour-accent);
+  color: var(--pn-colour-accent-text);
+  outline: none;
+}

@@ -70,6 +70,10 @@ minimumReleaseAgeExclude:
   - '@oxlint/binding-win32-x64-msvc@1.80.0'
 
 catalog:
+  # axe-core driven through Playwright: the runtime half of the studio's
+  # accessibility gate, catching contrast, focus order and computed roles
+  # that static analysis cannot see.
+  '@axe-core/playwright': ^4.13.0
   '@babel/core': ^8.0.0
   '@babel/preset-react': ^8.0.0
   '@nx/esbuild': 23.1.2
@@ -92,6 +96,9 @@ catalog:
   '@swc/helpers': 0.5.23
   '@testing-library/dom': 10.4.1
   '@testing-library/react': 16.3.3
+  # Keyboard and pointer interaction in component specs, driven through the
+  # events a browser would fire rather than through React's synthetic ones.
+  '@testing-library/user-event': ^14.6.1
   # jsdom ships no types of its own. The major line tracks jsdom's, so this
   # pin moves with the jsdom pin below rather than on its own.
   '@types/jsdom': ^27.0.0
@@ -143,6 +150,9 @@ catalog:
   # tsgolint bundles its own typescript-go checker, so it does not care about
   # the catalog's typescript version.
   oxlint-tsgolint: 7.0.2001
+  # Radix headless primitives, styled in apps/studio (issue #86). The unified
+  # package, so one version covers every primitive the panels adopt.
+  'radix-ui': ^1.6.7
   react: ^19.0.0
   react-dom: ^19.0.0
   # The markdown half of the unified ecosystem, held as one wave: remark-gfm

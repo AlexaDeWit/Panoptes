@@ -14,7 +14,15 @@ export const reactLib = (projectRoot: string) =>
     test: sharedTest(projectRoot, 'jsdom'),
   });
 
-export const reactApp = (projectRoot: string, port = 4200) =>
+type ReactAppOptions = {
+  readonly port?: number;
+  readonly setupFiles?: string[];
+};
+
+export const reactApp = (
+  projectRoot: string,
+  { port = 4200, setupFiles = [] }: ReactAppOptions = {},
+) =>
   defineConfig({
     root: projectRoot,
     cacheDir: cacheDir(projectRoot),
@@ -27,5 +35,5 @@ export const reactApp = (projectRoot: string, port = 4200) =>
       reportCompressedSize: true,
       commonjsOptions: { transformMixedEsModules: true },
     },
-    test: sharedTest(projectRoot, 'jsdom'),
+    test: sharedTest(projectRoot, 'jsdom', setupFiles),
   });

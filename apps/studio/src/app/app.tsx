@@ -1,8 +1,15 @@
+import { useState } from 'react';
 import { PanoptesCanvas } from '@panoptes/canvas';
-import { generateElementId, type Element } from '@panoptes/model';
+import {
+  generateElementId,
+  type Element,
+  type Severity,
+} from '@panoptes/model';
 import { Action } from '../store/actions.js';
 import { canUndo, elementCount, firstDiagramId } from '../store/selectors.js';
 import { dispatch, useModelStore } from '../store/store.js';
+import { SeverityField } from '../ui/severity-field.js';
+import styles from './app.module.css';
 
 function freshProcess(): Element {
   return {
@@ -18,15 +25,16 @@ function freshProcess(): Element {
 }
 
 /**
- * The studio, so far the walking skeleton of the model store: a control that
- * dispatches a model edit, a control that dispatches an undo, and a count
- * read through a selector, which re-renders itself when the model moves.
- * Issue #38 puts the interactive canvas where the placeholder is.
+ * The studio shell: the diagram and the store's walking skeleton beside it, a
+ * control that dispatches a model edit, a control that dispatches an undo and
+ * a count read through a selector, plus the panel the composed controls live
+ * in. Issue #38 puts the interactive canvas where the placeholder is.
  */
 export function App() {
   const elements = useModelStore(elementCount);
   const undoable = useModelStore(canUndo);
   const diagram = useModelStore(firstDiagramId);
+  const [severity, setSeverity] = useState<Severity>('undecided');
   const add =
     diagram === undefined
       ? undefined
@@ -35,24 +43,31 @@ export function App() {
             Action.AddElement({ diagramId: diagram, element: freshProcess() }),
           );
         };
+
   return (
-    <main>
-      <p>
-        Elements: <span data-testid="element-count">{elements}</span>
-      </p>
-      <button type="button" disabled={add === undefined} onClick={add}>
-        Add a process
-      </button>
-      <button
-        type="button"
-        disabled={!undoable}
-        onClick={() => {
-          dispatch(Action.Undo());
-        }}
-      >
-        Undo
-      </button>
-      <PanoptesCanvas />
-    </main>
+    <div className={styles.shell}>
+      <main className={styles.diagram}>
+        <h1 className={styles.title}>Panoptes</h1>
+        <p>
+          Elements: <span data-testid="element-count">{elements}</span>
+        </p>
+        <button type="button" disabled={add === undefined} onClick={add}>
+          Add a process
+        </button>
+        <button
+          type="button"
+          disabled={!undoable}
+          onClick={() => {
+            dispatch(Action.Undo());
+          }}
+        >
+          Undo
+        </button>
+        <PanoptesCanvas />
+      </main>
+      <aside aria-label="Threat details" className={styles.panel}>
+        <SeverityField onCommit={setSeverity} value={severity} />
+      </aside>
+    </div>
   );
 }

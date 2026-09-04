@@ -1,1 +1,49 @@
-/* You can add global styles to this file, and also import other style files */
+/*
+ * The studio's design tokens, and the only global rules in the app. Every
+ * component styles itself from these custom properties through its own CSS
+ * module, so a token is the one place a colour, a step of spacing, a radius,
+ * the focus ring or the type scale is decided. The naming follows the `pn-`
+ * prefix the canvas stylesheet already emits.
+ *
+ * The colours are picked to clear WCAG AA against the surface they sit on,
+ * because apps/studio-e2e runs axe-core over this page and contrast is one of
+ * the things only a real browser can measure.
+ */
+:root {
+  --pn-font-family:
+    system-ui, -apple-system, 'Segoe UI', roboto, 'Helvetica Neue', arial,
+    sans-serif;
+  --pn-font-size: 0.875rem;
+  --pn-line-height: 1.5;
+
+  --pn-colour-surface: #ffffff;
+  --pn-colour-surface-raised: #f2f4f7;
+  --pn-colour-text: #16191d;
+  --pn-colour-text-muted: #4a5058;
+  --pn-colour-border: #767d87;
+  --pn-colour-accent: #1b4fa8;
+  --pn-colour-accent-text: #ffffff;
+
+  --pn-space-1: 0.25rem;
+  --pn-space-2: 0.5rem;
+  --pn-space-3: 0.75rem;
+  --pn-space-4: 1rem;
+
+  --pn-radius: 4px;
+
+  /*
+   * One focus indicator for the whole app. A control never removes it and
+   * never invents its own: it applies these two properties in `:focus-visible`.
+   */
+  --pn-focus-ring: 2px solid var(--pn-colour-accent);
+  --pn-focus-ring-offset: 2px;
+}
+
+body {
+  margin: 0;
+  background: var(--pn-colour-surface);
+  color: var(--pn-colour-text);
+  font-family: var(--pn-font-family);
+  font-size: var(--pn-font-size);
+  line-height: var(--pn-line-height);
+}
