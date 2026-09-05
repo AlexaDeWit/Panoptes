@@ -6,6 +6,7 @@ import {
   type Threat,
 } from '@panoptes/model';
 import { DiagramCanvas } from '../canvas/diagram-canvas.js';
+import { EditPalette } from '../canvas/palette.js';
 import { FileBar } from '../files/file-bar.js';
 import { Action } from '../store/actions.js';
 import {
@@ -108,6 +109,7 @@ export function App() {
         >
           Undo
         </button>
+        <EditPalette />
         <DiagramCanvas />
       </main>
       <section aria-label="Threat details" className={styles.panel}>

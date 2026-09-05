@@ -13,6 +13,12 @@ export const requestFlow = elementId('flow-request');
 /** The flow whose target belongs to no element. */
 export const probeFlow = elementId('flow-probe');
 
+/** The trust boundary drawn around the two, which no flow ends on. */
+export const boundaryElement = elementId('boundary-perimeter');
+
+/** The note beside them, which no flow ends on either. */
+export const noteElement = elementId('text-note');
+
 const document = {
   metadata: {
     title: 'Canvas fixture',
@@ -25,6 +31,19 @@ const document = {
       id: 'diagram-main',
       title: 'Main',
       elements: [
+        {
+          kind: 'trust-boundary',
+          id: boundaryElement,
+          name: 'Perimeter',
+          description: '',
+          outOfScope: false,
+          reasonOutOfScope: '',
+          shape: {
+            kind: 'box',
+            position: { x: -20, y: -20 },
+            size: { width: 460, height: 100 },
+          },
+        },
         {
           kind: 'actor',
           id: readerElement,
@@ -44,6 +63,17 @@ const document = {
           reasonOutOfScope: '',
           position: { x: 300, y: 0 },
           size: { width: 120, height: 60 },
+        },
+        {
+          kind: 'text',
+          id: noteElement,
+          name: 'Note',
+          description: '',
+          outOfScope: false,
+          reasonOutOfScope: '',
+          text: 'The studio opens on this model.',
+          position: { x: 0, y: 200 },
+          size: { width: 200, height: 40 },
         },
         {
           kind: 'flow',
@@ -111,9 +141,11 @@ const document = {
 };
 
 /**
- * The model the canvas specs draw: two elements, a flow between them, a flow
- * ending at a position that belongs to no element, and threats spread so a
- * name has one of each kind to account for, a single assessed threat on an
- * element and a pair of undecided ones on a flow.
+ * The model the canvas specs draw: two elements inside a trust boundary, a
+ * note beside them, a flow between them, a flow ending at a position that
+ * belongs to no element, and threats spread so a name has one of each kind to
+ * account for, a single assessed threat on an element and a pair of undecided
+ * ones on a flow. The boundary and the note are drawn and are no end of a
+ * flow, which is what the connecting controls read.
  */
 export const canvasModel: Model = parsedFixture(document);
