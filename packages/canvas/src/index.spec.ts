@@ -6,6 +6,7 @@ describe('the package barrel', () => {
   it('carries every name the README hands its consumers', () => {
     const promised = [
       'layoutDiagram',
+      'reanchoredFlow',
       'ElementGlyph',
       'PlacedElementGlyph',
       'FlowGlyph',

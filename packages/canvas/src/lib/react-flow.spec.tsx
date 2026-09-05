@@ -66,6 +66,23 @@ const bodyMarkup = (node: CanvasNode, selected = false): string =>
     </ReactFlowProvider>,
   );
 
+const edgeMarkup = (
+  data: { readonly edge: (typeof layout.edges)[number] } | undefined,
+  nodes: CanvasFlowNode[] = [],
+): string =>
+  renderToStaticMarkup(
+    <ReactFlowProvider initialNodes={nodes}>
+      <CanvasEdgeBody {...edgeProps(data)} />
+    </ReactFlowProvider>,
+  );
+
+const nodesWith = (moved: string, by: number): CanvasFlowNode[] =>
+  toReactFlowNodes(layout).map((node) =>
+    node.id === elementId(moved)
+      ? { ...node, position: { x: node.position.x, y: node.position.y + by } }
+      : node,
+  );
+
 const curveNode = layout.nodes.find((node) => node.kind === 'boundary-curve');
 
 describe('canvasNodeTypes', () => {
@@ -125,17 +142,26 @@ describe('CanvasNodeBody', () => {
 });
 
 describe('CanvasEdgeBody', () => {
+  const settled = 'd="M 200 100 L 240 100 L 280 120"';
+
   it('draws the flow from the geometry the layout resolved', () => {
-    const markup = renderToStaticMarkup(
-      <CanvasEdgeBody {...edgeProps({ edge: layout.edges[0] })} />,
-    );
-    expect(markup).toContain('d="M 200 100 L 240 100 L 280 120"');
+    expect(
+      edgeMarkup({ edge: layout.edges[0] }, nodesWith('el-client', 0)),
+    ).toContain(settled);
+  });
+
+  it('anchors an end on the node React Flow has, not the model position', () => {
+    expect(
+      edgeMarkup({ edge: layout.edges[0] }, nodesWith('el-client', 200)),
+    ).toContain('d="M 120 260 L 240 100 L 280 120"');
+  });
+
+  it('falls back on the settled geometry where React Flow has no node', () => {
+    expect(edgeMarkup({ edge: layout.edges[0] })).toContain(settled);
   });
 
   it('draws nothing where React Flow hands it an edge with no data', () => {
-    expect(
-      renderToStaticMarkup(<CanvasEdgeBody {...edgeProps(undefined)} />),
-    ).toBe('');
+    expect(edgeMarkup(undefined)).toBe('');
   });
 });
 
