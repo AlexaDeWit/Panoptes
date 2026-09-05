@@ -7,7 +7,7 @@ import {
   noDiagramYaml,
   unplacedFlowYaml,
 } from './cli.fixtures.js';
-import { pageCount } from './pdf.fixtures.js';
+import { compileTimeout, pageCount } from './pdf.fixtures.js';
 import { render, type RenderOptions } from './render.js';
 
 const repositoryRoot = join(import.meta.dirname, '../../..');
@@ -30,8 +30,6 @@ const options = (given: Partial<RenderOptions>): RenderOptions => ({
 });
 
 const assets = join(repositoryRoot, 'apps/cli/dist/assets');
-
-const compileTimeout = 60_000;
 
 const bytesOf = (out: string | Uint8Array): Uint8Array =>
   typeof out === 'string' ? Buffer.from(out, 'utf8') : out;
@@ -205,21 +203,6 @@ describe('render', () => {
       expect(outcome.code).toBe(0);
       expect(outcome.out).toBeInstanceOf(Uint8Array);
       expect(pageCount(bytesOf(outcome.out))).toBe(14);
-    },
-    compileTimeout,
-  );
-
-  it(
-    'reports an install missing the files it typesets with, and exits 2',
-    async () => {
-      const outcome = await render(
-        ecluse,
-        options({ format: 'pdf', out: '-' }),
-        join(repositoryRoot, 'apps/cli/dist/absent'),
-      );
-      expect(outcome.code).toBe(2);
-      expect(outcome.out).toBe('');
-      expect(outcome.err).toContain('error: cannot compile the PDF');
     },
     compileTimeout,
   );

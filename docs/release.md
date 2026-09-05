@@ -249,17 +249,19 @@ replace that:
   `--cached-only`, and refuses to run where no network namespace can be made.
   The workflow sets `DENO_NO_UPDATE_CHECK` and `DENO_NO_PROMPT`. A runtime
   that is not pinned therefore fails the compile; it cannot become a download.
-- **The output is a function of the bundle's bytes and the staged name, time
-  and mode.** `deno compile` records the entry file's name, modification time
-  and executable bit in the virtual file system it embeds, so the script
-  copies the bundle to a fixed `main.js`, stamps it to the epoch and to mode
-  644, and compiles that. It then compiles every target into two directories
-  and fails unless the two are byte for byte the same, on a pull request as
-  well as on a release, staging the repeat copy with another time and mode on
-  purpose so that comparison reds where a stamp is dropped instead of agreeing
-  with itself.
+- **The output is a function of the staged tree's bytes, names, times and
+  modes.** `deno compile` records every embedded file's name, modification
+  time and executable bit in the virtual file system it embeds, so the script
+  stages what it compiles into a directory of its own: the bundle as a fixed
+  `main.js`, and beside it the assets an executable carries, the Typst
+  WebAssembly module and the fonts. It stamps every file there to the epoch
+  and to mode 644, every directory to mode 755, and compiles that. It then
+  compiles every target into two directories and fails unless the two are byte
+  for byte the same, on a pull request as well as on a release, staging the
+  repeat tree with another time and mode on purpose so that comparison reds
+  where a stamp is dropped instead of agreeing with itself.
 
-The staged entry is the one host-dependent input left at these pins, and it is
+The staged tree is the one host-dependent input left at these pins, and it is
 worth a dozen bytes rather than five thousand: the time is ASCII digits inside
 one JSON record, so two machines building on the same day give executables of
 equal size differing in the last few digits (#106). The pair of sizes the issue

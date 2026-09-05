@@ -6,7 +6,7 @@ import { join } from 'node:path';
 import { fixtureFile, proseThreatYaml } from './cli.fixtures.js';
 import { readModel } from './input.js';
 import { compilePdf } from './pdf.js';
-import { outlineTitles, pageCount } from './pdf.fixtures.js';
+import { compileTimeout, outlineTitles, pageCount } from './pdf.fixtures.js';
 
 const repositoryRoot = join(import.meta.dirname, '../../..');
 
@@ -33,8 +33,6 @@ const document = (body: string): string =>
   ['#set page(paper: "a4")', '#set text(font: "Liberation Sans")', body].join(
     '\n',
   );
-
-const compileTimeout = 60_000;
 
 const compiled = (source: string) => compilePdf(source, assets);
 

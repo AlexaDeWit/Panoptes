@@ -165,10 +165,17 @@ address, since nothing is fetched.
 
 Prose nested past `deepestProse` is one paragraph of the author's own bytes,
 there as here. That bound is the smaller of the two writers', and the smaller
-is the Typst one: Typst refuses a document nesting its own show rules past
-sixteen, which a blockquote reaches one level of the tree above itself, while
-remark's serializer goes deeper. Holding both to the smaller is what keeps a
-register that renders as markdown from failing to compile as a PDF.
+is the Typst one, which is what keeps a register that renders as markdown from
+failing to compile as a PDF. The blockquote is the construct that binds:
+Typst refuses a document nesting its own show rules past sixteen, so
+seventeen nested blockquotes are refused where twenty nested strong or
+emphasis are not, and remark's serializer goes deeper than either. A tree of
+n nested blockquotes measures n + 2, the paragraph and the text under the
+innermost being the other two levels, so 18 is the exact bound and the 16 the
+package sets is two levels under it. That margin is deliberate: the limit is
+the compiler's rather than this package's, a Typst release may lower it, and
+two levels buy a version bump without prose that has always rendered starting
+to fail.
 
 ## The goldens
 

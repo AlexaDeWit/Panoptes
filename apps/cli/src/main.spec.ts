@@ -13,7 +13,7 @@ import {
   fixtureFile,
   undeclaredKeyYaml,
 } from './cli.fixtures.js';
-import { outlineTitles, pageCount } from './pdf.fixtures.js';
+import { compileTimeout, outlineTitles, pageCount } from './pdf.fixtures.js';
 import { cliVersion } from './version.js';
 
 type Runner = {
@@ -74,8 +74,6 @@ const titleOf = (runner: Runner): string =>
     : `the CLI, run as ${runner.name}, skipped because ${runner.absence}`;
 
 const fullDevice = '/dev/full';
-
-const compileTimeout = 60_000;
 
 const ran = (runner: Runner, args: readonly string[]) => {
   const result = spawnSync(runner.command, [...runner.leading, ...args], {

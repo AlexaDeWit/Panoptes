@@ -35,11 +35,17 @@ const proseDepths = [3, 4, 5, 6, 6, 6] as const;
  * How deeply prose may nest before the register renders it as one paragraph
  * of the author's own bytes instead, counted from the root of the parsed
  * tree. It is the smaller of the two writers' limits, and the smaller is the
- * Typst one: every writer of this tree recurses per level, and Typst refuses
- * a document nesting its own show rules past sixteen, which a blockquote
- * reaches one level of the tree above itself. A model inside this bound
- * therefore renders as markdown and compiles as a PDF, rather than doing the
- * first and failing the second.
+ * Typst one, so a model inside this bound renders as markdown and compiles as
+ * a PDF rather than doing the first and failing the second.
+ *
+ * The blockquote is the construct that binds: Typst refuses a document
+ * nesting its own show rules past sixteen, so seventeen nested blockquotes
+ * are refused where twenty nested strong or emphasis are not. A tree of n
+ * nested blockquotes measures n + 2, the paragraph and the text under the
+ * innermost being the other two levels, so 18 is the exact bound and this is
+ * two levels under it. That margin is deliberate: the limit is the compiler's
+ * rather than this package's, a Typst release may lower it, and two levels
+ * buy a version bump without prose that has always rendered starting to fail.
  */
 export const deepestProse = 16;
 

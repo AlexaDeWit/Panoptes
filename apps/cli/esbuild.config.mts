@@ -15,13 +15,15 @@ const resolve = createRequire(import.meta.url);
 
 const projectAssets = join(import.meta.dirname, 'src/assets');
 
-// Everything the PDF path reads at run time, gathered beside the bundle in
-// dist/assets: the fonts and their licence, which are committed, and the
-// Typst WebAssembly module, which is not. esbuild inlines JavaScript and
-// nothing else, so both arrive as files. src/pdf.ts reaches them through
-// import.meta.dirname, and `deno compile --include` puts the same directory
-// inside an executable (scripts/package-cli.sh). A file that is neither
-// inlined nor included does not exist for a user who has only the executable.
+// Everything the executable carries beside its bundle, gathered in
+// dist/assets: the fonts, which the PDF path reads, and the licence and
+// provenance record that travel with them. The Typst WebAssembly module joins
+// them from node_modules rather than from the tree. esbuild inlines
+// JavaScript and nothing else, so all of it arrives as files. src/pdf.ts
+// reaches the fonts and the module through import.meta.dirname, and
+// `deno compile --include` puts the same directory inside an executable
+// (scripts/package-cli.sh). A file that is neither inlined nor included does
+// not exist for a user who has only the executable.
 const runtimeAssets = (): readonly string[] => [
   ...readdirSync(projectAssets, { withFileTypes: true })
     .filter((entry) => entry.isFile())

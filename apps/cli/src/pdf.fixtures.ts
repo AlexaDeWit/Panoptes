@@ -1,3 +1,13 @@
+/**
+ * How long a spec that compiles a PDF is given, against vitest's default of
+ * five seconds. The first compile in a process initialises 28 MB of
+ * WebAssembly before it typesets anything, and the scenario that checks the
+ * byte path spawns the whole CLI twice, so a loaded machine takes longer than
+ * the default allows. It is generous rather than measured: the number is here
+ * to stop a slow machine reporting a failure, not to describe one.
+ */
+export const compileTimeout = 60_000;
+
 const pageTree = /\/Type\s*\/Pages[\s\S]*?\/Count\s+(\d+)/u;
 
 const titleKey = /\/Title\s*/gu;

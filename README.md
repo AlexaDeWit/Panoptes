@@ -200,8 +200,10 @@ into the bundle by esbuild, does not exist for a user who has only the
 executable. `apps/cli/dist/assets` is that directory today: the Typst
 WebAssembly module, which the build copies out of node_modules, and the
 Liberation fonts, which are committed with their licence and their provenance
-under [`apps/cli/src/assets`](apps/cli/src/assets/README.md). Together they
-are the 28.95 MiB PDF output adds to every executable. Everything the script
+under [`apps/cli/src/assets`](apps/cli/src/assets/README.md). The directory is
+28.89 MiB, and an executable grows by 28.95 MiB, the difference being the
+compiler package's JavaScript, which esbuild inlines into the bundle.
+Everything the script
 stages is stamped with one modification time and one mode, the assets as well
 as the entry point, so the bytes stay a function of the inputs rather than of
 the machine. The packaging script then renders the vendored fixture to a PDF
