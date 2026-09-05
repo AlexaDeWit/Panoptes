@@ -2,6 +2,7 @@ import type { ElementId } from '@panoptes/model';
 import { Select } from 'radix-ui';
 import { useId, useState } from 'react';
 import { useModelStore } from '../store/store.js';
+import { LiveRegion } from '../ui/live-region.js';
 import { useAnnouncement } from './announcements.js';
 import { addPaletteElement, connectElements } from './edits.js';
 import { flowEnds, paletteKinds, paletteNames } from './elements.js';
@@ -19,11 +20,12 @@ import styles from './palette.module.css';
  * one of the elements a flow runs between, and the listbox offers only those,
  * so neither end can be a trust boundary, a text note or a flow.
  *
- * The region is a live one, always in the page, on the pattern the failure
- * notice sets ([the studio's UI](../ui/README.md)). What it says is keyed by
- * the announcement's own count, so the same words twice over are two
- * announcements rather than one: a live region speaks when its content
- * changes, and adding two actors says the same sentence each time.
+ * The region is the studio's own `LiveRegion` ([the studio's
+ * UI](../ui/README.md)), named so a screen reader's landmark list says which
+ * region it reached. What it says is keyed by the announcement's own count,
+ * so the same words twice over are two announcements rather than one: a live
+ * region speaks when its content changes, and adding two actors says the same
+ * sentence each time.
  */
 export function EditPalette() {
   const layout = useModelStore(currentLayout);
@@ -106,17 +108,17 @@ export function EditPalette() {
           Connect
         </button>
       </section>
-      <div
-        aria-live="polite"
+      <LiveRegion
         className={styles.announcement}
-        data-testid="canvas-announcement"
+        label="Canvas messages"
+        testId="canvas-announcement"
       >
         {announcement.message !== '' && (
           <p className={styles.message} key={announcement.sequence}>
             {announcement.message}
           </p>
         )}
-      </div>
+      </LiveRegion>
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import {
+  beforeCanvas,
   chooseByKeyboard,
   nodeNamed,
   openEcluse,
@@ -205,7 +206,7 @@ test('a flow selected on the canvas opens its own threats in the panel', async (
 }) => {
   await openEcluse(page);
 
-  await page.getByRole('button', { name: 'Add a process' }).focus();
+  await beforeCanvas(page).focus();
   await page.keyboard.press('Tab');
   await page.keyboard.press('Enter');
 

@@ -83,8 +83,9 @@ the region below, which speaks only for edits that landed.
   again when it settles, and the settled report is the only one folded into an
   action, as with a drag.
 
-The palette holds the region that says what an edit did, a polite live region
-always in the page on the pattern [the failure notice](../ui/README.md) sets.
+The palette holds the region that says what an edit did, the studio's own
+`LiveRegion` ([the controls](../ui/README.md)), always in the page and named
+so a screen reader's landmark list says which region it reached.
 It is fed through a channel of its own rather than through the model store: an
 announcement is not the model and must not ride the undo stacks, and the
 palette and the canvas are siblings that both speak into the one region. What
