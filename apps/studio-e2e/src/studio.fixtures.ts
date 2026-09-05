@@ -4,8 +4,12 @@ import { join } from 'node:path';
 
 const developmentModelKey = 'panoptesDevelopmentModel';
 
+/** A file of the repository, named from the root, as a path on disk. */
+export const vendored = (path: string): string =>
+  join(__dirname, '../../..', path);
+
 const ecluse: unknown = JSON.parse(
-  readFileSync(join(__dirname, '../../../test-data/ecluse.model.json'), 'utf8'),
+  readFileSync(vendored('test-data/ecluse.model.json'), 'utf8'),
 );
 
 /**
@@ -54,6 +58,49 @@ export const openPlaceholder = async (page: Page): Promise<void> => {
 };
 
 /**
+ * Takes the File System Access API off the page, so the studio falls back to
+ * its own file input and to a download. Playwright cannot operate the native
+ * pickers that API opens, and the fallback is the path a browser without it
+ * takes anyway.
+ */
+export const withoutPickers = (): void => {
+  Reflect.deleteProperty(globalThis, 'showOpenFilePicker');
+  Reflect.deleteProperty(globalThis, 'showSaveFilePicker');
+};
+
+/**
+ * Opens a file of the repository through the fallback picker, and holds that
+ * it was read and drawn. The format is the file's own: the studio reads the
+ * content rather than the name.
+ */
+export const openFile = async (page: Page, path: string): Promise<void> => {
+  await page.addInitScript(withoutPickers);
+  await page.goto('/');
+  await expect(page.getByTestId('canvas-container')).toBeVisible();
+  await page.getByTestId('file-input').setInputFiles(vendored(path));
+  await expect(page.getByTestId('failure-notice')).toBeEmpty();
+  await canvasSettled(page);
+};
+
+/** A file the studio wrote through the download path. */
+export type SavedFile = {
+  readonly name: string;
+  readonly text: string;
+};
+
+/** Saves through that download path, and reads back what was written. */
+export const savedFile = async (page: Page): Promise<SavedFile> => {
+  const [download] = await Promise.all([
+    page.waitForEvent('download'),
+    page.getByRole('button', { name: 'Save', exact: true }).click(),
+  ]);
+  return {
+    name: download.suggestedFilename(),
+    text: readFileSync(await download.path(), 'utf8'),
+  };
+};
+
+/**
  * Every element drawn as a box. The anchor a free flow end rides on is hidden
  * from assistive technology, so it is no group and is not among these.
  */
@@ -89,6 +136,20 @@ export const beforeCanvas = (page: Page): Locator =>
 /** The listbox a flow's other end is chosen from. */
 export const connectTarget = (page: Page): Locator =>
   page.getByRole('combobox', { name: 'Flow to' });
+
+/** The panel holding the threats of whatever the canvas has selected. */
+export const threatPanel = (page: Page): Locator =>
+  page.getByRole('region', { name: 'Threats' });
+
+/** Chooses an option in one of the panel's listboxes, by pointer. */
+export const chooseInPanel = async (
+  page: Page,
+  field: string,
+  option: string,
+): Promise<void> => {
+  await threatPanel(page).getByRole('combobox', { name: field }).click();
+  await page.getByRole('option', { name: option }).click();
+};
 
 /**
  * Where React Flow has placed a node, read off the transform in its style
@@ -167,6 +228,26 @@ export const selectNode = async (
 };
 
 /**
+ * Selects an element by focusing it and pressing Enter, and waits for the
+ * canvas to pan to it. Opening a file leaves the viewport where the model
+ * before it put it, so an element of a real diagram can be drawn outside the
+ * view, where the pointer cannot reach it and this path can.
+ */
+export const selectByKeyboard = async (
+  page: Page,
+  name: RegExp,
+): Promise<Locator> => {
+  const node = nodeNamed(page, name);
+  await expect(node).toBeVisible();
+  await canvasSettled(page);
+  await node.focus();
+  await page.keyboard.press('Enter');
+  await expect(node).toHaveClass(/selected/u);
+  await canvasSettled(page);
+  return node;
+};
+
+/**
  * The option the open listbox has focused, waited for. Radix marks it with
  * `aria-selected` only while it is both focused and the value already set, so
  * focus is what a spec follows through a listbox rather than that attribute.
@@ -196,4 +277,83 @@ export const chooseByKeyboard = async (
   }).toPass();
   await page.keyboard.press('Enter');
   await expect(page.getByRole('listbox')).toHaveCount(0);
+};
+
+const missing: unique symbol = Symbol('missing');
+
+const isKeyed = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value);
+
+const entryOf = (holder: Record<string, unknown>, key: string): unknown =>
+  key in holder ? holder[key] : missing;
+
+const itemOf = (holder: readonly unknown[], index: number): unknown =>
+  index < holder.length ? holder[index] : missing;
+
+const keysOf = (
+  before: Record<string, unknown>,
+  after: Record<string, unknown>,
+): readonly string[] => [
+  ...Object.keys(before),
+  ...Object.keys(after).filter((key) => !(key in before)),
+];
+
+const under = (
+  before: unknown,
+  after: unknown,
+  path: string,
+  found: string[],
+): void => {
+  if (Array.isArray(before) && Array.isArray(after)) {
+    const length = Math.max(before.length, after.length);
+    for (let index = 0; index < length; index += 1) {
+      under(
+        itemOf(before, index),
+        itemOf(after, index),
+        `${path}[${index}]`,
+        found,
+      );
+    }
+    return;
+  }
+  if (isKeyed(before) && isKeyed(after)) {
+    for (const key of keysOf(before, after)) {
+      under(
+        entryOf(before, key),
+        entryOf(after, key),
+        path === '' ? key : `${path}.${key}`,
+        found,
+      );
+    }
+    return;
+  }
+  if (!Object.is(before, after)) {
+    found.push(path);
+  }
+};
+
+/**
+ * Records under their own ids, so a comparison follows identity rather than
+ * position: inserting one record into a list would otherwise read as a
+ * change to every record after it.
+ */
+export const identified = (
+  records: readonly { readonly id: string }[],
+): Record<string, unknown> =>
+  Object.fromEntries(records.map((record) => [record.id, record]));
+
+/**
+ * Every path at which two parsed values differ, in the order the first
+ * declares its keys. A record one side holds and the other does not is
+ * reported at its own path rather than walked, so a whole added element is
+ * one entry rather than one per field, and a path that is not listed names a
+ * value both sides hold identically.
+ */
+export const differingPaths = (
+  before: unknown,
+  after: unknown,
+): readonly string[] => {
+  const found: string[] = [];
+  under(before, after, '', found);
+  return found;
 };

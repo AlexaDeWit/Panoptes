@@ -4,7 +4,9 @@
   "private": true,
   "devDependencies": {
     "@axe-core/playwright": "catalog:",
-    "@playwright/test": "catalog:"
+    "@panoptes/formats": "workspace:*",
+    "@playwright/test": "catalog:",
+    "effect": "catalog:"
   },
   "nx": {
     "tags": [
