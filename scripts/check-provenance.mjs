@@ -267,8 +267,9 @@ const report = (heading, lines) => {
   console.log('');
 };
 
-// 0, 1 for a provenance failure, or 2 where a move was found and what would
-// accept it could not be read.
+// 0 where this commit's catalog is as attested as the base commit's, 1 for a
+// provenance failure, or 2 where a move was found and the commits that would
+// declare it could not be read or hold a declaration that is not three fields.
 const check = ({ catalog, attested, audited, base, baseAttested, range }) => {
   const names = [...catalog.keys()].sort();
 
