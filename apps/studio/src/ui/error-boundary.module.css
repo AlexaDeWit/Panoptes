@@ -1,0 +1,32 @@
+.stopped {
+  max-width: 40rem;
+  margin: var(--pn-space-4);
+  padding: var(--pn-space-4);
+  border: 1px solid var(--pn-colour-border);
+  border-radius: var(--pn-radius);
+  background: var(--pn-colour-surface-raised);
+}
+
+.headline {
+  margin: 0 0 var(--pn-space-3);
+  font-size: 1.125rem;
+}
+
+.detail {
+  color: var(--pn-colour-text-muted);
+  overflow-wrap: anywhere;
+}
+
+.reload {
+  padding: var(--pn-space-2) var(--pn-space-3);
+  border: 1px solid var(--pn-colour-border);
+  border-radius: var(--pn-radius);
+  background: var(--pn-colour-surface);
+  color: var(--pn-colour-text);
+  font: inherit;
+}
+
+.reload:focus-visible {
+  outline: var(--pn-focus-ring);
+  outline-offset: var(--pn-focus-ring-offset);
+}

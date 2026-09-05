@@ -10,7 +10,72 @@ import {
   type Threat,
   type ThreatId,
 } from '@panoptes/model';
+import { threatDragonCodec } from '@panoptes/formats';
 import { Either } from 'effect';
+import type { RetainedSource } from './state.js';
+
+/**
+ * A file in the native format that retained no document, which is what a
+ * save into a format a model was not read from has to merge onto.
+ */
+export const nativeSource: RetainedSource = {
+  format: 'panoptes-yaml',
+  document: undefined,
+};
+
+const foreignText = JSON.stringify({
+  version: '2.0',
+  summary: { title: 'Store fixture' },
+  detail: {
+    diagrams: [
+      {
+        id: 0,
+        title: 'Main',
+        diagramType: 'STRIDE',
+        cells: [
+          {
+            id: 'actor-reader',
+            shape: 'actor',
+            position: { x: 0, y: 0 },
+            size: { width: 120, height: 60 },
+            data: {
+              type: 'tm.Actor',
+              name: 'Reader',
+              threats: [
+                {
+                  id: 'threat-tampering',
+                  number: 1,
+                  title: 'A reader edits a model they may only read',
+                  modelType: 'STRIDE',
+                  type: 'Tampering',
+                  status: 'Open',
+                  severity: 'Medium',
+                  description: '',
+                  mitigation: '',
+                },
+              ],
+            },
+          },
+        ],
+      },
+    ],
+  },
+});
+
+/**
+ * A file in the format the studio reads Threat Dragon's files as, carrying
+ * the document a real read produced rather than none. The purity spec clones
+ * the state it is in, which is what holds the store README's rule that
+ * nothing but plain data goes there, so the field this document sits in is
+ * covered by the clone rather than only by its type.
+ */
+export const foreignSource: RetainedSource = {
+  format: 'threat-dragon',
+  document: Either.getOrThrowWith(
+    threatDragonCodec.read(foreignText),
+    () => new Error('The Threat Dragon fixture no longer reads.'),
+  ).source,
+};
 
 /** Parses a spec's literal string into a branded element id. */
 export const elementId = (value: string): ElementId =>

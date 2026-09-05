@@ -1,0 +1,36 @@
+/* The region stays in the page while it has nothing to say, so a screen
+   reader is already observing it when the first refusal arrives. It collapses
+   rather than hiding: `display: none` would take it out of the accessibility
+   tree, and a region inserted and revealed in the same frame announces
+   nothing. */
+.notice:empty {
+  padding: 0;
+  border: 0;
+}
+
+.notice:not(:empty) {
+  margin-top: var(--pn-space-2);
+}
+
+.notice {
+  padding: var(--pn-space-3);
+  border: 1px solid var(--pn-colour-border);
+  border-radius: var(--pn-radius);
+  background: var(--pn-colour-surface-raised);
+  color: var(--pn-colour-text);
+}
+
+.headline {
+  margin: 0;
+  font-weight: 600;
+}
+
+/* Every path a codec refused, one to a line, wrapping rather than scrolling
+   sideways: a path into a threat nests eight levels deep and is longer than
+   the panel is wide. */
+.details {
+  margin: var(--pn-space-2) 0 0;
+  padding-left: var(--pn-space-4);
+  color: var(--pn-colour-text-muted);
+  overflow-wrap: anywhere;
+}

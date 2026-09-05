@@ -1,4 +1,8 @@
-import type { FormatName } from '@panoptes/formats';
+import type {
+  DetectionFailure,
+  Divergence,
+  ReadFailure,
+} from '@panoptes/formats';
 import type {
   DiagramId,
   Element,
@@ -10,15 +14,26 @@ import type {
   ThreatId,
 } from '@panoptes/model';
 import { Data } from 'effect';
+import type { RetainedSource } from './state.js';
 
 /**
  * Everything that can change the studio's state. Nine tags carry a model
  * operation and nothing else, each holding exactly the arguments that
  * operation takes, so the reducer applies one and folds its answer. The
- * remaining five are the studio's own: the two history moves, selection, and
- * the two ends of the file lifecycle. `Opened` and `Saved` both name a file,
- * because a first save is a save-as and settles which file the model lives
- * in.
+ * remaining seven are the studio's own: the two history moves, selection,
+ * the two ends of the file lifecycle, and the two ways the file path
+ * refuses. `Opened` and `Saved` both name a file, because a first save is a
+ * save-as and settles which file the model lives in, and both carry the
+ * source a later save merges onto.
+ *
+ * `ReadFailed` and `FileRefused` are how a failure outside the model
+ * reaches the state: the reducer records it, so the view that asked for the
+ * file has nothing to handle and one value carries every refusal.
+ *
+ * `Opened` carries what the read dropped as well, which the reducer does not
+ * keep: it describes the file that was read rather than the model, and the
+ * view that asked for the file is what shows it. It rides here so that one
+ * value describes the open, rather than the view reading the codec twice.
  *
  * The union is bounded and the reducer is exhaustive over it, so a tag added
  * here without an arm beside it is a compile error rather than a silent
@@ -41,9 +56,15 @@ export type Action = Data.TaggedEnum<{
   Opened: {
     readonly model: Model;
     readonly name: string;
-    readonly format: FormatName;
+    readonly source: RetainedSource;
+    readonly divergences: readonly Divergence[];
   };
-  Saved: { readonly name: string; readonly format: FormatName };
+  Saved: { readonly name: string; readonly source: RetainedSource };
+  ReadFailed: {
+    readonly name: string;
+    readonly failure: ReadFailure | DetectionFailure;
+  };
+  FileRefused: { readonly reason: string };
 }>;
 
 /**

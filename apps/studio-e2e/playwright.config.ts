@@ -1,9 +1,11 @@
 import { defineConfig, devices } from '@playwright/test';
 
 // Browsers come from the flake (PLAYWRIGHT_BROWSERS_PATH points into the nix
-// store), never from playwright's downloader. The suite covers the boot smoke
-// and the axe-core accessibility check, which is the half of the studio's
-// accessibility gate that needs a real browser; #38 grows it further.
+// store), never from playwright's downloader. The suite covers the boot smoke,
+// the axe-core accessibility check, which is the half of the studio's
+// accessibility gate that needs a real browser, and opening and saving a file,
+// which needs a browser for the file input and the download; #38 grows it
+// further.
 export default defineConfig({
   testDir: './src',
   outputDir: './test-output/playwright/output',

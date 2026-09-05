@@ -42,3 +42,30 @@ test('the studio page carries no axe-core accessibility violation', async ({
 
   await audit(page, 'showing an open listbox', '[role="listbox"]');
 });
+
+// The two notice regions hold nothing at rest, so the audit above sees them
+// empty. This one gives one of them something to say. Nothing is hidden while
+// it does, so the audit stays page-wide rather than being scoped to the
+// region: a refusal that broke the page around it would show up here too.
+test('the studio carries no violation while it shows a refusal', async ({
+  page,
+}) => {
+  await page.goto('/');
+  await expect(page.getByTestId('canvas-container')).toBeVisible();
+
+  await expect(page.getByTestId('failure-notice')).toHaveCSS(
+    'display',
+    'block',
+  );
+
+  await page.getByTestId('file-input').setInputFiles({
+    name: 'notes.txt',
+    mimeType: 'text/plain',
+    buffer: Buffer.from('no threat model here'),
+  });
+  await expect(page.getByTestId('failure-notice')).toContainText(
+    'No format claimed notes.txt.',
+  );
+
+  await audit(page, 'showing a refusal');
+});

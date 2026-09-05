@@ -1,0 +1,76 @@
+/* No gap between the regions: two of the three hold nothing most of the time,
+   and they stay in the page rather than being hidden, so a gap either side of
+   them would be space around nothing. Each region spaces itself when it has
+   something to say. */
+.bar {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: var(--pn-space-4);
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--pn-space-2);
+}
+
+.control {
+  padding: var(--pn-space-2) var(--pn-space-3);
+  border: 1px solid var(--pn-colour-border);
+  border-radius: var(--pn-radius);
+  background: var(--pn-colour-surface);
+  color: var(--pn-colour-text);
+  font: inherit;
+}
+
+.control:focus-visible {
+  outline: var(--pn-focus-ring);
+  outline-offset: var(--pn-focus-ring-offset);
+}
+
+/* Whether the model is in a file is said in words, never by a colour or a
+   mark alone. */
+.state {
+  margin: 0;
+  color: var(--pn-colour-text-muted);
+}
+
+/* The fallback picker. It is out of the page rather than merely invisible,
+   so it is neither on the tab path nor in the accessibility tree: the Open
+   control is the one way to it, and every browser opens a file input this
+   way when one is clicked. */
+.input {
+  display: none;
+}
+
+/* As with the failure notice beside it, the region collapses while it is
+   empty rather than hiding, so it is in the accessibility tree before the
+   first entry lands in it. */
+.report:empty {
+  padding: 0;
+  border: 0;
+}
+
+.report:not(:empty) {
+  margin-top: var(--pn-space-2);
+}
+
+.report {
+  padding: var(--pn-space-3);
+  border: 1px solid var(--pn-colour-border);
+  border-radius: var(--pn-radius);
+  background: var(--pn-colour-surface-raised);
+}
+
+.headline {
+  margin: 0;
+  font-weight: 600;
+}
+
+.lines {
+  margin: var(--pn-space-2) 0;
+  padding-left: var(--pn-space-4);
+  color: var(--pn-colour-text-muted);
+  overflow-wrap: anywhere;
+}
