@@ -13,12 +13,7 @@ export type Point = { readonly x: number; readonly y: number };
 
 const decimals = 3;
 
-/**
- * One point at the precision the canvas writes an SVG coordinate to, so a
- * number read off a drawn path and one computed from a node's style compare
- * as equal where they name the same place.
- */
-export const rounded = (point: Point): Point => ({
+const rounded = (point: Point): Point => ({
   x: Number(point.x.toFixed(decimals)),
   y: Number(point.y.toFixed(decimals)),
 });
@@ -59,8 +54,7 @@ export const lineOf = (page: Page, name: RegExp): Locator =>
 export const drawnBy = async (line: Locator): Promise<string> =>
   (await line.getAttribute('d')) ?? '';
 
-/** The points a drawn line turns at, its two ends among them. */
-export const turnsOf = (drawn: string): Point[] =>
+const turnsOf = (drawn: string): Point[] =>
   [...drawn.matchAll(/(-?[\d.]+)\s+(-?[\d.]+)/gu)].map((turn) =>
     rounded({ x: Number(turn[1]), y: Number(turn[2]) }),
   );
