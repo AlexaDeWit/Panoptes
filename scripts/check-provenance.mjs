@@ -57,6 +57,7 @@ const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '..');
 const lockName = 'pnpm-lock.yaml';
 const lockPath = join(repoRoot, lockName);
 const trailerKey = 'Provenance-Move';
+const trailerLine = /^Provenance-Move:\s*(.+)$/;
 
 // The grammar npm accepts for a package name, bounded at npm's own limit of
 // 214 characters. Every catalog name passes it before it becomes a path,
@@ -229,16 +230,15 @@ const attestedSources = (catalog, audited) => {
 };
 
 // The moves this project has accepted, out of the commits the range holds:
-// each `Provenance-Move: name old-repository new-repository` trailer, kept as
-// the whole triple so a trailer admits the move it names and no other. The
-// declaration travels with the commit that makes the move, so it arrives for
-// review beside the bump it explains and nothing is kept in step afterwards.
-// Null where git will not answer at all; a trailer of that name carrying
-// anything but three fields comes back under malformed, with its commit.
+// each `Provenance-Move: name old-repository new-repository` line, kept as
+// the whole triple so a declaration admits the move it names and no other.
 //
-// git decides what a trailer is, rather than a regex of this file's own: a
-// body reaches `interpret-trailers --parse` only where it mentions the name
-// at all, so the common commit costs no process.
+// The author writes it as a trailer on the commit that makes the move, and
+// this reads a whole line anywhere in the body: a squash merge concatenates
+// every commit's message, so what the author wrote last arrives mid-body
+// under the merge's own trailers. A mention inside a sentence starts no line
+// and is not read. Null where git will not answer, and a line of that name
+// carrying anything but three fields comes back under malformed.
 const acceptedMoves = (range) => {
   const log = attempt(() =>
     execFileSync('git', ['log', '--format=%h%x00%B%x00', range], {
@@ -254,22 +254,8 @@ const acceptedMoves = (range) => {
   const records = log.split('\0');
   for (let index = 0; index + 1 < records.length; index += 2) {
     const commit = records[index].trim();
-    const body = records[index + 1];
-    if (!body.includes(trailerKey)) continue;
-    const parsed = attempt(() =>
-      execFileSync('git', ['interpret-trailers', '--parse'], {
-        cwd: repoRoot,
-        input: body,
-        encoding: 'utf8',
-        stdio: ['pipe', 'pipe', 'ignore'],
-      }),
-    );
-    if (parsed === null) {
-      malformed.push(`${commit} its trailers could not be read`);
-      continue;
-    }
-    for (const line of parsed.split('\n')) {
-      const declared = new RegExp(`^${trailerKey}:(.*)$`).exec(line);
+    for (const line of records[index + 1].split('\n')) {
+      const declared = trailerLine.exec(line);
       if (declared === null) continue;
       const fields = declared[1].trim().split(/\s+/);
       if (fields.length === 3) accepted.add(fields.join(' '));

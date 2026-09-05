@@ -95,10 +95,12 @@ another commit. A move that is a real change of home is accepted in the body of
 the commit that makes it, as a `Provenance-Move: name old-repository
 new-repository` trailer, one line per package, read out of the commits between
 the base and the head: the declaration arrives for review beside the bump it
-explains, and it admits the move it names and no other. Nothing is committed
-beyond that: the packages that publish no attestation at all are printed as the
-residual, and that list is what a release accepts and what Panoptes' own threat
-model names.
+explains, and it admits the move it names and no other. The line is read
+wherever the squash left it, since a squash merge concatenates the branch's
+commit messages and the declaration lands in the middle of what reaches main.
+Nothing is committed beyond that: the packages that publish no attestation at
+all are printed as the residual, and that list is what a release accepts and
+what Panoptes' own threat model names.
 
 The CI gate runs the same check on this tag, and on a pull request whenever
 `pnpm-lock.yaml` or `pnpm-workspace.yaml` changed, which is where a bump
