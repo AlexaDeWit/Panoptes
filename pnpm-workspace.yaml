@@ -144,7 +144,7 @@ catalog:
   # Declared here rather than reached through effect, which depends on it:
   # the version the property tests run against is ours to pin. ^3.23.2 is
   # what effect resolves, so the lockfile keeps one copy.
-  fast-check: ^3.23.2
+  fast-check: ^4.0.0
   jiti: 2.7.0
   jsdom: ^30.0.0
   nx: 23.1.2
