@@ -24,10 +24,9 @@ export const developmentModelKey = 'panoptesDevelopmentModel';
  * nothing to do about a fixture a spec malformed.
  */
 export function developmentModel(): Model | undefined {
-  if (!import.meta.env.DEV) {
-    return undefined;
-  }
-  const injected = window[developmentModelKey];
+  const injected = import.meta.env.DEV
+    ? window[developmentModelKey]
+    : undefined;
   return injected === undefined
     ? undefined
     : Either.getOrUndefined(parseModel(injected));

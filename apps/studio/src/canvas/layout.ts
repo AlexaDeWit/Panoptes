@@ -2,13 +2,12 @@ import { layoutDiagram, type CanvasLayout } from '@panoptes/canvas';
 import type { DiagramId, ElementId, Model } from '@panoptes/model';
 import type { State } from '../store/state.js';
 
-type LastLayout = {
-  readonly model: Model;
+type LaidOut = {
   readonly diagram: DiagramId;
   readonly layout: CanvasLayout;
 };
 
-let last: LastLayout | undefined;
+const laidOut = new WeakMap<Model, LaidOut>();
 
 /** The layout of a model that holds no diagram to draw. */
 export const emptyLayout: CanvasLayout = {
@@ -23,24 +22,28 @@ export const emptyLayout: CanvasLayout = {
  * the studio shows more than one, and nothing at all while the model holds
  * none.
  *
- * A selector runs on every dispatch and zustand compares what it returns by
- * identity, so this keeps the last answer and hands it back while the model
- * and the diagram are the same objects. Every model operation returns a new
- * model, so an edit lays the diagram out exactly once and a dispatch that
- * moves something else, a selection say, lays it out not at all. One entry
- * is enough for one canvas; an undo, which restores an earlier model, lays
- * that model out again.
+ * The answer is kept against the model it was laid out from, in a `WeakMap`
+ * so that keeping it holds no model alive, and handed back while the model
+ * and the diagram are the same objects. Saving the work is the smaller half
+ * of why: zustand reads a store through `useSyncExternalStore`, which
+ * refuses a snapshot that is a new object on every call, so a selector
+ * laying the diagram out afresh each time takes the canvas down rather than
+ * merely slowing it. Every model operation returns a new model, so an edit
+ * lays the diagram out once, a dispatch that moves something else does not
+ * lay it out at all, and an undo, which restores an earlier model, finds
+ * that model's own layout still here.
  */
 export function currentLayout(state: State): CanvasLayout {
   const diagram = state.present.diagrams.at(0);
   if (diagram === undefined) {
     return emptyLayout;
   }
-  if (last?.model === state.present && last.diagram === diagram.id) {
+  const last = laidOut.get(state.present);
+  if (last?.diagram === diagram.id) {
     return last.layout;
   }
   const layout = layoutDiagram(diagram, state.present);
-  last = { model: state.present, diagram: diagram.id, layout };
+  laidOut.set(state.present, { diagram: diagram.id, layout });
   return layout;
 }
 

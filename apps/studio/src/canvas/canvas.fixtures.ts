@@ -1,6 +1,5 @@
-import { parseModel, type Model } from '@panoptes/model';
-import { Either } from 'effect';
-import { elementId } from '../store/store.fixtures.js';
+import type { Model } from '@panoptes/model';
+import { elementId, parsedFixture } from '../store/store.fixtures.js';
 
 /** The actor the fixture threat is attached to. */
 export const readerElement = elementId('actor-reader');
@@ -94,25 +93,27 @@ const document = {
       mitigation: '',
       elements: [requestFlow],
     },
+    {
+      id: 'threat-repudiation',
+      number: 3,
+      title: 'An edit is attributed to a reader who did not make it',
+      category: { methodology: 'STRIDE', category: 'repudiation' },
+      severity: 'undecided',
+      status: 'open',
+      description: '',
+      mitigation: '',
+      elements: [requestFlow],
+    },
   ],
-  lastIssuedThreatNumber: 2,
+  lastIssuedThreatNumber: 3,
   mitigations: [],
   assumptions: [],
 };
 
 /**
  * The model the canvas specs draw: two elements, a flow between them, a flow
- * ending at a position that belongs to no element, and a threat on each of
- * the two things a name has to account for. Throws where the literal stops
- * parsing, a broken fixture being a broken suite rather than a case under
- * test.
+ * ending at a position that belongs to no element, and threats spread so a
+ * name has one of each kind to account for, a single assessed threat on an
+ * element and a pair of undecided ones on a flow.
  */
-export const canvasModel: Model = Either.getOrThrowWith(
-  parseModel(document),
-  (failure) =>
-    new Error(
-      `Fixture does not parse: ${failure.issues
-        .map((issue) => `${issue.path.join('.')}: ${issue.message}`)
-        .join('; ')}`,
-    ),
-);
+export const canvasModel: Model = parsedFixture(document);

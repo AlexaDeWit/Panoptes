@@ -2,45 +2,55 @@ import {
   freeEndNodes,
   toReactFlowEdges,
   toReactFlowNodes,
-  type CanvasEdge,
   type CanvasFlowEdge,
   type CanvasFlowNode,
   type CanvasFreeEndNode,
   type CanvasLayout,
   type CanvasNode,
-  type CanvasNodeKind,
-  type ThreatBadge,
 } from '@panoptes/canvas';
 import type { ElementId } from '@panoptes/model';
+import { accessibleNames } from './names.js';
 
 /** Every node the canvas mounts: an element's own, or a free end's anchor. */
 export type DiagramNode = CanvasFlowNode | CanvasFreeEndNode;
 
-const kindWords = {
-  actor: 'actor',
-  process: 'process',
-  store: 'store',
-  text: 'text',
-  'boundary-box': 'trust boundary',
-  'boundary-curve': 'trust boundary',
-} as const satisfies Record<CanvasNodeKind, string>;
-
-const freeEndWords = 'a free point';
+/** What the canvas hands React Flow: the diagram's nodes and its flows. */
+export type DiagramGraph = {
+  readonly nodes: DiagramNode[];
+  readonly edges: CanvasFlowEdge[];
+};
 
 /**
- * What every element the layout drew is called to assistive technology,
- * keyed by the id React Flow knows it by. The glyphs are hidden from a
- * screen reader, so a name here is the only account of the element it has:
- * what the element is called, what kind it is, and what its badge says.
+ * The laid-out diagram as React Flow takes it: every element named for
+ * assistive technology and carrying whether the store has it selected, then
+ * the anchors a flow's free end rides on. The nodes and the flows come back
+ * together because one pass over the layout names both.
+ *
+ * Every node and every edge object is built afresh here, so a selection
+ * rebuilds them all and React Flow re-renders each one. That is one pass
+ * over a diagram's elements with nothing measured, which is what lets the
+ * canvas hold no view of the model of its own.
  */
-export function accessibleNames(
+export function diagramGraph(
   layout: CanvasLayout,
-): ReadonlyMap<string, string> {
-  const nodes = new Map(layout.nodes.map((node) => [node.id, node]));
-  return new Map<string, string>([
-    ...layout.nodes.map((node) => [node.id, nodeName(node)] as const),
-    ...layout.edges.map((edge) => [edge.id, edgeName(edge, nodes)] as const),
-  ]);
+  selection: ElementId | undefined,
+): DiagramGraph {
+  const names = accessibleNames(layout);
+  return {
+    nodes: [
+      ...toReactFlowNodes(layout).map((node) => ({
+        ...node,
+        selected: node.id === selection,
+        ariaLabel: names.get(node.id),
+      })),
+      ...freeEndNodes(layout),
+    ],
+    edges: toReactFlowEdges(layout).map((edge) => ({
+      ...edge,
+      selected: edge.id === selection,
+      ariaLabel: names.get(edge.id),
+    })),
+  };
 }
 
 /** Every node the layout drew, keyed by the id React Flow knows it by. */
@@ -65,42 +75,6 @@ export function elementIds(
 }
 
 /**
- * The diagram's nodes as React Flow takes them: the elements, each named for
- * assistive technology and carrying whether the store has it selected, then
- * the anchors a flow's free end rides on.
- */
-export function diagramNodes(
-  layout: CanvasLayout,
-  selection: ElementId | undefined,
-): DiagramNode[] {
-  const names = accessibleNames(layout);
-  return [
-    ...toReactFlowNodes(layout).map((node) => ({
-      ...node,
-      selected: node.id === selection,
-      ariaLabel: names.get(node.id),
-    })),
-    ...freeEndNodes(layout),
-  ];
-}
-
-/**
- * The diagram's flows as React Flow takes them, each named for assistive
- * technology and carrying whether the store has it selected.
- */
-export function diagramEdges(
-  layout: CanvasLayout,
-  selection: ElementId | undefined,
-): CanvasFlowEdge[] {
-  const names = accessibleNames(layout);
-  return toReactFlowEdges(layout).map((edge) => ({
-    ...edge,
-    selected: edge.id === selection,
-    ariaLabel: names.get(edge.id),
-  }));
-}
-
-/**
  * The nodes the model gives, carrying the extents React Flow measured for
  * the ones already on screen. React Flow reads where a flow ends off a
  * measured node and forgets that measurement when it is handed a node
@@ -116,50 +90,4 @@ export function withMeasurements(
     const extent = measured.get(node.id);
     return extent === undefined ? node : { ...node, measured: extent };
   });
-}
-
-function nodeName(node: CanvasNode): string {
-  return spoken([node.name, kindWords[node.kind], ...badgeWords(node.badge)]);
-}
-
-function edgeName(
-  edge: CanvasEdge,
-  nodes: ReadonlyMap<ElementId, CanvasNode>,
-): string {
-  return spoken([
-    edge.name,
-    'flow',
-    `from ${endName(edge.sourceElement, nodes)} to ${endName(edge.targetElement, nodes)}`,
-    ...badgeWords(edge.badge),
-  ]);
-}
-
-function endName(
-  element: ElementId | undefined,
-  nodes: ReadonlyMap<ElementId, CanvasNode>,
-): string {
-  if (element === undefined) {
-    return freeEndWords;
-  }
-  const node = nodes.get(element);
-  if (node === undefined) {
-    return element;
-  }
-  return node.name === '' ? kindWords[node.kind] : node.name;
-}
-
-function badgeWords(badge: ThreatBadge | undefined): string[] {
-  if (badge === undefined) {
-    return [];
-  }
-  return [
-    badge.count === 1 ? '1 open threat' : `${badge.count} open threats`,
-    badge.severity === 'undecided'
-      ? 'severity not assessed'
-      : `highest severity ${badge.severity}`,
-  ];
-}
-
-function spoken(parts: readonly string[]): string {
-  return parts.filter((part) => part !== '').join(', ');
 }

@@ -8,6 +8,7 @@ import {
   canvasEdgeTypes,
   canvasNodeTypes,
   CanvasEdgeBody,
+  CanvasFreeEndBody,
   CanvasNodeBody,
   flowEndNodeId,
   freeEndNodeKind,
@@ -141,6 +142,18 @@ describe('toReactFlowNodes', () => {
 });
 
 const looseFlow = layout.edges.find((edge) => edge.sourceElement === undefined);
+
+describe('CanvasFreeEndBody', () => {
+  it('draws the one handle an edge end resolves from, and nothing else', () => {
+    const markup = renderToStaticMarkup(
+      <ReactFlowProvider>
+        <CanvasFreeEndBody />
+      </ReactFlowProvider>,
+    );
+    expect(markup).toContain('react-flow__handle');
+    expect(markup).not.toContain('<svg');
+  });
+});
 
 describe('toReactFlowEdges', () => {
   it('carries one edge per drawn flow, ends named by the layout', () => {

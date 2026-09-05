@@ -1,4 +1,5 @@
 import { flowEndNodeId, layoutDiagram } from '@panoptes/canvas';
+import type { ElementId } from '@panoptes/model';
 import { Action } from '../store/actions.js';
 import {
   canvasModel,
@@ -7,7 +8,10 @@ import {
   requestFlow,
   studioElement,
 } from './canvas.fixtures.js';
+import { initialState } from '../store/state.js';
+import { modelStore } from '../store/store.js';
 import {
+  applyChanges,
   moveActions,
   selectionActions,
   type DiagramChange,
@@ -33,6 +37,13 @@ const moving = (
 ): DiagramChange => ({ id, type: 'position', position, dragging });
 
 const anchor = flowEndNodeId(probeFlow, 'target');
+
+const opened = (selection?: ElementId): void => {
+  modelStore.setState({ ...initialState(canvasModel), selection }, true);
+};
+
+const selectionHeld = (): ElementId | undefined =>
+  modelStore.getState().selection;
 
 describe('selectionActions', () => {
   it('selects the element the changes chose', () => {
@@ -116,5 +127,60 @@ describe('moveActions', () => {
     expect(moveActions([moving(anchor, { x: 9, y: 9 }, false)], nodes)).toEqual(
       [],
     );
+  });
+});
+
+describe('applyChanges', () => {
+  it('selects the element a click chose', () => {
+    opened();
+
+    applyChanges([selecting(readerElement, true)], elements, nodes);
+
+    expect(selectionHeld()).toBe(readerElement);
+  });
+
+  it('moves the selection from an element to a flow, deselection last', () => {
+    opened(readerElement);
+
+    applyChanges([selecting(requestFlow, true)], elements, nodes);
+    applyChanges([selecting(readerElement, false)], elements, nodes);
+
+    expect(selectionHeld()).toBe(requestFlow);
+  });
+
+  it('moves the selection from a flow to an element, deselection last', () => {
+    opened(requestFlow);
+
+    applyChanges([selecting(readerElement, true)], elements, nodes);
+    applyChanges([selecting(requestFlow, false)], elements, nodes);
+
+    expect(selectionHeld()).toBe(readerElement);
+  });
+
+  it('clears the selection where nothing was chosen in its place', () => {
+    opened(readerElement);
+
+    applyChanges([selecting(readerElement, false)], elements, nodes);
+
+    expect(selectionHeld()).toBeUndefined();
+  });
+
+  it('moves an element the model holds, so undo has something to take back', () => {
+    opened();
+
+    applyChanges(
+      [moving(readerElement, { x: 40, y: 25 }, false)],
+      elements,
+      nodes,
+    );
+
+    expect(modelStore.getState().past).toHaveLength(1);
+    expect(
+      modelStore
+        .getState()
+        .present.diagrams[0].elements.find(
+          (element) => element.id === readerElement,
+        ),
+    ).toMatchObject({ position: { x: 40, y: 25 } });
   });
 });

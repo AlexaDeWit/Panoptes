@@ -12,12 +12,11 @@ import {
   type NodeChange,
 } from '@xyflow/react';
 import { useMemo, useState } from 'react';
-import { dispatch, useModelStore } from '../store/store.js';
-import { moveActions, selectionActions } from './changes.js';
+import { useModelStore } from '../store/store.js';
+import { applyChanges } from './changes.js';
 import { currentLayout, selectedElement } from './layout.js';
 import {
-  diagramEdges,
-  diagramNodes,
+  diagramGraph,
   elementIds,
   nodesById,
   withMeasurements,
@@ -36,44 +35,35 @@ import styles from './diagram-canvas.module.css';
  * under the pointer among it, so a drag stays smooth. That copy is folded
  * back onto the model's own nodes as soon as the model moves, during render
  * rather than in an effect, so the canvas draws the store and nothing else.
- * The gesture reaches the store once, when it settles, as one offset. The
- * reasoning and the limits are in this directory's README.
+ * The gesture reaches the store once, when it settles, as one offset, and
+ * what it asks of the store is settled against the store's own selection
+ * rather than this render's. The reasoning and the limits are in this
+ * directory's README.
  */
 export function DiagramCanvas() {
   const layout = useModelStore(currentLayout);
   const selection = useModelStore(selectedElement);
-  const nodes = useMemo(
-    () => diagramNodes(layout, selection),
-    [layout, selection],
-  );
-  const edges = useMemo(
-    () => diagramEdges(layout, selection),
+  const graph = useMemo(
+    () => diagramGraph(layout, selection),
     [layout, selection],
   );
   const elements = useMemo(() => elementIds(layout), [layout]);
   const positions = useMemo(() => nodesById(layout), [layout]);
-  const [onScreen, setOnScreen] = useState<DiagramNode[]>(nodes);
-  const [folded, setFolded] = useState<DiagramNode[]>(nodes);
+  const [onScreen, setOnScreen] = useState<DiagramNode[]>(graph.nodes);
+  const [folded, setFolded] = useState<DiagramNode[]>(graph.nodes);
 
-  if (folded !== nodes) {
-    setFolded(nodes);
-    setOnScreen(withMeasurements(nodes, onScreen));
+  if (folded !== graph.nodes) {
+    setFolded(graph.nodes);
+    setOnScreen(withMeasurements(graph.nodes, onScreen));
   }
 
   const onNodesChange = (changes: NodeChange<DiagramNode>[]): void => {
     setOnScreen((current) => applyNodeChanges(changes, current));
-    for (const action of [
-      ...selectionActions(changes, elements, selection),
-      ...moveActions(changes, positions),
-    ]) {
-      dispatch(action);
-    }
+    applyChanges(changes, elements, positions);
   };
 
   const onEdgesChange = (changes: EdgeChange<CanvasFlowEdge>[]): void => {
-    for (const action of selectionActions(changes, elements, selection)) {
-      dispatch(action);
-    }
+    applyChanges(changes, elements, positions);
   };
 
   return (
@@ -83,7 +73,7 @@ export function DiagramCanvas() {
         aria-label="Diagram"
         connectionMode={ConnectionMode.Loose}
         deleteKeyCode={null}
-        edges={edges}
+        edges={graph.edges}
         edgeTypes={canvasEdgeTypes}
         fitView
         multiSelectionKeyCode={null}

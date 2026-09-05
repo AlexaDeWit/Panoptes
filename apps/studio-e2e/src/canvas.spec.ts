@@ -2,16 +2,22 @@ import { expect, test, type Locator, type Page } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-// The studio opens on a development model when the page carries one, which is
-// how a real file reaches the canvas while the open dialog is still issue
-// #37's. The name is the one apps/studio/src/store/development-model.ts reads,
-// set on globalThis, which in a page is the window the studio reads it off.
+/**
+ * The name the studio reads a development session's model off the page by,
+ * as `apps/studio/src/store/development-model.ts` declares it. Setting it is
+ * how a real file reaches the canvas while the open dialog is still issue
+ * #37's.
+ */
 const developmentModelKey = 'panoptesDevelopmentModel';
 
 const ecluse: unknown = JSON.parse(
   readFileSync(join(__dirname, '../../../test-data/ecluse.model.json'), 'utf8'),
 );
 
+/**
+ * Opens the studio on Écluse's model, put on the page before the studio's own
+ * modules run. `globalThis` in a page is the window the studio reads.
+ */
 const openEcluse = async (page: Page): Promise<void> => {
   await page.addInitScript(
     ({ key, model }) => {
@@ -23,20 +29,27 @@ const openEcluse = async (page: Page): Promise<void> => {
   await expect(page.getByTestId('canvas-container')).toBeVisible();
 };
 
+/** Opens the studio on the model it carries until a file can be opened. */
 const openPlaceholder = async (page: Page): Promise<void> => {
   await page.goto('/');
   await expect(page.getByTestId('canvas-container')).toBeVisible();
 };
 
+/**
+ * Every element drawn as a box. The anchor a free flow end rides on is hidden
+ * from assistive technology, so it is no group and is not among these.
+ */
 const elementNodes = (page: Page): Locator =>
   page.locator('.react-flow__nodes').getByRole('group');
 
 const nodeNamed = (page: Page, name: string | RegExp): Locator =>
   page.getByRole('group', { name });
 
-// React Flow places a node with a transform in its style attribute, so that
-// is where a move shows up. The rest of the attribute is left out: selecting
-// a node also raises it, and a spec about position should not read that.
+/**
+ * Where React Flow has placed a node, read off the transform in its style
+ * attribute. The rest of the attribute is left out: selecting a node also
+ * raises it, and a spec about position should not read that.
+ */
 const placeOf = async (node: Locator): Promise<string> => {
   const style = (await node.getAttribute('style')) ?? '';
   return /translate\([^)]*\)/u.exec(style)?.[0] ?? style;
@@ -55,17 +68,25 @@ const dragBy = async (page: Page, node: Locator, by: number): Promise<void> => {
   await page.mouse.up();
 };
 
-test('the whole of a real model is drawn, elements and flows alike', async ({
+test('a real model is drawn whole: 18 elements and 20 flows', async ({
   page,
 }) => {
   await openEcluse(page);
 
-  // Écluse's one diagram: 18 elements the canvas draws as boxes and 20 flows.
-  // The anchor a free flow end rides on is hidden from assistive technology,
-  // so it is no group and does not count here.
   await expect(elementNodes(page)).toHaveCount(18);
   await expect(page.locator('.react-flow__edge')).toHaveCount(20);
   await expect(nodeNamed(page, /^Écluse proxy, process/u)).toBeVisible();
+});
+
+test('tabbing into a real model reaches every flow before any element', async ({
+  page,
+}) => {
+  await openEcluse(page);
+
+  await page.getByRole('button', { name: 'Add a process' }).focus();
+  await page.keyboard.press('Tab');
+
+  await expect(page.locator('.react-flow__edge:focus')).toHaveCount(1);
 });
 
 test('a click selects an element and the canvas draws the selection', async ({
@@ -80,6 +101,27 @@ test('a click selects an element and the canvas draws the selection', async ({
   await expect(nodeNamed(page, /^Studio, process/u)).not.toHaveClass(
     /selected/u,
   );
+});
+
+test('the selection moves between an element and a flow, either way', async ({
+  page,
+}) => {
+  await openEcluse(page);
+  const proxy = nodeNamed(page, /^Écluse proxy, process/u);
+  const selectedFlow = page.locator('.react-flow__edge.selected');
+
+  await proxy.click();
+  await expect(proxy).toHaveClass(/selected/u);
+
+  await page.getByRole('button', { name: 'Add a process' }).focus();
+  await page.keyboard.press('Tab');
+  await page.keyboard.press('Enter');
+  await expect(selectedFlow).toHaveCount(1);
+  await expect(proxy).not.toHaveClass(/selected/u);
+
+  await proxy.click();
+  await expect(proxy).toHaveClass(/selected/u);
+  await expect(selectedFlow).toHaveCount(0);
 });
 
 test('a drag moves the element through the store, and undo puts it back', async ({
@@ -98,14 +140,12 @@ test('a drag moves the element through the store, and undo puts it back', async 
   await expect.poll(() => placeOf(reader)).toBe(before);
 });
 
-test('an element is reachable, selectable and movable by keyboard alone', async ({
+test('an element is reachable, selectable and movable by keyboard alone, the disabled Undo beside it being no tab stop', async ({
   page,
 }) => {
   await openPlaceholder(page);
   const reader = nodeNamed(page, /^Reader, actor/u);
 
-  // The Undo button beside it is disabled while there is nothing to undo, so
-  // the tab after the last control on the page reaches the first element.
   await page.getByRole('button', { name: 'Add a process' }).focus();
   await page.keyboard.press('Tab');
   await expect(reader).toBeFocused();
