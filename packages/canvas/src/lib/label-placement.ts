@@ -229,6 +229,15 @@ export type FlowGeometry = {
  * which costs nothing at the standoff that put the label beside it and does
  * cost where the flow doubles back under its own name.
  *
+ * An element's badge is grown by one clearance on every side where a
+ * candidate's own badge box is tested against it, so a flow badge that comes
+ * within a clearance of an element's badge costs as much as one drawn over
+ * it. Two circles that close together on one corner read as an element's own
+ * pair rather than as the flow's. The candidate's name box is tested against
+ * every badge as it is drawn, and so is its badge box against a label
+ * already placed: the growth is an element badge's alone, so two flow badges
+ * are charged where they overlap and not before.
+ *
  * Flows are placed in ascending order of their ids, so the order the model
  * happens to hold its elements in decides nothing, and the cheapest
  * candidate wins. A tie goes to the candidate nearest the midpoint of the
@@ -255,19 +264,27 @@ export function flowLabelPlacements(
   for (const { flow, index } of ordered) {
     const chosen = cheapestCandidate(flow, drawn, placed);
     placements[index] = chosen.placement;
-    placed.push(...chosen.boxes);
+    placed.push(...boxesOf(chosen));
   }
   return placements;
 }
 
 type Candidate = {
   readonly placement: FlowLabelPlacement;
-  readonly boxes: readonly Box[];
+  readonly nameBox: Box | undefined;
+  readonly badgeBox: Box | undefined;
   readonly fromMiddle: number;
 };
 
 type Obstacles = {
+  readonly boxesForName: readonly Box[];
+  readonly boxesForBadge: readonly Box[];
+  readonly lines: readonly Segment[];
+};
+
+type NodeDrawing = {
   readonly boxes: readonly Box[];
+  readonly badges: readonly Box[];
   readonly lines: readonly Segment[];
 };
 
@@ -402,12 +419,17 @@ function candidateAt(
   const badge = badgeBeside(flow.badge, anchor, negated(normal), standoff);
   return {
     placement: { name, badge: badge?.at },
-    boxes: [
-      ...(nameBox === undefined ? [] : [nameBox]),
-      ...(badge === undefined ? [] : [badge.box]),
-    ],
+    nameBox,
+    badgeBox: badge?.box,
     fromMiddle: Math.hypot(name.at.x - middle.x, name.at.y - middle.y),
   };
+}
+
+function boxesOf(candidate: Candidate): Box[] {
+  return [
+    ...(candidate.nameBox === undefined ? [] : [candidate.nameBox]),
+    ...(candidate.badgeBox === undefined ? [] : [candidate.badgeBox]),
+  ];
 }
 
 function badgeBeside(
@@ -432,13 +454,26 @@ function collisionsOf(
   drawn: Obstacles,
   placed: readonly Box[],
 ): number {
-  let held = 0;
-  for (const box of candidate.boxes) {
-    held += drawn.boxes.filter((other) => boxesOverlap(box, other)).length;
-    held += placed.filter((other) => boxesOverlap(box, other)).length;
-    held += drawn.lines.filter((line) => segmentMeetsBox(line, box)).length;
+  return (
+    boxCollisions(candidate.nameBox, drawn.boxesForName, placed, drawn.lines) +
+    boxCollisions(candidate.badgeBox, drawn.boxesForBadge, placed, drawn.lines)
+  );
+}
+
+function boxCollisions(
+  box: Box | undefined,
+  boxes: readonly Box[],
+  placed: readonly Box[],
+  lines: readonly Segment[],
+): number {
+  if (box === undefined) {
+    return 0;
   }
-  return held;
+  return (
+    boxes.filter((other) => boxesOverlap(box, other)).length +
+    placed.filter((other) => boxesOverlap(box, other)).length +
+    lines.filter((line) => segmentMeetsBox(line, box)).length
+  );
 }
 
 function drawnObstacles(
@@ -446,31 +481,48 @@ function drawnObstacles(
   nodes: readonly CanvasNode[],
 ): Obstacles {
   const boxes: Box[] = [];
+  const badges: Box[] = [];
   const lines: Segment[] = [];
   for (const node of nodes) {
     const own = nodeObstacles(node);
     boxes.push(...own.boxes);
+    badges.push(...own.badges);
     lines.push(...own.lines);
   }
   for (const flow of flows) {
     lines.push(...segmentsOfPolyline(flow.points));
   }
-  return { boxes, lines };
+  return {
+    boxesForName: [...boxes, ...badges],
+    boxesForBadge: [...boxes, ...badges.map(grownByClearance)],
+    lines,
+  };
+}
+
+function grownByClearance(box: Box): Box {
+  return {
+    minX: box.minX - flowLabelClearance,
+    minY: box.minY - flowLabelClearance,
+    maxX: box.maxX + flowLabelClearance,
+    maxY: box.maxY + flowLabelClearance,
+  };
 }
 
 function isEnclosure(node: CanvasNode): boolean {
   return node.kind === 'boundary-box' || node.kind === 'boundary-curve';
 }
 
-function nodeObstacles(node: CanvasNode): Obstacles {
-  const own = [...ownTextBox(node), ...ownBadgeBox(node)];
+function nodeObstacles(node: CanvasNode): NodeDrawing {
+  const text = ownTextBox(node);
+  const badges = ownBadgeBox(node);
   const box = nodeBox(node);
   if (node.kind === 'boundary-box') {
-    return { boxes: own, lines: segmentsOfBox(box) };
+    return { boxes: text, badges, lines: segmentsOfBox(box) };
   }
   if (node.kind === 'boundary-curve') {
     return {
-      boxes: own,
+      boxes: text,
+      badges,
       lines: segmentsOfPolyline(
         controlPolygon(node.waypoints).map((point) =>
           shiftedBy(point, node.position),
@@ -478,7 +530,7 @@ function nodeObstacles(node: CanvasNode): Obstacles {
       ),
     };
   }
-  return { boxes: [box, ...own], lines: [] };
+  return { boxes: [box, ...text], badges, lines: [] };
 }
 
 function ownTextBox(node: CanvasNode): Box[] {
