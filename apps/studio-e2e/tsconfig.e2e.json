@@ -2,6 +2,9 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "outDir": "./out-tsc/playwright",
+    // The page functions a spec hands to page.evaluate run in the browser,
+    // so the browser's globals are part of what this project compiles.
+    "lib": ["dom", "es2022"],
     "types": ["node"],
     "module": "esnext",
     "moduleResolution": "bundler"
