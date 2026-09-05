@@ -25,6 +25,7 @@ and of the canvas package for one.
 | `--pn-colour-canvas`                                                 | What a diagram is drawn on         |
 | `--pn-colour-text`, `--pn-colour-text-muted`                         | Text, at WCAG AA on either surface |
 | `--pn-colour-border`                                                 | Every hairline                     |
+| `--pn-colour-grid`                                                   | The canvas's graph-paper ruling    |
 | `--pn-colour-accent`, `--pn-colour-accent-text`                      | Selection and the focus indicator  |
 | `--pn-space-1` to `--pn-space-4`                                     | Every gap and every pad            |
 | `--pn-radius`                                                        | Every corner                       |

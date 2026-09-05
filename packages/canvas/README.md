@@ -207,17 +207,20 @@ a dense diagram still draws every name it carries.
 `tokens.ts` is where a colour, a step of spacing and a size of type are
 decided, for the diagram and for the studio's chrome alike. `lightPalette`
 names roles rather than shades: the three surfaces, the two washes an actor
-and a process are filled with, the two inks, the hairline, the primary action,
-the cream a badge is lettered in, and one tone per severity. `darkPalette`
-answers the same roles over warm ink grounds. Nothing applies the dark table
-yet, so it is data beside the light one rather than a theme.
+and a process are filled with, the two inks, the hairline, the ruled line of
+the studio's graph paper, the primary action, the cream a badge is lettered
+in, and one tone per severity. `darkPalette` answers the same roles over warm
+ink grounds. Nothing applies the dark table yet, so it is data beside the
+light one rather than a theme.
 
 The palette is the maintainer's vintage draftsman colours with the lightness
-moved where a contrast floor demanded it and the hue left alone. Five values
+moved where a contrast floor demanded it and the hue left alone. Six values
 are not the starting palette's own, and the reasons are in the module. The
 fifth severity, which the starting palette does not carry, is the olive of the
 primary action, so a low badge and a button are one colour: what tells one
-severity from another is the badge's mark, and the tone repeats it.
+severity from another is the badge's mark, and the tone repeats it. The grid
+line is the other role the starting palette has no value for, a warm taupe the
+studio rules its canvas with.
 
 `contrastRatio` is the WCAG 2.2 ratio computed from two tokens, and
 `tokens.spec.ts` puts every text-on-surface and mark-on-surface pair of both
@@ -226,8 +229,28 @@ for the outline that identifies a control. Every surface counts as a ground,
 the two washes an actor and a process are filled with among them, since a
 badge is drawn over an element as readily as beside one. So the palette is
 measured rather than read, and a value moved by hand fails the suite with the
-ratio it reached. `channelDistance` is the coarse floor under the five tones, which
-catches two collapsing onto one shade and claims nothing more.
+ratio it reached. `channelDistance` is the coarse floor under the five tones,
+which catches two collapsing onto one shade and claims nothing more.
+
+The grid line is measured on a band rather than against a floor, at least 1.3
+and at most 1.6 on the canvas ground it is drawn over. Graph paper has to be
+visible without reading as a control's outline, so a later edit that darkens
+it to the hairline's 3 fails the suite as readily as one that loses it in the
+ground.
+
+The module carries the sizes the drawing is built from as well as its colours.
+`strokeWidths` is every stroke a diagram lays down: one weight for an
+element's outline, a trust boundary's dashes and a flow's line, a heavier one
+for a store's two lines, which are the whole glyph and have no box to sit in,
+and the ring and the halo that cut a badge and a flow name out of whatever
+they are drawn over. `arrowhead` sizes the triangle a flow ends in,
+`badgeRadius` the two circles a badge stacks, and `gridSpacing` the graph
+paper the studio rules its canvas with, which the headless render lays down
+none of. The badge radii and the ring are one decision: the ring is centred on
+the circle, so half of it eats into the disc the count is lettered on, and the
+secondary radius is 9 because a two-digit count at that size, measured with
+the wrap's own ratio, reaches 6.69 units from the centre where a 3-unit ring
+would leave 6.5.
 
 `canvasStylesheet` resolves the light tokens to values, because the standalone
 SVG has no document around it to hold a `:root` and neither has the PDF that
