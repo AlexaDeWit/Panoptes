@@ -89,17 +89,20 @@ root, and compares what verifies against
 each attested package beside the source repository its attestation names. It
 fails where a package that carried an attestation no longer does, where the
 attestation now names a different repository, where a signature or an
-attestation does not verify, and where the record and the catalog have parted.
-Every one of those is accepted, once read, by rerunning with `--update` and
-committing the diff. The packages that publish no attestation at all are
-printed as the residual: that list is what a release accepts, and it is the
-residual Panoptes' own threat model names.
+attestation does not verify, where a package carries no registry signature
+though the registry publishes signing keys, and where the record and the
+catalog have parted. Every one of those is accepted, once read, by rerunning
+with `--update` and committing the diff. The packages that publish no
+attestation at all are printed as the residual: that list is what a release
+accepts, and it is the residual Panoptes' own threat model names.
 
 The CI gate runs the same check, on this tag as on every pull request, so this
 run is the one that answers before a tag exists that cannot be moved. It
 reaches the registry, and an exit code of 2 says the check could not run
 rather than that provenance failed: the registry was out of reach after two
-attempts, or the lockfile or the record is not there to read. Run it again.
+attempts, or `pnpm-lock.yaml` or the record could not be read, or the catalog
+holds a name npm would refuse or a version the lockfile does not install. Only
+the first of those is worth running again; the rest name what to correct.
 
 ### 4. Cut and push the signed tag (owner, GPG key)
 

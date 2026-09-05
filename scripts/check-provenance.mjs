@@ -13,9 +13,9 @@
 // workspace reads `catalog:`. Run in place it therefore covers no catalog
 // edge at all: whichever catalog packages it reaches, it reaches by accident
 // through some transitive dependent that names them in a range, which on the
-// tree as it stands leaves 31 of the 56 unreached and reads one of the rest
-// at a version this workspace does not install. Coverage that moves with
-// every unrelated dependency change is not a check.
+// tree as it stands leaves 31 of the 56 unreached, and two consecutive runs
+// over the one unchanged tree answered for 781 packages and then 780.
+// Coverage that moves with every unrelated dependency change is not a check.
 //
 // So npm is handed a throwaway tree instead: one directory per catalog
 // package holding the name and the version pnpm-lock.yaml resolved, which is
@@ -27,11 +27,11 @@
 // and jq is not in the flake.
 //
 // Exit 1 is a provenance failure and exit 2 is a check that could not run: a
-// registry out of reach, a lockfile this cannot read, a record that is not
-// there. docs/release.md says what to do with each.
+// registry out of reach, a lockfile or a record this cannot read, a catalog
+// entry naming what npm would not accept as a package or what the lockfile
+// does not install. docs/release.md says what to do with each.
 import { execFileSync } from 'node:child_process';
 import {
-  existsSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
@@ -47,11 +47,15 @@ const lockPath = join(repoRoot, 'pnpm-lock.yaml');
 const recordName = 'dependency-provenance.txt';
 const recordPath = join(repoRoot, recordName);
 
-// The grammar npm accepts for a package name. Every catalog name is checked
-// against it before it becomes a path, because the lockfile is a file a pull
-// request may edit and `../` in a name would otherwise be a directory this
-// writes into.
+// The grammar npm accepts for a package name, bounded at npm's own limit of
+// 214 characters. Every catalog name is checked against it before it becomes
+// a path, because the lockfile is a file a pull request may edit: `../` in a
+// name would otherwise be a directory this writes into, and a name past what
+// a file system takes would be an unhandled ENAMETOOLONG.
+const nameLimit = 214;
 const packageName = /^(?:@[a-z0-9~-][a-z0-9._~-]*\/)?[a-z0-9~-][a-z0-9._~-]*$/;
+const isPackageName = (name) =>
+  name.length <= nameLimit && packageName.test(name);
 
 const provenancePredicate = 'https://slsa.dev/provenance/v1';
 const unknownRepository = '-';
@@ -74,9 +78,11 @@ const recordHeader = `# Every package in the pnpm-workspace.yaml catalog that ca
 `;
 
 // pnpm writes the version each catalog specifier resolved to under
-// `catalogs:`, which is the version actually installed rather than the range
-// asked for. A named catalog sits between the two, so the names are four
-// spaces in and their versions six.
+// `catalogs:`, which is meant to be the version installed rather than the
+// range asked for. A named catalog sits between the two, so the names are
+// four spaces in and their versions six. Nothing in that block proves the
+// version is installed, so readSnapshots below reads the `packages:` block
+// and main refuses a catalog entry that block does not carry.
 const readCatalog = (lockText) => {
   const versions = new Map();
   let inCatalogs = false;
@@ -99,6 +105,25 @@ const readCatalog = (lockText) => {
     }
   }
   return versions;
+};
+
+// Every package pnpm installs, one `name@version` key per line two spaces
+// into the `packages:` block. A catalog entry naming a version absent from
+// here would have provenance verified for something the install does not
+// carry, so it stops the check instead.
+const readSnapshots = (lockText) => {
+  const installed = new Set();
+  let inPackages = false;
+  for (const line of lockText.split('\n')) {
+    if (!inPackages) {
+      inPackages = line === 'packages:';
+      continue;
+    }
+    if (/^\S/.test(line)) break;
+    const key = /^ {2}'?([^']+?)'?:$/.exec(line);
+    if (key) installed.add(key[1]);
+  }
+  return installed;
 };
 
 const writeProbeTree = (root, catalog) => {
@@ -302,9 +327,9 @@ const update = (catalog, audited) => {
   return 0;
 };
 
-const readRecord = () => {
+const readRecord = (recordText) => {
   const recorded = new Map();
-  for (const line of readFileSync(recordPath, 'utf8').split('\n')) {
+  for (const line of recordText.split('\n')) {
     const trimmed = line.trim();
     if (trimmed === '' || trimmed.startsWith('#')) continue;
     const [name, repository = unknownRepository] = trimmed.split(/\s+/);
@@ -318,28 +343,40 @@ const cannotRun = (lines) => {
   return 2;
 };
 
+// Node's filesystem calls throw, and this script's error channel is an exit
+// code with a sentence beside it, so every one a hostile lockfile or an
+// unreadable checkout could break comes back as null and leaves through
+// cannotRun instead of a stack trace under the exit code that means a
+// provenance failure.
+const attempt = (act) => {
+  try {
+    return act();
+  } catch {
+    return null;
+  }
+};
+
 const main = () => {
   const argument = process.argv[2];
   if (argument !== undefined && argument !== '--update') {
     return cannotRun(['usage: scripts/check-provenance.mjs [--update]']);
   }
 
-  if (!existsSync(lockPath)) {
+  const lockText = attempt(() => readFileSync(lockPath, 'utf8'));
+  if (lockText === null) {
     return cannotRun([
-      `no ${lockPath}: run this from a checkout of the repository`,
+      `cannot read ${lockPath}: run this from a checkout of the repository`,
     ]);
   }
 
-  const catalog = readCatalog(readFileSync(lockPath, 'utf8'));
+  const catalog = readCatalog(lockText);
   if (catalog.size === 0) {
     return cannotRun([
       `no catalog in ${lockPath}: its shape is not the one this reads`,
     ]);
   }
 
-  const malformed = [...catalog.keys()].filter(
-    (name) => !packageName.test(name),
-  );
+  const malformed = [...catalog.keys()].filter((name) => !isPackageName(name));
   if (malformed.length > 0) {
     return cannotRun([
       `${lockPath} holds what npm would not accept as a package name:`,
@@ -347,19 +384,50 @@ const main = () => {
     ]);
   }
 
-  if (argument !== '--update' && !existsSync(recordPath)) {
+  const installed = readSnapshots(lockText);
+  const uninstalled = [...catalog]
+    .filter(([name, version]) => !installed.has(`${name}@${version}`))
+    .map(([name, version]) => `  ${name}@${version}`);
+  if (uninstalled.length > 0) {
     return cannotRun([
-      `no ${recordName}: write it with scripts/check-provenance.mjs --update`,
+      `${lockPath} catalogues a version its packages do not carry, so an`,
+      'attestation would be read for something the install does not hold:',
+      ...uninstalled,
     ]);
   }
 
-  const root = mkdtempSync(join(tmpdir(), 'panoptes-provenance-'));
+  const recordText =
+    argument === '--update'
+      ? ''
+      : attempt(() => readFileSync(recordPath, 'utf8'));
+  if (recordText === null) {
+    return cannotRun([
+      `cannot read ${recordName}: write it with scripts/check-provenance.mjs --update`,
+    ]);
+  }
+
+  const root = attempt(() =>
+    mkdtempSync(join(tmpdir(), 'panoptes-provenance-')),
+  );
+  if (root === null) {
+    return cannotRun([
+      `cannot make a directory under ${tmpdir()}, so npm has no tree to audit`,
+    ]);
+  }
+
+  let probed = null;
   let audited = null;
   try {
-    writeProbeTree(root, catalog);
-    audited = audit(root);
+    probed = attempt(() => writeProbeTree(root, catalog) ?? true);
+    if (probed !== null) audited = audit(root);
   } finally {
     rmSync(root, { recursive: true, force: true });
+  }
+
+  if (probed === null) {
+    return cannotRun([
+      `cannot write the tree npm audits under ${tmpdir()}, so nothing was verified`,
+    ]);
   }
 
   if (audited === null) {
@@ -371,7 +439,7 @@ const main = () => {
   }
 
   if (argument === '--update') return update(catalog, audited);
-  return check(catalog, audited, readRecord());
+  return check(catalog, audited, readRecord(recordText));
 };
 
 process.exitCode = main();
