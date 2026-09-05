@@ -1,8 +1,13 @@
 import type { Diagram, Model } from '@panoptes/model';
-import { renderRegister, renderSvg, type SvgDocument } from '@panoptes/render';
+import {
+  renderRegister,
+  renderSvg,
+  renderTypst,
+  type SvgDocument,
+} from '@panoptes/render';
 import { Either } from 'effect';
 import { z } from 'zod';
-import { writeTextFile } from './files.js';
+import { writeFile } from './files.js';
 import { readModel } from './input.js';
 import {
   escaped,
@@ -10,7 +15,9 @@ import {
   succeeded,
   usageError,
   type CommandOutcome,
+  type CommandOutput,
 } from './outcome.js';
+import { compilePdf, typstAssets } from './pdf.js';
 
 type UnplacedFlow = SvgDocument['unplaced'][number];
 
@@ -21,7 +28,7 @@ type UnplacedFlow = SvgDocument['unplaced'][number];
  * what a user reads.
  */
 export const renderOptionsSchema = z.object({
-  format: z.enum(['svg', 'md'], { error: 'must be svg or md' }),
+  format: z.enum(['svg', 'md', 'pdf'], { error: 'must be svg, md or pdf' }),
   out: z.string({ error: 'must be a path, or - for standard output' }),
   diagram: z.string().optional(),
 });
@@ -29,34 +36,83 @@ export const renderOptionsSchema = z.object({
 /** The options a render was asked for. */
 export type RenderOptions = z.infer<typeof renderOptionsSchema>;
 
+type WholeModelFormat = Exclude<RenderOptions['format'], 'svg'>;
+
+const wholeModelFormats = {
+  md: 'writes the whole register',
+  pdf: 'writes every diagram and the register',
+} satisfies Record<WholeModelFormat, string>;
+
 /**
- * `panoptes render <file> --format svg|md --out <path>`: a projection of
+ * `panoptes render <file> --format svg|md|pdf --out <path>`: a projection of
  * the model the file holds, written to that path, or to standard output
- * where the path is `-`. `md` writes the whole threat register. `svg` draws
- * one diagram, which `--diagram` names by id or by title, and which a model
- * holding exactly one diagram does not have to name.
+ * where the path is `-`. `md` writes the whole threat register and `pdf`
+ * writes every diagram followed by that register, so neither takes
+ * `--diagram`. `svg` draws one diagram, which `--diagram` names by id or by
+ * title, and which a model holding exactly one diagram does not have to name.
+ *
+ * Only the PDF is asynchronous, because the Typst compiler is a WebAssembly
+ * module that is built before it compiles anything. `assets` is where that
+ * compiler and its fonts are read from, which for a running CLI is always
+ * where the build put them.
  */
-export function render(file: string, options: RenderOptions): CommandOutcome {
+export function render(
+  file: string,
+  options: RenderOptions,
+  assets: string = typstAssets,
+): Promise<CommandOutcome> {
   return Either.match(readModel(file), {
-    onLeft: (outcome) => outcome,
-    onRight: (read) => projection(read.model, options),
+    onLeft: (outcome) => Promise.resolve(outcome),
+    onRight: (read) => projection(read.model, options, assets),
   });
 }
 
-function projection(model: Model, options: RenderOptions): CommandOutcome {
-  return options.format === 'md'
-    ? register(model, options)
-    : drawing(model, options);
+function projection(
+  model: Model,
+  options: RenderOptions,
+  assets: string,
+): Promise<CommandOutcome> {
+  return options.format === 'svg'
+    ? Promise.resolve(drawing(model, options))
+    : wholeModel(model, options.format, options, assets);
 }
 
-function register(model: Model, options: RenderOptions): CommandOutcome {
+function wholeModel(
+  model: Model,
+  format: WholeModelFormat,
+  options: RenderOptions,
+  assets: string,
+): Promise<CommandOutcome> {
   return options.diagram === undefined
-    ? written(options.out, renderRegister(model), '')
-    : usageError(
-        lines(
-          'error: --diagram chooses one diagram, and --format md writes the whole register.',
-        ),
-      );
+    ? document(model, format, options.out, assets)
+    : Promise.resolve(usageError(lines(refusedDiagram(format))));
+}
+
+function refusedDiagram(format: WholeModelFormat): string {
+  return `error: --diagram chooses one diagram, and --format ${format} ${wholeModelFormats[format]}.`;
+}
+
+function document(
+  model: Model,
+  format: WholeModelFormat,
+  out: string,
+  assets: string,
+): Promise<CommandOutcome> {
+  return format === 'md'
+    ? Promise.resolve(written(out, renderRegister(model), ''))
+    : compiled(model, out, assets);
+}
+
+async function compiled(
+  model: Model,
+  out: string,
+  assets: string,
+): Promise<CommandOutcome> {
+  const source = renderTypst(model);
+  return Either.match(await compilePdf(source.typst, assets), {
+    onLeft: (reason) => usageError(lines(`error: ${reason}`)),
+    onRight: (pdf) => written(out, pdf, unplacedWarning(source.unplaced)),
+  });
 }
 
 function drawing(model: Model, options: RenderOptions): CommandOutcome {
@@ -67,14 +123,18 @@ function drawing(model: Model, options: RenderOptions): CommandOutcome {
 }
 
 function drawn(diagram: Diagram, model: Model, out: string): CommandOutcome {
-  const document = renderSvg(diagram, model);
-  return written(out, document.svg, unplacedWarning(document.unplaced));
+  const drawnDiagram = renderSvg(diagram, model);
+  return written(out, drawnDiagram.svg, unplacedWarning(drawnDiagram.unplaced));
 }
 
-function written(out: string, text: string, warning: string): CommandOutcome {
+function written(
+  out: string,
+  content: CommandOutput,
+  warning: string,
+): CommandOutcome {
   return out === '-'
-    ? succeeded(text, warning)
-    : Either.match(writeTextFile(out, text), {
+    ? succeeded(content, warning)
+    : Either.match(writeFile(out, content), {
         onLeft: (reason) => usageError(lines(`error: ${reason}`)),
         onRight: () => succeeded('', warning),
       });

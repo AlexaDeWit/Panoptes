@@ -15,6 +15,9 @@ catalogs:
     '@babel/preset-react':
       specifier: ^8.0.0
       version: 8.0.1
+    '@myriaddreamin/typst-ts-web-compiler':
+      specifier: 0.7.0
+      version: 0.7.0
     '@nx/esbuild':
       specifier: 23.1.2
       version: 23.1.2
@@ -297,6 +300,9 @@ importers:
 
   apps/cli:
     dependencies:
+      '@myriaddreamin/typst-ts-web-compiler':
+        specifier: 'catalog:'
+        version: 0.7.0
       '@panoptes/formats':
         specifier: workspace:*
         version: link:../../packages/formats
@@ -1676,6 +1682,9 @@ packages:
 
   '@jridgewell/trace-mapping@0.3.31':
     resolution: {integrity: sha512-zzNR+SdQSDJzc8joaeP8QQoCQr8NuYx2dIIytl1QeBEZHJ9uW6hebsrYgbz8hJwUQao3TWCMtmfV8Nu1twOLAw==}
+
+  '@myriaddreamin/typst-ts-web-compiler@0.7.0':
+    resolution: {integrity: sha512-nMwMcfOBy5pABPDuVM7/u8425SxhPUM+OJe6daqqgVOT3+neCTz4JKwx2L8XasfEHTNvd0cUI07LR9q5ADo7Gw==}
 
   '@napi-rs/wasm-runtime@0.2.4':
     resolution: {integrity: sha512-9zESzOO5aDByvhIAsOy9TbpZ0Ur2AJbUI7UT73kcUTS2mxAMHOBaa1st/jAymNoCtvrit99kkzT1FZuXVcgfIQ==}
@@ -7510,6 +7519,8 @@ snapshots:
     dependencies:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.5.5
+
+  '@myriaddreamin/typst-ts-web-compiler@0.7.0': {}
 
   '@napi-rs/wasm-runtime@0.2.4':
     dependencies:

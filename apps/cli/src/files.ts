@@ -31,16 +31,16 @@ export function sizeOf(path: string): number | undefined {
 }
 
 /**
- * The text written to a path as UTF-8, or a sentence naming the path and
- * the system's reason.
+ * The content written to a path, text as UTF-8 and bytes as they are, or a
+ * sentence naming the path and the system's reason.
  */
-export function writeTextFile(
+export function writeFile(
   path: string,
-  text: string,
+  content: string | Uint8Array,
 ): Either.Either<void, string> {
   return Either.try({
     try: () => {
-      writeFileSync(path, text);
+      writeFileSync(path, content);
     },
     catch: (error) => `cannot write ${path}: ${reasonOf(error)}`,
   });

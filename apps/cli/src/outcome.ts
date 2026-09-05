@@ -7,19 +7,26 @@
 export type ExitCode = 0 | 1 | 2;
 
 /**
- * What a command asks the edge to do: the exit code, and the text each
- * stream is to carry. Both texts are written verbatim, so a command writing
- * a document to standard output decides its own trailing newline rather
- * than inheriting one.
+ * What a command puts on standard output: the text of a document, or its
+ * bytes where the document is not text. A PDF is the second, and a stream
+ * handed a string would encode it as UTF-8 and corrupt it.
+ */
+export type CommandOutput = string | Uint8Array;
+
+/**
+ * What a command asks the edge to do: the exit code, and what each stream is
+ * to carry. Both are written verbatim, so a command writing a document to
+ * standard output decides its own trailing newline rather than inheriting
+ * one.
  */
 export type CommandOutcome = {
   readonly code: ExitCode;
-  readonly out: string;
+  readonly out: CommandOutput;
   readonly err: string;
 };
 
 /** The command did what it was asked, whatever it wrote to either stream. */
-export function succeeded(out: string, err: string): CommandOutcome {
+export function succeeded(out: CommandOutput, err: string): CommandOutcome {
   return { code: 0, out, err };
 }
 
@@ -31,7 +38,11 @@ export function invalidInput(err: string): CommandOutcome {
 /**
  * The invocation cannot be carried out: the parser or the option schema
  * refused it, a file cannot be read or written, a choice names no diagram,
- * or a stream refused the output, a pipe whose reader closed aside.
+ * a stream refused the output, a pipe whose reader closed aside, or a
+ * projection could not be produced from a model Panoptes accepted, which is
+ * a typesetter refusing the document or an install missing the files it
+ * typesets with. The last two are 2 rather than 1 because the file was read
+ * and was good: what failed is the asking, not the input.
  */
 export function usageError(err: string): CommandOutcome {
   return { code: 2, out: '', err };

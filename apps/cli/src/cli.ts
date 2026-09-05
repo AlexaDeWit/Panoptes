@@ -6,6 +6,7 @@ import {
   succeeded,
   usageError,
   type CommandOutcome,
+  type CommandOutput,
   type ExitCode,
 } from './outcome.js';
 import { render, renderOptionsSchema, type RenderOptions } from './render.js';
@@ -33,7 +34,7 @@ type ParseState = {
  * system's reason where the stream would not take the text.
  */
 export type CliStreams = {
-  readonly out: (text: string) => Either.Either<void, string>;
+  readonly out: (output: CommandOutput) => Either.Either<void, string>;
   readonly err: (text: string) => Either.Either<void, string>;
 };
 
@@ -41,9 +42,10 @@ export type CliStreams = {
  * The arguments as the outcome they ask for. Commander reports by exiting,
  * which `exitOverride` turns into a value here, and what it recognizes
  * becomes a typed request that runs once parsing is over, so a command is
- * reached with typed arguments alone.
+ * reached with typed arguments alone. Parsing is synchronous; the answer is
+ * a promise because one projection, the PDF, is.
  */
-export function runCli(argv: readonly string[]): CommandOutcome {
+export function runCli(argv: readonly string[]): Promise<CommandOutcome> {
   const state: ParseState = {
     out: '',
     err: '',
@@ -53,10 +55,10 @@ export function runCli(argv: readonly string[]): CommandOutcome {
   try {
     programFor(state).parse([...argv], { from: 'user' });
   } catch (error) {
-    return parseStopped(state, error);
+    return Promise.resolve(parseStopped(state, error));
   }
   return state.request === undefined
-    ? usageError(state.err)
+    ? Promise.resolve(usageError(state.err))
     : outcomeOf(state.request);
 }
 
@@ -122,7 +124,7 @@ function programFor(state: ParseState): Command {
     .command('render')
     .description('write a projection of a model file')
     .argument('<file>', 'the model file to read')
-    .option('--format <format>', 'svg or md')
+    .option('--format <format>', 'svg, md or pdf')
     .option('--out <path>', 'the file to write, or - for standard output')
     .option('--diagram <id or title>', 'the diagram to draw, for --format svg')
     .action((file: string, options: unknown) => {
@@ -145,10 +147,10 @@ function renderRequest(file: string, options: unknown): Request {
       };
 }
 
-function outcomeOf(request: Request): CommandOutcome {
+function outcomeOf(request: Request): Promise<CommandOutcome> {
   return request.kind === 'validate'
-    ? validate(request.file)
+    ? Promise.resolve(validate(request.file))
     : request.kind === 'render'
       ? render(request.file, request.options)
-      : usageError(request.text);
+      : Promise.resolve(usageError(request.text));
 }
