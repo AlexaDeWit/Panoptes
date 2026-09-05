@@ -1,0 +1,15 @@
+/* The shortcut is the control's description rather than part of its name, so
+   it sits beside the button and out of view: inside it, the accessible name
+   of Save would read "Save Ctrl+S". Out of flow, so a row of controls spaces
+   itself as though the note were not there. */
+.shortcut {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  overflow: hidden;
+}

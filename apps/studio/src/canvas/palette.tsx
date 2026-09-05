@@ -1,10 +1,12 @@
 import type { ElementId } from '@panoptes/model';
 import { Select } from 'radix-ui';
 import { useId, useState } from 'react';
+import { CommandButton } from '../commands/command-button.js';
+import { paletteCommands } from '../commands/registry.js';
 import { useModelStore } from '../store/store.js';
 import { LiveRegion } from '../ui/live-region.js';
 import { useAnnouncement } from './announcements.js';
-import { addPaletteElement, connectElements } from './edits.js';
+import { connectElements } from './edits.js';
 import { flowEnds, paletteKinds, paletteNames } from './elements.js';
 import { currentLayout, selectedElement } from './layout.js';
 import styles from './palette.module.css';
@@ -13,6 +15,10 @@ import styles from './palette.module.css';
  * The canvas's editing controls: a button per element kind, a listbox that
  * draws a flow from the selected element to any other, and the region that
  * says what an edit did.
+ *
+ * Each button runs the tool command for the kind it adds ([the
+ * commands](../commands/README.md)), so it shows the key that adds the same
+ * element and the click and the key press are one dispatch.
  *
  * The source of a flow is whatever the canvas has selected, so connecting by
  * keyboard is selecting an element and then choosing a target, with no mode
@@ -43,16 +49,13 @@ export function EditPalette() {
     <div className={styles.palette}>
       <section aria-label="Add an element" className={styles.group}>
         {paletteKinds.map((kind) => (
-          <button
+          <CommandButton
             className={styles.control}
+            command={paletteCommands[kind]}
             key={kind}
-            onClick={() => {
-              addPaletteElement(kind);
-            }}
-            type="button"
           >
             {paletteNames[kind]}
-          </button>
+          </CommandButton>
         ))}
       </section>
       <section

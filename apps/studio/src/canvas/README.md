@@ -52,7 +52,9 @@ costs no history, the store keeping selection out of its stacks. An edit the
 model refuses moves nothing and is said by the failure notice rather than by
 the region below, which speaks only for edits that landed.
 
-- **Add.** One button per element kind, in the palette above the canvas. The
+- **Add.** One button per element kind, in the palette above the canvas, each
+  running the tool command for the kind it adds and showing that command's
+  key ([the commands](../commands/README.md)). The
   element lands at the left edge of the diagram a gap below everything it
   draws, which is free whatever the diagram holds, since `bounds` is the ink
   the diagram lays down. It arrives named after the button that added it,
@@ -80,8 +82,12 @@ the region below, which speaks only for edits that landed.
   both ends attached and no waypoints, so the layout routes it. An element
   cannot be connected to itself: the layout resolves both ends of such a flow
   to one handle and would draw nothing.
-- **Delete.** Delete or Backspace, with focus anywhere in the canvas, removes
-  the selected element or flow as one `RemoveElement`. The cascade is the
+- **Delete.** Delete or Backspace removes the selected element or flow as one
+  `RemoveElement`. The command registry binds the two keys for the whole page
+  ([the commands](../commands/README.md)), and the canvas binds them again for
+  itself: a press the canvas has answered is marked handled, so one press is
+  one removal whichever of the two took it. Consolidating the two into the
+  registry alone is a follow-up. The cascade is the
   model's own: a flow attached to what went loses that end and keeps the
   other, and a threat that named it keeps its record and loses the link. The
   announcement counts both before the dispatch, since afterwards there is
@@ -132,13 +138,15 @@ select it, then an arrow key moves it five model units, twenty with shift
 held. Each press is one undoable `MoveElement`. React Flow announces the move
 in a live region of its own and pans a newly focused element into view.
 
-Every edit has a keyboard path of its own. Adding is a button. Connecting is
-selecting an element on the canvas, then choosing the other end in the
-listbox beside those buttons and pressing Connect, which is why the source is
-the selection rather than a mode to enter and leave. Deleting is the Delete or
-Backspace key while the canvas holds focus. The palette's two connecting
-controls are disabled while nothing is selected, so a keyboard user passes no
-dead stop between the buttons and the canvas.
+Every edit has a keyboard path of its own, and every one of them is a
+registered command with its chord shown beside it ([the
+commands](../commands/README.md)). Adding is a button or the tool's own
+letter. Connecting is selecting an element on the canvas, then choosing the
+other end in the listbox beside those buttons and pressing Connect, which is
+why the source is the selection rather than a mode to enter and leave.
+Deleting is the Delete or Backspace key, from anywhere in the studio. The
+palette's two connecting controls are disabled while nothing is selected, so
+a keyboard user passes no dead stop between the buttons and the canvas.
 
 ## What is not attempted here
 
@@ -158,9 +166,11 @@ dead stop between the buttons and the canvas.
 - Selection is single. Multi-select and box select are unbound, because the
   store holds one selection and a plural gesture has no plural action behind
   it.
-- Zoom and pan have no keyboard path: the wheel and a drag of the background
-  do them. Reaching an element does not need one, since focusing an element
-  pans it into view. Controls for both belong with the toolbar.
+- Panning has no keyboard path: a drag of the background does it. Reaching an
+  element does not need one, since focusing an element pans it into view.
+  Zooming and fitting are registered commands with chords of their own ([the
+  commands](../commands/README.md)); the controls for them belong with the
+  toolbar.
 - Tab order is React Flow's DOM order, every flow before every element, so a
   keyboard user reaches the flows first. Choosing another order means
   ordering the DOM, which is the same decision as how a diagram is

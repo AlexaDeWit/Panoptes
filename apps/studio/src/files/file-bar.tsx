@@ -1,171 +1,66 @@
-import { readLimits } from '@panoptes/formats';
-import { useEffect, useRef, useState } from 'react';
-import { Action } from '../store/actions.js';
+import { useEffect } from 'react';
+import { CommandButton } from '../commands/command-button.js';
 import { isDirty } from '../store/selectors.js';
-import { dispatch, useModelStore } from '../store/store.js';
+import { useModelStore } from '../store/store.js';
 import { FailureNotice } from '../ui/failure-notice.js';
-import { browserFileBridge } from './browser-bridge.js';
-import {
-  OpenOutcome,
-  SaveOutcome,
-  type ChosenFile,
-  type FileBridge,
-} from './bridge.js';
+import type { FileSession } from './file-commands.js';
 import styles from './file-bar.module.css';
 import {
   formatLabels,
   formatOf,
   nameOf,
-  openReport,
-  openedBy,
   otherFormat,
   reportHeadlines,
   reportLines,
-  saveReport,
-  saveTarget,
-  savedBy,
-  writeThrough,
-  type LossReport,
-  type SaveTarget,
 } from './session.js';
 
-function useCloseGuard(dirty: boolean): void {
-  useEffect(() => {
-    if (!dirty) {
-      return undefined;
-    }
-    const guard = (event: BeforeUnloadEvent): void => {
-      event.preventDefault();
-    };
-    globalThis.addEventListener('beforeunload', guard);
-    return () => {
-      globalThis.removeEventListener('beforeunload', guard);
-    };
-  }, [dirty]);
-}
-
-function mayDiscard(dirty: boolean): boolean {
-  return (
-    !dirty ||
-    globalThis.confirm(
-      'The model has changes that are not in a file. Open another file and lose them?',
-    )
-  );
-}
-
-/** Which bridge the controls reach files through. */
-export type FileBarProps = { readonly bridge?: FileBridge };
+/** The session the controls read and run their commands through. */
+export type FileBarProps = { readonly session: FileSession };
 
 /**
  * Opening and saving, the file the model lives in, whether it holds
  * everything on screen, and what the last save could not carry.
  *
- * The reducer is total and cannot refuse an open over work that is in no
- * file, so the asking is here: a person confirms once, at the control, and
- * the same unsaved state arms the guard on closing the tab. The file input
- * beside the controls is the fallback picker, hidden and reached by the same
- * Open control wherever the bridge has no picker of its own, so the
- * confirmation is asked once whichever picker follows it.
+ * The three controls are the registry's commands ([the
+ * commands](../commands/README.md)), so each shows the chord that runs the
+ * same thing from the keyboard and neither route holds a handler of its own.
+ * What they run is the session the app holds ([the session
+ * hook](./file-commands.ts)), which is where the confirmation over unsaved
+ * work is asked: the reducer is total and cannot refuse an open. The same
+ * unsaved state arms the guard on closing the tab, which is here because a
+ * component is what can hold it.
+ *
+ * The file input beside the controls is the fallback picker, hidden and
+ * reached by the Open command wherever the bridge has no picker of its own,
+ * so the confirmation is asked once whichever picker follows it.
  *
  * The loss report is what the last open or the last save cost, which is view
  * state and not the model's: it says what one file crossing cost rather than
- * anything about the model on screen, so it lives here and stands until a
- * save starts or an open lands. An open that was refused leaves it alone,
- * nothing having crossed the file boundary. A read reports as a write does,
- * because the keys a wire schema does not declare are gone from the model and
- * from the retained document alike, so no later save can say what became of
- * them.
+ * anything about the model on screen, so it stands until a save starts or an
+ * open lands. An open that was refused leaves it alone, nothing having
+ * crossed the file boundary. A read reports as a write does, because the keys
+ * a wire schema does not declare are gone from the model and from the
+ * retained document alike, so no later save can say what became of them.
  */
-export function FileBar({ bridge = browserFileBridge }: FileBarProps) {
+export function FileBar({ session }: FileBarProps) {
   const file = useModelStore((state) => state.file);
-  const present = useModelStore((state) => state.present);
   const failure = useModelStore((state) => state.lastFailure);
   const dirty = useModelStore(isDirty);
-  const [report, setReport] = useState<LossReport | undefined>(undefined);
-  const input = useRef<HTMLInputElement>(null);
 
   useCloseGuard(dirty);
 
+  const { attachPicker, dismissReport, receive, report } = session;
   const format = formatOf(file);
   const alternative = otherFormat(format);
-
-  const applyOpen = (outcome: OpenOutcome): void => {
-    const action = openedBy(outcome);
-    if (action === undefined) {
-      return;
-    }
-    if (Action.$is('Opened')(action)) {
-      setReport(openReport(action.divergences));
-    }
-    dispatch(action);
-  };
-
-  const pick = async (): Promise<void> => {
-    if (!mayDiscard(dirty)) {
-      return;
-    }
-    const outcome = await bridge.open(readLimits.maxTextBytes);
-    if (OpenOutcome.$is('NoPicker')(outcome)) {
-      input.current?.click();
-      return;
-    }
-    applyOpen(outcome);
-  };
-
-  const receive = async (chosen: ChosenFile | undefined): Promise<void> => {
-    if (chosen !== undefined) {
-      applyOpen(await bridge.received(chosen, readLimits.maxTextBytes));
-    }
-  };
-
-  const store = async (
-    target: SaveTarget,
-    elsewhere: boolean,
-  ): Promise<void> => {
-    setReport(undefined);
-    const written = writeThrough(present, target.source);
-    const outcome = elsewhere
-      ? await bridge.saveAs(target.name, written.output)
-      : await bridge.save(target.name, written.output);
-    const action = savedBy(outcome, target.source);
-    if (action !== undefined) {
-      dispatch(action);
-    }
-    if (SaveOutcome.$is('Written')(outcome)) {
-      setReport(saveReport(written.divergences));
-    }
-  };
 
   return (
     <div className={styles.bar}>
       <section aria-label="File" className={styles.controls}>
-        <button
-          className={styles.control}
-          onClick={() => {
-            void pick();
-          }}
-          type="button"
-        >
-          Open a model
-        </button>
-        <button
-          className={styles.control}
-          onClick={() => {
-            void store(saveTarget(file, format), false);
-          }}
-          type="button"
-        >
-          Save
-        </button>
-        <button
-          className={styles.control}
-          onClick={() => {
-            void store(saveTarget(file, alternative), true);
-          }}
-          type="button"
-        >
+        <CommandButton className={styles.control} command="open" />
+        <CommandButton className={styles.control} command="save" />
+        <CommandButton className={styles.control} command="save-as">
           Save as {formatLabels[alternative]}
-        </button>
+        </CommandButton>
         <p className={styles.state} data-testid="file-state">
           {nameOf(file)}, {formatLabels[format]},{' '}
           {dirty ? 'unsaved changes' : 'no unsaved changes'}
@@ -178,7 +73,7 @@ export function FileBar({ bridge = browserFileBridge }: FileBarProps) {
             event.target.value = '';
             void receive(chosen);
           }}
-          ref={input}
+          ref={attachPicker}
           type="file"
         />
       </section>
@@ -201,9 +96,7 @@ export function FileBar({ bridge = browserFileBridge }: FileBarProps) {
             </ul>
             <button
               className={styles.control}
-              onClick={() => {
-                setReport(undefined);
-              }}
+              onClick={dismissReport}
               type="button"
             >
               Dismiss the report
@@ -213,4 +106,19 @@ export function FileBar({ bridge = browserFileBridge }: FileBarProps) {
       </section>
     </div>
   );
+}
+
+function useCloseGuard(dirty: boolean): void {
+  useEffect(() => {
+    if (!dirty) {
+      return undefined;
+    }
+    const guard = (event: BeforeUnloadEvent): void => {
+      event.preventDefault();
+    };
+    globalThis.addEventListener('beforeunload', guard);
+    return () => {
+      globalThis.removeEventListener('beforeunload', guard);
+    };
+  }, [dirty]);
 }
