@@ -1,4 +1,4 @@
-import type { DiagramId, Threat } from '@panoptes/model';
+import type { DiagramId } from '@panoptes/model';
 import type { State } from './state.js';
 
 /**
@@ -36,14 +36,4 @@ export function elementCount(state: State): number {
  */
 export function firstDiagramId(state: State): DiagramId | undefined {
   return state.present.diagrams.at(0)?.id;
-}
-
-/**
- * The threat the panel edits, which is the first the model holds until a
- * selection decides one (#40), and nothing at all while the register is
- * empty. The model's operations share what they did not change, so this
- * returns the same object until the threat itself moves.
- */
-export function editedThreat(state: State): Threat | undefined {
-  return state.present.threats.at(0);
 }

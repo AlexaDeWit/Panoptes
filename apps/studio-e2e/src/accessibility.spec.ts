@@ -33,6 +33,23 @@ test('the studio page carries no axe-core accessibility violation', async ({
   await expect(page.getByTestId('canvas-container')).toBeVisible();
 
   await audit(page, 'at rest');
+});
+
+// The panel is bound to the selection and holds no editable control without
+// one, so the audit of its fields needs an element selected and a threat
+// expanded. It is the studio's densest form: every composed control at once,
+// inside the panel's own landmark.
+test('the studio carries no violation with the threat panel open on a selected element', async ({
+  page,
+}) => {
+  await page.goto('/');
+  await expect(page.getByTestId('canvas-container')).toBeVisible();
+
+  await page.getByRole('group', { name: /^Reader, actor/u }).click();
+  await page.getByRole('button', { name: /A reader edits/u }).click();
+  await expect(page.getByRole('textbox', { name: 'Title' })).toBeVisible();
+
+  await audit(page, 'showing the threat panel');
 
   // The open listbox is audited on its own because Radix hides the rest of
   // the page from assistive technology while it is open, which axe's

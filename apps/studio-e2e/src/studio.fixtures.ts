@@ -124,3 +124,54 @@ export const dragOnto = async (
   );
   await page.mouse.up();
 };
+
+/**
+ * Selects an element by clicking it, retried until the canvas reports it
+ * selected. React Flow measures the nodes and fits the view after the first
+ * paint, so a click sent while the page is still settling lands where the
+ * node is about to be rather than where it is, which takes the selection off
+ * instead of putting it on.
+ */
+export const selectNode = async (
+  page: Page,
+  name: RegExp,
+): Promise<Locator> => {
+  const node = nodeNamed(page, name);
+  await expect(async () => {
+    await node.click();
+    await expect(node).toHaveClass(/selected/u, { timeout: 1000 });
+  }).toPass({ timeout: 15_000 });
+  return node;
+};
+
+/**
+ * The option the open listbox has focused, waited for. Radix marks it with
+ * `aria-selected` only while it is both focused and the value already set, so
+ * focus is what a spec follows through a listbox rather than that attribute.
+ */
+export const focusedOption = (page: Page): Locator =>
+  page.locator('[role="option"]:focus');
+
+/**
+ * Chooses the option one step from the one already set, from the focused
+ * listbox trigger, by keyboard alone. Radix focuses the chosen item as the
+ * listbox opens and again once the popper has been positioned, so an arrow
+ * key pressed between the two moves nothing: the press is repeated until the
+ * highlight lands somewhere else.
+ */
+export const chooseByKeyboard = async (
+  page: Page,
+  step: 'ArrowDown' | 'ArrowUp',
+): Promise<void> => {
+  await page.keyboard.press('Enter');
+  await expect(focusedOption(page)).toHaveCount(1);
+  const already = (await focusedOption(page).textContent()) ?? '';
+  await expect(async () => {
+    await page.keyboard.press(step);
+    await expect(focusedOption(page)).not.toHaveText(already, {
+      timeout: 250,
+    });
+  }).toPass();
+  await page.keyboard.press('Enter');
+  await expect(page.getByRole('listbox')).toHaveCount(0);
+};

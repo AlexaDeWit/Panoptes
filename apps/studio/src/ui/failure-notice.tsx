@@ -2,6 +2,7 @@ import { DetectionFailure, ReadFailure } from '@panoptes/formats';
 import { OperationFailure, type ParseIssue } from '@panoptes/model';
 import { StudioFailure } from '../store/state.js';
 import styles from './failure-notice.module.css';
+import { LiveRegion } from './live-region.js';
 
 /** A refusal as a person reads it: one sentence, and the paths under it. */
 export type FailureDescription = {
@@ -34,21 +35,19 @@ export type FailureNoticeProps = {
 };
 
 /**
- * The last refusal, wherever it arose. The region is always in the page, so
- * a refusal that arrives while the person is elsewhere is announced rather
- * than appearing in silence, and it holds nothing at all while there is
- * nothing to say.
+ * The last refusal, wherever it arose, in the studio's own live region, so a
+ * refusal that arrives while the person is elsewhere is announced rather than
+ * appearing in silence.
  */
 export function FailureNotice({ failure }: FailureNoticeProps) {
   const described =
     failure === undefined ? undefined : describeFailure(failure);
 
   return (
-    <section
-      aria-label="Problems"
-      aria-live="polite"
+    <LiveRegion
       className={styles.notice}
-      data-testid="failure-notice"
+      label="Problems"
+      testId="failure-notice"
     >
       {described !== undefined && (
         <>
@@ -62,7 +61,7 @@ export function FailureNotice({ failure }: FailureNoticeProps) {
           )}
         </>
       )}
-    </section>
+    </LiveRegion>
   );
 }
 

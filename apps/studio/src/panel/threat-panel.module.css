@@ -1,0 +1,105 @@
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pn-space-3);
+  width: 20rem;
+  padding: var(--pn-space-4);
+  border-left: 1px solid var(--pn-colour-border);
+  background: var(--pn-colour-surface-raised);
+  overflow-y: auto;
+}
+
+.heading {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.announcement:not(:empty) {
+  padding: var(--pn-space-2) var(--pn-space-3);
+  border: 1px solid var(--pn-colour-border);
+  border-radius: var(--pn-radius);
+  background: var(--pn-colour-surface);
+}
+
+.message,
+.instruction {
+  margin: 0;
+  color: var(--pn-colour-text-muted);
+}
+
+.add,
+.delete {
+  padding: var(--pn-space-2) var(--pn-space-3);
+  border: 1px solid var(--pn-colour-border);
+  border-radius: var(--pn-radius);
+  background: var(--pn-colour-surface);
+  color: var(--pn-colour-text);
+  font: inherit;
+}
+
+.add:focus-visible,
+.delete:focus-visible,
+.disclosure:focus-visible {
+  outline: var(--pn-focus-ring);
+  outline-offset: var(--pn-focus-ring-offset);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pn-space-2);
+}
+
+.item {
+  border: 1px solid var(--pn-colour-border);
+  border-radius: var(--pn-radius);
+  background: var(--pn-colour-surface);
+}
+
+.header {
+  margin: 0;
+  font-size: inherit;
+}
+
+.disclosure {
+  display: flex;
+  align-items: baseline;
+  gap: var(--pn-space-2);
+  width: 100%;
+  padding: var(--pn-space-2) var(--pn-space-3);
+  border: 0;
+  border-radius: var(--pn-radius);
+  background: none;
+  color: var(--pn-colour-text);
+  font: inherit;
+  text-align: left;
+}
+
+.number {
+  color: var(--pn-colour-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.summary {
+  flex: 1;
+}
+
+/* Radix reports the item's own state on the trigger, which is where the
+   chevron turns from rather than a class the component would have to keep in
+   step. The glyph is hidden from assistive technology: the trigger already
+   carries its expanded state. */
+.disclosure[data-state='open'] .chevron {
+  transform: rotate(180deg);
+}
+
+.chevron {
+  color: var(--pn-colour-text-muted);
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pn-space-3);
+  padding: var(--pn-space-3);
+  border-top: 1px solid var(--pn-colour-border);
+}

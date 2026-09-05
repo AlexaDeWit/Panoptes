@@ -38,19 +38,21 @@ where the accent is the background it would be drawn on.
 
 ## What is here that is not a control
 
-Two components carry no Radix primitive, because neither takes an edit.
-`FailureNotice` renders `StudioFailure`, whatever produced it, so one region
-shows the model refusing an edit, a codec refusing a file, and the platform
-refusing to hand one over. It words every variant: nothing reaches a person
-as a tag, and a codec's paths are kept because they say which line of a file
-was refused rather than that the file was. It is a live region that stays in
-the page while it has nothing to say, and collapses rather than hiding while
-it is empty, so a refusal is announced when it arrives rather than appearing
-in silence. `ErrorBoundary` is the last stop for a throw from anywhere below it,
-and is a class because React offers no other way to catch one; it holds the
-only component state in this directory for that reason. It needs no live
-region, because it replaces the tree it was guarding rather than announcing
-into it.
+Three components carry no Radix primitive, because none of them takes an
+edit. `LiveRegion` is the one way anything here announces: a region that
+stays in the page while it has nothing to say and collapses rather than
+hiding while it is empty, because a region inserted and filled in the same
+frame announces nothing. `FailureNotice` renders `StudioFailure` inside one,
+whatever produced it, so one region shows the model refusing an edit, a codec
+refusing a file, and the platform refusing to hand one over. It words every
+variant: nothing reaches a person as a tag, and a codec's paths are kept
+because they say which line of a file was refused rather than that the file
+was. The threat panel announces an added or deleted threat through the same
+component ([the panel](../panel/README.md)). `ErrorBoundary` is the last stop
+for a throw from anywhere below it, and is a class because React offers no
+other way to catch one; it holds the only component state in this directory
+for that reason. It needs no live region, because it replaces the tree it was
+guarding rather than announcing into it.
 
 ## What a composed control owes
 
@@ -61,12 +63,20 @@ reading the markup. `jsx-a11y` in `.oxlintrc.json` is the static half of that
 and the axe-core run in `apps/studio-e2e` is the runtime half, which audits
 the page at rest and every open overlay in its own scope.
 
-A control holds no state of its own and no form library holds it either. It
-takes its value as a prop and reports an edit through one commit callback, so
-the edit becomes a store action and is undoable. `SeverityField` is the worked
-example: `App` reads its value through the `editedThreat` selector and its
-`onCommit` hands the changed field to `threatCommitter`, which dispatches one
-`Action.ReplaceThreat` that the Undo control takes back with nothing added.
-A later control commits through the same function with its own patch. A commit that would not change the value dispatches
-nothing, because a no-op operation still returns a new model and so marks the
-file dirty ([the store's README](../store/README.md)).
+A control takes its value as a prop and reports an edit through one commit
+callback, so the edit becomes a store action and is undoable. No form library
+holds it and no control holds model state of its own. `EnumField` is the
+worked example, and `SeverityField`, `StatusField` and `CategoryField` are it
+three times: each reads its options from a model schema, so the field offers
+what the model names and nothing else, and each hands its committed value to
+the panel, which dispatches one `Action.ReplaceThreat` that the Undo control
+takes back with nothing added ([the panel](../panel/README.md)). A commit that
+would not change the value dispatches nothing, because a no-op operation still
+returns a new model and so marks the file dirty ([the store's
+README](../store/README.md)).
+
+A text field is the one control that holds anything: what is typed is its own
+until it is committed, which is what keeps text the model refuses on screen to
+be corrected. It commits when it is left rather than as it is typed, so one
+edit is one undo step, and it follows the value it is given whenever that
+value moves, which is how an undo lands in a field a person is looking at.
