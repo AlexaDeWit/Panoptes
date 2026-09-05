@@ -19,16 +19,22 @@ export const cacheDir = (projectRoot: string): string =>
     relative(workspaceRoot, projectRoot),
   );
 
+// A project whose src/ belongs to another runner overrides this, because
+// playwright and vitest match the same spec file names.
+const everySpec =
+  '{src,tests}/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}';
+
 export const sharedTest = (
   projectRoot: string,
   environment: 'node' | 'jsdom',
   setupFiles: string[] = [],
+  include: string[] = [everySpec],
 ) => ({
   name: projectName(projectRoot),
   watch: false,
   globals: true,
   environment,
-  include: ['{src,tests}/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
+  include,
   // Paths relative to the project root, for the browser APIs jsdom leaves out.
   setupFiles,
   reporters: ['default'],
@@ -44,12 +50,19 @@ export const sharedTest = (
   },
 });
 
-export const nodeTest = (projectRoot: string) =>
+type NodeTestOptions = {
+  readonly include?: string[];
+};
+
+export const nodeTest = (
+  projectRoot: string,
+  { include }: NodeTestOptions = {},
+) =>
   defineConfig({
     root: projectRoot,
     cacheDir: cacheDir(projectRoot),
     // The same substitution the CLI bundle is built with, so a test reads the
     // constant a release ships rather than a value invented for the test.
     define: versionDefine(),
-    test: sharedTest(projectRoot, 'node'),
+    test: sharedTest(projectRoot, 'node', [], include),
   });
