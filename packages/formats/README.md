@@ -237,14 +237,16 @@ moves but the stamps above, and each one that moves is matched by the
 divergence that claims it. On `ecluse.json`, which is already stamped 2.6.2
 and already numbers every threat, nothing moves at all and nothing is
 reported. Every file then reads back as the model it was written from, and
-`ecluse.json` reads back as the internal model vendored at
-`test-data/ecluse.model.json`, which `packages/model` regenerates from its own
-fixture. And every written file validates against the JSON Schema Threat
-Dragon ships, run through ajv as that tool runs it. That schema describes
-the file Threat Dragon writes only in part, and threats least of all: it
-declares them beside `data` rather than under it, and constrains nothing
-this codec puts there. So the oracle gates the shape of the document, and
-the two oracles above are what gate its threats.
+`ecluse.json` reads back as the internal model committed at
+`test-data/ecluse.model.json`, which `packages/model` writes from its own
+fixture. `nx.json` orders that suite's test task ahead of this one's, so an
+update run cannot read the file half-written. And every written file
+validates against the JSON Schema Threat Dragon ships, run through ajv as
+that tool runs it. That schema describes the file Threat Dragon writes only
+in part, and threats least of all: it declares them beside `data` rather
+than under it, and constrains nothing this codec puts there. So the oracle
+gates the shape of the document, and the two oracles above are what gate its
+threats.
 
 `readAnyFormat` opens a text without being told which format it is, and
 answers with the codec that read it beside everything that read produced. The

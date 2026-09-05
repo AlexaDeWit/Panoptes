@@ -67,8 +67,16 @@
   ],
   "analytics": false,
   "targetDefaults": {
+    // ^test orders a suite after the suites of the projects it depends on.
+    // A file snapshot is written when the file is absent and rewritten under
+    // -u, and packages/model writes test-data/ecluse.model.json that way
+    // while the formats, canvas and render suites read it at module load, so
+    // without the edge a run-many can read the file mid-write (CODING.md,
+    // Build targets). apps/cli sets its own dependsOn and keeps it: it reads
+    // no file packages/model writes, and CI runs its suite a second time
+    // with --skip-nx-cache, where ^test would rerun every dependency suite.
     "test": {
-      "dependsOn": ["^build"]
+      "dependsOn": ["^build", "^test"]
     },
     "lint": {
       "executor": "nx:run-commands",
