@@ -274,8 +274,8 @@ jobs:
   # attested on the base commit, with the packages that publish no
   # attestation reported as the residual (scripts/check-provenance.mjs).
   # A move this project accepts is declared on the commit that makes it, as
-  # a `Provenance-Move:` trailer, which the script reads out of the commits
-  # between the base and here.
+  # a `Provenance-Move:` trailer, which the script reads as a line out of the
+  # commits between the base and here, wherever a squash merge left it.
   #
   # It runs when the lockfile or the catalog moved, which is where a Renovate
   # bump appears, and unconditionally on a push and a dispatch;
@@ -304,8 +304,13 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-          # The base commit is the baseline the check compares against.
-          fetch-depth: 2
+          # The whole history, not a bounded depth. The check reads the base
+          # commit's lockfile and every declaration in HEAD^..HEAD, which on
+          # the merge ref a pull request is checked out as means the whole
+          # branch side. A shallow store answers `git log` without error and
+          # simply holds fewer commits, so a bounded depth would drop a
+          # declaration made before the last commit in silence.
+          fetch-depth: 0
 
       - name: Set up toolchain
         uses: ./.github/actions/setup-toolchain

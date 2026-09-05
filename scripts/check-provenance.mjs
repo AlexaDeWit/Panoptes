@@ -14,8 +14,8 @@
 // one answer, so only the packages whose version moved are audited twice,
 // and only those can be reported lost or moved. A move this project accepts
 // is declared on the commit that makes it, as a `Provenance-Move: name
-// old-repository new-repository` trailer, and this reads the trailers of
-// every commit between the base and here.
+// old-repository new-repository` trailer, and this reads that line out of
+// every commit body between the base and here.
 //
 // npm is the verifier rather than pnpm: `pnpm audit signatures` checks
 // registry signatures alone and knows nothing of attestations. npm's own
@@ -33,7 +33,8 @@
 // installed.
 //
 // Exit 1 is a provenance failure and exit 2 is a check that could not run: a
-// registry out of reach, a lockfile or an exceptions file this cannot read, a
+// registry out of reach, a lockfile this cannot read, commits in the range
+// this cannot read, a declaration line carrying other than three fields, or a
 // catalog entry naming what npm would not accept as a package or what the
 // lockfile does not install. docs/release.md says what to do with each.
 import { execFileSync } from 'node:child_process';
@@ -57,7 +58,7 @@ const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '..');
 const lockName = 'pnpm-lock.yaml';
 const lockPath = join(repoRoot, lockName);
 const trailerKey = 'Provenance-Move';
-const trailerLine = /^Provenance-Move:\s*(.+)$/;
+const trailerLine = /^Provenance-Move:(.*)$/;
 
 // The grammar npm accepts for a package name, bounded at npm's own limit of
 // 214 characters. Every catalog name passes it before it becomes a path,
@@ -229,16 +230,11 @@ const attestedSources = (catalog, audited) => {
   return sources;
 };
 
-// The moves this project has accepted, out of the commits the range holds:
-// each `Provenance-Move: name old-repository new-repository` line, kept as
-// the whole triple so a declaration admits the move it names and no other.
-//
-// The author writes it as a trailer on the commit that makes the move, and
-// this reads a whole line anywhere in the body: a squash merge concatenates
-// every commit's message, so what the author wrote last arrives mid-body
-// under the merge's own trailers. A mention inside a sentence starts no line
-// and is not read. Null where git will not answer, and a line of that name
-// carrying anything but three fields comes back under malformed.
+// A declaration is held as the whole triple, so it admits the move it names
+// and no other. The author writes it as a trailer on the commit that makes
+// the move, and this reads a whole line anywhere in the body: a squash merge
+// concatenates every commit's message, so what the author wrote last arrives
+// mid-body under the merge's own trailers.
 const acceptedMoves = (range) => {
   const log = attempt(() =>
     execFileSync('git', ['log', '--format=%h%x00%B%x00', range], {
@@ -271,9 +267,8 @@ const report = (heading, lines) => {
   console.log('');
 };
 
-// 0 where this commit's catalog is as attested as the base commit's, 1 for a
-// provenance failure, and 2 where a move was found and the trailers that
-// would accept it could not be read.
+// 0, 1 for a provenance failure, or 2 where a move was found and what would
+// accept it could not be read.
 const check = ({ catalog, attested, audited, base, baseAttested, range }) => {
   const names = [...catalog.keys()].sort();
 

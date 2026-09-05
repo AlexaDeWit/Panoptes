@@ -109,11 +109,12 @@ that cannot be moved is never cut on an unanswered question. Run it in an
 installed checkout: it parses both lockfiles with the catalog's `yaml`. It
 reaches the registry, and an exit code of 2 says the check could not run
 rather than that provenance failed: the registry was out of reach after two
-attempts, or the lockfile at either commit could not be read, or a
-`Provenance-Move:` trailer is not three fields, or the catalog holds a name
-npm would refuse, a version the workspace's own importers do not resolve
-`catalog:` to, or an entry no workspace project references at all. Only the
-first of those is worth running again; the rest name what to correct.
+attempts, or the lockfile at either commit could not be read, or the commits
+between the base and the head could not be read, or a `Provenance-Move:` line
+is not three fields, or the catalog holds a name npm would refuse, a version
+the workspace's own importers do not resolve `catalog:` to, or an entry no
+workspace project references at all. Only the first of those is worth running
+again; the rest name what to correct.
 
 ### 4. Cut and push the signed tag (owner, GPG key)
 
