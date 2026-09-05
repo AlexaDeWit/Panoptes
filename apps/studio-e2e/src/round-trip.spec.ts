@@ -117,7 +117,7 @@ test('opens Écluse, edits it on both surfaces, and saves a valid, lossless file
 
   expect(
     differingPaths(JSON.parse(source), JSON.parse(written.text)),
-    'the parsed documents are compared, never the bytes: the writer serializes the model rather than editing the file, so it owns the key order and writes non-ASCII text as itself where the fixture escapes it',
+    'the parsed documents are compared, never the bytes',
   ).toStrictEqual([
     `detail.diagrams[0].cells[${cellOf(proxyId)}].position.x`,
     `detail.diagrams[0].cells[${cellOf(proxyId)}].position.y`,

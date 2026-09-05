@@ -19,8 +19,9 @@ export const cacheDir = (projectRoot: string): string =>
     relative(workspaceRoot, projectRoot),
   );
 
-// A project whose src/ belongs to another runner overrides this, because
-// playwright and vitest match the same spec file names.
+// A project whose src/ belongs to another runner overrides this: src/ is
+// playwright's testDir in the e2e project, and both runners match the same
+// spec file names.
 const everySpec =
   '{src,tests}/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}';
 

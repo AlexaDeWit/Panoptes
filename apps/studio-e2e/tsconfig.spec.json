@@ -12,7 +12,7 @@
     "module": "esnext",
     "moduleResolution": "bundler"
   },
-  "include": ["tests/**/*.spec.ts"],
+  "include": ["tests/**/*.test.ts", "tests/**/*.spec.ts"],
   "references": [
     {
       "path": "./tsconfig.e2e.json"
