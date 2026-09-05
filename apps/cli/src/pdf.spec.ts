@@ -30,9 +30,12 @@ const hostileSource = renderTypst(
 ).typst;
 
 const document = (body: string): string =>
-  ['#set page(paper: "a4")', '#set text(font: "Liberation Sans")', body].join(
-    '\n',
-  );
+  [
+    '#set document(date: none)',
+    '#set page(paper: "a4")',
+    '#set text(font: "Liberation Sans")',
+    body,
+  ].join('\n');
 
 const compiled = (source: string) => compilePdf(source, assets);
 
@@ -58,6 +61,9 @@ describe('Typst source compiled to a PDF', () => {
       const source = document('#"twice"');
       const first = Either.getOrThrow(await compiled(source));
       const second = Either.getOrThrow(await compiled(source));
+      expect(Buffer.from(first).toString('latin1')).not.toContain(
+        'CreationDate',
+      );
       expect(Buffer.from(second)).toEqual(Buffer.from(first));
     },
     compileTimeout,
