@@ -128,11 +128,11 @@ module together with the fonts it typesets with. Nothing is fetched and no
 browser is involved, so `--format pdf` works with no network and on a machine
 that has neither Typst nor a browser installed.
 
-| Exit code | What it means                                                                                                                                                                                                    |
-| --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 0         | The command did what it was asked.                                                                                                                                                                               |
-| 1         | Panoptes read the file and refused it: no format claimed it, or one did and either the document or the model it maps to is not valid.                                                                            |
-| 2         | The invocation cannot be carried out: the parser or the option schema refused it, a file cannot be read or written, a choice names no diagram, or a stream refused the output, a pipe whose reader closed aside. |
+| Exit code | What it means                                                                                                                                                                                                                                                                                                                                                                           |
+| --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0         | The command did what it was asked.                                                                                                                                                                                                                                                                                                                                                      |
+| 1         | Panoptes read the file and refused it: no format claimed it, or one did and either the document or the model it maps to is not valid.                                                                                                                                                                                                                                                   |
+| 2         | The invocation cannot be carried out: the parser or the option schema refused it, a file cannot be read or written, a choice names no diagram, a stream refused the output, a pipe whose reader closed aside, or a projection could not be produced from a model Panoptes accepted, which is the PDF typesetter refusing the document or an install missing the files it typesets with. |
 
 Errors go to standard error, path-precise where a schema refused something,
 and no failure prints a stack trace.
@@ -199,11 +199,14 @@ time through `import.meta.dirname`. Anything not included, and not inlined
 into the bundle by esbuild, does not exist for a user who has only the
 executable. `apps/cli/dist/assets` is that directory today: the Typst
 WebAssembly module, which the build copies out of node_modules, and the
-Liberation fonts, which are committed under `apps/cli/src/assets` beside the
-SIL Open Font License they carry. Together they are the 28.9 MiB PDF output
-adds to every executable. The packaging script renders the vendored fixture
-to a PDF through the compiled executable, so an executable built without them
-fails there rather than in a user's hands.
+Liberation fonts, which are committed with their licence and their provenance
+under [`apps/cli/src/assets`](apps/cli/src/assets/README.md). Together they
+are the 28.95 MiB PDF output adds to every executable. Everything the script
+stages is stamped with one modification time and one mode, the assets as well
+as the entry point, so the bytes stay a function of the inputs rather than of
+the machine. The packaging script then renders the vendored fixture to a PDF
+through the compiled executable, so an executable built without them fails
+there rather than in a user's hands.
 
 [`docs/release.md`](docs/release.md) is the release procedure.
 

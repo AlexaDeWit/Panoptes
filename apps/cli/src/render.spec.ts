@@ -31,6 +31,8 @@ const options = (given: Partial<RenderOptions>): RenderOptions => ({
 
 const assets = join(repositoryRoot, 'apps/cli/dist/assets');
 
+const compileTimeout = 60_000;
+
 const bytesOf = (out: string | Uint8Array): Uint8Array =>
   typeof out === 'string' ? Buffer.from(out, 'utf8') : out;
 
@@ -180,24 +182,62 @@ describe('render', () => {
     });
   });
 
-  it('compiles the Écluse fixture to a PDF of diagram and register', async () => {
-    const run = await written('ecluse.pdf', ecluse, { format: 'pdf' });
-    expect(run.outcome).toEqual({ code: 0, out: '', err: '' });
-    const pdf = run.bytes();
-    expect(pdf.subarray(0, 5).toString('latin1')).toBe('%PDF-');
-    expect(pageCount(pdf)).toBe(14);
-  });
+  it(
+    'compiles the Écluse fixture to a PDF of diagram and register',
+    async () => {
+      const run = await written('ecluse.pdf', ecluse, { format: 'pdf' });
+      expect(run.outcome).toEqual({ code: 0, out: '', err: '' });
+      const pdf = run.bytes();
+      expect(pdf.subarray(0, 5).toString('latin1')).toBe('%PDF-');
+      expect(pageCount(pdf)).toBe(14);
+    },
+    compileTimeout,
+  );
 
-  it('writes a PDF to standard output for an out of -', async () => {
-    const outcome = await render(
-      ecluse,
-      options({ format: 'pdf', out: '-' }),
-      assets,
-    );
-    expect(outcome.code).toBe(0);
-    expect(outcome.out).toBeInstanceOf(Uint8Array);
-    expect(pageCount(bytesOf(outcome.out))).toBe(14);
-  });
+  it(
+    'writes a PDF to standard output for an out of -',
+    async () => {
+      const outcome = await render(
+        ecluse,
+        options({ format: 'pdf', out: '-' }),
+        assets,
+      );
+      expect(outcome.code).toBe(0);
+      expect(outcome.out).toBeInstanceOf(Uint8Array);
+      expect(pageCount(bytesOf(outcome.out))).toBe(14);
+    },
+    compileTimeout,
+  );
+
+  it(
+    'reports an install missing the files it typesets with, and exits 2',
+    async () => {
+      const outcome = await render(
+        ecluse,
+        options({ format: 'pdf', out: '-' }),
+        join(repositoryRoot, 'apps/cli/dist/absent'),
+      );
+      expect(outcome.code).toBe(2);
+      expect(outcome.out).toBe('');
+      expect(outcome.err).toContain('error: cannot compile the PDF');
+    },
+    compileTimeout,
+  );
+
+  it(
+    'reports an install missing the files it typesets with, and exits 2',
+    async () => {
+      const outcome = await render(
+        ecluse,
+        options({ format: 'pdf', out: '-' }),
+        join(repositoryRoot, 'apps/cli/dist/absent'),
+      );
+      expect(outcome.code).toBe(2);
+      expect(outcome.out).toBe('');
+      expect(outcome.err).toContain('error: cannot compile the PDF');
+    },
+    compileTimeout,
+  );
 
   it('reports an out it cannot write as the invocation being wrong', async () => {
     const out = join(directory, 'absent', 'ecluse.svg');

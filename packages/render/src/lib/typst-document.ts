@@ -38,10 +38,17 @@ export type TypstDocument = {
  * The register's content is the mdast tree {@link registerDocument} builds,
  * walked into Typst markup, so the register in a PDF and the register in a
  * markdown file say the same thing in the same order. Every node type mdast
- * can carry has a Typst form except three that are markup bookkeeping rather
- * than content: a raw `html` node, a link `definition`, and YAML
- * frontmatter, all of which are dropped. A link is written as its own text,
- * since a threat register in print has nowhere to follow one to.
+ * can carry has a Typst form, YAML frontmatter aside, which the register's
+ * parser is not configured to produce. Raw HTML is written as its own text,
+ * as the markdown register writes it: dropping it would delete a mitigation
+ * an author wrote in HTML with nothing said, and keep the text between the
+ * tags, so the document would assert the author wrote what is left.
+ *
+ * A link is written as its own text with its address beside it in
+ * parentheses, and never as a live link. Following a link out of untrusted
+ * prose from inside an audit artifact is refused; writing the address means
+ * the reader loses nothing by that. An image is written the same way, its
+ * alternative text and its address, since nothing is fetched.
  *
  * Typst markup is a language of its own, where `#` calls a function and
  * `*`, `_`, `` ` ``, `<`, `@`, `[`, `]` and `\` all mean something, and
@@ -53,7 +60,10 @@ export type TypstDocument = {
  *
  * The document names the fonts it expects, {@link bodyFont} and
  * {@link monospaceFont}, and carries none: a compiler is given them, and
- * substitutes where it has neither.
+ * substitutes where it has neither. That substitution reaches the embedded
+ * drawings too, whose stylesheet asks for Helvetica and Arial, so the PDF
+ * and a standalone `.svg` file are the one drawing rather than the one
+ * rendering of it.
  *
  * The same model gives the same source on every run, and the source carries
  * no date, so a compiler that is itself deterministic writes the same PDF
@@ -117,7 +127,7 @@ function typstOf(node: RootContent): string {
     case 'code':
       return `#raw(block: true, ${literal(node.value)})`;
     case 'definition':
-      return '';
+      return shown(`[${node.label ?? node.identifier}]: ${node.url}`);
     case 'delete':
       return `#strike[${inlineOf(node.children)}]`;
     case 'emphasis':
@@ -129,15 +139,19 @@ function typstOf(node: RootContent): string {
     case 'heading':
       return `#heading(level: ${String(node.depth)})[${inlineOf(node.children)}]`;
     case 'html':
-      return '';
+      return shown(node.value);
     case 'image':
-      return shown(node.alt ?? '');
+      return addressed(shown(node.alt ?? ''), node.alt ?? '', node.url);
     case 'imageReference':
       return shown(node.alt ?? '');
     case 'inlineCode':
       return `#raw(${literal(node.value)})`;
     case 'link':
-      return inlineOf(node.children);
+      return addressed(
+        inlineOf(node.children),
+        plainTextOf(node.children),
+        node.url,
+      );
     case 'linkReference':
       return inlineOf(node.children);
     case 'list':
@@ -165,8 +179,22 @@ function typstOf(node: RootContent): string {
   }
 }
 
-function unwritten(node: never): string {
-  return String(node);
+function unwritten(_node: never): string {
+  return '';
+}
+
+function addressed(label: string, plain: string, url: string): string {
+  return url.length === 0 || plain === url
+    ? label
+    : `${label}${shown(` (${url})`)}`;
+}
+
+function plainTextOf(nodes: readonly RootContent[]): string {
+  return nodes
+    .map((node) =>
+      node.type === 'text' || node.type === 'inlineCode' ? node.value : '',
+    )
+    .join('');
 }
 
 function listOf(

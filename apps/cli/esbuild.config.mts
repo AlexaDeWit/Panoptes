@@ -23,10 +23,16 @@ const projectAssets = join(import.meta.dirname, 'src/assets');
 // inside an executable (scripts/package-cli.sh). A file that is neither
 // inlined nor included does not exist for a user who has only the executable.
 const runtimeAssets = (): readonly string[] => [
-  ...readdirSync(projectAssets).map((name) => join(projectAssets, name)),
+  ...readdirSync(projectAssets, { withFileTypes: true })
+    .filter((entry) => entry.isFile())
+    .map((entry) => join(projectAssets, entry.name)),
   resolve.resolve('@myriaddreamin/typst-ts-web-compiler/wasm'),
 ];
 
+// Structural rather than esbuild's own PluginBuild: importing that type would
+// mean declaring esbuild in this app's manifest under the explicit-dependency
+// rule, for a build-time file that never reaches the bundle. What the plugin
+// touches is two fields and one method.
 type EsbuildPlugin = {
   initialOptions: { readonly outfile?: string; readonly outdir?: string };
   onEnd: (callback: () => void) => void;

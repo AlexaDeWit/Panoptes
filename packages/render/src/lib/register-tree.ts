@@ -31,7 +31,17 @@ const sectionDepth = 2;
 
 const proseDepths = [3, 4, 5, 6, 6, 6] as const;
 
-const deepestProse = 32;
+/**
+ * How deeply prose may nest before the register renders it as one paragraph
+ * of the author's own bytes instead, counted from the root of the parsed
+ * tree. It is the smaller of the two writers' limits, and the smaller is the
+ * Typst one: every writer of this tree recurses per level, and Typst refuses
+ * a document nesting its own show rules past sixteen, which a blockquote
+ * reaches one level of the tree above itself. A model inside this bound
+ * therefore renders as markdown and compiles as a PDF, rather than doing the
+ * first and failing the second.
+ */
+export const deepestProse = 16;
 
 const lineBreaks = /\s*[\r\n]+\s*/gu;
 
@@ -148,9 +158,9 @@ const categoryLabels = {
  * demoted below the section heading so it cannot break the register's
  * structure. Raw HTML in prose is parsed as an `html` node and passed on as
  * written: what to do about it belongs to whatever writes the tree out.
- * Prose nested deeper than 32 levels becomes one paragraph of the author's
- * own bytes instead, because every writer of this tree recurses per level and
- * a deep enough tree would overflow the stack.
+ * Prose nested deeper than {@link deepestProse} becomes one paragraph of the
+ * author's own bytes instead, which is what keeps a register that renders as
+ * markdown from failing to compile as a PDF.
  */
 export function registerDocument(model: Model): Root {
   const threats = [...model.threats];

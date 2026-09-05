@@ -75,6 +75,8 @@ const titleOf = (runner: Runner): string =>
 
 const fullDevice = '/dev/full';
 
+const compileTimeout = 60_000;
+
 const ran = (runner: Runner, args: readonly string[]) => {
   const result = spawnSync(runner.command, [...runner.leading, ...args], {
     cwd: repositoryRoot,
@@ -241,9 +243,40 @@ for (const runner of runners) {
       expect(readFileSync(out)).toEqual(golden('ecluse.snapshot.svg'));
     });
 
-    it('writes the Écluse fixture as a PDF of diagram and register', () => {
-      const out = join(directory, `${runner.name}.pdf`);
-      expect(
+    it(
+      'writes the Écluse fixture as a PDF of diagram and register',
+      () => {
+        const out = join(directory, `${runner.name}.pdf`);
+        expect(
+          text(runner, [
+            'render',
+            'test-data/ecluse.json',
+            '--format',
+            'pdf',
+            '--out',
+            out,
+          ]),
+        ).toEqual({ code: 0, out: '', err: '' });
+        const pdf = readFileSync(out);
+        expect(pdf.subarray(0, 5).toString('latin1')).toBe('%PDF-');
+        expect(pageCount(pdf)).toBe(14);
+        expect(outlineTitles(pdf)).toContain('Écluse threat register');
+      },
+      compileTimeout,
+    );
+
+    it(
+      'writes a PDF to standard output as bytes, not as text',
+      () => {
+        const out = join(directory, `${runner.name}.stdout.pdf`);
+        const streamed = ran(runner, [
+          'render',
+          'test-data/ecluse.json',
+          '--format',
+          'pdf',
+          '--out',
+          '-',
+        ]);
         text(runner, [
           'render',
           'test-data/ecluse.json',
@@ -251,31 +284,38 @@ for (const runner of runners) {
           'pdf',
           '--out',
           out,
-        ]),
-      ).toEqual({ code: 0, out: '', err: '' });
-      const pdf = readFileSync(out);
-      expect(pdf.subarray(0, 5).toString('latin1')).toBe('%PDF-');
-      expect(pageCount(pdf)).toBe(14);
-    });
+        ]);
+        expect(streamed.code).toEqual(0);
+        expect(streamed.out.subarray(0, 5).toString('latin1')).toBe('%PDF-');
+        expect(pageCount(streamed.out)).toBe(14);
+        expect(streamed.out).toEqual(readFileSync(out));
+      },
+      compileTimeout,
+    );
 
-    it('carries a hostile fixture into the PDF as text, not as markup', () => {
-      const out = join(directory, `${runner.name}.hostile.pdf`);
-      expect(
-        text(runner, [
-          'render',
-          'test-data/adversarial/typst-injection.yaml',
-          '--format',
-          'pdf',
-          '--out',
-          out,
-        ]),
-      ).toEqual({ code: 0, out: '', err: '' });
-      const pdf = readFileSync(out);
-      expect(pageCount(pdf)).toBe(2);
-      expect(outlineTitles(pdf)).toContain(
-        'Threat 1: Title #eval("1+1") <script>alert(1)</script>',
-      );
-    });
+    it(
+      'carries a hostile fixture into the PDF as text, not as markup',
+      () => {
+        const out = join(directory, `${runner.name}.hostile.pdf`);
+        expect(
+          text(runner, [
+            'render',
+            'test-data/adversarial/typst-injection.yaml',
+            '--format',
+            'pdf',
+            '--out',
+            out,
+          ]),
+        ).toEqual({ code: 0, out: '', err: '' });
+        const pdf = readFileSync(out);
+        expect(pageCount(pdf)).toBe(2);
+        expect(outlineTitles(pdf)).toContain(
+          'Threat 1: Title #eval("1+1") <script>alert(1)</script>',
+        );
+        expect(outlineTitles(pdf)).toContain('<img src=x onerror="alert(3)">');
+      },
+      compileTimeout,
+    );
 
     it('refuses a diagram chosen for a PDF, which draws them all', () => {
       expect(

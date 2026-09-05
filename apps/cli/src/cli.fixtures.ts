@@ -116,6 +116,26 @@ ${processElement('element-1', 0)}${processElement('element-2', 100)}${flow(
   'element-2',
 )}${flow('flow-2', 'flow-1')}${oneThreat}`;
 
+/**
+ * A native file whose one threat carries the given text as its description,
+ * so a spec that decides the shape of that prose has a model to put it in.
+ */
+export function proseThreatYaml(description: string): string {
+  return `${heading}diagrams: []
+threats:
+  - id: threat-1
+    number: 1
+    title: Deep prose
+    category: { methodology: STRIDE, category: spoofing }
+    severity: high
+    status: open
+    description: ${JSON.stringify(description)}
+    mitigation: ''
+    elements: []
+lastIssuedThreatNumber: 1
+`;
+}
+
 /** A YAML text no registered codec claims. */
 export const unclaimedYaml = 'hello: world\n';
 

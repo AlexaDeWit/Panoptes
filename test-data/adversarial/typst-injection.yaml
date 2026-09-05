@@ -55,7 +55,7 @@ threats:
     severity: medium
     status: open
     description: 'Set <span onclick="boom()">the flag</span> and <script>alert(2)</script> first.'
-    mitigation: '<img src=x onerror="alert(3)">'
+    mitigation: "## <img src=x onerror=\"alert(3)\">\n\nApply the patch."
     elements:
       - element-2
 mitigations: []

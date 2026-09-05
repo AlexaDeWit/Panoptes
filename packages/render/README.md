@@ -76,7 +76,8 @@ the same model always renders the same bytes.
 `registerDocument` builds that as an mdast tree and is the register's one
 definition. `renderRegister` serializes the tree as markdown and
 `renderTypst` walks it into Typst markup, so what a PDF says and what a
-markdown file says cannot drift.
+markdown file says cannot drift. `deepestProse` is the one bound both writers
+observe.
 
 ## What the register promises
 
@@ -128,7 +129,10 @@ no network, which is what lets `apps/cli` run the compiler with neither.
 
 The source names the two font families it expects, Liberation Sans and
 Liberation Mono, and carries neither. A compiler is given them, and
-substitutes where it has neither. It also carries no date, so a compiler that
+substitutes where it has neither. That substitution reaches the drawings
+too: their stylesheet asks for Helvetica and Arial, which no compiler here
+has, so the PDF and a standalone `.svg` file are the one drawing rather than
+the one rendering of it. The source also carries no date, so a compiler that
 is itself deterministic writes the same PDF twice.
 
 ### Typst markup is a language, and threat prose is untrusted
@@ -145,11 +149,26 @@ Every `#` in the output is therefore this package's own, which is what
 
 The register's prose is user-authored markdown, so the walk covers every node
 type mdast can carry, checked by the compiler rather than by a default case.
-Three carry no Typst form and are dropped: a raw `html` node, a link
-`definition`, and YAML frontmatter. A link is written as its own text, since a
-register in print has nowhere to follow one to. Prose nested past the depth
-bound the register applies is one paragraph of the author's own bytes, there
-as here, because the walk recurses per level.
+Nothing is dropped, YAML frontmatter aside, which the register's parser is not
+configured to produce. Raw HTML is written as its own text, exactly as the
+markdown register writes it: dropping it deleted a mitigation an author wrote
+in HTML with nothing said, and kept the text between the tags, so the document
+asserted the author had written what was left. The Écluse fixture is the
+proof that this is not a corner case: its prose names a configuration key
+`mounts.<eco>.publicationTargetToken`, and `<eco>` parses as raw HTML.
+
+A link is written as its own text with its address beside it in parentheses,
+and never as a live link. Following a link out of untrusted prose from inside
+an audit artifact is refused; writing the address means a reader loses nothing
+by that. An image is written the same way, its alternative text and its
+address, since nothing is fetched.
+
+Prose nested past `deepestProse` is one paragraph of the author's own bytes,
+there as here. That bound is the smaller of the two writers', and the smaller
+is the Typst one: Typst refuses a document nesting its own show rules past
+sixteen, which a blockquote reaches one level of the tree above itself, while
+remark's serializer goes deeper. Holding both to the smaller is what keeps a
+register that renders as markdown from failing to compile as a PDF.
 
 ## The goldens
 

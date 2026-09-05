@@ -391,6 +391,12 @@ one is text a reader sees rather than anything the compiler ran. It is
 committed rather than built in a spec because it is the input a reviewer
 should be able to read, and because both packages read it.
 
+Threat 2's mitigation is a markdown heading whose content is a raw HTML tag.
+That shape is deliberate: a heading becomes a PDF outline entry, which is a
+PDF string rather than glyphs, so a spec reads it back without a font or a
+content stream. It is how the register's treatment of raw HTML is proven in
+the artifact rather than only in the source.
+
 `nested-anchors.yaml` is what the parser's own alias accounting costs rather
 than what an alias costs. `yaml` resolves an alias by scanning the whole
 document, and its accounting takes that scan once per anchor, so anchors

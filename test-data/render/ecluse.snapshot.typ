@@ -177,7 +177,7 @@ align(center + horizon)[
 
 #strong[#"Mitigation"]
 
-#"Compensating control: under passthrough the request carries only the caller's own forwarded token, and the read path never substitutes a standing credential. No forwarded token means no private read. A breach of the edge exposes only the public-gated view plus the untrusted-egress and denial-of-service surface, never private packages. The publish path is the one exception. A configured static publication-target credential (mounts."#".publicationTargetToken) serves as the fallback for a tokenless publish, so 'no token, no publish' holds only for pure passthrough. The internal-credential publish mode is therefore fail-closed by construction. A configured publication-target token requires a verifiable inbound edge, server.authToken or stronger, so the composition root refuses internal-credential-plus-open-edge at boot. That state is unrepresentable, on the same principle the trusted-edge read identity follows. Restrict both north-south and east-west access, as the Golden Path documents. Any edge mode that substitutes Écluse's own identity, read or write, must require a verifiable edge. Use mTLS or a shared secret, never a bare spoofable header."
+#"Compensating control: under passthrough the request carries only the caller's own forwarded token, and the read path never substitutes a standing credential. No forwarded token means no private read. A breach of the edge exposes only the public-gated view plus the untrusted-egress and denial-of-service surface, never private packages. The publish path is the one exception. A configured static publication-target credential (mounts."#"<eco>"#".publicationTargetToken) serves as the fallback for a tokenless publish, so 'no token, no publish' holds only for pure passthrough. The internal-credential publish mode is therefore fail-closed by construction. A configured publication-target token requires a verifiable inbound edge, server.authToken or stronger, so the composition root refuses internal-credential-plus-open-edge at boot. That state is unrepresentable, on the same principle the trusted-edge read identity follows. Restrict both north-south and east-west access, as the Golden Path documents. Any edge mode that substitutes Écluse's own identity, read or write, must require a verifiable edge. Use mTLS or a shared secret, never a bare spoofable header."
 
 #heading(level: 2)[#"Threat 4: Caller credential leak to the public upstream"]
 
@@ -257,7 +257,7 @@ align(center + horizon)[
 
 #strong[#"Description"]
 
-#"Écluse supports collapsing its internal registry roles onto as few as one store. The recommended topology keeps the first-party store (A) and the public-derived mirror store (B) separate. It then unions them into the pull-through read endpoint (C) at the registry level. Collapsing them onto a single shared store is the degenerate floor. An undeclared mounts."#".mirrorTarget makes the mount serve-only, with no mirror store at all. The fold is a mirrorTarget set equal to the private upstream, which the boot warns about and then accepts. Collapse loses the physical separation between first-party and public-derived inventory. Distinct storage-level rule sets and scanning per provenance become impossible. Collapse also muddies post-disclosure incident scoping, 'which mirrored public packages did we hold?', which weakens the arithmetic-not-forensics response."
+#"Écluse supports collapsing its internal registry roles onto as few as one store. The recommended topology keeps the first-party store (A) and the public-derived mirror store (B) separate. It then unions them into the pull-through read endpoint (C) at the registry level. Collapsing them onto a single shared store is the degenerate floor. An undeclared mounts."#"<eco>"#".mirrorTarget makes the mount serve-only, with no mirror store at all. The fold is a mirrorTarget set equal to the private upstream, which the boot warns about and then accepts. Collapse loses the physical separation between first-party and public-derived inventory. Distinct storage-level rule sets and scanning per provenance become impossible. Collapse also muddies post-disclosure incident scoping, 'which mirrored public packages did we hold?', which weakens the arithmetic-not-forensics response."
 
 #strong[#"Mitigation"]
 
@@ -465,7 +465,7 @@ align(center + horizon)[
 
 #strong[#"Mitigation"]
 
-#"Dredger must refuse to boot when mounts."#".mirrorTarget and mounts."#".publicationTarget resolve to the same registry. The proxy's own boot warns on that pair and then proceeds. Collapsing the registries deliberately surrenders Dredger's automated pruning."
+#"Dredger must refuse to boot when mounts."#"<eco>"#".mirrorTarget and mounts."#"<eco>"#".publicationTarget resolve to the same registry. The proxy's own boot warns on that pair and then proceeds. Collapsing the registries deliberately surrenders Dredger's automated pruning."
 
 #heading(level: 2)[#"Threat 101: Oracle Blackout / Supply Chain DoS via OSV.dev compromise"]
 
@@ -489,4 +489,4 @@ align(center + horizon)[
 
 #strong[#"Mitigation"]
 
-#"Dredger must verify explicit operator consent before it runs any destructive action. It is required to query the target CodeArtifact repository for a specific resource tag, for example "#raw("Dredger: PermanentDeletionAllowed")#", and to fail closed without that tag. It must also refuse to boot when mounts."#".mirrorTarget and mounts."#".publicationTarget resolve to the same registry."
+#"Dredger must verify explicit operator consent before it runs any destructive action. It is required to query the target CodeArtifact repository for a specific resource tag, for example "#raw("Dredger: PermanentDeletionAllowed")#", and to fail closed without that tag. It must also refuse to boot when mounts."#"<eco>"#".mirrorTarget and mounts."#"<eco>"#".publicationTarget resolve to the same registry."

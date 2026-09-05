@@ -73,8 +73,8 @@ if [ -z "${PANOPTES_DENORT_CACHE-}" ]; then
   exit 1
 fi
 
-# Everything this run writes outside dist/: deno's caches, and the staged
-# entry point deno compiles.
+# Everything this run writes outside dist/: deno's caches, the staged tree
+# deno compiles, and the PDF the checks below render.
 scratch="$(mktemp -d)"
 readonly scratch
 trap 'rm -rf -- "${scratch}"' EXIT
@@ -125,35 +125,45 @@ fi
 version="$(node -p 'require("./package.json").version')"
 readonly version
 
-# deno records the entry file's name, modification time and executable bit in
-# the virtual file system it embeds, so an executable would otherwise carry
-# the minute its bundle was written and whatever mode the checkout's file
-# system reported for it. That is the one host-dependent input left at these
-# pins, and it is worth a dozen bytes (#106). Anything else deno is told to
-# embed has to be stamped here too, for the same reason.
-stamp_entry() {
-  chmod 644 -- "$1"
-  touch -m -d '@0' -- "$1"
+# deno records every embedded file's name, modification time and executable
+# bit in the virtual file system, so an executable would otherwise carry the
+# minute its bundle was written and whatever mode the checkout's file system
+# reported. That is the one host-dependent input left at these pins, and it is
+# worth a dozen bytes (#106). The assets are embedded too, so the whole staged
+# tree is stamped rather than the entry point alone.
+stamp_staged() {
+  find "$1" -type d -exec chmod 755 -- {} +
+  find "$1" -type f -exec chmod 644 -- {} +
+  find "$1" -depth -exec touch -m -d '@0' -- {} +
 }
 
-readonly entry="${scratch}/first/main.js"
-readonly repeat_entry="${scratch}/repeat/main.js"
-mkdir -p -- "${scratch}/first" "${scratch}/repeat"
-cp -- "${bundle}" "${entry}"
-cp -- "${bundle}" "${repeat_entry}"
+# The layout deno compiles is the layout the CLI expects at run time: the
+# assets sit beside the entry point, which is where import.meta.dirname looks
+# for them, and the virtual file system deno builds is rooted at their common
+# directory.
+stage_into() {
+  mkdir -p -- "$1"
+  cp -- "${bundle}" "$1/main.js"
+  cp -R -- "${assets}" "$1/assets"
+}
+
+readonly staged="${scratch}/first"
+readonly repeat_staged="${scratch}/repeat"
+stage_into "${staged}"
+stage_into "${repeat_staged}"
 
 # The repeat compile reads a copy carrying another time and mode on purpose,
 # so the comparison below reds where a stamp is dropped instead of agreeing
 # with itself.
-chmod 700 -- "${repeat_entry}"
-touch -m -d '@1000000000' -- "${repeat_entry}"
+find "${repeat_staged}" -type f -exec chmod 700 -- {} +
+find "${repeat_staged}" -depth -exec touch -m -d '@1000000000' -- {} +
 
-stamp_entry "${entry}"
-stamp_entry "${repeat_entry}"
+stamp_staged "${staged}"
+stamp_staged "${repeat_staged}"
 
 compile_into() {
   local target="$1"
-  local source="$2"
+  local tree="$2"
   local output="$3"
 
   "${unshare_bin}" -rn deno compile \
@@ -166,10 +176,10 @@ compile_into() {
     --allow-read \
     --allow-write \
     --allow-env \
-    --include "${assets}" \
+    --include "${tree}/assets" \
     --target "${target}" \
     --output "${output}" \
-    "${source}"
+    "${tree}/main.js"
 }
 
 rm -rf -- "${out_dir}" "${repeat_dir}"
@@ -182,8 +192,8 @@ for target in "${targets[@]}"; do
   esac
 
   echo "compiling ${name}"
-  compile_into "${target}" "${entry}" "${out_dir}/${name}"
-  compile_into "${target}" "${repeat_entry}" "${repeat_dir}/${name}"
+  compile_into "${target}" "${staged}" "${out_dir}/${name}"
+  compile_into "${target}" "${repeat_staged}" "${repeat_dir}/${name}"
 
   first="$(sha256sum <"${out_dir}/${name}" | cut -d ' ' -f 1)"
   second="$(sha256sum <"${repeat_dir}/${name}" | cut -d ' ' -f 1)"
@@ -223,12 +233,16 @@ readonly summary
 # A PDF, which is the one command that reads a file the executable carries
 # rather than one the bundle inlines: the Typst WebAssembly module and the
 # fonts. An executable compiled without --include answers --version and
-# validates a file exactly as this one does, and fails here alone.
-readonly pdf_check="${out_dir}/pdf-check.pdf"
+# validates a file exactly as this one does, and fails only here. Two ways of
+# failing, and both are covered: a render that exits nonzero stops the script
+# under set -e with the CLI's own message, and one that exits 0 having written
+# something that is not a PDF is what the comparison below catches. The file
+# goes to the scratch directory rather than to dist/cli, which is uploaded
+# whole as the release artifact.
+readonly pdf_check="${scratch}/pdf-check.pdf"
 "${host_binary}" render "${fixture}" --format pdf --out "${pdf_check}"
 pdf_header="$(head -c 5 -- "${pdf_check}")"
 readonly pdf_header
-rm -f -- "${pdf_check}"
 if [ "${pdf_header}" != '%PDF-' ]; then
   echo "panoptes render --format pdf wrote a file opening '${pdf_header}'," >&2
   echo "not a PDF. The executable carries no working Typst compiler." >&2

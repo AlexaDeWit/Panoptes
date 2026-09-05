@@ -7,6 +7,8 @@ import {
 import { Either } from 'effect';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { renderRegister } from './markdown-register.js';
+import { deepestProse } from './register-tree.js';
 import { renderTypst } from './typst-document.js';
 
 const repositoryRoot = join(import.meta.dirname, '../../../..');
@@ -57,11 +59,11 @@ const sourceOf = (model: Model): string => renderTypst(model).typst;
 const proseOf = (written: string): string =>
   sourceOf(modelOf([threatOf({ number: 1, description: written })]));
 
-/**
- * The source with every Typst string literal replaced by an empty one. What
- * is left is the document's own template, so a hostile fragment surviving
- * here reached the source as Typst code rather than as text.
- */
+const nested = (levels: number): string => `${'> '.repeat(levels)}bottom`;
+
+const quotesIn = (source: string): number =>
+  source.split('#quote(block: true)[').length - 1;
+
 const withoutLiterals = (source: string): string =>
   source.replace(/"(?:[^"\\]|\\[\s\S])*"/gu, '""');
 
@@ -123,12 +125,20 @@ describe('a value out of the model', () => {
 });
 
 describe('threat prose', () => {
-  it('drops a raw HTML node rather than writing it out', () => {
+  it('writes a raw HTML node as the text the author wrote', () => {
     const source = proseOf('Set <span onclick="boom()">the flag</span> first.');
-    expect(source).toContain('Set ');
+    expect(source).toContain('#"<span onclick=\\"boom()\\">"');
     expect(source).toContain('the flag');
-    expect(source).not.toContain('<span');
-    expect(source).not.toContain('onclick');
+    expect(withoutLiterals(source)).not.toContain('<span');
+    expect(withoutLiterals(source)).not.toContain('onclick');
+  });
+
+  it('keeps a mitigation an author wrote as HTML alone', () => {
+    const model = modelOf([
+      threatOf({ number: 1, mitigation: '<img src=x onerror="alert(1)">' }),
+    ]);
+    expect(sourceOf(model)).toContain('<img src=x onerror=');
+    expect(renderRegister(model)).toContain('<img src=x onerror=');
   });
 
   it('writes a list as a Typst list', () => {
@@ -154,13 +164,86 @@ describe('threat prose', () => {
     );
   });
 
-  it('writes a link as its own text, with nothing to follow', () => {
-    const source = proseOf('A [link](https://example.invalid).');
+  it('writes a link as its own text with the address beside it', () => {
+    const source = proseOf('A [link](https://example.invalid/x).');
     expect(source).toContain('#"link"');
-    expect(source).not.toContain('example.invalid');
+    expect(source).toContain('#" (https://example.invalid/x)"');
+    expect(withoutLiterals(source)).not.toContain('#link(');
+  });
+
+  it('writes an autolink once, not as its own address twice', () => {
+    const source = proseOf('See <https://example.invalid/x> for more.');
+    expect(source).toContain('#"https://example.invalid/x"');
+    expect(source).not.toContain('#" (https://example.invalid/x)"');
+  });
+
+  it('keeps the address of a link definition and of an image', () => {
+    expect(proseOf('![a picture](https://example.invalid/p.png)')).toContain(
+      '#" (https://example.invalid/p.png)"',
+    );
+    expect(proseOf('[cite]: https://example.invalid/d')).toContain(
+      '#"[cite]: https://example.invalid/d"',
+    );
+  });
+
+  it('writes a quote, a rule, a break and a strikethrough', () => {
+    expect(proseOf('> quoted')).toContain('#quote(block: true)[');
+    expect(proseOf('a\n\n---\n\nb')).toContain('#line(length: 100%)');
+    expect(proseOf('a\\\nb')).toContain('#linebreak()');
+    expect(proseOf('~~gone~~')).toContain('#strike[#"gone"]');
+  });
+
+  it('writes a table and a heading inside prose', () => {
+    const source = proseOf('| a | b |\n| - | - |\n| 1 | 2 |\n\n## Inside');
+    expect(source).toContain('#table(columns: 2,');
+    expect(source).toContain('#heading(level: 4)[#"Inside"]');
+  });
+
+  it('writes a footnote as its reference and its text', () => {
+    const source = proseOf('A claim[^1].\n\n[^1]: The evidence.');
+    expect(source).toContain('#"[1]"');
+    expect(source).toContain('#"The evidence."');
+  });
+
+  it('writes a reference-style image as its alternative text', () => {
+    const source = proseOf(
+      '![a picture][p]\n\n[p]: https://example.invalid/p.png',
+    );
+    expect(source).toContain('#"a picture"');
+  });
+
+  it('writes a reference-style link as its text', () => {
+    const source = proseOf(
+      'See [the policy][p].\n\n[p]: https://example.invalid/p',
+    );
+    expect(source).toContain('#"the policy"');
+    expect(source).toContain('#"[p]: https://example.invalid/p"');
   });
 
   it('collapses a soft line break inside a paragraph to a space', () => {
     expect(proseOf('first\nsecond')).toContain('#"first second"');
+  });
+});
+
+describe('the prose depth bound', () => {
+  it('is the depth both writers survive, counted from the root', () => {
+    expect(deepestProse).toBe(16);
+  });
+
+  it('writes the deepest prose it admits as the nesting the author wrote', () => {
+    const admitted = deepestProse - 2;
+    const source = proseOf(nested(admitted));
+    expect(quotesIn(source)).toBe(admitted);
+    expect(
+      renderRegister(
+        modelOf([threatOf({ number: 1, description: nested(admitted) })]),
+      ),
+    ).toContain('bottom');
+  });
+
+  it("writes prose one level past the bound as the author's own bytes", () => {
+    const source = proseOf(nested(deepestProse - 1));
+    expect(quotesIn(source)).toBe(0);
+    expect(source).toContain('bottom');
   });
 });

@@ -80,8 +80,10 @@ catalog:
   # inside the CLI's single executable: no browser, no native addon, and
   # nothing fetched at run time (issue #34). The node compiler package of the
   # same project is a native addon and so cannot ride in a `deno compile`
-  # binary. Pinned exactly: the module is carried as a build asset, and its
-  # size is the executable's size, so a bump is a reviewed change.
+  # binary. Pinned exactly: the module is carried as a build asset, its size
+  # is the executable's size, and the Typst it wraps decides the PDF's bytes,
+  # so a bump is a reviewed change. 0.7.0 carries Typst 0.14.2, which the
+  # PDF's own Creator field records.
   '@myriaddreamin/typst-ts-web-compiler': 0.7.0
   '@nx/esbuild': 23.1.2
   '@nx/eslint-plugin': 23.1.2
