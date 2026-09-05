@@ -65,13 +65,20 @@ wherever a person is. Three rules decide whether a press is the studio's:
 - **A press a control has already acted on is not.** It arrives with its
   default prevented, which is how one Delete removes one element while the
   canvas still binds that key itself (`../canvas/diagram-canvas.tsx`).
-  Consolidating that binding into this one is issue #179's follow-up.
+  Consolidating the two into this one is a follow-up of its own, left out
+  here because #154 owned that file while this was written.
 - **A press an open overlay owns is not.** A listbox or a menu is handling
   the same keys, Escape and every letter of its typeahead among them, so
   nothing is taken out from under it.
-- **A press typed into a text field is not**, unless the command is exempt.
-  Saving, saving as, undo, redo and clearing are the exemptions, so naming an
-  element never deletes one and a save mid-sentence still saves.
+- **A press typed into a control that takes characters is not**, unless the
+  command is exempt: a text field, and a listbox trigger that is closed,
+  whose typeahead is the same thing. Saving, saving as, undo and redo are the
+  exemptions, so naming an element never deletes one, a save mid-sentence
+  still saves, and no control leaves them dead under a person's hands.
+  Escape is not among them: it clears the selection, which unmounts the panel
+  and takes a refused draft with it, and the draft is the field's alone. The
+  panel overlay (#176) rules what Escape does from inside a field, and until
+  it does the field keeps the key.
 
 A press that is the studio's is claimed from the browser, whether or not the
 command has a dispatch yet: a chord the studio advertises must not do

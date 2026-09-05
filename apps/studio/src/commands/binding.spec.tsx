@@ -39,19 +39,19 @@ describe('keyboardOwner', () => {
     expect(keyboardOwner(null)).toBe('page');
   });
 
-  it('gives a text field the presses typed into it', () => {
+  it('gives typing the presses aimed at a control that takes characters', () => {
     const holder = markup(
       '<input /><textarea></textarea><div contenteditable="true"><span>x</span></div>',
     );
 
     for (const child of holder.querySelectorAll('input, textarea, span')) {
-      expect(keyboardOwner(child)).toBe('text-field');
+      expect(keyboardOwner(child)).toBe('typing');
     }
   });
 
   it('gives an open overlay the keyboard whole, its own typeahead among it', () => {
     const holder = markup(
-      '<div role="listbox"><div role="option">One</div></div><button role="combobox"></button>',
+      '<div role="listbox"><div role="option">One</div></div><button aria-expanded="true" role="combobox"></button>',
     );
 
     expect(keyboardOwner(holder.querySelector('[role="option"]'))).toBe(
@@ -60,6 +60,14 @@ describe('keyboardOwner', () => {
     expect(keyboardOwner(holder.querySelector('[role="combobox"]'))).toBe(
       'overlay',
     );
+  });
+
+  it('gives a closed listbox trigger its typeahead and nothing more', () => {
+    const holder = markup(
+      '<button aria-expanded="false" role="combobox">Severity</button>',
+    );
+
+    expect(keyboardOwner(holder.firstElementChild)).toBe('typing');
   });
 });
 
@@ -99,9 +107,35 @@ describe('commandForKey', () => {
     expect(
       commandForKey(press(field, { key: 's', ctrlKey: true }), 'other')?.id,
     ).toBe('save');
-    expect(commandForKey(press(field, { key: 'Escape' }), 'other')?.id).toBe(
+  });
+
+  it('leaves Escape to a field holding a draft the model refused', () => {
+    const holder = markup('<input />');
+    const field = holder.firstElementChild ?? holder;
+
+    expect(
+      commandForKey(press(field, { key: 'Escape' }), 'other'),
+    ).toBeUndefined();
+    expect(commandForKey(press(holder, { key: 'Escape' }), 'other')?.id).toBe(
       'clear-selection',
     );
+  });
+
+  it('keeps saving alive under a listbox trigger that is closed', () => {
+    const holder = markup(
+      '<button aria-expanded="false" role="combobox">Severity</button>',
+    );
+    const trigger = holder.firstElementChild ?? holder;
+
+    expect(
+      commandForKey(press(trigger, { key: 's', ctrlKey: true }), 'other')?.id,
+    ).toBe('save');
+    expect(
+      commandForKey(press(trigger, { key: 'z', ctrlKey: true }), 'other')?.id,
+    ).toBe('undo');
+    expect(
+      commandForKey(press(trigger, { key: 's' }), 'other'),
+    ).toBeUndefined();
   });
 
   it('takes nothing out from under an open overlay', () => {

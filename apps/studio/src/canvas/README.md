@@ -144,9 +144,9 @@ commands](../commands/README.md)). Adding is a button or the tool's own
 letter. Connecting is selecting an element on the canvas, then choosing the
 other end in the listbox beside those buttons and pressing Connect, which is
 why the source is the selection rather than a mode to enter and leave.
-Deleting is the Delete or Backspace key, from anywhere in the studio. The palette's two connecting
-controls are disabled while nothing is selected, so a keyboard user passes no
-dead stop between the buttons and the canvas.
+Deleting is the Delete or Backspace key, from anywhere in the studio. The
+palette's two connecting controls are disabled while nothing is selected, so
+a keyboard user passes no dead stop between the buttons and the canvas.
 
 ## What is not attempted here
 

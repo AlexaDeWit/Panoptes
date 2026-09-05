@@ -1,7 +1,6 @@
 import { expect, test } from '@playwright/test';
+import { chordsWaitingOnASurface, registeredChords } from './chords.js';
 import {
-  chordsWaitingOnASurface,
-  registeredChords,
   savedByKey,
   shortcutShown,
   viewportTransform,
@@ -192,6 +191,24 @@ test('a shortcut waits while a name is being typed, and saving and undo do not',
   await expect(
     threatPanel(page).getByRole('textbox', { name: 'Title' }),
   ).toHaveCount(0);
+});
+
+test('escape leaves a refused draft in the field it is corrected in', async ({
+  page,
+}) => {
+  await openPlaceholder(page);
+  const reader = await selectNode(page, /^Reader, actor/u);
+  await threatPanel(page).getByRole('button', { name: 'Add a threat' }).click();
+  const title = threatPanel(page).getByRole('textbox', { name: 'Title' });
+  await title.fill('Soft\u00adhyphen');
+  await title.press('Enter');
+  await expect(title).toHaveAttribute('aria-invalid', 'true');
+
+  await title.press(registeredChords['clear-selection'][0]);
+
+  await expect(title).toHaveValue('Soft\u00adhyphen');
+  await expect(title).toHaveAttribute('aria-invalid', 'true');
+  await expect(reader).toHaveClass(/selected/u);
 });
 
 test('every control says which key runs it, to a pointer and to a reader alike', async ({

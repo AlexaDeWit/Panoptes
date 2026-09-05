@@ -23,22 +23,30 @@ export const unmountedSurface: CommandSurface = {
 /**
  * Who a key press belongs to. An overlay that is open is handling the same
  * keys the studio binds, Escape and every letter among them, so nothing is
- * taken out from under it. A text field is where a person is writing, so
- * only the commands the registry exempts fire there. Everything else is the
- * page, where every shortcut is the studio's.
+ * taken out from under it. `typing` is where a pressed character lands in a
+ * control rather than in the studio: a text field, and a listbox trigger
+ * that is closed, whose typeahead is the same thing. Only the commands the
+ * registry exempts fire there, so saving and the history moves are never
+ * dead under a person's hands. Everything else is the page, where every
+ * shortcut is the studio's.
  */
-export const keyboardOwners = ['page', 'text-field', 'overlay'] as const;
+export const keyboardOwners = ['page', 'typing', 'overlay'] as const;
 
 /** Who the key press in front of the studio belongs to. */
 export type KeyboardOwner = (typeof keyboardOwners)[number];
 
 const overlaySelector =
-  '[role="combobox"], [role="listbox"], [role="menu"], [role="dialog"]';
+  '[role="combobox"][aria-expanded="true"], [role="listbox"], [role="menu"], [role="dialog"]';
 
-const textFieldSelector =
-  'input, textarea, [contenteditable]:not([contenteditable="false"])';
+const typingSelector =
+  'input, textarea, [contenteditable]:not([contenteditable="false"]), [role="combobox"]';
 
-/** Which of {@link keyboardOwners} holds the keyboard while `target` has it. */
+/**
+ * Which of {@link keyboardOwners} holds the keyboard while `target` has it.
+ * A listbox trigger stands in the page whether it is open or not and says
+ * which it is, so the closed one is asked for typing alone; the roles that
+ * are in the page only while they are open are read by their presence.
+ */
 export function keyboardOwner(target: EventTarget | null): KeyboardOwner {
   if (!(target instanceof Element)) {
     return 'page';
@@ -46,13 +54,13 @@ export function keyboardOwner(target: EventTarget | null): KeyboardOwner {
   if (target.closest(overlaySelector) !== null) {
     return 'overlay';
   }
-  return target.closest(textFieldSelector) === null ? 'page' : 'text-field';
+  return target.closest(typingSelector) === null ? 'page' : 'typing';
 }
 
 /**
  * The command a key press runs, and nothing at all where it runs none: a
  * press a control has already acted on, one an open overlay owns, one no
- * chord matches, and one aimed at a command the field it was typed in
+ * chord matches, and one aimed at a command the control it was typed in
  * suppresses.
  *
  * A press the canvas has already answered arrives here with its default
@@ -68,10 +76,7 @@ export function commandForKey(
     return undefined;
   }
   const command = commandFor(event, platform);
-  if (
-    command === undefined ||
-    (owner === 'text-field' && !command.inTextFields)
-  ) {
+  if (command === undefined || (owner === 'typing' && !command.inTextFields)) {
     return undefined;
   }
   return command;

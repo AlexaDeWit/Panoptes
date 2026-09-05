@@ -153,7 +153,7 @@ const table = {
     id: 'clear-selection',
     label: 'Clear the selection',
     shortcuts: [bare('Escape')],
-    inTextFields: true,
+    inTextFields: false,
     dispatch: runs(() => {
       dispatch(Action.Select({ elementId: undefined }));
     }),

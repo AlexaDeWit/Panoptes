@@ -78,6 +78,16 @@ describe('firedBy', () => {
     expect(firedBy(press({ key: 's' }), save, 'other')).toBe(false);
   });
 
+  it('leaves a layout writing a character under AltGr to write it', () => {
+    expect(
+      firedBy(
+        { ...press({ ctrlKey: true }), getModifierState: () => true },
+        save,
+        'other',
+      ),
+    ).toBe(false);
+  });
+
   it('reads the key a shifted press reports, which is the capital', () => {
     expect(
       firedBy(

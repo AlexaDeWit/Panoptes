@@ -36,12 +36,16 @@ describe('the command registry', () => {
     }
   });
 
-  it('exempts only saving, the history moves and clearing from a text field', () => {
+  it('exempts only saving and the history moves from a control being typed in', () => {
     expect(
       commands
         .filter((command) => command.inTextFields)
         .map((command) => command.id),
-    ).toEqual(['save', 'save-as', 'undo', 'redo', 'clear-selection']);
+    ).toEqual(['save', 'save-as', 'undo', 'redo']);
+  });
+
+  it('leaves Escape to the field a refused draft is being corrected in', () => {
+    expect(commandById('clear-selection').inTextFields).toBe(false);
   });
 
   it('names the issue that will give each command still without a dispatch one', () => {
