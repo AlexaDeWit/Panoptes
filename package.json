@@ -2,7 +2,7 @@
   "name": "@panoptes/source",
   "version": "0.0.1",
   "private": true,
-  "packageManager": "pnpm@11.23.0",
+  "packageManager": "pnpm@11.25.0",
   "//": [
     "check runs everything the CI gate runs except: workflow lint (#13; actionlint and zizmor live in the Nix ci shell, not the pnpm graph), the Playwright e2e job (#25; its own CI job), the semgrep scan (#70; semgrep lives in the Nix shells, not the pnpm graph), and the dependency provenance check (#113; it reaches the npm registry, and its own CI job is where an unreachable registry reds one job rather than the whole local run).",
     "Coverage stays enabled in check so the local run and CI's Codecov upload are the same command.",
