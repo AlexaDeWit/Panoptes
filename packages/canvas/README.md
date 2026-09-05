@@ -3,8 +3,8 @@
 The drawing primitives a diagram is made of, shared by the interactive studio
 and by headless rendering: one glyph component per element kind, the flow edge
 and its path maths, the threat badges, the handle geometry, the text wrapping,
-the box and segment arithmetic label placement is settled with, and one
-stylesheet. Everything is presentational and stateless, and every
+the box, circle and segment arithmetic label placement is settled with, and
+one stylesheet. Everything is presentational and stateless, and every
 number it draws comes out of the model. Imports `@panoptes/model` and no other
 internal package.
 
@@ -127,21 +127,22 @@ carries nothing beyond that: which side of a divider its name sits on says
 nothing about which side the name describes.
 
 A curve's name has the mirror of that side as its one other candidate, and it
-takes it where the convex side would put the box over an element's own box or
-an element's badge, since a name drawn under a badge cannot be read. Where
+takes it where the convex side would put the box over an element's own shape
+or an element's badge, since a name drawn under a badge cannot be read. Where
 both sides are covered the convex one stands, a name having to be drawn
 somewhere. Element names are not consulted and nothing else is searched, so a
 curve's name chooses between two places rather than looking for a third, and
 it is the flow labels that move aside around it, since a curve's text box is
 one of the obstacles that search reads. Both candidates are fixed by the
-waypoints and the obstacles are the model's own boxes, so neither the order
-the model holds its elements in nor the end the curve is drawn from changes
-the answer. What the offset guarantees on either side is a standoff from the
-tangent at the middle waypoint. The outside of the turn is what carries that
-over to the drawn curve, for every shape the suite draws or probes: arches,
-bowls, hairpins, S bends, and the runs the fixtures hold. A curve that doubled
-back over its own bend inside half the name's width could still cross it, and
-so could one pushed to the mirror side, which sits inside the turn.
+waypoints and the obstacles are the shapes the model's own elements draw, so
+neither the order the model holds its elements in nor the end the curve is
+drawn from changes the answer. What the offset guarantees on either side is a
+standoff from the tangent at the middle waypoint. The outside of the turn is
+what carries that over to the drawn curve, for every shape the suite draws or
+probes: arches, bowls, hairpins, S bends, and the runs the fixtures hold. A
+curve that doubled back over its own bend inside half the name's width could
+still cross it, and so could one pushed to the mirror side, which sits inside
+the turn.
 
 **Flow labels are placed where nothing else is drawn.** A flow's name printed
 beside its own midpoint lands on another flow's line, inside an element, or on
@@ -150,22 +151,30 @@ so `layoutDiagram` settles every flow label over the whole diagram at once and
 stores the result on the edge. `flowLabelPlacements` offers each flow the
 midpoint and the quarter points of each of its segments, on either side of
 that segment's normal, at three standoffs a clearance apart. A candidate
-costs one for every element box, element name and element badge its own name
+costs one for every element shape, element name and element badge its own name
 or badge box overlaps, one for every straight run of a drawn line that meets
 either box, and one for every name or badge already placed that either box
-overlaps. An element the canvas draws as a box occupies its box, its run of
-text and its badge, so a label over an element's name costs both; a trust
+overlaps.
+
+An element is charged as the shape its glyph draws, measured by the function
+that draws it: an actor, a store and a text element as their boxes, a process
+as the circle `processCircle` inscribes in its box. So a label in a corner of
+a process's box costs nothing for that process, which is what a reader sees
+there: white space beside a circle. The element occupies that shape, its run
+of text and its badge, so a label over an element's name costs both; a trust
 boundary occupies its outline alone, its four sides or the polygon its
 curve's control points trace, since it encloses what it is drawn around and a
 label inside it is where it belongs. The drawn lines are those outlines and
-every flow's own polyline. An element's badge is grown by one clearance on
-every side where a candidate's own badge box is tested against it, so a flow
-badge that comes within a clearance of an element's badge costs as much as
-one drawn over it: two circles that close together on one corner read as
-that element's own pair rather than as the flow's. A candidate's name box is
-tested against every badge as it is drawn, and so is its badge box against a
-label already placed: the growth is an element badge's alone, so two flow
-badges are charged where they overlap and not before.
+every flow's own polyline.
+
+Every badge already drawn is grown by one clearance on every side where a
+candidate's own badge box is tested against it, an element's and a flow
+label's alike, so a flow badge that comes within a clearance of another badge
+costs as much as one drawn over it: two circles that close together read as
+one element's own stacked pair rather than as two labels. A candidate's name
+box is tested against every badge as it is drawn, ungrown, since text beside
+a badge is still read as text.
+
 Flows are placed in ascending order of their ids, so the order the model holds
 its elements in decides nothing, and a tie goes to the candidate nearest the
 midpoint of the flow's longest segment, then to the flow's own placement
@@ -173,9 +182,11 @@ beside that midpoint, then to the first candidate in the order above. Nothing
 is measured, so the interactive canvas and the headless render agree and a
 golden holds byte for byte. Two flows between one pair of elements share a
 segment and therefore a candidate list; the first by id takes its own side of
-the line and the second is pushed to the other side by the name already there.
-A label with no clear candidate anywhere takes the cheapest one rather than
-being dropped, so a dense diagram still draws every name it carries.
+the line and the second is pushed to the other side by the name already there,
+and where both carry a badge the growth pushes the second's badge off the
+first's rather than letting the two stack a few units apart. A label with no
+clear candidate anywhere takes the cheapest one rather than being dropped, so
+a dense diagram still draws every name it carries.
 
 ## Measuring nothing, and the same bytes every time
 
