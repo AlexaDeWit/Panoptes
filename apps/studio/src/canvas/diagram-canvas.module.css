@@ -4,6 +4,12 @@
   border: 1px solid var(--pn-colour-border);
   border-radius: var(--pn-radius);
   background: var(--pn-colour-canvas);
+
+  /* React Flow's background component reads its pattern colour from this
+     property, so the grid is handed the token here rather than as a literal
+     in the component. The grid line is lighter than the hairline because
+     nothing on the canvas is read off it. */
+  --xy-background-pattern-color: var(--pn-colour-grid);
 }
 
 /* React Flow names its own parts with global classes, so the studio reaches

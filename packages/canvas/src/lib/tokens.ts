@@ -26,6 +26,12 @@ export type Palette = {
   readonly textSecondary: Colour;
   /** Every hairline, the outline that identifies a control among them. */
   readonly border: Colour;
+  /**
+   * The ruled lines of the graph paper the studio draws a diagram on. It is
+   * lighter than the hairline on purpose: nothing is read off the grid, so it
+   * sits below the ratio a mark needs rather than at it.
+   */
+  readonly gridLine: Colour;
   /** The primary action, which is also the focus indicator. */
   readonly actionPrimary: Colour;
   /** The primary action under the pointer. */
@@ -49,12 +55,13 @@ export type Palette = {
 /**
  * The light palette: the maintainer's vintage draftsman colours with the
  * lightness moved where the contrast floors demanded it and the hue left
- * alone. Five values are not the starting palette's own. The ochre and the
+ * alone. Six values are not the starting palette's own. The ochre and the
  * warm grey are darker, because cream lettering on them measured 3.2 and 4.4
  * where a badge needs 4.5. The secondary text and the hairline are darker,
  * because they measured 3.2 and 1.4 on the canvas ground where text needs 4.5
- * and a control's outline 3. The fifth severity, which the starting palette
- * does not carry, is the olive of the primary action.
+ * and a control's outline 3. The last two are roles the starting palette has
+ * none of: the fifth severity, which is the olive of the primary action, and
+ * the grid line, a warm taupe at a graph-paper weight over the canvas ground.
  */
 export const lightPalette = {
   surfaceApp: '#FDFBF7',
@@ -65,6 +72,7 @@ export const lightPalette = {
   textPrimary: '#3E3A35',
   textSecondary: '#706B62',
   border: '#96865E',
+  gridLine: '#D2C8B3',
   actionPrimary: '#4A5D23',
   actionHover: '#3B4A1C',
   actionText: '#FDFBF7',
@@ -91,6 +99,7 @@ export const darkPalette = {
   textPrimary: '#E6E1D8',
   textSecondary: '#9A948B',
   border: '#847753',
+  gridLine: '#38342D',
   actionPrimary: '#769438',
   actionHover: '#8DB143',
   actionText: '#1A1815',
@@ -129,6 +138,52 @@ export const canvasType = {
   secondaryBadgeCount: 9,
   badgeMark: 9,
 } as const;
+
+/**
+ * Every stroke the drawing lays down, in user units rather than CSS lengths,
+ * since a diagram is measured in the model's own coordinates. One weight
+ * carries an element's outline, a trust boundary's dashes and a flow's line,
+ * so a diagram reads as drawn by one hand. A store is heavier because its two
+ * lines are the whole glyph and have no box to sit in. The badge ring and the
+ * halo under a flow name are laid down in a ground colour rather than in ink:
+ * they cut the mark out of whatever it is drawn over.
+ */
+export const strokeWidths = {
+  outline: 2,
+  store: 2.5,
+  badgeRing: 3,
+  labelHalo: 3,
+} as const;
+
+/**
+ * The triangle that marks where a flow ends, in user units: how far its base
+ * sits back from the tip, and how far each wing reaches from the line. It is
+ * sized to be read at the zoom a diagram opens at rather than off the line it
+ * ends, which is two units wide and would leave a mark to look for.
+ */
+export const arrowhead = {
+  length: 18,
+  halfWidth: 7,
+} as const;
+
+/**
+ * How far a threat badge reaches from its own centre, in user units. The ring
+ * in {@link strokeWidths} is centred on the circle, so half of it eats into
+ * the disc the count is lettered on, and each radius carries the room the
+ * count needs inside what the ring leaves.
+ */
+export const badgeRadius = {
+  primary: 13,
+  secondary: 9,
+} as const;
+
+/**
+ * The gap between the ruled lines of the graph paper the studio draws a
+ * diagram on, in user units, so the grid scales with the viewport. The
+ * headless render lays down no grid: it writes the diagram rather than the
+ * surface it was drawn on.
+ */
+export const gridSpacing = 25;
 
 /** Every gap and every pad in the chrome, as four steps of a quarter rem. */
 export const spacingScale = {
@@ -169,6 +224,7 @@ export const tokenStylesheet = `:root {
   --pn-colour-text: ${lightPalette.textPrimary};
   --pn-colour-text-muted: ${lightPalette.textSecondary};
   --pn-colour-border: ${lightPalette.border};
+  --pn-colour-grid: ${lightPalette.gridLine};
   --pn-colour-accent: ${lightPalette.actionPrimary};
   --pn-colour-accent-text: ${lightPalette.actionText};
 

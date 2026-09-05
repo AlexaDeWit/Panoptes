@@ -3,10 +3,13 @@ import {
   canvasNodeTypes,
   canvasStylesheet,
   centreOf,
+  gridSpacing,
   type CanvasFlowEdge,
 } from '@panoptes/canvas';
 import {
   applyNodeChanges,
+  Background,
+  BackgroundVariant,
   ConnectionMode,
   ReactFlow,
   type Connection,
@@ -65,6 +68,12 @@ const deleteKeys = new Set(['Delete', 'Backspace']);
  * came from the keyboard, and an edit's focus is neither. It is the move that
  * pans, not the model changing under a selection that stays, so dragging the
  * selected element to the edge of the canvas leaves it where it was dropped.
+ *
+ * The ground is graph paper: React Flow's own background component ruled at
+ * the token module's grid spacing, so the lines scale with the viewport and a
+ * zoom reads as one. Its colour comes from the studio's own custom property,
+ * which the CSS module beside this file hands React Flow. The headless render
+ * draws no grid, the surface a diagram was drawn on being no part of it.
  *
  * Deleting is bound here rather than left to React Flow, whose delete key
  * listens on the whole document and would remove the selected element from
@@ -160,7 +169,9 @@ export function DiagramCanvas() {
         ref={surface}
         selectionKeyCode={null}
         tabIndex={-1}
-      />
+      >
+        <Background gap={gridSpacing} variant={BackgroundVariant.Lines} />
+      </ReactFlow>
     </div>
   );
 }

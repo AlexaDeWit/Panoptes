@@ -1,9 +1,6 @@
 import type { Point } from '@panoptes/model';
 import { svgNumber } from './numbers.js';
-
-const arrowheadLength = 12;
-
-const arrowheadHalfWidth = 5;
+import { arrowhead } from './tokens.js';
 
 const curveSamples = 64;
 
@@ -144,12 +141,12 @@ export function arrowheadPoints(tip: Point, from: Point): readonly Point[] {
   const unit =
     length === 0 ? { x: 1, y: 0 } : { x: run.x / length, y: run.y / length };
   const base = {
-    x: tip.x - unit.x * arrowheadLength,
-    y: tip.y - unit.y * arrowheadLength,
+    x: tip.x - unit.x * arrowhead.length,
+    y: tip.y - unit.y * arrowhead.length,
   };
   const wing = {
-    x: -unit.y * arrowheadHalfWidth,
-    y: unit.x * arrowheadHalfWidth,
+    x: -unit.y * arrowhead.halfWidth,
+    y: unit.x * arrowhead.halfWidth,
   };
   return [
     tip,
