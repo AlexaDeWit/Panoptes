@@ -63,12 +63,14 @@ boundary shape, endpoint kind, threat status, severity, mitigation status,
 and assumption status the schemas declare, and every category of every
 enumerated methodology, so a construct that stops being representable fails a
 named assertion or the type-check. The source file is vendored at
-[`test-data/ecluse.json`](../../test-data/ecluse.json), and the suite writes
-`ecluseFixture` back out to
+[`test-data/ecluse.json`](../../test-data/ecluse.json), and the suite holds
+`ecluseFixture` against
 [`test-data/ecluse.model.json`](../../test-data/ecluse.model.json) as a file
 snapshot, which is where `packages/formats` compares its own read of the same
 threat model against this one. Regenerate it with `pnpm nx test
-@panoptes/model -- -u` in the commit that moved it.
+@panoptes/model -- -u` in the commit that moved it. That run and a run where
+the file is absent are the two that write it, and `nx.json` gives `test` a
+`dependsOn` of `^test` so the suites reading the file run after this one.
 
 `@panoptes/model/fixtures` is the one home for the fixture helpers every
 suite in the workspace shares: `elementId`, `diagramId` and `threatId`, which

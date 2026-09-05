@@ -132,8 +132,12 @@ target's `inputs` (`test-data/` is the case in the tree). The same holds
 for what a task produces and consumes: files a task writes are restored
 from cache only when listed in its `outputs`, and a task that needs another
 project's output reaches it through the project graph, a `workspace:*`
-dependency or `dependsOn`, never a relative path the graph cannot see. CI
-restores no cache, so a hole shows only in local runs.
+dependency or `dependsOn`, never a relative path the graph cannot see.
+`test` carries `^test` for that reason: `packages/model` writes
+`test-data/ecluse.model.json` as a file snapshot, and the formats, canvas and
+render suites read it, so the write is ordered ahead of every read along the
+`workspace:*` edges those projects already have. CI restores no cache, so a
+hole shows only in local runs.
 
 A target that empties its output directory owns that directory alone. The
 studio's vite build empties `dist/` on every run and nothing orders it
