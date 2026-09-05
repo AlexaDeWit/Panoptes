@@ -234,7 +234,9 @@ export type FlowGeometry = {
  * within a clearance of an element's badge costs as much as one drawn over
  * it. Two circles that close together on one corner read as an element's own
  * pair rather than as the flow's. The candidate's name box is tested against
- * every badge as it is drawn.
+ * every badge as it is drawn, and so is its badge box against a label
+ * already placed: the growth is an element badge's alone, so two flow badges
+ * are charged where they overlap and not before.
  *
  * Flows are placed in ascending order of their ids, so the order the model
  * happens to hold its elements in decides nothing, and the cheapest
@@ -453,22 +455,15 @@ function collisionsOf(
   placed: readonly Box[],
 ): number {
   return (
-    boxCollisions(
-      candidate.nameBox,
-      [...drawn.boxesForName, ...placed],
-      drawn.lines,
-    ) +
-    boxCollisions(
-      candidate.badgeBox,
-      [...drawn.boxesForBadge, ...placed],
-      drawn.lines,
-    )
+    boxCollisions(candidate.nameBox, drawn.boxesForName, placed, drawn.lines) +
+    boxCollisions(candidate.badgeBox, drawn.boxesForBadge, placed, drawn.lines)
   );
 }
 
 function boxCollisions(
   box: Box | undefined,
   boxes: readonly Box[],
+  placed: readonly Box[],
   lines: readonly Segment[],
 ): number {
   if (box === undefined) {
@@ -476,6 +471,7 @@ function boxCollisions(
   }
   return (
     boxes.filter((other) => boxesOverlap(box, other)).length +
+    placed.filter((other) => boxesOverlap(box, other)).length +
     lines.filter((line) => segmentMeetsBox(line, box)).length
   );
 }

@@ -118,11 +118,14 @@ const flowBadges = (layout: CanvasLayout): Drawn[] =>
         ],
   );
 
-const labelBoxes = (layout: CanvasLayout): Drawn[] => [
-  ...layout.edges.flatMap((edge) => {
+const flowNames = (layout: CanvasLayout): Drawn[] =>
+  layout.edges.flatMap((edge) => {
     const name = boxOfPoints(textPlacementCorners(edge.label.name));
     return name === undefined ? [] : [{ of: `"${edge.name}"`, box: name }];
-  }),
+  });
+
+const labelBoxes = (layout: CanvasLayout): Drawn[] => [
+  ...flowNames(layout),
   ...flowBadges(layout),
 ];
 
@@ -548,6 +551,29 @@ describe("a flow whose badge would land beside an element's badge", () => {
       '"ship the parcel" badge',
     ]);
     expect(crowdedElementBadges(layout)).toEqual([]);
+  });
+});
+
+describe("a flow's name where its badge would be moved on", () => {
+  const layout = layoutOf(
+    diagramOf(
+      [
+        boxAt('el-left', 0, 0),
+        boxAt('el-right', 400, 0),
+        boxAt('el-tag', 205, 70),
+        flowFrom('el-carry', 'el-left', 'el-right', 'ship the parcel'),
+      ],
+      [openThreatOn('el-tag')],
+    ),
+  );
+
+  it('stands within a clearance of an element badge, clear of it', () => {
+    const [name] = flowNames(layout);
+    const [badge] = elementBadges(layout);
+    expect(boxesOverlap(name.box, badge.box)).toBe(false);
+    expect(boxesOverlap(name.box, grownBy(badge.box, flowLabelClearance))).toBe(
+      true,
+    );
   });
 });
 

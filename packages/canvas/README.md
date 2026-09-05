@@ -163,7 +163,9 @@ every side where a candidate's own badge box is tested against it, so a flow
 badge that comes within a clearance of an element's badge costs as much as
 one drawn over it: two circles that close together on one corner read as
 that element's own pair rather than as the flow's. A candidate's name box is
-tested against every badge as it is drawn.
+tested against every badge as it is drawn, and so is its badge box against a
+label already placed: the growth is an element badge's alone, so two flow
+badges are charged where they overlap and not before.
 Flows are placed in ascending order of their ids, so the order the model holds
 its elements in decides nothing, and a tie goes to the candidate nearest the
 midpoint of the flow's longest segment, then to the flow's own placement
