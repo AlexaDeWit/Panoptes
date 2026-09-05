@@ -1,11 +1,16 @@
+import type { Point } from '@panoptes/model';
 import {
   arrowheadPath,
   controlPolygon,
   polylinePath,
+  sampledCurve,
   smoothPath,
   smoothSegments,
   translate,
 } from './paths.js';
+
+const lowestOf = (points: readonly Point[]): number =>
+  Math.min(...points.map((point) => point.y));
 
 describe('translate', () => {
   it('writes the point as an SVG transform', () => {
@@ -123,5 +128,35 @@ describe('controlPolygon', () => {
   it('gives back the points where there is nothing to smooth', () => {
     expect(controlPolygon([{ x: 5, y: 5 }])).toEqual([{ x: 5, y: 5 }]);
     expect(controlPolygon([])).toEqual([]);
+  });
+});
+
+describe('sampledCurve', () => {
+  it('runs from the first point to the last, 64 samples to a cubic', () => {
+    const waypoints = [
+      { x: 0, y: 0 },
+      { x: 100, y: 40 },
+      { x: 200, y: 0 },
+    ];
+    const sampled = sampledCurve(waypoints);
+    expect(sampled).toHaveLength(129);
+    expect(sampled[0]).toEqual(waypoints[0]);
+    expect(sampled.at(-1)).toEqual(waypoints[2]);
+  });
+
+  it('stays inside the reach of the control polygon on a sharp turn', () => {
+    const waypoints = [
+      { x: 0, y: 0 },
+      { x: 400, y: 0 },
+      { x: 400, y: 400 },
+    ];
+    expect(lowestOf(sampledCurve(waypoints))).toBeGreaterThan(
+      lowestOf(controlPolygon(waypoints)),
+    );
+  });
+
+  it('gives back the points where there is nothing to smooth', () => {
+    expect(sampledCurve([{ x: 5, y: 5 }])).toEqual([{ x: 5, y: 5 }]);
+    expect(sampledCurve([])).toEqual([]);
   });
 });

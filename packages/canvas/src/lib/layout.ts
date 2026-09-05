@@ -21,6 +21,7 @@ import {
   nodeTextPlacement,
   settledCurveNames,
   textPlacementCorners,
+  type CurveNameSide,
   type FlowGeometry,
   type FlowLabelPlacement,
 } from './label-placement.js';
@@ -51,10 +52,10 @@ type CanvasNodeBase = {
  * stroke falls inside the node and a straight run or a pair of repeated
  * waypoints still has an extent to pick. Its waypoints are held again
  * relative to that box, so the glyph draws in the node's own coordinates,
- * and `nameMirrored` carries which of the two sides of the curve
- * {@link settledCurveNames} put its name on. A node is built on the convex
- * side, `false`, and settling flips it only where that side is covered, so
- * an unsettled node draws the side that clears its own curve.
+ * and `nameSide` carries which bend of the curve, and which side of it,
+ * {@link settledCurveNames} put its name on. A node is built without one,
+ * which draws the convex side of the middle waypoint, the candidate the
+ * settling tries first.
  */
 export type CanvasNode =
   | (CanvasNodeBase & { readonly kind: 'actor' })
@@ -65,7 +66,7 @@ export type CanvasNode =
   | (CanvasNodeBase & {
       readonly kind: 'boundary-curve';
       readonly waypoints: readonly Point[];
-      readonly nameMirrored: boolean;
+      readonly nameSide: CurveNameSide | undefined;
     });
 
 /** What kind of box an element takes on the canvas. */
@@ -266,7 +267,7 @@ function boundaryNode(
     return {
       ...base,
       kind: 'boundary-curve',
-      nameMirrored: false,
+      nameSide: undefined,
       position: origin,
       size: {
         width: box.width + boundaryStrokeWidth * 2,

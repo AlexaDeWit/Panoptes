@@ -5,6 +5,8 @@ const arrowheadLength = 12;
 
 const arrowheadHalfWidth = 5;
 
+const curveSamples = 64;
+
 /** The given point as an SVG `transform` that moves an element to it. */
 export function translate(point: Point): string {
   return `translate(${svgNumber(point.x)}, ${svgNumber(point.y)})`;
@@ -81,6 +83,34 @@ export function controlPolygon(points: readonly Point[]): readonly Point[] {
 }
 
 /**
+ * The drawn curve as a polyline through points on the ink itself: the first
+ * of the given points, then each cubic of {@link smoothSegments} at 64 evenly
+ * spaced parameters up to and including its own end. The count is fixed per
+ * cubic, so the work is linear in the number of points.
+ *
+ * A caller holding a box clear of the ink measures this rather than
+ * {@link controlPolygon}, whose polyline can pass outside a box the curve
+ * runs through. A caller bounding the curve measures the polygon instead,
+ * since the hull holds every point of the curve and a sample set holds only
+ * itself. Fewer than two points leave nothing to smooth and come back as the
+ * points themselves.
+ */
+export function sampledCurve(points: readonly Point[]): readonly Point[] {
+  const drawn = smoothSegments(points);
+  if (drawn.length === 0) {
+    return points;
+  }
+  return [
+    points[0],
+    ...drawn.flatMap((segment, index) =>
+      Array.from({ length: curveSamples }, (_unused, step) =>
+        onCubic(points[index], segment, (step + 1) / curveSamples),
+      ),
+    ),
+  ];
+}
+
+/**
  * A smooth open curve through the given points, as the cubic segments
  * {@link smoothSegments} resolves. Fewer than two points leave nothing to
  * smooth and come back as {@link polylinePath}.
@@ -131,6 +161,27 @@ export function arrowheadPoints(tip: Point, from: Point): readonly Point[] {
 /** {@link arrowheadPoints} closed, as a filled SVG path. */
 export function arrowheadPath(tip: Point, from: Point): string {
   return `${polylinePath(arrowheadPoints(tip, from))} Z`;
+}
+
+function onCubic(from: Point, segment: CubicSegment, at: number): Point {
+  const rest = 1 - at;
+  const weights = [rest ** 3, 3 * rest ** 2 * at, 3 * rest * at ** 2, at ** 3];
+  const controls = [
+    from,
+    segment.firstControl,
+    segment.secondControl,
+    segment.end,
+  ];
+  return {
+    x: controls.reduce(
+      (sum, point, index) => sum + point.x * weights[index],
+      0,
+    ),
+    y: controls.reduce(
+      (sum, point, index) => sum + point.y * weights[index],
+      0,
+    ),
+  };
 }
 
 function cubicSegment(

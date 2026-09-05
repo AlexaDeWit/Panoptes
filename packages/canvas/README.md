@@ -37,8 +37,8 @@ around it cannot drift. A curve is bounded by the convex
 hull of its control points, which holds the curve and a little more, because a
 sharp turn throws a control point outside the box its waypoints span while the
 ink stays inside the hull. `controlPolygon` is the one derivation of those
-points, so the bounds, the placement and the specs that check them read the
-curve alike.
+points, so the bounds, the flow-label search and the specs that check them
+read the curve alike.
 
 Stroke widths are the one thing outside `bounds`, since a stroke straddles the
 line it paints, so a caller sizing a viewBox leaves whitespace for them. It
@@ -100,54 +100,62 @@ its box, a store a pair of horizontal lines open at the sides, each with the
 element's name centred inside. A text element is its own prose wrapped inside
 its box, with no outline or fill. A box trust boundary is a dashed rectangle
 and a curve trust boundary a smooth dashed open curve through its waypoints,
-Catmull-Rom converted to cubic segments, with its name beside the middle
-waypoint. A flow is straight segments from its source through its waypoints to
-its target, with a filled arrowhead at the target, and its name and badge
-beside the line where `flowLabelPlacements` settled them. Each hangs off a
-unit normal rather than straight down the y axis: a name at a standoff plus
-its own extent projected onto that normal, a badge at the standoff plus its
-own reach that way, which is not symmetric since a badge stacks its secondary
-below its primary. So a vertical or diagonal flow carries its name beside its
-line rather than along it, whatever the height of the block, a curve carries
-its name clear of the dashes rather than under them, and a flow's badge takes
-the other side of the line from its name. A flow name is also stroked in the
-ground colour under `paint-order: stroke`, so names that converge on one
-element read in layers rather than as one blot. An out-of-scope element draws
-dimmed with a dashed outline; the reason it is out of scope stays in the
-register.
+Catmull-Rom converted to cubic segments, with its name beside the waypoint the
+placement settles on. A flow is straight segments from its source through its
+waypoints to its target, with a filled arrowhead at the target, and its name
+and badge beside the line where `flowLabelPlacements` settled them. Each hangs
+off a unit normal rather than straight down the y axis: a name at a standoff
+plus its own extent projected onto that normal, a badge at the standoff plus
+its own reach that way, which is not symmetric since a badge stacks its
+secondary below its primary. So a vertical or diagonal flow carries its name
+beside its line rather than along it, whatever the height of the block, a
+curve carries its name clear of the dashes rather than under them, and a
+flow's badge takes the other side of the line from its name. A flow name is
+also stroked in the ground colour under `paint-order: stroke`, so names that
+converge on one element read in layers rather than as one blot. An
+out-of-scope element draws dimmed with a dashed outline; the reason it is out
+of scope stays in the register.
 
 A flow's normal is its own segment's. A curve's is the normal of the tangent
-the drawn curve has at the middle waypoint, the central waypoint of an odd run
-and of an even run's two central ones the one nearer the origin, by x and then
-by y, so the anchor is a waypoint on the curve and a reversed run anchors the
-name on the same one. That tangent is the run from the waypoint before it to
-the one after with the ends repeated where a neighbour is missing, and
-of the two normals it takes the one pointing away from the bend, so the name
-sits on the outside of the turn and the arms lead away from it. Where the bend
-lies along the tangent, which a straight middle gives, and for a flow
-throughout, the normal with a non-negative y is the run's own, and where that
-y is zero the one with a positive x. The side is therefore fixed by the
-waypoints rather than by which end the flow or the curve is drawn from, and it
-carries nothing beyond that: which side of a divider its name sits on says
-nothing about which side the name describes.
+the drawn curve has at the waypoint its name hangs beside, the middle waypoint
+unless the search below walks along the curve: the central waypoint of an odd
+run and of an even run's two central ones the one nearer the origin, by x and
+then by y, so the anchor is a waypoint on the curve and a reversed run anchors
+the name on the same one. That tangent is the run from the waypoint before it
+to the one after with the ends repeated where a neighbour is missing, and of
+the two normals it takes the one pointing away from the bend, so the name sits
+on the outside of the turn and the arms lead away from it. Where the bend lies
+along the tangent, which a straight middle gives, and for a flow throughout,
+the normal with a non-negative y is the run's own, and where that y is zero
+the one with a positive x. The side is therefore fixed by the waypoints rather
+than by which end the flow or the curve is drawn from, and it carries nothing
+beyond that: which side of a divider its name sits on says nothing about which
+side the name describes.
 
-A curve's name has the mirror of that side as its one other candidate, and it
-takes it where the convex side would put the box over an element's own shape
-or an element's badge, since a name drawn under a badge cannot be read. Where
-both sides are covered the convex one stands, a name having to be drawn
-somewhere. Element names are not consulted and nothing else is searched, so a
-curve's name chooses between two places rather than looking for a third, and
-it is the flow labels that move aside around it, since a curve's text box is
-one of the obstacles that search reads. Both candidates are fixed by the
-waypoints and the obstacles are the shapes the model's own elements draw, so
-neither the order the model holds its elements in nor the end the curve is
-drawn from changes the answer. What the offset guarantees on either side is a
-standoff from the tangent at the middle waypoint. The outside of the turn is
-what carries that over to the drawn curve, for every shape the suite draws or
-probes: arches, bowls, hairpins, S bends, and the runs the fixtures hold. A
-curve that doubled back over its own bend inside half the name's width could
-still cross it, and so could one pushed to the mirror side, which sits inside
-the turn.
+A curve's name is offered an ordered list of candidates and takes the first
+one clear of the drawn curve, of the shape every element draws and of every
+element's badge, since a name under a badge or over a glyph cannot be read:
+the convex side of the middle waypoint, then its mirror, then both sides of
+each further bend, walking outwards from the middle a waypoint at a time and
+taking at each distance the bend nearer the origin first, by x and then by y.
+Where no candidate is clear the convex side of the middle waypoint stands, a
+name having to be drawn somewhere, and the collision it leaves is one the
+suite reports rather than one the picture hides. Element names are not
+consulted, and it is the flow labels that move aside around a curve's name,
+since its text box is one of the obstacles that search reads. Every candidate
+is fixed by the waypoints and the obstacles are the shapes the model's own
+elements draw, so neither the order the model holds its elements in nor the
+end the curve is drawn from changes the answer.
+
+What the offset guarantees on either side of a bend is a standoff from the
+tangent there. The outside of the turn carries that over to the drawn curve,
+for every shape the suite draws or probes: arches, bowls, hairpins, S bends,
+and the runs the fixtures hold. The mirror sits inside the turn, where the
+arms lead back, and a tight arch's mirror crosses its own ink, so a candidate
+is tested against the curve itself: `sampledCurve` takes a polyline through
+the ink at a fixed count of points per cubic, rather than the control polygon,
+which can pass outside a box the curve runs through. What is left uncaught is
+a curve that doubled back over its own bend between two samples.
 
 **Flow labels are placed where nothing else is drawn.** A flow's name printed
 beside its own midpoint lands on another flow's line, inside an element, or on

@@ -31,7 +31,7 @@ import {
   type CanvasLayout,
   type CanvasNode,
 } from './layout.js';
-import { controlPolygon, smoothSegments, type CubicSegment } from './paths.js';
+import { controlPolygon, sampledCurve } from './paths.js';
 import { flowLabelClearance } from './typography.js';
 
 const id = (value: string) => elementIdSchema.parse(value);
@@ -275,56 +275,38 @@ const scenes: readonly {
   },
 ];
 
-const curveSamples = 64;
-
 const dividerName = 'a divider named at length, over more than one line';
-
-const onCubic = (from: Point, cubic: CubicSegment, at: number): Point => {
-  const rest = 1 - at;
-  const weights = [rest ** 3, 3 * rest ** 2 * at, 3 * rest * at ** 2, at ** 3];
-  const controls = [from, cubic.firstControl, cubic.secondControl, cubic.end];
-  return {
-    x: controls.reduce(
-      (sum, point, index) => sum + point.x * weights[index],
-      0,
-    ),
-    y: controls.reduce(
-      (sum, point, index) => sum + point.y * weights[index],
-      0,
-    ),
-  };
-};
-
-const drawnCurve = (waypoints: readonly Point[]): Point[] =>
-  smoothSegments(waypoints).flatMap((cubic, index) =>
-    Array.from({ length: curveSamples + 1 }, (_unused, step) =>
-      onCubic(waypoints[index], cubic, step / curveSamples),
-    ),
-  );
 
 const curveRuns = (node: CanvasNode): Segment[] =>
   node.kind === 'boundary-curve'
     ? segmentsOfPolyline(
-        drawnCurve(node.waypoints).map((point) =>
+        sampledCurve(node.waypoints).map((point) =>
           shiftedBy(point, node.position),
         ),
       )
     : [];
 
-const nameStruckBy = (node: CanvasNode): string[] => {
-  const box = textBoxOf(node);
-  return box === undefined
+const boxStruckBy = (node: CanvasNode, box: Box | undefined): string[] =>
+  box === undefined
     ? []
     : curveRuns(node)
         .filter((run) => segmentMeetsBox(run, box))
         .map(() => `${node.name} over its own curve`);
-};
+
+const nameStruckBy = (node: CanvasNode): string[] =>
+  boxStruckBy(node, textBoxOf(node));
+
+const curveBeside = (
+  waypoints: readonly Point[],
+  name: string,
+  elements: unknown[],
+): CanvasLayout =>
+  layoutOf(diagramOf([curveOf('el-divider', waypoints, name), ...elements]));
 
 const layoutOfCurve = (
   waypoints: readonly Point[],
   name = dividerName,
-): CanvasLayout =>
-  layoutOf(diagramOf([curveOf('el-divider', waypoints, name)]));
+): CanvasLayout => curveBeside(waypoints, name, []);
 
 const curveNameOverlaps = (layout: CanvasLayout): string[] => {
   const solids = elementSolids(layout);
@@ -338,10 +320,30 @@ const curveNameOverlaps = (layout: CanvasLayout): string[] => {
   });
 };
 
+const firstWaypointOf = (node: CanvasNode): Point =>
+  node.kind === 'boundary-curve' ? node.waypoints[0] : { x: 0, y: 0 };
+
 const middleWaypointOf = (node: CanvasNode): Point =>
   node.kind === 'boundary-curve'
     ? node.waypoints[Math.floor(node.waypoints.length / 2)]
     : { x: 0, y: 0 };
+
+const mirrorBoxOf = (node: CanvasNode): Box | undefined => {
+  const placement = nodeTextPlacement(node);
+  const middle = middleWaypointOf(node);
+  return boxOfPoints(
+    textPlacementCorners({
+      ...placement,
+      at: {
+        x: middle.x * 2 - placement.at.x,
+        y: middle.y * 2 - placement.at.y,
+      },
+    }).map((corner) => shiftedBy(corner, node.position)),
+  );
+};
+
+const distanceBetween = (one: Point, other: Point): number =>
+  Math.hypot(other.x - one.x, other.y - one.y);
 
 const rightEdge = (bounds: CanvasBounds): number => bounds.x + bounds.width;
 
@@ -433,7 +435,7 @@ const reversedRuns = [
   ],
 ] as const;
 
-describe(`a curve boundary's name, over every cubic sampled ${curveSamples} times`, () => {
+describe("a curve boundary's name, over the curve as it is sampled", () => {
   it.each(curveOrientations)(
     'clears a curve %s',
     (_orientation, waypoints, name) => {
@@ -498,6 +500,17 @@ const dividerBeside = (
 const dividerNameX = (layout: CanvasLayout): number =>
   nodeTextPlacement(layout.nodes[0]).at.x;
 
+const dividerReversed = [
+  { x: 0, y: 400 },
+  { x: 60, y: 200 },
+  { x: 0, y: 0 },
+];
+
+const coveringBothSides = [
+  boxAt('el-block', 100, 150),
+  boxAt('el-other', -80, 150),
+];
+
 describe("a curve boundary's name beside what the diagram already draws", () => {
   it('stays on the convex side where nothing is drawn there', () => {
     const layout = dividerBeside([]);
@@ -525,15 +538,72 @@ describe("a curve boundary's name beside what the diagram already draws", () => 
     expect(dividerNameX(blocked)).toBeLessThan(middle.x);
   });
 
-  it('keeps the convex side where both sides are covered', () => {
-    const boxed = dividerBeside([
-      boxAt('el-block', 100, 150),
-      boxAt('el-other', -80, 150),
-    ]);
-    expect(dividerNameX(boxed)).toBeGreaterThan(
-      middleWaypointOf(boxed.nodes[0]).x,
+  it('walks to a further bend where both sides of the middle are covered', () => {
+    const boxed = dividerBeside(coveringBothSides);
+    const [curve] = boxed.nodes;
+    const at = nodeTextPlacement(curve).at;
+    expect(distanceBetween(at, firstWaypointOf(curve))).toBeLessThan(
+      distanceBetween(at, middleWaypointOf(curve)),
     );
-    expect(curveNameOverlaps(boxed)).not.toEqual([]);
+    expect(curveNameOverlaps(boxed)).toEqual([]);
+    expect(nameStruckBy(curve)).toEqual([]);
+  });
+
+  it('walks to the same place on a run reversed, not to the same index', () => {
+    const forwards = curveBeside(
+      dividerWaypoints,
+      dividerName,
+      coveringBothSides,
+    );
+    const backwards = curveBeside(
+      dividerReversed,
+      dividerName,
+      coveringBothSides,
+    );
+    expect(nodeTextPlacement(backwards.nodes[0]).at).toEqual(
+      nodeTextPlacement(forwards.nodes[0]).at,
+    );
+  });
+
+  it('keeps the convex side of the middle where no bend is clear', () => {
+    const smothered = dividerBeside([
+      boxAt('el-smother', -300, -300, 'actor', { width: 800, height: 1000 }),
+    ]);
+    expect(nodeTextPlacement(smothered.nodes[0]).at).toEqual(
+      nodeTextPlacement(dividerBeside([]).nodes[0]).at,
+    );
+    expect(curveNameOverlaps(smothered)).not.toEqual([]);
+  });
+});
+
+const archWaypoints = [
+  { x: 0, y: 100 },
+  { x: 150, y: 0 },
+  { x: 300, y: 100 },
+];
+
+const archName = 'Untrusted callers';
+
+describe('the name of a 300 by 100 arch', () => {
+  const overTheConvexSide = boxAt('el-over', 120, -60, 'actor', {
+    width: 60,
+    height: 40,
+  });
+
+  it('would cross its own curve on the mirror of the middle bend', () => {
+    const [arch] = layoutOfCurve(archWaypoints, archName).nodes;
+    expect(boxStruckBy(arch, mirrorBoxOf(arch))).not.toEqual([]);
+  });
+
+  it('walks past that mirror, clear of the curve and of what covers it', () => {
+    const pushed = curveBeside(archWaypoints, archName, [overTheConvexSide]);
+    const [arch] = pushed.nodes;
+    const at = nodeTextPlacement(arch).at;
+    expect(distanceBetween(at, firstWaypointOf(arch))).toBeLessThan(
+      distanceBetween(at, middleWaypointOf(arch)),
+    );
+    expect(nameStruckBy(arch)).toEqual([]);
+    expect(curveNameOverlaps(pushed)).toEqual([]);
   });
 });
 
