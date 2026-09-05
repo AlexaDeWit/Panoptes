@@ -170,7 +170,7 @@ catalogs:
       version: 2.9.0
     zod:
       specifier: ^4.4.0
-      version: 4.4.3
+      version: 4.5.2
     zustand:
       specifier: ^5.0.15
       version: 5.0.15
@@ -314,7 +314,7 @@ importers:
         version: 3.22.1
       zod:
         specifier: 'catalog:'
-        version: 4.4.3
+        version: 4.5.2
 
   apps/studio:
     dependencies:
@@ -418,7 +418,7 @@ importers:
         version: 2.9.0
       zod:
         specifier: 'catalog:'
-        version: 4.4.3
+        version: 4.5.2
     devDependencies:
       ajv:
         specifier: 'catalog:'
@@ -434,7 +434,7 @@ importers:
         version: 3.22.1
       zod:
         specifier: 'catalog:'
-        version: 4.4.3
+        version: 4.5.2
 
   packages/render:
     dependencies:
@@ -489,13 +489,13 @@ importers:
     dependencies:
       zod:
         specifier: 'catalog:'
-        version: 4.4.3
+        version: 4.5.2
 
   packages/wire-threat-dragon:
     dependencies:
       zod:
         specifier: 'catalog:'
-        version: 4.4.3
+        version: 4.5.2
 
 packages:
 
@@ -6043,8 +6043,8 @@ packages:
     resolution: {integrity: sha512-rVksvsnNCdJ/ohGc6xgPwyN8eheCxsiLM8mxuE/t/mOVqJewPuO1miLpTHQiRgTKCLexL4MeAFVagts7HmNZ2Q==}
     engines: {node: '>=10'}
 
-  zod@4.4.3:
-    resolution: {integrity: sha512-ytENFjIJFl2UwYglde2jchW2Hwm4GJFLDiSXWdTrJQBIN9Fcyp7n4DhxJEiWNAJMV1/BqWfW/kkg71UDcHJyTQ==}
+  zod@4.5.2:
+    resolution: {integrity: sha512-XkYXCol10+ba/6F/cueWV+TezUeOqXW0hdeJt5CdXjTYeAgAQg5N03RQdJ80mhfFE72+pblvYMW4wy2Qp4Qbrg==}
 
   zustand@4.5.7:
     resolution: {integrity: sha512-CHOUy7mu3lbD6o6LJLfllpjkzhHXSBlX8B9+qPddUsIfeF5S/UZ5q0kmCsnRqT1UHFQZchNFDDzMbQsuesHWlw==}
@@ -12320,7 +12320,7 @@ snapshots:
 
   yocto-queue@0.1.0: {}
 
-  zod@4.4.3: {}
+  zod@4.5.2: {}
 
   zustand@4.5.7(@types/react@19.2.18)(react@19.2.8):
     dependencies:
