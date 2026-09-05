@@ -55,21 +55,3 @@ export function usageError(err: string): CommandOutcome {
 export function lines(...texts: readonly string[]): string {
   return texts.map((text) => `${text}\n`).join('');
 }
-
-/**
- * A text with every control character written as `\uXXXX` and every
- * backslash doubled. Text out of a model file reaches a terminal through
- * standard error, and an escape it carries would otherwise move the cursor
- * or set the colours rather than being read. The whole `Cc` category is
- * covered, not the subset `JSON.stringify` escapes, so the C1 range is
- * closed too, and doubling the backslash is what keeps a file spelling an
- * escape out of literal characters distinguishable from one carrying the
- * escape itself.
- */
-export function escaped(text: string): string {
-  return text.replace(/\\|\p{Cc}/gu, (character) =>
-    character === '\\'
-      ? '\\\\'
-      : `\\u${character.charCodeAt(0).toString(16).padStart(4, '0')}`,
-  );
-}

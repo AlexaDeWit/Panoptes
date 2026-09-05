@@ -6,6 +6,7 @@ import {
   threatIdSchema,
 } from '@panoptes/model';
 import {
+  escapedForTerminal,
   hasDiverged,
   noDivergence,
   renderDivergences,
@@ -164,5 +165,17 @@ describe('renderDivergences', () => {
     expect(renderDivergences(divergences).split('\n')).toEqual([
       'element "a\\u000ab": the key summary\\u001b[31m\\u0007 (no place in the format)',
     ]);
+  });
+});
+
+describe('escapedForTerminal', () => {
+  it('closes the control characters a foreign text carries into a terminal', () => {
+    expect(escapedForTerminal(`red${escapeChar}[31m${bellChar}`)).toBe(
+      'red\\u001b[31m\\u0007',
+    );
+  });
+
+  it('doubles a backslash, so a text spelling an escape is not one', () => {
+    expect(escapedForTerminal('red\\u001b[31m')).toBe('red\\\\u001b[31m');
   });
 });

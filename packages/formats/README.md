@@ -27,7 +27,9 @@ the format forces into several, `overridden` for a value the codec wrote over
 rather than repeated, and `discarded-by-edit` for what an edit removed from
 the file. An empty list is the aligned case, and `renderDivergences` turns the
 list into lines for a person, escaping what an imported id could otherwise do
-to a line.
+to a line. `escapedForTerminal` is that escaping on its own, exported because
+the CLI writes model text to a terminal on paths of its own and one escaper is
+what keeps the two from drifting apart.
 
 `read` returns Effect's `Either` with a package-owned `ReadFailure` on the
 error channel, one variant per place a read stops: a text past a read limit,
