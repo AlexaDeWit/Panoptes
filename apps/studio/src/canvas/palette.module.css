@@ -105,15 +105,6 @@
   font-size: 0.75rem;
 }
 
-/* As with the failure notice, the region stays in the page while it has
-   nothing to say and collapses rather than hiding: `display: none` takes it
-   out of the accessibility tree, and a region inserted and revealed in the
-   same frame announces nothing. */
-.announcement:empty {
-  padding: 0;
-  border: 0;
-}
-
 .announcement {
   padding: var(--pn-space-2) var(--pn-space-3);
   border: 1px solid var(--pn-colour-border);

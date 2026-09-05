@@ -1,0 +1,44 @@
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pn-space-1);
+}
+
+.label {
+  color: var(--pn-colour-text-muted);
+  font-weight: 600;
+}
+
+.input,
+.prose {
+  padding: var(--pn-space-2) var(--pn-space-3);
+  border: 1px solid var(--pn-colour-border);
+  border-radius: var(--pn-radius);
+  background: var(--pn-colour-surface);
+  color: var(--pn-colour-text);
+  font: inherit;
+}
+
+.prose {
+  resize: vertical;
+}
+
+.input:focus-visible,
+.prose:focus-visible {
+  outline: var(--pn-focus-ring);
+  outline-offset: var(--pn-focus-ring-offset);
+}
+
+/* The refusal reads as text rather than as a colour alone: forced colours
+   drop the border tint, and a person who cannot separate the two hues has
+   the sentence under the field either way. */
+.input[aria-invalid='true'],
+.prose[aria-invalid='true'] {
+  border-color: var(--pn-colour-text);
+  border-width: 2px;
+}
+
+.refusal {
+  margin: 0;
+  color: var(--pn-colour-text);
+}

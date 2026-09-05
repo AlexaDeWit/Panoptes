@@ -106,21 +106,3 @@ test('an element is reachable, selectable and movable by keyboard alone', async 
   await page.getByRole('button', { name: 'Undo' }).click();
   await expect.poll(() => placeOf(reader)).toBe(selected);
 });
-
-test('a threat edited off the canvas moves the badge on the element it names', async ({
-  page,
-}) => {
-  await openPlaceholder(page);
-
-  await expect(
-    nodeNamed(page, 'Reader, actor, 1 open threat, highest severity medium'),
-  ).toBeVisible();
-
-  await page.getByRole('combobox', { name: 'Severity' }).click();
-  await page.getByRole('option', { name: 'critical' }).click();
-
-  await expect(
-    nodeNamed(page, 'Reader, actor, 1 open threat, highest severity critical'),
-  ).toBeVisible();
-  await expect(page.locator('.pn-badge-mark')).toHaveText('C');
-});

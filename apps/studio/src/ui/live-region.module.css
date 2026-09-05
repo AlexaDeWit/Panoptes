@@ -1,0 +1,7 @@
+/* The region collapses rather than hiding while it is empty: `display: none`
+   would take it out of the accessibility tree, and a region revealed in the
+   same frame as its first message announces nothing. */
+.region:empty {
+  padding: 0;
+  border: 0;
+}

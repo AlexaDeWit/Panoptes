@@ -86,3 +86,11 @@
 .indicator {
   font-size: 0.75rem;
 }
+
+/* A heading over a group of options, which is not one of them: it takes the
+   muted text and the label weight the field's own label carries. */
+.group {
+  padding: var(--pn-space-2) var(--pn-space-3) var(--pn-space-1);
+  color: var(--pn-colour-text-muted);
+  font-weight: 600;
+}

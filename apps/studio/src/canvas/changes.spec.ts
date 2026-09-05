@@ -1,5 +1,5 @@
 import { flowEndNodeId, layoutDiagram } from '@panoptes/canvas';
-import type { ElementId } from '@panoptes/model';
+import type { ElementId, Flow } from '@panoptes/model';
 import { Action } from '../store/actions.js';
 import {
   canvasModel,
@@ -53,6 +53,11 @@ const opened = (selection?: ElementId): void => {
 
 const selectionHeld = (): ElementId | undefined =>
   modelStore.getState().selection;
+
+const flowDrawn = (): Flow | undefined => {
+  const drawn = modelStore.getState().present.diagrams[0].elements.at(-1);
+  return drawn?.kind === 'flow' ? drawn : undefined;
+};
 
 describe('selectionActions', () => {
   it('selects the element the changes chose', () => {
@@ -227,6 +232,14 @@ describe('applyConnection', () => {
     );
 
     expect(modelStore.getState().past).toHaveLength(1);
+    expect(flowDrawn()?.source).toEqual({
+      kind: 'attached',
+      element: readerElement,
+    });
+    expect(flowDrawn()?.target).toEqual({
+      kind: 'attached',
+      element: studioElement,
+    });
   });
 
   it('draws nothing for an end that names no element of the diagram', () => {

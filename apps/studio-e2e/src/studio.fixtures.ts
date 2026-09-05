@@ -9,6 +9,26 @@ const ecluse: unknown = JSON.parse(
 );
 
 /**
+ * Waits for the canvas to stop moving. React Flow measures the nodes it has
+ * drawn and fits the view to them a frame later, so a click sent before that
+ * lands where a node is about to be rather than where it is. The viewport's
+ * own transform is the signal, and it is read twice: it has settled when a
+ * poll finds it where the poll before found it.
+ */
+export const canvasSettled = async (page: Page): Promise<void> => {
+  const viewport = page.locator('.react-flow__viewport');
+  let before = '';
+  await expect
+    .poll(async () => {
+      const now = (await viewport.getAttribute('style')) ?? '';
+      const settled = now !== '' && now === before;
+      before = now;
+      return settled;
+    })
+    .toBe(true);
+};
+
+/**
  * Opens the studio on Écluse's model, put on the page before the studio's own
  * modules run under the name `apps/studio/src/store/development-model.ts`
  * declares, which is how a real file reaches the canvas while the open dialog
@@ -23,12 +43,14 @@ export const openEcluse = async (page: Page): Promise<void> => {
   );
   await page.goto('/');
   await expect(page.getByTestId('canvas-container')).toBeVisible();
+  await canvasSettled(page);
 };
 
 /** Opens the studio on the model it carries until a file can be opened. */
 export const openPlaceholder = async (page: Page): Promise<void> => {
   await page.goto('/');
   await expect(page.getByTestId('canvas-container')).toBeVisible();
+  await canvasSettled(page);
 };
 
 /**
@@ -123,4 +145,55 @@ export const dragOnto = async (
     { steps: 12 },
   );
   await page.mouse.up();
+};
+
+/**
+ * Selects an element by clicking it, and holds that the click landed. The
+ * element is on the page and the canvas has stopped moving before the click
+ * is sent ({@link canvasSettled}), so one click is one selection: a click
+ * that does not select is a regression in the canvas rather than something
+ * to send again.
+ */
+export const selectNode = async (
+  page: Page,
+  name: RegExp,
+): Promise<Locator> => {
+  const node = nodeNamed(page, name);
+  await expect(node).toBeVisible();
+  await canvasSettled(page);
+  await node.click();
+  await expect(node).toHaveClass(/selected/u);
+  return node;
+};
+
+/**
+ * The option the open listbox has focused, waited for. Radix marks it with
+ * `aria-selected` only while it is both focused and the value already set, so
+ * focus is what a spec follows through a listbox rather than that attribute.
+ */
+export const focusedOption = (page: Page): Locator =>
+  page.locator('[role="option"]:focus');
+
+/**
+ * Chooses the option one step from the one already set, from the focused
+ * listbox trigger, by keyboard alone. Radix focuses the chosen item as the
+ * listbox opens and again once the popper has been positioned, so an arrow
+ * key pressed between the two moves nothing: the press is repeated until the
+ * highlight lands somewhere else.
+ */
+export const chooseByKeyboard = async (
+  page: Page,
+  step: 'ArrowDown' | 'ArrowUp',
+): Promise<void> => {
+  await page.keyboard.press('Enter');
+  await expect(focusedOption(page)).toHaveCount(1);
+  const already = (await focusedOption(page).textContent()) ?? '';
+  await expect(async () => {
+    await page.keyboard.press(step);
+    await expect(focusedOption(page)).not.toHaveText(already, {
+      timeout: 250,
+    });
+  }).toPass();
+  await page.keyboard.press('Enter');
+  await expect(page.getByRole('listbox')).toHaveCount(0);
 };
