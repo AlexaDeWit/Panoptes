@@ -1,4 +1,4 @@
-import type { CanvasLayout } from '@panoptes/canvas';
+import type { CanvasLayout, CanvasNode } from '@panoptes/canvas';
 import {
   generateElementId,
   type Element,
@@ -8,10 +8,11 @@ import {
 } from '@panoptes/model';
 
 /**
- * The element kinds the palette adds, one button each. They are the canvas's
+ * The element kinds the palette adds, one button each: five of the canvas's
  * own kinds rather than the model's, because the two shapes a trust boundary
  * takes are drawn, added and reasoned about separately while the model holds
- * them under one kind.
+ * them under one kind. The sixth the canvas draws, a text note, has no button
+ * until there is somewhere to type its prose.
  */
 export const paletteKinds = [
   'actor',
@@ -39,6 +40,19 @@ export const paletteNames = {
 
 /** What a flow drawn on the canvas is called until something renames it. */
 export const newFlowName = 'New flow';
+
+/**
+ * The elements a flow can run between, which is every element the diagram
+ * draws as a box other than a trust boundary: a boundary is what a flow
+ * crosses rather than an end of one. Both ways of connecting read this, so
+ * neither offers an end the other refuses, and a flow is not among them at
+ * all, the layout having no geometry for a flow that ends on a flow.
+ */
+export function flowEnds(layout: CanvasLayout): CanvasNode[] {
+  return layout.nodes.filter(
+    (node) => node.kind !== 'boundary-box' && node.kind !== 'boundary-curve',
+  );
+}
 
 const nominalSizes = {
   actor: { width: 120, height: 60 },

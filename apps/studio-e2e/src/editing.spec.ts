@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 import {
   beforeCanvas,
+  canvasSurface,
   connectTarget,
   dragBy,
   dragOnto,
@@ -111,6 +112,7 @@ test('the delete key removes the element, and the flows it held lose an end', as
     'Removed Public npm registry, actor. 2 flows detached, 1 threat link dropped.',
   );
   await expect(fetched).toHaveAttribute('aria-label', /to a free point/u);
+  await expect(canvasSurface(page)).toBeFocused();
 });
 
 test('a deletion is one step, so undo puts the element and its flows back', async ({

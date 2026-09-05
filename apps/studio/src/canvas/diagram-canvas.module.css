@@ -41,13 +41,15 @@
    Hidden rather than removed: React Flow measures a handle's box to resolve
    where an edge ends, and a removed one has no box. A handle that stays
    hidden is still a place to drop a flow, React Flow resolving the nearest
-   handle within its connection radius rather than hit testing the dot. */
+   handle within its connection radius rather than hit testing the dot. React
+   Flow marks a handle `connectable` from the node it belongs to, so a trust
+   boundary, which no flow ends on, shows none. */
 .canvas :global(.react-flow__handle) {
   visibility: hidden;
 }
 
-.canvas :global(.react-flow__node:hover .react-flow__handle),
-.canvas :global(.react-flow__node.selected .react-flow__handle) {
+.canvas :global(.react-flow__node:hover .react-flow__handle.connectable),
+.canvas :global(.react-flow__node.selected .react-flow__handle.connectable) {
   visibility: visible;
 }
 

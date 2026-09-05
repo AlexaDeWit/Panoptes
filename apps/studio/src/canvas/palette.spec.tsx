@@ -4,7 +4,12 @@ import userEvent from '@testing-library/user-event';
 import { initialState } from '../store/state.js';
 import { modelStore } from '../store/store.js';
 import { resetAnnouncements } from './announcements.js';
-import { canvasModel, readerElement } from './canvas.fixtures.js';
+import {
+  boundaryElement,
+  canvasModel,
+  readerElement,
+  requestFlow,
+} from './canvas.fixtures.js';
 import { paletteKinds, paletteNames } from './elements.js';
 import { EditPalette } from './palette.js';
 
@@ -40,7 +45,7 @@ describe('EditPalette', () => {
 
     await user.click(screen.getByRole('button', { name: 'New store' }));
 
-    expect(elementCount()).toBe(5);
+    expect(elementCount()).toBe(6);
     expect(announced()).toBe('Added New store, store.');
   });
 
@@ -63,6 +68,44 @@ describe('EditPalette', () => {
     ).toBe(true);
   });
 
+  it('leaves connecting unavailable while the selection is a flow', () => {
+    opened(requestFlow);
+    render(<EditPalette />);
+
+    expect(
+      screen.getByRole('button', { name: 'Connect' }).hasAttribute('disabled'),
+    ).toBe(true);
+    expect(
+      screen
+        .getByRole('combobox', { name: 'Flow to' })
+        .hasAttribute('disabled'),
+    ).toBe(true);
+  });
+
+  it('leaves connecting unavailable while the selection is a trust boundary', () => {
+    opened(boundaryElement);
+    render(<EditPalette />);
+
+    expect(
+      screen.getByRole('button', { name: 'Connect' }).hasAttribute('disabled'),
+    ).toBe(true);
+    expect(
+      screen
+        .getByRole('combobox', { name: 'Flow to' })
+        .hasAttribute('disabled'),
+    ).toBe(true);
+  });
+
+  it('offers no trust boundary as the end of a flow', async () => {
+    const user = userEvent.setup();
+    opened(readerElement);
+    render(<EditPalette />);
+
+    await user.click(screen.getByRole('combobox', { name: 'Flow to' }));
+
+    expect(screen.queryByRole('option', { name: 'Perimeter' })).toBeNull();
+  });
+
   it('draws a flow to the element chosen with the keyboard alone', async () => {
     const user = userEvent.setup();
     opened(readerElement);
@@ -72,7 +115,7 @@ describe('EditPalette', () => {
     await user.click(screen.getByRole('option', { name: 'Studio' }));
     await user.click(screen.getByRole('button', { name: 'Connect' }));
 
-    expect(elementCount()).toBe(5);
+    expect(elementCount()).toBe(6);
     expect(announced()).toBe('Added New flow, flow, from Reader to Studio.');
   });
 

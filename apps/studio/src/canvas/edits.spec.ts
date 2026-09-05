@@ -3,6 +3,7 @@ import { initialState } from '../store/state.js';
 import { modelStore } from '../store/store.js';
 import { currentAnnouncement, resetAnnouncements } from './announcements.js';
 import {
+  boundaryElement,
   canvasModel,
   probeFlow,
   readerElement,
@@ -63,7 +64,7 @@ describe('addPaletteElement', () => {
     addPaletteElement('actor');
 
     const state = modelStore.getState();
-    expect(state.present.diagrams[0].elements).toHaveLength(5);
+    expect(state.present.diagrams[0].elements).toHaveLength(6);
     expect(state.selection).toBeDefined();
     expect(said()).toBe('Added New actor, actor.');
   });
@@ -85,6 +86,20 @@ describe('connectElements', () => {
 
     expect(said()).toBe('Added New flow, flow, from Reader to Studio.');
     expect(modelStore.getState().past).toHaveLength(1);
+  });
+
+  it('refuses a flow as an end, which the layout could place nowhere', () => {
+    connectElements(readerElement, requestFlow);
+
+    expect(modelStore.getState().past).toHaveLength(0);
+    expect(said()).toBe('');
+  });
+
+  it('refuses a trust boundary as an end, which a flow crosses rather than ends on', () => {
+    connectElements(boundaryElement, studioElement);
+
+    expect(modelStore.getState().past).toHaveLength(0);
+    expect(said()).toBe('');
   });
 });
 

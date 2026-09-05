@@ -13,6 +13,9 @@ export const requestFlow = elementId('flow-request');
 /** The flow whose target belongs to no element. */
 export const probeFlow = elementId('flow-probe');
 
+/** The trust boundary drawn around the two, which no flow ends on. */
+export const boundaryElement = elementId('boundary-perimeter');
+
 const document = {
   metadata: {
     title: 'Canvas fixture',
@@ -25,6 +28,19 @@ const document = {
       id: 'diagram-main',
       title: 'Main',
       elements: [
+        {
+          kind: 'trust-boundary',
+          id: boundaryElement,
+          name: 'Perimeter',
+          description: '',
+          outOfScope: false,
+          reasonOutOfScope: '',
+          shape: {
+            kind: 'box',
+            position: { x: -20, y: -20 },
+            size: { width: 460, height: 100 },
+          },
+        },
         {
           kind: 'actor',
           id: readerElement,
@@ -111,9 +127,11 @@ const document = {
 };
 
 /**
- * The model the canvas specs draw: two elements, a flow between them, a flow
- * ending at a position that belongs to no element, and threats spread so a
- * name has one of each kind to account for, a single assessed threat on an
- * element and a pair of undecided ones on a flow.
+ * The model the canvas specs draw: two elements inside a trust boundary, a
+ * flow between them, a flow ending at a position that belongs to no element,
+ * and threats spread so a name has one of each kind to account for, a single
+ * assessed threat on an element and a pair of undecided ones on a flow. The
+ * boundary is drawn but is no end of a flow, which is what the connecting
+ * controls read.
  */
 export const canvasModel: Model = parsedFixture(document);

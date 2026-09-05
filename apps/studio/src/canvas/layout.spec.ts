@@ -15,7 +15,7 @@ const moved = reduce(
 describe('currentLayout', () => {
   it('lays out every element of the diagram on screen', () => {
     const layout = currentLayout(start);
-    expect(layout.nodes).toHaveLength(2);
+    expect(layout.nodes).toHaveLength(3);
     expect(layout.edges).toHaveLength(2);
   });
 
@@ -25,7 +25,10 @@ describe('currentLayout', () => {
 
   it('lays the diagram out again once the model has moved', () => {
     expect(currentLayout(moved)).not.toBe(currentLayout(start));
-    expect(currentLayout(moved).nodes[0].position.x).toBe(10);
+    expect(
+      currentLayout(moved).nodes.find((node) => node.id === readerElement)
+        ?.position.x,
+    ).toBe(10);
   });
 
   it('draws nothing for a model that holds no diagram', () => {

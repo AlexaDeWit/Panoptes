@@ -9,6 +9,7 @@ import {
   type CanvasNode,
 } from '@panoptes/canvas';
 import type { ElementId } from '@panoptes/model';
+import { flowEnds } from './elements.js';
 import { accessibleNames } from './names.js';
 
 /** Every node the canvas mounts: an element's own, or a free end's anchor. */
@@ -22,9 +23,12 @@ export type DiagramGraph = {
 
 /**
  * The laid-out diagram as React Flow takes it: every element named for
- * assistive technology and carrying whether the store has it selected, then
- * the anchors a flow's free end rides on. The nodes and the flows come back
- * together because one pass over the layout names both.
+ * assistive technology and carrying whether the store has it selected and
+ * whether a flow can end on it, then the anchors a flow's free end rides on.
+ * The nodes and the flows come back together because one pass over the layout
+ * names both. A node a flow cannot end on is not connectable, so React Flow
+ * refuses the gesture where it starts rather than letting it settle into an
+ * edit the store would drop.
  *
  * Every node and every edge object is built afresh here, so a selection
  * rebuilds them all and React Flow re-renders each one. That is one pass
@@ -36,11 +40,13 @@ export function diagramGraph(
   selection: ElementId | undefined,
 ): DiagramGraph {
   const names = accessibleNames(layout);
+  const ends = new Set<string>(flowEnds(layout).map((node) => node.id));
   return {
     nodes: [
       ...toReactFlowNodes(layout).map((node) => ({
         ...node,
         selected: node.id === selection,
+        connectable: ends.has(node.id),
         ariaLabel: names.get(node.id),
       })),
       ...freeEndNodes(layout),

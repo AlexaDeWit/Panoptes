@@ -4,7 +4,7 @@ import { useId, useState } from 'react';
 import { useModelStore } from '../store/store.js';
 import { useAnnouncement } from './announcements.js';
 import { addPaletteElement, connectElements } from './edits.js';
-import { paletteKinds, paletteNames } from './elements.js';
+import { flowEnds, paletteKinds, paletteNames } from './elements.js';
 import { currentLayout, selectedElement } from './layout.js';
 import styles from './palette.module.css';
 
@@ -15,9 +15,9 @@ import styles from './palette.module.css';
  *
  * The source of a flow is whatever the canvas has selected, so connecting by
  * keyboard is selecting an element and then choosing a target, with no mode
- * to enter or leave. Both controls are disabled while the selection is not an
- * element the diagram draws as a box, which is also what keeps a flow from
- * being given an end the layout could not place.
+ * to enter or leave. Both controls are disabled while the selection is not
+ * one of the elements a flow runs between, and the listbox offers only those,
+ * so neither end can be a trust boundary or a flow.
  *
  * The region is a live one, always in the page, on the pattern the failure
  * notice sets ([the studio's UI](../ui/README.md)). What it says is keyed by
@@ -32,8 +32,9 @@ export function EditPalette() {
   const [target, setTarget] = useState<ElementId | undefined>(undefined);
   const triggerId = useId();
 
-  const source = layout.nodes.find((node) => node.id === selection);
-  const targets = layout.nodes.filter((node) => node.id !== source?.id);
+  const ends = flowEnds(layout);
+  const source = ends.find((node) => node.id === selection);
+  const targets = ends.filter((node) => node.id !== source?.id);
   const chosen = targets.find((node) => node.id === target);
 
   return (

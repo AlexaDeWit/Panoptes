@@ -5,6 +5,7 @@ import type { State } from '../store/state.js';
 import { dispatch, modelStore } from '../store/store.js';
 import { announce } from './announcements.js';
 import {
+  flowEnds,
   freePosition,
   freshElement,
   freshFlow,
@@ -44,12 +45,18 @@ export function addPaletteElement(kind: PaletteKind): void {
  * Draws a flow from one element to another, on the same terms as
  * {@link addPaletteElement}: one action, then the selection and the focus.
  * Both ways of connecting land here, so a drag between handles and a choice
- * from the palette's listbox add the same flow.
+ * from the palette's listbox add the same flow, and both are refused an end
+ * that is not one of {@link flowEnds}. The refusal is here rather than in
+ * either control because the model takes an endpoint naming any element of
+ * the diagram, a flow included, and the layout then drops the flow it cannot
+ * place: an unplaceable flow would sit in the model and in the next saved
+ * file while being drawn nowhere.
  */
 export function connectElements(source: ElementId, target: ElementId): void {
   const state = modelStore.getState();
   const diagramId = firstDiagramId(state);
-  if (diagramId === undefined) {
+  const ends = new Set(flowEnds(currentLayout(state)).map((node) => node.id));
+  if (diagramId === undefined || !ends.has(source) || !ends.has(target)) {
     return;
   }
   const flow = freshFlow(source, target);

@@ -42,6 +42,14 @@ export const elementNodes = (page: Page): Locator =>
 export const nodeNamed = (page: Page, name: string | RegExp): Locator =>
   page.getByRole('group', { name });
 
+/**
+ * The canvas itself, which React Flow gives the application role and the
+ * canvas its name. It is where focus lands once the element that held it has
+ * been deleted.
+ */
+export const canvasSurface = (page: Page): Locator =>
+  page.getByRole('application', { name: 'Diagram' });
+
 /** What the canvas last said an edit did. */
 export const editAnnouncement = (page: Page): Locator =>
   page.getByTestId('canvas-announcement');

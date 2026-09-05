@@ -85,7 +85,11 @@ The canvas pans to the selected element where the whole of it is not in view,
 which is what makes an element added below the diagram worth selecting and
 focusing. React Flow pans to a focused node of its own accord, but only where
 the node is wholly outside the view and the focus came from the keyboard, and
-an edit's focus is neither.
+an edit's focus is neither. The test is the whole of the element, so clicking
+a node the edge of the canvas clips re-centres the view under the pointer. It
+is the selection moving that pans rather than the model changing under a
+selection that stays, so dragging the selected element to the edge leaves it
+where it was dropped.
 
 ## Accessibility
 

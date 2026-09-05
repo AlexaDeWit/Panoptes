@@ -3,11 +3,13 @@ import { addElement } from '@panoptes/model';
 import { Either } from 'effect';
 import { diagramId } from '../store/store.fixtures.js';
 import {
+  boundaryElement,
   canvasModel,
   readerElement,
   studioElement,
 } from './canvas.fixtures.js';
 import {
+  flowEnds,
   freePosition,
   freshElement,
   freshFlow,
@@ -87,5 +89,20 @@ describe('freshFlow', () => {
         ),
       ),
     ).toBe(true);
+  });
+});
+
+describe('flowEnds', () => {
+  it('offers the elements a flow runs between', () => {
+    expect(flowEnds(layout).map((node) => node.id)).toEqual([
+      readerElement,
+      studioElement,
+    ]);
+  });
+
+  it('offers no trust boundary, which a flow crosses rather than ends on', () => {
+    expect(flowEnds(layout).some((node) => node.id === boundaryElement)).toBe(
+      false,
+    );
   });
 });
