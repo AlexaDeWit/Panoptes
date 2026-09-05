@@ -50,7 +50,7 @@ const saveAsControl = (): HTMLElement =>
 const state = (): string => screen.getByTestId('file-state').textContent ?? '';
 
 const reportEntries = (): readonly Element[] => [
-  ...screen.getByTestId('save-report').querySelectorAll('li'),
+  ...screen.getByTestId('loss-report').querySelectorAll('li'),
 ];
 
 const mounted = (bridge: SpecBridge): void => {
@@ -192,7 +192,7 @@ describe('opening', () => {
     await waitFor(() => {
       expect(reportEntries().length > 0).toBe(true);
     });
-    expect(screen.getByTestId('save-report').textContent).toContain(
+    expect(screen.getByTestId('loss-report').textContent).toContain(
       'Opening the file dropped',
     );
     expect(reportEntries().map((entry) => entry.textContent)).toEqual([
@@ -207,6 +207,43 @@ describe('opening', () => {
     });
     expect(bridge.writes[0].text).not.toContain('unknownRoot');
     expect(reportEntries()).toEqual([]);
+  });
+
+  it('changes nothing when the picker is dismissed', async () => {
+    const user = userEvent.setup();
+    mounted(specBridge());
+
+    await user.click(openControl());
+
+    await waitFor(() => {
+      expect(state()).toBe('No file, Panoptes YAML, no unsaved changes');
+    });
+    expect(screen.getByTestId('failure-notice').textContent).toBe('');
+    expect(reportEntries()).toEqual([]);
+  });
+
+  it('leaves the report standing when the next open is refused, nothing having crossed', async () => {
+    const user = userEvent.setup();
+    mounted(
+      specBridge({
+        offers: chosenFile('ecluse.json', await withUndeclaredKeys()),
+      }),
+    );
+    await user.click(openControl());
+    await waitFor(() => {
+      expect(reportEntries().length > 0).toBe(true);
+    });
+
+    fireEvent.change(screen.getByTestId('file-input'), {
+      target: { files: [chosenFile('notes.txt', 'no threat model here')] },
+    });
+
+    await waitFor(() => {
+      expect(screen.getByTestId('failure-notice').textContent).toContain(
+        'No format claimed notes.txt.',
+      );
+    });
+    expect(reportEntries().length > 0).toBe(true);
   });
 
   it('opens through its own file input where the bridge has no picker', async () => {

@@ -66,7 +66,9 @@ format and nothing has to assert which codec owns which.
   place rewrites every snapshot at once and takes undo, redo and unsaved work
   down together. The spec that holds this clones the state with
   `structuredClone`, so `State` holds plain data: no function, class instance
-  or ref goes in it.
+  or ref goes in it. The state it clones has a file open, carrying the wire
+  document a read retained, because a guard only covers what the clone is
+  handed.
 - A new mutation is a new action tag, a reducer arm, and a spec. Never a store
   method that edits the state beside the reducer, and never a copy of model
   state held in a component.

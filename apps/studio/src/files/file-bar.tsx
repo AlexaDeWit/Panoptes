@@ -1,5 +1,6 @@
 import { readLimits } from '@panoptes/formats';
 import { useEffect, useRef, useState } from 'react';
+import { Action } from '../store/actions.js';
 import { isDirty } from '../store/selectors.js';
 import { dispatch, useModelStore } from '../store/store.js';
 import { FailureNotice } from '../ui/failure-notice.js';
@@ -68,10 +69,12 @@ export type FileBarProps = { readonly bridge?: FileBridge };
  *
  * The loss report is what the last open or the last save cost, which is view
  * state and not the model's: it says what one file crossing cost rather than
- * anything about the model on screen, so it lives here and goes when a save
- * starts or an open lands. A read reports too, because the keys a wire
- * schema does not declare are gone from the model and from the retained
- * document alike, so no later save can say what became of them.
+ * anything about the model on screen, so it lives here and stands until a
+ * save starts or an open lands. An open that was refused leaves it alone,
+ * nothing having crossed the file boundary. A read reports as a write does,
+ * because the keys a wire schema does not declare are gone from the model and
+ * from the retained document alike, so no later save can say what became of
+ * them.
  */
 export function FileBar({ bridge = browserFileBridge }: FileBarProps) {
   const file = useModelStore((state) => state.file);
@@ -88,10 +91,13 @@ export function FileBar({ bridge = browserFileBridge }: FileBarProps) {
 
   const applyOpen = (outcome: OpenOutcome): void => {
     const action = openedBy(outcome);
-    if (action !== undefined) {
-      setReport(openReport(action));
-      dispatch(action);
+    if (action === undefined) {
+      return;
     }
+    if (Action.$is('Opened')(action)) {
+      setReport(openReport(action.divergences));
+    }
+    dispatch(action);
   };
 
   const pick = async (): Promise<void> => {
@@ -178,10 +184,10 @@ export function FileBar({ bridge = browserFileBridge }: FileBarProps) {
       </section>
       <FailureNotice failure={failure} />
       <section
-        aria-label="Save report"
+        aria-label="Loss report"
         aria-live="polite"
         className={styles.report}
-        data-testid="save-report"
+        data-testid="loss-report"
       >
         {report !== undefined && (
           <>

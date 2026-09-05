@@ -53,6 +53,11 @@ test('the studio carries no violation while it shows a refusal', async ({
   await page.goto('/');
   await expect(page.getByTestId('canvas-container')).toBeVisible();
 
+  await expect(page.getByTestId('failure-notice')).toHaveCSS(
+    'display',
+    'block',
+  );
+
   await page.getByTestId('file-input').setInputFiles({
     name: 'notes.txt',
     mimeType: 'text/plain',

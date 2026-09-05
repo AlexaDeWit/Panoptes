@@ -194,16 +194,15 @@ export const reportHeadlines: Record<LossOccasion, string> = {
 };
 
 /**
- * What an open cost, and nothing at all where it cost nothing or where no
- * model was opened. A read drops every key its wire schema does not declare
- * and reports each one, and the retained document has lost them too, so the
- * save that follows has nothing left to say about them: this is the only
- * place they are said.
+ * What an open cost, and nothing at all where it cost nothing. A read drops
+ * every key its wire schema does not declare and reports each one, and the
+ * retained document has lost them too, so the save that follows has nothing
+ * left to say about them: this is the only place they are said.
  */
-export function openReport(action: Action): LossReport | undefined {
-  return Action.$is('Opened')(action)
-    ? reported('open', action.divergences)
-    : undefined;
+export function openReport(
+  divergences: readonly Divergence[],
+): LossReport | undefined {
+  return reported('open', divergences);
 }
 
 /** What a save cost, and nothing at all where it carried everything. */

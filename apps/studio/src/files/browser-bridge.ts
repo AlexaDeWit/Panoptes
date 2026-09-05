@@ -67,8 +67,11 @@ async function saveAs(name: string, text: string): Promise<SaveOutcome> {
   }
   try {
     const handle = await picker({ suggestedName: name });
-    held = handle;
-    return await writeTo(handle, handle.name, text);
+    const outcome = await writeTo(handle, handle.name, text);
+    if (SaveOutcome.$is('Written')(outcome)) {
+      held = handle;
+    }
+    return outcome;
   } catch (cause) {
     return dismissed(cause)
       ? SaveOutcome.Cancelled()
@@ -116,11 +119,14 @@ function download(name: string, text: string): SaveOutcome {
  *
  * The handle a picker returned is held here rather than in the store,
  * because it is neither plain data nor undoable: it is which file on disk
- * this tab may write. It is held only where a read produced a text, since a
- * file that would not open is not a file this model may be written over, and
- * it is dropped the moment the model moves to another file: an open through
- * the caller's own input, and a save-as that ends in a download. A save-as
- * the person dismissed moves nothing, so it leaves the handle alone.
+ * this tab may write. It is taken only where the crossing it names actually
+ * happened: a read that produced a text, and a save-as whose write landed. A
+ * file that would not open, and one that refused what was written to it, are
+ * not files this model may be written over. It is dropped the moment the
+ * model moves to another file, which is an open through the caller's own
+ * input and a save-as that ends in a download. A save-as the person dismissed
+ * and one the platform refused move nothing, so both leave the handle where
+ * it was.
  *
  * The two pickers are declared here because TypeScript's DOM library does
  * not declare them, and each is read off `window` as an optional member, so

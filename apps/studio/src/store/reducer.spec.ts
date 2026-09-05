@@ -108,6 +108,7 @@ const withHistory: State = {
   ...start,
   past: [emptyModel],
   future: [emptyModel],
+  file: FileLifecycle.Opened({ name: 'model.json', source: foreignSource }),
 };
 
 const studioActions: ActionsByTag<StudioActionTag> = {

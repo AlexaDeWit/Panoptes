@@ -46,7 +46,7 @@ test('opens a model, saves it back, and writes a file that parses again', async 
     version: '2.6.2',
     summary: { title: 'Écluse' },
   });
-  await expect(page.getByTestId('save-report')).toBeEmpty();
+  await expect(page.getByTestId('loss-report')).toBeEmpty();
 });
 
 test('says what it could not read, and stays up', async ({ page }) => {

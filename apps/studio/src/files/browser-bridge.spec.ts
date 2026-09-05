@@ -156,6 +156,29 @@ describe('saving', () => {
     expect(written).toEqual(['first', 'second']);
   });
 
+  it('keeps writing back to the open file when a save-as is refused where it was pointed', async () => {
+    const written: string[] = [];
+    vi.stubGlobal('showOpenFilePicker', () =>
+      Promise.resolve([handleFor('model.json', '{}', written)]),
+    );
+    vi.stubGlobal('showSaveFilePicker', () =>
+      Promise.resolve({
+        name: 'elsewhere.json',
+        createWritable: () => Promise.reject(new Error('NotAllowedError')),
+      }),
+    );
+    const bridge = await freshBridge();
+    await bridge.open(1024);
+
+    expect(await bridge.saveAs('elsewhere.json', 'first')).toEqual(
+      SaveOutcome.Refused({ reason: 'NotAllowedError' }),
+    );
+    await bridge.save('model.json', 'second');
+
+    expect(written).toEqual(['second']);
+    expect(downloads).toEqual([]);
+  });
+
   it('says nothing where a save-as was dismissed, and keeps writing back to the open file', async () => {
     const written: string[] = [];
     vi.stubGlobal('showOpenFilePicker', () =>
