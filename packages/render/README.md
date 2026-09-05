@@ -1,8 +1,14 @@
 # @panoptes/render
 
 Projections of a model. `renderSvg` draws one diagram as a standalone SVG
-document, and `renderRegister` writes the threat register as GFM markdown,
-shaped to replace a register a downstream site generator builds by hand.
+document, `renderRegister` writes the threat register as GFM markdown, shaped
+to replace a register a downstream site generator builds by hand, and
+`renderTypst` writes the whole model, every diagram and that same register, as
+the source of one Typst document.
+
+Every projection is a pure function of the model. Nothing here compiles a
+PDF, carries a font, or reads a file: `apps/cli` carries the Typst compiler
+and turns the source into the bytes.
 
 ## A diagram as an SVG document
 
@@ -67,6 +73,11 @@ section per threat carrying the same fields as a list and the threat's prose.
 Threats come out in number order whatever order the model holds them in, and
 the same model always renders the same bytes.
 
+`registerDocument` builds that as an mdast tree and is the register's one
+definition. `renderRegister` serializes the tree as markdown and
+`renderTypst` walks it into Typst markup, so what a PDF says and what a
+markdown file says cannot drift.
+
 ## What the register promises
 
 - **Stable anchors.** A section heading is `Threat <number>: <title>`, so the
@@ -101,9 +112,48 @@ the same model always renders the same bytes.
   a threat does not carry reads `None recorded.`, and a model holding no
   threats says so in place of an empty table.
 
+## A model as a Typst document
+
+`renderTypst(model)` returns the source of one document and, beside it, the
+same `unplaced` list `renderSvg` reports, gathered over every diagram: the
+projection covers every diagram at once, so a caller that draws none of them
+itself still has the notice.
+
+Every diagram comes first, one to a landscape page, then the register on
+portrait pages. A diagram is embedded as the bytes of the SVG document
+`renderSvg` writes, so the PDF and a standalone `.svg` file are the one
+drawing. Nothing is referenced from outside the source: no file, no font
+file, no Typst package, no URL. A compiler therefore needs no filesystem and
+no network, which is what lets `apps/cli` run the compiler with neither.
+
+The source names the two font families it expects, Liberation Sans and
+Liberation Mono, and carries neither. A compiler is given them, and
+substitutes where it has neither. It also carries no date, so a compiler that
+is itself deterministic writes the same PDF twice.
+
+### Typst markup is a language, and threat prose is untrusted
+
+Typst is not a markup dialect that a stray character makes ugly. `#` calls a
+function, and `*`, `_`, `` ` ``, `<`, `@`, `[`, `]` and `\` all mean
+something, so a threat title reaching the source as markup would be a
+`#read("/etc/passwd")` away from a document that reads a file. No value out of
+the model is written as markup. Every one becomes a Typst string literal,
+where only `"` and `\` have meaning and a C0 control becomes a `\u{}`
+escape, and a literal shown in markup position displays the text it holds.
+Every `#` in the output is therefore this package's own, which is what
+`test-data/adversarial/typst-injection.yaml` is there to hold it to.
+
+The register's prose is user-authored markdown, so the walk covers every node
+type mdast can carry, checked by the compiler rather than by a default case.
+Three carry no Typst form and are dropped: a raw `html` node, a link
+`definition`, and YAML frontmatter. A link is written as its own text, since a
+register in print has nowhere to follow one to. Prose nested past the depth
+bound the register applies is one paragraph of the author's own bytes, there
+as here, because the walk recurses per level.
+
 ## The goldens
 
-Six files under [`test-data/render/`](../../test-data/render) are this
+Seven files under [`test-data/render/`](../../test-data/render) are this
 package's output, committed so a change to what it writes arrives as a diff
 on a file rather than as a test that still passes:
 
@@ -122,10 +172,13 @@ on a file rather than as a test that still passes:
 - `panoptes-read-and-render.snapshot.svg` and
   `panoptes-agent-and-desktop.snapshot.svg`, the two diagrams of the Panoptes
   model, which is the only committed model holding more than one.
+- `ecluse.snapshot.typ`, the Écluse model as the Typst source of a whole
+  document, which holds the diagram above inside it, so the two goldens move
+  together.
 
 Each list is one list in the spec, the registers and the documents alike, so
 a further model or diagram joins every check over them by being added there.
-The suite compares all six on every run as vitest file snapshots and reds
+The suite compares all seven on every run as vitest file snapshots and reds
 where a file and the output differ. A deleted golden is a hole in that gate
 rather than a failure: vitest writes a missing snapshot back and passes, and
 only a CI run, where writing is refused, reports it. Regenerate them with
