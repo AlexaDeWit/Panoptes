@@ -6,12 +6,11 @@ import {
 import { expect, test } from '@playwright/test';
 import { Either } from 'effect';
 import { readFileSync } from 'node:fs';
+import { differingPaths, identified } from './differing-paths.js';
 import {
   chooseInPanel,
   connectTarget,
-  differingPaths,
   dragBy,
-  identified,
   nodeNamed,
   openFile,
   placeOf,
@@ -49,7 +48,7 @@ const byIdentity = (model: DetectedRead['model']): unknown => ({
   threats: identified(model.threats),
 });
 
-test('opens Écluse, edits it on both surfaces, and saves a minimal, valid, lossless file', async ({
+test('opens Écluse, edits it on both surfaces, and saves a valid, lossless file that parses to the source with the edits and nothing else', async ({
   page,
 }) => {
   await openFile(page, fixture);
@@ -118,6 +117,7 @@ test('opens Écluse, edits it on both surfaces, and saves a minimal, valid, loss
 
   expect(
     differingPaths(JSON.parse(source), JSON.parse(written.text)),
+    'the parsed documents are compared, never the bytes',
   ).toStrictEqual([
     `detail.diagrams[0].cells[${cellOf(proxyId)}].position.x`,
     `detail.diagrams[0].cells[${cellOf(proxyId)}].position.y`,
