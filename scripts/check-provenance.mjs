@@ -1,34 +1,42 @@
 #!/usr/bin/env node
 // Report which of the catalog's packages carries a verified npm provenance
-// attestation, from which source repository, and fail where one that carried
-// it no longer does or now names somewhere else.
+// attestation and from which source repository, and fail where a package
+// attested on the base commit is not attested here, or is now attested from
+// somewhere else.
 //
-//   scripts/check-provenance.mjs           check against dependency-provenance.txt
-//   scripts/check-provenance.mjs --update  rewrite that record from what verifies now
+//   scripts/check-provenance.mjs [--base <ref>]
+//
+// The baseline is git rather than a file kept in step with the catalog by
+// hand: the base commit's lockfile, read out of the object store and audited
+// now. HEAD^ is the default because it is the base on both events that run
+// this, a pull request checked out as its merge commit and a push to main. A
+// package pinned at the same version on both sides is one artifact and gets
+// one answer, so only the packages whose version moved are audited twice,
+// and only those can be reported lost or moved. A move this project accepts
+// is declared on the commit that makes it, as a `Provenance-Move: name
+// old-repository new-repository` trailer, and this reads that line out of
+// every commit body between the base and here.
 //
 // npm is the verifier rather than pnpm: `pnpm audit signatures` checks
 // registry signatures alone and knows nothing of attestations. npm's own
 // `audit signatures` checks both, but it walks a tree by dependency edges
-// whose specifier is a registry range, and every catalog reference in this
-// workspace reads `catalog:`. Run in place it therefore covers no catalog
-// edge at all: whichever catalog packages it reaches, it reaches by accident
-// through some transitive dependent that names them in a range, which on the
-// tree as it stands leaves 31 of the 56 unreached. Coverage that moves with
-// every unrelated dependency change is not a check.
-//
-// So npm is handed a throwaway tree instead: one directory per catalog
-// package holding the name and the version pnpm-lock.yaml resolved, which is
-// all it reads before fetching the registry's manifest and verifying the
-// signature and the attestation against the sigstore trust root. Nothing is
-// downloaded and nothing is installed.
-//
-// Node rather than bash, because the audit answers in JSON of a few megabytes
-// and jq is not in the flake.
+// whose specifier is a registry range, and every catalog reference here
+// reads `catalog:`. Run in place it therefore covers no catalog edge at all:
+// whichever catalog packages it reaches, it reaches by accident through some
+// transitive dependent that names them in a range, which on the tree as it
+// stands leaves 32 of the 56 unreached. Coverage that moves with every
+// unrelated dependency change is not a check. So npm is handed a throwaway
+// tree instead: one directory per catalog package holding the name and the
+// version pnpm-lock.yaml resolved, which is all it reads before fetching the
+// registry's manifest and verifying the signature and the attestation
+// against the sigstore trust root. Nothing is downloaded and nothing is
+// installed.
 //
 // Exit 1 is a provenance failure and exit 2 is a check that could not run: a
-// registry out of reach, a lockfile or a record this cannot read, a catalog
-// entry naming what npm would not accept as a package or what the lockfile
-// does not install. docs/release.md says what to do with each.
+// registry out of reach, a lockfile this cannot read, commits in the range
+// this cannot read, a declaration line carrying other than three fields, or a
+// catalog entry naming what npm would not accept as a package or what the
+// lockfile does not install. docs/release.md says what to do with each.
 import { execFileSync } from 'node:child_process';
 import {
   mkdirSync,
@@ -41,16 +49,22 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+// The catalog's own YAML parser, imported dynamically so a checkout that has
+// not installed leaves through cannotRun rather than a module-resolution
+// stack trace under the exit code that means a provenance failure.
+const yaml = await import('yaml').catch(() => null);
+
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '..');
-const lockPath = join(repoRoot, 'pnpm-lock.yaml');
-const recordName = 'dependency-provenance.txt';
-const recordPath = join(repoRoot, recordName);
+const lockName = 'pnpm-lock.yaml';
+const lockPath = join(repoRoot, lockName);
+const trailerKey = 'Provenance-Move';
+const trailerLine = /^Provenance-Move:(.*)$/;
 
 // The grammar npm accepts for a package name, bounded at npm's own limit of
-// 214 characters. Every catalog name is checked against it before it becomes
-// a path, because the lockfile is a file a pull request may edit: `../` in a
-// name would otherwise be a directory this writes into, and a name past what
-// a file system takes would be an unhandled ENAMETOOLONG.
+// 214 characters. Every catalog name passes it before it becomes a path,
+// because the lockfile is a file a pull request may edit: `../` in a name
+// would otherwise be a directory this writes into, and a name past what a
+// file system takes an unhandled ENAMETOOLONG.
 const nameLimit = 214;
 const packageName = /^(?:@[a-z0-9~-][a-z0-9._~-]*\/)?[a-z0-9~-][a-z0-9._~-]*$/;
 const isPackageName = (name) =>
@@ -59,33 +73,15 @@ const isPackageName = (name) =>
 const provenancePredicate = 'https://slsa.dev/provenance/v1';
 const unknownRepository = '-';
 
-const recordHeader = `# Every package in the pnpm-workspace.yaml catalog that carried a verified
-# npm provenance attestation when this file was last written, and the source
-# repository that attestation names. A "${unknownRepository}" is an attestation whose
-# provenance statement names no repository.
-#
-# scripts/check-provenance.mjs reads it. A name here that no longer verifies
-# is a lost attestation, and one whose attestation now names another
-# repository is a release built somewhere new: both fail the check, because
-# the verification itself carries no identity policy and would take either.
-# A catalog package that verifies and is absent here is a record out of date.
-# No version is recorded, so a bump that keeps the attestation and the
-# repository leaves this file untouched. The catalog's other packages publish
-# no attestation at all, and the check prints them as the residual.
-#
-# Regenerate with: scripts/check-provenance.mjs --update
-`;
-
 const cannotRun = (lines) => {
   for (const line of lines) console.error(line);
   return 2;
 };
 
 // Node's filesystem calls throw, and this script's error channel is an exit
-// code with a sentence beside it, so every one a hostile lockfile or an
-// unreadable checkout could break comes back as null and leaves through
-// cannotRun instead of a stack trace under the exit code that means a
-// provenance failure.
+// code with a sentence beside it, so what a hostile lockfile or an unreadable
+// checkout could break comes back as null and leaves through cannotRun rather
+// than as a stack trace under the code that means a provenance failure.
 const attempt = (act) => {
   try {
     return act();
@@ -94,87 +90,68 @@ const attempt = (act) => {
   }
 };
 
+const readLock = (read) => {
+  const text = attempt(read);
+  return text === null ? null : attempt(() => yaml.parse(text));
+};
+
+const lockAt = (ref) =>
+  execFileSync('git', ['show', `${ref}:${lockName}`], {
+    cwd: repoRoot,
+    encoding: 'utf8',
+    maxBuffer: 64 * 1024 * 1024,
+    // git's own diagnostic would land beside this script's sentence.
+    stdio: ['ignore', 'pipe', 'ignore'],
+  });
+
 // pnpm writes the version each catalog specifier resolved to under
 // `catalogs:`, which is meant to be the version installed rather than the
-// range asked for. A named catalog sits between the two, so the names are
-// four spaces in and their versions six. Nothing in that block proves the
-// claim, so readCatalogResolutions below reads what the workspace projects
-// resolve, and main refuses a catalog entry the two disagree about.
-const readCatalog = (lockText) => {
+// range asked for. The block is keyed by catalog name and this reads through
+// to the package names alone, so two named catalogs pinning one package at
+// two versions leave one entry; the importers witness below refuses that,
+// since no single version then matches every resolution.
+const catalogVersions = (lock) => {
   const versions = new Map();
-  let inCatalogs = false;
-  let name = null;
-  for (const line of lockText.split('\n')) {
-    if (!inCatalogs) {
-      inCatalogs = line === 'catalogs:';
-      continue;
-    }
-    if (/^\S/.test(line)) break;
-    const named = /^ {4}'?([^':]+)'?:$/.exec(line);
-    if (named) {
-      name = named[1];
-      continue;
-    }
-    const resolved = /^ {6}version: '?([^'\s(]+)'?/.exec(line);
-    if (resolved && name !== null) {
-      versions.set(name, resolved[1]);
-      name = null;
+  for (const packages of Object.values(lock?.catalogs ?? {})) {
+    for (const [name, entry] of Object.entries(packages ?? {})) {
+      if (entry?.version !== undefined)
+        versions.set(name, String(entry.version));
     }
   }
   return versions;
 };
 
 // What each workspace project resolves a `catalog:` reference to, out of the
-// `importers:` block: project at two spaces, dependency section at four, the
-// name at six, its specifier and version at eight. The version carries peer
-// suffixes in brackets, and the part before the first bracket is the version.
+// `importers:` block, with the peer suffix in brackets dropped.
 //
 // This is the witness for what pnpm installs, and the `packages:` block is
-// not: that block carries every version anywhere in the resolved graph,
-// transitive ones included, so a catalog entry could name a version present
-// there as some other package's dependency and never be the version any
-// project resolves. Six catalog names sit in `packages:` at two versions on
-// the tree as it stands.
-const readCatalogResolutions = (lockText) => {
+// not: that block carries every version anywhere in the resolved graph, so a
+// catalog entry could name a version present there only as some other
+// package's dependency. Six catalog names sit in `packages:` at two versions
+// on the tree as it stands.
+const catalogResolutions = (lock) => {
   const resolutions = new Map();
-  let inImporters = false;
-  let name = null;
-  let viaCatalog = false;
-  for (const line of lockText.split('\n')) {
-    if (!inImporters) {
-      inImporters = line === 'importers:';
-      continue;
-    }
-    if (/^\S/.test(line)) break;
-    const named = /^ {6}'?([^':]+)'?:$/.exec(line);
-    if (named) {
-      name = named[1];
-      viaCatalog = false;
-      continue;
-    }
-    if (/^ {8}specifier: '?catalog:/.test(line)) {
-      viaCatalog = true;
-      continue;
-    }
-    const version = /^ {8}version: '?([^'\s(]+)/.exec(line);
-    if (version && name !== null && viaCatalog) {
-      if (!resolutions.has(name)) resolutions.set(name, new Set());
-      resolutions.get(name).add(version[1]);
-      name = null;
-      viaCatalog = false;
+  for (const importer of Object.values(lock?.importers ?? {})) {
+    for (const section of Object.values(importer ?? {})) {
+      for (const [name, entry] of Object.entries(section ?? {})) {
+        if (typeof entry?.specifier !== 'string') continue;
+        if (!entry.specifier.startsWith('catalog:')) continue;
+        if (!resolutions.has(name)) resolutions.set(name, new Set());
+        resolutions.get(name).add(String(entry.version).split('(')[0]);
+      }
     }
   }
   return resolutions;
 };
 
 const writeProbeTree = (root, catalog) => {
-  const dependencies = Object.fromEntries([...catalog].sort());
   const probe = {
     name: 'panoptes-provenance-probe',
     version: '0.0.0',
     private: true,
-    dependencies,
+    dependencies: Object.fromEntries([...catalog].sort()),
   };
+  mkdirSync(root, { recursive: true });
   writeFileSync(join(root, 'package.json'), JSON.stringify(probe));
   for (const [name, version] of catalog) {
     const directory = join(root, 'node_modules', name);
@@ -189,8 +166,8 @@ const writeProbeTree = (root, catalog) => {
 // npm answers in JSON whether it verified anything or not: a signature that
 // does not verify exits 1 carrying the findings, and a registry it cannot
 // reach exits 1 carrying {"error": ...}. Neither the exit code nor
-// parseability separates those two, so the three arrays an audit answers with
-// are the test, and their absence is what the retry and exit 2 are for.
+// parseability separates those two, so the three arrays an audit answers
+// with are the test, and their absence is what the retry and exit 2 are for.
 const isAuditAnswer = (value) =>
   typeof value === 'object' &&
   value !== null &&
@@ -229,21 +206,17 @@ const parseStatement = (payload) => {
 // The audit hands back the bundles it verified, and the SLSA provenance
 // statement inside one names the repository the release was built from. That
 // identity is the part the verification does not check: pacote calls
-// sigstore.verify with no certificate identity policy, so an attestation from
-// any repository at all satisfies it. Recording the repository is what turns
-// a move to another one into a decision rather than a silent pass.
+// sigstore.verify with no certificate identity policy, so an attestation
+// from anywhere satisfies it. Comparing it with the base commit's is what
+// turns a move into a decision rather than a silent pass.
 const sourceRepository = (entry) => {
   for (const attestation of entry.attestationBundles ?? []) {
     if (attestation.predicateType !== provenancePredicate) continue;
     const statement = parseStatement(attestation.bundle?.dsseEnvelope?.payload);
-    const workflow =
-      statement?.predicate?.buildDefinition?.externalParameters?.workflow;
-    if (
-      typeof workflow?.repository === 'string' &&
-      workflow.repository !== ''
-    ) {
-      return workflow.repository;
-    }
+    const repository =
+      statement?.predicate?.buildDefinition?.externalParameters?.workflow
+        ?.repository;
+    if (typeof repository === 'string' && repository !== '') return repository;
   }
   return unknownRepository;
 };
@@ -257,18 +230,51 @@ const attestedSources = (catalog, audited) => {
   return sources;
 };
 
+// A declaration is held as the whole triple, so it admits the move it names
+// and no other. The author writes it as a trailer on the commit that makes
+// the move, and this reads a whole line anywhere in the body: a squash merge
+// concatenates every commit's message, so what the author wrote last arrives
+// mid-body under the merge's own trailers.
+const acceptedMoves = (range) => {
+  const log = attempt(() =>
+    execFileSync('git', ['log', '--format=%h%x00%B%x00', range], {
+      cwd: repoRoot,
+      encoding: 'utf8',
+      maxBuffer: 64 * 1024 * 1024,
+      stdio: ['ignore', 'pipe', 'ignore'],
+    }),
+  );
+  if (log === null) return null;
+  const accepted = new Set();
+  const malformed = [];
+  const records = log.split('\0');
+  for (let index = 0; index + 1 < records.length; index += 2) {
+    const commit = records[index].trim();
+    for (const line of records[index + 1].split('\n')) {
+      const declared = trailerLine.exec(line);
+      if (declared === null) continue;
+      const fields = declared[1].trim().split(/\s+/);
+      if (fields.length === 3) accepted.add(fields.join(' '));
+      else malformed.push(`${commit} ${line.trim()}`);
+    }
+  }
+  return { accepted, malformed };
+};
+
 const report = (heading, lines) => {
   console.log(heading);
   for (const line of lines) console.log(`  ${line}`);
   console.log('');
 };
 
-const check = (catalog, audited, recorded) => {
-  const attested = attestedSources(catalog, audited);
+// 0 where this commit's catalog is as attested as the base commit's, 1 for a
+// provenance failure, or 2 where a move was found and the commits that would
+// declare it could not be read or hold a declaration that is not three fields.
+const check = ({ catalog, attested, audited, base, baseAttested, range }) => {
   const names = [...catalog.keys()].sort();
 
   console.log(
-    `${names.length} packages in the catalog, ${attested.size} with a verified provenance attestation.`,
+    `${names.length} packages in the catalog, ${attested.size} with a verified provenance attestation, ${base.size} whose version moved since the base commit.`,
   );
   console.log('');
 
@@ -289,41 +295,56 @@ const check = (catalog, audited, recorded) => {
 
   const failures = [];
 
-  const lost = [...recorded.keys()].filter(
-    (name) => catalog.has(name) && !attested.has(name),
-  );
+  const lost = [...baseAttested.keys()]
+    .filter((name) => !attested.has(name))
+    .sort();
   if (lost.length > 0) {
-    report(`Attestation lost since ${recordName} was written:`, lost);
-    failures.push('an attestation this repository recorded is gone');
+    report(
+      'Attestation lost since the base commit:',
+      lost.map(
+        (name) =>
+          `${name} ${base.get(name)} carried one, ${catalog.get(name)} does not`,
+      ),
+    );
+    failures.push('a package attested on the base commit is not attested here');
   }
 
-  const moved = [...recorded.keys()].filter(
-    (name) => attested.has(name) && attested.get(name) !== recorded.get(name),
+  const moved = [...baseAttested.keys()]
+    .filter(
+      (name) =>
+        attested.has(name) && attested.get(name) !== baseAttested.get(name),
+    )
+    .sort();
+  const declared = moved.length === 0 ? null : acceptedMoves(range);
+  if (moved.length > 0 && declared === null) {
+    return cannotRun([
+      'an attestation names another repository and the commits in',
+      `${range} could not be read, so nothing says whether the move is one`,
+      'this project has declared',
+    ]);
+  }
+  if (declared !== null && declared.malformed.length > 0) {
+    return cannotRun([
+      `a ${trailerKey} trailer is not "name old-repository new-repository":`,
+      ...declared.malformed.map((entry) => `  ${entry}`),
+    ]);
+  }
+  const accepted = declared === null ? new Set() : declared.accepted;
+  const unaccepted = moved.filter(
+    (name) =>
+      !accepted.has(`${name} ${baseAttested.get(name)} ${attested.get(name)}`),
   );
-  if (moved.length > 0) {
+  if (unaccepted.length > 0) {
     report(
       'Attestation now names another source repository:',
-      moved.map(
-        (name) => `${name} ${recorded.get(name)} is now ${attested.get(name)}`,
+      unaccepted.map(
+        (name) =>
+          `${name} ${baseAttested.get(name)} is now ${attested.get(name)}`,
       ),
     );
     failures.push(
-      'a release is attested from a repository this one did not record',
+      'a release is attested from a repository the base commit did not name',
     );
-  }
-
-  const gained = [...attested.keys()]
-    .filter((name) => !recorded.has(name))
-    .sort();
-  const departed = [...recorded.keys()].filter((name) => !catalog.has(name));
-  if (gained.length > 0 || departed.length > 0) {
-    report(`${recordName} is out of date:`, [
-      ...gained.map((name) => `${name} now verifies and is not recorded`),
-      ...departed.map(
-        (name) => `${name} is recorded and is no longer in the catalog`,
-      ),
-    ]);
-    failures.push(`${recordName} and the catalog have parted`);
   }
 
   if (audited.invalid.length > 0) {
@@ -348,57 +369,38 @@ const check = (catalog, audited, recorded) => {
   if (failures.length === 0) return 0;
   for (const failure of failures)
     console.error(`provenance check failed: ${failure}`);
-  console.error(
-    'Read the report above, then run scripts/check-provenance.mjs --update',
-  );
-  console.error('if the change is one this repository accepts.');
+  console.error('Read the report above.');
+  if (unaccepted.length > 0) {
+    console.error('A move this project takes is declared in the body of the');
+    console.error('commit that makes it, one line per package:');
+    console.error(`  ${trailerKey}: name old-repository new-repository`);
+  }
   return 1;
 };
 
-const update = (catalog, audited) => {
-  const attested = attestedSources(catalog, audited);
-  const lines = [...attested.keys()]
-    .sort()
-    .map((name) => `${name} ${attested.get(name)}\n`)
-    .join('');
-  const written = attempt(() => {
-    writeFileSync(recordPath, `${recordHeader}${lines}`);
-    return true;
-  });
-  if (written === null) {
-    return cannotRun([`cannot write ${recordPath}`]);
-  }
-  console.log(
-    `wrote ${recordName}: ${attested.size} of ${catalog.size} packages in the catalog`,
-  );
-  return 0;
-};
-
-const readRecord = (recordText) => {
-  const recorded = new Map();
-  for (const line of recordText.split('\n')) {
-    const trimmed = line.trim();
-    if (trimmed === '' || trimmed.startsWith('#')) continue;
-    const [name, repository = unknownRepository] = trimmed.split(/\s+/);
-    recorded.set(name, repository);
-  }
-  return recorded;
-};
-
 const main = () => {
-  const argument = process.argv[2];
-  if (argument !== undefined && argument !== '--update') {
-    return cannotRun(['usage: scripts/check-provenance.mjs [--update]']);
-  }
-
-  const lockText = attempt(() => readFileSync(lockPath, 'utf8'));
-  if (lockText === null) {
+  if (yaml === null) {
     return cannotRun([
-      `cannot read ${lockPath}: run this from a checkout of the repository`,
+      'cannot load the yaml package, which reads the lockfile: run',
+      'pnpm install --frozen-lockfile in this checkout first',
     ]);
   }
 
-  const catalog = readCatalog(lockText);
+  const [flag, named, ...rest] = process.argv.slice(2);
+  const ref = flag === undefined ? 'HEAD^' : named;
+  if ((flag !== undefined && flag !== '--base') || rest.length > 0 || !ref) {
+    return cannotRun(['usage: scripts/check-provenance.mjs [--base <ref>]']);
+  }
+
+  const head = readLock(() => readFileSync(lockPath, 'utf8'));
+  if (head === null) {
+    return cannotRun([
+      `cannot read ${lockPath} as YAML: run this from a checkout of the`,
+      'repository, on a lockfile pnpm wrote',
+    ]);
+  }
+
+  const catalog = catalogVersions(head);
   if (catalog.size === 0) {
     return cannotRun([
       `no catalog in ${lockPath}: its shape is not the one this reads`,
@@ -413,7 +415,7 @@ const main = () => {
     ]);
   }
 
-  const resolutions = readCatalogResolutions(lockText);
+  const resolutions = catalogResolutions(head);
   const unreferenced = [...catalog.keys()].filter(
     (name) => !resolutions.has(name),
   );
@@ -441,15 +443,26 @@ const main = () => {
     ]);
   }
 
-  const recordText =
-    argument === '--update'
-      ? ''
-      : attempt(() => readFileSync(recordPath, 'utf8'));
-  if (recordText === null) {
+  const baseLock = readLock(() => lockAt(ref));
+  const baseCatalog = baseLock === null ? new Map() : catalogVersions(baseLock);
+  if (baseCatalog.size === 0) {
     return cannotRun([
-      `cannot read ${recordName}: write it with scripts/check-provenance.mjs --update`,
+      `no catalog in ${lockName} at ${ref}, which is the baseline this`,
+      'compares against: check out enough history to reach it',
     ]);
   }
+
+  // The base versions of the packages this commit moved. A package at one
+  // version on both sides is one artifact, so auditing it twice would put
+  // the same question to the registry and take the same answer back.
+  const base = new Map(
+    [...catalog]
+      .filter(
+        ([name, version]) =>
+          baseCatalog.has(name) && baseCatalog.get(name) !== version,
+      )
+      .map(([name]) => [name, baseCatalog.get(name)]),
+  );
 
   const root = attempt(() =>
     mkdtempSync(join(tmpdir(), 'panoptes-provenance-')),
@@ -462,13 +475,17 @@ const main = () => {
 
   let probed = false;
   let audited = null;
+  let baseAudited = null;
   try {
     probed =
       attempt(() => {
-        writeProbeTree(root, catalog);
+        writeProbeTree(join(root, 'head'), catalog);
+        if (base.size > 0) writeProbeTree(join(root, 'base'), base);
         return true;
       }) === true;
-    if (probed) audited = audit(root);
+    if (probed) audited = audit(join(root, 'head'));
+    if (audited !== null && base.size > 0)
+      baseAudited = audit(join(root, 'base'));
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -479,7 +496,7 @@ const main = () => {
     ]);
   }
 
-  if (audited === null) {
+  if (audited === null || (base.size > 0 && baseAudited === null)) {
     return cannotRun([
       'npm audit signatures answered no verification, twice.',
       'The registry or the sigstore trust root was out of reach, so',
@@ -487,8 +504,15 @@ const main = () => {
     ]);
   }
 
-  if (argument === '--update') return update(catalog, audited);
-  return check(catalog, audited, readRecord(recordText));
+  return check({
+    catalog,
+    range: `${ref}..HEAD`,
+    attested: attestedSources(catalog, audited),
+    audited,
+    base,
+    baseAttested:
+      baseAudited === null ? new Map() : attestedSources(base, baseAudited),
+  });
 };
 
 process.exitCode = main();

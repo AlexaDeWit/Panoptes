@@ -231,20 +231,70 @@ jobs:
       - name: Run the smoke suite
         run: nix develop .#ci --command pnpm nx e2e @panoptes/studio-e2e
 
+  # Whether this run touches the files that decide the dependency tree. The
+  # provenance job below reaches the npm registry, so it runs when one of
+  # them moved and is skipped otherwise, and the gate accepts that skip only
+  # with this job's answer beside it.
+  dependency-changes:
+    name: Dependency file changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      lockfile: ${{ steps.diff.outputs.lockfile }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          # HEAD and its parents. A pull request is checked out as its merge
+          # commit, whose first parent is the branch it targets; a push
+          # carries the commit before it.
+          fetch-depth: 2
+
+      # A checkout with one commit in it (a repository's first) has nothing
+      # to compare against, so the answer there is that they changed.
+      - name: Compare the dependency files against the base commit
+        id: diff
+        run: |
+          changed=true
+          if [ "$(git rev-list --count HEAD)" -gt 1 ]; then
+            moved="$(git diff --name-only HEAD^ HEAD -- \
+              pnpm-lock.yaml pnpm-workspace.yaml)"
+            if [ -z "$moved" ]; then
+              changed=false
+            fi
+          fi
+          echo "lockfile=$changed" >>"$GITHUB_OUTPUT"
+          echo "pnpm-lock.yaml or pnpm-workspace.yaml changed: $changed"
+
   # The npm provenance attestation of every package in the catalog, verified
-  # against the sigstore trust root and compared with the source repository
-  # dependency-provenance.txt records for it, with the packages that publish
-  # no attestation reported as the residual (scripts/check-provenance.mjs).
-  # It runs on every pull request because a Renovate bump is where a lost or
-  # moved attestation would first appear, and it is a named step before a tag
-  # in docs/release.md.
+  # against the sigstore trust root and compared with what the same package
+  # attested on the base commit, with the packages that publish no
+  # attestation reported as the residual (scripts/check-provenance.mjs).
+  # A move this project accepts is declared on the commit that makes it, as
+  # a `Provenance-Move:` trailer, which the script reads as a line out of the
+  # commits between the base and here, wherever a squash merge left it.
   #
-  # Its own job because it installs nothing and reaches the registry: a
-  # registry out of reach reds this job alone, which the verdict below names,
-  # and no dependency tree sits beside the failure. The script attempts the
-  # audit twice before reporting that it could not run.
+  # It runs when the lockfile or the catalog moved, which is where a Renovate
+  # bump appears, and unconditionally on a push and a dispatch;
+  # docs/release.md names it as a step before a tag.
+  #
+  # Its own job because it reaches the registry: a registry out of reach reds
+  # this job alone, which the verdict below names. The script attempts each
+  # audit twice before reporting that it could not run. The install is for
+  # the `yaml` package the script parses both lockfiles with, and carries
+  # --ignore-scripts, so no install-time script in the tree runs here. One
+  # package still runs code: `yaml` itself, which the script imports and
+  # which sits in the residual this job prints, so the parser is inside the
+  # audit it performs. Threat 25 records that.
   provenance:
     name: Dependency provenance
+    needs: dependency-changes
+    if: >-
+      github.event_name != 'pull_request'
+      || needs.dependency-changes.outputs.lockfile == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -254,12 +304,24 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+          # The whole history, not a bounded depth. The check reads the base
+          # commit's lockfile and every declaration in HEAD^..HEAD, which on
+          # the merge ref a pull request is checked out as means the whole
+          # branch side. A shallow store answers `git log` without error and
+          # simply holds fewer commits, so a bounded depth would drop a
+          # declaration made before the last commit in silence.
+          fetch-depth: 0
 
       - name: Set up toolchain
         uses: ./.github/actions/setup-toolchain
         with:
           # build-test is the one writer for the shared "nix" prefix.
           save-nix-store: 'false'
+
+      - name: Install the lockfile parser
+        run: >-
+          nix develop .#ci --command
+          pnpm install --frozen-lockfile --ignore-scripts
 
       - name: Check dependency provenance
         run: nix develop .#ci --command scripts/check-provenance.mjs
@@ -269,7 +331,8 @@ jobs:
     # The single required check. Wire a new gating job in by adding it to
     # `needs` AND to the verdict step, so a job that silently never ran can
     # never read as green.
-    needs: [build-test, static-checks, e2e-smoke, provenance]
+    needs:
+      [build-test, static-checks, e2e-smoke, dependency-changes, provenance]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -279,6 +342,8 @@ jobs:
           BUILD_TEST: ${{ needs.build-test.result }}
           STATIC_CHECKS: ${{ needs.static-checks.result }}
           E2E_SMOKE: ${{ needs.e2e-smoke.result }}
+          DEPENDENCY_CHANGES: ${{ needs.dependency-changes.result }}
+          LOCKFILE_CHANGED: ${{ needs.dependency-changes.outputs.lockfile }}
           PROVENANCE: ${{ needs.provenance.result }}
         run: |
           verdict=0
@@ -300,8 +365,20 @@ jobs:
             echo "FAILED  e2e-smoke: $E2E_SMOKE"
             verdict=1
           fi
+          if [ "$DEPENDENCY_CHANGES" = "success" ]; then
+            echo "ok      dependency-changes"
+          else
+            echo "FAILED  dependency-changes: $DEPENDENCY_CHANGES"
+            verdict=1
+          fi
+          # The provenance job is skipped where no dependency file moved.
+          # That skip, and no other, reads as green.
           if [ "$PROVENANCE" = "success" ]; then
             echo "ok      provenance"
+          elif [ "$PROVENANCE" = "skipped" ] \
+            && [ "$DEPENDENCY_CHANGES" = "success" ] \
+            && [ "$LOCKFILE_CHANGED" = "false" ]; then
+            echo "ok      provenance: skipped, no dependency file changed"
           else
             echo "FAILED  provenance: $PROVENANCE"
             verdict=1
