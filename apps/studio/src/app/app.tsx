@@ -6,6 +6,7 @@ import {
   type Severity,
   type Threat,
 } from '@panoptes/model';
+import { FileBar } from '../files/file-bar.js';
 import { Action } from '../store/actions.js';
 import {
   canUndo,
@@ -58,12 +59,15 @@ export function threatCommitter(
 }
 
 /**
- * The studio shell: the diagram and the store's walking skeleton beside it, a
- * control that dispatches a model edit, a control that dispatches an undo and
- * a count read through a selector, plus the panel of composed controls. The
- * panel edits the threat a selector names, and its commit is a dispatch like
- * any other, so the same Undo control takes it back. Issue #38 puts the
- * interactive canvas where the placeholder is, and #40 the rest of the panel.
+ * The studio shell: the file controls, the diagram and the store's walking
+ * skeleton beside it, a control that dispatches a model edit, a control that
+ * dispatches an undo and a count read through a selector, plus the panel of
+ * composed controls. The panel edits the threat a selector names, and its
+ * commit is a dispatch like any other, so the same Undo control takes it
+ * back. Opening, saving, and everything they report live in the file bar
+ * ([the file bridge](../files/README.md)), so this mounts one component
+ * rather than growing a file path of its own. Issue #38 puts the interactive
+ * canvas where the placeholder is, and #40 the rest of the panel.
  */
 export function App() {
   const elements = useModelStore(elementCount);
@@ -87,6 +91,7 @@ export function App() {
     <div className={styles.shell}>
       <main className={styles.diagram}>
         <h1 className={styles.title}>Panoptes</h1>
+        <FileBar />
         <p>
           Elements: <span data-testid="element-count">{elements}</span>
         </p>

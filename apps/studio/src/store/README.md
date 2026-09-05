@@ -22,14 +22,14 @@ and no immutable snapshot to push onto a stack.
 
 - `state.ts` holds `State`, the `FileLifecycle` and `StudioFailure` enums, the
   state a model starts in, and the placeholder model the studio opens on until
-  issue #37 can open a file. The stacks hold whole models: the model's
-  operations return new models sharing everything they did not change, so a
-  snapshot is cheap.
+  a file is opened. The stacks hold whole models: the model's operations return
+  new models sharing everything they did not change, so a snapshot is cheap.
 - `actions.ts` is the `Action` union, an Effect `Data.taggedEnum`. Nine tags
   carry a `@panoptes/model` operation and its arguments; the rest are undo,
-  redo, selection, and the two ends of the file lifecycle. `Saved` names a file
-  as `Opened` does, because a first save is a save-as, and folding both into
-  `file` keeps "this model lives in this file" one fact.
+  redo, selection, the two ends of the file lifecycle, and the two ways the
+  file path refuses. `Saved` names a file as `Opened` does, because a first
+  save is a save-as, and folding both into `file` keeps "this model lives in
+  this file" one fact.
 - `reducer.ts` is the one pure function, beside the private helpers its arms
   share. It is total: an operation the model refuses leaves the present and
   both stacks alone and records the refusal in `lastFailure`, so no dispatch
@@ -45,8 +45,18 @@ Selection and the file lifecycle stay out of the undo stacks, so an undo moves
 the model and leaves the user where they were. A removal clears a selection
 that names the element it removed, so `selection` dangles only where a
 dispatch selected an id the model never held. Being total, the reducer cannot
-refuse `Opened` over unsaved work, so the guard the milestone asks for on
-close belongs in the view (#37).
+refuse `Opened` over unsaved work, so the guard on that, and the one on
+closing the tab, belong in the view ([the file bridge](../files/README.md)).
+
+`FileLifecycle.Opened` carries the file's name and its `RetainedSource`: the
+format it was read as, and the wire document that read produced. The document
+is there because a save merges the model onto it, and what Panoptes does not
+model survives only that way. It rides in the store rather than in a component
+so that one dispatch settles which file the model lives in and what a save
+merges onto, and it stays out of the stacks with the rest of the file: an undo
+moves the model, never the file. The type is derived from the formats
+package's detected-read union, so a document cannot be filed under the wrong
+format and nothing has to assert which codec owns which.
 
 ## What a later slice does
 

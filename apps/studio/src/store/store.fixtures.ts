@@ -11,6 +11,22 @@ import {
   type ThreatId,
 } from '@panoptes/model';
 import { Either } from 'effect';
+import type { RetainedSource } from './state.js';
+
+/**
+ * A file in the native format that retained no document, which is what a
+ * save into a format a model was not read from has to merge onto.
+ */
+export const nativeSource: RetainedSource = {
+  format: 'panoptes-yaml',
+  document: undefined,
+};
+
+/** The same, in the format the studio reads Threat Dragon's files as. */
+export const foreignSource: RetainedSource = {
+  format: 'threat-dragon',
+  document: undefined,
+};
 
 /** Parses a spec's literal string into a branded element id. */
 export const elementId = (value: string): ElementId =>

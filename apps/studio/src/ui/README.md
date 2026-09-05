@@ -36,6 +36,20 @@ where the accent is the background it would be drawn on.
    the panel declares.
 5. Add a spec beside it.
 
+## What is here that is not a control
+
+Two components carry no Radix primitive, because neither takes an edit.
+`FailureNotice` renders `StudioFailure`, whatever produced it, so one region
+shows the model refusing an edit, a codec refusing a file, and the platform
+refusing to hand one over. It words every variant: nothing reaches a person
+as a tag, and a codec's paths are kept because they say which line of a file
+was refused rather than that the file was. `ErrorBoundary` is the last stop
+for a throw from anywhere below it, and is a class because React offers no
+other way to catch one; it holds the only component state in this directory
+for that reason. Both are live regions that stay in the page while they have
+nothing to say, so what arrives in them is announced rather than appearing in
+silence.
+
 ## What a composed control owes
 
 The primitive underneath is not the bar; the component here is. Every control

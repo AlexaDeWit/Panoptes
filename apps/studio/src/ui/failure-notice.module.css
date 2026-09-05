@@ -1,0 +1,26 @@
+.notice:empty {
+  display: none;
+}
+
+.notice {
+  padding: var(--pn-space-3);
+  border: 1px solid var(--pn-colour-border);
+  border-radius: var(--pn-radius);
+  background: var(--pn-colour-surface-raised);
+  color: var(--pn-colour-text);
+}
+
+.headline {
+  margin: 0;
+  font-weight: 600;
+}
+
+/* Every path a codec refused, one to a line, wrapping rather than scrolling
+   sideways: a path into a threat nests eight levels deep and is longer than
+   the panel is wide. */
+.details {
+  margin: var(--pn-space-2) 0 0;
+  padding-left: var(--pn-space-4);
+  color: var(--pn-colour-text-muted);
+  overflow-wrap: anywhere;
+}

@@ -1,4 +1,9 @@
-import type { FormatName } from '@panoptes/formats';
+import type {
+  DetectedRead,
+  DetectionFailure,
+  FormatName,
+  ReadFailure,
+} from '@panoptes/formats';
 import {
   emptyModel,
   parseModel,
@@ -8,15 +13,38 @@ import {
 } from '@panoptes/model';
 import { Data, Either } from 'effect';
 
+type Retained<Read> = Read extends {
+  readonly format: FormatName;
+  readonly source: unknown;
+}
+  ? { readonly format: Read['format']; readonly document: Read['source'] }
+  : never;
+
+/**
+ * Where a save writes from: a format, and either the wire document a read of
+ * that format retained or nothing at all. Given a document the save merges
+ * onto it, so what Panoptes does not model survives the round trip; given
+ * none the codec projects the model, which is what a save into a format the
+ * model was not read from has to do.
+ *
+ * The paired half is derived from the formats package's own detected-read
+ * union, so a document cannot be filed under the wrong format and
+ * `codec.write(model, document)` type-checks after one narrowing. The
+ * document is plain data, as everything in the state is.
+ */
+export type RetainedSource =
+  | Retained<DetectedRead>
+  | { readonly format: FormatName; readonly document: undefined };
+
 /**
  * Where the studio stands with a file. `NoFile` is the studio before
- * anything is opened, and `Opened` names the file a save writes back to.
- * The open and save paths are issue #37's, and this grows with them; it
- * carries the least a save needs until then.
+ * anything is opened, and `Opened` names the file a save writes back to,
+ * with the source a merge writes onto. The file is not in the undo stacks:
+ * an undo moves the model and leaves the file it lives in alone.
  */
 export type FileLifecycle = Data.TaggedEnum<{
   NoFile: {};
-  Opened: { readonly name: string; readonly format: FormatName };
+  Opened: { readonly name: string; readonly source: RetainedSource };
 }>;
 
 /**
@@ -26,13 +54,22 @@ export type FileLifecycle = Data.TaggedEnum<{
 export const FileLifecycle = Data.taggedEnum<FileLifecycle>();
 
 /**
- * Why the studio could not do what a view asked of it. One member today, the
- * model refusing an operation. Issue #37's read and write failures join it
- * as members of this union rather than as a second field beside it, so a
- * view renders one value however the refusal arose.
+ * Why the studio could not do what a view asked of it, as one union rather
+ * than a field per kind, so a view renders one value however the refusal
+ * arose. `Operation` is the model refusing an edit. `Read` is a file that
+ * arrived whole and that no codec could make a model of, carrying the
+ * codec's own failure so the view renders its paths rather than a sentence
+ * the store invented. `File` is the file itself never arriving or
+ * never being written, which is the platform's answer and no codec's, so it
+ * carries what the platform said and no path into a document.
  */
 export type StudioFailure = Data.TaggedEnum<{
   Operation: { readonly failure: OperationFailure };
+  Read: {
+    readonly name: string;
+    readonly failure: ReadFailure | DetectionFailure;
+  };
+  File: { readonly reason: string };
 }>;
 
 /**
@@ -66,7 +103,7 @@ const placeholderDocument = {
   metadata: {
     title: 'Placeholder model',
     owner: '',
-    description: 'Stands in for a file until the studio can open one.',
+    description: 'Stands in until a file is opened.',
     contributors: [],
   },
   diagrams: [
@@ -116,11 +153,10 @@ const placeholderDocument = {
 };
 
 /**
- * The model the studio starts on, so the walking skeleton has a diagram and a
- * threat to edit before anything can be opened. Issue #37 replaces it with
- * the model a file carries, dispatched as an `Opened` action. It comes
- * through parseModel, and folds to the model package's empty model rather
- * than throwing if the literal ever stops parsing.
+ * The model the studio starts on, so there is a diagram and a threat to edit
+ * before a file is opened. Opening one replaces it with the model that file
+ * carries. It comes through parseModel, and folds to the model package's
+ * empty model rather than throwing if the literal ever stops parsing.
  */
 export const placeholderModel: Model = Either.getOrElse(
   parseModel(placeholderDocument),

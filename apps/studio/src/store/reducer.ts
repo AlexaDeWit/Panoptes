@@ -52,14 +52,23 @@ export function reduce(state: State, action: Action): State {
     Undo: () => undone(state),
     Redo: () => redone(state),
     Select: ({ elementId }) => ({ ...state, selection: elementId }),
-    Opened: ({ model, name, format }) => ({
+    Opened: ({ model, name, source }) => ({
       ...initialState(model),
-      file: FileLifecycle.Opened({ name, format }),
+      file: FileLifecycle.Opened({ name, source }),
     }),
-    Saved: ({ name, format }) => ({
+    Saved: ({ name, source }) => ({
       ...state,
       saved: state.present,
-      file: FileLifecycle.Opened({ name, format }),
+      file: FileLifecycle.Opened({ name, source }),
+      lastFailure: undefined,
+    }),
+    ReadFailed: ({ name, failure }) => ({
+      ...state,
+      lastFailure: StudioFailure.Read({ name, failure }),
+    }),
+    FileRefused: ({ reason }) => ({
+      ...state,
+      lastFailure: StudioFailure.File({ reason }),
     }),
   });
 }
