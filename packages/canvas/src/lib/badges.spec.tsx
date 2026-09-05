@@ -1,4 +1,5 @@
-import { elementIdSchema, severitySchema } from '@panoptes/model';
+import { severitySchema } from '@panoptes/model';
+import { elementId, parsedFixture } from '@panoptes/model/fixtures';
 import { renderToStaticMarkup } from 'react-dom/server';
 import {
   badgeExtent,
@@ -8,10 +9,8 @@ import {
   ThreatBadgeGlyph,
   type ThreatBadge,
 } from './badges.js';
-import { everyGlyphModel, parsedFixture } from './canvas.fixtures.js';
+import { everyGlyphModel } from './canvas.fixtures.js';
 import { canvasClassNames, severityToneClass } from './stylesheet.js';
-
-const id = (value: string) => elementIdSchema.parse(value);
 
 const badges = badgesByElement(everyGlyphModel);
 
@@ -60,7 +59,7 @@ const modelWith = (threats: unknown[]) =>
   });
 
 const badgeOfOne = (threats: unknown[]): ThreatBadge | undefined =>
-  badgesByElement(modelWith(threats)).get(id('el-one'));
+  badgesByElement(modelWith(threats)).get(elementId('el-one'));
 
 describe('severityRank', () => {
   it('ranks every severity the model declares and no other', () => {
@@ -144,7 +143,7 @@ describe('badgesByElement', () => {
   });
 
   it('badges a flow as it badges any other element', () => {
-    expect(badges.get(id('el-request'))).toEqual({
+    expect(badges.get(elementId('el-request'))).toEqual({
       count: 1,
       severity: 'low',
       secondary: 0,

@@ -1,4 +1,5 @@
-import { parsedFixture, validModelFixture } from './fixtures.js';
+import { parsedFixture } from './fixtures.js';
+import { validModelFixture } from './lib/fixtures.js';
 
 describe('parsedFixture', () => {
   it('returns the model a fixture parses to', () => {

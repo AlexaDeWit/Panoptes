@@ -1,5 +1,5 @@
 import type { Model } from '@panoptes/model';
-import { elementId, parsedFixture } from '../store/store.fixtures.js';
+import { elementId, parsedFixture } from '@panoptes/model/fixtures';
 
 /** The actor the fixture threat is attached to. */
 export const readerElement = elementId('actor-reader');

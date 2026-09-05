@@ -12,6 +12,7 @@
     "forceConsistentCasingInFileNames": true
   },
   "include": [
+    "src/fixtures.ts",
     "src/lib/fixtures.ts",
     "src/lib/*.fixtures.ts",
     "src/**/*.test.ts",

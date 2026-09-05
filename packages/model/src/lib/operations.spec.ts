@@ -1,11 +1,7 @@
 import { Either } from 'effect';
+import { diagramId, elementId, parsedFixture } from '../fixtures.js';
 import { elementSchema, type Element, type Flow } from './elements.js';
-import {
-  diagramId,
-  elementId,
-  parsedFixture,
-  validModelFixture,
-} from './fixtures.js';
+import { validModelFixture } from './fixtures.js';
 import { OperationFailure } from './operation-failures.js';
 import {
   addElement,

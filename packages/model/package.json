@@ -11,6 +11,11 @@
       "import": "./src/index.ts",
       "default": "./src/index.ts"
     },
+    "./fixtures": {
+      "types": "./src/fixtures.ts",
+      "import": "./src/fixtures.ts",
+      "default": "./src/fixtures.ts"
+    },
     "./package.json": "./package.json"
   },
   "dependencies": {

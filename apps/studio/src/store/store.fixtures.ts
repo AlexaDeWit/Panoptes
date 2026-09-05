@@ -1,16 +1,11 @@
-import {
-  diagramIdSchema,
-  elementIdSchema,
-  parseModel,
-  threatIdSchema,
-  type DiagramId,
-  type Element,
-  type ElementId,
-  type Model,
-  type Threat,
-  type ThreatId,
-} from '@panoptes/model';
 import { threatDragonCodec } from '@panoptes/formats';
+import type { Element, Model, Threat } from '@panoptes/model';
+import {
+  diagramId,
+  elementId,
+  parsedFixture,
+  threatId,
+} from '@panoptes/model/fixtures';
 import { Either } from 'effect';
 import type { RetainedSource } from './state.js';
 
@@ -76,18 +71,6 @@ export const foreignSource: RetainedSource = {
     () => new Error('The Threat Dragon fixture no longer reads.'),
   ).source,
 };
-
-/** Parses a spec's literal string into a branded element id. */
-export const elementId = (value: string): ElementId =>
-  elementIdSchema.parse(value);
-
-/** Parses a spec's literal string into a branded diagram id. */
-export const diagramId = (value: string): DiagramId =>
-  diagramIdSchema.parse(value);
-
-/** Parses a spec's literal string into a branded threat id. */
-export const threatId = (value: string): ThreatId =>
-  threatIdSchema.parse(value);
 
 /** The diagram every fixture element belongs to. */
 export const mainDiagram = diagramId('diagram-main');
@@ -166,23 +149,6 @@ const document = {
   mitigations: [],
   assumptions: [],
 };
-
-/**
- * The parsed form of a fixture, for a spec that needs a Model. Throws where
- * the fixture stops parsing: a fixture that no longer parses is a broken
- * suite rather than a case under test, and the message names what it lost.
- */
-export function parsedFixture(input: unknown): Model {
-  return Either.getOrThrowWith(
-    parseModel(input),
-    (failure) =>
-      new Error(
-        `Fixture does not parse: ${failure.issues
-          .map((issue) => `${issue.path.join('.')}: ${issue.message}`)
-          .join('; ')}`,
-      ),
-  );
-}
 
 /**
  * The model the store specs edit: one diagram of three elements and a

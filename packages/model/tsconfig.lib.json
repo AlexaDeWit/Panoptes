@@ -10,11 +10,15 @@
   },
   "include": ["src/**/*.ts"],
   "references": [],
+  // The fixtures entry and the modules behind it stay out of the build:
+  // consumers reach `@panoptes/model/fixtures` at its source through the
+  // package's exports, and no fixture belongs in what a release ships.
   "exclude": [
     "vite.config.ts",
     "vite.config.mts",
     "vitest.config.ts",
     "vitest.config.mts",
+    "src/fixtures.ts",
     "src/lib/fixtures.ts",
     "src/lib/*.fixtures.ts",
     "src/**/*.test.ts",
