@@ -116,18 +116,36 @@ fi
 version="$(node -p 'require("./package.json").version')"
 readonly version
 
-# deno records the entry file's modification time in the virtual file system
-# it embeds, so an executable would otherwise carry the minute its bundle was
-# written and two machines building one commit would differ by those bytes.
-# Compile a copy stamped to the epoch instead. Anything else deno is told to
-# embed has to be staged here too, for the same reason (#106).
-readonly entry="${scratch}/main.js"
+# deno records the entry file's name, modification time and executable bit in
+# the virtual file system it embeds, so an executable would otherwise carry
+# the minute its bundle was written and whatever mode the checkout's file
+# system reported for it. That is the one host-dependent input left at these
+# pins, and it is worth a dozen bytes (#106). Anything else deno is told to
+# embed has to be stamped here too, for the same reason.
+stamp_entry() {
+  chmod 644 -- "$1"
+  touch -m -d '@0' -- "$1"
+}
+
+readonly entry="${scratch}/first/main.js"
+readonly repeat_entry="${scratch}/repeat/main.js"
+mkdir -p -- "${scratch}/first" "${scratch}/repeat"
 cp -- "${bundle}" "${entry}"
-touch -m -d '@0' -- "${entry}"
+cp -- "${bundle}" "${repeat_entry}"
+
+# The repeat compile reads a copy carrying another time and mode on purpose,
+# so the comparison below reds where a stamp is dropped instead of agreeing
+# with itself.
+chmod 700 -- "${repeat_entry}"
+touch -m -d '@1000000000' -- "${repeat_entry}"
+
+stamp_entry "${entry}"
+stamp_entry "${repeat_entry}"
 
 compile_into() {
   local target="$1"
-  local output="$2"
+  local source="$2"
+  local output="$3"
 
   "${unshare_bin}" -rn deno compile \
     --quiet \
@@ -141,7 +159,7 @@ compile_into() {
     --allow-env \
     --target "${target}" \
     --output "${output}" \
-    "${entry}"
+    "${source}"
 }
 
 rm -rf -- "${out_dir}" "${repeat_dir}"
@@ -154,14 +172,14 @@ for target in "${targets[@]}"; do
   esac
 
   echo "compiling ${name}"
-  compile_into "${target}" "${out_dir}/${name}"
-  compile_into "${target}" "${repeat_dir}/${name}"
+  compile_into "${target}" "${entry}" "${out_dir}/${name}"
+  compile_into "${target}" "${repeat_entry}" "${repeat_dir}/${name}"
 
   first="$(sha256sum <"${out_dir}/${name}" | cut -d ' ' -f 1)"
   second="$(sha256sum <"${repeat_dir}/${name}" | cut -d ' ' -f 1)"
   if [ "${first}" != "${second}" ]; then
-    echo "${name} is not reproducible: two compiles of one bundle gave" >&2
-    echo "${first} and ${second}." >&2
+    echo "${name} is not reproducible: one bundle staged twice, once with" >&2
+    echo "another time and mode, gave ${first} and ${second}." >&2
     exit 1
   fi
 done

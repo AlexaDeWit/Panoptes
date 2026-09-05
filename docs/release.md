@@ -249,15 +249,28 @@ replace that:
   `--cached-only`, and refuses to run where no network namespace can be made.
   The workflow sets `DENO_NO_UPDATE_CHECK` and `DENO_NO_PROMPT`. A runtime
   that is not pinned therefore fails the compile; it cannot become a download.
-- **The output is a function of the bundle alone.** The script compiles every
-  target into two directories and fails unless the two are byte for byte the
-  same, on a pull request as well as on a release. That catches what varies
-  within one machine. What varied between two was the entry file's
-  modification time, which `deno compile` records in the virtual file system
-  it embeds, so the script compiles a copy of the bundle stamped to the epoch
-  (#106). Nothing else about the host reaches the output: the entry's path is
-  not embedded, and the metadata deno writes beside it names no user, host or
-  clock.
+- **The output is a function of the bundle's bytes and the staged name, time
+  and mode.** `deno compile` records the entry file's name, modification time
+  and executable bit in the virtual file system it embeds, so the script
+  copies the bundle to a fixed `main.js`, stamps it to the epoch and to mode
+  644, and compiles that. It then compiles every target into two directories
+  and fails unless the two are byte for byte the same, on a pull request as
+  well as on a release, staging the repeat copy with another time and mode on
+  purpose so that comparison reds where a stamp is dropped instead of agreeing
+  with itself.
+
+The staged entry is the one host-dependent input left at these pins, and it is
+worth a dozen bytes rather than five thousand: the time is ASCII digits inside
+one JSON record, so two machines building on the same day give executables of
+equal size differing in the last few digits (#106). The pair of sizes the issue
+records, 5,077 bytes apart, is not reproducible from one bundle and traces to
+two builds of two different bundles on the release branch. Nothing else about
+the host is embedded: not the entry's directory, and not a user, host or clock,
+none of which appear in the metadata deno writes beside the file system. The
+one host property that metadata does carry is `vfs_case_sensitivity`, deno's
+probe of the filesystem it compiled on, which every Linux checkout reports as
+`s`. A case-insensitive mount would change it, which is a residual worth
+knowing rather than one the script can stamp away.
 
 **Bumping deno.** The URL version is `pkgs.deno.version`, so a nixpkgs bump
 moves all five URLs while the hashes stay behind, and the build fails on a
@@ -301,8 +314,13 @@ nix develop --command pnpm nx build @panoptes/cli
 nix develop --command scripts/package-cli.sh
 ```
 
-Its last lines are the bundle's SHA-256 and then the `SHA256SUMS` it wrote for
-the executables. Compare the host target's line with the release's
+The default shell is enough: `flake.nix` puts `denortEnv` in both shells, so
+the default one sets the denort pins the script refuses to run without, and
+the `.#ci` its refusal names is the shell CI happens to enter rather than the
+only one that works.
+
+The script's last lines are the bundle's SHA-256 and then the `SHA256SUMS` it
+wrote for the executables. Compare the host target's line with the release's
 `SHA256SUMS`. Every CI run prints the same two things, so a runner build and a
 local build can be compared from the logs alone, without downloading either.
 
