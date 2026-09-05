@@ -8,7 +8,7 @@ synchronizing them.
 ## What it binds to
 
 `threats.ts` holds the selectors and the pure functions the panel is built
-from. `selectedElement` is the element `State.selection` names and
+from. `panelElement` is the element `State.selection` names and
 `attachedThreats` the threats that name it, in register order. A flow is a
 selection like any other: it carries threats, so it opens the panel as a box
 does. Status plays no part in the list, where it decides the badge: the panel
