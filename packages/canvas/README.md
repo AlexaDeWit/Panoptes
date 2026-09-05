@@ -37,8 +37,8 @@ around it cannot drift. A curve is bounded by the convex
 hull of its control points, which holds the curve and a little more, because a
 sharp turn throws a control point outside the box its waypoints span while the
 ink stays inside the hull. `controlPolygon` is the one derivation of those
-points, so the bounds, the placement and the specs that check them read the
-curve alike.
+points, so the bounds, the flow-label search and the specs that check them
+read the curve alike.
 
 Stroke widths are the one thing outside `bounds`, since a stroke straddles the
 line it paints, so a caller sizing a viewBox leaves whitespace for them. It

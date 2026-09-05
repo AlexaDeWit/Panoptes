@@ -500,6 +500,17 @@ const dividerBeside = (
 const dividerNameX = (layout: CanvasLayout): number =>
   nodeTextPlacement(layout.nodes[0]).at.x;
 
+const dividerReversed = [
+  { x: 0, y: 400 },
+  { x: 60, y: 200 },
+  { x: 0, y: 0 },
+];
+
+const coveringBothSides = [
+  boxAt('el-block', 100, 150),
+  boxAt('el-other', -80, 150),
+];
+
 describe("a curve boundary's name beside what the diagram already draws", () => {
   it('stays on the convex side where nothing is drawn there', () => {
     const layout = dividerBeside([]);
@@ -528,10 +539,7 @@ describe("a curve boundary's name beside what the diagram already draws", () => 
   });
 
   it('walks to a further bend where both sides of the middle are covered', () => {
-    const boxed = dividerBeside([
-      boxAt('el-block', 100, 150),
-      boxAt('el-other', -80, 150),
-    ]);
+    const boxed = dividerBeside(coveringBothSides);
     const [curve] = boxed.nodes;
     const at = nodeTextPlacement(curve).at;
     expect(distanceBetween(at, firstWaypointOf(curve))).toBeLessThan(
@@ -539,6 +547,22 @@ describe("a curve boundary's name beside what the diagram already draws", () => 
     );
     expect(curveNameOverlaps(boxed)).toEqual([]);
     expect(nameStruckBy(curve)).toEqual([]);
+  });
+
+  it('walks to the same place on a run reversed, not to the same index', () => {
+    const forwards = curveBeside(
+      dividerWaypoints,
+      dividerName,
+      coveringBothSides,
+    );
+    const backwards = curveBeside(
+      dividerReversed,
+      dividerName,
+      coveringBothSides,
+    );
+    expect(nodeTextPlacement(backwards.nodes[0]).at).toEqual(
+      nodeTextPlacement(forwards.nodes[0]).at,
+    );
   });
 
   it('keeps the convex side of the middle where no bend is clear', () => {
