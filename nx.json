@@ -67,8 +67,13 @@
   ],
   "analytics": false,
   "targetDefaults": {
+    // ^test because packages/model writes test-data/ecluse.model.json as a
+    // file snapshot and the formats, canvas and render suites read it, so a
+    // run-many could read it mid-write (CODING.md, Build targets). apps/cli
+    // overrides this and drops ^test: CI runs its suite a second time with
+    // --skip-nx-cache, where ^test would rerun every dependency suite.
     "test": {
-      "dependsOn": ["^build"]
+      "dependsOn": ["^build", "^test"]
     },
     "lint": {
       "executor": "nx:run-commands",
