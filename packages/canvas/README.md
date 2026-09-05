@@ -82,10 +82,15 @@ flows can meet at one midpoint.
 
 **Badges count open threats only**, on the model's own definition of open, so
 a badge, the register and the CLI count one set of threats. The primary badge
-carries the number of open threats attached to the element, coloured by the
-worst severity assessed among them. The secondary badge, smaller and neutral,
-carries how many of those are undecided, and appears only where that says
-something the primary does not: an element whose open threats are all
+carries the number of open threats attached to the element over a mark for
+the worst severity assessed among them, a letter per severity and a question
+mark where none has been assessed, and it is coloured by that same severity.
+The mark is what the badge says about severity; the tone repeats it, so the
+picture reads with the colour ignored and the interactive canvas and the
+headless render say the same thing. The secondary badge, smaller, neutral and
+unmarked, since every threat it counts is undecided, carries how many of the
+open threats those are, and appears only where that says something the
+primary does not: an element whose open threats are all
 undecided shows the primary alone, neutral. An element with no open threat
 shows no badge.
 
@@ -247,9 +252,18 @@ type `source`, so the canvas that mounts them passes
 `toReactFlowNodes` carries the layout's nodes over with their position and
 extent set explicitly, so React Flow measures nothing; a boundary curve rides
 as a node too, sized to the box its waypoints span, so it drags and selects as
-one thing. Flows are left out of that conversion on purpose: a React Flow edge
-runs between two nodes, and a model flow may end at a free position that is no
-node, so how a free end rides is the interactive canvas's decision.
+one thing. `toReactFlowEdges` carries the flows over the same way, each end
+naming the element it attaches to and the handle side the layout resolved.
+
+A React Flow edge runs between two nodes and a model flow may end at a free
+position that is no element, so `freeEndNodes` gives such an end a node of its
+own at that position, named by `flowEndNodeId` and drawn by
+`CanvasFreeEndBody`, which draws nothing but the one handle React Flow needs
+to resolve where the edge ends. The flow's own glyph carries the line all the
+way to the free position, so the anchor lays down no ink the headless render
+does not. It is not draggable, not selectable, not focusable, and hidden from
+assistive technology: it is a place for an edge to end rather than a thing on
+the diagram.
 
 `CanvasEdgeBody` draws a flow from the geometry the layout resolved, not from
 the `sourceX`, `sourceY`, `targetX` and `targetY` React Flow measures, which

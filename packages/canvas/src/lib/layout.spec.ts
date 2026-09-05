@@ -3,7 +3,7 @@ import { badgeExtent } from './badges.js';
 import { everyGlyphModel, parsedFixture } from './canvas.fixtures.js';
 import { handlePositions } from './handles.js';
 import { layoutDiagram, type CanvasEdge, type CanvasNode } from './layout.js';
-import { canvasNodeTypes } from './react-flow.js';
+import { canvasNodeTypes, freeEndNodeKind } from './react-flow.js';
 import { boundaryStrokeWidth } from './stylesheet.js';
 
 const id = (value: string) => elementIdSchema.parse(value);
@@ -122,7 +122,9 @@ const curveBoundary = (waypoints: unknown[]): CanvasNode =>
 describe('layoutDiagram', () => {
   it('lays out a node of every kind the canvas draws as a box', () => {
     expect(new Set(layout.nodes.map((node) => node.kind))).toEqual(
-      new Set<string>(Object.keys(canvasNodeTypes)),
+      new Set<string>(
+        Object.keys(canvasNodeTypes).filter((kind) => kind !== freeEndNodeKind),
+      ),
     );
     expect(layout.edges).toHaveLength(3);
   });
@@ -201,7 +203,7 @@ describe('layoutDiagram', () => {
   });
 
   it('bounds everything it draws', () => {
-    expect(layout.bounds).toEqual({ x: 0, y: -11, width: 651, height: 421 });
+    expect(layout.bounds).toEqual({ x: 0, y: -13, width: 653, height: 423 });
   });
 
   it('reaches past a node box for the badge hanging off its corner', () => {

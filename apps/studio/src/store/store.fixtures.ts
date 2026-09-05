@@ -168,20 +168,28 @@ const document = {
 };
 
 /**
+ * The parsed form of a fixture, for a spec that needs a Model. Throws where
+ * the fixture stops parsing: a fixture that no longer parses is a broken
+ * suite rather than a case under test, and the message names what it lost.
+ */
+export function parsedFixture(input: unknown): Model {
+  return Either.getOrThrowWith(
+    parseModel(input),
+    (failure) =>
+      new Error(
+        `Fixture does not parse: ${failure.issues
+          .map((issue) => `${issue.path.join('.')}: ${issue.message}`)
+          .join('; ')}`,
+      ),
+  );
+}
+
+/**
  * The model the store specs edit: one diagram of three elements and a
  * register of one threat, small enough that a spec names every id it
- * touches. Throws where the literal stops parsing, a broken fixture being a
- * broken suite rather than a case under test.
+ * touches.
  */
-export const sampleModel: Model = Either.getOrThrowWith(
-  parseModel(document),
-  (failure) =>
-    new Error(
-      `Fixture does not parse: ${failure.issues
-        .map((issue) => `${issue.path.join('.')}: ${issue.message}`)
-        .join('; ')}`,
-    ),
-);
+export const sampleModel: Model = parsedFixture(document);
 
 /** The fixture threat, as the register holds it. */
 export const sampleThreat: Threat = sampleModel.threats[0];

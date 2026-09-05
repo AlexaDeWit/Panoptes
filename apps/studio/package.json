@@ -6,6 +6,7 @@
     "@panoptes/canvas": "workspace:*",
     "@panoptes/formats": "workspace:*",
     "@panoptes/model": "workspace:*",
+    "@xyflow/react": "catalog:",
     "effect": "catalog:",
     "radix-ui": "catalog:",
     "react": "catalog:",

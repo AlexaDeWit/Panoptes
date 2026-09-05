@@ -8,7 +8,12 @@ import {
   canvasEdgeTypes,
   canvasNodeTypes,
   CanvasEdgeBody,
+  CanvasFreeEndBody,
   CanvasNodeBody,
+  flowEndNodeId,
+  freeEndNodeKind,
+  freeEndNodes,
+  toReactFlowEdges,
   toReactFlowNodes,
   type CanvasFlowEdge,
   type CanvasFlowNode,
@@ -64,9 +69,12 @@ const bodyMarkup = (node: CanvasNode): string =>
   );
 
 describe('canvasNodeTypes', () => {
-  it('names one node type for every kind the layout produces', () => {
+  it('names one node type for every kind the layout produces, and the free-end anchor', () => {
     expect(new Set(Object.keys(canvasNodeTypes))).toEqual(
-      new Set<string>(layout.nodes.map((node) => node.kind)),
+      new Set<string>([
+        ...layout.nodes.map((node) => node.kind),
+        freeEndNodeKind,
+      ]),
     );
   });
 });
@@ -130,5 +138,60 @@ describe('toReactFlowNodes', () => {
 
   it('carries one React Flow node per laid-out node, flows excluded', () => {
     expect(toReactFlowNodes(layout)).toHaveLength(layout.nodes.length);
+  });
+});
+
+const looseFlow = layout.edges.find((edge) => edge.sourceElement === undefined);
+
+describe('CanvasFreeEndBody', () => {
+  it('draws the one handle an edge end resolves from, and nothing else', () => {
+    const markup = renderToStaticMarkup(
+      <ReactFlowProvider>
+        <CanvasFreeEndBody />
+      </ReactFlowProvider>,
+    );
+    expect(markup).toContain('react-flow__handle');
+    expect(markup).not.toContain('<svg');
+  });
+});
+
+describe('toReactFlowEdges', () => {
+  it('carries one edge per drawn flow, ends named by the layout', () => {
+    const edges = toReactFlowEdges(layout);
+    expect(edges).toHaveLength(layout.edges.length);
+    expect(edges.find((edge) => edge.id === id('el-request'))).toMatchObject({
+      type: 'flow',
+      source: id('el-client'),
+      target: id('el-api'),
+      data: { edge: layout.edges[0] },
+    });
+  });
+
+  it('ends a flow with a free end on the anchor of that end', () => {
+    const converted = toReactFlowEdges(layout).find(
+      (edge) => edge.id === looseFlow?.id,
+    );
+    expect(looseFlow).toBeDefined();
+    expect(converted?.source).toBe(flowEndNodeId(id('el-probe'), 'source'));
+  });
+});
+
+describe('freeEndNodes', () => {
+  it('anchors every free end and nothing else', () => {
+    const free = layout.edges.flatMap((edge) => [
+      ...(edge.sourceElement === undefined ? ['source'] : []),
+      ...(edge.targetElement === undefined ? ['target'] : []),
+    ]);
+    expect(free.length).toBeGreaterThan(0);
+    expect(freeEndNodes(layout)).toHaveLength(free.length);
+  });
+
+  it('places an anchor where the layout put the free end, out of reach', () => {
+    const anchor = freeEndNodes(layout)[0];
+    expect(anchor.position).toEqual(looseFlow?.source);
+    expect(anchor.type).toBe(freeEndNodeKind);
+    expect(anchor.selectable).toBe(false);
+    expect(anchor.draggable).toBe(false);
+    expect(anchor.focusable).toBe(false);
   });
 });

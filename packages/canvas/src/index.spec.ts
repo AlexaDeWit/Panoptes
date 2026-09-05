@@ -21,6 +21,7 @@ describe('the package barrel', () => {
       'badgeExtent',
       'badgeBox',
       'severityRank',
+      'severityMark',
       'ThreatBadgeGlyph',
       'handleSides',
       'centreOf',
@@ -59,7 +60,11 @@ describe('the package barrel', () => {
       'CanvasNodeBody',
       'CanvasEdgeBody',
       'toReactFlowNodes',
-      'PanoptesCanvas',
+      'toReactFlowEdges',
+      'freeEndNodes',
+      'flowEndNodeId',
+      'freeEndNodeKind',
+      'CanvasFreeEndBody',
     ];
     expect(new Set(promised).size).toBe(promised.length);
     expect(promised.filter((name) => !exported.has(name))).toEqual([]);

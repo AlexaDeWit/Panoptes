@@ -1,15 +1,20 @@
 import { useStore } from 'zustand';
 import { createStore } from 'zustand/vanilla';
 import type { Action } from './actions.js';
+import { developmentModel } from './development-model.js';
 import { reduce } from './reducer.js';
 import { initialState, placeholderModel, type State } from './state.js';
 
 /**
  * The studio's one store. It is a vanilla store rather than a React one, so
  * a spec drives it without rendering anything and {@link useModelStore} is
- * the only part that needs a component.
+ * the only part that needs a component. It opens on the placeholder model,
+ * or on the one a development session named, which is how the browser suite
+ * gets a real model on screen before issue #37 lands the file dialogs.
  */
-export const modelStore = createStore(() => initialState(placeholderModel));
+export const modelStore = createStore(() =>
+  initialState(developmentModel() ?? placeholderModel),
+);
 
 /**
  * Applies `action` through {@link reduce}, the one way the state moves outside

@@ -1,7 +1,7 @@
 // Root-defined vitest configuration. A leaf project's vitest.config.mts is one
 // line: `export default nodeTest(import.meta.dirname)`. Deviations from the
 // shared shape belong here, behind a parameter, not in leaf configs.
-import { defineConfig } from 'vitest/config';
+import { coverageConfigDefaults, defineConfig } from 'vitest/config';
 import { readFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { versionDefine } from './workspace-version.mts';
@@ -37,6 +37,10 @@ export const sharedTest = (
     provider: 'v8' as const,
     // lcov for the Codecov upload, text for the terminal.
     reporter: ['text', 'lcov'],
+    // A fixture is a spec's input rather than code under test: a model
+    // literal no assertion reads is not a coverage hole, and the parse it
+    // goes through is exercised by every spec that reads the fixture.
+    exclude: [...coverageConfigDefaults.exclude, '**/*.fixtures.ts'],
   },
 });
 

@@ -23,6 +23,7 @@ export const canvasClassNames = {
   badgePrimary: 'pn-badge-primary',
   badgeSecondary: 'pn-badge-secondary',
   badgeCount: 'pn-badge-count',
+  badgeMark: 'pn-badge-mark',
   toneCritical: 'pn-tone-critical',
   toneHigh: 'pn-tone-high',
   toneMedium: 'pn-tone-medium',
@@ -79,6 +80,8 @@ const text = wrappedTextStyles;
 const badgeFontSize = 11;
 
 const secondaryBadgeFontSize = 9;
+
+const badgeMarkFontSize = 9;
 
 const groundColour = '#ffffff';
 
@@ -166,6 +169,14 @@ export const canvasStylesheet = `.${name.element} {
 }
 .${name.badgeSecondary} .${name.badgeCount} {
   font-size: ${secondaryBadgeFontSize}px;
+}
+.${name.badgeMark} {
+  fill: ${groundColour};
+  stroke: none;
+  font-size: ${badgeMarkFontSize}px;
+  font-weight: 700;
+  text-anchor: middle;
+  dominant-baseline: central;
 }
 .${name.toneCritical} {
   fill: #7f1d1d;

@@ -657,18 +657,29 @@ describe('the every-glyph label beside the Order API process', () => {
   const submitOrder = labelBoxes(layout).filter((label) =>
     label.of.startsWith('"Submit order"'),
   );
+  const boxNamed = (of: string): Box => {
+    const [found] = submitOrder.filter((label) => label.of === of);
+    return found.box;
+  };
+
+  it('draws a name and a badge for that flow, and nothing else', () => {
+    expect(orderApi.name).toBe('Order API');
+    expect(submitOrder.map((label) => label.of)).toEqual([
+      '"Submit order"',
+      '"Submit order" badge',
+    ]);
+  });
 
   it('takes the corner of its box that the drawn circle leaves clear', () => {
-    expect(orderApi.name).toBe('Order API');
-    expect(submitOrder).toHaveLength(2);
-    expect(
-      submitOrder.filter((label) => boxesOverlap(label.box, boxOf(orderApi))),
-    ).toHaveLength(2);
-    expect(
-      submitOrder.filter((label) =>
-        boxMeetsCircle(label.box, circleOf(orderApi)),
-      ),
-    ).toEqual([]);
+    const name = boxNamed('"Submit order"');
+    expect(boxesOverlap(name, boxOf(orderApi))).toBe(true);
+    expect(boxMeetsCircle(name, circleOf(orderApi))).toBe(false);
+  });
+
+  it('hangs the badge beside the flow rather than in that corner beside the name', () => {
+    const badge = boxNamed('"Submit order" badge');
+    expect(boxesOverlap(badge, boxOf(orderApi))).toBe(false);
+    expect(boxMeetsCircle(badge, circleOf(orderApi))).toBe(false);
   });
 });
 

@@ -1,0 +1,55 @@
+.canvas {
+  height: 60vh;
+  min-height: 20rem;
+  border: 1px solid var(--pn-colour-border);
+  border-radius: var(--pn-radius);
+  background: var(--pn-colour-surface);
+}
+
+/* React Flow names its own parts with global classes, so the studio reaches
+   them through :global() from the container rather than by hanging a class of
+   its own on every node and every flow. */
+
+/* The focus indicator is the app's own token, on the element the browser put
+   focus on. Selection is drawn separately below, so an element that is both
+   focused and selected shows both. */
+.canvas :global(.react-flow__node):focus-visible,
+.canvas :global(.react-flow__edge):focus-visible {
+  outline: var(--pn-focus-ring);
+  outline-offset: var(--pn-focus-ring-offset);
+}
+
+/* Selection is a dashed frame around the node: a border rather than an
+   outline, so it stacks with the focus ring and survives forced colours,
+   which drop a shadow. */
+.canvas :global(.react-flow__node.selected)::after {
+  content: '';
+  position: absolute;
+  inset: calc(-1 * var(--pn-space-2));
+  border: 2px dashed var(--pn-colour-text);
+  border-radius: var(--pn-radius);
+  pointer-events: none;
+}
+
+/* A flow has no box to frame, so a selected one is drawn heavier. */
+.canvas :global(.react-flow__edge.selected .pn-shape) {
+  stroke-width: 4;
+}
+
+/* Connecting is issue #39's, so the handles a flow would attach to are drawn
+   nowhere. Hidden rather than removed: React Flow measures a handle's box to
+   resolve where an edge ends, and a removed one has no box. */
+.canvas :global(.react-flow__handle) {
+  visibility: hidden;
+}
+
+/* React Flow's own attribution, restyled to the app's tokens because the
+   colour it ships is below the contrast the studio's axe run demands. The
+   attribution itself stays. */
+.canvas :global(.react-flow__attribution) {
+  background: var(--pn-colour-surface);
+}
+
+.canvas :global(.react-flow__attribution) a {
+  color: var(--pn-colour-text-muted);
+}
