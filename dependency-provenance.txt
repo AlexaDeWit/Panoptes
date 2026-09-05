@@ -16,6 +16,7 @@
 @axe-core/playwright https://github.com/dequelabs/axe-core-npm
 @babel/core https://github.com/babel/babel
 @babel/preset-react https://github.com/babel/babel
+@myriaddreamin/typst-ts-web-compiler https://github.com/Myriad-Dreamin/typst.ts
 @nx/esbuild https://github.com/nrwl/nx
 @nx/eslint-plugin https://github.com/nrwl/nx
 @nx/js https://github.com/nrwl/nx
