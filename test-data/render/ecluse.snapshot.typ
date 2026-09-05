@@ -13,15 +13,15 @@ align(center + horizon)[
   font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
 }
 .pn-shape {
-  fill: #ffffff;
-  stroke: #1f2937;
+  fill: #FAF8F5;
+  stroke: #3E3A35;
   stroke-width: 1.5;
 }
 .pn-actor {
-  fill: #eef2ff;
+  fill: #EAEFF6;
 }
 .pn-process {
-  fill: #f0fdf4;
+  fill: #EFF3E8;
 }
 .pn-store {
   fill: none;
@@ -30,7 +30,7 @@ align(center + horizon)[
 .pn-boundary-box,
 .pn-boundary-curve {
   fill: none;
-  stroke: #6b7280;
+  stroke: #706B62;
   stroke-width: 2;
   stroke-dasharray: 8 6;
 }
@@ -41,14 +41,14 @@ align(center + horizon)[
   stroke-dasharray: 6 4;
 }
 .pn-label {
-  fill: #111827;
+  fill: #3E3A35;
   font-size: 12px;
   font-weight: 500;
   text-anchor: middle;
   dominant-baseline: central;
 }
 .pn-note {
-  fill: #374151;
+  fill: #706B62;
   font-size: 12px;
   text-anchor: middle;
   dominant-baseline: central;
@@ -57,25 +57,25 @@ align(center + horizon)[
   fill: none;
 }
 .pn-flow-arrow {
-  fill: #1f2937;
+  fill: #3E3A35;
   stroke: none;
 }
 .pn-flow-label {
-  fill: #374151;
+  fill: #706B62;
   font-size: 11px;
   text-anchor: middle;
   dominant-baseline: central;
   paint-order: stroke;
-  stroke: #ffffff;
+  stroke: #F4EFE6;
   stroke-width: 3;
   stroke-linejoin: round;
 }
 .pn-badge {
-  stroke: #ffffff;
+  stroke: #FDFBF7;
   stroke-width: 1.5;
 }
 .pn-badge-count {
-  fill: #ffffff;
+  fill: #FDFBF7;
   stroke: none;
   font-weight: 600;
   text-anchor: middle;
@@ -88,7 +88,7 @@ align(center + horizon)[
   font-size: 9px;
 }
 .pn-badge-mark {
-  fill: #ffffff;
+  fill: #FDFBF7;
   stroke: none;
   font-size: 9px;
   font-weight: 700;
@@ -96,19 +96,19 @@ align(center + horizon)[
   dominant-baseline: central;
 }
 .pn-tone-critical {
-  fill: #7f1d1d;
+  fill: #BA2D0B;
 }
 .pn-tone-high {
-  fill: #b91c1c;
+  fill: #A45611;
 }
 .pn-tone-medium {
-  fill: #b45309;
+  fill: #3A6EA5;
 }
 .pn-tone-low {
-  fill: #1d4ed8;
+  fill: #4A5D23;
 }
 .pn-tone-neutral {
-  fill: #52525b;
+  fill: #757069;
 }
 </style><g transform=\"translate(240, 10)\"><g class=\"pn-element\"><rect class=\"pn-shape pn-boundary-box\" width=\"1180\" height=\"1180\"></rect><text class=\"pn-label\" x=\"590\" y=\"12\"><tspan x=\"590\" dy=\"0\">Operator trust zone (VPC / mesh): access edge enforced here</tspan></text></g></g><g transform=\"translate(-90, 640)\"><g class=\"pn-element\"><rect class=\"pn-shape pn-boundary-box\" width=\"240\" height=\"200\"></rect><text class=\"pn-label\" x=\"120\" y=\"12\"><tspan x=\"120\" dy=\"0\">Public internet (untrusted)</tspan></text></g></g><g transform=\"translate(1452, 755)\"><g class=\"pn-element\"><rect class=\"pn-shape pn-boundary-box\" width=\"240\" height=\"200\"></rect><text class=\"pn-label\" x=\"120\" y=\"12\"><tspan x=\"120\" dy=\"0\">Public internet (untrusted)</tspan></text></g></g><g transform=\"translate(10, 350)\"><g class=\"pn-element\"><rect class=\"pn-shape pn-actor\" width=\"170\" height=\"90\"></rect><text class=\"pn-label\" x=\"85\" y=\"37.5\"><tspan x=\"85\" dy=\"0\">npm client</tspan><tspan x=\"85\" dy=\"15\">(developer / CI)</tspan></text></g></g><g transform=\"translate(-60, 695)\"><g class=\"pn-element\"><rect class=\"pn-shape pn-actor\" width=\"180\" height=\"90\"></rect><text class=\"pn-label\" x=\"90\" y=\"45\"><tspan x=\"90\" dy=\"0\">Public npm registry</tspan></text></g></g><g transform=\"translate(635, 740)\"><g class=\"pn-element\"><rect class=\"pn-shape pn-actor\" width=\"190\" height=\"90\"></rect><text class=\"pn-label\" x=\"95\" y=\"45\"><tspan x=\"95\" dy=\"0\">AWS IMDS + STS</tspan></text></g></g><g transform=\"translate(530, 475)\"><g class=\"pn-element\"><circle class=\"pn-shape pn-process\" cx=\"65\" cy=\"65\" r=\"65\"></circle><text class=\"pn-label\" x=\"65\" y=\"65\"><tspan x=\"65\" dy=\"0\">Écluse proxy</tspan></text></g></g><g transform=\"translate(350, 990)\"><g class=\"pn-element\"><circle class=\"pn-shape pn-process\" cx=\"65\" cy=\"65\" r=\"65\"></circle><text class=\"pn-label\" x=\"65\" y=\"57.5\"><tspan x=\"65\" dy=\"0\">Mirror</tspan><tspan x=\"65\" dy=\"15\">worker</tspan></text></g></g><g transform=\"translate(635, 910)\"><g class=\"pn-element\"><circle class=\"pn-shape pn-process\" cx=\"70\" cy=\"70\" r=\"70\"></circle><text class=\"pn-label\" x=\"70\" y=\"62.5\"><tspan x=\"70\" dy=\"0\">Credential</tspan><tspan x=\"70\" dy=\"15\">provider</tspan></text></g></g><g transform=\"translate(360, 110)\"><g class=\"pn-element\"><line class=\"pn-shape pn-store\" x1=\"0\" y1=\"0\" x2=\"180\" y2=\"0\"></line><line class=\"pn-shape pn-store\" x1=\"0\" y1=\"90\" x2=\"180\" y2=\"90\"></line><text class=\"pn-label\" x=\"90\" y=\"37.5\"><tspan x=\"90\" dy=\"0\">Metadata cache</tspan><tspan x=\"90\" dy=\"15\">(public-gated only)</tspan></text></g></g><g transform=\"translate(325, 810)\"><g class=\"pn-element\"><line class=\"pn-shape pn-store\" x1=\"0\" y1=\"0\" x2=\"180\" y2=\"0\"></line><line class=\"pn-shape pn-store\" x1=\"0\" y1=\"90\" x2=\"180\" y2=\"90\"></line><text class=\"pn-label\" x=\"90\" y=\"45\"><tspan x=\"90\" dy=\"0\">Mirror queue (SQS)</tspan></text></g></g><g transform=\"translate(910, 475)\"><g class=\"pn-element\"><line class=\"pn-shape pn-store\" x1=\"0\" y1=\"0\" x2=\"200\" y2=\"0\"></line><line class=\"pn-shape pn-store\" x1=\"0\" y1=\"90\" x2=\"200\" y2=\"90\"></line><text class=\"pn-label\" x=\"100\" y=\"37.5\"><tspan x=\"100\" dy=\"0\">Registry C:</tspan><tspan x=\"100\" dy=\"15\">pull-through read endpoint</tspan></text></g></g><g transform=\"translate(1150, 140)\"><g class=\"pn-element\"><line class=\"pn-shape pn-store\" x1=\"0\" y1=\"0\" x2=\"200\" y2=\"0\"></line><line class=\"pn-shape pn-store\" x1=\"0\" y1=\"90\" x2=\"200\" y2=\"90\"></line><text class=\"pn-label\" x=\"100\" y=\"37.5\"><tspan x=\"100\" dy=\"0\">Registry A:</tspan><tspan x=\"100\" dy=\"15\">private store (first-party)</tspan></text></g></g><g transform=\"translate(1190, 665)\"><g class=\"pn-element\"><line class=\"pn-shape pn-store\" x1=\"0\" y1=\"0\" x2=\"200\" y2=\"0\"></line><line class=\"pn-shape pn-store\" x1=\"0\" y1=\"90\" x2=\"200\" y2=\"90\"></line><text class=\"pn-label\" x=\"100\" y=\"30\"><tspan x=\"100\" dy=\"0\">Registry B:</tspan><tspan x=\"100\" dy=\"15\">mirror store</tspan><tspan x=\"100\" dy=\"15\">(public-derived)</tspan></text><g class=\"pn-badge\" transform=\"translate(200, 0)\"><g class=\"pn-badge-primary\"><circle class=\"pn-tone-medium\" r=\"13\"></circle><text class=\"pn-badge-count\" y=\"-3\">1</text><text class=\"pn-badge-mark\" y=\"6\">M</text></g></g></g></g><g transform=\"translate(920, 915)\"><g class=\"pn-element\"><circle class=\"pn-shape pn-process\" cx=\"65\" cy=\"65\" r=\"65\"></circle><text class=\"pn-label\" x=\"65\" y=\"50\"><tspan x=\"65\" dy=\"0\">Écluse Pilot</tspan><tspan x=\"65\" dy=\"15\">(Ingestion</tspan><tspan x=\"65\" dy=\"15\">Pipeline)</tspan></text></g></g><g transform=\"translate(1477, 810)\"><g class=\"pn-element\"><rect class=\"pn-shape pn-actor\" width=\"170\" height=\"110\"></rect><text class=\"pn-label\" x=\"85\" y=\"55\"><tspan x=\"85\" dy=\"0\">OSV.dev</tspan></text></g></g><g transform=\"translate(920, 640)\"><g class=\"pn-element\"><line class=\"pn-shape pn-store\" x1=\"0\" y1=\"0\" x2=\"180\" y2=\"0\"></line><line class=\"pn-shape pn-store\" x1=\"0\" y1=\"130\" x2=\"180\" y2=\"130\"></line><text class=\"pn-label\" x=\"90\" y=\"65\"><tspan x=\"90\" dy=\"0\">S3 (OSV Datasets)</tspan></text></g></g><g transform=\"translate(400, 1100)\"><g class=\"pn-element\"><circle class=\"pn-shape pn-process\" cx=\"65\" cy=\"65\" r=\"65\"></circle><text class=\"pn-label\" x=\"65\" y=\"57.5\"><tspan x=\"65\" dy=\"0\">Écluse</tspan><tspan x=\"65\" dy=\"15\">Dredger</tspan></text><g class=\"pn-badge\" transform=\"translate(130, 0)\"><g class=\"pn-badge-primary\"><circle class=\"pn-tone-critical\" r=\"13\"></circle><text class=\"pn-badge-count\" y=\"-3\">5</text><text class=\"pn-badge-mark\" y=\"6\">C</text></g></g></g></g><g class=\"pn-element\"><path class=\"pn-shape pn-flow\" d=\"M 180 395 L 530 540\"></path><path class=\"pn-flow-arrow\" d=\"M 530 540 L 517 540.026 L 520.827 530.788 Z\"></path><text class=\"pn-flow-label\" x=\"334.415\" y=\"503.437\"><tspan x=\"334.415\" dy=\"0\">npm read / publish</tspan><tspan x=\"334.415\" dy=\"13.75\">(passthrough</tspan><tspan x=\"334.415\" dy=\"13.75\">CodeArtifact token)</tspan></text><g class=\"pn-badge\" transform=\"translate(366.859, 438.874)\"><g class=\"pn-badge-primary\"><circle class=\"pn-tone-medium\" r=\"13\"></circle><text class=\"pn-badge-count\" y=\"-3\">1</text><text class=\"pn-badge-mark\" y=\"6\">M</text></g></g></g><g class=\"pn-element\"><path class=\"pn-shape pn-flow\" d=\"M 660 540 L 910 520\"></path><path class=\"pn-flow-arrow\" d=\"M 910 520 L 898.437 525.941 L 897.639 515.973 Z\"></path><text class=\"pn-flow-label\" x=\"844.449\" y=\"473.117\"><tspan x=\"844.449\" dy=\"0\">read packument /</tspan><tspan x=\"844.449\" dy=\"13.75\">tarball (caller token</tspan><tspan x=\"844.449\" dy=\"13.75\">forwarded)</tspan></text></g><g class=\"pn-element\"><path class=\"pn-shape pn-flow\" d=\"M 595 475 L 450 200\"></path><path class=\"pn-flow-arrow\" d=\"M 450 200 L 460.02 208.283 L 451.174 212.947 Z\"></path><text class=\"pn-flow-label\" x=\"462.405\" y=\"362.311\"><tspan x=\"462.405\" dy=\"0\">cache public-gated</tspan><tspan x=\"462.405\" dy=\"13.75\">metadata</tspan></text></g><g class=\"pn-element\"><path class=\"pn-shape pn-flow\" d=\"M 530 540 L 120 740\"></path><path class=\"pn-flow-arrow\" d=\"M 120 740 L 128.593 730.245 L 132.977 739.233 Z\"></path><text class=\"pn-flow-label\" x=\"350.934\" y=\"679.414\"><tspan x=\"350.934\" dy=\"0\">anonymous packument /</tspan><tspan x=\"350.934\" dy=\"13.75\">tarball fetch (caller</tspan><tspan x=\"350.934\" dy=\"13.75\">token stripped)</tspan></text></g><g class=\"pn-element\"><path class=\"pn-shape pn-flow\" d=\"M 660 540 L 1150 185\"></path><path class=\"pn-flow-arrow\" d=\"M 1150 185 L 1143.216 196.089 L 1137.349 187.991 Z\"></path><text class=\"pn-flow-label\" x=\"940.061\" y=\"397.144\"><tspan x=\"940.061\" dy=\"0\">relay npm publish</tspan><tspan x=\"940.061\" dy=\"13.75\">(publisher token</tspan><tspan x=\"940.061\" dy=\"13.75\">forwarded)</tspan></text></g><g class=\"pn-element\"><path class=\"pn-shape pn-flow\" d=\"M 595 605 L 415 810\"></path><path class=\"pn-flow-arrow\" d=\"M 415 810 L 419.16 797.684 L 426.675 804.282 Z\"></path><text class=\"pn-flow-label\" x=\"552.402\" y=\"742.246\"><tspan x=\"552.402\" dy=\"0\">enqueue mirror job</tspan><tspan x=\"552.402\" dy=\"13.75\">(demand-driven)</tspan></text></g><g class=\"pn-element\"><path class=\"pn-shape pn-flow\" d=\"M 415 990 L 415 900\"></path><path class=\"pn-flow-arrow\" d=\"M 415 900 L 420 912 L 410 912 Z\"></path><text class=\"pn-flow-label\" x=\"456.225\" y=\"945\"><tspan x=\"456.225\" dy=\"0\">poll jobs</tspan></text></g><g class=\"pn-element\"><path class=\"pn-shape pn-flow\" d=\"M 350 1055 L 120 740\"></path><path class=\"pn-flow-arrow\" d=\"M 120 740 L 131.114 746.743 L 123.038 752.64 Z\"></path><text class=\"pn-flow-label\" x=\"182.284\" y=\"929.116\"><tspan x=\"182.284\" dy=\"0\">back-fill artifact</tspan><tspan x=\"182.284\" dy=\"13.75\">fetch (untrusted)</tspan></text></g><g class=\"pn-element\"><path class=\"pn-shape pn-flow\" d=\"M 480 1055 L 635 980\"></path><path class=\"pn-flow-arrow\" d=\"M 635 980 L 626.376 989.728 L 622.02 980.726 Z\"></path><text class=\"pn-flow-label\" x=\"535.073\" y=\"964.275\"><tspan x=\"535.073\" dy=\"0\">request mirror-write</tspan><tspan x=\"535.073\" dy=\"13.75\">token</tspan></text></g><g class=\"pn-element\"><path class=\"pn-shape pn-flow\" d=\"M 705 910 L 730 830\"></path><path class=\"pn-flow-arrow\" d=\"M 730 830 L 731.193 842.945 L 721.648 839.962 Z\"></path><text class=\"pn-flow-label\" x=\"797.771\" y=\"888.21\"><tspan x=\"797.771\" dy=\"0\">mint via container role</tspan><tspan x=\"797.771\" dy=\"13.75\">(IMDSv2 / STS)</tspan></text></g><g class=\"pn-element\"><path class=\"pn-shape pn-flow\" d=\"M 480 1055 L 1180 1065 L 1290 755\"></path><path class=\"pn-flow-arrow\" d=\"M 1290 755 L 1290.699 767.981 L 1281.275 764.637 Z\"></path><text class=\"pn-flow-label\" x=\"829.511\" y=\"1080.445\"><tspan x=\"829.511\" dy=\"0\">publish mirrored</tspan><tspan x=\"829.511\" dy=\"13.75\">artifact (minted write</tspan><tspan x=\"829.511\" dy=\"13.75\">token)</tspan></text></g><g class=\"pn-element\"><path class=\"pn-shape pn-flow\" d=\"M 1110 520 L 1150 185\"></path><path class=\"pn-flow-arrow\" d=\"M 1150 185 L 1153.542 197.508 L 1143.613 196.323 Z\"></path><text class=\"pn-flow-label\" x=\"1184.13\" y=\"352.088\"><tspan x=\"1184.13\" dy=\"0\">pull-through</tspan><tspan x=\"1184.13\" dy=\"13.75\">(first-party)</tspan></text></g><g class=\"pn-element\"><path class=\"pn-shape pn-flow\" d=\"M 1110 520 L 1190 710\"></path><path class=\"pn-flow-arrow\" d=\"M 1190 710 L 1180.735 700.881 L 1189.951 697 Z\"></path><text class=\"pn-flow-label\" x=\"1223.968\" y=\"583.856\"><tspan x=\"1223.968\" dy=\"0\">pull-through (mirrored)</tspan></text></g><g class=\"pn-element\"><path class=\"pn-shape pn-flow\" d=\"M 825 785 L 920 980\"></path><path class=\"pn-flow-arrow\" d=\"M 920 980 L 910.249 971.402 L 919.239 967.022 Z\"></path><text class=\"pn-flow-label\" x=\"917.548\" y=\"793.358\"><tspan x=\"917.548\" dy=\"0\">mint token (container</tspan><tspan x=\"917.548\" dy=\"13.75\">role)</tspan></text></g><g class=\"pn-element\"><path class=\"pn-shape pn-flow\" d=\"M 1480 860 L 1050 980\"></path><path class=\"pn-flow-arrow\" d=\"M 1050 980 L 1060.214 971.958 L 1062.902 981.59 Z\"></path><text class=\"pn-flow-label\" x=\"1280.102\" y=\"967.239\"><tspan x=\"1280.102\" dy=\"0\">OSV Dataset for</tspan><tspan x=\"1280.102\" dy=\"13.75\">Supported Registries</tspan></text></g><g class=\"pn-element\"><path class=\"pn-shape pn-flow\" d=\"M 985 915 L 1010 770\"></path><path class=\"pn-flow-arrow\" d=\"M 1010 770 L 1012.888 782.675 L 1003.034 780.976 Z\"></path><text class=\"pn-flow-label\" x=\"1070.971\" y=\"855.167\"><tspan x=\"1070.971\" dy=\"0\">Push osv.db (SQLite)</tspan></text></g><g class=\"pn-element\"><path class=\"pn-shape pn-flow\" d=\"M 920 705 L 660 540\"></path><path class=\"pn-flow-arrow\" d=\"M 660 540 L 672.811 542.208 L 667.453 550.652 Z\"></path><text class=\"pn-flow-label\" x=\"813.017\" y=\"586.23\"><tspan x=\"813.017\" dy=\"0\">Download osv.db</tspan></text></g><g class=\"pn-element\"><path class=\"pn-shape pn-flow\" d=\"M 530 1165 L 1190 710\"></path><path class=\"pn-flow-arrow\" d=\"M 1190 710 L 1182.958 720.928 L 1177.282 712.694 Z\"></path><text class=\"pn-flow-label\" x=\"1064.902\" y=\"881.63\"><tspan x=\"1064.902\" dy=\"0\">delete pruned versions</tspan></text></g><g class=\"pn-element\"><path class=\"pn-shape pn-flow\" d=\"M 920 980 L 825 785\"></path><path class=\"pn-flow-arrow\" d=\"M 825 785 L 834.751 793.598 L 825.761 797.978 Z\"></path><text class=\"pn-flow-label\" x=\"797.065\" y=\"852.055\"><tspan x=\"797.065\" dy=\"0\">mint container</tspan><tspan x=\"797.065\" dy=\"13.75\">credentials</tspan></text></g><g class=\"pn-element\"><path class=\"pn-shape pn-flow\" d=\"M 660 540 L 920 705\"></path><path class=\"pn-flow-arrow\" d=\"M 920 705 L 907.189 702.792 L 912.547 694.348 Z\"></path><text class=\"pn-flow-label\" x=\"760.903\" y=\"668.35\"><tspan x=\"760.903\" dy=\"0\">poll &amp; download osv.db</tspan></text></g></svg>
 "), format: "svg", fit: "contain", width: 100%, height: 100%)

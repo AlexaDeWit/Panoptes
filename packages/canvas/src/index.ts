@@ -10,4 +10,5 @@ export * from './lib/paths.js';
 export * from './lib/react-flow.js';
 export * from './lib/scene.js';
 export * from './lib/stylesheet.js';
+export * from './lib/tokens.js';
 export * from './lib/typography.js';

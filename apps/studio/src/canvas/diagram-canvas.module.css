@@ -3,7 +3,7 @@
   min-height: 20rem;
   border: 1px solid var(--pn-colour-border);
   border-radius: var(--pn-radius);
-  background: var(--pn-colour-surface);
+  background: var(--pn-colour-canvas);
 }
 
 /* React Flow names its own parts with global classes, so the studio reaches
@@ -57,7 +57,7 @@
    colour it ships is below the contrast the studio's axe run demands. The
    attribution itself stays. */
 .canvas :global(.react-flow__attribution) {
-  background: var(--pn-colour-surface);
+  background: var(--pn-colour-canvas);
 }
 
 .canvas :global(.react-flow__attribution) a {

@@ -2,15 +2,15 @@
   font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
 }
 .pn-shape {
-  fill: #ffffff;
-  stroke: #1f2937;
+  fill: #FAF8F5;
+  stroke: #3E3A35;
   stroke-width: 1.5;
 }
 .pn-actor {
-  fill: #eef2ff;
+  fill: #EAEFF6;
 }
 .pn-process {
-  fill: #f0fdf4;
+  fill: #EFF3E8;
 }
 .pn-store {
   fill: none;
@@ -19,7 +19,7 @@
 .pn-boundary-box,
 .pn-boundary-curve {
   fill: none;
-  stroke: #6b7280;
+  stroke: #706B62;
   stroke-width: 2;
   stroke-dasharray: 8 6;
 }
@@ -30,14 +30,14 @@
   stroke-dasharray: 6 4;
 }
 .pn-label {
-  fill: #111827;
+  fill: #3E3A35;
   font-size: 12px;
   font-weight: 500;
   text-anchor: middle;
   dominant-baseline: central;
 }
 .pn-note {
-  fill: #374151;
+  fill: #706B62;
   font-size: 12px;
   text-anchor: middle;
   dominant-baseline: central;
@@ -46,25 +46,25 @@
   fill: none;
 }
 .pn-flow-arrow {
-  fill: #1f2937;
+  fill: #3E3A35;
   stroke: none;
 }
 .pn-flow-label {
-  fill: #374151;
+  fill: #706B62;
   font-size: 11px;
   text-anchor: middle;
   dominant-baseline: central;
   paint-order: stroke;
-  stroke: #ffffff;
+  stroke: #F4EFE6;
   stroke-width: 3;
   stroke-linejoin: round;
 }
 .pn-badge {
-  stroke: #ffffff;
+  stroke: #FDFBF7;
   stroke-width: 1.5;
 }
 .pn-badge-count {
-  fill: #ffffff;
+  fill: #FDFBF7;
   stroke: none;
   font-weight: 600;
   text-anchor: middle;
@@ -77,7 +77,7 @@
   font-size: 9px;
 }
 .pn-badge-mark {
-  fill: #ffffff;
+  fill: #FDFBF7;
   stroke: none;
   font-size: 9px;
   font-weight: 700;
@@ -85,18 +85,18 @@
   dominant-baseline: central;
 }
 .pn-tone-critical {
-  fill: #7f1d1d;
+  fill: #BA2D0B;
 }
 .pn-tone-high {
-  fill: #b91c1c;
+  fill: #A45611;
 }
 .pn-tone-medium {
-  fill: #b45309;
+  fill: #3A6EA5;
 }
 .pn-tone-low {
-  fill: #1d4ed8;
+  fill: #4A5D23;
 }
 .pn-tone-neutral {
-  fill: #52525b;
+  fill: #757069;
 }
 </style><g transform="translate(298, 58)"><g class="pn-element"><path class="pn-shape pn-boundary-curve" d="M 2 2 C 8.667 33.667 42 123.667 42 192 C 42 260.333 2 340.333 2 412 C 2 483.667 35.333 587 42 622"></path><text class="pn-label" x="72.1" y="412"><tspan x="72.1" dy="0">Untrusted callers</tspan></text></g></g><g transform="translate(1030, 420)"><g class="pn-element"><rect class="pn-shape pn-boundary-box" width="220" height="220"></rect><text class="pn-label" x="110" y="12"><tspan x="110" dy="0">Electron main process</tspan></text></g></g><g transform="translate(30, 190)"><g class="pn-element pn-out-of-scope"><rect class="pn-shape pn-actor" width="200" height="80"></rect><text class="pn-label" x="100" y="40"><tspan x="100" dy="0">Agent and its harness</tspan></text></g></g><g transform="translate(60, 460)"><g class="pn-element"><circle class="pn-shape pn-process" cx="70" cy="70" r="70"></circle><text class="pn-label" x="70" y="62.5"><tspan x="70" dy="0">Studio</tspan><tspan x="70" dy="15">renderer</tspan></text><g class="pn-badge" transform="translate(140, 0)"><g class="pn-badge-primary"><circle class="pn-tone-high" r="13"></circle><text class="pn-badge-count" y="-3">1</text><text class="pn-badge-mark" y="6">H</text></g></g></g></g><g transform="translate(630, 160)"><g class="pn-element"><circle class="pn-shape pn-process" cx="70" cy="70" r="70"></circle><text class="pn-label" x="70" y="62.5"><tspan x="70" dy="0">MCP server</tspan><tspan x="70" dy="15">and tools</tspan></text><g class="pn-badge" transform="translate(140, 0)"><g class="pn-badge-primary"><circle class="pn-tone-high" r="13"></circle><text class="pn-badge-count" y="-3">3</text><text class="pn-badge-mark" y="6">H</text></g><g class="pn-badge-secondary" transform="translate(0, 24)"><circle class="pn-tone-neutral" r="8"></circle><text class="pn-badge-count">1</text></g></g></g></g><g transform="translate(910, 160)"><g class="pn-element"><circle class="pn-shape pn-process" cx="70" cy="70" r="70"></circle><text class="pn-label" x="70" y="62.5"><tspan x="70" dy="0">Model core</tspan><tspan x="70" dy="15">and codecs</tspan></text><g class="pn-badge" transform="translate(140, 0)"><g class="pn-badge-primary"><circle class="pn-tone-medium" r="13"></circle><text class="pn-badge-count" y="-3">2</text><text class="pn-badge-mark" y="6">M</text></g><g class="pn-badge-secondary" transform="translate(0, 24)"><circle class="pn-tone-neutral" r="8"></circle><text class="pn-badge-count">1</text></g></g></g></g><g transform="translate(630, 460)"><g class="pn-element"><circle class="pn-shape pn-process" cx="70" cy="70" r="70"></circle><text class="pn-label" x="70" y="62.5"><tspan x="70" dy="0">Preload and</tspan><tspan x="70" dy="15">IPC bridge</tspan></text><g class="pn-badge" transform="translate(140, 0)"><g class="pn-badge-primary"><circle class="pn-tone-high" r="13"></circle><text class="pn-badge-count" y="-3">2</text><text class="pn-badge-mark" y="6">H</text></g></g></g></g><g transform="translate(1070, 460)"><g class="pn-element"><circle class="pn-shape pn-process" cx="70" cy="70" r="70"></circle><text class="pn-label" x="70" y="70"><tspan x="70" dy="0">Electron main</tspan></text><g class="pn-badge" transform="translate(140, 0)"><g class="pn-badge-primary"><circle class="pn-tone-high" r="13"></circle><text class="pn-badge-count" y="-3">2</text><text class="pn-badge-mark" y="6">H</text></g></g></g></g><g transform="translate(1430, 320)"><g class="pn-element"><line class="pn-shape pn-store" x1="0" y1="0" x2="200" y2="0"></line><line class="pn-shape pn-store" x1="0" y1="90" x2="200" y2="90"></line><text class="pn-label" x="100" y="45"><tspan x="100" dy="0">Local filesystem</tspan></text><g class="pn-badge" transform="translate(200, 0)"><g class="pn-badge-primary"><circle class="pn-tone-high" r="13"></circle><text class="pn-badge-count" y="-3">2</text><text class="pn-badge-mark" y="6">H</text></g></g></g></g><g class="pn-element"><path class="pn-shape pn-flow" d="M 230 230 L 630 230"></path><path class="pn-flow-arrow" d="M 630 230 L 618 235 L 618 225 Z"></path><text class="pn-flow-label" x="430" y="249.5"><tspan x="430" dy="0">Tool calls over stdio</tspan></text></g><g class="pn-element"><path class="pn-shape pn-flow" d="M 770 230 L 910 230"></path><path class="pn-flow-arrow" d="M 910 230 L 898 235 L 898 225 Z"></path><text class="pn-flow-label" x="840" y="249.5"><tspan x="840" dy="0">Parsed operations</tspan></text></g><g class="pn-element"><path class="pn-shape pn-flow" d="M 1050 230 L 1130 230 L 1430 365"></path><path class="pn-flow-arrow" d="M 1430 365 L 1417.005 364.635 L 1421.109 355.516 Z"></path><text class="pn-flow-label" x="1261.473" y="331.795"><tspan x="1261.473" dy="0">Reads and writes</tspan><tspan x="1261.473" dy="13.75">model files</tspan></text></g><g class="pn-element"><path class="pn-shape pn-flow" d="M 200 530 L 630 530"></path><path class="pn-flow-arrow" d="M 630 530 L 618 535 L 618 525 Z"></path><text class="pn-flow-label" x="415" y="549.5"><tspan x="415" dy="0">Open and save requests</tspan></text></g><g class="pn-element"><path class="pn-shape pn-flow" d="M 770 530 L 1070 530"></path><path class="pn-flow-arrow" d="M 1070 530 L 1058 535 L 1058 525 Z"></path><text class="pn-flow-label" x="920" y="549.5"><tspan x="920" dy="0">Validated IPC messages</tspan></text></g><g class="pn-element"><path class="pn-shape pn-flow" d="M 1210 530 L 1530 530 L 1530 410"></path><path class="pn-flow-arrow" d="M 1530 410 L 1535 422 L 1525 422 Z"></path><text class="pn-flow-label" x="1370" y="549.5"><tspan x="1370" dy="0">Native dialogs,</tspan><tspan x="1370" dy="13.75">real paths</tspan></text></g></svg>

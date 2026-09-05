@@ -3,54 +3,17 @@
  * viewport, the handles and the controls, none of which the drawing
  * primitives in @panoptes/canvas draw. It is loaded here, with the app's
  * other global CSS, rather than by the component that mounts the canvas.
- * The canvas module overrides what it has to, from the tokens below.
+ * The canvas module overrides what it has to, from the tokens.
  */
 @import '@xyflow/react/dist/style.css';
 
 /*
- * The studio's design tokens, and the only global rules in the app. Every
- * component styles itself from these custom properties through its own CSS
- * module, so a token is the one place a colour, a step of spacing, a radius,
- * the focus ring or the type scale is decided. The naming follows the `pn-`
- * prefix the canvas stylesheet already emits.
- *
- * The colours are picked to clear WCAG AA against the surface they sit on,
- * because apps/studio-e2e runs axe-core over this page and contrast is one of
- * the things only a real browser can measure.
+ * The `--pn-*` custom properties every component reads are not declared here.
+ * They come from the token module in @panoptes/canvas, injected once at the
+ * app root by `src/theme.tsx`, so one table decides what the chrome and the
+ * diagram are coloured with. This file holds what is left: the one global
+ * rule, reading those properties like any other module.
  */
-:root {
-  --pn-font-family:
-    system-ui, -apple-system, 'Segoe UI', roboto, 'Helvetica Neue', arial,
-    sans-serif;
-  --pn-font-size: 0.875rem;
-  --pn-line-height: 1.5;
-
-  --pn-colour-surface: #ffffff;
-  --pn-colour-surface-raised: #f2f4f7;
-  --pn-colour-text: #16191d;
-  --pn-colour-text-muted: #4a5058;
-  --pn-colour-border: #767d87;
-  --pn-colour-accent: #1b4fa8;
-  --pn-colour-accent-text: #ffffff;
-
-  --pn-space-1: 0.25rem;
-  --pn-space-2: 0.5rem;
-  --pn-space-3: 0.75rem;
-  --pn-space-4: 1rem;
-
-  --pn-radius: 4px;
-
-  /*
-   * One focus indicator for the whole app. A control never removes it and
-   * never invents its own: it applies these properties in `:focus-visible`.
-   * The width is a token of its own so a control drawing the ring in another
-   * colour, over an accent background say, still draws it at the one width.
-   */
-  --pn-focus-ring-width: 2px;
-  --pn-focus-ring: var(--pn-focus-ring-width) solid var(--pn-colour-accent);
-  --pn-focus-ring-offset: 2px;
-}
-
 body {
   margin: 0;
   background: var(--pn-colour-surface);
