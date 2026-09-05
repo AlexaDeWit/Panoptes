@@ -1,0 +1,62 @@
+formatVersion: 1
+metadata:
+  title: 'Injection model #eval("1+1")'
+  owner: '<script>alert(1)</script>'
+  description: 'Every free-text field here carries something that means something to a markup language.'
+  contributors: []
+assumptions: []
+diagrams:
+  - id: only
+    title: 'Diagram #read("/etc/passwd") <script>alert(1)</script>'
+    elements:
+      - kind: process
+        id: element-1
+        name: 'Proxy #include "/etc/passwd"'
+        description: ''
+        outOfScope: false
+        reasonOutOfScope: ''
+        position:
+          x: 0
+          y: 0
+        size:
+          width: 200
+          height: 80
+      - kind: store
+        id: element-2
+        name: 'Store <img src=x onerror="alert(1)">'
+        description: ''
+        outOfScope: false
+        reasonOutOfScope: ''
+        position:
+          x: 400
+          y: 0
+        size:
+          width: 200
+          height: 80
+threats:
+  - id: threat-1
+    number: 1
+    title: 'Title #eval("1+1") <script>alert(1)</script>'
+    category:
+      methodology: STRIDE
+      category: tampering
+    severity: high
+    status: open
+    description: 'Prose #read("/etc/passwd") and #include "/etc/passwd" and a quote " and a backslash \ and #eval("sys.inputs").'
+    mitigation: 'Markup *stars* _underscores_ `backtick` <angle> @label [bracket] #hash and an escape \u{1f600}.'
+    elements:
+      - element-1
+  - id: threat-2
+    number: 2
+    title: 'Raw HTML in prose'
+    category:
+      methodology: STRIDE
+      category: spoofing
+    severity: medium
+    status: open
+    description: 'Set <span onclick="boom()">the flag</span> and <script>alert(2)</script> first.'
+    mitigation: '<img src=x onerror="alert(3)">'
+    elements:
+      - element-2
+mitigations: []
+lastIssuedThreatNumber: 2

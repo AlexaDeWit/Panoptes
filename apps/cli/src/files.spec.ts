@@ -2,14 +2,14 @@ import { Either } from 'effect';
 import { existsSync, mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { readTextFile, reasonOf, writeTextFile } from './files.js';
+import { readTextFile, reasonOf, writeFile } from './files.js';
 
 const directory = mkdtempSync(join(tmpdir(), 'panoptes-cli-files-'));
 
 describe('text files at the edge', () => {
   it('writes a text and reads back what it wrote', () => {
     const path = join(directory, 'written.txt');
-    expect(writeTextFile(path, 'Écluse\n')).toEqual(Either.right(undefined));
+    expect(writeFile(path, 'Écluse\n')).toEqual(Either.right(undefined));
     expect(readTextFile(path)).toEqual(Either.right('Écluse\n'));
   });
 
@@ -24,7 +24,7 @@ describe('text files at the edge', () => {
 
   it('names the path and the reason where a file cannot be written', () => {
     const path = join(directory, 'absent', 'written.txt');
-    expect(writeTextFile(path, '')).toEqual(
+    expect(writeFile(path, '')).toEqual(
       Either.left(
         `cannot write ${path}: ENOENT: no such file or directory, open '${path}'`,
       ),

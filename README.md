@@ -37,7 +37,7 @@ Dragon and license it under the same Apache License 2.0. See
 | `packages/wire-threat-dragon` | The Threat Dragon v2 format as a schema and nothing else                                                                                                                                                                |
 | `packages/formats`            | File-format codecs, and the mappings between a file and the model                                                                                                                                                       |
 | `packages/canvas`             | React canvas components, shared by the UI and headless rendering                                                                                                                                                        |
-| `packages/render`             | Projections of a model: SVG, markdown, PDF                                                                                                                                                                              |
+| `packages/render`             | Projections of a model: SVG, markdown, and the Typst source a PDF is compiled from                                                                                                                                      |
 | `apps/studio`                 | The drawing UI: its [canvas](apps/studio/src/canvas/README.md), its [model store](apps/studio/src/store/README.md), its [file bridge](apps/studio/src/files/README.md) and its [controls](apps/studio/src/ui/README.md) |
 | `apps/cli`                    | The command-line interface                                                                                                                                                                                              |
 
@@ -103,6 +103,7 @@ notarization are deferred, not overlooked.
 panoptes validate threat-model.yaml
 panoptes render threat-model.yaml --format md --out register.md
 panoptes render threat-model.yaml --format svg --out diagram.svg
+panoptes render threat-model.yaml --format pdf --out threat-model.pdf
 panoptes render threat-model.yaml --format svg --out -
 ```
 
@@ -118,8 +119,14 @@ stated it.
 `render` writes a projection. `--format md` writes the whole threat
 register. `--format svg` draws one diagram, which `--diagram <id or title>`
 chooses where the model holds more than one, and which a model of one does
-not have to name. `--out -` writes to standard output. PDF output lands with
-issue #34.
+not have to name. `--format pdf` writes one document holding every diagram,
+one to a landscape page, then that same register, so it takes no `--diagram`
+either. `--out -` writes to standard output, the PDF's bytes included.
+
+The PDF is compiled by Typst, which the executable carries as a WebAssembly
+module together with the fonts it typesets with. Nothing is fetched and no
+browser is involved, so `--format pdf` works with no network and on a machine
+that has neither Typst nor a browser installed.
 
 | Exit code | What it means                                                                                                                                                                                                    |
 | --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -162,8 +169,9 @@ across the workspace.
 
 [`scripts/package-cli.sh`](scripts/package-cli.sh) turns that bundle into
 standalone executables with `deno compile`, cross-compiling every target from
-any one of them, and runs the host executable twice: once for the version it
-reports, once to validate a vendored model file. CI runs the script for the
+any one of them, and runs the host executable three times: once for the
+version it reports, once to validate a vendored model file, and once to render
+that file to a PDF. CI runs the script for the
 host target on every pull request, and over the whole matrix when the ref is a
 `v*` tag, which is how a release is built: one workflow, not a second pipeline
 beside it. Deno is a packaging tool only: it never resolves the workspace, and
@@ -185,12 +193,17 @@ moves, is in
 [Rebuilding a released executable](docs/release.md#rebuilding-a-released-executable)
 is the check anyone can run against a download.
 
-A file the executables must carry, such as the Typst WebAssembly module and
-its fonts for PDF output (issue #34), rides along as an argument to
+A file the executables must carry rides along as an argument to
 `deno compile --include <path>` in that script, and the code reaches it at run
 time through `import.meta.dirname`. Anything not included, and not inlined
 into the bundle by esbuild, does not exist for a user who has only the
-executable.
+executable. `apps/cli/dist/assets` is that directory today: the Typst
+WebAssembly module, which the build copies out of node_modules, and the
+Liberation fonts, which are committed under `apps/cli/src/assets` beside the
+SIL Open Font License they carry. Together they are the 28.9 MiB PDF output
+adds to every executable. The packaging script renders the vendored fixture
+to a PDF through the compiled executable, so an executable built without them
+fails there rather than in a user's hands.
 
 [`docs/release.md`](docs/release.md) is the release procedure.
 

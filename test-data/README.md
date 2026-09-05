@@ -165,6 +165,22 @@ both keep a golden drawn from it. It is here rather than inside either
 package because the layer matrix forbids a package dependency between the two
 readers, which is the same reason `ecluse.model.json` is here.
 
+## `render/ecluse.snapshot.typ`
+
+The Écluse model as the Typst source of one whole document: every diagram,
+one to a landscape page, then the register above on portrait pages. Not
+vendored. This repository generates it, from `ecluse.model.json` above.
+
+It is the only committed form of what `apps/cli` hands the Typst compiler for
+`--format pdf`, so a change to the document template, to the escaping of any
+value out of the model, or to the drawing embedded inside it, arrives as a
+diff here. `ecluse.snapshot.svg` below is inside it verbatim, so the two move
+together and a diff on one without the other is a bug.
+
+Regenerate it with `pnpm nx test @panoptes/render -- -u`, in the same commit
+as the change that moved it. Nothing formats it: oxfmt does not know Typst,
+which is the decision this file's format needed under the rule above.
+
 ## `render/*.snapshot.svg`
 
 The diagrams `packages/render` draws as standalone SVG documents. Not
@@ -290,14 +306,18 @@ update changes the file below and the test says which table fell behind.
 
 ## `adversarial/`
 
-Small payloads built to break one of the read bounds `@panoptes/formats`
-exports as `readLimits`, so each bound is pinned by an input rather than by
-its own definition. Nothing here is a threat model, none of it is vendored,
-and none of it is large: an oversized text is generated in the spec instead,
-since committing megabytes to prove a size bound would be the wrong trade.
-`read-limits.spec.ts` hands every one of them to both reads, the Panoptes
-YAML read and the Threat Dragon read, because YAML is a superset of JSON and
-a hostile file arrives with whatever extension its author chose.
+Hostile inputs, none of them vendored. Most are small payloads built to break
+one of the read bounds `@panoptes/formats` exports as `readLimits`, so each
+bound is pinned by an input rather than by its own definition. None of those
+is a threat model, and none is large: an oversized text is generated in the
+spec instead, since committing megabytes to prove a size bound would be the
+wrong trade. `read-limits.spec.ts` hands every one of them to both reads, the
+Panoptes YAML read and the Threat Dragon read, because YAML is a superset of
+JSON and a hostile file arrives with whatever extension its author chose.
+
+`typst-injection.yaml` is the exception, and is described under its own
+heading below: it is a valid model, and what is hostile about it is its
+prose.
 
 | File                   | Bytes | What it is                                                                                                                                     | How it was built                                                                |
 | ---------------------- | ----- | ---------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
@@ -354,6 +374,22 @@ depth an alias reaches it from. At the size it was found, a 4 MiB text
 holding a two-million-element sequence aliased from forty depths, the nesting
 walk spent six seconds on that one sequence where resolving the whole document
 cost under half a second. This is that shape at a size worth committing.
+
+### `adversarial/typst-injection.yaml`
+
+A valid model of two elements and two threats, whose every free-text field
+carries something that means something to a markup language: `#eval("1+1")`
+and `#read("/etc/passwd")` and `#include`, which are Typst function calls, a
+`<script>` tag and an `onerror` attribute, which are HTML, a bare `"` and a
+trailing `\`, which are what a Typst string literal is delimited and escaped
+by, and `\u{1f600}`, which is what a Typst string escape looks like.
+
+It reads and renders like any other model. `packages/render` writes it as
+Typst source whose every one of those fragments sits inside a string literal,
+and `apps/cli` compiles it and reads the text back out of the PDF, where each
+one is text a reader sees rather than anything the compiler ran. It is
+committed rather than built in a spec because it is the input a reviewer
+should be able to read, and because both packages read it.
 
 `nested-anchors.yaml` is what the parser's own alias accounting costs rather
 than what an alias costs. `yaml` resolves an alias by scanning the whole

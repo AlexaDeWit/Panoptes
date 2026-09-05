@@ -11,8 +11,8 @@ const ecluse = join(repositoryRoot, 'test-data/ecluse.json');
 
 const collecting = (failing?: 'out' | 'err') => {
   const written = { out: '', err: '' };
-  const to = (stream: 'out' | 'err') => (text: string) => {
-    written[stream] += text;
+  const to = (stream: 'out' | 'err') => (output: string | Uint8Array) => {
+    written[stream] += String(output);
     return stream === failing
       ? Either.left('No space left on device')
       : Either.right(undefined);
@@ -26,83 +26,91 @@ describe('the arguments as the outcome they ask for', () => {
     vi.restoreAllMocks();
   });
 
-  it('answers --version with the stamped version', () => {
-    expect(runCli(['--version'])).toEqual({
+  it('answers --version with the stamped version', async () => {
+    await expect(runCli(['--version'])).resolves.toEqual({
       code: 0,
       out: `${cliVersion}\n`,
       err: '',
     });
   });
 
-  it('answers --help on standard output, having been asked', () => {
-    const outcome = runCli(['--help']);
+  it('answers --help on standard output, having been asked', async () => {
+    const outcome = await runCli(['--help']);
     expect(outcome.code).toEqual(0);
     expect(outcome.out).toContain('Usage: panoptes [options] [command]');
     expect(outcome.err).toEqual('');
   });
 
-  it('answers no arguments with the usage text on standard error', () => {
-    const outcome = runCli([]);
+  it('answers no arguments with the usage text on standard error', async () => {
+    const outcome = await runCli([]);
     expect(outcome.code).toEqual(2);
     expect(outcome.out).toEqual('');
     expect(outcome.err).toContain('Usage: panoptes [options] [command]');
   });
 
-  it('refuses a flag it does not know', () => {
-    expect(runCli(['validate', ecluse, '--nope'])).toEqual({
+  it('refuses a flag it does not know', async () => {
+    await expect(runCli(['validate', ecluse, '--nope'])).resolves.toEqual({
       code: 2,
       out: '',
       err: "error: unknown option '--nope'\n",
     });
   });
 
-  it('refuses a command it does not know', () => {
-    expect(runCli(['nope'])).toEqual({
+  it('refuses a command it does not know', async () => {
+    await expect(runCli(['nope'])).resolves.toEqual({
       code: 2,
       out: '',
       err: "error: unknown command 'nope'\n",
     });
   });
 
-  it('refuses a command missing the file it takes', () => {
-    expect(runCli(['validate'])).toEqual({
+  it('refuses a command missing the file it takes', async () => {
+    await expect(runCli(['validate'])).resolves.toEqual({
       code: 2,
       out: '',
       err: "error: missing required argument 'file'\n",
     });
   });
 
-  it('hands validate the file it was given', () => {
-    expect(runCli(['validate', ecluse])).toEqual(validate(ecluse));
-  });
-
-  it('hands render the options it was given', () => {
-    expect(runCli(['render', ecluse, '--format', 'md', '--out', '-'])).toEqual(
-      render(ecluse, { format: 'md', out: '-' }),
+  it('hands validate the file it was given', async () => {
+    await expect(runCli(['validate', ecluse])).resolves.toEqual(
+      validate(ecluse),
     );
   });
 
-  it('says which options a render needs where it was given none', () => {
-    expect(runCli(['render', ecluse])).toEqual({
+  it('hands render the options it was given', async () => {
+    await expect(
+      runCli(['render', ecluse, '--format', 'md', '--out', '-']),
+    ).resolves.toEqual(await render(ecluse, { format: 'md', out: '-' }));
+  });
+
+  it('says which options a render needs where it was given none', async () => {
+    await expect(runCli(['render', ecluse])).resolves.toEqual({
       code: 2,
       out: '',
       err:
-        'error: --format: must be svg or md\n' +
+        'error: --format: must be svg, md or pdf\n' +
         'error: --out: must be a path, or - for standard output\n',
     });
   });
 
-  it('says which formats there are where the one given is neither', () => {
-    expect(runCli(['render', ecluse, '--format', 'pdf', '--out', '-'])).toEqual(
-      { code: 2, out: '', err: 'error: --format: must be svg or md\n' },
-    );
+  it('says which formats there are where the one given is none of them', async () => {
+    await expect(
+      runCli(['render', ecluse, '--format', 'ps', '--out', '-']),
+    ).resolves.toEqual({
+      code: 2,
+      out: '',
+      err: 'error: --format: must be svg, md or pdf\n',
+    });
   });
 
-  it('says why a command threw where the parser wrote nothing', () => {
+  it('says why a command threw where the parser wrote nothing', async () => {
     vi.spyOn(renderOptionsSchema, 'safeParse').mockImplementation(() => {
       throw new Error('the option schema gave out');
     });
-    expect(runCli(['render', ecluse, '--format', 'md', '--out', '-'])).toEqual({
+    await expect(
+      runCli(['render', ecluse, '--format', 'md', '--out', '-']),
+    ).resolves.toEqual({
       code: 2,
       out: '',
       err: 'error: the option schema gave out\n',

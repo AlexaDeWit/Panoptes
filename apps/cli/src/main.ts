@@ -1,14 +1,14 @@
 import { Either } from 'effect';
 import { runCli, writeOutcome } from './cli.js';
 import { reasonOf } from './files.js';
-import { lines } from './outcome.js';
+import { lines, type CommandOutput } from './outcome.js';
 
 const wrote =
   (stream: NodeJS.WriteStream) =>
-  (text: string): Either.Either<void, string> =>
+  (output: CommandOutput): Either.Either<void, string> =>
     Either.try({
       try: () => {
-        stream.write(text);
+        stream.write(output);
       },
       catch: (error) => reasonOf(error),
     });
@@ -32,7 +32,7 @@ watchForLostWrites(process.stdout, (reason) => {
 });
 watchForLostWrites(process.stderr, () => undefined);
 
-process.exitCode = writeOutcome(runCli(process.argv.slice(2)), {
+process.exitCode = writeOutcome(await runCli(process.argv.slice(2)), {
   out: wrote(process.stdout),
   err: wrote(process.stderr),
 });

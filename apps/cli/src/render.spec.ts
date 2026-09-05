@@ -7,6 +7,7 @@ import {
   noDiagramYaml,
   unplacedFlowYaml,
 } from './cli.fixtures.js';
+import { pageCount } from './pdf.fixtures.js';
 import { render, type RenderOptions } from './render.js';
 
 const repositoryRoot = join(import.meta.dirname, '../../..');
@@ -28,76 +29,96 @@ const options = (given: Partial<RenderOptions>): RenderOptions => ({
   ...given,
 });
 
-const written = (name: string, file: string, given: Partial<RenderOptions>) => {
+const assets = join(repositoryRoot, 'apps/cli/dist/assets');
+
+const bytesOf = (out: string | Uint8Array): Uint8Array =>
+  typeof out === 'string' ? Buffer.from(out, 'utf8') : out;
+
+const written = async (
+  name: string,
+  file: string,
+  given: Partial<RenderOptions>,
+) => {
   const out = join(directory, name);
   return {
-    outcome: render(file, options({ ...given, out })),
+    outcome: await render(file, options({ ...given, out }), assets),
+    bytes: () => readFileSync(out),
     text: () => readFileSync(out, 'utf8'),
   };
 };
 
 describe('render', () => {
-  it('writes the register of the Écluse fixture as the golden file', () => {
-    const run = written('ecluse.register.md', ecluse, { format: 'md' });
+  it('writes the register of the Écluse fixture as the golden file', async () => {
+    const run = await written('ecluse.register.md', ecluse, { format: 'md' });
     expect(run.outcome).toEqual({ code: 0, out: '', err: '' });
     expect(run.text()).toEqual(golden('ecluse.register.snapshot.md'));
   });
 
-  it('draws the Écluse fixture as the golden file', () => {
-    const run = written('ecluse.svg', ecluse, { format: 'svg' });
+  it('draws the Écluse fixture as the golden file', async () => {
+    const run = await written('ecluse.svg', ecluse, { format: 'svg' });
     expect(run.outcome).toEqual({ code: 0, out: '', err: '' });
     expect(run.text()).toEqual(golden('ecluse.snapshot.svg'));
   });
 
-  it('writes the register to standard output for an out of -', () => {
-    expect(render(ecluse, options({ format: 'md', out: '-' }))).toEqual({
+  it('writes the register to standard output for an out of -', async () => {
+    await expect(
+      render(ecluse, options({ format: 'md', out: '-' })),
+    ).resolves.toEqual({
       code: 0,
       out: golden('ecluse.register.snapshot.md'),
       err: '',
     });
   });
 
-  it('draws to standard output for an out of -', () => {
-    expect(render(ecluse, options({ format: 'svg', out: '-' }))).toEqual({
+  it('draws to standard output for an out of -', async () => {
+    await expect(
+      render(ecluse, options({ format: 'svg', out: '-' })),
+    ).resolves.toEqual({
       code: 0,
       out: golden('ecluse.snapshot.svg'),
       err: '',
     });
   });
 
-  it('projects the same model out of the native format, byte for byte', () => {
-    expect(render(ecluseYaml, options({ format: 'md', out: '-' }))).toEqual({
+  it('projects the same model out of the native format, byte for byte', async () => {
+    await expect(
+      render(ecluseYaml, options({ format: 'md', out: '-' })),
+    ).resolves.toEqual({
       code: 0,
       out: golden('ecluse.register.snapshot.md'),
       err: '',
     });
-    expect(render(ecluseYaml, options({ format: 'svg', out: '-' }))).toEqual({
+    await expect(
+      render(ecluseYaml, options({ format: 'svg', out: '-' })),
+    ).resolves.toEqual({
       code: 0,
       out: golden('ecluse.snapshot.svg'),
       err: '',
     });
   });
 
-  it('draws the diagram a model of several names by id', () => {
-    expect(render(panoptes, options({ diagram: 'read-and-render' }))).toEqual({
+  it('draws the diagram a model of several names by id', async () => {
+    await expect(
+      render(panoptes, options({ diagram: 'read-and-render' })),
+    ).resolves.toEqual({
       code: 0,
       out: golden('panoptes-read-and-render.snapshot.svg'),
       err: '',
     });
   });
 
-  it('draws the diagram a model of several names by title', () => {
-    expect(
+  it('draws the diagram a model of several names by title', async () => {
+    await expect(
       render(panoptes, options({ diagram: 'Agents and the desktop shell' })),
-    ).toEqual({
+    ).resolves.toEqual({
       code: 0,
       out: golden('panoptes-agent-and-desktop.snapshot.svg'),
       err: '',
     });
   });
 
-  it('lists the diagrams where a model of several names none', () => {
-    expect(render(panoptes, options({}))).toEqual({
+  it('lists the diagrams where a model of several names none', async () => {
+    await expect(render(panoptes, options({}))).resolves.toEqual({
       code: 2,
       out: '',
       err:
@@ -107,8 +128,10 @@ describe('render', () => {
     });
   });
 
-  it('lists the diagrams where the name given is none of them', () => {
-    expect(render(panoptes, options({ diagram: 'nope' }))).toEqual({
+  it('lists the diagrams where the name given is none of them', async () => {
+    await expect(
+      render(panoptes, options({ diagram: 'nope' })),
+    ).resolves.toEqual({
       code: 2,
       out: '',
       err:
@@ -118,18 +141,18 @@ describe('render', () => {
     });
   });
 
-  it('refuses to draw a model that holds no diagram', () => {
+  it('refuses to draw a model that holds no diagram', async () => {
     const file = fixtureFile(directory, 'no-diagram.yaml', noDiagramYaml);
-    expect(render(file, options({}))).toEqual({
+    await expect(render(file, options({}))).resolves.toEqual({
       code: 2,
       out: '',
       err: 'error: the model holds no diagram, so there is nothing to draw.\n',
     });
   });
 
-  it('reports a flow endpoint the layout left out of the drawing', () => {
+  it('reports a flow endpoint the layout left out of the drawing', async () => {
     const file = fixtureFile(directory, 'unplaced.yaml', unplacedFlowYaml);
-    expect(render(file, options({ out: '-' }))).toMatchObject({
+    await expect(render(file, options({ out: '-' }))).resolves.toMatchObject({
       code: 0,
       err:
         'warning: a flow endpoint names an element the canvas draws as no box, so its flow is not in the drawing.\n' +
@@ -137,25 +160,59 @@ describe('render', () => {
     });
   });
 
-  it('refuses a diagram chosen for a register, which holds them all', () => {
-    expect(render(ecluse, options({ format: 'md', diagram: '0' }))).toEqual({
+  it('refuses a diagram chosen for a register, which holds them all', async () => {
+    await expect(
+      render(ecluse, options({ format: 'md', diagram: '0' })),
+    ).resolves.toEqual({
       code: 2,
       out: '',
       err: 'error: --diagram chooses one diagram, and --format md writes the whole register.\n',
     });
   });
 
-  it('reports an out it cannot write as the invocation being wrong', () => {
+  it('refuses a diagram chosen for a PDF, which draws them all', async () => {
+    await expect(
+      render(ecluse, options({ format: 'pdf', diagram: '0' })),
+    ).resolves.toEqual({
+      code: 2,
+      out: '',
+      err: 'error: --diagram chooses one diagram, and --format pdf writes every diagram and the register.\n',
+    });
+  });
+
+  it('compiles the Écluse fixture to a PDF of diagram and register', async () => {
+    const run = await written('ecluse.pdf', ecluse, { format: 'pdf' });
+    expect(run.outcome).toEqual({ code: 0, out: '', err: '' });
+    const pdf = run.bytes();
+    expect(pdf.subarray(0, 5).toString('latin1')).toBe('%PDF-');
+    expect(pageCount(pdf)).toBe(14);
+  });
+
+  it('writes a PDF to standard output for an out of -', async () => {
+    const outcome = await render(
+      ecluse,
+      options({ format: 'pdf', out: '-' }),
+      assets,
+    );
+    expect(outcome.code).toBe(0);
+    expect(outcome.out).toBeInstanceOf(Uint8Array);
+    expect(pageCount(bytesOf(outcome.out))).toBe(14);
+  });
+
+  it('reports an out it cannot write as the invocation being wrong', async () => {
     const out = join(directory, 'absent', 'ecluse.svg');
-    expect(render(ecluse, options({ out }))).toEqual({
+    await expect(render(ecluse, options({ out }))).resolves.toEqual({
       code: 2,
       out: '',
       err: `error: cannot write ${out}: ENOENT: no such file or directory, open '${out}'\n`,
     });
   });
 
-  it('reports a file it read and refused before drawing anything', () => {
+  it('reports a file it read and refused before drawing anything', async () => {
     const file = fixtureFile(directory, 'dangling.yaml', danglingReferenceYaml);
-    expect(render(file, options({}))).toMatchObject({ code: 1, out: '' });
+    await expect(render(file, options({}))).resolves.toMatchObject({
+      code: 1,
+      out: '',
+    });
   });
 });

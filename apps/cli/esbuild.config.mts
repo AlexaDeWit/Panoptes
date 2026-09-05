@@ -1,3 +1,6 @@
+import { copyFileSync, mkdirSync, readdirSync } from 'node:fs';
+import { createRequire } from 'node:module';
+import { basename, dirname, join } from 'node:path';
 import { versionDefine } from '../../workspace-version.mts';
 
 // yaml's CommonJS dist calls require() at run time, which in an ESM bundle
@@ -8,7 +11,43 @@ const nodeRequireBanner = [
   'const require = createNodeRequire(import.meta.url);',
 ].join('\n');
 
+const resolve = createRequire(import.meta.url);
+
+const projectAssets = join(import.meta.dirname, 'src/assets');
+
+// Everything the PDF path reads at run time, gathered beside the bundle in
+// dist/assets: the fonts and their licence, which are committed, and the
+// Typst WebAssembly module, which is not. esbuild inlines JavaScript and
+// nothing else, so both arrive as files. src/pdf.ts reaches them through
+// import.meta.dirname, and `deno compile --include` puts the same directory
+// inside an executable (scripts/package-cli.sh). A file that is neither
+// inlined nor included does not exist for a user who has only the executable.
+const runtimeAssets = (): readonly string[] => [
+  ...readdirSync(projectAssets).map((name) => join(projectAssets, name)),
+  resolve.resolve('@myriaddreamin/typst-ts-web-compiler/wasm'),
+];
+
+type EsbuildPlugin = {
+  initialOptions: { readonly outfile?: string; readonly outdir?: string };
+  onEnd: (callback: () => void) => void;
+};
+
+const copyRuntimeAssets = {
+  name: 'panoptes-runtime-assets',
+  setup(build: EsbuildPlugin): void {
+    build.onEnd(() => {
+      const { outfile, outdir } = build.initialOptions;
+      const target = join(outdir ?? dirname(outfile ?? '.'), 'assets');
+      mkdirSync(target, { recursive: true });
+      for (const asset of runtimeAssets()) {
+        copyFileSync(asset, join(target, basename(asset)));
+      }
+    });
+  },
+};
+
 export default {
   define: versionDefine(),
   banner: { js: nodeRequireBanner },
+  plugins: [copyRuntimeAssets],
 };

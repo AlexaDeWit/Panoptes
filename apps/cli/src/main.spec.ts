@@ -13,6 +13,7 @@ import {
   fixtureFile,
   undeclaredKeyYaml,
 } from './cli.fixtures.js';
+import { outlineTitles, pageCount } from './pdf.fixtures.js';
 import { cliVersion } from './version.js';
 
 type Runner = {
@@ -238,6 +239,61 @@ for (const runner of runners) {
         ]),
       ).toEqual({ code: 0, out: '', err: '' });
       expect(readFileSync(out)).toEqual(golden('ecluse.snapshot.svg'));
+    });
+
+    it('writes the Écluse fixture as a PDF of diagram and register', () => {
+      const out = join(directory, `${runner.name}.pdf`);
+      expect(
+        text(runner, [
+          'render',
+          'test-data/ecluse.json',
+          '--format',
+          'pdf',
+          '--out',
+          out,
+        ]),
+      ).toEqual({ code: 0, out: '', err: '' });
+      const pdf = readFileSync(out);
+      expect(pdf.subarray(0, 5).toString('latin1')).toBe('%PDF-');
+      expect(pageCount(pdf)).toBe(14);
+    });
+
+    it('carries a hostile fixture into the PDF as text, not as markup', () => {
+      const out = join(directory, `${runner.name}.hostile.pdf`);
+      expect(
+        text(runner, [
+          'render',
+          'test-data/adversarial/typst-injection.yaml',
+          '--format',
+          'pdf',
+          '--out',
+          out,
+        ]),
+      ).toEqual({ code: 0, out: '', err: '' });
+      const pdf = readFileSync(out);
+      expect(pageCount(pdf)).toBe(2);
+      expect(outlineTitles(pdf)).toContain(
+        'Threat 1: Title #eval("1+1") <script>alert(1)</script>',
+      );
+    });
+
+    it('refuses a diagram chosen for a PDF, which draws them all', () => {
+      expect(
+        text(runner, [
+          'render',
+          'test-data/ecluse.json',
+          '--format',
+          'pdf',
+          '--out',
+          '-',
+          '--diagram',
+          '0',
+        ]),
+      ).toEqual({
+        code: 2,
+        out: '',
+        err: 'error: --diagram chooses one diagram, and --format pdf writes every diagram and the register.\n',
+      });
     });
 
     it('draws to standard output for an out of -', () => {

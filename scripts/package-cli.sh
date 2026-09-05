@@ -4,13 +4,16 @@
 #   scripts/package-cli.sh          the host target alone (what CI runs per PR)
 #   scripts/package-cli.sh --all    every target a release carries
 #
-# Input is apps/cli/dist/main.js, which `nx build @panoptes/cli` writes.
-# Output is dist/cli/panoptes-<version>-<target>[.exe] and SHA256SUMS beside
-# them. The host executable is then run twice: with --version, whose output is
-# compared with the workspace version, and over a committed fixture with
-# validate, so a bundle deno cannot compile, an executable that cannot report
-# its own version, and one that carries no working command, all fail here
-# rather than at release time.
+# Input is apps/cli/dist/main.js, which `nx build @panoptes/cli` writes, and
+# apps/cli/dist/assets beside it, which the same build fills with the Typst
+# WebAssembly module and the fonts a PDF needs. Output is
+# dist/cli/panoptes-<version>-<target>[.exe] and SHA256SUMS beside them. The
+# host executable is then run three times: with --version, whose output is
+# compared with the workspace version, over a committed fixture with validate,
+# and over the same fixture with render --format pdf, so a bundle deno cannot
+# compile, an executable that cannot report its own version, one that carries
+# no working command, and one whose included assets did not arrive, all fail
+# here rather than at release time.
 #
 # Linux only: the compile runs in a network namespace, which is a Linux
 # facility. Nothing may be fetched, so this script needs the flake's pinned
@@ -26,6 +29,7 @@ readonly repo_root
 cd -- "${repo_root}"
 
 readonly bundle='apps/cli/dist/main.js'
+readonly assets='apps/cli/dist/assets'
 readonly out_dir='dist/cli'
 readonly repeat_dir='dist/cli-repeat'
 
@@ -113,6 +117,11 @@ if [ ! -f "${bundle}" ]; then
   exit 1
 fi
 
+if [ ! -d "${assets}" ]; then
+  echo "no assets at ${assets}: run 'nx build @panoptes/cli' first" >&2
+  exit 1
+fi
+
 version="$(node -p 'require("./package.json").version')"
 readonly version
 
@@ -157,6 +166,7 @@ compile_into() {
     --allow-read \
     --allow-write \
     --allow-env \
+    --include "${assets}" \
     --target "${target}" \
     --output "${output}" \
     "${source}"
@@ -210,8 +220,24 @@ readonly fixture='test-data/ecluse.json'
 summary="$("${host_binary}" validate "${fixture}")"
 readonly summary
 
+# A PDF, which is the one command that reads a file the executable carries
+# rather than one the bundle inlines: the Typst WebAssembly module and the
+# fonts. An executable compiled without --include answers --version and
+# validates a file exactly as this one does, and fails here alone.
+readonly pdf_check="${out_dir}/pdf-check.pdf"
+"${host_binary}" render "${fixture}" --format pdf --out "${pdf_check}"
+pdf_header="$(head -c 5 -- "${pdf_check}")"
+readonly pdf_header
+rm -f -- "${pdf_check}"
+if [ "${pdf_header}" != '%PDF-' ]; then
+  echo "panoptes render --format pdf wrote a file opening '${pdf_header}'," >&2
+  echo "not a PDF. The executable carries no working Typst compiler." >&2
+  exit 1
+fi
+
 echo "panoptes --version reports ${reported}, panoptes validate ${fixture}"
-echo "reports ${summary}, and every target compiled twice to the same bytes"
+echo "reports ${summary}, panoptes render --format pdf writes a PDF, and"
+echo "every target compiled twice to the same bytes"
 
 # The input's hash and then the outputs', so a run's log carries what a
 # rebuild elsewhere has to match and says which half drifted when it does not
