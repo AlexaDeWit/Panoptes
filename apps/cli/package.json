@@ -6,7 +6,7 @@
   "//": [
     "The build deviates from the root esbuild defaults (CODING.md, Build targets) because its output is not something node runs from this checkout: `deno compile` turns it into the executables a release attaches (docs/release.md).",
     "bundle with thirdParty inlines every workspace package and every npm dependency, so the executable carries no node_modules. format esm because deno reads a bare .js file as an ES module. esbuild.config.mts stamps the workspace version in, which no static option can express.",
-    "declarationRootDir puts the declarations where tsconfig.app.json's own rootDir and outDir say they go. Without it the executor emits them under dist/apps/cli/src, and the typecheck target then reports TS6305 for a module imported from a sibling file.",
+    "declaration false so the build writes nothing but its bundle and assets. Nothing reads a declaration it would emit: `deno compile` takes dist/main.js and the directory beside it, and the typecheck emits its own under out-tsc/app. Unset, the executor infers declaration from composite, and the tsc it runs then writes declarations into dist and a near-empty build info over the typecheck's, which is the entanglement issue #146 removed. The type check itself stays: the executor runs it with composite cleared, which is what tsconfig.app.json writes declaration out for.",
     "test depends on this project's own build, not only on its dependencies, because main.spec.ts runs the bundle the build writes rather than the source (issue #33). Without the edge the spec reads whatever dist/main.js was left from an earlier run, or none at all.",
     "PDF output compiles the Typst source @panoptes/render writes, through the Typst WebAssembly module (issue #34). esbuild inlines the module's JavaScript, but the .wasm file itself is read at run time, so esbuild.config.mts copies it and the fonts into dist/assets and scripts/package-cli.sh hands that directory to `deno compile --include`.",
     "The second runner main.spec.ts uses, the deno-compiled executable in dist/cli, is no nx input: dist/cli is gitignored, so it can be neither a fileset input nor a task output, and nx replays a cached result whether or not that runner took part. Run scripts/package-cli.sh and then `pnpm nx test @panoptes/cli --skip-nx-cache` after recompiling. CI runs that command with PANOPTES_COMPILED_RUNNER=required, which fails the suite where the executable is missing."
@@ -20,7 +20,7 @@
         "executor": "@nx/esbuild:esbuild",
         "options": {
           "bundle": true,
-          "declarationRootDir": "apps/cli/src",
+          "declaration": false,
           "thirdParty": true,
           "format": [
             "esm"

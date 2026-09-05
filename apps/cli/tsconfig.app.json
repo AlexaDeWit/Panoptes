@@ -1,10 +1,17 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "outDir": "dist",
+    // Implied by composite for tsc itself. Written out because the esbuild
+    // build clears composite to type-check without emitting, and
+    // declarationMap and emitDeclarationOnly are errors without one of the
+    // two (apps/cli/package.json).
+    "declaration": true,
+    // Not dist: the esbuild build owns that directory and empties it on every
+    // run, and nothing orders the two targets (CODING.md, Build targets).
+    "outDir": "out-tsc/app",
+    "tsBuildInfoFile": "out-tsc/app/tsconfig.app.tsbuildinfo",
     "types": ["node"],
-    "rootDir": "src",
-    "tsBuildInfoFile": "dist/tsconfig.app.tsbuildinfo"
+    "rootDir": "src"
   },
   "include": ["src/**/*.ts"],
   "exclude": ["src/**/*.fixtures.ts", "src/**/*.test.ts", "src/**/*.spec.ts"],
