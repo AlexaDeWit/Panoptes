@@ -19,7 +19,6 @@
     "react": "catalog:"
   },
   "devDependencies": {
-    "@testing-library/react": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
     "effect": "catalog:",

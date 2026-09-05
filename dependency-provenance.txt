@@ -20,7 +20,6 @@
 @nx/esbuild https://github.com/nrwl/nx
 @nx/eslint-plugin https://github.com/nrwl/nx
 @nx/js https://github.com/nrwl/nx
-@nx/node https://github.com/nrwl/nx
 @nx/playwright https://github.com/nrwl/nx
 @nx/react https://github.com/nrwl/nx
 @nx/vite https://github.com/nrwl/nx

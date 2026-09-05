@@ -29,7 +29,6 @@ minimumReleaseAgeExclude:
   - '@nx/eslint-plugin@23.1.2'
   - '@nx/jest@23.1.2'
   - '@nx/js@23.1.2'
-  - '@nx/node@23.1.2'
   - '@nx/nx-darwin-arm64@23.1.2'
   - '@nx/nx-darwin-x64@23.1.2'
   - '@nx/nx-freebsd-x64@23.1.2'
@@ -88,7 +87,6 @@ catalog:
   '@nx/esbuild': 23.1.2
   '@nx/eslint-plugin': 23.1.2
   '@nx/js': 23.1.2
-  '@nx/node': 23.1.2
   '@nx/playwright': 23.1.2
   '@nx/react': 23.1.2
   '@nx/vite': 23.1.2
