@@ -69,3 +69,39 @@ test('the studio carries no violation while it shows a refusal', async ({
 
   await audit(page, 'showing a refusal');
 });
+
+// The palette is on the page at rest, so the audit above covers its controls
+// as it covers the rest. What it cannot see there is either notice region
+// with something in it, or a listbox that is disabled until an element is
+// selected, which is what the two tests below reach.
+test('the studio carries no violation while it says what an edit did', async ({
+  page,
+}) => {
+  await page.goto('/');
+  await expect(page.getByTestId('canvas-container')).toBeVisible();
+
+  await page.getByRole('button', { name: 'New actor' }).click();
+  await expect(page.getByTestId('canvas-announcement')).toHaveText(
+    'Added New actor, actor.',
+  );
+
+  await audit(page, 'showing an added element');
+
+  await page.keyboard.press('Delete');
+  await expect(page.getByTestId('canvas-announcement')).toContainText(
+    'Removed New actor',
+  );
+
+  await audit(page, 'showing a removed element');
+});
+
+test('the open connect listbox carries no violation', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.getByTestId('canvas-container')).toBeVisible();
+
+  await page.getByRole('button', { name: 'New actor' }).click();
+  await page.getByRole('combobox', { name: 'Flow to' }).press('Enter');
+  await expect(page.getByRole('listbox')).toBeVisible();
+
+  await audit(page, 'showing the open connect listbox', '[role="listbox"]');
+});

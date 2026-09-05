@@ -1,0 +1,127 @@
+.palette {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: var(--pn-space-2);
+}
+
+.group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--pn-space-2);
+  margin-bottom: var(--pn-space-2);
+}
+
+.control {
+  padding: var(--pn-space-2) var(--pn-space-3);
+  border: 1px solid var(--pn-colour-border);
+  border-radius: var(--pn-radius);
+  background: var(--pn-colour-surface);
+  color: var(--pn-colour-text);
+  font: inherit;
+}
+
+.control:focus-visible,
+.trigger:focus-visible {
+  outline: var(--pn-focus-ring);
+  outline-offset: var(--pn-focus-ring-offset);
+}
+
+/* A control that can do nothing yet stays in the page and is dimmed rather
+   than hidden, so the row does not move as the selection changes. Being
+   disabled it is also off the tab path, which is what says it is unavailable
+   rather than the colour. */
+.control:disabled,
+.trigger:disabled {
+  color: var(--pn-colour-text-muted);
+}
+
+.label {
+  color: var(--pn-colour-text-muted);
+  font-weight: 600;
+}
+
+.trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--pn-space-2);
+  min-width: 12rem;
+  padding: var(--pn-space-2) var(--pn-space-3);
+  border: 1px solid var(--pn-colour-border);
+  border-radius: var(--pn-radius);
+  background: var(--pn-colour-surface);
+  color: var(--pn-colour-text);
+  font: inherit;
+}
+
+.icon {
+  color: var(--pn-colour-text-muted);
+}
+
+.content {
+  border: 1px solid var(--pn-colour-border);
+  border-radius: var(--pn-radius);
+  background: var(--pn-colour-surface);
+  overflow: hidden;
+}
+
+.viewport {
+  padding: var(--pn-space-1);
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--pn-space-2);
+  padding: var(--pn-space-2) var(--pn-space-3);
+  border-radius: var(--pn-radius);
+  color: var(--pn-colour-text);
+  user-select: none;
+}
+
+/* Radix reports the pointer or keyboard cursor through `data-highlighted` and
+   the chosen value through `data-state`, which is where a state is styled
+   from rather than a class the component would have to keep in step. */
+.item[data-highlighted] {
+  background: var(--pn-colour-accent);
+  color: var(--pn-colour-accent-text);
+}
+
+/* Radix puts real DOM focus on the highlighted item, so the app's focus
+   indicator belongs here too, in the colour the item draws its text in: the
+   accent the ring token carries is the background it would be drawn on. */
+.item[data-highlighted]:focus-visible {
+  outline: var(--pn-focus-ring-width) solid var(--pn-colour-accent-text);
+  outline-offset: calc(-1 * var(--pn-focus-ring-offset));
+}
+
+.item[data-state='checked'] {
+  font-weight: 600;
+}
+
+.indicator {
+  font-size: 0.75rem;
+}
+
+/* As with the failure notice, the region stays in the page while it has
+   nothing to say and collapses rather than hiding: `display: none` takes it
+   out of the accessibility tree, and a region inserted and revealed in the
+   same frame announces nothing. */
+.announcement:empty {
+  padding: 0;
+  border: 0;
+}
+
+.announcement {
+  padding: var(--pn-space-2) var(--pn-space-3);
+  border: 1px solid var(--pn-colour-border);
+  border-radius: var(--pn-radius);
+  background: var(--pn-colour-surface-raised);
+  color: var(--pn-colour-text);
+}
+
+.message {
+  margin: 0;
+}

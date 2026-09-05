@@ -29,6 +29,7 @@ export function applyChanges(
   for (const action of [
     ...selectionActions(changes, elements, selection),
     ...moveActions(changes, nodes),
+    ...resizeActions(changes, nodes),
   ]) {
     dispatch(action);
   }
@@ -93,6 +94,42 @@ export function moveActions(
     return offset.x === 0 && offset.y === 0
       ? []
       : [Action.MoveElement({ elementId: node.id, offset })];
+  });
+}
+
+/**
+ * The resizes the reported changes ask for. React Flow reports an extent on
+ * every frame of a drag on a resize control and once more when the gesture
+ * ends, so only the settled one reaches the store: one action for the whole
+ * gesture, as a drag gives one move. It also reports an extent whenever it
+ * measures a node, which carries no `resizing` flag and asks for nothing, the
+ * measurement being React Flow's own view of what the model already says. A
+ * gesture that left the extent as it was asks for nothing either, an
+ * operation that changes no geometry still costing an undo entry.
+ */
+export function resizeActions(
+  changes: readonly DiagramChange[],
+  nodes: ReadonlyMap<string, CanvasNode>,
+): Action[] {
+  return changes.flatMap((change) => {
+    if (
+      change.type !== 'dimensions' ||
+      change.resizing !== false ||
+      change.dimensions === undefined
+    ) {
+      return [];
+    }
+    const node = nodes.get(change.id);
+    if (node === undefined) {
+      return [];
+    }
+    const size = {
+      width: change.dimensions.width,
+      height: change.dimensions.height,
+    };
+    return size.width === node.size.width && size.height === node.size.height
+      ? []
+      : [Action.ResizeElement({ elementId: node.id, size })];
   });
 }
 

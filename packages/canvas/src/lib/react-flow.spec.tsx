@@ -59,12 +59,14 @@ const edgeProps = (
   data,
 });
 
-const bodyMarkup = (node: CanvasNode): string =>
+const bodyMarkup = (node: CanvasNode, selected = false): string =>
   renderToStaticMarkup(
     <ReactFlowProvider>
-      <CanvasNodeBody {...nodeProps(node)} />
+      <CanvasNodeBody {...nodeProps(node)} selected={selected} />
     </ReactFlowProvider>,
   );
+
+const curveNode = layout.nodes.find((node) => node.kind === 'boundary-curve');
 
 describe('canvasNodeTypes', () => {
   it('names one node type for every kind the layout produces, and the free-end anchor', () => {
@@ -100,6 +102,25 @@ describe('CanvasNodeBody', () => {
     for (const side of handleSides) {
       expect(markup).toContain(`data-handleid="${side}"`);
     }
+  });
+
+  it('offers a resize control on a selected element the model can resize', () => {
+    expect(bodyMarkup(nodeNamed('el-client'), true)).toContain(
+      'react-flow__resize-control',
+    );
+  });
+
+  it('offers none while the element is not selected', () => {
+    expect(bodyMarkup(nodeNamed('el-client'))).not.toContain(
+      'react-flow__resize-control',
+    );
+  });
+
+  it('offers none on a boundary curve, which the model gives no extent', () => {
+    expect(curveNode).toBeDefined();
+    expect(curveNode && bodyMarkup(curveNode, true)).not.toContain(
+      'react-flow__resize-control',
+    );
   });
 });
 

@@ -36,11 +36,19 @@
   stroke-width: 4;
 }
 
-/* Connecting is issue #39's, so the handles a flow would attach to are drawn
-   nowhere. Hidden rather than removed: React Flow measures a handle's box to
-   resolve where an edge ends, and a removed one has no box. */
+/* The handles a flow attaches to are drawn on the element under the pointer
+   and on the selected one, so a diagram at rest is not covered in dots.
+   Hidden rather than removed: React Flow measures a handle's box to resolve
+   where an edge ends, and a removed one has no box. A handle that stays
+   hidden is still a place to drop a flow, React Flow resolving the nearest
+   handle within its connection radius rather than hit testing the dot. */
 .canvas :global(.react-flow__handle) {
   visibility: hidden;
+}
+
+.canvas :global(.react-flow__node:hover .react-flow__handle),
+.canvas :global(.react-flow__node.selected .react-flow__handle) {
+  visibility: visible;
 }
 
 /* React Flow's own attribution, restyled to the app's tokens because the

@@ -1,6 +1,7 @@
 import type { ElementId } from '@panoptes/model';
 import {
   Handle,
+  NodeResizeControl,
   Position,
   type Edge,
   type EdgeProps,
@@ -19,6 +20,14 @@ import type {
 import { svgNumber } from './numbers.js';
 
 const anchorExtent = 1;
+
+const resizableKinds = new Set<CanvasNodeKind>([
+  'actor',
+  'process',
+  'store',
+  'text',
+  'boundary-box',
+]);
 
 const handlePlacement = {
   top: Position.Top,
@@ -59,9 +68,16 @@ export type CanvasFreeEndNode = Node<CanvasFreeEndData, typeof freeEndNodeKind>;
  * one. The wrapper adds nothing of its own to the drawing, and the drawing
  * is hidden from assistive technology: the node's accessible name says what
  * the glyph shows, and the canvas mounting it settles that name.
+ *
+ * A selected element the model can resize carries one control, at its bottom
+ * right corner. It is the corner alone because a control on the top or the
+ * left moves the element as well as sizing it, which is two model operations
+ * for one gesture where the studio's store has one action per edit. A
+ * boundary curve carries none: the model has no extent to set on one.
  */
 export function CanvasNodeBody({
   data,
+  selected,
 }: NodeProps<CanvasFlowNode>): ReactElement {
   return (
     <>
@@ -81,6 +97,9 @@ export function CanvasNodeBody({
           position={handlePlacement[side]}
         />
       ))}
+      {selected && resizableKinds.has(data.node.kind) && (
+        <NodeResizeControl position="bottom-right" />
+      )}
     </>
   );
 }

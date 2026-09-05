@@ -13,6 +13,7 @@ import { modelStore } from '../store/store.js';
 import {
   applyChanges,
   moveActions,
+  resizeActions,
   selectionActions,
   type DiagramChange,
 } from './changes.js';
@@ -35,6 +36,12 @@ const moving = (
   position: { x: number; y: number },
   dragging: boolean,
 ): DiagramChange => ({ id, type: 'position', position, dragging });
+
+const sizing = (
+  id: string,
+  dimensions: { width: number; height: number },
+  resizing: boolean | undefined,
+): DiagramChange => ({ id, type: 'dimensions', dimensions, resizing });
 
 const anchor = flowEndNodeId(probeFlow, 'target');
 
@@ -130,6 +137,55 @@ describe('moveActions', () => {
   });
 });
 
+describe('resizeActions', () => {
+  it('resizes an element to the extent a settled gesture reported', () => {
+    expect(
+      resizeActions(
+        [sizing(readerElement, { width: 200, height: 90 }, false)],
+        nodes,
+      ),
+    ).toEqual([
+      Action.ResizeElement({
+        elementId: readerElement,
+        size: { width: 200, height: 90 },
+      }),
+    ]);
+  });
+
+  it('leaves a gesture still in flight to the canvas', () => {
+    expect(
+      resizeActions(
+        [sizing(readerElement, { width: 200, height: 90 }, true)],
+        nodes,
+      ),
+    ).toEqual([]);
+  });
+
+  it('asks for nothing where React Flow reported a measurement of its own', () => {
+    expect(
+      resizeActions(
+        [sizing(readerElement, { width: 200, height: 90 }, undefined)],
+        nodes,
+      ),
+    ).toEqual([]);
+  });
+
+  it('asks for nothing where the extent ended up where it started', () => {
+    expect(
+      resizeActions(
+        [sizing(readerElement, { width: 120, height: 60 }, false)],
+        nodes,
+      ),
+    ).toEqual([]);
+  });
+
+  it('resizes nothing for an id that names no drawn node', () => {
+    expect(
+      resizeActions([sizing(anchor, { width: 20, height: 20 }, false)], nodes),
+    ).toEqual([]);
+  });
+});
+
 describe('applyChanges', () => {
   it('selects the element a click chose', () => {
     opened();
@@ -182,5 +238,24 @@ describe('applyChanges', () => {
           (element) => element.id === readerElement,
         ),
     ).toMatchObject({ position: { x: 40, y: 25 } });
+  });
+
+  it('resizes an element the model holds, so undo has something to take back', () => {
+    opened();
+
+    applyChanges(
+      [sizing(readerElement, { width: 200, height: 90 }, false)],
+      elements,
+      nodes,
+    );
+
+    expect(modelStore.getState().past).toHaveLength(1);
+    expect(
+      modelStore
+        .getState()
+        .present.diagrams[0].elements.find(
+          (element) => element.id === readerElement,
+        ),
+    ).toMatchObject({ size: { width: 200, height: 90 } });
   });
 });

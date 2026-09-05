@@ -254,9 +254,15 @@ flag is as wide as a letter in the estimate.
 
 `canvasNodeTypes` covers every node kind and `canvasEdgeTypes` covers the
 flow. A node wrapper draws the shared glyph at the model's own width and
-height and adds four `Handle` components, nothing else. Every handle is of
+height and adds four `Handle` components. Every handle is of
 type `source`, so the canvas that mounts them passes
 `connectionMode={ConnectionMode.Loose}` for a flow to be able to end on one.
+A selected node of a kind the model can resize adds one `NodeResizeControl`
+at its bottom right corner, and nothing else: a control on the top or the
+left moves the node as well as sizing it, which is two model operations for
+one gesture, and a boundary curve carries none because the model has no
+extent to set on one. The control reports through the node changes the canvas
+already folds, so this package still dispatches nothing.
 `toReactFlowNodes` carries the layout's nodes over with their position and
 extent set explicitly, so React Flow measures nothing; a boundary curve rides
 as a node too, sized to the box its waypoints span, so it drags and selects as
