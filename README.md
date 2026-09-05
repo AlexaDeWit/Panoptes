@@ -142,6 +142,7 @@ pnpm check             # everything the CI gate runs
 pnpm fix               # write formatting and lint fixes
 pnpm nx e2e @panoptes/studio-e2e   # browser smoke, excluded from pnpm check
 semgrep scan --config auto --severity ERROR --severity WARNING --error .   # SAST scan, excluded from pnpm check
+scripts/check-provenance.mjs       # dependency provenance, excluded from pnpm check
 ```
 
 The live loop: `pnpm nx serve studio` hot-reloads the studio app, and

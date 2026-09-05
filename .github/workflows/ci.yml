@@ -231,12 +231,44 @@ jobs:
       - name: Run the smoke suite
         run: nix develop .#ci --command pnpm nx e2e @panoptes/studio-e2e
 
+  # The npm provenance attestation of every package in the catalog, verified
+  # against the sigstore trust root, with the packages that publish none
+  # reported as the residual (scripts/check-provenance.mjs,
+  # dependency-provenance.txt). It runs on every pull request because a
+  # Renovate bump is where a lost attestation would first appear, and it is a
+  # named step before a tag in docs/release.md.
+  #
+  # Its own job because it installs nothing and reaches the registry: a
+  # registry out of reach reds this job alone, which the verdict below names,
+  # and no dependency tree sits beside the failure. The script attempts the
+  # audit twice before reporting that it could not run.
+  provenance:
+    name: Dependency provenance
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up toolchain
+        uses: ./.github/actions/setup-toolchain
+        with:
+          # build-test is the one writer for the shared "nix" prefix.
+          save-nix-store: 'false'
+
+      - name: Check dependency provenance
+        run: nix develop .#ci --command scripts/check-provenance.mjs
+
   gate:
     name: CI gate
     # The single required check. Wire a new gating job in by adding it to
     # `needs` AND to the verdict step, so a job that silently never ran can
     # never read as green.
-    needs: [build-test, static-checks, e2e-smoke]
+    needs: [build-test, static-checks, e2e-smoke, provenance]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -246,6 +278,7 @@ jobs:
           BUILD_TEST: ${{ needs.build-test.result }}
           STATIC_CHECKS: ${{ needs.static-checks.result }}
           E2E_SMOKE: ${{ needs.e2e-smoke.result }}
+          PROVENANCE: ${{ needs.provenance.result }}
         run: |
           verdict=0
           if [ "$BUILD_TEST" = "success" ]; then
@@ -264,6 +297,12 @@ jobs:
             echo "ok      e2e-smoke"
           else
             echo "FAILED  e2e-smoke: $E2E_SMOKE"
+            verdict=1
+          fi
+          if [ "$PROVENANCE" = "success" ]; then
+            echo "ok      provenance"
+          else
+            echo "FAILED  provenance: $PROVENANCE"
             verdict=1
           fi
           exit "$verdict"

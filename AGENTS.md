@@ -34,8 +34,9 @@ suggestions.
   global installs.
 - **Local verification**: `pnpm check`, everything the CI gate runs
   (exclusions noted beside the script definition in `package.json`), plus
-  the browser smoke as its own command: `pnpm nx e2e @panoptes/studio-e2e`.
-  `pnpm fix` runs the writing variants.
+  the browser smoke as its own command: `pnpm nx e2e @panoptes/studio-e2e`,
+  and the dependency provenance check as another:
+  `scripts/check-provenance.mjs`. `pnpm fix` runs the writing variants.
 - **One fact, one home.** Decision records only on the maintainer's explicit
   request ([CONTRIBUTING, Decision records](CONTRIBUTING.md#decision-records)).
 

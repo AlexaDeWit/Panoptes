@@ -1,0 +1,47 @@
+# Every package in the pnpm-workspace.yaml catalog that carried a verified
+# npm provenance attestation when this file was last written.
+# scripts/check-provenance.mjs reads it: a name here that no longer verifies
+# is a lost attestation and fails the check, and a catalog package that
+# verifies and is absent here is a record out of date. Names alone, so a
+# version bump that keeps the attestation leaves this file untouched. The
+# catalog's other packages publish no attestation at all, and the check
+# prints them as the residual.
+#
+# Regenerate with: scripts/check-provenance.mjs --update
+@axe-core/playwright
+@babel/core
+@babel/preset-react
+@nx/esbuild
+@nx/eslint-plugin
+@nx/js
+@nx/node
+@nx/playwright
+@nx/react
+@nx/vite
+@nx/vitest
+@nx/web
+@playwright/test
+@swc-node/register
+@swc/core
+@swc/helpers
+@testing-library/react
+@testing-library/user-event
+@typescript-eslint/parser
+@vitejs/plugin-react
+@vitest/coverage-v8
+@vitest/ui
+@xyflow/react
+effect
+esbuild
+fast-check
+nx
+oxfmt
+oxlint
+oxlint-tsgolint
+radix-ui
+react
+react-dom
+vite
+vitest
+zod
+zustand

@@ -73,7 +73,31 @@ Open a pull request in the usual way and merge it once the gate is green. Give
 it a `chore(release): v<version>` title: it is the squash subject, and a
 `chore` subject asks for no further bump.
 
-### 3. Cut and push the signed tag (owner, GPG key)
+### 3. Check dependency provenance (owner, no credentials)
+
+On the merge commit, before the tag exists:
+
+```sh
+git switch main && git pull --ff-only
+nix develop --command scripts/check-provenance.mjs
+```
+
+The check reads the catalog's resolved versions out of `pnpm-lock.yaml`,
+verifies each package's npm provenance attestation against the sigstore trust
+root, and compares what verifies against
+[`dependency-provenance.txt`](../dependency-provenance.txt), the record of
+what verified last time. It fails where a package that carried an attestation
+no longer does, where a signature or an attestation does not verify, and where
+the record and the catalog have parted. The packages that publish no
+attestation at all are printed as the residual: that list is what a release
+accepts, and it is the residual Panoptes' own threat model names.
+
+The CI gate runs the same check, on this tag as on every pull request, so this
+run is the one that answers before a tag exists that cannot be moved. It
+reaches the registry, and an exit code of 2 says the audit could not run
+rather than that provenance failed. Run it again.
+
+### 4. Cut and push the signed tag (owner, GPG key)
 
 On the merge commit, and nowhere else:
 
@@ -87,7 +111,7 @@ git push origin "v<version>"
 `-s` is required: an unsigned tag is rejected by the ruleset. The tag cannot be
 moved or deleted afterwards, so check the commit before pushing.
 
-### 4. The executables are built and attached (automatic, no credentials)
+### 5. The executables are built and attached (automatic, no credentials)
 
 Pushing the tag runs [`.github/workflows/ci.yml`](../.github/workflows/ci.yml),
 the same workflow every pull request runs. There is no separate release
@@ -121,7 +145,7 @@ configuration. If `CHANGELOG.md` has no section for the version, the notes
 fall back to GitHub's generated ones rather than failing, because a tag cannot
 be moved and a stopped release would leave the version unshippable.
 
-### 5. Check what shipped (owner)
+### 6. Check what shipped (owner)
 
 Download one executable from the release page, verify it against
 `SHA256SUMS`, check its provenance with both flags, and run
@@ -344,10 +368,16 @@ something environment-dependent has reached the output again.
 - **A target stops cross-compiling.** `scripts/package-cli.sh --all` reproduces
   it on a Linux machine inside `nix develop`, and CI catches the host target on
   every pull request before a tag exists.
+- **A dependency lost its provenance attestation.** The `provenance` job fails
+  and with it the gate, so nothing is published. Read what the check printed:
+  either the package moved to a publisher that attests nothing, in which case
+  the catalog entry is the decision to make, or the registry is answering
+  wrongly and the release waits.
 - **Something unrelated to the release failed the run.** One workflow means the
   whole gate stands between a tag and its release, so a Codecov upload that
-  cannot reach the service, or a semgrep scan that cannot fetch its registry
-  rules, fails `build-test` or `static-checks` and no release is created. That
+  cannot reach the service, a semgrep scan that cannot fetch its registry
+  rules, or a provenance check that cannot reach the npm registry, fails
+  `build-test`, `static-checks` or `provenance` and no release is created. That
   is the trade for having no second pipeline to drift. Re-run from the Actions
   tab once the service is back: the re-run is the recovery described above, and
   publishing is idempotent.
