@@ -131,17 +131,17 @@ const reasonPhrases: Record<DivergenceReason, string> = {
  * The divergences as lines for a person, one per entry and in the order the
  * codec recorded them. An empty list renders as a line saying so, so the
  * rendering is never blank. An id reaches this rendering as the foreign
- * file wrote it and `detail` can quote what the file said, so both go
- * through `escapedForTerminal`, and an id, which is rendered in quotes,
- * escapes a quote as well: a newline cannot split one entry into two lines,
- * and no id can render as another. Of what that escaping leaves alone an id
- * carries less than a `detail` can, the model refusing every control
- * character but tab, line feed and carriage return: what is left to an id
- * is the zero width joiner and non-joiner, the format characters a script
- * owns and the three Arabic marks the model accepts by name, some of them
- * invisible and some drawn as an ornament over the text that follows, and
- * the Arabic letter mark U+061C, which is a bidirectional control the model
- * accepts.
+ * file wrote it and `detail` can quote what the file said, so both are
+ * escaped the way `escapedForTerminal` escapes a text, and an id, which is
+ * rendered in quotes, escapes a quote on top of that: a newline cannot split
+ * one entry into two lines, and no id can render as another. Of what that
+ * escaping leaves alone an id carries less than a `detail` can, the model
+ * refusing every control character but tab, line feed and carriage return:
+ * what is left to an id is the zero width joiner and non-joiner, the format
+ * characters a script owns and the three Arabic marks the model accepts by
+ * name, some of them invisible and some drawn as an ornament over the text
+ * that follows, and the Arabic letter mark U+061C, which is a bidirectional
+ * control the model accepts.
  */
 export function renderDivergences(divergences: readonly Divergence[]): string {
   return hasDiverged(divergences)
