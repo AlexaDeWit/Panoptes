@@ -1,4 +1,5 @@
 import type { Severity } from '@panoptes/model';
+import { canvasType, lightPalette } from './tokens.js';
 
 /**
  * Every class name the primitives emit. A consumer names a class through
@@ -50,9 +51,15 @@ export type TextStyleRule = {
  * estimates with is the size the text renders at by construction.
  */
 export const wrappedTextStyles = {
-  label: { className: canvasClassNames.label, fontSize: 12 },
-  note: { className: canvasClassNames.note, fontSize: 12 },
-  flowLabel: { className: canvasClassNames.flowLabel, fontSize: 11 },
+  label: {
+    className: canvasClassNames.label,
+    fontSize: canvasType.elementName,
+  },
+  note: { className: canvasClassNames.note, fontSize: canvasType.note },
+  flowLabel: {
+    className: canvasClassNames.flowLabel,
+    fontSize: canvasType.flowName,
+  },
 } as const satisfies Record<WrappedTextStyle, TextStyleRule>;
 
 /**
@@ -77,13 +84,9 @@ const name = canvasClassNames;
 
 const text = wrappedTextStyles;
 
-const badgeFontSize = 11;
+const type = canvasType;
 
-const secondaryBadgeFontSize = 9;
-
-const badgeMarkFontSize = 9;
-
-const groundColour = '#ffffff';
+const colour = lightPalette;
 
 /**
  * The one stylesheet the primitives are drawn with. The headless renderer
@@ -91,20 +94,25 @@ const groundColour = '#ffffff';
  * injects it once, so both draw one diagram. Only properties SVG applies
  * appear, so the sheet works with no HTML around it, and interactive states
  * join it as further classes rather than as a second sheet.
+ *
+ * Every value comes out of {@link lightPalette} and {@link canvasType}
+ * resolved rather than as a custom property, because the standalone SVG has
+ * no document around it to hold a `:root` and the PDF that embeds those bytes
+ * has none either.
  */
 export const canvasStylesheet = `.${name.element} {
-  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-family: ${type.family};
 }
 .${name.shape} {
-  fill: ${groundColour};
-  stroke: #1f2937;
+  fill: ${colour.surfacePanel};
+  stroke: ${colour.textPrimary};
   stroke-width: 1.5;
 }
 .${name.actor} {
-  fill: #eef2ff;
+  fill: ${colour.surfaceActor};
 }
 .${name.process} {
-  fill: #f0fdf4;
+  fill: ${colour.surfaceProcess};
 }
 .${name.store} {
   fill: none;
@@ -113,7 +121,7 @@ export const canvasStylesheet = `.${name.element} {
 .${name.boundaryBox},
 .${name.boundaryCurve} {
   fill: none;
-  stroke: #6b7280;
+  stroke: ${colour.textSecondary};
   stroke-width: ${boundaryStrokeWidth};
   stroke-dasharray: 8 6;
 }
@@ -124,14 +132,14 @@ export const canvasStylesheet = `.${name.element} {
   stroke-dasharray: 6 4;
 }
 .${text.label.className} {
-  fill: #111827;
+  fill: ${colour.textPrimary};
   font-size: ${text.label.fontSize}px;
   font-weight: 500;
   text-anchor: middle;
   dominant-baseline: central;
 }
 .${text.note.className} {
-  fill: #374151;
+  fill: ${colour.textSecondary};
   font-size: ${text.note.fontSize}px;
   text-anchor: middle;
   dominant-baseline: central;
@@ -140,57 +148,57 @@ export const canvasStylesheet = `.${name.element} {
   fill: none;
 }
 .${name.flowArrow} {
-  fill: #1f2937;
+  fill: ${colour.textPrimary};
   stroke: none;
 }
 .${text.flowLabel.className} {
-  fill: #374151;
+  fill: ${colour.textSecondary};
   font-size: ${text.flowLabel.fontSize}px;
   text-anchor: middle;
   dominant-baseline: central;
   paint-order: stroke;
-  stroke: ${groundColour};
+  stroke: ${colour.surfaceCanvas};
   stroke-width: 3;
   stroke-linejoin: round;
 }
 .${name.badge} {
-  stroke: ${groundColour};
+  stroke: ${colour.badgeGround};
   stroke-width: 1.5;
 }
 .${name.badgeCount} {
-  fill: ${groundColour};
+  fill: ${colour.badgeGround};
   stroke: none;
   font-weight: 600;
   text-anchor: middle;
   dominant-baseline: central;
 }
 .${name.badgePrimary} .${name.badgeCount} {
-  font-size: ${badgeFontSize}px;
+  font-size: ${type.badgeCount}px;
 }
 .${name.badgeSecondary} .${name.badgeCount} {
-  font-size: ${secondaryBadgeFontSize}px;
+  font-size: ${type.secondaryBadgeCount}px;
 }
 .${name.badgeMark} {
-  fill: ${groundColour};
+  fill: ${colour.badgeGround};
   stroke: none;
-  font-size: ${badgeMarkFontSize}px;
+  font-size: ${type.badgeMark}px;
   font-weight: 700;
   text-anchor: middle;
   dominant-baseline: central;
 }
 .${name.toneCritical} {
-  fill: #7f1d1d;
+  fill: ${colour.toneCritical};
 }
 .${name.toneHigh} {
-  fill: #b91c1c;
+  fill: ${colour.toneHigh};
 }
 .${name.toneMedium} {
-  fill: #b45309;
+  fill: ${colour.toneMedium};
 }
 .${name.toneLow} {
-  fill: #1d4ed8;
+  fill: ${colour.toneLow};
 }
 .${name.toneNeutral} {
-  fill: #52525b;
+  fill: ${colour.toneNeutral};
 }
 `;

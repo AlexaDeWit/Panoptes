@@ -3,17 +3,26 @@
 Behaviour comes from [Radix](https://www.radix-ui.com/) headless primitives,
 imported from the single `radix-ui` package; nothing here adopts a component
 kit. Styling is a CSS module per component, drawing every colour, space and
-radius from the design tokens in [`../styles.css`](../styles.css), with Radix
-state read through its own `data-state` and `data-highlighted` attributes
-rather than through classes a component would have to keep in step. No
-CSS-in-JS, no Tailwind, and no second stylesheet.
+radius from the design tokens below, with Radix state read through its own
+`data-state` and `data-highlighted` attributes rather than through classes a
+component would have to keep in step. No CSS-in-JS, no Tailwind, and no second
+stylesheet.
 
 ## Tokens
+
+The values are the canvas package's
+([the visual system](../../../../packages/canvas/README.md#the-visual-system)),
+projected as custom properties and injected once at the app root by
+[`../theme.tsx`](../theme.tsx), so the chrome and the diagram inside it are
+coloured from one table. A colour written into a stylesheet here instead is a
+failing spec, `../theme.spec.tsx`, which walks the production files of this app
+and of the canvas package for one.
 
 | Token                                                                | What it decides                    |
 | -------------------------------------------------------------------- | ---------------------------------- |
 | `--pn-font-family`, `--pn-font-size`, `--pn-line-height`             | The type scale                     |
 | `--pn-colour-surface`, `--pn-colour-surface-raised`                  | What a control sits on             |
+| `--pn-colour-canvas`                                                 | What a diagram is drawn on         |
 | `--pn-colour-text`, `--pn-colour-text-muted`                         | Text, at WCAG AA on either surface |
 | `--pn-colour-border`                                                 | Every hairline                     |
 | `--pn-colour-accent`, `--pn-colour-accent-text`                      | Selection and the focus indicator  |

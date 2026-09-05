@@ -68,7 +68,8 @@ the headless renderer embeds the one string in a `<style>` element inside its
 SVG and the studio injects the same string once. A renamed class is a compile
 error for every consumer, and the suite checks that the sheet and the
 primitives name exactly the same set of classes. Interactive states join as
-further classes in the same sheet.
+further classes in the same sheet. Every value in that sheet comes out of the
+token module below rather than out of the sheet itself.
 
 **Attachment is fixed side-midpoint handles.** Every element the canvas draws
 as a box exposes four handles, `top`, `right`, `bottom` and `left`, at the
@@ -200,6 +201,45 @@ and where both carry a badge the growth pushes the second's badge off the
 first's rather than letting the two stack a few units apart. A label with no
 clear candidate anywhere takes the cheapest one rather than being dropped, so
 a dense diagram still draws every name it carries.
+
+## The visual system
+
+`tokens.ts` is where a colour, a step of spacing and a size of type are
+decided, for the diagram and for the studio's chrome alike. `lightPalette`
+names roles rather than shades: the three surfaces, the two washes an actor
+and a process are filled with, the two inks, the hairline, the primary action,
+the cream a badge is lettered in, and one tone per severity. `darkPalette`
+answers the same roles over warm ink grounds. Nothing applies the dark table
+yet, so it is data beside the light one rather than a theme.
+
+The palette is the maintainer's vintage draftsman colours with the lightness
+moved where a contrast floor demanded it and the hue left alone. Five values
+are not the starting palette's own, and the reasons are in the module. The
+fifth severity, which the starting palette does not carry, is the olive of the
+primary action, so a low badge and a button are one colour: what tells one
+severity from another is the badge's mark, and the tone repeats it.
+
+`contrastRatio` is the WCAG 2.2 ratio computed from two tokens, and
+`tokens.spec.ts` puts every text-on-surface and mark-on-surface pair of both
+tables through it: 4.5 for text and for a badge's lettering, 3 for a mark and
+for the outline that identifies a control. Every surface counts as a ground,
+the two washes an actor and a process are filled with among them, since a
+badge is drawn over an element as readily as beside one. So the palette is
+measured rather than read, and a value moved by hand fails the suite with the
+ratio it reached. `channelDistance` is the coarse floor under the five tones, which
+catches two collapsing onto one shade and claims nothing more.
+
+`canvasStylesheet` resolves the light tokens to values, because the standalone
+SVG has no document around it to hold a `:root` and neither has the PDF that
+embeds those bytes. `tokenStylesheet` is the other projection of the same
+table, a `:root` block of the `--pn-*` custom properties the studio's CSS
+modules read, which the studio injects once at its own root
+(`apps/studio/src/theme.tsx`). Generating a `.css` file at build time would
+work as well and was not taken: a generated file is a second copy that a check
+has to police, where a projection computed from the table cannot go stale.
+That is why the studio's custom-property names live in this package: the
+naming already followed the `pn-` prefix this sheet emits, and the projection
+belongs beside the table it reads.
 
 ## Measuring nothing, and the same bytes every time
 
