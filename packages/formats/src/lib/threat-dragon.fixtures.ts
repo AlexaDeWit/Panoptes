@@ -3,15 +3,12 @@ import {
   diagramSchema,
   mitigationSchema,
   modelMetadataSchema,
-  parseModel,
   threatSchema,
-  type Model,
 } from '@panoptes/model';
 import type {
   ThreatDragonDocument,
   ThreatDragonThreat,
 } from '@panoptes/wire-threat-dragon';
-import { Either } from 'effect';
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { z } from 'zod';
@@ -328,7 +325,9 @@ export const unmodelledFixture: ThreatDragonDocument = {
 /**
  * A whole model as `parseModel` takes it, typed from the schemas the model
  * package exports rather than from the model schema itself, which stays
- * internal to that package.
+ * internal to that package. A fixture literal carries this annotation where
+ * it is written: the shared `parsedFixture` takes `unknown`, so nothing else
+ * checks the literal before the parse.
  */
 export type ModelInput = {
   metadata: z.input<typeof modelMetadataSchema>;
@@ -338,26 +337,6 @@ export type ModelInput = {
   mitigations: z.input<typeof mitigationSchema>[];
   assumptions: z.input<typeof assumptionSchema>[];
 };
-
-/**
- * The parsed form of a model fixture, for a spec that needs a Model rather
- * than the schema's input. Typed as that input, so a fixture literal is
- * checked where it is written rather than only where it is parsed. Throws
- * where the fixture stops parsing, since a fixture that no longer parses is
- * a broken suite rather than a case under test, and the message carries the
- * issues so the failure names what it lost.
- */
-export function parsedFixture(input: ModelInput): Model {
-  return Either.getOrThrowWith(
-    parseModel(input),
-    (failure) =>
-      new Error(
-        `A fixture does not parse: ${failure.issues
-          .map((issue) => `${issue.path.join('.')}: ${issue.message}`)
-          .join('; ')}`,
-      ),
-  );
-}
 
 /**
  * A model holding what Threat Dragon has no place for, so that a write of

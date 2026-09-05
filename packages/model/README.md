@@ -75,8 +75,9 @@ suite in the workspace shares: `elementId`, `diagramId` and `threatId`, which
 parse a spec's literal string into a branded id, and `parsedFixture`, the
 fold from a fixture document to a `Model` that throws where the fixture stops
 parsing, a fixture that no longer parses being a broken suite rather than a
-case under test. The subpath resolves to source and is excluded from the
-library build, so no fixture module reaches what a release ships.
+case under test. The subpath resolves to source and stays out of the library
+build. Who may import it is a workspace rule, stated in
+[`CODING.md`](../../CODING.md#tests).
 
 [`SCHEMA.md`](SCHEMA.md) is the whole model expanded from the schemas
 themselves, regenerated and checked on every test run.

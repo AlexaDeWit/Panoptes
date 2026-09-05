@@ -1,3 +1,4 @@
+import { parsedFixture } from '@panoptes/model/fixtures';
 import {
   threatDragonWireSchema,
   type ThreatDragonDocument,
@@ -13,11 +14,11 @@ import {
   complementFixture,
   ecluseModel,
   ecluseText,
-  parsedFixture,
   richerThanFormatFixture,
   richerThanFormatSource,
   threatDragonJsonSchema,
   unmodelledFixture,
+  type ModelInput,
 } from './threat-dragon.fixtures.js';
 
 const threatDragon: Codec<typeof threatDragonWireSchema> = {
@@ -433,7 +434,7 @@ describe('a merge onto a document an edit has moved out from under', () => {
     lastIssuedThreatNumber: 4,
     mitigations: [],
     assumptions: [],
-  });
+  } satisfies ModelInput);
 
   const written = threatDragon.write(edited, source);
   const document = documentOf(written.output);
@@ -551,7 +552,7 @@ describe('a threat an edit detached from one of the cells holding it', () => {
     lastIssuedThreatNumber: 1,
     mitigations: [],
     assumptions: [],
-  });
+  } satisfies ModelInput);
 
   const written = threatDragon.write(detached, source);
   const cells = documentOf(written.output).detail.diagrams[0]?.cells ?? [];
