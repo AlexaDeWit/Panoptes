@@ -82,10 +82,15 @@ flows can meet at one midpoint.
 
 **Badges count open threats only**, on the model's own definition of open, so
 a badge, the register and the CLI count one set of threats. The primary badge
-carries the number of open threats attached to the element, coloured by the
-worst severity assessed among them. The secondary badge, smaller and neutral,
-carries how many of those are undecided, and appears only where that says
-something the primary does not: an element whose open threats are all
+carries the number of open threats attached to the element over a mark for
+the worst severity assessed among them, a letter per severity and a question
+mark where none has been assessed, and it is coloured by that same severity.
+The mark is what the badge says about severity; the tone repeats it, so the
+picture reads with the colour ignored and the interactive canvas and the
+headless render say the same thing. The secondary badge, smaller, neutral and
+unmarked, since every threat it counts is undecided, carries how many of the
+open threats those are, and appears only where that says something the
+primary does not: an element whose open threats are all
 undecided shows the primary alone, neutral. An element with no open threat
 shows no badge.
 

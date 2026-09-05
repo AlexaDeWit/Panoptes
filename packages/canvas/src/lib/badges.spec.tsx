@@ -3,6 +3,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import {
   badgeExtent,
   badgesByElement,
+  severityMark,
   severityRank,
   ThreatBadgeGlyph,
   type ThreatBadge,
@@ -73,6 +74,20 @@ describe('severityRank', () => {
     expect(severityRank.low).toBeLessThan(severityRank.medium);
     expect(severityRank.medium).toBeLessThan(severityRank.high);
     expect(severityRank.high).toBeLessThan(severityRank.critical);
+  });
+});
+
+describe('severityMark', () => {
+  it('marks every severity the model declares and no other', () => {
+    expect(new Set(Object.keys(severityMark))).toEqual(
+      new Set<string>(severitySchema.options),
+    );
+  });
+
+  it('gives each severity a mark of its own, so no two badges read alike', () => {
+    expect(new Set(Object.values(severityMark)).size).toBe(
+      severitySchema.options.length,
+    );
   });
 });
 
@@ -170,6 +185,17 @@ describe('ThreatBadgeGlyph', () => {
     expect(markup).toContain(`class="${severityToneClass.high}"`);
     expect(markup).toContain('>4</text>');
     expect(markup).not.toContain(canvasClassNames.badgeSecondary);
+  });
+
+  it('marks the severity in text, so the tone is not the only thing saying it', () => {
+    const markup = renderToStaticMarkup(
+      <ThreatBadgeGlyph
+        badge={{ count: 4, severity: 'high', secondary: 0 }}
+        at={{ x: 0, y: 0 }}
+      />,
+    );
+    expect(markup).toContain(canvasClassNames.badgeMark);
+    expect(markup).toContain(`>${severityMark.high}</text>`);
   });
 
   it('stacks the undecided count under the primary badge', () => {

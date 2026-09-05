@@ -13,11 +13,15 @@ import { svgNumber } from './numbers.js';
 import { translate } from './paths.js';
 import { canvasClassNames, severityToneClass } from './stylesheet.js';
 
-const primaryRadius = 11;
+const primaryRadius = 13;
 
 const secondaryRadius = 8;
 
 const badgeGap = 3;
+
+const countOffset = -3;
+
+const markOffset = 6;
 
 /**
  * Order of the severities, worst last. `undecided` ranks zero because it is
@@ -31,6 +35,19 @@ export const severityRank = {
   high: 3,
   critical: 4,
 } as const satisfies Record<Severity, number>;
+
+/**
+ * The mark the primary badge carries under its count, one per severity, so
+ * the severity reads with the colour ignored. `undecided` takes a question
+ * mark rather than a letter, since it is the absence of an assessment.
+ */
+export const severityMark = {
+  undecided: '?',
+  low: 'L',
+  medium: 'M',
+  high: 'H',
+  critical: 'C',
+} as const satisfies Record<Severity, string>;
 
 /**
  * What an element's badge says. `count` is how many open threats name it and
@@ -117,6 +134,8 @@ export function badgeBox(at: Point, badge: ThreatBadge): Box {
 
 /**
  * The stacked pair of threat badges, its primary centred on `at`. The
+ * primary carries the count over the mark of its severity, so the tone
+ * repeats what the mark already says rather than carrying it alone. The
  * secondary sits beneath the primary and is left out where the model gives
  * the two nothing to say apart.
  */
@@ -134,7 +153,15 @@ export function ThreatBadgeGlyph({
           className={severityToneClass[badge.severity]}
           r={svgNumber(primaryRadius)}
         />
-        <text className={canvasClassNames.badgeCount}>{badge.count}</text>
+        <text
+          className={canvasClassNames.badgeCount}
+          y={svgNumber(countOffset)}
+        >
+          {badge.count}
+        </text>
+        <text className={canvasClassNames.badgeMark} y={svgNumber(markOffset)}>
+          {severityMark[badge.severity]}
+        </text>
       </g>
       {badge.secondary === 0 ? null : (
         <g

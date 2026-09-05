@@ -201,7 +201,7 @@ describe('layoutDiagram', () => {
   });
 
   it('bounds everything it draws', () => {
-    expect(layout.bounds).toEqual({ x: 0, y: -11, width: 651, height: 421 });
+    expect(layout.bounds).toEqual({ x: 0, y: -13, width: 653, height: 423 });
   });
 
   it('reaches past a node box for the badge hanging off its corner', () => {

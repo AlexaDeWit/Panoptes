@@ -21,6 +21,7 @@ describe('the package barrel', () => {
       'badgeExtent',
       'badgeBox',
       'severityRank',
+      'severityMark',
       'ThreatBadgeGlyph',
       'handleSides',
       'centreOf',
