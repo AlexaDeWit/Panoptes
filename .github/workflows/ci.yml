@@ -284,8 +284,10 @@ jobs:
   # this job alone, which the verdict below names. The script attempts each
   # audit twice before reporting that it could not run. The install is for
   # the `yaml` package the script parses both lockfiles with, and carries
-  # --ignore-scripts, so nothing in the tree whose provenance is in question
-  # runs code in the job that asks.
+  # --ignore-scripts, so no install-time script in the tree runs here. One
+  # package still runs code: `yaml` itself, which the script imports and
+  # which sits in the residual this job prints, so the parser is inside the
+  # audit it performs. Threat 25 records that.
   provenance:
     name: Dependency provenance
     needs: dependency-changes

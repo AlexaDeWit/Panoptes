@@ -257,7 +257,7 @@ const check = ({ catalog, attested, audited, base, baseAttested }) => {
   const names = [...catalog.keys()].sort();
 
   console.log(
-    `${names.length} packages in the catalog, ${attested.size} with a verified provenance attestation, ${base.size} at a version the base commit did not carry.`,
+    `${names.length} packages in the catalog, ${attested.size} with a verified provenance attestation, ${base.size} whose version moved since the base commit.`,
   );
   console.log('');
 
