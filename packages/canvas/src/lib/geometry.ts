@@ -8,6 +8,12 @@ export type Box = {
   readonly maxY: number;
 };
 
+/** A circle, as the point it is centred on and its radius. */
+export type Circle = {
+  readonly centre: Point;
+  readonly radius: number;
+};
+
 /** A straight run between two points, the piece every drawn line is made of. */
 export type Segment = {
   readonly from: Point;
@@ -72,6 +78,22 @@ export function boxesOverlap(one: Box, other: Box): boolean {
     other.minX <= one.maxX &&
     one.minY <= other.maxY &&
     other.minY <= one.maxY
+  );
+}
+
+/**
+ * Whether a box shares any point with a circle, its edge and the circle's
+ * own included. The point of the box nearest the centre decides it, which is
+ * the centre itself where the centre lies inside.
+ */
+export function boxMeetsCircle(box: Box, circle: Circle): boolean {
+  const nearest = {
+    x: Math.min(Math.max(circle.centre.x, box.minX), box.maxX),
+    y: Math.min(Math.max(circle.centre.y, box.minY), box.maxY),
+  };
+  return (
+    Math.hypot(nearest.x - circle.centre.x, nearest.y - circle.centre.y) <=
+    circle.radius
   );
 }
 

@@ -8,17 +8,20 @@ import {
 } from './canvas.fixtures.js';
 import {
   boxesOverlap,
+  boxMeetsCircle,
   boxOfPoints,
   segmentMeetsBox,
   segmentsOfBox,
   segmentsOfPolyline,
   shiftedBy,
   type Box,
+  type Circle,
   type Segment,
 } from './geometry.js';
 import {
   flowLabelPlacements,
   nodeTextPlacement,
+  processCircle,
   textPlacementCorners,
   type FlowGeometry,
 } from './label-placement.js';
@@ -59,6 +62,26 @@ const outlineOf = (node: CanvasNode): Segment[] => {
 
 type Drawn = { readonly of: string; readonly box: Box };
 
+type Solid = { readonly of: string; readonly meets: (box: Box) => boolean };
+
+const asSolid = (drawn: Drawn): Solid => ({
+  of: drawn.of,
+  meets: (box) => boxesOverlap(box, drawn.box),
+});
+
+const circleOf = (node: CanvasNode): Circle => {
+  const circle = processCircle(node.size);
+  return {
+    centre: shiftedBy(circle.centre, node.position),
+    radius: circle.radius,
+  };
+};
+
+const outlineSolid = (node: CanvasNode): Solid =>
+  node.kind === 'process'
+    ? { of: node.name, meets: (box) => boxMeetsCircle(box, circleOf(node)) }
+    : asSolid({ of: node.name, box: boxOf(node) });
+
 const textBoxOf = (node: CanvasNode): Box | undefined =>
   boxOfPoints(
     textPlacementCorners(nodeTextPlacement(node)).map((corner) =>
@@ -81,11 +104,11 @@ const elementBadges = (layout: CanvasLayout): Drawn[] =>
         ],
   );
 
-const elementSolids = (layout: CanvasLayout): Drawn[] => [
+const elementSolids = (layout: CanvasLayout): Solid[] => [
   ...layout.nodes.flatMap((node) =>
-    isEnclosure(node) ? [] : [{ of: node.name, box: boxOf(node) }],
+    isEnclosure(node) ? [] : [outlineSolid(node)],
   ),
-  ...elementBadges(layout),
+  ...elementBadges(layout).map(asSolid),
 ];
 
 const elementNames = (layout: CanvasLayout): Drawn[] =>
@@ -94,9 +117,9 @@ const elementNames = (layout: CanvasLayout): Drawn[] =>
     return text === undefined ? [] : [{ of: `${node.name} name`, box: text }];
   });
 
-const elementBoxes = (layout: CanvasLayout): Drawn[] => [
+const elementBoxes = (layout: CanvasLayout): Solid[] => [
   ...elementSolids(layout),
-  ...elementNames(layout),
+  ...elementNames(layout).map(asSolid),
 ];
 
 const drawnLines = (layout: CanvasLayout): Segment[] => [
@@ -153,7 +176,7 @@ const collisionsIn = (layout: CanvasLayout): string[] => {
   const labels = labelBoxes(layout);
   return labels.flatMap((label, index) => [
     ...elements
-      .filter((element) => boxesOverlap(label.box, element.box))
+      .filter((element) => element.meets(label.box))
       .map((element) => `${label.of} over the element ${element.of}`),
     ...labels
       .slice(index + 1)
@@ -310,7 +333,7 @@ const curveNameOverlaps = (layout: CanvasLayout): string[] => {
     return box === undefined
       ? []
       : solids
-          .filter((solid) => boxesOverlap(box, solid.box))
+          .filter((solid) => solid.meets(box))
           .map((solid) => `${node.name} over ${solid.of}`);
   });
 };
@@ -602,6 +625,50 @@ describe('two flows between one pair of elements', () => {
 
   it('leaves nothing overlapping', () => {
     expect(collisionsIn(layout)).toEqual([]);
+  });
+});
+
+describe('two badged flows between one pair of elements', () => {
+  const layout = layoutOf(
+    diagramOf(
+      [
+        boxAt('el-left', 0, 0),
+        boxAt('el-right', 460, 0),
+        flowFrom('el-out', 'el-left', 'el-right', 'ship the parcel'),
+        flowFrom('el-back', 'el-right', 'el-left', 'return the parcel'),
+      ],
+      [openThreatOn('el-out'), openThreatOn('el-back', 2)],
+    ),
+  );
+
+  it('holds their badges a clearance apart, so the two read as one each', () => {
+    const badges = flowBadges(layout);
+    expect(badges).toHaveLength(2);
+    const [one, other] = badges;
+    expect(boxesOverlap(grownBy(one.box, flowLabelClearance), other.box)).toBe(
+      false,
+    );
+  });
+});
+
+describe('the every-glyph label beside the Order API process', () => {
+  const layout = layoutOf(everyGlyphModel);
+  const [orderApi] = layout.nodes.filter((node) => node.kind === 'process');
+  const submitOrder = labelBoxes(layout).filter((label) =>
+    label.of.startsWith('"Submit order"'),
+  );
+
+  it('takes the corner of its box that the drawn circle leaves clear', () => {
+    expect(orderApi.name).toBe('Order API');
+    expect(submitOrder).toHaveLength(2);
+    expect(
+      submitOrder.filter((label) => boxesOverlap(label.box, boxOf(orderApi))),
+    ).toHaveLength(2);
+    expect(
+      submitOrder.filter((label) =>
+        boxMeetsCircle(label.box, circleOf(orderApi)),
+      ),
+    ).toEqual([]);
   });
 });
 

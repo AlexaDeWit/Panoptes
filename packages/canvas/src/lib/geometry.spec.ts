@@ -1,5 +1,6 @@
 import {
   boxesOverlap,
+  boxMeetsCircle,
   boxOfPoints,
   cornersOfBox,
   segmentMeetsBox,
@@ -7,9 +8,12 @@ import {
   segmentsOfPolyline,
   shiftedBy,
   type Box,
+  type Circle,
 } from './geometry.js';
 
 const unitBox: Box = { minX: 0, minY: 0, maxX: 100, maxY: 100 };
+
+const unitCircle: Circle = { centre: { x: 50, y: 50 }, radius: 50 };
 
 describe('boxOfPoints', () => {
   it('holds every point it is given', () => {
@@ -74,6 +78,26 @@ describe('boxesOverlap', () => {
     expect(
       boxesOverlap(unitBox, { minX: 101, minY: 0, maxX: 200, maxY: 100 }),
     ).toBe(false);
+  });
+});
+
+describe('boxMeetsCircle', () => {
+  it('meets a box the circle reaches into', () => {
+    expect(
+      boxMeetsCircle({ minX: 40, minY: -50, maxX: 60, maxY: 10 }, unitCircle),
+    ).toBe(true);
+  });
+
+  it('counts a box its edge only touches', () => {
+    expect(
+      boxMeetsCircle({ minX: 100, minY: 40, maxX: 120, maxY: 60 }, unitCircle),
+    ).toBe(true);
+  });
+
+  it('leaves a box in the corner of its bounding square clear', () => {
+    const corner: Box = { minX: 90, minY: 90, maxX: 100, maxY: 100 };
+    expect(boxesOverlap(corner, unitBox)).toBe(true);
+    expect(boxMeetsCircle(corner, unitCircle)).toBe(false);
   });
 });
 

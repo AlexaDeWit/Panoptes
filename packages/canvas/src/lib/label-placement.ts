@@ -7,12 +7,14 @@ import {
 } from './badges.js';
 import {
   boxesOverlap,
+  boxMeetsCircle,
   boxOfPoints,
   segmentMeetsBox,
   segmentsOfBox,
   segmentsOfPolyline,
   shiftedBy,
   type Box,
+  type Circle,
   type Segment,
 } from './geometry.js';
 import type { TextAnchor } from './labels.js';
@@ -136,6 +138,22 @@ export function nodeTextPlacement(node: CanvasNode): TextPlacement {
 }
 
 /**
+ * The circle a process's glyph draws, in the node's own coordinates: centred
+ * in the node's box, of the radius that inscribes it in the shorter side.
+ * The glyph draws it and the placement search charges a label for it, so the
+ * shape a reader sees is the shape a label is held clear of.
+ *
+ * The stroke straddles this circle and is left out of it, the way an
+ * element's box leaves out its own outline's stroke.
+ */
+export function processCircle(size: Size): Circle {
+  return {
+    centre: boxCentre(size),
+    radius: Math.min(size.width, size.height) / 2,
+  };
+}
+
+/**
  * The two opposite corners of the box a placement's text fills, wrapped and
  * measured the way `WrappedText` lays it out. Text that wraps to no
  * line at all, which is what an empty name gives, occupies nothing and comes
@@ -163,16 +181,16 @@ export function textPlacementCorners(
 /**
  * The given nodes with every curve boundary's name settled on one side of
  * its curve. A curve's name takes the convex side, and where that box would
- * lie over an element's own box or an element's badge it takes the mirror of
- * that side instead; where both are covered the convex side stands, since a
- * name has to be drawn somewhere and that side is the one that clears the
- * curve. Element names are not consulted, and neither are the flow labels,
- * which are placed after this and already count a curve's text box among
- * their obstacles.
+ * lie over the shape an element draws or over an element's badge it takes
+ * the mirror of that side instead; where both are covered the convex side
+ * stands, since a name has to be drawn somewhere and that side is the one
+ * that clears the curve. Element names are not consulted, and neither are
+ * the flow labels, which are placed after this and already count a curve's
+ * text box among their obstacles.
  *
  * Both candidates are fixed by the waypoints and the obstacles are the
- * model's own boxes, so reversing a curve's waypoints, or holding the
- * elements in another order, gives the same side.
+ * shapes the model's own elements draw, so reversing a curve's waypoints, or
+ * holding the elements in another order, gives the same side.
  */
 export function settledCurveNames(
   nodes: readonly CanvasNode[],
@@ -216,27 +234,32 @@ export type FlowGeometry = {
  *
  * A flow offers a candidate at the midpoint and the quarter points of each
  * of its segments, on either side of that segment's own normal, at three
- * standoffs a clearance apart. A candidate costs one for every element box,
- * element name and element badge its own name or badge box overlaps, one
- * for every straight run of a drawn line that meets either box, and one for
- * every name or badge already placed that either box overlaps. An element
- * the canvas draws as a box occupies its box, its run of text and its badge,
- * so a label over an element's name costs both; a trust boundary occupies
- * its outline alone, its four sides or the polygon its curve's control
- * points trace, since it encloses what it is drawn around and a label inside
- * it is where it belongs. The drawn lines are those outlines and every
- * flow's own polyline, and a flow's own line counts as much as another's,
- * which costs nothing at the standoff that put the label beside it and does
- * cost where the flow doubles back under its own name.
+ * standoffs a clearance apart. A candidate costs one for every element
+ * shape, element name and element badge its own name or badge box overlaps,
+ * one for every straight run of a drawn line that meets either box, and one
+ * for every name or badge already placed that either box overlaps.
  *
- * An element's badge is grown by one clearance on every side where a
- * candidate's own badge box is tested against it, so a flow badge that comes
- * within a clearance of an element's badge costs as much as one drawn over
- * it. Two circles that close together on one corner read as an element's own
- * pair rather than as the flow's. The candidate's name box is tested against
- * every badge as it is drawn, and so is its badge box against a label
- * already placed: the growth is an element badge's alone, so two flow badges
- * are charged where they overlap and not before.
+ * An element is charged as the shape its glyph draws, measured by the
+ * function that draws it: an actor, a store and a text element as their
+ * boxes, a process as the circle {@link processCircle} inscribes in its box.
+ * A label in a corner of a process's box therefore costs nothing for that
+ * process, which is the white space a reader sees there. The element
+ * occupies that shape, its run of text and its badge, so a label over an
+ * element's name costs both; a trust boundary occupies its outline alone,
+ * its four sides or the polygon its curve's control points trace, since it
+ * encloses what it is drawn around and a label inside it is where it
+ * belongs. The drawn lines are those outlines and every flow's own polyline,
+ * and a flow's own line counts as much as another's, which costs nothing at
+ * the standoff that put the label beside it and does cost where the flow
+ * doubles back under its own name.
+ *
+ * Every badge already drawn is grown by one clearance on every side where a
+ * candidate's own badge box is tested against it, an element's and a flow
+ * label's alike, so a flow badge that comes within a clearance of another
+ * badge costs as much as one drawn over it. Two circles that close together
+ * read as one element's own stacked pair rather than as two labels. The
+ * candidate's name box is tested against every badge as it is drawn,
+ * ungrown, since text beside a badge is still read as text.
  *
  * Flows are placed in ascending order of their ids, so the order the model
  * happens to hold its elements in decides nothing, and the cheapest
@@ -256,15 +279,14 @@ export function flowLabelPlacements(
   flows: readonly FlowGeometry[],
   nodes: readonly CanvasNode[],
 ): FlowLabelPlacement[] {
-  const drawn = drawnObstacles(flows, nodes);
   const ordered = flows.map((flow, index) => ({ flow, index }));
   ordered.sort((one, other) => byIdAscending(one.flow, other.flow));
-  const placed: Box[] = [];
   const placements: FlowLabelPlacement[] = [];
+  let drawn = drawnObstacles(flows, nodes);
   for (const { flow, index } of ordered) {
-    const chosen = cheapestCandidate(flow, drawn, placed);
+    const chosen = cheapestCandidate(flow, drawn);
     placements[index] = chosen.placement;
-    placed.push(...boxesOf(chosen));
+    drawn = withLabelPlaced(drawn, chosen);
   }
   return placements;
 }
@@ -276,16 +298,15 @@ type Candidate = {
   readonly fromMiddle: number;
 };
 
-type Obstacles = {
-  readonly boxesForName: readonly Box[];
-  readonly boxesForBadge: readonly Box[];
+type Solids = {
+  readonly boxes: readonly Box[];
+  readonly circles: readonly Circle[];
   readonly lines: readonly Segment[];
 };
 
-type NodeDrawing = {
-  readonly boxes: readonly Box[];
-  readonly badges: readonly Box[];
-  readonly lines: readonly Segment[];
+type Obstacles = {
+  readonly forName: Solids;
+  readonly forBadge: Solids;
 };
 
 type BoundaryCurve = Extract<CanvasNode, { readonly kind: 'boundary-curve' }>;
@@ -340,7 +361,7 @@ function boxCentre(size: Size): Point {
   return { x: size.width / 2, y: size.height / 2 };
 }
 
-function nameIsBlocked(node: BoundaryCurve, blocked: readonly Box[]): boolean {
+function nameIsBlocked(node: BoundaryCurve, blocked: Solids): boolean {
   const [convex] = ownTextBox({ ...node, nameMirrored: false });
   if (convex === undefined || !meetsAny(convex, blocked)) {
     return false;
@@ -349,15 +370,20 @@ function nameIsBlocked(node: BoundaryCurve, blocked: readonly Box[]): boolean {
   return mirror !== undefined && !meetsAny(mirror, blocked);
 }
 
-function elementSolids(nodes: readonly CanvasNode[]): Box[] {
-  return nodes.flatMap((node) => [
-    ...(isEnclosure(node) ? [] : [nodeBox(node)]),
-    ...ownBadgeBox(node),
-  ]);
+function elementSolids(nodes: readonly CanvasNode[]): Solids {
+  const outlines = nodes.map(nodeOutline);
+  return {
+    boxes: [
+      ...outlines.flatMap((outline) => outline.boxes),
+      ...nodes.flatMap(ownBadgeBox),
+    ],
+    circles: outlines.flatMap((outline) => outline.circles),
+    lines: [],
+  };
 }
 
-function meetsAny(box: Box, others: readonly Box[]): boolean {
-  return others.some((other) => boxesOverlap(box, other));
+function meetsAny(box: Box, solids: Solids): boolean {
+  return boxCollisions(box, solids) > 0;
 }
 
 function byIdAscending(one: FlowGeometry, other: FlowGeometry): number {
@@ -367,18 +393,14 @@ function byIdAscending(one: FlowGeometry, other: FlowGeometry): number {
   return one.id < other.id ? -1 : 1;
 }
 
-function cheapestCandidate(
-  flow: FlowGeometry,
-  drawn: Obstacles,
-  placed: readonly Box[],
-): Candidate {
+function cheapestCandidate(flow: FlowGeometry, drawn: Obstacles): Candidate {
   const segments = segmentsOfPolyline(flow.points);
   const home = homeSegment(flow.points, segments);
   const middle = alongSegment(home, 0.5);
   let best = candidateAt(flow, home, 0.5, 0, 1, middle);
-  let cost = collisionsOf(best, drawn, placed);
+  let cost = collisionsOf(best, drawn);
   for (const next of candidatesOf(flow, segments, middle)) {
-    const held = collisionsOf(next, drawn, placed);
+    const held = collisionsOf(next, drawn);
     if (held < cost || (held === cost && next.fromMiddle < best.fromMiddle)) {
       best = next;
       cost = held;
@@ -425,11 +447,20 @@ function candidateAt(
   };
 }
 
-function boxesOf(candidate: Candidate): Box[] {
-  return [
-    ...(candidate.nameBox === undefined ? [] : [candidate.nameBox]),
-    ...(candidate.badgeBox === undefined ? [] : [candidate.badgeBox]),
-  ];
+function withLabelPlaced(drawn: Obstacles, candidate: Candidate): Obstacles {
+  const name = candidate.nameBox === undefined ? [] : [candidate.nameBox];
+  const badge = candidate.badgeBox === undefined ? [] : [candidate.badgeBox];
+  return {
+    forName: withBoxes(drawn.forName, [...name, ...badge]),
+    forBadge: withBoxes(drawn.forBadge, [
+      ...name,
+      ...badge.map(grownByClearance),
+    ]),
+  };
+}
+
+function withBoxes(solids: Solids, boxes: readonly Box[]): Solids {
+  return { ...solids, boxes: [...solids.boxes, ...boxes] };
 }
 
 function badgeBeside(
@@ -449,30 +480,21 @@ function badgeBeside(
   return { at, box: badgeBox(at, badge) };
 }
 
-function collisionsOf(
-  candidate: Candidate,
-  drawn: Obstacles,
-  placed: readonly Box[],
-): number {
+function collisionsOf(candidate: Candidate, drawn: Obstacles): number {
   return (
-    boxCollisions(candidate.nameBox, drawn.boxesForName, placed, drawn.lines) +
-    boxCollisions(candidate.badgeBox, drawn.boxesForBadge, placed, drawn.lines)
+    boxCollisions(candidate.nameBox, drawn.forName) +
+    boxCollisions(candidate.badgeBox, drawn.forBadge)
   );
 }
 
-function boxCollisions(
-  box: Box | undefined,
-  boxes: readonly Box[],
-  placed: readonly Box[],
-  lines: readonly Segment[],
-): number {
+function boxCollisions(box: Box | undefined, solids: Solids): number {
   if (box === undefined) {
     return 0;
   }
   return (
-    boxes.filter((other) => boxesOverlap(box, other)).length +
-    placed.filter((other) => boxesOverlap(box, other)).length +
-    lines.filter((line) => segmentMeetsBox(line, box)).length
+    solids.boxes.filter((other) => boxesOverlap(box, other)).length +
+    solids.circles.filter((circle) => boxMeetsCircle(box, circle)).length +
+    solids.lines.filter((line) => segmentMeetsBox(line, box)).length
   );
 }
 
@@ -480,22 +502,24 @@ function drawnObstacles(
   flows: readonly FlowGeometry[],
   nodes: readonly CanvasNode[],
 ): Obstacles {
-  const boxes: Box[] = [];
-  const badges: Box[] = [];
-  const lines: Segment[] = [];
-  for (const node of nodes) {
-    const own = nodeObstacles(node);
-    boxes.push(...own.boxes);
-    badges.push(...own.badges);
-    lines.push(...own.lines);
-  }
-  for (const flow of flows) {
-    lines.push(...segmentsOfPolyline(flow.points));
-  }
+  const outlines = nodes.map(nodeOutline);
+  const boxes = [
+    ...outlines.flatMap((outline) => outline.boxes),
+    ...nodes.flatMap(ownTextBox),
+  ];
+  const badges = nodes.flatMap(ownBadgeBox);
+  const circles = outlines.flatMap((outline) => outline.circles);
+  const lines = [
+    ...outlines.flatMap((outline) => outline.lines),
+    ...flows.flatMap((flow) => segmentsOfPolyline(flow.points)),
+  ];
   return {
-    boxesForName: [...boxes, ...badges],
-    boxesForBadge: [...boxes, ...badges.map(grownByClearance)],
-    lines,
+    forName: { boxes: [...boxes, ...badges], circles, lines },
+    forBadge: {
+      boxes: [...boxes, ...badges.map(grownByClearance)],
+      circles,
+      lines,
+    },
   };
 }
 
@@ -508,21 +532,14 @@ function grownByClearance(box: Box): Box {
   };
 }
 
-function isEnclosure(node: CanvasNode): boolean {
-  return node.kind === 'boundary-box' || node.kind === 'boundary-curve';
-}
-
-function nodeObstacles(node: CanvasNode): NodeDrawing {
-  const text = ownTextBox(node);
-  const badges = ownBadgeBox(node);
-  const box = nodeBox(node);
+function nodeOutline(node: CanvasNode): Solids {
   if (node.kind === 'boundary-box') {
-    return { boxes: text, badges, lines: segmentsOfBox(box) };
+    return { boxes: [], circles: [], lines: segmentsOfBox(nodeBox(node)) };
   }
   if (node.kind === 'boundary-curve') {
     return {
-      boxes: text,
-      badges,
+      boxes: [],
+      circles: [],
       lines: segmentsOfPolyline(
         controlPolygon(node.waypoints).map((point) =>
           shiftedBy(point, node.position),
@@ -530,7 +547,18 @@ function nodeObstacles(node: CanvasNode): NodeDrawing {
       ),
     };
   }
-  return { boxes: [box, ...text], badges, lines: [] };
+  if (node.kind === 'process') {
+    return { boxes: [], circles: [placedCircle(node)], lines: [] };
+  }
+  return { boxes: [nodeBox(node)], circles: [], lines: [] };
+}
+
+function placedCircle(node: CanvasNode): Circle {
+  const circle = processCircle(node.size);
+  return {
+    centre: shiftedBy(circle.centre, node.position),
+    radius: circle.radius,
+  };
 }
 
 function ownTextBox(node: CanvasNode): Box[] {

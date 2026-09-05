@@ -1,7 +1,7 @@
 import type { ReactElement } from 'react';
 import { badgeAnchor, ThreatBadgeGlyph } from './badges.js';
 import { WrappedText } from './labels.js';
-import { nodeTextPlacement } from './label-placement.js';
+import { nodeTextPlacement, processCircle } from './label-placement.js';
 import type { CanvasEdge, CanvasNode } from './layout.js';
 import { svgNumber } from './numbers.js';
 import { arrowheadPath, polylinePath, smoothPath, translate } from './paths.js';
@@ -120,12 +120,13 @@ function actorOutline(node: NodeOf<'actor'>): ReactElement {
 }
 
 function processOutline(node: NodeOf<'process'>): ReactElement {
+  const circle = processCircle(node.size);
   return (
     <circle
       className={shapeClass(canvasClassNames.process)}
-      cx={svgNumber(node.size.width / 2)}
-      cy={svgNumber(node.size.height / 2)}
-      r={svgNumber(Math.min(node.size.width, node.size.height) / 2)}
+      cx={svgNumber(circle.centre.x)}
+      cy={svgNumber(circle.centre.y)}
+      r={svgNumber(circle.radius)}
     />
   );
 }
