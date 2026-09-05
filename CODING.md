@@ -75,6 +75,36 @@ manifest, test-only ones under `devDependencies`. Never reach a library
 through another package's re-export, or rely on it resolving transitively:
 the version tested against is then someone else's to change.
 
+The root manifest is a leaf under that rule too, and what it declares is the
+workspace's own tooling in four groups. First, the tools a root script or a
+target's command runs: `nx`, `typescript`, `oxlint`, `oxfmt`, and `eslint` as
+the host of the boundaries rule. Second, the nx plugins, generators and
+executors `nx.json` names: `@nx/js`, `@nx/vite`, `@nx/vitest` and
+`@nx/playwright` as plugins, `@nx/react` as the generator defaults, and
+`@nx/esbuild` as the executor a build target selects. Third, what the root
+configs import by name: `@nx/eslint-plugin` and `@typescript-eslint/parser` in
+`eslint.config.mjs`, `vite` and `@vitejs/plugin-react` in `vite.shared.mts`,
+`vitest` in `vitest.shared.mts` and `vitest.config.ts`. Fourth, a tool's
+optional peers, held beside the tool that declares them so their versions are
+this workspace's to pin rather than that tool's: `@swc-node/register` and
+`@swc/core` for `nx`, `@swc/helpers` for `@swc/core`, `oxlint-tsgolint` for
+`oxlint`, `jiti` for `eslint` and `vite`, `esbuild` for `@nx/esbuild` and
+`vite`, `@types/node` for `vite` and `vitest`, and `jsdom`,
+`@vitest/coverage-v8` and `@vitest/ui` for `vitest`, the first two of which
+`vitest.shared.mts` selects as the environment and the coverage provider every
+project tests under. `tslib` sits outside all four: `tsconfig.base.json` sets
+`importHelpers`, so emitted code imports it.
+
+Three entries are none of those. `@nx/web`, `@babel/core` and
+`@babel/preset-react` are hard dependencies of `@nx/react` and `@nx/js`, so
+declaring them at the root pins versions those plugins resolve anyway. They
+are redundant rather than wrong, and retiring them is its own change. Leave
+them until then.
+
+React, react-dom, the testing libraries and Playwright are on none of these
+lists, which is what the rule is for. A project that renders or tests React
+declares them itself, so no project resolves them through the root.
+
 ## Build targets
 
 Targets are root-defined: nx plugins and `targetDefaults` own task
