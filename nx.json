@@ -134,7 +134,12 @@
         {
           "json": "{workspaceRoot}/tsconfig.json",
           "fields": ["extends", "files", "include"]
-        }
+        },
+        // The CLI's bundle carries fonts the flake provides rather than files
+        // in its project root, so the variable naming their store path is an
+        // input: without it a nixpkgs bump that moves the fonts would replay
+        // a build made from the old ones (CODING.md, Build targets).
+        { "env": "PANOPTES_FONTS_DIR" }
       ],
       "outputs": ["{options.outputPath}"],
       "defaultConfiguration": "production",
@@ -145,7 +150,6 @@
         "bundle": false,
         "main": "{projectRoot}/src/main.ts",
         "tsConfig": "{projectRoot}/tsconfig.app.json",
-        "assets": ["{projectRoot}/src/assets"],
         "sourcemap": true
       },
       "configurations": {

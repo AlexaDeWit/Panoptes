@@ -14,10 +14,21 @@
       let
         pkgs = nixpkgs.legacyPackages.${system};
 
-        # A UTF-8 locale, so test-runner output encodes regardless of host locale.
+        # What both shells export beyond the tool-specific sets below.
         shellEnv = {
+          # A UTF-8 locale, so test-runner output encodes regardless of host
+          # locale.
           LANG = "C.UTF-8";
           LC_ALL = "C.UTF-8";
+
+          # The fonts the CLI typesets a PDF with, pinned by this flake's
+          # nixpkgs revision rather than committed to the tree: a binary
+          # Panoptes did not author is a toolchain input (CODING.md,
+          # Dependencies and versions). apps/cli/esbuild.config.mts reads the
+          # faces it needs by name from here, takes the licence from the same
+          # store path, and refuses to build without this variable rather than
+          # writing an executable that cannot typeset.
+          PANOPTES_FONTS_DIR = "${pkgs.liberation_ttf}/share/fonts/truetype";
         };
 
         # The runtimes only. The flake pins node and pnpm; pnpm-workspace.yaml

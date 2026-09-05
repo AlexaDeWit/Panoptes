@@ -6,7 +6,8 @@
 #
 # Input is apps/cli/dist/main.js, which `nx build @panoptes/cli` writes, and
 # apps/cli/dist/assets beside it, which the same build fills with the Typst
-# WebAssembly module and the fonts a PDF needs. Output is
+# WebAssembly module out of node_modules and the fonts a PDF needs out of the
+# flake. Output is
 # dist/cli/panoptes-<version>-<target>[.exe] and SHA256SUMS beside them. The
 # host executable is then run three times: with --version, whose output is
 # compared with the workspace version, over a committed fixture with validate,
@@ -253,8 +254,13 @@ echo "panoptes --version reports ${reported}, panoptes validate ${fixture}"
 echo "reports ${summary}, panoptes render --format pdf writes a PDF, and"
 echo "every target compiled twice to the same bytes"
 
-# The input's hash and then the outputs', so a run's log carries what a
+# The inputs' hashes and then the outputs', so a run's log carries what a
 # rebuild elsewhere has to match and says which half drifted when it does not
-# (docs/release.md, "Rebuilding a released executable").
-sha256sum -- "${bundle}"
+# (docs/release.md, "Rebuilding a released executable"). The fonts and the
+# licence that travels with them are hashed as well as the bundle: they come
+# from the flake's nixpkgs rather than from the tree, so a bump that redraws a
+# glyph or replaces the licence file shows here instead of only in an
+# executable's bytes.
+sha256sum -- "${bundle}" "${assets}"/*.ttf \
+  "${assets}"/LICENSE.liberation-fonts.txt
 cat -- "${out_dir}/SHA256SUMS"
