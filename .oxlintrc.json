@@ -18,6 +18,21 @@
     "suspicious": "error"
   },
   "rules": {
+    // Test helpers on a subpath every downstream project can reach, which
+    // the layer matrix does not see because it reasons about projects rather
+    // than entry points. Only a spec or a fixture module may import them
+    // (CODING.md -> Tests); the override below is the whole of the exemption.
+    "no-restricted-imports": [
+      "error",
+      {
+        "paths": [
+          {
+            "name": "@panoptes/model/fixtures",
+            "message": "Fixture helpers belong to a *.spec.* or *.fixtures.* module. A production module that imports them ships them."
+          }
+        ]
+      }
+    ],
     // Effect's tagged types discriminate on `_tag` (adopted for the model
     // package's fallible surface), and zod exposes a schema's own definition
     // under `_zod` (read by the model package's schema report). Both are the
@@ -50,6 +65,15 @@
     "typescript/switch-exhaustiveness-check": "error",
     "typescript/use-unknown-in-catch-callback-variable": "error"
   },
+  "overrides": [
+    {
+      // The fixture helpers' intended callers, exempt from the rule above.
+      "files": ["**/*.spec.*", "**/*.fixtures.*"],
+      "rules": {
+        "no-restricted-imports": "off"
+      }
+    }
+  ],
   // Generated output; node_modules is ignored by default.
   "ignorePatterns": ["**/dist/**", "**/out-tsc/**", "**/coverage/**"]
 }
