@@ -177,10 +177,13 @@ should a local one after a recompile.
 
 Around 33 MB of every executable is a runtime deno embeds, which the nixpkgs
 deno pin does not cover. The flake pins it by hash, the compile runs with no
-network, and every target is built twice and compared, so a release is
-reproducible from the flake alone and needs Linux. What each control is for,
-and how to bump the hashes when deno moves, is in
+network, and every target is built twice from a bundle stamped with a fixed
+name, modification time and mode, so one commit gives one executable on any
+Linux machine. What each control is for, and how to bump the hashes when deno
+moves, is in
 [the release procedure](docs/release.md#maintenance-the-runtime-inside-an-executable).
+[Rebuilding a released executable](docs/release.md#rebuilding-a-released-executable)
+is the check anyone can run against a download.
 
 A file the executables must carry, such as the Typst WebAssembly module and
 its fonts for PDF output (issue #34), rides along as an argument to
