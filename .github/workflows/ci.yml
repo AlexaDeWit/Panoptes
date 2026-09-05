@@ -273,8 +273,9 @@ jobs:
   # against the sigstore trust root and compared with what the same package
   # attested on the base commit, with the packages that publish no
   # attestation reported as the residual (scripts/check-provenance.mjs).
-  # dependency-provenance-moves.txt is the one committed input: the
-  # repository moves this project has accepted.
+  # A move this project accepts is declared on the commit that makes it, as
+  # a `Provenance-Move:` trailer, which the script reads out of the commits
+  # between the base and here.
   #
   # It runs when the lockfile or the catalog moved, which is where a Renovate
   # bump appears, and unconditionally on a push and a dispatch;

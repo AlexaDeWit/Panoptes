@@ -98,5 +98,10 @@ commitment. A weekend of rework is not serious commitment. Two more rules:
   subjects, so **the title decides the version bump**
   ([the release procedure](docs/release.md)).
 - **Commits are GPG-signed and DCO signed off** (see above). Disclose
-  non-trivial AI assistance with an `Assisted-by:` trailer.
+  non-trivial AI assistance with an `Assisted-by:` trailer. A commit that
+  moves a dependency to a release attested from another source repository
+  declares that move with a `Provenance-Move:` trailer naming the package and
+  the old and the new repository, one line per package, which is what the
+  provenance check reads before it takes the move
+  ([the release procedure](docs/release.md)).
 - **The engineering rules live in [`CODING.md`](CODING.md)**.

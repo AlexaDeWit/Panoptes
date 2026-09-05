@@ -12,8 +12,10 @@
 // this, a pull request checked out as its merge commit and a push to main. A
 // package pinned at the same version on both sides is one artifact and gets
 // one answer, so only the packages whose version moved are audited twice,
-// and only those can be reported lost or moved.
-// dependency-provenance-moves.txt records the moves this repository accepts.
+// and only those can be reported lost or moved. A move this project accepts
+// is declared on the commit that makes it, as a `Provenance-Move: name
+// old-repository new-repository` trailer, and this reads the trailers of
+// every commit between the base and here.
 //
 // npm is the verifier rather than pnpm: `pnpm audit signatures` checks
 // registry signatures alone and knows nothing of attestations. npm's own
@@ -54,8 +56,7 @@ const yaml = await import('yaml').catch(() => null);
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '..');
 const lockName = 'pnpm-lock.yaml';
 const lockPath = join(repoRoot, lockName);
-const movesName = 'dependency-provenance-moves.txt';
-const movesPath = join(repoRoot, movesName);
+const trailerKey = 'Provenance-Move';
 
 // The grammar npm accepts for a package name, bounded at npm's own limit of
 // 214 characters. Every catalog name passes it before it becomes a path,
@@ -227,21 +228,55 @@ const attestedSources = (catalog, audited) => {
   return sources;
 };
 
-// The moves this repository has accepted, one `name old-repository
-// new-repository` per line, held as the whole line so an exception admits
-// the move it names and no other. Null where the file will not read.
-const acceptedMoves = () => {
-  const text = attempt(() => readFileSync(movesPath, 'utf8'));
-  if (text === null) return null;
+// The moves this project has accepted, out of the commits the range holds:
+// each `Provenance-Move: name old-repository new-repository` trailer, kept as
+// the whole triple so a trailer admits the move it names and no other. The
+// declaration travels with the commit that makes the move, so it arrives for
+// review beside the bump it explains and nothing is kept in step afterwards.
+// Null where git will not answer at all; a trailer of that name carrying
+// anything but three fields comes back under malformed, with its commit.
+//
+// git decides what a trailer is, rather than a regex of this file's own: a
+// body reaches `interpret-trailers --parse` only where it mentions the name
+// at all, so the common commit costs no process.
+const acceptedMoves = (range) => {
+  const log = attempt(() =>
+    execFileSync('git', ['log', '--format=%h%x00%B%x00', range], {
+      cwd: repoRoot,
+      encoding: 'utf8',
+      maxBuffer: 64 * 1024 * 1024,
+      stdio: ['ignore', 'pipe', 'ignore'],
+    }),
+  );
+  if (log === null) return null;
   const accepted = new Set();
-  for (const line of text.split('\n')) {
-    const trimmed = line.trim();
-    if (trimmed === '' || trimmed.startsWith('#')) continue;
-    const fields = trimmed.split(/\s+/);
-    if (fields.length !== 3) return null;
-    accepted.add(fields.join(' '));
+  const malformed = [];
+  const records = log.split('\0');
+  for (let index = 0; index + 1 < records.length; index += 2) {
+    const commit = records[index].trim();
+    const body = records[index + 1];
+    if (!body.includes(trailerKey)) continue;
+    const parsed = attempt(() =>
+      execFileSync('git', ['interpret-trailers', '--parse'], {
+        cwd: repoRoot,
+        input: body,
+        encoding: 'utf8',
+        stdio: ['pipe', 'pipe', 'ignore'],
+      }),
+    );
+    if (parsed === null) {
+      malformed.push(`${commit} its trailers could not be read`);
+      continue;
+    }
+    for (const line of parsed.split('\n')) {
+      const declared = new RegExp(`^${trailerKey}:(.*)$`).exec(line);
+      if (declared === null) continue;
+      const fields = declared[1].trim().split(/\s+/);
+      if (fields.length === 3) accepted.add(fields.join(' '));
+      else malformed.push(`${commit} ${line.trim()}`);
+    }
   }
-  return accepted;
+  return { accepted, malformed };
 };
 
 const report = (heading, lines) => {
@@ -251,9 +286,9 @@ const report = (heading, lines) => {
 };
 
 // 0 where this commit's catalog is as attested as the base commit's, 1 for a
-// provenance failure, and 2 where a move was found and the file that would
-// accept it could not be read.
-const check = ({ catalog, attested, audited, base, baseAttested }) => {
+// provenance failure, and 2 where a move was found and the trailers that
+// would accept it could not be read.
+const check = ({ catalog, attested, audited, base, baseAttested, range }) => {
   const names = [...catalog.keys()].sort();
 
   console.log(
@@ -298,14 +333,21 @@ const check = ({ catalog, attested, audited, base, baseAttested }) => {
         attested.has(name) && attested.get(name) !== baseAttested.get(name),
     )
     .sort();
-  const accepted = moved.length === 0 ? new Set() : acceptedMoves();
-  if (accepted === null) {
+  const declared = moved.length === 0 ? null : acceptedMoves(range);
+  if (moved.length > 0 && declared === null) {
     return cannotRun([
-      `an attestation names another repository and ${movesName} cannot be`,
-      'read as lines of "name old-repository new-repository", so nothing',
-      'says whether the move is one this repository has accepted',
+      'an attestation names another repository and the commits in',
+      `${range} could not be read, so nothing says whether the move is one`,
+      'this project has declared',
     ]);
   }
+  if (declared !== null && declared.malformed.length > 0) {
+    return cannotRun([
+      `a ${trailerKey} trailer is not "name old-repository new-repository":`,
+      ...declared.malformed.map((entry) => `  ${entry}`),
+    ]);
+  }
+  const accepted = declared === null ? new Set() : declared.accepted;
   const unaccepted = moved.filter(
     (name) =>
       !accepted.has(`${name} ${baseAttested.get(name)} ${attested.get(name)}`),
@@ -347,10 +389,9 @@ const check = ({ catalog, attested, audited, base, baseAttested }) => {
     console.error(`provenance check failed: ${failure}`);
   console.error('Read the report above.');
   if (unaccepted.length > 0) {
-    console.error(
-      `A move this project takes goes in ${movesName}, as the line:`,
-    );
-    console.error('  name old-repository new-repository');
+    console.error('A move this project takes is declared in the body of the');
+    console.error('commit that makes it, one line per package:');
+    console.error(`  ${trailerKey}: name old-repository new-repository`);
   }
   return 1;
 };
@@ -483,6 +524,7 @@ const main = () => {
 
   return check({
     catalog,
+    range: `${ref}..HEAD`,
     attested: attestedSources(catalog, audited),
     audited,
     base,

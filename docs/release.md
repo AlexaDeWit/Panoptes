@@ -91,12 +91,14 @@ where one that carried an attestation on the base commit no longer does, where
 the attestation now names a different repository, where a signature or an
 attestation does not verify, and where a package carries no registry signature
 though the registry publishes signing keys. `--base <ref>` compares against
-another commit. A move that is a real change of home is accepted by writing it
-in [`dependency-provenance-moves.txt`](../dependency-provenance-moves.txt) as
-`name old-repository new-repository` and committing that line, which admits
-the move it names and no other. Nothing else is committed: the packages that
-publish no attestation at all are printed as the residual, and that list is
-what a release accepts and what Panoptes' own threat model names.
+another commit. A move that is a real change of home is accepted in the body of
+the commit that makes it, as a `Provenance-Move: name old-repository
+new-repository` trailer, one line per package, read out of the commits between
+the base and the head: the declaration arrives for review beside the bump it
+explains, and it admits the move it names and no other. Nothing is committed
+beyond that: the packages that publish no attestation at all are printed as the
+residual, and that list is what a release accepts and what Panoptes' own threat
+model names.
 
 The CI gate runs the same check on this tag, and on a pull request whenever
 `pnpm-lock.yaml` or `pnpm-workspace.yaml` changed, which is where a bump
@@ -105,11 +107,11 @@ that cannot be moved is never cut on an unanswered question. Run it in an
 installed checkout: it parses both lockfiles with the catalog's `yaml`. It
 reaches the registry, and an exit code of 2 says the check could not run
 rather than that provenance failed: the registry was out of reach after two
-attempts, or the lockfile at either commit or the moves file could not be
-read, or the catalog holds a name npm would refuse, a version the workspace's
-own importers do not resolve `catalog:` to, or an entry no workspace project
-references at all. Only the first of those is worth running again; the rest
-name what to correct.
+attempts, or the lockfile at either commit could not be read, or a
+`Provenance-Move:` trailer is not three fields, or the catalog holds a name
+npm would refuse, a version the workspace's own importers do not resolve
+`catalog:` to, or an entry no workspace project references at all. Only the
+first of those is worth running again; the rest name what to correct.
 
 ### 4. Cut and push the signed tag (owner, GPG key)
 
@@ -387,9 +389,9 @@ something environment-dependent has reached the output again.
 - **A dependency lost its provenance attestation, or moved to another source
   repository.** The `provenance` job fails and with it the gate, so nothing is
   published. Read what the check printed: either the move is one this project
-  takes, in which case one line in `dependency-provenance-moves.txt` accepts
-  that move and no other, or the registry is answering wrongly and the release
-  waits.
+  takes, in which case a `Provenance-Move:` trailer on the commit that makes it
+  accepts that move and no other, or the registry is answering wrongly and the
+  release waits.
 - **Something unrelated to the release failed the run.** One workflow means the
   whole gate stands between a tag and its release, so a Codecov upload that
   cannot reach the service, a semgrep scan that cannot fetch its registry
