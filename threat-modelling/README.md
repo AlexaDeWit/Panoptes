@@ -16,10 +16,15 @@ paths, the desktop IPC bridge, and the MCP write tools.
 Every status is true to the tree. A threat is mitigated where a mechanism is
 on `main` and its mitigation prose names that mechanism, open where the
 surface is designed and its issue is named but nothing is built, and carries
-an undecided severity where there is nothing built to assess. Fifteen are
-mitigated, nine are open, and one is transferred to whoever publishes a
-register. Every mitigated threat names a mitigation record, and every open
-one names the issue that carries the work.
+an undecided severity where there is nothing built to assess. A third case
+sits between the first two. A threat is partly held where a mechanism is on
+`main` and does not cover the whole surface: it stays open, and its prose
+names the mechanism and what the mechanism leaves behind rather than an
+issue. Threat 25 is the one of those. Fifteen are mitigated, nine are open,
+and one is transferred to whoever publishes a register. Every mitigated
+threat names a mitigation record, and every open one names either the issue
+that carries the work or, where it is partly held, the mechanism and its
+residual.
 
 It is a draft the maintainer will refine. What it is not is decoration: it is
 the second production-scale fixture the suites gate on, beside the Écluse

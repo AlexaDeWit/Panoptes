@@ -1,0 +1,52 @@
+# Every package in the pnpm-workspace.yaml catalog that carried a verified
+# npm provenance attestation when this file was last written, and the source
+# repository that attestation names. A "-" is an attestation whose
+# provenance statement names no repository.
+#
+# scripts/check-provenance.mjs reads it. A name here that no longer verifies
+# is a lost attestation, and one whose attestation now names another
+# repository is a release built somewhere new: both fail the check, because
+# the verification itself carries no identity policy and would take either.
+# A catalog package that verifies and is absent here is a record out of date.
+# No version is recorded, so a bump that keeps the attestation and the
+# repository leaves this file untouched. The catalog's other packages publish
+# no attestation at all, and the check prints them as the residual.
+#
+# Regenerate with: scripts/check-provenance.mjs --update
+@axe-core/playwright https://github.com/dequelabs/axe-core-npm
+@babel/core https://github.com/babel/babel
+@babel/preset-react https://github.com/babel/babel
+@nx/esbuild https://github.com/nrwl/nx
+@nx/eslint-plugin https://github.com/nrwl/nx
+@nx/js https://github.com/nrwl/nx
+@nx/node https://github.com/nrwl/nx
+@nx/playwright https://github.com/nrwl/nx
+@nx/react https://github.com/nrwl/nx
+@nx/vite https://github.com/nrwl/nx
+@nx/vitest https://github.com/nrwl/nx
+@nx/web https://github.com/nrwl/nx
+@playwright/test https://github.com/microsoft/playwright
+@swc-node/register https://github.com/swc-project/swc-node
+@swc/core https://github.com/swc-project/swc
+@swc/helpers https://github.com/swc-project/swc
+@testing-library/react https://github.com/testing-library/react-testing-library
+@testing-library/user-event https://github.com/testing-library/user-event
+@typescript-eslint/parser https://github.com/typescript-eslint/typescript-eslint
+@vitejs/plugin-react https://github.com/vitejs/vite-plugin-react
+@vitest/coverage-v8 https://github.com/vitest-dev/vitest
+@vitest/ui https://github.com/vitest-dev/vitest
+@xyflow/react https://github.com/xyflow/xyflow
+effect https://github.com/Effect-TS/effect
+esbuild https://github.com/evanw/esbuild
+fast-check https://github.com/dubzzz/fast-check
+nx https://github.com/nrwl/nx
+oxfmt https://github.com/oxc-project/oxc
+oxlint https://github.com/oxc-project/oxc
+oxlint-tsgolint https://github.com/oxc-project/tsgolint
+radix-ui https://github.com/radix-ui/primitives
+react https://github.com/react/react
+react-dom https://github.com/react/react
+vite https://github.com/vitejs/vite
+vitest https://github.com/vitest-dev/vitest
+zod https://github.com/colinhacks/zod
+zustand https://github.com/pmndrs/zustand
