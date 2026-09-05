@@ -232,11 +232,12 @@ jobs:
         run: nix develop .#ci --command pnpm nx e2e @panoptes/studio-e2e
 
   # The npm provenance attestation of every package in the catalog, verified
-  # against the sigstore trust root, with the packages that publish none
-  # reported as the residual (scripts/check-provenance.mjs,
-  # dependency-provenance.txt). It runs on every pull request because a
-  # Renovate bump is where a lost attestation would first appear, and it is a
-  # named step before a tag in docs/release.md.
+  # against the sigstore trust root and compared with the source repository
+  # dependency-provenance.txt records for it, with the packages that publish
+  # no attestation reported as the residual (scripts/check-provenance.mjs).
+  # It runs on every pull request because a Renovate bump is where a lost or
+  # moved attestation would first appear, and it is a named step before a tag
+  # in docs/release.md.
   #
   # Its own job because it installs nothing and reaches the registry: a
   # registry out of reach reds this job alone, which the verdict below names,

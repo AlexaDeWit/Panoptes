@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // Report which of the catalog's packages carries a verified npm provenance
-// attestation, and fail where one that carried it no longer does.
+// attestation, from which source repository, and fail where one that carried
+// it no longer does or now names somewhere else.
 //
 //   scripts/check-provenance.mjs           check against dependency-provenance.txt
 //   scripts/check-provenance.mjs --update  rewrite that record from what verifies now
@@ -9,20 +10,25 @@
 // registry signatures alone and knows nothing of attestations. npm's own
 // `audit signatures` checks both, but it walks a tree by dependency edges
 // whose specifier is a registry range, and every catalog reference in this
-// workspace reads `catalog:`, so run here it skips exactly the packages this
-// reports on. It is given a throwaway tree instead: one directory per catalog
+// workspace reads `catalog:`. Run in place it therefore covers no catalog
+// edge at all: whichever catalog packages it reaches, it reaches by accident
+// through some transitive dependent that names them in a range, which on the
+// tree as it stands leaves 31 of the 56 unreached and reads one of the rest
+// at a version this workspace does not install. Coverage that moves with
+// every unrelated dependency change is not a check.
+//
+// So npm is handed a throwaway tree instead: one directory per catalog
 // package holding the name and the version pnpm-lock.yaml resolved, which is
-// all npm reads before it fetches the registry's manifest and verifies the
+// all it reads before fetching the registry's manifest and verifying the
 // signature and the attestation against the sigstore trust root. Nothing is
 // downloaded and nothing is installed.
 //
 // Node rather than bash, because the audit answers in JSON of a few megabytes
 // and jq is not in the flake.
 //
-// The registry is reached over the network, so the audit is attempted twice
-// before the check reports that it could not run. That is exit code 2, apart
-// from the 1 a provenance failure exits with, and docs/release.md says what to
-// do with each.
+// Exit 1 is a provenance failure and exit 2 is a check that could not run: a
+// registry out of reach, a lockfile this cannot read, a record that is not
+// there. docs/release.md says what to do with each.
 import { execFileSync } from 'node:child_process';
 import {
   existsSync,
@@ -41,14 +47,28 @@ const lockPath = join(repoRoot, 'pnpm-lock.yaml');
 const recordName = 'dependency-provenance.txt';
 const recordPath = join(repoRoot, recordName);
 
+// The grammar npm accepts for a package name. Every catalog name is checked
+// against it before it becomes a path, because the lockfile is a file a pull
+// request may edit and `../` in a name would otherwise be a directory this
+// writes into.
+const packageName = /^(?:@[a-z0-9~-][a-z0-9._~-]*\/)?[a-z0-9~-][a-z0-9._~-]*$/;
+
+const provenancePredicate = 'https://slsa.dev/provenance/v1';
+const unknownRepository = '-';
+
 const recordHeader = `# Every package in the pnpm-workspace.yaml catalog that carried a verified
-# npm provenance attestation when this file was last written.
-# scripts/check-provenance.mjs reads it: a name here that no longer verifies
-# is a lost attestation and fails the check, and a catalog package that
-# verifies and is absent here is a record out of date. Names alone, so a
-# version bump that keeps the attestation leaves this file untouched. The
-# catalog's other packages publish no attestation at all, and the check
-# prints them as the residual.
+# npm provenance attestation when this file was last written, and the source
+# repository that attestation names. A "${unknownRepository}" is an attestation whose
+# provenance statement names no repository.
+#
+# scripts/check-provenance.mjs reads it. A name here that no longer verifies
+# is a lost attestation, and one whose attestation now names another
+# repository is a release built somewhere new: both fail the check, because
+# the verification itself carries no identity policy and would take either.
+# A catalog package that verifies and is absent here is a record out of date.
+# No version is recorded, so a bump that keeps the attestation and the
+# repository leaves this file untouched. The catalog's other packages publish
+# no attestation at all, and the check prints them as the residual.
 #
 # Regenerate with: scripts/check-provenance.mjs --update
 `;
@@ -100,9 +120,18 @@ const writeProbeTree = (root, catalog) => {
   }
 };
 
-// npm exits 1 and still answers in JSON where a signature or an attestation
-// fails to verify, so the exit code alone does not separate a finding from a
-// registry that could not be reached. Parseable output is the test.
+// npm answers in JSON whether it verified anything or not: a signature that
+// does not verify exits 1 carrying the findings, and a registry it cannot
+// reach exits 1 carrying {"error": ...}. Neither the exit code nor
+// parseability separates those two, so the three arrays an audit answers with
+// are the test, and their absence is what the retry and exit 2 are for.
+const isAuditAnswer = (value) =>
+  typeof value === 'object' &&
+  value !== null &&
+  Array.isArray(value.verified) &&
+  Array.isArray(value.invalid) &&
+  Array.isArray(value.missing);
+
 const auditOnce = (root) => {
   const command = ['audit', 'signatures', '--json', '--include-attestations'];
   const options = { cwd: root, encoding: 'utf8', maxBuffer: 256 * 1024 * 1024 };
@@ -113,7 +142,8 @@ const auditOnce = (root) => {
     stdout = typeof error.stdout === 'string' ? error.stdout : '';
   }
   try {
-    return JSON.parse(stdout);
+    const parsed = JSON.parse(stdout);
+    return isAuditAnswer(parsed) ? parsed : null;
   } catch {
     return null;
   }
@@ -121,12 +151,45 @@ const auditOnce = (root) => {
 
 const audit = (root) => auditOnce(root) ?? auditOnce(root);
 
-const attestedNames = (catalog, audited) =>
-  new Set(
-    audited.verified
-      .filter((entry) => catalog.has(entry.name))
-      .map((entry) => entry.name),
-  );
+const parseStatement = (payload) => {
+  if (typeof payload !== 'string') return null;
+  try {
+    return JSON.parse(Buffer.from(payload, 'base64').toString('utf8'));
+  } catch {
+    return null;
+  }
+};
+
+// The audit hands back the bundles it verified, and the SLSA provenance
+// statement inside one names the repository the release was built from. That
+// identity is the part the verification does not check: pacote calls
+// sigstore.verify with no certificate identity policy, so an attestation from
+// any repository at all satisfies it. Recording the repository is what turns
+// a move to another one into a decision rather than a silent pass.
+const sourceRepository = (entry) => {
+  for (const attestation of entry.attestationBundles ?? []) {
+    if (attestation.predicateType !== provenancePredicate) continue;
+    const statement = parseStatement(attestation.bundle?.dsseEnvelope?.payload);
+    const workflow =
+      statement?.predicate?.buildDefinition?.externalParameters?.workflow;
+    if (
+      typeof workflow?.repository === 'string' &&
+      workflow.repository !== ''
+    ) {
+      return workflow.repository;
+    }
+  }
+  return unknownRepository;
+};
+
+const attestedSources = (catalog, audited) => {
+  const sources = new Map();
+  for (const entry of audited.verified) {
+    if (catalog.has(entry.name))
+      sources.set(entry.name, sourceRepository(entry));
+  }
+  return sources;
+};
 
 const report = (heading, lines) => {
   console.log(heading);
@@ -135,13 +198,20 @@ const report = (heading, lines) => {
 };
 
 const check = (catalog, audited, recorded) => {
-  const attested = attestedNames(catalog, audited);
+  const attested = attestedSources(catalog, audited);
   const names = [...catalog.keys()].sort();
 
   console.log(
     `${names.length} packages in the catalog, ${attested.size} with a verified provenance attestation.`,
   );
   console.log('');
+
+  report(
+    'Verified provenance attestation, and the repository it names:',
+    names
+      .filter((name) => attested.has(name))
+      .map((name) => `${name} ${catalog.get(name)} ${attested.get(name)}`),
+  );
 
   const residual = names.filter((name) => !attested.has(name));
   if (residual.length > 0) {
@@ -153,7 +223,7 @@ const check = (catalog, audited, recorded) => {
 
   const failures = [];
 
-  const lost = recorded.filter(
+  const lost = [...recorded.keys()].filter(
     (name) => catalog.has(name) && !attested.has(name),
   );
   if (lost.length > 0) {
@@ -161,10 +231,25 @@ const check = (catalog, audited, recorded) => {
     failures.push('an attestation this repository recorded is gone');
   }
 
-  const gained = [...attested]
-    .filter((name) => !recorded.includes(name))
+  const moved = [...recorded.keys()].filter(
+    (name) => attested.has(name) && attested.get(name) !== recorded.get(name),
+  );
+  if (moved.length > 0) {
+    report(
+      'Attestation now names another source repository:',
+      moved.map(
+        (name) => `${name} ${recorded.get(name)} is now ${attested.get(name)}`,
+      ),
+    );
+    failures.push(
+      'a release is attested from a repository this one did not record',
+    );
+  }
+
+  const gained = [...attested.keys()]
+    .filter((name) => !recorded.has(name))
     .sort();
-  const departed = recorded.filter((name) => !catalog.has(name));
+  const departed = [...recorded.keys()].filter((name) => !catalog.has(name));
   if (gained.length > 0 || departed.length > 0) {
     report(`${recordName} is out of date:`, [
       ...gained.map((name) => `${name} now verifies and is not recorded`),
@@ -205,36 +290,67 @@ const check = (catalog, audited, recorded) => {
 };
 
 const update = (catalog, audited) => {
-  const attested = [...attestedNames(catalog, audited)].sort();
-  writeFileSync(
-    recordPath,
-    `${recordHeader}${attested.map((name) => `${name}\n`).join('')}`,
-  );
+  const attested = attestedSources(catalog, audited);
+  const lines = [...attested.keys()]
+    .sort()
+    .map((name) => `${name} ${attested.get(name)}\n`)
+    .join('');
+  writeFileSync(recordPath, `${recordHeader}${lines}`);
   console.log(
-    `wrote ${recordName}: ${attested.length} of ${catalog.size} packages in the catalog`,
+    `wrote ${recordName}: ${attested.size} of ${catalog.size} packages in the catalog`,
   );
   return 0;
 };
 
-const readRecord = () =>
-  readFileSync(recordPath, 'utf8')
-    .split('\n')
-    .map((line) => line.trim())
-    .filter((line) => line !== '' && !line.startsWith('#'));
+const readRecord = () => {
+  const recorded = new Map();
+  for (const line of readFileSync(recordPath, 'utf8').split('\n')) {
+    const trimmed = line.trim();
+    if (trimmed === '' || trimmed.startsWith('#')) continue;
+    const [name, repository = unknownRepository] = trimmed.split(/\s+/);
+    recorded.set(name, repository);
+  }
+  return recorded;
+};
+
+const cannotRun = (lines) => {
+  for (const line of lines) console.error(line);
+  return 2;
+};
 
 const main = () => {
   const argument = process.argv[2];
   if (argument !== undefined && argument !== '--update') {
-    console.error('usage: scripts/check-provenance.mjs [--update]');
-    return 2;
+    return cannotRun(['usage: scripts/check-provenance.mjs [--update]']);
+  }
+
+  if (!existsSync(lockPath)) {
+    return cannotRun([
+      `no ${lockPath}: run this from a checkout of the repository`,
+    ]);
   }
 
   const catalog = readCatalog(readFileSync(lockPath, 'utf8'));
   if (catalog.size === 0) {
-    console.error(
+    return cannotRun([
       `no catalog in ${lockPath}: its shape is not the one this reads`,
-    );
-    return 2;
+    ]);
+  }
+
+  const malformed = [...catalog.keys()].filter(
+    (name) => !packageName.test(name),
+  );
+  if (malformed.length > 0) {
+    return cannotRun([
+      `${lockPath} holds what npm would not accept as a package name:`,
+      ...malformed.map((name) => `  ${name}`),
+    ]);
+  }
+
+  if (argument !== '--update' && !existsSync(recordPath)) {
+    return cannotRun([
+      `no ${recordName}: write it with scripts/check-provenance.mjs --update`,
+    ]);
   }
 
   const root = mkdtempSync(join(tmpdir(), 'panoptes-provenance-'));
@@ -247,23 +363,14 @@ const main = () => {
   }
 
   if (audited === null) {
-    console.error('npm audit signatures answered nothing parseable, twice.');
-    console.error(
+    return cannotRun([
+      'npm audit signatures answered no verification, twice.',
       'The registry or the sigstore trust root was out of reach, so',
-    );
-    console.error(
       'nothing was verified and no provenance claim is made either way.',
-    );
-    return 2;
+    ]);
   }
 
   if (argument === '--update') return update(catalog, audited);
-  if (!existsSync(recordPath)) {
-    console.error(
-      `no ${recordName}: write it with scripts/check-provenance.mjs --update`,
-    );
-    return 2;
-  }
   return check(catalog, audited, readRecord());
 };
 

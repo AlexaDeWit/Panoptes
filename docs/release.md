@@ -85,17 +85,21 @@ nix develop --command scripts/check-provenance.mjs
 The check reads the catalog's resolved versions out of `pnpm-lock.yaml`,
 verifies each package's npm provenance attestation against the sigstore trust
 root, and compares what verifies against
-[`dependency-provenance.txt`](../dependency-provenance.txt), the record of
-what verified last time. It fails where a package that carried an attestation
-no longer does, where a signature or an attestation does not verify, and where
-the record and the catalog have parted. The packages that publish no
-attestation at all are printed as the residual: that list is what a release
-accepts, and it is the residual Panoptes' own threat model names.
+[`dependency-provenance.txt`](../dependency-provenance.txt), which records
+each attested package beside the source repository its attestation names. It
+fails where a package that carried an attestation no longer does, where the
+attestation now names a different repository, where a signature or an
+attestation does not verify, and where the record and the catalog have parted.
+Every one of those is accepted, once read, by rerunning with `--update` and
+committing the diff. The packages that publish no attestation at all are
+printed as the residual: that list is what a release accepts, and it is the
+residual Panoptes' own threat model names.
 
 The CI gate runs the same check, on this tag as on every pull request, so this
 run is the one that answers before a tag exists that cannot be moved. It
-reaches the registry, and an exit code of 2 says the audit could not run
-rather than that provenance failed. Run it again.
+reaches the registry, and an exit code of 2 says the check could not run
+rather than that provenance failed: the registry was out of reach after two
+attempts, or the lockfile or the record is not there to read. Run it again.
 
 ### 4. Cut and push the signed tag (owner, GPG key)
 
@@ -368,11 +372,11 @@ something environment-dependent has reached the output again.
 - **A target stops cross-compiling.** `scripts/package-cli.sh --all` reproduces
   it on a Linux machine inside `nix develop`, and CI catches the host target on
   every pull request before a tag exists.
-- **A dependency lost its provenance attestation.** The `provenance` job fails
-  and with it the gate, so nothing is published. Read what the check printed:
-  either the package moved to a publisher that attests nothing, in which case
-  the catalog entry is the decision to make, or the registry is answering
-  wrongly and the release waits.
+- **A dependency lost its provenance attestation, or moved to another source
+  repository.** The `provenance` job fails and with it the gate, so nothing is
+  published. Read what the check printed: either the package moved, in which
+  case the catalog entry is the decision to make and `--update` is how the move
+  is accepted, or the registry is answering wrongly and the release waits.
 - **Something unrelated to the release failed the run.** One workflow means the
   whole gate stands between a tag and its release, so a Codecov upload that
   cannot reach the service, a semgrep scan that cannot fetch its registry
