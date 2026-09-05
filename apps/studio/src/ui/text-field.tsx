@@ -1,5 +1,5 @@
 import { firstRefusedCharacter } from '@panoptes/model';
-import { useId, useState, type Ref } from 'react';
+import { useEffect, useId, useRef, useState, type Ref } from 'react';
 
 import styles from './text-field.module.css';
 
@@ -12,17 +12,25 @@ function useDraft(
   onRefused: (refusal: string | undefined) => void,
 ): {
   readonly text: string;
-  readonly refusal: string | undefined;
+  readonly refusal: TextRefusal | undefined;
   readonly change: (text: string) => void;
   readonly commit: () => void;
 } {
   const [draft, setDraft] = useState<Draft>({ shown: value, text: value });
-  const [refusal, setRefusal] = useState<string | undefined>(undefined);
+  const [refusal, setRefusal] = useState<TextRefusal | undefined>(undefined);
+  const reported = useRef<TextRefusal | undefined>(undefined);
 
   if (draft.shown !== value) {
     setDraft({ shown: value, text: value });
     setRefusal(undefined);
   }
+
+  useEffect(() => {
+    if (reported.current !== refusal) {
+      reported.current = refusal;
+      onRefused(refusal?.said);
+    }
+  }, [refusal, onRefused]);
 
   return {
     text: draft.text,
@@ -31,10 +39,9 @@ function useDraft(
       setDraft({ shown: value, text });
     },
     commit: () => {
-      const message = refusedText(label, draft.text);
-      setRefusal(message);
-      onRefused(message);
-      if (message === undefined) {
+      const refused = refusedText(label, draft.text);
+      setRefusal(refused);
+      if (refused === undefined) {
         onCommit(draft.text);
       }
     },
@@ -42,23 +49,37 @@ function useDraft(
 }
 
 /**
+ * A refusal in the two places it is read: `shown` under the field, where the
+ * label already says which field it is, and `said` wherever the refusal is
+ * announced away from it, where the field has to be named.
+ */
+export type TextRefusal = {
+  readonly shown: string;
+  readonly said: string;
+};
+
+/**
  * Why the model would not take this text, or nothing for text it accepts.
  * Every string of the model is text of a defined character set, and a paste
- * is where a character outside it arrives, so the field says which field was
- * not saved and which character stopped it rather than letting the model
- * carry text no codec can write back out.
+ * is where a character outside it arrives, so the field says which character
+ * stopped the edit rather than letting the model carry text no codec can
+ * write back out.
  *
  * The position is counted in characters, not in the code units the model
  * reports the refusal at, so an emoji earlier in the text does not shift the
  * number a person counts to.
  */
-export function refusedText(label: string, text: string): string | undefined {
+export function refusedText(
+  label: string,
+  text: string,
+): TextRefusal | undefined {
   const at = firstRefusedCharacter(text);
   if (at === undefined) {
     return undefined;
   }
   const before = Array.from(text.slice(0, at)).length;
-  return `${label} was not saved: character ${String(before + 1)} is one the model does not accept.`;
+  const shown = `Character ${String(before + 1)} is one the model does not accept.`;
+  return { shown, said: `${label} was not saved. ${shown}` };
 }
 
 /** What a {@link TextField} or {@link ProseField} shows and where an edit goes. */
@@ -76,9 +97,13 @@ export type TextFieldProps = {
  * where it is, the control being on a line of its own.
  *
  * What is typed is the field's until it is committed, which is what keeps a
- * refused character on screen to be corrected. Every commit attempt reports
- * through `onRefused`, whether the model took the text or refused it, so what
- * mounts the field can say so and keep it on screen while the draft stands.
+ * refused character on screen to be corrected. Every change to whether the
+ * model is refusing the draft reaches `onRefused`, so what mounts the field
+ * can say so and keep the field on screen while a refused draft stands. It is
+ * reported after the render rather than during it, because the field's own
+ * refusal drops during render, when the value it is given moves, and a parent
+ * cannot take a report from a child that is still rendering.
+ *
  * An edit that lands from anywhere else, an undo among them, replaces the
  * draft: the field follows the value it is given whenever that value moves.
  */
@@ -124,7 +149,7 @@ export function TextField({
       />
       {refusal !== undefined && (
         <p className={styles.refusal} id={refusalId}>
-          {refusal}
+          {refusal.shown}
         </p>
       )}
     </div>
@@ -171,7 +196,7 @@ export function ProseField({
       />
       {refusal !== undefined && (
         <p className={styles.refusal} id={refusalId}>
-          {refusal}
+          {refusal.shown}
         </p>
       )}
     </div>

@@ -32,13 +32,23 @@ dirty over an edit nobody made.
 
 Text carrying a character the model's character set does not accept is not
 committed at all, because the alternative is a model on screen that no codec
-can write back to a file. The field names itself and the character that
-stopped it, the panel announces the same sentence in its live region so the
-refusal is never silent, and what was typed stays on screen to be corrected.
-That last part holds under one condition: the threat holding a refused draft
-stays expanded until the text is corrected or cleared. Radix unmounts a
-collapsed item's fields, so a collapse would take the draft with it, and the
-panel refuses the collapse rather than the draft.
+can write back to a file. The field says which character stopped it, under a
+label that already says which field it is, and the panel announces the same
+refusal with the field named, so a refusal that lands after focus has left is
+not silent. What was typed stays on screen to be corrected, which holds under
+one condition: the threat holding a refused draft stays expanded until the
+text is corrected or cleared. Radix unmounts a collapsed item's fields, so a
+collapse would take the draft with it, and the panel refuses the collapse
+rather than the draft.
+
+The refusal is the panel's only view state that another view can settle, so
+it is dropped from both ends. The field reports every change to it, including
+the one it makes on its own when the value under a draft moves, an undo among
+those, and it reports after the render rather than during it, a parent having
+no way to take a report from a child that is still rendering. The panel drops
+it as well whenever nothing on screen is holding it, which is what a selection
+moving to another element does. Neither a sentence about a draft that is gone
+nor a threat held open by nothing survives.
 
 Adding is one `AddThreat`, attached to the selected element and carrying the
 number the model issues next. Deleting is one `RemoveThreat`. Both are

@@ -2,7 +2,11 @@ import type { Threat } from '@panoptes/model';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Accordion } from 'radix-ui';
-import { sampleThreat } from '../store/store.fixtures.js';
+import {
+  processElement,
+  sampleThreat,
+  storeElement,
+} from '../store/store.fixtures.js';
 import { ThreatEditor, type ThreatEditorProps } from './threat-editor.js';
 
 const softHyphen = '­';
@@ -149,22 +153,19 @@ describe('ThreatEditor', () => {
 
     await typeInto('Description', `Pasted${softHyphen}prose`);
     expect(onRefusal).toHaveBeenLastCalledWith(
-      'Description was not saved: character 7 is one the model does not accept.',
+      'Description was not saved. Character 7 is one the model does not accept.',
     );
 
     await typeInto('Mitigation', 'Check the token.');
 
     expect(onRefusal).toHaveBeenLastCalledWith(
-      'Description was not saved: character 7 is one the model does not accept.',
+      'Description was not saved. Character 7 is one the model does not accept.',
     );
   });
 
   it('says that deleting a threat several elements name takes it off all of them', () => {
     showEditor({
-      threat: {
-        ...sampleThreat,
-        elements: [...sampleThreat.elements, ...sampleThreat.elements],
-      },
+      threat: { ...sampleThreat, elements: [processElement, storeElement] },
     });
 
     expect(screen.getByText(/names 2 elements/u)).toBeDefined();

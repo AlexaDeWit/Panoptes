@@ -56,6 +56,10 @@ function focusIn(
  * A text field the model refused announces there too, and the threat holding
  * the refused draft stays expanded until the text is fixed or cleared: Radix
  * unmounts a collapsed item's fields, which would take the draft with them.
+ * The refusal is dropped as soon as it is no longer held, whether the field
+ * reported the draft settled or the selection moved off the threat entirely,
+ * so no sentence outlives the draft it was about and no threat is held open
+ * with nothing holding it.
  */
 export function ThreatPanel() {
   const element = useModelStore(panelElement);
@@ -82,13 +86,20 @@ export function ThreatPanel() {
     setAnnounced({ about: selected, said: '' });
   }
 
+  if (refusal !== undefined && held === undefined) {
+    setRefusal(undefined);
+  }
+
   const add = (): void => {
     if (element === undefined) {
       return;
     }
     const threat = freshThreat(number, element.id);
     dispatch(Action.AddThreat({ threat }));
-    if (!modelStore.getState().present.threats.includes(threat)) {
+    const added = modelStore
+      .getState()
+      .present.threats.some((candidate) => candidate.id === threat.id);
+    if (!added) {
       return;
     }
     setExpanded(threat.id);

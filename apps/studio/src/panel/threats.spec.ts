@@ -1,15 +1,14 @@
 import { replaceThreat, type Model, type Threat } from '@panoptes/model';
+import { elementId, threatId } from '@panoptes/model/fixtures';
 import { Either } from 'effect';
 import { Action } from '../store/actions.js';
 import { initialState, type State } from '../store/state.js';
 import {
   actorElement,
-  elementId,
   newProcess,
   processElement,
   sampleModel,
   sampleThreat,
-  threatId,
 } from '../store/store.fixtures.js';
 import {
   attachedThreats,

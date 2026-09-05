@@ -131,9 +131,56 @@ describe('ThreatPanel', () => {
     await user.click(screen.getByRole('button', { name: /A reader edits/u }));
 
     expect(screen.getByDisplayValue(`Pasted${softHyphen}prose`)).toBeDefined();
-    expect(screen.getAllByText(/Description was not saved/u)).toHaveLength(2);
+    expect(screen.getByText(/^Character 7/u)).toBeDefined();
     expect(announcement()).toContain('Description was not saved');
     expect(modelStore.getState().present.threats[0].description).toBe('');
+  });
+
+  it('drops a refusal the selection moved away from, and lets the threat collapse again', async () => {
+    const user = userEvent.setup();
+    showPanel(actorElement);
+    await user.click(screen.getByRole('button', { name: /A reader edits/u }));
+    await user.click(screen.getByRole('textbox', { name: 'Description' }));
+    await user.keyboard(`Pasted${softHyphen}prose`);
+    await user.click(screen.getByRole('button', { name: /A reader edits/u }));
+    expect(announcement()).toContain('Description was not saved');
+
+    act(() => {
+      dispatch(Action.Select({ elementId: processElement }));
+    });
+    act(() => {
+      dispatch(Action.Select({ elementId: actorElement }));
+    });
+
+    expect(announcement()).toBe('');
+
+    await user.click(screen.getByRole('button', { name: /A reader edits/u }));
+
+    expect(screen.queryByRole('textbox', { name: 'Description' })).toBeNull();
+  });
+
+  it('drops a refusal an undo settled, and lets the threat collapse again', async () => {
+    const user = userEvent.setup();
+    showPanel(actorElement);
+    await user.click(screen.getByRole('button', { name: /A reader edits/u }));
+    await user.click(screen.getByRole('textbox', { name: 'Description' }));
+    await user.keyboard('Prose the model takes');
+    await user.tab();
+
+    await user.click(screen.getByRole('textbox', { name: 'Description' }));
+    await user.keyboard(softHyphen);
+    await user.click(screen.getByRole('button', { name: /A reader edits/u }));
+    expect(announcement()).toContain('Description was not saved');
+
+    act(() => {
+      dispatch(Action.Undo());
+    });
+
+    expect(announcement()).toBe('');
+
+    await user.click(screen.getByRole('button', { name: /A reader edits/u }));
+
+    expect(screen.queryByRole('textbox', { name: 'Description' })).toBeNull();
   });
 
   it('lets the threat collapse once the refused text is corrected', async () => {

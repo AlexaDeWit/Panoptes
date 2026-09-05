@@ -19,14 +19,22 @@ describe('refusedText', () => {
     expect(refusedText('Title', 'Threats, écluse, 脅威')).toBeUndefined();
   });
 
-  it('names the field and where the first character the model refuses sits', () => {
-    expect(refusedText('Title', `ab${softHyphen}c`)).toBe(
-      'Title was not saved: character 3 is one the model does not accept.',
+  it('says where the first character the model refuses sits', () => {
+    expect(refusedText('Title', `ab${softHyphen}c`)?.shown).toBe(
+      'Character 3 is one the model does not accept.',
+    );
+  });
+
+  it('names the field where the refusal is read away from it', () => {
+    expect(refusedText('Title', `ab${softHyphen}c`)?.said).toBe(
+      'Title was not saved. Character 3 is one the model does not accept.',
     );
   });
 
   it('counts characters rather than the code units the model reports', () => {
-    expect(refusedText('Title', `😀ab${softHyphen}`)).toContain('character 4');
+    expect(refusedText('Title', `😀ab${softHyphen}`)?.shown).toContain(
+      'Character 4',
+    );
   });
 });
 
@@ -78,14 +86,16 @@ describe('TextField', () => {
     await user.keyboard(`ab${softHyphen}c{Enter}`);
 
     expect(onCommit).toHaveBeenCalledTimes(0);
-    expect(onRefused).toHaveBeenCalledWith(
-      'Title was not saved: character 3 is one the model does not accept.',
+    expect(onRefused).toHaveBeenLastCalledWith(
+      'Title was not saved. Character 3 is one the model does not accept.',
     );
     expect(textbox('Title').getAttribute('aria-invalid')).toBe('true');
-    expect(screen.getByText(/character 3/u)).toBeDefined();
+    expect(
+      screen.getByText('Character 3 is one the model does not accept.'),
+    ).toBeDefined();
   });
 
-  it('reports a commit the model took as no refusal at all', async () => {
+  it('reports the refusal away once the text is corrected', async () => {
     const user = userEvent.setup();
     const onRefused = refusals();
     render(
@@ -98,9 +108,41 @@ describe('TextField', () => {
     );
 
     await user.click(textbox('Title'));
-    await user.keyboard('Plain text{Enter}');
+    await user.keyboard(`ab${softHyphen}c{Enter}`);
+    await user.clear(textbox('Title'));
+    await user.keyboard('abc{Enter}');
 
-    expect(onRefused).toHaveBeenCalledWith(undefined);
+    expect(onRefused).toHaveBeenLastCalledWith(undefined);
+  });
+
+  it('reports the refusal away when the value moves under the draft', async () => {
+    const user = userEvent.setup();
+    const onRefused = refusals();
+    const { rerender } = render(
+      <TextField
+        label="Title"
+        onCommit={commits()}
+        onRefused={onRefused}
+        value=""
+      />,
+    );
+
+    await user.click(textbox('Title'));
+    await user.keyboard(`ab${softHyphen}c{Enter}`);
+    expect(onRefused).toHaveBeenLastCalledWith(
+      'Title was not saved. Character 3 is one the model does not accept.',
+    );
+
+    rerender(
+      <TextField
+        label="Title"
+        onCommit={commits()}
+        onRefused={onRefused}
+        value="Landed from elsewhere"
+      />,
+    );
+
+    expect(onRefused).toHaveBeenLastCalledWith(undefined);
   });
 
   it('takes the value an edit landing from elsewhere left behind', () => {

@@ -80,6 +80,9 @@ until it is committed, which is what keeps text the model refuses on screen to
 be corrected. It commits when it is left rather than as it is typed, so one
 edit is one undo step, and it follows the value it is given whenever that
 value moves, which is how an undo lands in a field a person is looking at.
-Every commit attempt is reported through a second callback, refused or taken,
-because a refusal shown in the field alone is a refusal nothing announces and
-nothing can keep on screen.
+Every change to whether the model is refusing what it holds is reported
+through a second callback, because a refusal shown in the field alone is a
+refusal nothing announces and nothing can keep on screen. The refusal it
+shows is the character clause alone, the label above it already naming the
+field; the sentence the callback carries names the field, for whatever reads
+it away from the control.
