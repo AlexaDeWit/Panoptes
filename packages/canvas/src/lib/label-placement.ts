@@ -19,7 +19,7 @@ import {
 } from './geometry.js';
 import type { TextAnchor } from './labels.js';
 import type { CanvasNode } from './layout.js';
-import { controlPolygon } from './paths.js';
+import { controlPolygon, sampledCurve } from './paths.js';
 import { wrappedTextStyles, type WrappedTextStyle } from './stylesheet.js';
 import {
   flowLabelClearance,
@@ -52,45 +52,53 @@ export type TextPlacement = {
 };
 
 /**
+ * Which bend of a curve carries its name and on which side of that bend: the
+ * index of the waypoint the name hangs beside, and whether the side is the
+ * mirror of the convex one there.
+ */
+export type CurveNameSide = {
+  readonly at: number;
+  readonly mirrored: boolean;
+};
+
+/**
  * The run of text one node's glyph draws, in the node's own coordinates: a
  * text element's prose, a box boundary's name below its top edge, a curve
- * boundary's name beside its middle waypoint, and every other kind's name
+ * boundary's name beside one of its waypoints, and every other kind's name
  * centred in its box. A process wraps to the width of the square inscribed
  * in its circle rather than to its box.
  *
- * A curve's name hangs off the unit normal of the curve's own tangent at
- * that waypoint, a clearance plus the name's extent projected onto that
- * normal, so its box clears the tangent there by the clearance and a curve
- * dividing two lanes carries its name beside the dashes rather than under
- * them. The tangent is the drawn curve's, the run from the waypoint before
- * to the one after with the ends repeated where a neighbour is missing,
- * which is the tangent Catmull-Rom gives the cubic there. The middle
- * waypoint is the central one of an odd run, and of an even run's two
- * central ones the one nearer the origin, by x and then by y, which is a
- * waypoint rather than a point between two, so the anchor lies on the curve
- * and a reversed run anchors the name on the same one.
+ * A curve's name hangs off the unit normal of the drawn curve's tangent at
+ * the waypoint it is anchored on, a clearance plus the name's extent
+ * projected onto that normal, so its box clears that tangent by the
+ * clearance and a curve dividing two lanes carries its name beside the
+ * dashes rather than under them. The tangent is the run from the waypoint
+ * before to the one after with the ends repeated where a neighbour is
+ * missing, which is the tangent Catmull-Rom gives the cubic there. Of the
+ * two normals the convex one points away from the bend, so the arms of the
+ * curve lead away from a name on that side rather than back across it, and
+ * where the bend lies along the tangent, which a straight run gives, the
+ * normal with a non-negative y is the curve's own and where that y is zero
+ * the one with a positive x, the rule a flow's name follows.
  *
- * Of the two normals the name takes the one pointing away from the bend, so
- * it sits on the convex side and the arms of the curve lead away from it
- * rather than back across it. The bend is the second difference of the three
- * waypoints, and where it lies along the tangent, which a straight run gives,
- * the normal with a non-negative y is the curve's own and where that y is
- * zero the one with a positive x, the rule a flow's name follows. Reversing
- * the waypoints leaves the anchor, the bend and that normal alone, so the
- * placement is fixed by the waypoints and not by the end the curve is drawn
- * from.
- * {@link settledCurveNames} flips a name to the mirror of that side where
- * the convex one is covered, and the node carries which side it took, so
- * this stays a function of the node alone and the glyph and the drawn extent
- * read one placement.
+ * The candidates a curve's name is offered, in order, are the convex side of
+ * the middle waypoint, then its mirror, then both sides of each further
+ * bend, walking outwards from the middle a waypoint at a time and taking at
+ * each distance the bend nearer the origin first, by x and then by y. The
+ * middle waypoint is the central one of an odd run, and of an even run's two
+ * central ones the one nearer the origin the same way, which is a waypoint
+ * rather than a point between two, so the anchor lies on the curve.
+ * {@link settledCurveNames} walks that list over the whole diagram and
+ * leaves the answer on the node as `nameSide`, so this stays a function of
+ * the node alone and the glyph and the drawn extent read one placement. A
+ * node carrying no side takes the convex side of the middle waypoint, which
+ * is also where a curve with no clear candidate anywhere ends up: a name has
+ * to be drawn somewhere, and the collision it leaves is one the suite
+ * reports rather than one the picture hides.
  *
- * What the offset guarantees on either side is the standoff from that
- * tangent. Clearance from the drawn curve follows from the convex side,
- * since the arms lead away on it, and holds for every shape the suite draws
- * or probes: arches, bowls, hairpins, S bends, and the runs the fixtures
- * hold. A curve that doubled back over its own bend inside half the name's
- * width could still cross the box, and so could one whose name is pushed to
- * the mirror side, which sits inside the turn where the arms lead back.
+ * Reversing a curve's waypoints leaves the anchor, the bend, the normal and
+ * the order of the walk alone, so the placement is fixed by the waypoints
+ * and not by the end the curve is drawn from.
  */
 export function nodeTextPlacement(node: CanvasNode): TextPlacement {
   if (node.kind === 'text') {
@@ -179,18 +187,24 @@ export function textPlacementCorners(
 }
 
 /**
- * The given nodes with every curve boundary's name settled on one side of
- * its curve. A curve's name takes the convex side, and where that box would
- * lie over the shape an element draws or over an element's badge it takes
- * the mirror of that side instead; where both are covered the convex side
- * stands, since a name has to be drawn somewhere and that side is the one
- * that clears the curve. Element names are not consulted, and neither are
- * the flow labels, which are placed after this and already count a curve's
- * text box among their obstacles.
+ * The given nodes with every curve boundary's name settled on one bend of
+ * its curve and one side of that bend, the first candidate of the order
+ * {@link nodeTextPlacement} states that is clear of the drawn curve, of the
+ * shape every element draws and of every element's badge, since a name under
+ * a badge or over a glyph cannot be read.
  *
- * Both candidates are fixed by the waypoints and the obstacles are the
- * shapes the model's own elements draw, so reversing a curve's waypoints, or
- * holding the elements in another order, gives the same side.
+ * The curve is the polyline {@link sampledCurve} takes through the ink
+ * rather than the control polygon, which can pass outside a box the curve
+ * runs through. The standoff holds a name clear of the tangent at its bend
+ * on either side, and the convex side carries that over to the drawn curve,
+ * but the mirror sits inside the turn where the arms lead back, so a tight
+ * arch's mirror crosses its own ink and only the sampled test catches it.
+ *
+ * Element names are not consulted, and neither are the flow labels, which
+ * are placed after this and already count a curve's text box among their
+ * obstacles. Every candidate is fixed by the waypoints and the obstacles are
+ * the shapes the model's own elements draw, so reversing a curve's
+ * waypoints, or holding the elements in another order, gives the same side.
  */
 export function settledCurveNames(
   nodes: readonly CanvasNode[],
@@ -198,7 +212,7 @@ export function settledCurveNames(
   const blocked = elementSolids(nodes);
   return nodes.map((node) =>
     node.kind === 'boundary-curve'
-      ? { ...node, nameMirrored: nameIsBlocked(node, blocked) }
+      ? { ...node, nameSide: settledSide(node, blocked) }
       : node,
   );
 }
@@ -318,15 +332,20 @@ type Bend = {
 };
 
 function curveNamePlacement(node: BoundaryCurve): TextPlacement {
-  const bend = bendAt(node.waypoints, middleWaypoint(node.waypoints));
+  const side = node.nameSide ?? convexMiddle(node.waypoints);
+  const bend = bendAt(node.waypoints, side.at);
   const convex = convexNormal(bend);
   return nameBeside(
     node.name,
     bend.middle,
-    node.nameMirrored ? negated(convex) : convex,
+    side.mirrored ? negated(convex) : convex,
     flowLabelClearance,
     'label',
   );
+}
+
+function convexMiddle(waypoints: readonly Point[]): CurveNameSide {
+  return { at: middleWaypoint(waypoints), mirrored: false };
 }
 
 function middleWaypoint(waypoints: readonly Point[]): number {
@@ -334,11 +353,11 @@ function middleWaypoint(waypoints: readonly Point[]): number {
   if (waypoints.length % 2 === 1) {
     return at;
   }
-  const before = waypoints[at - 1];
-  const middle = waypoints[at];
-  return before.x < middle.x || (before.x === middle.x && before.y < middle.y)
-    ? at - 1
-    : at;
+  return nearerOrigin(waypoints[at - 1], waypoints[at]) ? at - 1 : at;
+}
+
+function nearerOrigin(one: Point, other: Point): boolean {
+  return one.x < other.x || (one.x === other.x && one.y < other.y);
 }
 
 function bendAt(waypoints: readonly Point[], at: number): Bend {
@@ -361,13 +380,67 @@ function boxCentre(size: Size): Point {
   return { x: size.width / 2, y: size.height / 2 };
 }
 
-function nameIsBlocked(node: BoundaryCurve, blocked: Solids): boolean {
-  const [convex] = ownTextBox({ ...node, nameMirrored: false });
-  if (convex === undefined || !meetsAny(convex, blocked)) {
-    return false;
-  }
-  const [mirror] = ownTextBox({ ...node, nameMirrored: true });
-  return mirror !== undefined && !meetsAny(mirror, blocked);
+function settledSide(node: BoundaryCurve, elements: Solids): CurveNameSide {
+  const obstacles = withOwnCurve(node, elements);
+  const clear = sidesInOrder(node.waypoints).find(
+    (side) => !nameMeetsAny(node, side, obstacles),
+  );
+  return clear ?? convexMiddle(node.waypoints);
+}
+
+function sidesInOrder(waypoints: readonly Point[]): CurveNameSide[] {
+  return bendsInOrder(waypoints).flatMap((at) => [
+    { at, mirrored: false },
+    { at, mirrored: true },
+  ]);
+}
+
+function bendsInOrder(waypoints: readonly Point[]): number[] {
+  const middle = middleWaypoint(waypoints);
+  const steps = Math.max(middle, waypoints.length - 1 - middle);
+  return [
+    middle,
+    ...Array.from({ length: steps }, (_unused, step) =>
+      bendsEitherSide(waypoints, middle, step + 1),
+    ).flat(),
+  ];
+}
+
+function bendsEitherSide(
+  waypoints: readonly Point[],
+  middle: number,
+  step: number,
+): number[] {
+  const held = [middle - step, middle + step].filter(
+    (at) => at >= 0 && at < waypoints.length,
+  );
+  return held.length === 2 &&
+    nearerOrigin(waypoints[held[1]], waypoints[held[0]])
+    ? [held[1], held[0]]
+    : held;
+}
+
+function nameMeetsAny(
+  node: BoundaryCurve,
+  side: CurveNameSide,
+  obstacles: Solids,
+): boolean {
+  const [box] = ownTextBox({ ...node, nameSide: side });
+  return box !== undefined && meetsAny(box, obstacles);
+}
+
+function withOwnCurve(node: BoundaryCurve, solids: Solids): Solids {
+  return {
+    ...solids,
+    lines: [
+      ...solids.lines,
+      ...segmentsOfPolyline(
+        sampledCurve(node.waypoints).map((point) =>
+          shiftedBy(point, node.position),
+        ),
+      ),
+    ],
+  };
 }
 
 function elementSolids(nodes: readonly CanvasNode[]): Solids {
