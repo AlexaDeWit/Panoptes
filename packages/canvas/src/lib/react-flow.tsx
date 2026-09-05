@@ -3,19 +3,22 @@ import {
   Handle,
   NodeResizeControl,
   Position,
+  useInternalNode,
   type Edge,
   type EdgeProps,
+  type InternalNode,
   type Node,
   type NodeProps,
 } from '@xyflow/react';
 import type { ReactElement } from 'react';
 import { ElementGlyph, FlowGlyph } from './glyphs.js';
-import { handleSides, type HandleSide } from './handles.js';
-import type {
-  CanvasEdge,
-  CanvasLayout,
-  CanvasNode,
-  CanvasNodeKind,
+import { handleSides, type HandleSide, type NodeBox } from './handles.js';
+import {
+  reanchoredFlow,
+  type CanvasEdge,
+  type CanvasLayout,
+  type CanvasNode,
+  type CanvasNodeKind,
 } from './layout.js';
 import { svgNumber } from './numbers.js';
 
@@ -105,23 +108,59 @@ export function CanvasNodeBody({
 }
 
 /**
- * One flow as a React Flow edge, drawn from the geometry the layout resolved
- * out of the model rather than from the `sourceX`, `sourceY`, `targetX` and
- * `targetY` React Flow measures, so the interactive and headless paths
- * cannot part. The consequence is that dragging a node moves no flow on its
- * own: a canvas that lets nodes move re-runs `layoutDiagram` on the changed
- * model and hands the edges down again. The drawing is hidden from assistive
- * technology, as a node's is, since React Flow's edge wrapper around it
- * carries the accessible name.
+ * One flow as a React Flow edge, drawn by {@link reanchoredFlow} from the
+ * geometry the layout resolved and the live box of each end's node. That is
+ * what lets a line follow an element under the pointer: React Flow applies a
+ * drag frame to the node list and the model learns of the move once, at the
+ * drop, so in between the node is the only place the element's position is.
+ * The box comes off the node React Flow holds rather than the `sourceX`,
+ * `sourceY`, `targetX` and `targetY` it measures off the DOM, so nothing here
+ * measures anything and the interactive and headless paths stay one.
+ *
+ * The subscription is per node, so a drag frame re-renders the moved node's
+ * own flows and no others.
+ *
+ * The drawing is hidden from assistive technology, as a node's is, since
+ * React Flow's edge wrapper around it carries the accessible name.
  */
 export function CanvasEdgeBody({
   data,
+  source,
+  target,
 }: EdgeProps<CanvasFlowEdge>): ReactElement | null {
-  return data === undefined ? null : (
+  const sourceNode = useInternalNode(source);
+  const targetNode = useInternalNode(target);
+  if (data === undefined) {
+    return null;
+  }
+  return (
     <g aria-hidden="true">
-      <FlowGlyph edge={data.edge} />
+      <FlowGlyph
+        edge={reanchoredFlow(
+          data.edge,
+          liveBox(data.edge.sourceElement, sourceNode),
+          liveBox(data.edge.targetElement, targetNode),
+        )}
+      />
     </g>
   );
+}
+
+function liveBox(
+  element: ElementId | undefined,
+  node: InternalNode | undefined,
+): NodeBox | undefined {
+  if (element === undefined || node === undefined) {
+    return undefined;
+  }
+  const { width, height } = node;
+  if (width === undefined || height === undefined) {
+    return undefined;
+  }
+  return {
+    position: node.internals.positionAbsolute,
+    size: { width, height },
+  };
 }
 
 /**

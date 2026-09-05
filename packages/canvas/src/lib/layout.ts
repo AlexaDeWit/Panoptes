@@ -183,6 +183,49 @@ export function layoutDiagram(diagram: Diagram, model: Model): CanvasLayout {
   };
 }
 
+/**
+ * One laid-out flow with its two ends resolved again, against boxes a caller
+ * holds more recently than the model does. The interactive canvas passes
+ * where React Flow has each end's node while a gesture is in flight, so the
+ * line follows the element under the pointer rather than waiting for the
+ * drop. A box is absent for an end the layout left free and for one the
+ * caller cannot resolve, and such an end keeps the anchor and the side the
+ * layout settled. Nothing here reads what kind of element a box belongs to,
+ * so a flow attached to a trust boundary follows it as it follows any other
+ * node, and a free end is carried by no box at all, the model linking an
+ * element to a boundary by nothing but where the two are drawn.
+ *
+ * Only the two anchors move. The name and the badge keep the placement
+ * {@link layoutDiagram} settled over the whole diagram, which is the work
+ * this does not repeat: a flow costs a handful of arithmetic here rather than
+ * a placement pass over every flow in the diagram. That arithmetic is the
+ * layout's own, so a box back where the model has it gives the settled anchor
+ * exactly and a drop moves no line.
+ */
+export function reanchoredFlow(
+  edge: CanvasEdge,
+  sourceBox: NodeBox | undefined,
+  targetBox: NodeBox | undefined,
+): CanvasEdge {
+  const source = endpointAt(sourceBox, edge.source, edge.sourceElement);
+  const target = endpointAt(targetBox, edge.target, edge.targetElement);
+  const sourceAnchor = anchorOf(
+    source,
+    edge.waypoints[0] ?? referenceOf(target),
+  );
+  const targetAnchor = anchorOf(
+    target,
+    edge.waypoints.at(-1) ?? referenceOf(source),
+  );
+  return {
+    ...edge,
+    source: sourceAnchor.point,
+    target: targetAnchor.point,
+    sourceSide: sourceAnchor.side ?? edge.sourceSide,
+    targetSide: targetAnchor.side ?? edge.targetSide,
+  };
+}
+
 type PlacedEndpoint =
   | { readonly kind: 'free'; readonly point: Point }
   | {
@@ -338,6 +381,16 @@ function resolveEndpoint(
   return box === undefined
     ? { kind: 'unplaced', element: endpoint.element }
     : { kind: 'node', element: endpoint.element, box };
+}
+
+function endpointAt(
+  box: NodeBox | undefined,
+  settled: Point,
+  element: ElementId | undefined,
+): PlacedEndpoint {
+  return box === undefined || element === undefined
+    ? { kind: 'free', point: settled }
+    : { kind: 'node', element, box };
 }
 
 function unplacedOf(

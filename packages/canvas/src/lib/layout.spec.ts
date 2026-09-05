@@ -2,8 +2,13 @@ import type { Model } from '@panoptes/model';
 import { elementId, parsedFixture } from '@panoptes/model/fixtures';
 import { badgeExtent } from './badges.js';
 import { everyGlyphModel } from './canvas.fixtures.js';
-import { handlePositions } from './handles.js';
-import { layoutDiagram, type CanvasEdge, type CanvasNode } from './layout.js';
+import { handlePositions, type NodeBox } from './handles.js';
+import {
+  layoutDiagram,
+  reanchoredFlow,
+  type CanvasEdge,
+  type CanvasNode,
+} from './layout.js';
 import { canvasNodeTypes, freeEndNodeKind } from './react-flow.js';
 import { boundaryStrokeWidth } from './stylesheet.js';
 
@@ -348,5 +353,97 @@ describe('layoutDiagram, an end it cannot place', () => {
     expect(placed.edges.map((edge) => edge.id)).toEqual([
       elementId('el-carrier'),
     ]);
+  });
+});
+
+const nodeBoxAt = (x: number, y: number): NodeBox => ({
+  position: { x, y },
+  size: { width: 100, height: 100 },
+});
+
+describe('reanchoredFlow', () => {
+  const settled = layoutOf(
+    twoBoxDiagram(flowBetween(attached('el-left'), attached('el-right'), [])),
+  ).edges[0];
+
+  const left = nodeBoxAt(0, 0);
+  const right = nodeBoxAt(400, 0);
+
+  it('gives the settled flow back where each box is where the model has it', () => {
+    expect(reanchoredFlow(settled, left, right)).toEqual(settled);
+  });
+
+  it('carries the anchor of an end whose box has moved', () => {
+    expect(reanchoredFlow(settled, nodeBoxAt(0, 200), right).source).toEqual({
+      x: 100,
+      y: 250,
+    });
+  });
+
+  it('leaves the end whose box stands where it was', () => {
+    expect(reanchoredFlow(settled, nodeBoxAt(0, 200), right).target).toEqual(
+      settled.target,
+    );
+  });
+
+  it('settles the side of both ends afresh, as the layout would', () => {
+    const moved = reanchoredFlow(settled, nodeBoxAt(0, -600), right);
+    expect([moved.sourceSide, moved.targetSide]).toEqual(['bottom', 'top']);
+    expect([moved.source, moved.target]).toEqual([
+      { x: 50, y: -500 },
+      { x: 450, y: 0 },
+    ]);
+  });
+
+  it('keeps the name and the badge where the whole diagram settled them', () => {
+    expect(reanchoredFlow(settled, nodeBoxAt(0, 200), right).label).toBe(
+      settled.label,
+    );
+  });
+
+  it('keeps a free end where it is, no box carrying one', () => {
+    const loose = layoutOf(
+      twoBoxDiagram(
+        flowBetween(
+          attached('el-left'),
+          { kind: 'free', position: { x: 50, y: 400 } },
+          [],
+        ),
+      ),
+    ).edges[0];
+    const moved = reanchoredFlow(loose, nodeBoxAt(0, 200), undefined);
+    expect(moved.target).toEqual({ x: 50, y: 400 });
+    expect(moved.source).toEqual({ x: 50, y: 300 });
+  });
+
+  it('keeps both settled anchors where no box reaches it', () => {
+    expect(reanchoredFlow(settled, undefined, undefined)).toEqual(settled);
+  });
+
+  it('carries a flow attached to a trust boundary as it carries any other', () => {
+    const crossing = layoutOf(
+      twoBoxDiagram(
+        flowBetween(attached('el-left'), attached('el-fence'), []),
+        [
+          {
+            kind: 'trust-boundary',
+            id: 'el-fence',
+            name: 'Fence',
+            description: '',
+            outOfScope: false,
+            reasonOutOfScope: '',
+            shape: {
+              kind: 'box',
+              position: { x: 400, y: 0 },
+              size: { width: 100, height: 100 },
+            },
+          },
+        ],
+      ),
+    ).edges[0];
+    expect(reanchoredFlow(crossing, left, nodeBoxAt(400, 200)).target).toEqual({
+      x: 400,
+      y: 250,
+    });
   });
 });

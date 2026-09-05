@@ -33,6 +33,16 @@ one a render closed over, because React Flow reports a click that moves the
 selection between a node and a flow as two synchronous calls with no render
 between them.
 
+The flows follow that in-flight position without passing through here. A
+dragged node's position reaches React Flow's own node store as the canvas
+folds each frame in, and the flow edge reads it there
+([the drawing primitives](../../../../packages/canvas/README.md)), so a line
+is drawn to where its element is on every frame while the store still hears of
+the move once. Only the moved node's own flows are redrawn, and only their two
+anchors move: the names and the badges are placed over the whole diagram at
+once, which is a pass the canvas takes at the drop rather than per frame, so
+they stay where they were until then.
+
 ## Editing
 
 Every edit is one dispatched action, so undo takes back exactly what one
