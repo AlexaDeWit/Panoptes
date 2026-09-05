@@ -84,27 +84,32 @@ nix develop --command scripts/check-provenance.mjs
 
 The check reads the catalog's resolved versions out of `pnpm-lock.yaml`,
 verifies each package's npm provenance attestation against the sigstore trust
-root, and compares what verifies against
-[`dependency-provenance.txt`](../dependency-provenance.txt), which records
-each attested package beside the source repository its attestation names. It
-fails where a package that carried an attestation no longer does, where the
-attestation now names a different repository, where a signature or an
-attestation does not verify, where a package carries no registry signature
-though the registry publishes signing keys, and where the record and the
-catalog have parted. Every one of those is accepted, once read, by rerunning
-with `--update` and committing the diff. The packages that publish no
-attestation at all are printed as the residual: that list is what a release
-accepts, and it is the residual Panoptes' own threat model names.
+root, and reads the source repository out of what verifies. Its baseline is
+git rather than a committed record: it reads the same catalog out of `HEAD^`'s
+lockfile, audits on both sides the packages whose version moved, and fails
+where one that carried an attestation on the base commit no longer does, where
+the attestation now names a different repository, where a signature or an
+attestation does not verify, and where a package carries no registry signature
+though the registry publishes signing keys. `--base <ref>` compares against
+another commit. A move that is a real change of home is accepted by writing it
+in [`dependency-provenance-moves.txt`](../dependency-provenance-moves.txt) as
+`name old-repository new-repository` and committing that line, which admits
+the move it names and no other. Nothing else is committed: the packages that
+publish no attestation at all are printed as the residual, and that list is
+what a release accepts and what Panoptes' own threat model names.
 
-The CI gate runs the same check, on this tag as on every pull request, so this
-run is the one that answers before a tag exists that cannot be moved. It
+The CI gate runs the same check on this tag, and on a pull request whenever
+`pnpm-lock.yaml` or `pnpm-workspace.yaml` changed, which is where a bump
+appears. This step runs it whatever this commit's own diff touched, so a tag
+that cannot be moved is never cut on an unanswered question. Run it in an
+installed checkout: it parses both lockfiles with the catalog's `yaml`. It
 reaches the registry, and an exit code of 2 says the check could not run
 rather than that provenance failed: the registry was out of reach after two
-attempts, or `pnpm-lock.yaml` or the record could not be read, or the catalog
-holds a name npm would refuse, a version the workspace's own importers do not
-resolve `catalog:` to, or an entry no workspace project references at all.
-Only the first of those is worth running again; the rest name what to
-correct.
+attempts, or the lockfile at either commit or the moves file could not be
+read, or the catalog holds a name npm would refuse, a version the workspace's
+own importers do not resolve `catalog:` to, or an entry no workspace project
+references at all. Only the first of those is worth running again; the rest
+name what to correct.
 
 ### 4. Cut and push the signed tag (owner, GPG key)
 
@@ -381,9 +386,10 @@ something environment-dependent has reached the output again.
   every pull request before a tag exists.
 - **A dependency lost its provenance attestation, or moved to another source
   repository.** The `provenance` job fails and with it the gate, so nothing is
-  published. Read what the check printed: either the package moved, in which
-  case the catalog entry is the decision to make and `--update` is how the move
-  is accepted, or the registry is answering wrongly and the release waits.
+  published. Read what the check printed: either the move is one this project
+  takes, in which case one line in `dependency-provenance-moves.txt` accepts
+  that move and no other, or the registry is answering wrongly and the release
+  waits.
 - **Something unrelated to the release failed the run.** One workflow means the
   whole gate stands between a tag and its release, so a Codecov upload that
   cannot reach the service, a semgrep scan that cannot fetch its registry
