@@ -5,6 +5,7 @@ import { diagramId } from '../store/store.fixtures.js';
 import {
   boundaryElement,
   canvasModel,
+  noteElement,
   readerElement,
   studioElement,
 } from './canvas.fixtures.js';
@@ -102,6 +103,12 @@ describe('flowEnds', () => {
 
   it('offers no trust boundary, which a flow crosses rather than ends on', () => {
     expect(flowEnds(layout).some((node) => node.id === boundaryElement)).toBe(
+      false,
+    );
+  });
+
+  it('offers no text note, which is about the diagram rather than a part of it', () => {
+    expect(flowEnds(layout).some((node) => node.id === noteElement)).toBe(
       false,
     );
   });

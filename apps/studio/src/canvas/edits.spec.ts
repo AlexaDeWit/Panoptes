@@ -64,7 +64,7 @@ describe('addPaletteElement', () => {
     addPaletteElement('actor');
 
     const state = modelStore.getState();
-    expect(state.present.diagrams[0].elements).toHaveLength(6);
+    expect(state.present.diagrams[0].elements).toHaveLength(7);
     expect(state.selection).toBeDefined();
     expect(said()).toBe('Added New actor, actor.');
   });

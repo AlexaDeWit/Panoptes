@@ -7,6 +7,7 @@ import { resetAnnouncements } from './announcements.js';
 import {
   boundaryElement,
   canvasModel,
+  noteElement,
   readerElement,
   requestFlow,
 } from './canvas.fixtures.js';
@@ -45,7 +46,7 @@ describe('EditPalette', () => {
 
     await user.click(screen.getByRole('button', { name: 'New store' }));
 
-    expect(elementCount()).toBe(6);
+    expect(elementCount()).toBe(7);
     expect(announced()).toBe('Added New store, store.');
   });
 
@@ -96,7 +97,21 @@ describe('EditPalette', () => {
     ).toBe(true);
   });
 
-  it('offers no trust boundary as the end of a flow', async () => {
+  it('leaves connecting unavailable while the selection is a text note', () => {
+    opened(noteElement);
+    render(<EditPalette />);
+
+    expect(
+      screen.getByRole('button', { name: 'Connect' }).hasAttribute('disabled'),
+    ).toBe(true);
+    expect(
+      screen
+        .getByRole('combobox', { name: 'Flow to' })
+        .hasAttribute('disabled'),
+    ).toBe(true);
+  });
+
+  it('offers neither a trust boundary nor a note as the end of a flow', async () => {
     const user = userEvent.setup();
     opened(readerElement);
     render(<EditPalette />);
@@ -104,6 +119,7 @@ describe('EditPalette', () => {
     await user.click(screen.getByRole('combobox', { name: 'Flow to' }));
 
     expect(screen.queryByRole('option', { name: 'Perimeter' })).toBeNull();
+    expect(screen.queryByRole('option', { name: 'Note' })).toBeNull();
   });
 
   it('draws a flow to the element chosen with the keyboard alone', async () => {
@@ -115,7 +131,7 @@ describe('EditPalette', () => {
     await user.click(screen.getByRole('option', { name: 'Studio' }));
     await user.click(screen.getByRole('button', { name: 'Connect' }));
 
-    expect(elementCount()).toBe(6);
+    expect(elementCount()).toBe(7);
     expect(announced()).toBe('Added New flow, flow, from Reader to Studio.');
   });
 

@@ -15,7 +15,7 @@ const moved = reduce(
 describe('currentLayout', () => {
   it('lays out every element of the diagram on screen', () => {
     const layout = currentLayout(start);
-    expect(layout.nodes).toHaveLength(3);
+    expect(layout.nodes).toHaveLength(4);
     expect(layout.edges).toHaveLength(2);
   });
 

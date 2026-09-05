@@ -66,7 +66,7 @@ describe('DiagramCanvas', () => {
 
     fireEvent.keyDown(reader(), { key: 'Delete' });
 
-    expect(elementCount()).toBe(4);
+    expect(elementCount()).toBe(5);
     expect(currentAnnouncement().message).toBe(
       'Removed Reader, actor, 1 open threat, highest severity medium. 1 flow detached, 1 threat link dropped.',
     );
@@ -78,7 +78,7 @@ describe('DiagramCanvas', () => {
 
     fireEvent.keyDown(screen.getByTestId('rf__wrapper'), { key: 'Backspace' });
 
-    expect(elementCount()).toBe(4);
+    expect(elementCount()).toBe(5);
   });
 
   it('leaves the model alone on the delete key while nothing is selected', () => {
@@ -86,7 +86,7 @@ describe('DiagramCanvas', () => {
 
     fireEvent.keyDown(reader(), { key: 'Delete' });
 
-    expect(elementCount()).toBe(5);
+    expect(elementCount()).toBe(6);
     expect(currentAnnouncement().message).toBe('');
   });
 
