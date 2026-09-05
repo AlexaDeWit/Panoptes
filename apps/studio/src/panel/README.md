@@ -31,13 +31,21 @@ was asked to do, so the store would push an undo entry and mark the file
 dirty over an edit nobody made.
 
 Text carrying a character the model's character set does not accept is not
-committed at all. The field says which character stopped it and keeps what
-was typed to be corrected, because the alternative is a model on screen that
-no codec can write back to a file.
+committed at all, because the alternative is a model on screen that no codec
+can write back to a file. The field names itself and the character that
+stopped it, the panel announces the same sentence in its live region so the
+refusal is never silent, and what was typed stays on screen to be corrected.
+That last part holds under one condition: the threat holding a refused draft
+stays expanded until the text is corrected or cleared. Radix unmounts a
+collapsed item's fields, so a collapse would take the draft with it, and the
+panel refuses the collapse rather than the draft.
 
 Adding is one `AddThreat`, attached to the selected element and carrying the
 number the model issues next. Deleting is one `RemoveThreat`. Both are
-ordinary dispatches, so undo takes either back.
+ordinary dispatches, so undo takes either back. An add is announced and moves
+focus only once the store holds the threat: the reducer is total and records
+a refusal rather than failing, so the panel asks it what it did rather than
+assuming.
 
 ## Focus, and saying what happened
 
@@ -50,7 +58,10 @@ what it was.
 
 Radix unmounts a collapsed item's fields, so a commit always comes first:
 reaching the control that collapses an item, by pointer or by Tab, takes
-focus out of the field, which is the commit.
+focus out of the field, which is the commit. A commit the model refuses is
+the exception, and the item stays open until it is settled. Which field holds
+a refusal is kept in the item rather than in the panel, so a second field
+committing cleanly does not report the first field's draft away.
 
 The panel sits after the canvas in the DOM, so Tab reaches it after every
 element and every flow. Which of the two a keyboard user should reach first
@@ -68,7 +79,8 @@ toolbar rather than here ([the canvas](../canvas/README.md)).
   threats with no list of the others, so `AttachThreat` and `DetachThreat`
   have no control here. Deleting therefore removes the threat from the model
   rather than detaching it from the element, and a threat naming several
-  elements leaves all of them at once. Undo takes it back.
+  elements leaves all of them at once, which the item says beside the delete
+  control rather than leaving to be discovered. Undo takes it back.
 - Naming a new custom methodology is not offered: it is two free-text fields
   and a judgement about what the model is being read under. A threat that
   arrived carrying one shows it and can be moved onto an enumerated pair.

@@ -24,9 +24,11 @@ const kindWords = {
 /**
  * The element the panel edits, which is the one the canvas has selected, and
  * nothing at all while nothing is selected. A flow is an element like any
- * other here: it carries threats, so it opens the panel as a box does.
+ * other here: it carries threats, so it opens the panel as a box does. The
+ * canvas has a selector of its own over the same field, which returns the id
+ * it draws the selection from rather than the record this one reads.
  */
-export function selectedElement(state: State): Element | undefined {
+export function panelElement(state: State): Element | undefined {
   const selected = state.selection;
   return selected === undefined
     ? undefined

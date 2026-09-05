@@ -6,8 +6,10 @@ import styles from './text-field.module.css';
 type Draft = { readonly shown: string; readonly text: string };
 
 function useDraft(
+  label: string,
   value: string,
   onCommit: (text: string) => void,
+  onRefused: (refusal: string | undefined) => void,
 ): {
   readonly text: string;
   readonly refusal: string | undefined;
@@ -29,8 +31,9 @@ function useDraft(
       setDraft({ shown: value, text });
     },
     commit: () => {
-      const message = refusedText(draft.text);
+      const message = refusedText(label, draft.text);
       setRefusal(message);
+      onRefused(message);
       if (message === undefined) {
         onCommit(draft.text);
       }
@@ -41,15 +44,21 @@ function useDraft(
 /**
  * Why the model would not take this text, or nothing for text it accepts.
  * Every string of the model is text of a defined character set, and a paste
- * is where a character outside it arrives, so the field says which character
- * stopped the edit rather than letting the model carry text no codec can
- * write back out.
+ * is where a character outside it arrives, so the field says which field was
+ * not saved and which character stopped it rather than letting the model
+ * carry text no codec can write back out.
+ *
+ * The position is counted in characters, not in the code units the model
+ * reports the refusal at, so an emoji earlier in the text does not shift the
+ * number a person counts to.
  */
-export function refusedText(text: string): string | undefined {
+export function refusedText(label: string, text: string): string | undefined {
   const at = firstRefusedCharacter(text);
-  return at === undefined
-    ? undefined
-    : `Character ${String(at + 1)} is one the model does not accept.`;
+  if (at === undefined) {
+    return undefined;
+  }
+  const before = Array.from(text.slice(0, at)).length;
+  return `${label} was not saved: character ${String(before + 1)} is one the model does not accept.`;
 }
 
 /** What a {@link TextField} or {@link ProseField} shows and where an edit goes. */
@@ -57,6 +66,7 @@ export type TextFieldProps = {
   readonly label: string;
   readonly value: string;
   readonly onCommit: (text: string) => void;
+  readonly onRefused: (refusal: string | undefined) => void;
   readonly ref?: Ref<HTMLInputElement>;
 };
 
@@ -66,14 +76,27 @@ export type TextFieldProps = {
  * where it is, the control being on a line of its own.
  *
  * What is typed is the field's until it is committed, which is what keeps a
- * refused character on screen to be corrected. An edit that lands from
- * anywhere else, an undo among them, replaces it: the field follows the value
- * it is given whenever that value moves.
+ * refused character on screen to be corrected. Every commit attempt reports
+ * through `onRefused`, whether the model took the text or refused it, so what
+ * mounts the field can say so and keep it on screen while the draft stands.
+ * An edit that lands from anywhere else, an undo among them, replaces the
+ * draft: the field follows the value it is given whenever that value moves.
  */
-export function TextField({ label, value, onCommit, ref }: TextFieldProps) {
+export function TextField({
+  label,
+  value,
+  onCommit,
+  onRefused,
+  ref,
+}: TextFieldProps) {
   const fieldId = useId();
   const refusalId = useId();
-  const { text, refusal, change, commit } = useDraft(value, onCommit);
+  const { text, refusal, change, commit } = useDraft(
+    label,
+    value,
+    onCommit,
+    onRefused,
+  );
 
   return (
     <div className={styles.field}>
@@ -114,10 +137,20 @@ export function TextField({ label, value, onCommit, ref }: TextFieldProps) {
  * the markdown source and nothing else: a preview beside it is deferred, and
  * the panel's README says why.
  */
-export function ProseField({ label, value, onCommit }: TextFieldProps) {
+export function ProseField({
+  label,
+  value,
+  onCommit,
+  onRefused,
+}: TextFieldProps) {
   const fieldId = useId();
   const refusalId = useId();
-  const { text, refusal, change, commit } = useDraft(value, onCommit);
+  const { text, refusal, change, commit } = useDraft(
+    label,
+    value,
+    onCommit,
+    onRefused,
+  );
 
   return (
     <div className={styles.field}>

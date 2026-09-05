@@ -84,6 +84,21 @@ describe('CategoryField', () => {
     );
   });
 
+  it('groups the pairs under the methodology each belongs to', async () => {
+    const user = userEvent.setup();
+    render(<CategoryField onCommit={noop} value={stride} />);
+
+    await user.tab();
+    await user.keyboard('{Enter}');
+
+    expect(screen.getAllByRole('group')).toHaveLength(
+      threatCategorySchema.options.length - 1,
+    );
+    expect(screen.getByRole('group', { name: 'STRIDE' }).textContent).toContain(
+      'STRIDE tampering',
+    );
+  });
+
   it('shows a custom category the file carried, beside the enumerated pairs', async () => {
     const user = userEvent.setup();
     render(<CategoryField onCommit={noop} value={custom} />);

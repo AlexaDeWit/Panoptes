@@ -78,6 +78,27 @@ describe('EnumField', () => {
     }
   });
 
+  it('puts the options under the heading each was grouped under', async () => {
+    const user = userEvent.setup();
+    render(
+      <EnumField
+        groupOf={(chosen) => (chosen === 'first' ? 'Early' : 'Late')}
+        label="Rank"
+        onCommit={noop}
+        options={options}
+        value="first"
+      />,
+    );
+
+    await user.tab();
+    await user.keyboard('{Enter}');
+
+    expect(screen.getAllByRole('group')).toHaveLength(2);
+    expect(screen.getByRole('group', { name: 'Late' }).textContent).toContain(
+      'second',
+    );
+  });
+
   it('commits the value chosen with the keyboard alone', async () => {
     const user = userEvent.setup();
     const onCommit = commits();

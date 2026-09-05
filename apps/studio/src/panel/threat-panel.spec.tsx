@@ -11,6 +11,8 @@ import {
 import { dispatch, modelStore } from '../store/store.js';
 import { ThreatPanel } from './threat-panel.js';
 
+const softHyphen = '­';
+
 const showPanel = (selection?: ElementId): void => {
   if (selection !== undefined) {
     dispatch(Action.Select({ elementId: selection }));
@@ -117,6 +119,39 @@ describe('ThreatPanel', () => {
     });
 
     expect(severityOf()).toContain('medium');
+  });
+
+  it('keeps a refused draft on screen where the threat would collapse, and says so', async () => {
+    const user = userEvent.setup();
+    showPanel(actorElement);
+    await user.click(screen.getByRole('button', { name: /A reader edits/u }));
+
+    await user.click(screen.getByRole('textbox', { name: 'Description' }));
+    await user.keyboard(`Pasted${softHyphen}prose`);
+    await user.click(screen.getByRole('button', { name: /A reader edits/u }));
+
+    expect(screen.getByDisplayValue(`Pasted${softHyphen}prose`)).toBeDefined();
+    expect(screen.getAllByText(/Description was not saved/u)).toHaveLength(2);
+    expect(announcement()).toContain('Description was not saved');
+    expect(modelStore.getState().present.threats[0].description).toBe('');
+  });
+
+  it('lets the threat collapse once the refused text is corrected', async () => {
+    const user = userEvent.setup();
+    showPanel(actorElement);
+    await user.click(screen.getByRole('button', { name: /A reader edits/u }));
+    await user.click(screen.getByRole('textbox', { name: 'Description' }));
+    await user.keyboard(`Pasted${softHyphen}prose`);
+    await user.click(screen.getByRole('button', { name: /A reader edits/u }));
+
+    await user.clear(screen.getByRole('textbox', { name: 'Description' }));
+    await user.keyboard('Pasted prose');
+    await user.click(screen.getByRole('button', { name: /A reader edits/u }));
+
+    expect(screen.queryByRole('textbox', { name: 'Description' })).toBeNull();
+    expect(modelStore.getState().present.threats[0].description).toBe(
+      'Pasted prose',
+    );
   });
 
   it('follows the selection off the element it was showing', async () => {

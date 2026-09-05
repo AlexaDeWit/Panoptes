@@ -9,6 +9,26 @@ const ecluse: unknown = JSON.parse(
 );
 
 /**
+ * Waits for the canvas to stop moving. React Flow measures the nodes it has
+ * drawn and fits the view to them a frame later, so a click sent before that
+ * lands where a node is about to be rather than where it is. The viewport's
+ * own transform is the signal, and it is read twice: it has settled when a
+ * poll finds it where the poll before found it.
+ */
+export const canvasSettled = async (page: Page): Promise<void> => {
+  const viewport = page.locator('.react-flow__viewport');
+  let before = '';
+  await expect
+    .poll(async () => {
+      const now = (await viewport.getAttribute('style')) ?? '';
+      const settled = now !== '' && now === before;
+      before = now;
+      return settled;
+    })
+    .toBe(true);
+};
+
+/**
  * Opens the studio on Écluse's model, put on the page before the studio's own
  * modules run under the name `apps/studio/src/store/development-model.ts`
  * declares, which is how a real file reaches the canvas while the open dialog
@@ -23,12 +43,14 @@ export const openEcluse = async (page: Page): Promise<void> => {
   );
   await page.goto('/');
   await expect(page.getByTestId('canvas-container')).toBeVisible();
+  await canvasSettled(page);
 };
 
 /** Opens the studio on the model it carries until a file can be opened. */
 export const openPlaceholder = async (page: Page): Promise<void> => {
   await page.goto('/');
   await expect(page.getByTestId('canvas-container')).toBeVisible();
+  await canvasSettled(page);
 };
 
 /**
@@ -126,21 +148,21 @@ export const dragOnto = async (
 };
 
 /**
- * Selects an element by clicking it, retried until the canvas reports it
- * selected. React Flow measures the nodes and fits the view after the first
- * paint, so a click sent while the page is still settling lands where the
- * node is about to be rather than where it is, which takes the selection off
- * instead of putting it on.
+ * Selects an element by clicking it, and holds that the click landed. The
+ * element is on the page and the canvas has stopped moving before the click
+ * is sent ({@link canvasSettled}), so one click is one selection: a click
+ * that does not select is a regression in the canvas rather than something
+ * to send again.
  */
 export const selectNode = async (
   page: Page,
   name: RegExp,
 ): Promise<Locator> => {
   const node = nodeNamed(page, name);
-  await expect(async () => {
-    await node.click();
-    await expect(node).toHaveClass(/selected/u, { timeout: 1000 });
-  }).toPass({ timeout: 15_000 });
+  await expect(node).toBeVisible();
+  await canvasSettled(page);
+  await node.click();
+  await expect(node).toHaveClass(/selected/u);
   return node;
 };
 

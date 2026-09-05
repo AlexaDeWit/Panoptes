@@ -36,6 +36,10 @@ const enumerated: readonly {
   },
 ];
 
+function methodologyOf(key: string): string {
+  return key.split(' ')[0];
+}
+
 function categoryFromKey(key: string): ThreatCategory | undefined {
   const [methodology, ...rest] = key.split(' ');
   const parsed = threatCategorySchema.safeParse({
@@ -96,6 +100,9 @@ export type CategoryFieldProps = {
  * enumerates at once. One choice settles both halves of the category, so a
  * methodology never stands over a category that does not belong to it.
  *
+ * The options are grouped under the methodology they belong to, thirty pairs
+ * being more than a person scans as one list.
+ *
  * A threat that arrived carrying a custom category shows it, as an option of
  * its own, and can be moved onto an enumerated pair. Naming a new custom
  * methodology is not offered here: it is two free-text fields and a decision
@@ -110,6 +117,7 @@ export function CategoryField({ value, onCommit }: CategoryFieldProps) {
 
   return (
     <EnumField
+      groupOf={methodologyOf}
       label="Category"
       onCommit={categoryCommitter(onCommit)}
       options={options}

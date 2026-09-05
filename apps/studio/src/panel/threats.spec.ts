@@ -16,7 +16,7 @@ import {
   elementLabel,
   freshThreat,
   nextNumber,
-  selectedElement,
+  panelElement,
   threatAfterDeleting,
   threatCommitter,
 } from './threats.js';
@@ -37,19 +37,17 @@ const third: Threat = { ...sampleThreat, id: threatId('threat-third') };
 
 const recorder = () => vi.fn<(action: Action) => void>();
 
-describe('selectedElement', () => {
+describe('panelElement', () => {
   it('is the element the canvas selected', () => {
-    expect(selectedElement(selecting(actorElement))?.name).toBe('Reader');
+    expect(panelElement(selecting(actorElement))?.name).toBe('Reader');
   });
 
   it('is nothing while nothing is selected', () => {
-    expect(selectedElement(selecting(undefined))).toBeUndefined();
+    expect(panelElement(selecting(undefined))).toBeUndefined();
   });
 
   it('is nothing where the selection names no element of the model', () => {
-    expect(
-      selectedElement(selecting(elementId('element-gone'))),
-    ).toBeUndefined();
+    expect(panelElement(selecting(elementId('element-gone')))).toBeUndefined();
   });
 });
 

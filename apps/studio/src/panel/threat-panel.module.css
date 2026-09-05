@@ -1,6 +1,7 @@
 .panel {
   display: flex;
   flex-direction: column;
+  flex-shrink: 0;
   gap: var(--pn-space-3);
   width: 20rem;
   padding: var(--pn-space-4);
@@ -22,7 +23,8 @@
 }
 
 .message,
-.instruction {
+.instruction,
+.spread {
   margin: 0;
   color: var(--pn-colour-text-muted);
 }

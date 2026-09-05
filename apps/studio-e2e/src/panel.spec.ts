@@ -108,7 +108,9 @@ test('a title edited in the panel is one undo step', async ({ page }) => {
   await disclosure(page, /Massive Purge DoS/u).click();
 
   const title = panel(page).getByRole('textbox', { name: 'Title' });
-  await title.fill('Massive purge denial of service');
+  await title.click();
+  await page.keyboard.press('ControlOrMeta+a');
+  await page.keyboard.type('Massive purge denial of service');
   await title.press('Enter');
 
   await expect(
@@ -159,16 +161,19 @@ test('every field of a threat is reachable and editable from the keyboard, add a
   ).toBeFocused();
 
   await page.keyboard.press('Tab');
-  await expect(
-    panel(page).getByRole('textbox', { name: 'Description' }),
-  ).toBeFocused();
+  const description = panel(page).getByRole('textbox', {
+    name: 'Description',
+  });
+  await expect(description).toBeFocused();
   await page.keyboard.type('The queue accepts a job nobody enqueued.');
 
   await page.keyboard.press('Tab');
-  await expect(
-    panel(page).getByRole('textbox', { name: 'Mitigation' }),
-  ).toBeFocused();
+  const mitigation = panel(page).getByRole('textbox', { name: 'Mitigation' });
+  await expect(mitigation).toBeFocused();
   await page.keyboard.type('Sign every job.');
+  await expect(description).toHaveValue(
+    'The queue accepts a job nobody enqueued.',
+  );
 
   await page.keyboard.press('Tab');
   const remove = panel(page).getByRole('button', { name: 'Delete threat 103' });
@@ -179,6 +184,16 @@ test('every field of a threat is reachable and editable from the keyboard, add a
     /1 open threat, highest severity critical/u,
   );
 
+  const undo = page.getByRole('button', { name: 'Undo' });
+  await undo.click();
+  await expect(mitigation).toHaveValue('');
+  await expect(description).toHaveValue(
+    'The queue accepts a job nobody enqueued.',
+  );
+  await undo.click();
+  await expect(description).toHaveValue('');
+
+  await remove.focus();
   await page.keyboard.press('Enter');
 
   await expect(add).toBeFocused();

@@ -3,7 +3,7 @@ import { Accordion } from 'radix-ui';
 import { useCallback, useRef, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { Action } from '../store/actions.js';
-import { dispatch, useModelStore } from '../store/store.js';
+import { dispatch, modelStore, useModelStore } from '../store/store.js';
 import { LiveRegion } from '../ui/live-region.js';
 import { ThreatEditor, type EditorFocus } from './threat-editor.js';
 import styles from './threat-panel.module.css';
@@ -12,7 +12,7 @@ import {
   elementLabel,
   freshThreat,
   nextNumber,
-  selectedElement,
+  panelElement,
   threatAfterDeleting,
   threatCommitter,
 } from './threats.js';
@@ -23,6 +23,8 @@ type Announced = {
   readonly about: ElementId | undefined;
   readonly said: string;
 };
+
+type Refusal = { readonly threatId: ThreatId; readonly said: string };
 
 function focusIn(
   focus: PanelFocus | undefined,
@@ -47,10 +49,16 @@ function focusIn(
  * since a moved focus alone tells a screen reader that something happened but
  * not what it was. What was announced is dropped as soon as the selection
  * moves off the element it was about, so the region never says again what
- * happened on an element the panel has left.
+ * happened on an element the panel has left. An add is announced only once
+ * the store holds the threat, the reducer being free to refuse an operation
+ * and leave the model where it was.
+ *
+ * A text field the model refused announces there too, and the threat holding
+ * the refused draft stays expanded until the text is fixed or cleared: Radix
+ * unmounts a collapsed item's fields, which would take the draft with them.
  */
 export function ThreatPanel() {
-  const element = useModelStore(selectedElement);
+  const element = useModelStore(panelElement);
   const threats = useModelStore(useShallow(attachedThreats));
   const number = useModelStore(nextNumber);
   const [expanded, setExpanded] = useState('');
@@ -59,8 +67,13 @@ export function ThreatPanel() {
     about: undefined,
     said: '',
   });
+  const [refusal, setRefusal] = useState<Refusal | undefined>(undefined);
   const addControl = useRef<HTMLButtonElement>(null);
   const selected = element?.id;
+  const held = threats.some((threat) => threat.id === refusal?.threatId)
+    ? refusal?.threatId
+    : undefined;
+  const said = refusal?.said ?? announced.said;
   const focused = useCallback(() => {
     setFocus(undefined);
   }, []);
@@ -75,7 +88,11 @@ export function ThreatPanel() {
     }
     const threat = freshThreat(number, element.id);
     dispatch(Action.AddThreat({ threat }));
+    if (!modelStore.getState().present.threats.includes(threat)) {
+      return;
+    }
     setExpanded(threat.id);
+    setRefusal(undefined);
     setFocus({ kind: 'title', threatId: threat.id });
     setAnnounced({
       about: element.id,
@@ -86,6 +103,7 @@ export function ThreatPanel() {
   const remove = (threat: Threat): void => {
     const next = threatAfterDeleting(threats, threat.id);
     dispatch(Action.RemoveThreat({ threatId: threat.id }));
+    setRefusal(undefined);
     if (next === undefined) {
       addControl.current?.focus();
     } else {
@@ -97,6 +115,25 @@ export function ThreatPanel() {
     });
   };
 
+  const refused =
+    (threat: Threat) =>
+    (message: string | undefined): void => {
+      setRefusal(
+        message === undefined
+          ? undefined
+          : { threatId: threat.id, said: message },
+      );
+      if (message !== undefined) {
+        setAnnounced({ about: selected, said: '' });
+      }
+    };
+
+  const expand = (value: string): void => {
+    if (held === undefined || value === held) {
+      setExpanded(value);
+    }
+  };
+
   return (
     <section aria-label="Threats" className={styles.panel}>
       <h2 className={styles.heading}>
@@ -106,12 +143,10 @@ export function ThreatPanel() {
       </h2>
       <LiveRegion
         className={styles.announcement}
-        label="Threat changes"
+        label="Panel messages"
         testId="threat-announcement"
       >
-        {announced.said !== '' && (
-          <p className={styles.message}>{announced.said}</p>
-        )}
+        {said !== '' && <p className={styles.message}>{said}</p>}
       </LiveRegion>
       {element === undefined ? (
         <p className={styles.instruction}>
@@ -136,7 +171,7 @@ export function ThreatPanel() {
             <Accordion.Root
               className={styles.list}
               collapsible
-              onValueChange={setExpanded}
+              onValueChange={expand}
               type="single"
               value={expanded}
             >
@@ -149,6 +184,7 @@ export function ThreatPanel() {
                     remove(threat);
                   }}
                   onFocused={focused}
+                  onRefusal={refused(threat)}
                   threat={threat}
                 />
               ))}
