@@ -282,8 +282,9 @@ replace that:
   into `apps/cli/dist/assets` from `PANOPTES_FONTS_DIR`, which both dev shells
   export from the pinned nixpkgs' `liberation_ttf`, so their provenance is the
   `nixpkgs` revision in `flake.lock`. `scripts/package-cli.sh` prints each
-  staged font's SHA-256 beside the bundle's, so a nixpkgs bump that redraws a
-  glyph is visible in a run's log rather than only in a PDF's bytes.
+  staged font's SHA-256, and their licence's, beside the bundle's, so a
+  nixpkgs bump that redraws a glyph or replaces the licence file is visible in
+  a run's log rather than only in an executable's bytes.
 - **A compile has no network.** `scripts/package-cli.sh` runs every
   `deno compile` under `unshare -rn`, passes `--no-remote`, `--no-npm` and
   `--cached-only`, and refuses to run where no network namespace can be made.
@@ -362,8 +363,8 @@ without and the font path the build refuses to run without, and the `.#ci` the
 refusals name is the shell CI happens to enter rather than the only one that
 works.
 
-The script's last lines are the bundle's SHA-256, then each staged font's, then
-the `SHA256SUMS` it wrote for the executables. Compare the host target's line
+The script's last lines are the bundle's SHA-256, then each staged font's and
+their licence's, then the `SHA256SUMS` it wrote for the executables. Compare the host target's line
 with the release's `SHA256SUMS`. Every CI run prints the same things, so a
 runner build and a local build can be compared from the logs alone, without
 downloading either.

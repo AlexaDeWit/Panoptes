@@ -27,8 +27,11 @@ const fontsVariable = 'PANOPTES_FONTS_DIR';
 
 // Named one at a time rather than copied wholesale: liberation_ttf ships
 // twelve faces, src/pdf.ts loads every .ttf it finds beside the bundle, and a
-// face that arrives there moves the PDF the render golden fixes.
-const fontFiles = [
+// face that arrives there moves the PDF the render golden fixes. Mono is
+// carried in the regular face alone, so strong and emphasised inline code is
+// synthesised by the typesetter rather than drawn: the other three faces are
+// 860 KB, which no register in the document asks for yet.
+const fontFiles: readonly string[] = [
   'LiberationMono-Regular.ttf',
   'LiberationSans-Bold.ttf',
   'LiberationSans-BoldItalic.ttf',
@@ -48,9 +51,10 @@ const wasmModule = resolve.resolve('@myriaddreamin/typst-ts-web-compiler/wasm');
 
 type RuntimeAsset = { readonly from: string; readonly to: string };
 
-// A missing input stops the build with one sentence naming it. The
-// alternative is an executable that answers every command except the one that
-// typesets, which only the packaging script's PDF check would catch.
+// A missing input stops the build with one sentence naming it, because
+// nothing downstream would. The packaging script's PDF check reads a five
+// byte header, and an executable carrying the compiler module but no face
+// still writes one: what that check catches is a missing module.
 const refuse = (sentence: string): never => {
   console.error(sentence);
   process.exit(1);
@@ -72,19 +76,21 @@ const fontIn = (fonts: string, name: string): string => {
     : refuse(`${fontsVariable} names ${fonts}, which holds no ${name}.`);
 };
 
+// Exactly one, rather than the first readdirSync happens to return: a
+// single-package store path holds one release directory, and reading two
+// would mean the variable points somewhere else, where a pick by directory
+// order would be a different licence on a different machine.
 const licenceIn = (fonts: string): string => {
   const documentation = join(fonts, '..', '..', 'doc');
-  const shipped = existsSync(documentation)
-    ? readdirSync(documentation).map((release) =>
-        join(documentation, release, licenceFile),
-      )
-    : [];
-  return (
-    shipped.find((path) => existsSync(path)) ??
-    refuse(
-      `${fontsVariable} names ${fonts}, whose package ships no ${licenceFile} under ${documentation}. The fonts do not travel without it.`,
-    )
-  );
+  const releases = existsSync(documentation) ? readdirSync(documentation) : [];
+  const [shipped, ...rest] = releases
+    .map((release) => join(documentation, release, licenceFile))
+    .filter((path) => existsSync(path));
+  return shipped !== undefined && rest.length === 0
+    ? shipped
+    : refuse(
+        `${fontsVariable} names ${fonts}, whose package does not ship exactly one ${licenceFile} under ${documentation}. The fonts do not travel without it.`,
+      );
 };
 
 // Everything the executable carries beside its bundle, gathered in

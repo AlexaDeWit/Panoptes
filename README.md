@@ -205,7 +205,7 @@ Liberation faces with their licence, which it copies out of the store path
 catalog and the lockfile and the fonts by the nixpkgs revision in
 `flake.lock`, and a build outside the flake shell stops with the missing
 variable named rather than writing an executable that cannot typeset.
-Liberation Sans is metric compatible with Arial, which is what the canvas
+Liberation Sans is metric-compatible with Arial, which is what the canvas
 stylesheet asks for, so a diagram embedded in a PDF keeps the layout the
 canvas measured. The directory is 28.89 MiB, and an executable grows by
 28.95 MiB, the difference being the compiler package's JavaScript, which
@@ -213,8 +213,10 @@ esbuild inlines into the bundle. Everything the script stages is stamped with
 one modification time and one mode, the assets as well as the entry point, so
 the bytes stay a function of the inputs rather than of the machine. The
 packaging script then renders the vendored fixture to a PDF through the
-compiled executable, so an executable built without them fails there rather
-than in a user's hands.
+compiled executable, so an executable compiled without the compiler module
+fails there rather than in a user's hands. A missing face is not that check's
+to catch, since a document typeset without one is still a PDF: the build's own
+refusal is what keeps a fontless executable from being made at all.
 
 [`docs/release.md`](docs/release.md) is the release procedure.
 
