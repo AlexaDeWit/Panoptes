@@ -20,12 +20,6 @@ const surfaces = [
   'surfaceProcess',
 ] as const satisfies readonly (keyof Palette)[];
 
-const chromeSurfaces = [
-  'surfaceApp',
-  'surfaceCanvas',
-  'surfacePanel',
-] as const satisfies readonly (keyof Palette)[];
-
 const tones = [
   'toneCritical',
   'toneHigh',
@@ -63,7 +57,9 @@ const measured = (palette: Palette, pairs: readonly Pair[]) =>
   }));
 
 const below = (palette: Palette, pairs: readonly Pair[]) =>
-  measured(palette, pairs).filter((entry) => entry.ratio < entry.floor);
+  measured(palette, pairs).filter(
+    (entry) => !Number.isFinite(entry.ratio) || entry.ratio < entry.floor,
+  );
 
 describe.each(palettes)('$name', ({ palette }) => {
   it('sets text on every surface at the ratio WCAG 2.2 AA asks of text', () => {
@@ -88,11 +84,7 @@ describe.each(palettes)('$name', ({ palette }) => {
     expect(
       below(
         palette,
-        pairsOf(
-          [...tones, 'border', 'actionPrimary'],
-          chromeSurfaces,
-          markFloor,
-        ),
+        pairsOf([...tones, 'border', 'actionPrimary'], surfaces, markFloor),
       ),
     ).toEqual([]);
   });

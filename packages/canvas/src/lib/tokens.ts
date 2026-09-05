@@ -49,12 +49,12 @@ export type Palette = {
 /**
  * The light palette: the maintainer's vintage draftsman colours with the
  * lightness moved where the contrast floors demanded it and the hue left
- * alone. Four values are not the starting palette's own. The ochre is darker,
- * because cream lettering on the starting ochre measured 3.2 where a badge
- * needs 4.5. The secondary text and the hairline are darker, because they
- * measured 3.2 and 1.4 on the canvas ground where text needs 4.5 and a
- * control's outline 3. The fifth severity, which the starting palette does
- * not carry, is the olive of the primary action.
+ * alone. Five values are not the starting palette's own. The ochre and the
+ * warm grey are darker, because cream lettering on them measured 3.2 and 4.4
+ * where a badge needs 4.5. The secondary text and the hairline are darker,
+ * because they measured 3.2 and 1.4 on the canvas ground where text needs 4.5
+ * and a control's outline 3. The fifth severity, which the starting palette
+ * does not carry, is the olive of the primary action.
  */
 export const lightPalette = {
   surfaceApp: '#FDFBF7',
@@ -78,7 +78,9 @@ export const lightPalette = {
 
 /**
  * The dark palette: the same hues over warm ink grounds, measured against the
- * same floors. Nothing applies it yet, so it is a table and not a theme.
+ * same floors, its hairline lightened a step past the first table so it clears
+ * 3 on the wash a process is filled with. Nothing applies it yet, so it is a
+ * table and not a theme.
  */
 export const darkPalette = {
   surfaceApp: '#24211D',
@@ -88,7 +90,7 @@ export const darkPalette = {
   surfaceProcess: '#292E1F',
   textPrimary: '#E6E1D8',
   textSecondary: '#9A948B',
-  border: '#807350',
+  border: '#847753',
   actionPrimary: '#769438',
   actionHover: '#8DB143',
   actionText: '#1A1815',

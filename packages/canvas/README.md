@@ -213,7 +213,7 @@ answers the same roles over warm ink grounds. Nothing applies the dark table
 yet, so it is data beside the light one rather than a theme.
 
 The palette is the maintainer's vintage draftsman colours with the lightness
-moved where a contrast floor demanded it and the hue left alone. Four values
+moved where a contrast floor demanded it and the hue left alone. Five values
 are not the starting palette's own, and the reasons are in the module. The
 fifth severity, which the starting palette does not carry, is the olive of the
 primary action, so a low badge and a button are one colour: what tells one
@@ -222,9 +222,11 @@ severity from another is the badge's mark, and the tone repeats it.
 `contrastRatio` is the WCAG 2.2 ratio computed from two tokens, and
 `tokens.spec.ts` puts every text-on-surface and mark-on-surface pair of both
 tables through it: 4.5 for text and for a badge's lettering, 3 for a mark and
-for the outline that identifies a control. So the palette is measured rather
-than read, and a value moved by hand fails the suite with the ratio it
-reached. `channelDistance` is the coarse floor under the five tones, which
+for the outline that identifies a control. Every surface counts as a ground,
+the two washes an actor and a process are filled with among them, since a
+badge is drawn over an element as readily as beside one. So the palette is
+measured rather than read, and a value moved by hand fails the suite with the
+ratio it reached. `channelDistance` is the coarse floor under the five tones, which
 catches two collapsing onto one shade and claims nothing more.
 
 `canvasStylesheet` resolves the light tokens to values, because the standalone

@@ -10,26 +10,25 @@ const trees = [
   join(repositoryRoot, 'packages/canvas/src'),
 ];
 
-const tokenModule = [
-  join(repositoryRoot, 'packages/canvas/src/lib/tokens.ts'),
-  join(repositoryRoot, 'packages/canvas/src/lib/tokens.spec.ts'),
-];
+const tokenModule = join(repositoryRoot, 'packages/canvas/src/lib/tokens.ts');
 
 const styled = /\.(css|tsx?)$/u;
+
+const beside = /\.(spec|test)\./u;
 
 const filesUnder = (from: string): string[] =>
   readdirSync(from, { withFileTypes: true }).flatMap((entry) => {
     const path = join(from, entry.name);
     return entry.isDirectory()
       ? filesUnder(path)
-      : styled.test(entry.name)
+      : styled.test(entry.name) && !beside.test(entry.name)
         ? [path]
         : [];
   });
 
 const sources = trees
   .flatMap(filesUnder)
-  .filter((path) => !tokenModule.includes(path))
+  .filter((path) => path !== tokenModule)
   .map((path) => ({
     path: relative(repositoryRoot, path),
     text: readFileSync(path, 'utf8'),
@@ -59,10 +58,11 @@ describe('the studio and the canvas, coloured from one table', () => {
     expect(carrying.map((source) => source.path)).toEqual([]);
   });
 
-  it('walked both trees, the global stylesheet and the canvas sheet among them', () => {
+  it('reads the production files of both trees and no spec beside them, which is what this task declares as its inputs', () => {
     const walked = sources.map((source) => source.path);
     expect(walked).toContain('apps/studio/src/styles.css');
     expect(walked).toContain('packages/canvas/src/lib/stylesheet.ts');
+    expect(walked.filter((path) => beside.test(path))).toEqual([]);
   });
 });
 

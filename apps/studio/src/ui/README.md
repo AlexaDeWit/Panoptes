@@ -15,8 +15,8 @@ The values are the canvas package's
 projected as custom properties and injected once at the app root by
 [`../theme.tsx`](../theme.tsx), so the chrome and the diagram inside it are
 coloured from one table. A colour written into a stylesheet here instead is a
-failing spec, `../theme.spec.tsx`, which walks this app and the canvas package
-for one.
+failing spec, `../theme.spec.tsx`, which walks the production files of this app
+and of the canvas package for one.
 
 | Token                                                                | What it decides                    |
 | -------------------------------------------------------------------- | ---------------------------------- |
