@@ -127,23 +127,17 @@ const reasonPhrases: Record<DivergenceReason, string> = {
   'discarded-by-edit': 'removed by an edit',
 };
 
-const escapableText = /\\|\p{Cc}/gu;
-
-const escapableId = /["\\]|\p{Cc}/gu;
-
 /**
  * The divergences as lines for a person, one per entry and in the order the
  * codec recorded them. An empty list renders as a line saying so, so the
  * rendering is never blank. An id reaches this rendering as the foreign
- * file wrote it and `detail` can quote what the file said, so both escape
- * control characters to `\uXXXX` and a backslash with a backslash, and an
- * id, which is rendered in quotes, escapes a quote as well. A newline
- * cannot split one entry into two lines, and no id can render as another.
- * Nothing else is escaped, so bidirectional or zero-width formatting a
- * `detail` quotes from a file still displays as something other than what
- * it says. An id carries less of it than a `detail` can, the model refusing
- * every control character but tab, line feed and carriage return: what is
- * left to an id is the zero width joiner and non-joiner, the format
+ * file wrote it and `detail` can quote what the file said, so both are
+ * escaped the way `escapedForTerminal` escapes a text, and an id, which is
+ * rendered in quotes, escapes a quote on top of that: a newline cannot split
+ * one entry into two lines, and no id can render as another. Of what that
+ * escaping leaves alone an id carries less than a `detail` can, the model
+ * refusing every control character but tab, line feed and carriage return:
+ * what is left to an id is the zero width joiner and non-joiner, the format
  * characters a script owns and the three Arabic marks the model accepts by
  * name, some of them invisible and some drawn as an ornament over the text
  * that follows, and the Arabic letter mark U+061C, which is a bidirectional
@@ -156,7 +150,7 @@ export function renderDivergences(divergences: readonly Divergence[]): string {
 }
 
 function renderDivergence(divergence: Divergence): string {
-  return `${renderSubject(divergence.subject)}: ${escapeText(
+  return `${renderSubject(divergence.subject)}: ${escapedForTerminal(
     divergence.detail,
   )} (${reasonPhrases[divergence.reason]})`;
 }
@@ -167,9 +161,25 @@ function renderSubject(subject: DivergenceSubject): string {
     : `${subject.kind} "${escapeId(subject.id)}"`;
 }
 
-function escapeText(text: string): string {
+const escapableText = /\\|\p{Cc}/gu;
+
+/**
+ * A text with every control character written as `\uXXXX` and every
+ * backslash doubled. Text out of a model file reaches a terminal through
+ * standard error, and an escape it carries would otherwise move the cursor
+ * or set the colours rather than being read. The whole `Cc` category is
+ * covered, not the subset `JSON.stringify` escapes, so the C1 range is
+ * closed too, and doubling the backslash is what keeps a file spelling an
+ * escape out of literal characters distinguishable from one carrying the
+ * escape itself. Nothing else is escaped, so bidirectional or zero-width
+ * formatting the text quotes from a file still displays as something other
+ * than what it says.
+ */
+export function escapedForTerminal(text: string): string {
   return text.replace(escapableText, escapeCharacter);
 }
+
+const escapableId = /["\\]|\p{Cc}/gu;
 
 function escapeId(id: string): string {
   return id.replace(escapableId, escapeCharacter);

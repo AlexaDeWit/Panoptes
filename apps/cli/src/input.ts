@@ -1,6 +1,7 @@
 import {
   DetectionFailure,
   ReadFailure,
+  escapedForTerminal,
   hasDiverged,
   readAnyFormat,
   readLimits,
@@ -12,7 +13,6 @@ import type { ParseIssue } from '@panoptes/model';
 import { Either } from 'effect';
 import { readTextFile, sizeOf } from './files.js';
 import {
-  escaped,
   invalidInput,
   lines,
   usageError,
@@ -115,7 +115,7 @@ function detected(file: string): Either.Either<DetectedRead, CommandOutcome> {
 
 function issueLines(issues: readonly ParseIssue[]): readonly string[] {
   return issues.map((issue) =>
-    escaped(`${pathOf(issue.path)}: ${issue.message}`),
+    escapedForTerminal(`${pathOf(issue.path)}: ${issue.message}`),
   );
 }
 

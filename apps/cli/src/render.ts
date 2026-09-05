@@ -1,3 +1,4 @@
+import { escapedForTerminal } from '@panoptes/formats';
 import type { Diagram, Model } from '@panoptes/model';
 import {
   renderRegister,
@@ -10,7 +11,6 @@ import { z } from 'zod';
 import { writeFile } from './files.js';
 import { readModel } from './input.js';
 import {
-  escaped,
   lines,
   succeeded,
   usageError,
@@ -196,7 +196,7 @@ function theNamedDiagram(
 
 function diagramList(model: Model): readonly string[] {
   return model.diagrams.map((diagram) =>
-    escaped(`  ${diagram.id}: ${collapsed(diagram.title)}`),
+    escapedForTerminal(`  ${diagram.id}: ${collapsed(diagram.title)}`),
   );
 }
 
