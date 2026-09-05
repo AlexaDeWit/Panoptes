@@ -1,4 +1,8 @@
-import type { DetectionFailure, ReadFailure } from '@panoptes/formats';
+import type {
+  DetectionFailure,
+  Divergence,
+  ReadFailure,
+} from '@panoptes/formats';
 import type {
   DiagramId,
   Element,
@@ -26,6 +30,11 @@ import type { RetainedSource } from './state.js';
  * reaches the state: the reducer records it, so the view that asked for the
  * file has nothing to handle and one value carries every refusal.
  *
+ * `Opened` carries what the read dropped as well, which the reducer does not
+ * keep: it describes the file that was read rather than the model, and the
+ * view that asked for the file is what shows it. It rides here so that one
+ * value describes the open, rather than the view reading the codec twice.
+ *
  * The union is bounded and the reducer is exhaustive over it, so a tag added
  * here without an arm beside it is a compile error rather than a silent
  * no-op. A new mutation is a new tag, never a store method that edits the
@@ -48,6 +57,7 @@ export type Action = Data.TaggedEnum<{
     readonly model: Model;
     readonly name: string;
     readonly source: RetainedSource;
+    readonly divergences: readonly Divergence[];
   };
   Saved: { readonly name: string; readonly source: RetainedSource };
   ReadFailed: {

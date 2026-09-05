@@ -1,7 +1,10 @@
+/* No gap between the regions: two of the three hold nothing most of the time,
+   and they stay in the page rather than being hidden, so a gap either side of
+   them would be space around nothing. Each region spaces itself when it has
+   something to say. */
 .bar {
   display: flex;
   flex-direction: column;
-  gap: var(--pn-space-2);
   margin-bottom: var(--pn-space-4);
 }
 
@@ -41,8 +44,16 @@
   display: none;
 }
 
+/* As with the failure notice beside it, the region collapses while it is
+   empty rather than hiding, so it is in the accessibility tree before the
+   first entry lands in it. */
 .report:empty {
-  display: none;
+  padding: 0;
+  border: 0;
+}
+
+.report:not(:empty) {
+  margin-top: var(--pn-space-2);
 }
 
 .report {

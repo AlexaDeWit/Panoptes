@@ -18,7 +18,12 @@ import {
 } from '../store/store.fixtures.js';
 import { SaveOutcome } from './bridge.js';
 import { FileBar } from './file-bar.js';
-import { chosenFile, specBridge, type SpecBridge } from './files.fixtures.js';
+import {
+  chosenFile,
+  specBridge,
+  vendoredFile,
+  type SpecBridge,
+} from './files.fixtures.js';
 
 const nativeText = panoptesYamlCodec.write(sampleModel).output;
 
@@ -55,6 +60,20 @@ const mounted = (bridge: SpecBridge): void => {
 const asked = (): boolean =>
   !globalThis.dispatchEvent(new Event('beforeunload', { cancelable: true }));
 
+/**
+ * Écluse, carrying two keys the Threat Dragon wire schema does not declare:
+ * one at the root and one under `detail`. Written as text rather than
+ * through a parse and a re-stringify, so the file reaches the codec as a
+ * file would.
+ */
+const withUndeclaredKeys = async (): Promise<string> =>
+  (await vendoredFile('test-data/ecluse.json').text())
+    .replace(
+      '"version"',
+      '"unknownRoot": "nothing declares this",\n  "version"',
+    )
+    .replace('"detail": {', '"detail": {\n    "unknownDetail": "nor this",');
+
 beforeEach(() => {
   modelStore.setState(initialState(sampleModel), true);
   vi.stubGlobal(
@@ -79,7 +98,8 @@ describe('what the studio says about the file', () => {
     expect(state()).toBe('No file, Panoptes YAML, unsaved changes');
   });
 
-  it('guards the tab while the model has changes in no file', () => {
+  it('guards the tab while the model has changes in no file, and lets go once they are in one', async () => {
+    const user = userEvent.setup();
     mounted(specBridge());
 
     expect(asked()).toBe(false);
@@ -87,6 +107,12 @@ describe('what the studio says about the file', () => {
     edit();
 
     expect(asked()).toBe(true);
+
+    await user.click(saveControl());
+
+    await waitFor(() => {
+      expect(asked()).toBe(false);
+    });
   });
 });
 
@@ -152,6 +178,35 @@ describe('opening', () => {
     await waitFor(() => {
       expect(state()).toBe('model.yaml, Panoptes YAML, no unsaved changes');
     });
+  });
+
+  it('says what the read dropped, which no later save can report', async () => {
+    const user = userEvent.setup();
+    const bridge = specBridge({
+      offers: chosenFile('ecluse.json', await withUndeclaredKeys()),
+    });
+    mounted(bridge);
+
+    await user.click(openControl());
+
+    await waitFor(() => {
+      expect(reportEntries().length > 0).toBe(true);
+    });
+    expect(screen.getByTestId('save-report').textContent).toContain(
+      'Opening the file dropped',
+    );
+    expect(reportEntries().map((entry) => entry.textContent)).toEqual([
+      'model: the key unknownRoot (not declared by the wire schema)',
+      'model: the key detail.unknownDetail (not declared by the wire schema)',
+    ]);
+
+    await user.click(saveControl());
+
+    await waitFor(() => {
+      expect(bridge.writes).toHaveLength(1);
+    });
+    expect(bridge.writes[0].text).not.toContain('unknownRoot');
+    expect(reportEntries()).toEqual([]);
   });
 
   it('opens through its own file input where the bridge has no picker', async () => {

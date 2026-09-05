@@ -54,9 +54,11 @@ export function formatOf(file: FileLifecycle): FormatName {
 }
 
 /**
- * The format a save-as offers: the registered one the file is not already
- * in. It reads the registry rather than naming a format, so a third codec
- * offers something rather than nothing, and a lone format offers itself.
+ * The format a save-as offers: the first registered one the file is not
+ * already in. It reads the registry rather than naming a format, so a third
+ * codec offers something rather than nothing, and a lone format offers
+ * itself. One control can only offer one format, so a third codec is where
+ * the control becomes a menu over every format but the file's own.
  */
 export function otherFormat(format: FormatName): FormatName {
   return formatNameSchema.options.find((option) => option !== format) ?? format;
@@ -165,8 +167,8 @@ export function savedBy(
 /**
  * The loss report, one line per divergence, through the formats package's
  * own rendering: an id reaches it as a foreign file wrote it, and that
- * rendering is where the escaping lives. An aligned save reports nothing,
- * which is a list of no lines rather than a line saying so.
+ * rendering is where the escaping lives. An aligned read or write reports
+ * nothing, which is a list of no lines rather than a line saying so.
  */
 export function reportLines(
   divergences: readonly Divergence[],
@@ -176,22 +178,69 @@ export function reportLines(
     : [];
 }
 
+/** Whether a loss report is about a file being read or one being written. */
+export type LossOccasion = 'open' | 'save';
+
+/** What one open or one save cost, and which of the two it was. */
+export type LossReport = {
+  readonly occasion: LossOccasion;
+  readonly divergences: readonly Divergence[];
+};
+
+/** How each occasion introduces its report to a person. */
+export const reportHeadlines: Record<LossOccasion, string> = {
+  open: 'Opening the file dropped what it holds and Panoptes does not:',
+  save: 'The last save did not carry everything the model holds:',
+};
+
 /**
- * What a read produced, as the store holds it. The two arms read alike and
- * differ in type: narrowing the format is what pairs the document with the
- * codec that produced it, and a format the arms do not name would not
- * compile.
+ * What an open cost, and nothing at all where it cost nothing or where no
+ * model was opened. A read drops every key its wire schema does not declare
+ * and reports each one, and the retained document has lost them too, so the
+ * save that follows has nothing left to say about them: this is the only
+ * place they are said.
+ */
+export function openReport(action: Action): LossReport | undefined {
+  return Action.$is('Opened')(action)
+    ? reported('open', action.divergences)
+    : undefined;
+}
+
+/** What a save cost, and nothing at all where it carried everything. */
+export function saveReport(
+  divergences: readonly Divergence[],
+): LossReport | undefined {
+  return reported('save', divergences);
+}
+
+/**
+ * What a read produced, as the store holds it. Narrowing the format is what
+ * pairs the document with the codec that produced it, so a format with no
+ * arm of its own would not compile rather than filing its document under
+ * another codec's name.
  */
 export function retainedSource(read: DetectedRead): RetainedSource {
   return read.format === 'threat-dragon'
-    ? { format: read.format, document: read.source }
-    : { format: read.format, document: read.source };
+    ? { format: 'threat-dragon', document: read.source }
+    : { format: 'panoptes-yaml', document: read.source };
+}
+
+function reported(
+  occasion: LossOccasion,
+  divergences: readonly Divergence[],
+): LossReport | undefined {
+  return hasDiverged(divergences) ? { occasion, divergences } : undefined;
 }
 
 function actionForText(name: string, text: string): Action {
   return Either.match(readAnyFormat(text), {
     onLeft: (failure) => Action.ReadFailed({ name, failure }),
     onRight: (read) =>
-      Action.Opened({ model: read.model, name, source: retainedSource(read) }),
+      Action.Opened({
+        model: read.model,
+        name,
+        source: retainedSource(read),
+        divergences: read.divergences,
+      }),
   });
 }

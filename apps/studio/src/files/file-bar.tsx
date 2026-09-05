@@ -1,4 +1,4 @@
-import { readLimits, type Divergence } from '@panoptes/formats';
+import { readLimits } from '@panoptes/formats';
 import { useEffect, useRef, useState } from 'react';
 import { isDirty } from '../store/selectors.js';
 import { dispatch, useModelStore } from '../store/store.js';
@@ -15,12 +15,16 @@ import {
   formatLabels,
   formatOf,
   nameOf,
+  openReport,
   openedBy,
   otherFormat,
+  reportHeadlines,
   reportLines,
+  saveReport,
   saveTarget,
   savedBy,
   writeThrough,
+  type LossReport,
   type SaveTarget,
 } from './session.js';
 
@@ -62,29 +66,30 @@ export type FileBarProps = { readonly bridge?: FileBridge };
  * Open control wherever the bridge has no picker of its own, so the
  * confirmation is asked once whichever picker follows it.
  *
- * The loss report is the divergences of the write that was just saved, which
- * is view state and not the model's: it says what one save cost rather than
- * anything about the model on screen, so it lives here and goes when the
- * next save or the next file replaces it.
+ * The loss report is what the last open or the last save cost, which is view
+ * state and not the model's: it says what one file crossing cost rather than
+ * anything about the model on screen, so it lives here and goes when a save
+ * starts or an open lands. A read reports too, because the keys a wire
+ * schema does not declare are gone from the model and from the retained
+ * document alike, so no later save can say what became of them.
  */
 export function FileBar({ bridge = browserFileBridge }: FileBarProps) {
   const file = useModelStore((state) => state.file);
   const present = useModelStore((state) => state.present);
   const failure = useModelStore((state) => state.lastFailure);
   const dirty = useModelStore(isDirty);
-  const [report, setReport] = useState<readonly Divergence[]>([]);
+  const [report, setReport] = useState<LossReport | undefined>(undefined);
   const input = useRef<HTMLInputElement>(null);
 
   useCloseGuard(dirty);
 
   const format = formatOf(file);
   const alternative = otherFormat(format);
-  const lines = reportLines(report);
 
   const applyOpen = (outcome: OpenOutcome): void => {
     const action = openedBy(outcome);
     if (action !== undefined) {
-      setReport([]);
+      setReport(openReport(action));
       dispatch(action);
     }
   };
@@ -111,6 +116,7 @@ export function FileBar({ bridge = browserFileBridge }: FileBarProps) {
     target: SaveTarget,
     elsewhere: boolean,
   ): Promise<void> => {
+    setReport(undefined);
     const written = writeThrough(present, target.source);
     const outcome = elsewhere
       ? await bridge.saveAs(target.name, written.output)
@@ -120,7 +126,7 @@ export function FileBar({ bridge = browserFileBridge }: FileBarProps) {
       dispatch(action);
     }
     if (SaveOutcome.$is('Written')(outcome)) {
-      setReport(written.divergences);
+      setReport(saveReport(written.divergences));
     }
   };
 
@@ -177,20 +183,20 @@ export function FileBar({ bridge = browserFileBridge }: FileBarProps) {
         className={styles.report}
         data-testid="save-report"
       >
-        {lines.length > 0 && (
+        {report !== undefined && (
           <>
             <p className={styles.headline}>
-              The last save did not carry everything the model holds:
+              {reportHeadlines[report.occasion]}
             </p>
             <ul className={styles.lines}>
-              {lines.map((line, index) => (
+              {reportLines(report.divergences).map((line, index) => (
                 <li key={`${String(index)} ${line}`}>{line}</li>
               ))}
             </ul>
             <button
               className={styles.control}
               onClick={() => {
-                setReport([]);
+                setReport(undefined);
               }}
               type="button"
             >

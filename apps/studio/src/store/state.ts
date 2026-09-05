@@ -83,8 +83,9 @@ export const StudioFailure = Data.taggedEnum<StudioFailure>();
  * and `future` are the undo and redo stacks, each entry a whole model and
  * nothing else. `saved` is the model the open file holds, `selection` names
  * an element of `present`, and `lastFailure` is the last refusal, cleared by
- * the next change to the model. The reasoning behind the shape is in this
- * directory's README.
+ * the next change to the model and by the next save that lands, a save being
+ * the answer to the refusal it followed. The reasoning behind the shape is in
+ * this directory's README.
  *
  * The state is never parsed and never written to a file, so it is the one
  * shape here with no schema behind it.

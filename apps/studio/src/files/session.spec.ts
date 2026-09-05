@@ -6,7 +6,7 @@ import {
   type Divergence,
 } from '@panoptes/formats';
 import { Action } from '../store/actions.js';
-import { FileLifecycle } from '../store/state.js';
+import { FileLifecycle, type RetainedSource } from '../store/state.js';
 import {
   foreignSource,
   nativeSource,
@@ -32,6 +32,11 @@ type OutcomesByTag<Outcome extends { readonly _tag: string }> = {
 const nativeText = panoptesYamlCodec.write(sampleModel).output;
 
 const foreignText = threatDragonCodec.write(sampleModel).output;
+
+const projectedForeign: RetainedSource = {
+  format: 'threat-dragon',
+  document: undefined,
+};
 
 const openOutcomes: OutcomesByTag<OpenOutcome> = {
   Chosen: OpenOutcome.Chosen({ name: 'model.yaml', text: nativeText }),
@@ -174,6 +179,10 @@ describe('saveTarget', () => {
   });
 
   it('writes back to the open file, merging onto what its read retained', () => {
+    expect(saveTarget(openedForeign, 'threat-dragon')).toEqual({
+      name: 'model.json',
+      source: foreignSource,
+    });
     expect(saveTarget(openedNative, 'panoptes-yaml')).toEqual({
       name: 'model.yaml',
       source: nativeSource,
@@ -214,7 +223,15 @@ describe('naming', () => {
 describe('writeThrough', () => {
   it('writes the format the source names', () => {
     expect(writeThrough(sampleModel, nativeSource).output).toBe(nativeText);
-    expect(writeThrough(sampleModel, foreignSource).output).toBe(foreignText);
+    expect(writeThrough(sampleModel, projectedForeign).output).toBe(
+      foreignText,
+    );
+  });
+
+  it('merges onto the document the source carries rather than projecting', () => {
+    expect(writeThrough(sampleModel, foreignSource).output).not.toBe(
+      foreignText,
+    );
   });
 
   it('reports what a format with no place for the model could not hold', () => {
@@ -222,7 +239,7 @@ describe('writeThrough', () => {
       hasDiverged(writeThrough(sampleModel, nativeSource).divergences),
     ).toBe(false);
     expect(
-      hasDiverged(writeThrough(sampleModel, foreignSource).divergences),
+      hasDiverged(writeThrough(sampleModel, projectedForeign).divergences),
     ).toBe(true);
   });
 });

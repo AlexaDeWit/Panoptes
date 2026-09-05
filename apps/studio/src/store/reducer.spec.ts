@@ -116,8 +116,9 @@ const studioActions: ActionsByTag<StudioActionTag> = {
   Select: Action.Select({ elementId: actorElement }),
   Opened: Action.Opened({
     model: emptyModel,
-    name: 'model.yaml',
-    source: nativeSource,
+    name: 'model.json',
+    source: foreignSource,
+    divergences: [],
   }),
   Saved: Action.Saved({ name: 'model.yaml', source: nativeSource }),
   ReadFailed: Action.ReadFailed({
@@ -232,8 +233,28 @@ describe('the file lifecycle', () => {
     expect(opened.past).toEqual([]);
     expect(opened.future).toEqual([]);
     expect(opened.file).toEqual(
-      FileLifecycle.Opened({ name: 'model.yaml', source: nativeSource }),
+      FileLifecycle.Opened({ name: 'model.json', source: foreignSource }),
     );
+  });
+
+  it('keeps nothing of what the read dropped, which describes the file', () => {
+    const opened = reduce(
+      start,
+      Action.Opened({
+        model: emptyModel,
+        name: 'model.json',
+        source: foreignSource,
+        divergences: [
+          {
+            subject: { kind: 'model' },
+            detail: 'the key unknownRoot',
+            reason: 'undeclared',
+          },
+        ],
+      }),
+    );
+
+    expect(JSON.stringify(opened)).not.toContain('unknownRoot');
   });
 
   it('names the file a first save writes to, having had none', () => {
@@ -256,6 +277,7 @@ describe('the file lifecycle', () => {
         model: sampleModel,
         name: 'model.json',
         source: foreignSource,
+        divergences: [],
       }),
     );
     const working = reduce(opened, applied.AddElement);

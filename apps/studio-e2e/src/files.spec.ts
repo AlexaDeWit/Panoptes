@@ -19,10 +19,6 @@ const vendored = (path: string): string =>
 test('opens a model, saves it back, and writes a file that parses again', async ({
   page,
 }) => {
-  // Écluse is the largest model the repository vendors, and a cold dev server
-  // compiles the codecs on the first request for them, so this one test gets
-  // the longer budget rather than the whole suite getting it.
-  test.slow();
   await page.addInitScript(withoutPickers);
   await page.goto('/');
   await expect(page.getByTestId('canvas-container')).toBeVisible();

@@ -43,12 +43,14 @@ Two components carry no Radix primitive, because neither takes an edit.
 shows the model refusing an edit, a codec refusing a file, and the platform
 refusing to hand one over. It words every variant: nothing reaches a person
 as a tag, and a codec's paths are kept because they say which line of a file
-was refused rather than that the file was. `ErrorBoundary` is the last stop
-for a throw from anywhere below it, and is a class because React offers no
-other way to catch one; it holds the only component state in this directory
-for that reason. Both are live regions that stay in the page while they have
-nothing to say, so what arrives in them is announced rather than appearing in
-silence.
+was refused rather than that the file was. It is a live region that stays in the page
+while it has nothing to say, and collapses rather than hiding while it is
+empty, so a refusal is announced when it arrives rather than appearing in
+silence. `ErrorBoundary` is the last stop for a throw from anywhere below it,
+and is a class because React offers no other way to catch one; it holds the
+only component state in this directory for that reason. It needs no live
+region, because it replaces the tree it was guarding rather than announcing
+into it.
 
 ## What a composed control owes
 

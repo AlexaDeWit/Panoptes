@@ -38,8 +38,9 @@ async function open(maxBytes: number): Promise<OpenOutcome> {
     if (handle === undefined) {
       return OpenOutcome.Cancelled();
     }
-    held = handle;
-    return await readWithin(await handle.getFile(), maxBytes);
+    const outcome = await readWithin(await handle.getFile(), maxBytes);
+    held = OpenOutcome.$is('Chosen')(outcome) ? handle : undefined;
+    return outcome;
   } catch (cause) {
     return dismissed(cause)
       ? OpenOutcome.Cancelled()
@@ -60,8 +61,8 @@ function save(name: string, text: string): Promise<SaveOutcome> {
 
 async function saveAs(name: string, text: string): Promise<SaveOutcome> {
   const picker = window.showSaveFilePicker;
-  held = undefined;
   if (picker === undefined) {
+    held = undefined;
     return download(name, text);
   }
   try {
@@ -115,8 +116,11 @@ function download(name: string, text: string): SaveOutcome {
  *
  * The handle a picker returned is held here rather than in the store,
  * because it is neither plain data nor undoable: it is which file on disk
- * this tab may write, and it is dropped the moment the model moves to
- * another file.
+ * this tab may write. It is held only where a read produced a text, since a
+ * file that would not open is not a file this model may be written over, and
+ * it is dropped the moment the model moves to another file: an open through
+ * the caller's own input, and a save-as that ends in a download. A save-as
+ * the person dismissed moves nothing, so it leaves the handle alone.
  *
  * The two pickers are declared here because TypeScript's DOM library does
  * not declare them, and each is read off `window` as an optional member, so

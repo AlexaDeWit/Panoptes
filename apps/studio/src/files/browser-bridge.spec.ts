@@ -117,6 +117,21 @@ describe('saving', () => {
     );
   });
 
+  it('offers a download where the file the picker named would not read', async () => {
+    const written: string[] = [];
+    vi.stubGlobal('showOpenFilePicker', () =>
+      Promise.resolve([handleFor('huge.json', 'a'.repeat(100), written)]),
+    );
+    const bridge = await freshBridge();
+
+    expect((await bridge.open(10))._tag).toBe('TooLarge');
+    expect(await bridge.save('threat-model.yaml', 'a: 1')).toEqual(
+      SaveOutcome.Written({ name: 'threat-model.yaml' }),
+    );
+    expect(written).toEqual([]);
+    expect(downloads).toEqual(['threat-model.yaml']);
+  });
+
   it('offers a download where no file was opened through a picker', async () => {
     const bridge = await freshBridge();
 
@@ -141,13 +156,22 @@ describe('saving', () => {
     expect(written).toEqual(['first', 'second']);
   });
 
-  it('says nothing where a save-as was dismissed', async () => {
+  it('says nothing where a save-as was dismissed, and keeps writing back to the open file', async () => {
+    const written: string[] = [];
+    vi.stubGlobal('showOpenFilePicker', () =>
+      Promise.resolve([handleFor('model.json', '{}', written)]),
+    );
     vi.stubGlobal('showSaveFilePicker', () => Promise.reject(dismissal()));
     const bridge = await freshBridge();
+    await bridge.open(1024);
 
     expect(await bridge.saveAs('model.yaml', 'a: 1')).toEqual(
       SaveOutcome.Cancelled(),
     );
+    await bridge.save('model.json', 'second');
+
+    expect(written).toEqual(['second']);
+    expect(downloads).toEqual([]);
   });
 
   it('forgets the file the model came from once a save-as downloads instead', async () => {
