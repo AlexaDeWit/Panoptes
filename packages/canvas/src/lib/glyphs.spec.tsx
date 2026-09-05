@@ -1,4 +1,4 @@
-import { elementIdSchema } from '@panoptes/model';
+import { elementId } from '@panoptes/model/fixtures';
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { renderToStaticMarkup } from 'react-dom/server';
@@ -20,12 +20,10 @@ import {
   textExtent,
 } from './typography.js';
 
-const id = (value: string) => elementIdSchema.parse(value);
-
 const layout = layoutDiagram(everyGlyphModel.diagrams[0], everyGlyphModel);
 
 const nodeNamed = (value: string): CanvasNode => {
-  const found = layout.nodes.find((node) => node.id === id(value));
+  const found = layout.nodes.find((node) => node.id === elementId(value));
   if (found === undefined) {
     throw new Error(`No node ${value} in the layout`);
   }
@@ -33,7 +31,7 @@ const nodeNamed = (value: string): CanvasNode => {
 };
 
 const edgeNamed = (value: string): CanvasEdge => {
-  const found = layout.edges.find((edge) => edge.id === id(value));
+  const found = layout.edges.find((edge) => edge.id === elementId(value));
   if (found === undefined) {
     throw new Error(`No edge ${value} in the layout`);
   }
@@ -205,7 +203,7 @@ const probeFlow = (
   to: Point,
   badge: ThreatBadge | undefined,
 ): CanvasEdge => ({
-  id: id('el-probe'),
+  id: elementId('el-probe'),
   name: probeName,
   outOfScope: false,
   badge,
@@ -217,7 +215,7 @@ const probeFlow = (
   targetElement: undefined,
   waypoints: [],
   label: flowLabelPlacements(
-    [{ id: id('el-probe'), name: probeName, badge, points: [from, to] }],
+    [{ id: elementId('el-probe'), name: probeName, badge, points: [from, to] }],
     [],
   )[0],
 });

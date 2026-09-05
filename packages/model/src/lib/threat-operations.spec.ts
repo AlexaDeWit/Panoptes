@@ -1,11 +1,6 @@
 import { Either } from 'effect';
-import {
-  elementId,
-  emptyRegisterFixture,
-  parsedFixture,
-  threatId,
-  threatRegisterFixture,
-} from './fixtures.js';
+import { elementId, parsedFixture, threatId } from '../fixtures.js';
+import { emptyRegisterFixture, threatRegisterFixture } from './fixtures.js';
 import { OperationFailure } from './operation-failures.js';
 import { parseModel, type Model } from './parse.js';
 import {

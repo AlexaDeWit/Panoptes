@@ -21,7 +21,6 @@
   "devDependencies": {
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
-    "effect": "catalog:",
     "react-dom": "catalog:"
   },
   "nx": {

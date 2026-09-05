@@ -1,15 +1,11 @@
+import { elementId, parsedFixture } from '../fixtures.js';
 import {
   elementsWithoutThreats,
   openThreatsBySeverity,
   threatCountByElement,
 } from './coverage.js';
 import type { Element } from './elements.js';
-import {
-  elementId,
-  emptyRegisterFixture,
-  parsedFixture,
-  threatRegisterFixture,
-} from './fixtures.js';
+import { emptyRegisterFixture, threatRegisterFixture } from './fixtures.js';
 import type { Threat } from './threats.js';
 
 const base = parsedFixture(threatRegisterFixture);

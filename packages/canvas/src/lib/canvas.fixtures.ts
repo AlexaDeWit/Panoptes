@@ -1,24 +1,7 @@
-import { parseModel, type Model } from '@panoptes/model';
-import { Either } from 'effect';
+import type { Model } from '@panoptes/model';
+import { parsedFixture } from '@panoptes/model/fixtures';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-
-/**
- * The parsed form of a fixture, for specs that need a Model. Throws where
- * the fixture stops parsing: a fixture that no longer parses is a broken
- * suite, not a case under test, and the message names the construct it lost.
- */
-export function parsedFixture(input: unknown): Model {
-  return Either.getOrThrowWith(
-    parseModel(input),
-    (failure) =>
-      new Error(
-        `Fixture does not parse: ${failure.issues
-          .map((issue) => `${issue.path.join('.')}: ${issue.message}`)
-          .join('; ')}`,
-      ),
-  );
-}
 
 const modelFile = (name: string): unknown =>
   JSON.parse(

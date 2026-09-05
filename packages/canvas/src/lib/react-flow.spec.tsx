@@ -1,4 +1,4 @@
-import { elementIdSchema } from '@panoptes/model';
+import { elementId } from '@panoptes/model/fixtures';
 import { Position, ReactFlowProvider, type EdgeProps } from '@xyflow/react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { everyGlyphModel } from './canvas.fixtures.js';
@@ -19,12 +19,10 @@ import {
   type CanvasFlowNode,
 } from './react-flow.js';
 
-const id = (value: string) => elementIdSchema.parse(value);
-
 const layout = layoutDiagram(everyGlyphModel.diagrams[0], everyGlyphModel);
 
 const nodeNamed = (value: string): CanvasNode => {
-  const found = layout.nodes.find((node) => node.id === id(value));
+  const found = layout.nodes.find((node) => node.id === elementId(value));
   if (found === undefined) {
     throw new Error(`No node ${value} in the layout`);
   }
@@ -159,10 +157,12 @@ describe('toReactFlowEdges', () => {
   it('carries one edge per drawn flow, ends named by the layout', () => {
     const edges = toReactFlowEdges(layout);
     expect(edges).toHaveLength(layout.edges.length);
-    expect(edges.find((edge) => edge.id === id('el-request'))).toMatchObject({
+    expect(
+      edges.find((edge) => edge.id === elementId('el-request')),
+    ).toMatchObject({
       type: 'flow',
-      source: id('el-client'),
-      target: id('el-api'),
+      source: elementId('el-client'),
+      target: elementId('el-api'),
       data: { edge: layout.edges[0] },
     });
   });
@@ -172,7 +172,9 @@ describe('toReactFlowEdges', () => {
       (edge) => edge.id === looseFlow?.id,
     );
     expect(looseFlow).toBeDefined();
-    expect(converted?.source).toBe(flowEndNodeId(id('el-probe'), 'source'));
+    expect(converted?.source).toBe(
+      flowEndNodeId(elementId('el-probe'), 'source'),
+    );
   });
 });
 

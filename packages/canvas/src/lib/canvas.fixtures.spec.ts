@@ -1,19 +1,9 @@
 import { elementSchema } from '@panoptes/model';
-import {
-  ecluseModel,
-  everyGlyphModel,
-  parsedFixture,
-} from './canvas.fixtures.js';
+import { ecluseModel, everyGlyphModel } from './canvas.fixtures.js';
 
 const declaredKinds = new Set<string>(
   elementSchema.options.map((option) => option.shape.kind.value),
 );
-
-describe('parsedFixture', () => {
-  it('names what a fixture lost when it stops parsing', () => {
-    expect(() => parsedFixture({})).toThrow(/Fixture does not parse/u);
-  });
-});
 
 describe('everyGlyphModel', () => {
   it('carries one element of every kind the model declares', () => {

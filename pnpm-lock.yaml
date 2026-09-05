@@ -370,9 +370,6 @@ importers:
       '@types/react-dom':
         specifier: 'catalog:'
         version: 19.2.5(@types/react@19.2.18)
-      effect:
-        specifier: 'catalog:'
-        version: 3.22.1
       react-dom:
         specifier: 'catalog:'
         version: 19.2.8(react@19.2.8)

@@ -1,5 +1,6 @@
 import { DetectionFailure, ReadFailure } from '@panoptes/formats';
 import { emptyModel } from '@panoptes/model';
+import { diagramId, elementId, threatId } from '@panoptes/model/fixtures';
 import { Action } from './actions.js';
 import { reduce } from './reducer.js';
 import {
@@ -10,8 +11,6 @@ import {
 } from './state.js';
 import {
   actorElement,
-  diagramId,
-  elementId,
   firstThreat,
   foreignSource,
   mainDiagram,
@@ -20,7 +19,6 @@ import {
   processElement,
   sampleModel,
   sampleThreat,
-  threatId,
 } from './store.fixtures.js';
 
 const start = initialState(sampleModel);

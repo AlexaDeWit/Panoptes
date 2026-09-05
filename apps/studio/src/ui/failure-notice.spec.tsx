@@ -1,8 +1,8 @@
 import { DetectionFailure, ReadFailure } from '@panoptes/formats';
 import { OperationFailure } from '@panoptes/model';
+import { diagramId, elementId, threatId } from '@panoptes/model/fixtures';
 import { render, screen } from '@testing-library/react';
 import { StudioFailure } from '../store/state.js';
-import { diagramId, elementId, threatId } from '../store/store.fixtures.js';
 import { FailureNotice, describeFailure } from './failure-notice.js';
 
 type ByTag<Union extends { readonly _tag: string }> = {

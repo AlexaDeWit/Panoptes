@@ -1,10 +1,10 @@
-import { elementIdSchema, type Model, type Point } from '@panoptes/model';
+import type { Model, Point } from '@panoptes/model';
+import { elementId, parsedFixture } from '@panoptes/model/fixtures';
 import { badgeAnchor, badgeBox } from './badges.js';
 import {
   ecluseModel,
   everyGlyphModel,
   panoptesModel,
-  parsedFixture,
 } from './canvas.fixtures.js';
 import {
   boxesOverlap,
@@ -33,8 +33,6 @@ import {
 } from './layout.js';
 import { controlPolygon, sampledCurve } from './paths.js';
 import { flowLabelClearance } from './typography.js';
-
-const id = (value: string) => elementIdSchema.parse(value);
 
 const layoutOf = (model: Model, diagram = 0): CanvasLayout =>
   layoutDiagram(model.diagrams[diagram], model);
@@ -804,18 +802,22 @@ describe('a label beside a store', () => {
   });
 });
 
+const twinFlow = (name: string): FlowGeometry => ({
+  id: elementId('el-twin'),
+  name,
+  badge: undefined,
+  points: [
+    { x: 0, y: 0 },
+    { x: 200, y: 0 },
+  ],
+});
+
 describe('the placement as a function of the model alone', () => {
   it('answers two flows of one id in the order it was handed them', () => {
-    const twin = (name: string): FlowGeometry => ({
-      id: id('el-twin'),
-      name,
-      badge: undefined,
-      points: [
-        { x: 0, y: 0 },
-        { x: 200, y: 0 },
-      ],
-    });
-    const placed = flowLabelPlacements([twin('first'), twin('second')], []);
+    const placed = flowLabelPlacements(
+      [twinFlow('first'), twinFlow('second')],
+      [],
+    );
     expect(placed.map((placement) => placement.name.text)).toEqual([
       'first',
       'second',
@@ -827,7 +829,7 @@ describe('the placement as a function of the model alone', () => {
     const [placement] = flowLabelPlacements(
       [
         {
-          id: id('el-dot'),
+          id: elementId('el-dot'),
           name: 'a flow of one point',
           badge: undefined,
           points: [still],
@@ -906,7 +908,7 @@ describe('the placement as a function of the model alone', () => {
 describe('the id of every fixture flow', () => {
   it('reads as an element id', () => {
     expect(ecluseLayout.edges.map((edge) => edge.id)).toContain(
-      id('f2d6c311-b8b3-4a9f-bef7-b78e4adaa17e'),
+      elementId('f2d6c311-b8b3-4a9f-bef7-b78e4adaa17e'),
     );
   });
 });

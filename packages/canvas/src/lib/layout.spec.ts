@@ -1,19 +1,18 @@
-import { elementIdSchema, type Model } from '@panoptes/model';
+import type { Model } from '@panoptes/model';
+import { elementId, parsedFixture } from '@panoptes/model/fixtures';
 import { badgeExtent } from './badges.js';
-import { everyGlyphModel, parsedFixture } from './canvas.fixtures.js';
+import { everyGlyphModel } from './canvas.fixtures.js';
 import { handlePositions } from './handles.js';
 import { layoutDiagram, type CanvasEdge, type CanvasNode } from './layout.js';
 import { canvasNodeTypes, freeEndNodeKind } from './react-flow.js';
 import { boundaryStrokeWidth } from './stylesheet.js';
-
-const id = (value: string) => elementIdSchema.parse(value);
 
 const layoutOf = (model: Model) => layoutDiagram(model.diagrams[0], model);
 
 const layout = layoutOf(everyGlyphModel);
 
 const nodeNamed = (value: string): CanvasNode => {
-  const found = layout.nodes.find((node) => node.id === id(value));
+  const found = layout.nodes.find((node) => node.id === elementId(value));
   if (found === undefined) {
     throw new Error(`No node ${value} in the layout`);
   }
@@ -21,7 +20,7 @@ const nodeNamed = (value: string): CanvasNode => {
 };
 
 const edgeNamed = (value: string): CanvasEdge => {
-  const found = layout.edges.find((edge) => edge.id === id(value));
+  const found = layout.edges.find((edge) => edge.id === elementId(value));
   if (found === undefined) {
     throw new Error(`No edge ${value} in the layout`);
   }
@@ -30,7 +29,7 @@ const edgeNamed = (value: string): CanvasEdge => {
 
 const elementIn = (model: Model, value: string) => {
   const found = model.diagrams[0].elements.find(
-    (element) => element.id === id(value),
+    (element) => element.id === elementId(value),
   );
   if (found === undefined) {
     throw new Error(`No element ${value} in the fixture`);
@@ -167,8 +166,8 @@ describe('layoutDiagram', () => {
 
   it('puts the boundaries ahead of what they enclose', () => {
     expect(layout.nodes.slice(0, 2).map((node) => node.id)).toEqual([
-      id('el-zone'),
-      id('el-edge-zone'),
+      elementId('el-zone'),
+      elementId('el-edge-zone'),
     ]);
   });
 
@@ -186,7 +185,7 @@ describe('layoutDiagram', () => {
     const client = nodeNamed('el-client');
     expect(edge.sourceSide).toBe('right');
     expect(edge.source).toEqual(handlePositions(client).right);
-    expect(edge.sourceElement).toBe(id('el-client'));
+    expect(edge.sourceElement).toBe(elementId('el-client'));
   });
 
   it('leaves a free end at its own position, on no side of anything', () => {
@@ -198,7 +197,11 @@ describe('layoutDiagram', () => {
 
   it('reports the fixture flow whose endpoint names another flow', () => {
     expect(layout.unplaced).toEqual([
-      { flow: id('el-replay'), side: 'source', element: id('el-request') },
+      {
+        flow: elementId('el-replay'),
+        side: 'source',
+        element: elementId('el-request'),
+      },
     ]);
   });
 
@@ -333,11 +336,17 @@ describe('layoutDiagram, an end it cannot place', () => {
 
   it('names an endpoint pointing at an element the canvas draws as no box', () => {
     expect(placed.unplaced).toEqual([
-      { flow: id('el-rider'), side: 'target', element: id('el-carrier') },
+      {
+        flow: elementId('el-rider'),
+        side: 'target',
+        element: elementId('el-carrier'),
+      },
     ]);
   });
 
   it('leaves that flow out rather than inventing geometry for it', () => {
-    expect(placed.edges.map((edge) => edge.id)).toEqual([id('el-carrier')]);
+    expect(placed.edges.map((edge) => edge.id)).toEqual([
+      elementId('el-carrier'),
+    ]);
   });
 });

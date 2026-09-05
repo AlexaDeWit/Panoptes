@@ -1,4 +1,5 @@
 import { Either } from 'effect';
+import { elementId, parsedFixture } from '../fixtures.js';
 import { assumptionStatusSchema } from './assumptions.js';
 import { threatCategorySchema } from './categories.js';
 import {
@@ -15,7 +16,6 @@ import {
   type Flow,
   type TrustBoundary,
 } from './elements.js';
-import { elementId, parsedFixture } from './fixtures.js';
 import { mitigationStatusSchema } from './mitigations.js';
 import { parseModel, type Model, type ParseIssue } from './parse.js';
 import { elementsAcross } from './references.js';
