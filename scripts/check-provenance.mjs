@@ -13,9 +13,8 @@
 // workspace reads `catalog:`. Run in place it therefore covers no catalog
 // edge at all: whichever catalog packages it reaches, it reaches by accident
 // through some transitive dependent that names them in a range, which on the
-// tree as it stands leaves 31 of the 56 unreached, and two consecutive runs
-// over the one unchanged tree answered for 781 packages and then 780.
-// Coverage that moves with every unrelated dependency change is not a check.
+// tree as it stands leaves 31 of the 56 unreached. Coverage that moves with
+// every unrelated dependency change is not a check.
 //
 // So npm is handed a throwaway tree instead: one directory per catalog
 // package holding the name and the version pnpm-lock.yaml resolved, which is
@@ -77,12 +76,30 @@ const recordHeader = `# Every package in the pnpm-workspace.yaml catalog that ca
 # Regenerate with: scripts/check-provenance.mjs --update
 `;
 
+const cannotRun = (lines) => {
+  for (const line of lines) console.error(line);
+  return 2;
+};
+
+// Node's filesystem calls throw, and this script's error channel is an exit
+// code with a sentence beside it, so every one a hostile lockfile or an
+// unreadable checkout could break comes back as null and leaves through
+// cannotRun instead of a stack trace under the exit code that means a
+// provenance failure.
+const attempt = (act) => {
+  try {
+    return act();
+  } catch {
+    return null;
+  }
+};
+
 // pnpm writes the version each catalog specifier resolved to under
 // `catalogs:`, which is meant to be the version installed rather than the
 // range asked for. A named catalog sits between the two, so the names are
 // four spaces in and their versions six. Nothing in that block proves the
-// version is installed, so readSnapshots below reads the `packages:` block
-// and main refuses a catalog entry that block does not carry.
+// claim, so readCatalogResolutions below reads what the workspace projects
+// resolve, and main refuses a catalog entry the two disagree about.
 const readCatalog = (lockText) => {
   const versions = new Map();
   let inCatalogs = false;
@@ -107,23 +124,47 @@ const readCatalog = (lockText) => {
   return versions;
 };
 
-// Every package pnpm installs, one `name@version` key per line two spaces
-// into the `packages:` block. A catalog entry naming a version absent from
-// here would have provenance verified for something the install does not
-// carry, so it stops the check instead.
-const readSnapshots = (lockText) => {
-  const installed = new Set();
-  let inPackages = false;
+// What each workspace project resolves a `catalog:` reference to, out of the
+// `importers:` block: project at two spaces, dependency section at four, the
+// name at six, its specifier and version at eight. The version carries peer
+// suffixes in brackets, and the part before the first bracket is the version.
+//
+// This is the witness for what pnpm installs, and the `packages:` block is
+// not: that block carries every version anywhere in the resolved graph,
+// transitive ones included, so a catalog entry could name a version present
+// there as some other package's dependency and never be the version any
+// project resolves. Six catalog names sit in `packages:` at two versions on
+// the tree as it stands.
+const readCatalogResolutions = (lockText) => {
+  const resolutions = new Map();
+  let inImporters = false;
+  let name = null;
+  let viaCatalog = false;
   for (const line of lockText.split('\n')) {
-    if (!inPackages) {
-      inPackages = line === 'packages:';
+    if (!inImporters) {
+      inImporters = line === 'importers:';
       continue;
     }
     if (/^\S/.test(line)) break;
-    const key = /^ {2}'?([^']+?)'?:$/.exec(line);
-    if (key) installed.add(key[1]);
+    const named = /^ {6}'?([^':]+)'?:$/.exec(line);
+    if (named) {
+      name = named[1];
+      viaCatalog = false;
+      continue;
+    }
+    if (/^ {8}specifier: '?catalog:/.test(line)) {
+      viaCatalog = true;
+      continue;
+    }
+    const version = /^ {8}version: '?([^'\s(]+)/.exec(line);
+    if (version && name !== null && viaCatalog) {
+      if (!resolutions.has(name)) resolutions.set(name, new Set());
+      resolutions.get(name).add(version[1]);
+      name = null;
+      viaCatalog = false;
+    }
   }
-  return installed;
+  return resolutions;
 };
 
 const writeProbeTree = (root, catalog) => {
@@ -320,7 +361,13 @@ const update = (catalog, audited) => {
     .sort()
     .map((name) => `${name} ${attested.get(name)}\n`)
     .join('');
-  writeFileSync(recordPath, `${recordHeader}${lines}`);
+  const written = attempt(() => {
+    writeFileSync(recordPath, `${recordHeader}${lines}`);
+    return true;
+  });
+  if (written === null) {
+    return cannotRun([`cannot write ${recordPath}`]);
+  }
   console.log(
     `wrote ${recordName}: ${attested.size} of ${catalog.size} packages in the catalog`,
   );
@@ -336,24 +383,6 @@ const readRecord = (recordText) => {
     recorded.set(name, repository);
   }
   return recorded;
-};
-
-const cannotRun = (lines) => {
-  for (const line of lines) console.error(line);
-  return 2;
-};
-
-// Node's filesystem calls throw, and this script's error channel is an exit
-// code with a sentence beside it, so every one a hostile lockfile or an
-// unreadable checkout could break comes back as null and leaves through
-// cannotRun instead of a stack trace under the exit code that means a
-// provenance failure.
-const attempt = (act) => {
-  try {
-    return act();
-  } catch {
-    return null;
-  }
 };
 
 const main = () => {
@@ -384,15 +413,31 @@ const main = () => {
     ]);
   }
 
-  const installed = readSnapshots(lockText);
-  const uninstalled = [...catalog]
-    .filter(([name, version]) => !installed.has(`${name}@${version}`))
-    .map(([name, version]) => `  ${name}@${version}`);
-  if (uninstalled.length > 0) {
+  const resolutions = readCatalogResolutions(lockText);
+  const unreferenced = [...catalog.keys()].filter(
+    (name) => !resolutions.has(name),
+  );
+  if (unreferenced.length > 0) {
     return cannotRun([
-      `${lockPath} catalogues a version its packages do not carry, so an`,
-      'attestation would be read for something the install does not hold:',
-      ...uninstalled,
+      `${lockPath} catalogues what no workspace project references, so`,
+      'nothing says which version an install would carry:',
+      ...unreferenced.map((name) => `  ${name}`),
+    ]);
+  }
+
+  const disagreed = [...catalog]
+    .filter(([name, version]) =>
+      [...resolutions.get(name)].some((resolved) => resolved !== version),
+    )
+    .map(
+      ([name, version]) =>
+        `  ${name} catalogued at ${version}, resolved to ${[...resolutions.get(name)].sort().join(', ')}`,
+    );
+  if (disagreed.length > 0) {
+    return cannotRun([
+      `${lockPath} catalogues a version its importers do not resolve, so an`,
+      'attestation would be read for something the install does not carry:',
+      ...disagreed,
     ]);
   }
 
@@ -415,16 +460,20 @@ const main = () => {
     ]);
   }
 
-  let probed = null;
+  let probed = false;
   let audited = null;
   try {
-    probed = attempt(() => writeProbeTree(root, catalog) ?? true);
-    if (probed !== null) audited = audit(root);
+    probed =
+      attempt(() => {
+        writeProbeTree(root, catalog);
+        return true;
+      }) === true;
+    if (probed) audited = audit(root);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
 
-  if (probed === null) {
+  if (!probed) {
     return cannotRun([
       `cannot write the tree npm audits under ${tmpdir()}, so nothing was verified`,
     ]);

@@ -101,8 +101,10 @@ run is the one that answers before a tag exists that cannot be moved. It
 reaches the registry, and an exit code of 2 says the check could not run
 rather than that provenance failed: the registry was out of reach after two
 attempts, or `pnpm-lock.yaml` or the record could not be read, or the catalog
-holds a name npm would refuse or a version the lockfile does not install. Only
-the first of those is worth running again; the rest name what to correct.
+holds a name npm would refuse, a version the workspace's own importers do not
+resolve `catalog:` to, or an entry no workspace project references at all.
+Only the first of those is worth running again; the rest name what to
+correct.
 
 ### 4. Cut and push the signed tag (owner, GPG key)
 
