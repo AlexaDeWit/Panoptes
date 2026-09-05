@@ -93,6 +93,13 @@ project's output reaches it through the project graph, a `workspace:*`
 dependency or `dependsOn`, never a relative path the graph cannot see. CI
 restores no cache, so a hole shows only in local runs.
 
+A target that empties its output directory owns that directory alone. The
+studio's vite build empties `dist/` on every run and nothing orders it
+against the typecheck, so the typecheck emits its declarations under
+`out-tsc/`. Sharing the directory leaves a declaration deleted under a build
+info file that records it as written, which the next `tsc --build` reports
+as TS6305.
+
 ## Workflows and CI
 
 Pin every GitHub Action to a full commit SHA, never a tag, with the

@@ -1,8 +1,10 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "outDir": "dist",
-    "tsBuildInfoFile": "dist/tsconfig.app.tsbuildinfo",
+    // Not dist: the vite build owns that directory and empties it on every
+    // run, and nothing orders the two targets (CODING.md, Build targets).
+    "outDir": "out-tsc/app",
+    "tsBuildInfoFile": "out-tsc/app/tsconfig.app.tsbuildinfo",
     "lib": ["dom", "es2022"],
     "types": [
       "node",
