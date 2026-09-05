@@ -219,6 +219,7 @@ to catch, since a document typeset without one is still a PDF: the build's own
 refusal is what keeps a fontless executable from being made at all.
 
 [`docs/release.md`](docs/release.md) is the release procedure.
+[`docs/studio-design.md`](docs/studio-design.md) is the studio's UX design.
 
 See [`CODING.md`](CODING.md) for the coding guidelines,
 [`CONTRIBUTING.md`](CONTRIBUTING.md) for the contribution process,
