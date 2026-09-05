@@ -1,7 +1,7 @@
 import { layoutDiagram } from '@panoptes/canvas';
 import { addElement } from '@panoptes/model';
+import { diagramId } from '@panoptes/model/fixtures';
 import { Either } from 'effect';
-import { diagramId } from '../store/store.fixtures.js';
 import {
   boundaryElement,
   canvasModel,

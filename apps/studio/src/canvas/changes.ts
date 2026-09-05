@@ -1,8 +1,9 @@
 import type { CanvasFlowEdge, CanvasNode } from '@panoptes/canvas';
 import type { ElementId } from '@panoptes/model';
-import type { EdgeChange, NodeChange } from '@xyflow/react';
+import type { Connection, Edge, EdgeChange, NodeChange } from '@xyflow/react';
 import { Action } from '../store/actions.js';
 import { dispatch, modelStore } from '../store/store.js';
+import { connectElements } from './edits.js';
 import { selectedElement } from './layout.js';
 import type { DiagramNode } from './nodes.js';
 
@@ -131,6 +132,33 @@ export function resizeActions(
       ? []
       : [Action.ResizeElement({ elementId: node.id, size })];
   });
+}
+
+/**
+ * Whether a connection React Flow is drawing runs between two different
+ * elements. It is React Flow's own test while the gesture is in flight, so a
+ * drag that would end where it started is refused as it is drawn rather than
+ * silently doing nothing: the layout resolves both ends of such a flow to one
+ * handle and would draw no line at all.
+ */
+export function betweenTwoElements(connection: Connection | Edge): boolean {
+  return connection.source !== connection.target;
+}
+
+/**
+ * Draws the flow a settled connection asks for. React Flow names each end by
+ * the id of the node the gesture reached, so an end naming no element of the
+ * diagram, a free end's anchor among them, asks for nothing.
+ */
+export function applyConnection(
+  connection: Connection,
+  elements: ReadonlyMap<string, ElementId>,
+): void {
+  const source = elements.get(connection.source);
+  const target = elements.get(connection.target);
+  if (source !== undefined && target !== undefined) {
+    connectElements(source, target);
+  }
 }
 
 function selectionIds(

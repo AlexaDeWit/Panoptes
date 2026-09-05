@@ -12,7 +12,16 @@ import {
   requestFlow,
 } from './canvas.fixtures.js';
 import { paletteKinds, paletteNames } from './elements.js';
+import { DiagramCanvas } from './diagram-canvas.js';
 import { EditPalette } from './palette.js';
+
+const nextFrame = async (): Promise<void> => {
+  await new Promise((settle) =>
+    requestAnimationFrame(() => {
+      settle(undefined);
+    }),
+  );
+};
 
 const opened = (selection?: ElementId): void => {
   modelStore.setState({ ...initialState(canvasModel), selection }, true);
@@ -30,7 +39,7 @@ describe('EditPalette', () => {
     opened();
   });
 
-  it('offers one button per element kind the canvas draws', () => {
+  it('offers one button per element kind it adds, five of the six drawn', () => {
     render(<EditPalette />);
 
     for (const kind of paletteKinds) {
@@ -54,6 +63,24 @@ describe('EditPalette', () => {
     render(<EditPalette />);
 
     expect(announced()).toBe('');
+  });
+
+  it('moves focus to the element it added, once the canvas has drawn it', async () => {
+    const user = userEvent.setup();
+    render(
+      <>
+        <EditPalette />
+        <DiagramCanvas />
+      </>,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'New actor' }));
+    await nextFrame();
+    await nextFrame();
+
+    expect(document.activeElement?.getAttribute('data-id')).toBe(
+      modelStore.getState().selection,
+    );
   });
 
   it('leaves connecting unavailable while no element is selected', () => {

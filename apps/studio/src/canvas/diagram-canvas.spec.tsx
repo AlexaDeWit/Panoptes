@@ -1,8 +1,9 @@
 import type { ElementId } from '@panoptes/model';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import { currentAnnouncement, resetAnnouncements } from './announcements.js';
+import { Action } from '../store/actions.js';
 import { initialState } from '../store/state.js';
-import { modelStore } from '../store/store.js';
+import { dispatch, modelStore } from '../store/store.js';
 import { canvasModel, readerElement, requestFlow } from './canvas.fixtures.js';
 import { DiagramCanvas } from './diagram-canvas.js';
 
@@ -57,6 +58,16 @@ describe('DiagramCanvas', () => {
     fireEvent.click(reader());
 
     expect(modelStore.getState().selection).toBe(readerElement);
+    expect(reader().classList.contains('selected')).toBe(true);
+  });
+
+  it('draws a selection the store moves to after it has mounted', () => {
+    render(<DiagramCanvas />);
+
+    act(() => {
+      dispatch(Action.Select({ elementId: readerElement }));
+    });
+
     expect(reader().classList.contains('selected')).toBe(true);
   });
 

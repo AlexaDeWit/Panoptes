@@ -1,7 +1,9 @@
+import { act, renderHook } from '@testing-library/react';
 import {
   announce,
   currentAnnouncement,
   resetAnnouncements,
+  useAnnouncement,
 } from './announcements.js';
 
 describe('announce', () => {
@@ -32,5 +34,29 @@ describe('announce', () => {
     resetAnnouncements();
 
     expect(currentAnnouncement().message).toBe('');
+  });
+});
+
+describe('useAnnouncement', () => {
+  beforeEach(() => {
+    resetAnnouncements();
+  });
+
+  it('tells a subscribed component what was said, and that it was unsaid', () => {
+    const { result } = renderHook(() => useAnnouncement());
+
+    act(() => {
+      announce(
+        'Removed Reader, actor. no flows detached, no threat links dropped.',
+      );
+    });
+    expect(result.current.message).toBe(
+      'Removed Reader, actor. no flows detached, no threat links dropped.',
+    );
+
+    act(() => {
+      resetAnnouncements();
+    });
+    expect(result.current.message).toBe('');
   });
 });

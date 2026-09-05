@@ -53,20 +53,20 @@ the region below, which speaks only for edits that landed.
   the actors, processes and stores the diagram draws. A trust boundary is not
   one of them at either end, being what a flow crosses rather than a thing it
   flows to, and neither is a text note, which is about the diagram rather than
-  a part of the system, as the model says by refusing a threat on one. So a
-  selected boundary or note leaves both controls disabled, neither is offered
-  as a target, and neither draws a handle. Neither is a flow, which the layout
-  has no geometry for as an end. `connectElements` refuses both ends itself
-  rather than leaving it to the controls, because the model takes an endpoint
-  naming any element of the diagram and the layout then drops the flow it
-  cannot place, which would leave a flow in the model and in the next saved
-  file while it is drawn nowhere. The
-  pointer draws the same flow by dragging from a handle on one element to a
-  handle on another. The handles are drawn on the element under the pointer
-  and on the selected one, so a diagram at rest is not covered in dots, and a
-  handle that stays hidden is still a place to drop a flow, React Flow
-  resolving the nearest handle within its connection radius rather than hit
-  testing the dot. Either way it is one `AddElement` carrying a flow with
+  a part of the system, as the model's own text schema describes it, a note
+  carrying no threats. So a selected boundary or note leaves both controls
+  disabled, neither is offered as a target, and neither draws a handle. Nor is
+  a flow one of them, the layout having no geometry for a flow that ends on a
+  flow. `connectElements` refuses both ends itself rather than leaving it to
+  the controls, because the model takes an endpoint naming any element of the
+  diagram and the layout then drops the flow it cannot place, which would
+  leave a flow in the model and in the next saved file while it is drawn
+  nowhere. The pointer draws the same flow by dragging from a handle on one
+  element to a handle on another. The handles are drawn on the element under
+  the pointer and on the selected one, so a diagram at rest is not covered in
+  dots, and a handle that stays hidden is still a place to drop a flow, React
+  Flow resolving the nearest handle within its connection radius rather than
+  hit testing the dot. Either way it is one `AddElement` carrying a flow with
   both ends attached and no waypoints, so the layout routes it. An element
   cannot be connected to itself: the layout resolves both ends of such a flow
   to one handle and would draw nothing.

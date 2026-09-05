@@ -1,6 +1,8 @@
 import { flowEndNodeId, layoutDiagram } from '@panoptes/canvas';
 import {
+  boundaryElement,
   canvasModel,
+  noteElement,
   probeFlow,
   readerElement,
   requestFlow,
@@ -33,6 +35,17 @@ describe('diagramGraph', () => {
     expect(nodes.find((node) => node.id === studioElement)?.selected).toBe(
       false,
     );
+  });
+
+  it('marks a node a flow can end on connectable, and no other', () => {
+    const { nodes } = diagramGraph(layout, undefined);
+    const connectable = (id: string): boolean | undefined =>
+      nodes.find((node) => node.id === id)?.connectable;
+
+    expect(connectable(readerElement)).toBe(true);
+    expect(connectable(studioElement)).toBe(true);
+    expect(connectable(boundaryElement)).toBe(false);
+    expect(connectable(noteElement)).toBe(false);
   });
 
   it('carries one named edge per flow and marks the selected one', () => {

@@ -12,6 +12,8 @@ import { initialState } from '../store/state.js';
 import { modelStore } from '../store/store.js';
 import {
   applyChanges,
+  applyConnection,
+  betweenTwoElements,
   moveActions,
   resizeActions,
   selectionActions,
@@ -183,6 +185,64 @@ describe('resizeActions', () => {
     expect(
       resizeActions([sizing(anchor, { width: 20, height: 20 }, false)], nodes),
     ).toEqual([]);
+  });
+});
+
+describe('betweenTwoElements', () => {
+  it('allows a connection between two elements', () => {
+    expect(
+      betweenTwoElements({
+        source: readerElement,
+        target: studioElement,
+        sourceHandle: 'right',
+        targetHandle: 'left',
+      }),
+    ).toBe(true);
+  });
+
+  it('refuses one that ends where it started, which draws no line', () => {
+    expect(
+      betweenTwoElements({
+        source: readerElement,
+        target: readerElement,
+        sourceHandle: 'right',
+        targetHandle: 'left',
+      }),
+    ).toBe(false);
+  });
+});
+
+describe('applyConnection', () => {
+  it('draws the flow a settled connection asks for', () => {
+    opened();
+
+    applyConnection(
+      {
+        source: readerElement,
+        target: studioElement,
+        sourceHandle: 'right',
+        targetHandle: 'left',
+      },
+      elements,
+    );
+
+    expect(modelStore.getState().past).toHaveLength(1);
+  });
+
+  it('draws nothing for an end that names no element of the diagram', () => {
+    opened();
+
+    applyConnection(
+      {
+        source: readerElement,
+        target: anchor,
+        sourceHandle: 'right',
+        targetHandle: null,
+      },
+      elements,
+    );
+
+    expect(modelStore.getState().past).toHaveLength(0);
   });
 });
 

@@ -10,7 +10,6 @@ import {
   ConnectionMode,
   ReactFlow,
   type Connection,
-  type Edge,
   type EdgeChange,
   type NodeChange,
   type ReactFlowInstance,
@@ -24,8 +23,12 @@ import {
 } from 'react';
 import type { ElementId } from '@panoptes/model';
 import { useModelStore } from '../store/store.js';
-import { applyChanges } from './changes.js';
-import { connectElements, removeSelected } from './edits.js';
+import {
+  applyChanges,
+  applyConnection,
+  betweenTwoElements,
+} from './changes.js';
+import { removeSelected } from './edits.js';
 import { currentLayout, selectedElement } from './layout.js';
 import {
   diagramGraph,
@@ -38,9 +41,6 @@ import { nodeInView } from './viewport.js';
 import styles from './diagram-canvas.module.css';
 
 const deleteKeys = new Set(['Delete', 'Backspace']);
-
-const betweenTwoElements = (connection: Connection | Edge): boolean =>
-  connection.source !== connection.target;
 
 /**
  * The diagram, interactive. Everything drawn is derived from the store by
@@ -123,12 +123,8 @@ export function DiagramCanvas() {
     applyChanges(changes, elements, positions);
   };
 
-  const onConnect = ({ source, target }: Connection): void => {
-    const from = elements.get(source);
-    const to = elements.get(target);
-    if (from !== undefined && to !== undefined) {
-      connectElements(from, to);
-    }
+  const onConnect = (connection: Connection): void => {
+    applyConnection(connection, elements);
   };
 
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>): void => {

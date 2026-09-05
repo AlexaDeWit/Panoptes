@@ -1,4 +1,5 @@
-import type { ElementId } from '@panoptes/model';
+import { emptyModel, type ElementId } from '@panoptes/model';
+import { elementId } from '@panoptes/model/fixtures';
 import { initialState } from '../store/state.js';
 import { modelStore } from '../store/store.js';
 import { currentAnnouncement, resetAnnouncements } from './announcements.js';
@@ -24,6 +25,11 @@ const opened = (selection?: ElementId): void => {
 };
 
 const said = (): string => currentAnnouncement().message;
+
+const emptied = (): void => {
+  modelStore.setState(initialState(emptyModel), true);
+  resetAnnouncements();
+};
 
 describe('removalCascade', () => {
   it('counts the flows an element holds and the threats that name it', () => {
@@ -74,6 +80,15 @@ describe('addPaletteElement', () => {
 
     expect(modelStore.getState().past).toHaveLength(1);
   });
+
+  it('adds nothing while the model holds no diagram to add to', () => {
+    emptied();
+
+    addPaletteElement('actor');
+
+    expect(modelStore.getState().past).toHaveLength(0);
+    expect(said()).toBe('');
+  });
 });
 
 describe('connectElements', () => {
@@ -101,11 +116,28 @@ describe('connectElements', () => {
     expect(modelStore.getState().past).toHaveLength(0);
     expect(said()).toBe('');
   });
+
+  it('draws nothing while the model holds no diagram to draw on', () => {
+    emptied();
+
+    connectElements(readerElement, studioElement);
+
+    expect(modelStore.getState().past).toHaveLength(0);
+    expect(said()).toBe('');
+  });
 });
 
 describe('removeSelected', () => {
   it('does nothing at all while nothing is selected', () => {
     opened();
+
+    expect(removeSelected()).toBe(false);
+    expect(modelStore.getState().past).toHaveLength(0);
+    expect(said()).toBe('');
+  });
+
+  it('says nothing where the model refuses the removal', () => {
+    opened(elementId('ghost-element'));
 
     expect(removeSelected()).toBe(false);
     expect(modelStore.getState().past).toHaveLength(0);

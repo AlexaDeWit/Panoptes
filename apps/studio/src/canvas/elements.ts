@@ -45,7 +45,8 @@ export const newFlowName = 'New flow';
  * The elements a flow can run between: the actors, processes and stores the
  * diagram draws. A trust boundary is what a flow crosses rather than an end
  * of one, and a text element is a note about the diagram rather than a part
- * of the system, which is why the model refuses a threat on one. Both ways of
+ * of the system, which is how the model's own text schema describes it, a
+ * note carrying no threats. Both ways of
  * connecting read this, so neither offers an end the other refuses, and a
  * flow is not among them at all, the layout having no geometry for a flow
  * that ends on a flow.

@@ -17,7 +17,7 @@ import styles from './palette.module.css';
  * keyboard is selecting an element and then choosing a target, with no mode
  * to enter or leave. Both controls are disabled while the selection is not
  * one of the elements a flow runs between, and the listbox offers only those,
- * so neither end can be a trust boundary or a flow.
+ * so neither end can be a trust boundary, a text note or a flow.
  *
  * The region is a live one, always in the page, on the pattern the failure
  * notice sets ([the studio's UI](../ui/README.md)). What it says is keyed by
