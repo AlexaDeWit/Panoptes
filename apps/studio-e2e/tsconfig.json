@@ -3,6 +3,9 @@
   "include": [],
   "references": [
     {
+      "path": "../../packages/formats"
+    },
+    {
       "path": "./tsconfig.e2e.json"
     }
   ],

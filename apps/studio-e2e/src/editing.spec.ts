@@ -115,6 +115,28 @@ test('the delete key removes the element, and the flows it held lose an end', as
   await expect(canvasSurface(page)).toBeFocused();
 });
 
+test('the delete key removes a selected flow, and undo puts it back', async ({
+  page,
+}) => {
+  await openEcluse(page);
+  const flows = page.locator('.react-flow__edge');
+
+  await beforeCanvas(page).focus();
+  await page.keyboard.press('Tab');
+  await page.keyboard.press('Enter');
+  await expect(page.locator('.react-flow__edge.selected')).toHaveCount(1);
+
+  await page.keyboard.press('Delete');
+
+  await expect(flows).toHaveCount(19);
+  await expect(editAnnouncement(page)).toContainText('Removed npm read');
+  await expect(canvasSurface(page)).toBeFocused();
+
+  await page.getByRole('button', { name: 'Undo' }).click();
+
+  await expect(flows).toHaveCount(20);
+});
+
 test('a deletion is one step, so undo puts the element and its flows back', async ({
   page,
 }) => {
