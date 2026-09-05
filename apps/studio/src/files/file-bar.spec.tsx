@@ -7,6 +7,7 @@ import {
   waitFor,
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { useMemo } from 'react';
 import { Action } from '../store/actions.js';
 import { isDirty } from '../store/selectors.js';
 import { initialState } from '../store/state.js';
@@ -16,8 +17,13 @@ import {
   newProcess,
   sampleModel,
 } from '../store/store.fixtures.js';
+import {
+  CommandSurfaceProvider,
+  unmountedSurface,
+} from '../commands/binding.js';
 import { SaveOutcome } from './bridge.js';
 import { FileBar } from './file-bar.js';
+import { useFileSession } from './file-commands.js';
 import {
   chosenFile,
   specBridge,
@@ -53,8 +59,21 @@ const reportEntries = (): readonly Element[] => [
   ...screen.getByTestId('loss-report').querySelectorAll('li'),
 ];
 
+function Bar({ bridge }: { readonly bridge: SpecBridge }) {
+  const session = useFileSession(bridge);
+  const surface = useMemo(
+    () => ({ ...unmountedSurface, files: session.commands }),
+    [session.commands],
+  );
+  return (
+    <CommandSurfaceProvider surface={surface}>
+      <FileBar session={session} />
+    </CommandSurfaceProvider>
+  );
+}
+
 const mounted = (bridge: SpecBridge): void => {
-  render(<FileBar bridge={bridge} />);
+  render(<Bar bridge={bridge} />);
 };
 
 const asked = (): boolean =>
