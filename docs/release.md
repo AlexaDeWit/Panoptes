@@ -277,6 +277,13 @@ replace that:
 - **The runtimes are pinned by hash.** `flake.nix` holds one SHA-256 per
   target in `denortHashes` and assembles the five zips into the `DENO_DIR`
   layout deno reads before reaching for the network.
+- **The fonts come from a pin too.** The five Liberation faces a PDF is
+  typeset with are not committed: `apps/cli/esbuild.config.mts` copies them
+  into `apps/cli/dist/assets` from `PANOPTES_FONTS_DIR`, which both dev shells
+  export from the pinned nixpkgs' `liberation_ttf`, so their provenance is the
+  `nixpkgs` revision in `flake.lock`. `scripts/package-cli.sh` prints each
+  staged font's SHA-256 beside the bundle's, so a nixpkgs bump that redraws a
+  glyph is visible in a run's log rather than only in a PDF's bytes.
 - **A compile has no network.** `scripts/package-cli.sh` runs every
   `deno compile` under `unshare -rn`, passes `--no-remote`, `--no-npm` and
   `--cached-only`, and refuses to run where no network namespace can be made.
@@ -349,21 +356,26 @@ nix develop --command pnpm nx build @panoptes/cli
 nix develop --command scripts/package-cli.sh
 ```
 
-The default shell is enough: `flake.nix` puts `denortEnv` in both shells, so
-the default one sets the denort pins the script refuses to run without, and
-the `.#ci` its refusal names is the shell CI happens to enter rather than the
-only one that works.
+The default shell is enough: `flake.nix` puts `denortEnv` and `shellEnv` in
+both shells, so the default one sets the denort pins the script refuses to run
+without and the font path the build refuses to run without, and the `.#ci` the
+refusals name is the shell CI happens to enter rather than the only one that
+works.
 
-The script's last lines are the bundle's SHA-256 and then the `SHA256SUMS` it
-wrote for the executables. Compare the host target's line with the release's
-`SHA256SUMS`. Every CI run prints the same two things, so a runner build and a
-local build can be compared from the logs alone, without downloading either.
+The script's last lines are the bundle's SHA-256, then each staged font's, then
+the `SHA256SUMS` it wrote for the executables. Compare the host target's line
+with the release's `SHA256SUMS`. Every CI run prints the same things, so a
+runner build and a local build can be compared from the logs alone, without
+downloading either.
 
-A mismatch belongs to one of the two steps, and the bundle's hash says which.
-A bundle hash that already differs puts it in the esbuild build: the checkout
-is not the tag, or the toolchain is not the flake's. A matching bundle under a
-differing executable puts it in `deno compile`: the denort pins moved, or
-something environment-dependent has reached the output again.
+A mismatch belongs to one of the steps, and the hashes printed above the sums
+say which. A bundle hash that already differs puts it in the esbuild build:
+the checkout is not the tag, or the toolchain is not the flake's. A font hash
+that differs puts it in the flake's nixpkgs revision, which is the fonts' only
+pin and reaches the executable without touching the bundle. A matching bundle
+and matching fonts under a differing executable puts it in `deno compile`: the
+denort pins moved, or something environment-dependent has reached the output
+again.
 
 ## When something goes wrong
 

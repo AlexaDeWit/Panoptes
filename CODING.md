@@ -105,6 +105,18 @@ React, react-dom, the testing libraries and Playwright are on none of these
 lists, which is what the rule is for. A project that renders or tests React
 declares them itself, so no project resolves them through the root.
 
+A binary Panoptes did not author is a toolchain input rather than a file the
+tree carries, so it comes from the flake or from the lockfile and its
+provenance is that pin. The Liberation fonts the CLI typesets a PDF with
+arrive as `PANOPTES_FONTS_DIR`, which both dev shells export from the pinned
+nixpkgs' `liberation_ttf`, and the Typst WebAssembly module arrives through
+the catalog. A build outside the flake fails naming the missing input rather
+than writing an executable that cannot typeset. Text a spec reads is a
+different thing: the vendored Threat Dragon schema under
+`test-data/threat-dragon/schema/` is a fixture, versioned with the tests that
+read it and readable in a diff, so it stays committed with its provenance
+beside it.
+
 ## Build targets
 
 Targets are root-defined: nx plugins and `targetDefaults` own task
