@@ -36,7 +36,12 @@ and no immutable snapshot to push onto a stack.
   fails and no view handles an error. A successful edit pushes the old present
   onto `past` and clears `future`.
 - `store.ts` creates the vanilla store, `dispatch` applies the reducer to it,
-  and `useModelStore(selector)` is the React half.
+  and `useModelStore(selector)` is the React half. The store opens on the
+  placeholder model, or on the one `development-model.ts` reads off the page
+  under Vite's development flag, which is how the browser suite puts a real
+  model on the canvas while opening a file is still issue #37's. Vite settles
+  that flag at build time, so a production build carries neither the read nor
+  a model to read.
 - `selectors.ts` derives what views show. Unsaved work is `present !== saved`
   by identity, so undoing back to the saved point clears it with no
   bookkeeping.

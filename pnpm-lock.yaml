@@ -327,6 +327,9 @@ importers:
       '@panoptes/model':
         specifier: workspace:*
         version: link:../../packages/model
+      '@xyflow/react':
+        specifier: 'catalog:'
+        version: 12.11.5(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       effect:
         specifier: 'catalog:'
         version: 3.22.1

@@ -30,16 +30,16 @@ Dragon and license it under the same Apache License 2.0. See
 
 ## Structure
 
-| Project                       | What it holds                                                                                                                                                           |
-| ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `packages/model`              | The internal data structures and operations on them                                                                                                                     |
-| `packages/wire-panoptes-yaml` | The Panoptes YAML format, version 1, as a schema and nothing else                                                                                                       |
-| `packages/wire-threat-dragon` | The Threat Dragon v2 format as a schema and nothing else                                                                                                                |
-| `packages/formats`            | File-format codecs, and the mappings between a file and the model                                                                                                       |
-| `packages/canvas`             | React canvas components, shared by the UI and headless rendering                                                                                                        |
-| `packages/render`             | Projections of a model: SVG, markdown, PDF                                                                                                                              |
-| `apps/studio`                 | The drawing UI, its [model store](apps/studio/src/store/README.md), its [file bridge](apps/studio/src/files/README.md) and its [controls](apps/studio/src/ui/README.md) |
-| `apps/cli`                    | The command-line interface                                                                                                                                              |
+| Project                       | What it holds                                                                                                                                                                                                           |
+| ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `packages/model`              | The internal data structures and operations on them                                                                                                                                                                     |
+| `packages/wire-panoptes-yaml` | The Panoptes YAML format, version 1, as a schema and nothing else                                                                                                                                                       |
+| `packages/wire-threat-dragon` | The Threat Dragon v2 format as a schema and nothing else                                                                                                                                                                |
+| `packages/formats`            | File-format codecs, and the mappings between a file and the model                                                                                                                                                       |
+| `packages/canvas`             | React canvas components, shared by the UI and headless rendering                                                                                                                                                        |
+| `packages/render`             | Projections of a model: SVG, markdown, PDF                                                                                                                                                                              |
+| `apps/studio`                 | The drawing UI: its [canvas](apps/studio/src/canvas/README.md), its [model store](apps/studio/src/store/README.md), its [file bridge](apps/studio/src/files/README.md) and its [controls](apps/studio/src/ui/README.md) |
+| `apps/cli`                    | The command-line interface                                                                                                                                                                                              |
 
 A wire package declares one file format and depends on zod alone, so no
 change to the internal model can change what a released format version

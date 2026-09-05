@@ -1,4 +1,13 @@
 /*
+ * React Flow's own stylesheet, which styles the canvas container, the
+ * viewport, the handles and the controls, none of which the drawing
+ * primitives in @panoptes/canvas draw. It is loaded here, with the app's
+ * other global CSS, rather than by the component that mounts the canvas.
+ * The canvas module overrides what it has to, from the tokens below.
+ */
+@import '@xyflow/react/dist/style.css';
+
+/*
  * The studio's design tokens, and the only global rules in the app. Every
  * component styles itself from these custom properties through its own CSS
  * module, so a token is the one place a colour, a step of spacing, a radius,

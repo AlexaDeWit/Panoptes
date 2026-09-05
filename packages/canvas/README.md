@@ -252,9 +252,18 @@ type `source`, so the canvas that mounts them passes
 `toReactFlowNodes` carries the layout's nodes over with their position and
 extent set explicitly, so React Flow measures nothing; a boundary curve rides
 as a node too, sized to the box its waypoints span, so it drags and selects as
-one thing. Flows are left out of that conversion on purpose: a React Flow edge
-runs between two nodes, and a model flow may end at a free position that is no
-node, so how a free end rides is the interactive canvas's decision.
+one thing. `toReactFlowEdges` carries the flows over the same way, each end
+naming the element it attaches to and the handle side the layout resolved.
+
+A React Flow edge runs between two nodes and a model flow may end at a free
+position that is no element, so `freeEndNodes` gives such an end a node of its
+own at that position, named by `flowEndNodeId` and drawn by
+`CanvasFreeEndBody`, which draws nothing but the one handle React Flow needs
+to resolve where the edge ends. The flow's own glyph carries the line all the
+way to the free position, so the anchor lays down no ink the headless render
+does not. It is not draggable, not selectable, not focusable, and hidden from
+assistive technology: it is a place for an edge to end rather than a thing on
+the diagram.
 
 `CanvasEdgeBody` draws a flow from the geometry the layout resolved, not from
 the `sourceX`, `sourceY`, `targetX` and `targetY` React Flow measures, which

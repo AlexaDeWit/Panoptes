@@ -65,8 +65,8 @@ describe('App', () => {
   });
 
   it('renders the canvas', () => {
-    const { getAllByText } = render(<App />);
-    expect(getAllByText('model').length > 0).toBeTruthy();
+    render(<App />);
+    expect(screen.getByTestId('canvas-container')).toBeTruthy();
   });
 
   it('shows a dispatched edit and takes it back through undo', () => {

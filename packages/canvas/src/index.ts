@@ -1,5 +1,4 @@
 export * from './lib/badges.js';
-export * from './lib/canvas.js';
 export * from './lib/geometry.js';
 export * from './lib/glyphs.js';
 export * from './lib/handles.js';
