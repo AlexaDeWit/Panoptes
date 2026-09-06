@@ -1,11 +1,16 @@
 import type { ElementId } from '@panoptes/model';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { focusElement } from '../canvas/edits.js';
 import { useModelStore } from '../store/store.js';
 import { panelFocusHandler } from './panel-focus.js';
 import { ThreatPanel, type HeldDraft } from './threat-panel.js';
 import { openFileName, panelSubject } from './threats.js';
+
+type Held = {
+  readonly file: string | undefined;
+  readonly drafts: Map<ElementId, HeldDraft>;
+};
 
 /**
  * Where the threat panel is on the page, and whether it is there at all. It
@@ -28,21 +33,28 @@ import { openFileName, panelSubject } from './threats.js';
  * because the panel is unmounted by every one of those moves and a draft has
  * to survive them. They are keyed by element and the panel keeps its own key
  * in step, so what comes back is what was typed on that element. They belong
- * to the file that was open: closing it or opening another drops them, so a
- * model carrying the same ids does not arrive with a draft from a session
- * somebody ended.
+ * to the file they were typed in, which is the map they are held in: a file
+ * closed, opened or saved under another name is a fresh map during the render
+ * that reads it, so a model carrying the same ids does not arrive with a
+ * draft from a sitting somebody ended.
  */
 export function ThreatOverlay() {
   const subject = useModelStore(useShallow(panelSubject));
   const file = useModelStore(openFileName);
-  const [drafts] = useState(() => new Map<ElementId, HeldDraft>());
+  const [held, setHeld] = useState<Held>(() => ({
+    file,
+    drafts: new Map<ElementId, HeldDraft>(),
+  }));
   const [closed, setClosed] = useState<ElementId | undefined>(undefined);
   const [focusing, setFocusing] = useState(false);
-  const holding = useRef<string | undefined>(undefined);
   const selected = subject?.kind === 'element' ? subject.element.id : undefined;
 
   if (closed !== undefined && closed !== selected) {
     setClosed(undefined);
+  }
+
+  if (held.file !== file) {
+    setHeld({ file, drafts: new Map() });
   }
 
   const take = useCallback((): boolean => {
@@ -68,21 +80,13 @@ export function ThreatOverlay() {
 
   useEffect(() => panelFocusHandler(take), [take]);
 
-  useEffect(() => {
-    if (holding.current === file) {
-      return;
-    }
-    holding.current = file;
-    drafts.clear();
-  }, [drafts, file]);
-
   if (subject === undefined || (closed !== undefined && closed === selected)) {
     return null;
   }
 
   return (
     <ThreatPanel
-      drafts={drafts}
+      drafts={held.drafts}
       focusing={focusing}
       key={selected ?? 'several'}
       onClose={close}

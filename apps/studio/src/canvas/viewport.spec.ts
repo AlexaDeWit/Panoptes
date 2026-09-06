@@ -1,10 +1,9 @@
-import { layoutDiagram } from '@panoptes/canvas';
+import { layoutDiagram, panelCover } from '@panoptes/canvas';
 import { canvasModel, readerElement } from './canvas.fixtures.js';
 import {
   clearOfPanel,
   fitViewport,
   nodeInView,
-  panelWidth,
   revealCentre,
   zoomLimits,
   type CanvasExtent,
@@ -45,7 +44,7 @@ describe('nodeInView', () => {
 describe('clearOfPanel', () => {
   it('takes what the panel covers off the right of the canvas', () => {
     expect(clearOfPanel({ width: 1000, height: 600 })).toEqual({
-      width: 1000 - panelWidth,
+      width: 1000 - panelCover,
       height: 600,
     });
   });
@@ -71,14 +70,14 @@ describe('revealCentre', () => {
       x: reader.position.x + reader.size.width / 2,
       y: reader.position.y + reader.size.height / 2,
     };
-    expect(centred?.x).toBe((node?.x ?? 0) + panelWidth / 2);
+    expect(centred?.x).toBe((node?.x ?? 0) + panelCover / 2);
     expect(centred?.y).toBe(node?.y);
   });
 
   it('counts the zoom, the panel covering a fixed part of the page', () => {
     const closer = reader && revealCentre(reader, 2);
     const centre = reader && reader.position.x + reader.size.width / 2;
-    expect(closer?.x).toBe((centre ?? 0) + panelWidth / 4);
+    expect(closer?.x).toBe((centre ?? 0) + panelCover / 4);
   });
 });
 

@@ -38,6 +38,7 @@ and the focus ring, are declared once, being the same in both.
 | `--pn-colour-badge-ground`                                           | What a threat badge is lettered in |
 | `--pn-colour-tone-critical` to `--pn-colour-tone-neutral`            | One per severity                   |
 | `--pn-space-1` to `--pn-space-4`                                     | Every gap and every pad            |
+| `--pn-panel-cover`                                                   | What the threat panel covers       |
 | `--pn-radius`                                                        | Every corner                       |
 | `--pn-focus-ring`, `--pn-focus-ring-width`, `--pn-focus-ring-offset` | The one visible focus indicator    |
 

@@ -22,7 +22,6 @@ import {
   useMemo,
   useRef,
   useState,
-  type CSSProperties,
   type KeyboardEvent,
 } from 'react';
 import { focusThreatPanel } from '../panel/panel-focus.js';
@@ -46,7 +45,6 @@ import { FitOnOpen } from './view-commands.js';
 import {
   clearOfPanel,
   nodeInView,
-  panelWidth,
   revealCentre,
   zoomLimits,
 } from './viewport.js';
@@ -54,10 +52,6 @@ import { ZoomCluster } from './zoom-cluster.js';
 import styles from './diagram-canvas.module.css';
 
 const deleteKeys = new Set(['Delete', 'Backspace']);
-
-const panelCover: CSSProperties & Record<string, string> = {
-  '--studio-panel-cover': `${String(panelWidth)}px`,
-};
 
 /**
  * The diagram, interactive. Everything drawn is derived from the store by
@@ -88,9 +82,9 @@ const panelCover: CSSProperties & Record<string, string> = {
  *
  * The panel is mounted here rather than beside the canvas, because that is
  * what makes it an overlay on the diagram rather than a column taken off it.
- * How much of the canvas it covers is `panelWidth`, handed to its stylesheet
- * here as a custom property and read back by the pan, so the width the panel
- * draws and the width the pan reasons about are one number.
+ * How much of the canvas it covers is one token, which the panel is drawn
+ * from and the pan reads, so the width the panel draws and the width the pan
+ * reasons about are one number.
  * Enter on the element the store has selected hands it the keyboard, which is
  * read in the capture phase: React Flow answers Enter on a node itself, and
  * by the time the press has bubbled the selection it reports has already
@@ -202,7 +196,6 @@ export function DiagramCanvas() {
       className={styles.canvas}
       data-testid="canvas-container"
       onKeyDownCapture={onKeyDownCapture}
-      style={panelCover}
     >
       <style>{themedCanvasStylesheet}</style>
       <ReactFlow

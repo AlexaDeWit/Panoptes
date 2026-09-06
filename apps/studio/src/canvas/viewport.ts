@@ -1,4 +1,9 @@
-import { centreOf, type CanvasBounds, type CanvasNode } from '@panoptes/canvas';
+import {
+  centreOf,
+  panelCover,
+  type CanvasBounds,
+  type CanvasNode,
+} from '@panoptes/canvas';
 import type { Point } from '@panoptes/model';
 import type { Viewport } from '@xyflow/react';
 
@@ -15,20 +20,6 @@ export type CanvasExtent = {
  * number, so the two agree on how much room that chrome takes.
  */
 export const canvasPadding = 64;
-
-/**
- * How much of the canvas's right edge the threat panel covers, in pixels of
- * the page: the whole of its box, border and padding included, and the inset
- * it floats at. A pan that reveals a selected element has to know what the
- * panel is over, the way a fit has to know how much room the floating chrome
- * takes.
- *
- * This is the one place the number lives. The canvas hands it to the
- * stylesheet as `--studio-panel-cover` and the panel sizes its border box from
- * that, so nothing can draw a panel of one width while the pan reasons about
- * another.
- */
-export const panelWidth = 358;
 
 /**
  * How far the canvas zooms either way. React Flow is given the same pair, so
@@ -63,10 +54,14 @@ export function nodeInView(
  * panel is open, which is everything left of the panel. The panel is open
  * whenever an element is selected, and a selection moving is what pans, so
  * every pan is computed against this rather than against the whole canvas.
+ * What the panel covers is the token module's `panelCover`, which is also
+ * what the panel is drawn from ([the visual
+ * system](../../../../packages/canvas/README.md#the-visual-system)), so the
+ * two cannot differ.
  */
 export function clearOfPanel(extent: CanvasExtent): CanvasExtent {
   return {
-    width: Math.max(extent.width - panelWidth, 0),
+    width: Math.max(extent.width - panelCover, 0),
     height: extent.height,
   };
 }
@@ -79,7 +74,7 @@ export function clearOfPanel(extent: CanvasExtent): CanvasExtent {
  */
 export function revealCentre(node: CanvasNode, zoom: number): Point {
   const centre = centreOf(node);
-  return { x: centre.x + panelWidth / 2 / zoom, y: centre.y };
+  return { x: centre.x + panelCover / 2 / zoom, y: centre.y };
 }
 
 /**

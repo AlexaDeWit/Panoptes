@@ -52,7 +52,11 @@ export function panelSubject(state: State): PanelSubject | undefined {
  * The file the studio has open, by name, and nothing at all while it has
  * none. It is what the panel's held drafts belong to: a draft is about a
  * threat in the file it was typed in, so closing that file or opening another
- * is what drops it, where a save, which leaves the file open, does not.
+ * drops it, and so does a save that writes another name, this being the only
+ * thing the state tells a reader about which file is in front of them. A save
+ * over the same name keeps them. Keying the drafts on the sitting rather than
+ * on the name needs a field the store does not have, and is recorded as a
+ * follow-up rather than done here.
  */
 export function openFileName(state: State): string | undefined {
   return state.file._tag === 'Opened' ? state.file.name : undefined;

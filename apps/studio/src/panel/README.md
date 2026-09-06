@@ -15,9 +15,11 @@ whole canvas, which is why the panel is the only place a threat is added
 from. It is held clear of the zoom cluster in the corner below it rather than
 drawn over it, and the diagram is not resized when it opens: what the panel
 covers is dealt with by panning, not by taking the room off the canvas ([the
-canvas](../canvas/README.md)). How much it covers is one number, `panelWidth`
-in `../canvas/viewport.ts`: the canvas hands it to this stylesheet as
-`--studio-panel-cover` and the panel sizes its border box from that, so the width
+canvas](../canvas/README.md)). How much it covers is one token, `panelCover`
+in the canvas package's token module, which reaches the page as
+`--pn-panel-cover` ([the visual
+system](../../../../packages/canvas/README.md#the-visual-system)): the panel
+sizes its border box from it and the pan reads the same number, so the width
 the panel draws and the width the pan reasons about cannot differ.
 
 `threat-overlay.tsx` is the mount: it reads the selection, decides whether
@@ -70,9 +72,12 @@ overlay, which outlives the panel, so a draft survives the panel closing, the
 selection moving to another element and coming back, and is put back in the
 field it was typed in with the threat it was typed on expanded. What drops a
 draft is the text being settled, by a correction or by an edit landing under
-it, the threat it named leaving the element, or the file it was typed in being
-closed or replaced: a model that arrives carrying the same ids is a different
-sitting, and starts on what the model says.
+it, the threat it named leaving the element, or the file it was typed in
+changing: a model that arrives carrying the same ids is a different sitting,
+and starts on what the model says. Which file that is, is its name, so a save
+that writes another one starts the drafts afresh as an open does; keying them
+on the sitting rather than the name is a follow-up, the state carrying nothing
+else that tells the two apart.
 
 ## The commit rule
 

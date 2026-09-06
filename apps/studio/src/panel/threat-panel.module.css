@@ -1,12 +1,10 @@
 /* The panel floats over the right edge of the canvas container, which is
    where the diagram is drawn, so nothing but the panel's own box is taken
-   from the diagram. How much of the canvas it covers is one number, held as
-   `panelWidth` in `../canvas/viewport.ts` and handed here as
-   `--studio-panel-cover` by the container it floats in: the box is that, less
-   the inset, measured over the border so the padding and the hairline are
-   inside what the pan was told about. The name sits outside the `--pn-`
-   namespace on purpose: that one is the token sheet's, and this is a value
-   one container sets on itself rather than a design token.
+   from the diagram. How much of the canvas it covers is one token,
+   `--pn-panel-cover`, which the canvas keeps clear of a selected element
+   ([the canvas](../canvas/viewport.ts)): the box is that, less the inset,
+   measured over the border so the padding and the hairline are inside what
+   the pan was told about.
 
    The zoom cluster floats in the bottom right corner of the same container
    (`../canvas/zoom-cluster.module.css`), so the panel is held clear of it
@@ -23,7 +21,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--pn-space-3);
-  inline-size: calc(var(--studio-panel-cover) - var(--pn-space-3));
+  inline-size: calc(var(--pn-panel-cover) - var(--pn-space-3));
   max-block-size: calc(
     100% - var(--pn-space-3) * 3 - (2rem + var(--pn-space-1) * 2 + 2px)
   );
