@@ -65,6 +65,34 @@ Edit here when the process changes, in the same PR as the change.
   flake count, a frame-time floor) is the exception and says so in its
   issue.
 
+## Model allocation (OpenCode)
+
+When the orchestration loop runs via OpenCode Go, all roles share one dollar pool:
+$12 per rolling 5-hour window, $30 per week, $60 per month. There is no
+Zen balance, so exhausting the pool blocks Go model requests until the
+window resets.
+
+- **Tech lead (resume-orchestration seat):** GPT 5.6 Luna
+  (`opencode-go/gpt-5.6-luna`). Decision-heavy but low-volume. Strong
+  reasoning, low per-token cost, 2,050 requests per 5-hour window,
+  $15/month usage allocation.
+- **Implementers (default):** Omen Alpha (`opencode-go/omen-alpha`).
+  11,600 requests per 5-hour window, $100/month usage allocation,
+  ~190 tokens per second, 500k context, reasoning. Highest throughput
+  per dollar in the Go lineup, so the pool lasts longest on the volume
+  seat. 23.14/40, rank 15 on the AI Coding Daily / OpenCode leaderboard
+  (Sep 2026); identity unconfirmed. A workhorse, not a reviewer.
+- **Reviewers:** GPT 5.6 Luna. Fresh-context evaluation sits at or
+  above the implementer's quality tier; Luna gives an independent
+  check on the implementer output.
+- **Per-slice pin:** For design-bearing or security-sensitive slices,
+  pin Kimi K2.7 Code (`opencode-go/kimi-k2.7-code`) or GPT 5.6 Luna
+  on the implementer instead of the default, per the orchestration
+  skill's pinning rule.
+- **Pool exhaustion:** Free models continue to serve after a Go pool
+  cap resets. Wire one into the opencode config fallback list so the
+  loop degrades rather than stalling outright.
+
 ## Worktrees
 
 - One worktree per agent:
