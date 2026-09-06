@@ -77,9 +77,6 @@ test('the studio carries no violation with the threat panel open on a selected e
   await audit(page, 'showing an open listbox', '[role="listbox"]');
 });
 
-// A drag is a state of its own: React Flow marks the node and the pane while
-// the pointer is down, and the panel stays open over it, which is the densest
-// the page gets. The audit runs mid-gesture, before the pointer is lifted.
 test('the studio carries no violation with the panel open mid-drag', async ({
   page,
 }) => {

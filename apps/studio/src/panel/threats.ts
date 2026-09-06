@@ -49,6 +49,16 @@ export function panelSubject(state: State): PanelSubject | undefined {
 }
 
 /**
+ * The file the studio has open, by name, and nothing at all while it has
+ * none. It is what the panel's held drafts belong to: a draft is about a
+ * threat in the file it was typed in, so closing that file or opening another
+ * is what drops it, where a save, which leaves the file open, does not.
+ */
+export function openFileName(state: State): string | undefined {
+  return state.file._tag === 'Opened' ? state.file.name : undefined;
+}
+
+/**
  * Every threat naming the selected element, in register order, and none while
  * nothing is selected. Status plays no part: the panel lists what has been
  * recorded against the element, where the canvas badge counts what is still

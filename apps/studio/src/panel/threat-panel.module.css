@@ -1,24 +1,30 @@
 /* The panel floats over the right edge of the canvas container, which is
    where the diagram is drawn, so nothing but the panel's own box is taken
-   from the diagram. Its width is the number `../canvas/viewport.ts` holds as
-   `panelWidth`, which is what the pan that reveals a selected element under
-   the panel is computed against.
+   from the diagram. How much of the canvas it covers is one number, held as
+   `panelWidth` in `../canvas/viewport.ts` and handed here as
+   `--pn-panel-cover` by the container it floats in: the box is that, less the
+   inset, measured over the border so the padding and the hairline are inside
+   what the pan was told about.
 
    The zoom cluster floats in the bottom right corner of the same container
    (`../canvas/zoom-cluster.module.css`), so the panel is held clear of it
    rather than covering it. What the height leaves is this panel's own inset
-   at the top, then the cluster's box and inset at the bottom, with a gap of
-   that same inset between the two. */
+   at the top, then the cluster's box, a control tall plus its padding and
+   border, and its inset at the bottom, with a gap of that same inset between
+   the two. */
 .panel {
   position: absolute;
   z-index: 1;
   inset-block-start: var(--pn-space-3);
   inset-inline-end: var(--pn-space-3);
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
   gap: var(--pn-space-3);
-  width: 20rem;
-  max-block-size: calc(100% - var(--pn-space-3) * 3 - 2.75rem);
+  inline-size: calc(var(--pn-panel-cover) - var(--pn-space-3));
+  max-block-size: calc(
+    100% - var(--pn-space-3) * 3 - (2rem + var(--pn-space-1) * 2 + 2px)
+  );
   padding: var(--pn-space-3);
   border: 1px solid var(--pn-colour-border);
   border-radius: var(--pn-radius);

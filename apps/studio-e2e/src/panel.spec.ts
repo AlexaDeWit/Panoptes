@@ -1,6 +1,7 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import {
   beforeCanvas,
+  canvasSettled,
   chooseByKeyboard,
   chooseInPanel,
   nodeNamed,
@@ -28,6 +29,17 @@ const boxOf = async (locator: Locator): Promise<Record<string, number>> => {
   expect(box, 'the box is on the page').not.toBeNull();
   const drawn = box ?? { x: 0, y: 0, width: 0, height: 0 };
   return { left: drawn.x, right: drawn.x + drawn.width };
+};
+
+const panAcross = async (page: Page, by: number): Promise<void> => {
+  const box = await page.locator('.react-flow__pane').boundingBox();
+  const pane = box ?? { x: 0, y: 0, width: 0, height: 0 };
+  const from = { x: pane.x + 24, y: pane.y + pane.height / 2 };
+  await page.mouse.move(from.x, from.y);
+  await page.mouse.down();
+  await page.mouse.move(from.x + by, from.y, { steps: 8 });
+  await page.mouse.up();
+  await canvasSettled(page);
 };
 
 test('the panel opens on the element selected and goes when the selection does', async ({
@@ -88,6 +100,29 @@ test('an element the panel would cover is panned clear of it', async ({
     'the element was drawn where the panel opens, so the pan has something to do',
   ).toBeGreaterThan(panel.left);
   expect((await boxOf(studio)).right).toBeLessThanOrEqual(panel.left);
+});
+
+test('a node just inside the panel edge is panned clear of it too', async ({
+  page,
+}) => {
+  await openPlaceholder(page);
+  const reader = nodeNamed(page, /^Reader, actor/u);
+  await selectNode(page, /^Reader, actor/u);
+  const panel = await boxOf(threatPanel(page));
+  await page.keyboard.press('Escape');
+  await expect(threatPanel(page)).toHaveCount(0);
+
+  const justInside = 10;
+  await panAcross(page, panel.left + justInside - (await boxOf(reader)).right);
+  const covered = await boxOf(reader);
+  expect(
+    covered.right,
+    'the node ends under the panel, in the strip its padding and border draw',
+  ).toBeGreaterThan(panel.left);
+
+  await selectNode(page, /^Reader, actor/u);
+
+  expect((await boxOf(reader)).right).toBeLessThanOrEqual(panel.left);
 });
 
 test('a draft the model refused comes back when its element is selected again', async ({

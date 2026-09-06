@@ -4,6 +4,7 @@ import { Action } from '../store/actions.js';
 import { initialState } from '../store/state.js';
 import {
   actorElement,
+  nativeSource,
   processElement,
   sampleModel,
 } from '../store/store.fixtures.js';
@@ -92,6 +93,27 @@ describe('ThreatOverlay', () => {
     expect(document.activeElement).toBe(addControl());
   });
 
+  it('stays closed while the element it was closed on is edited', async () => {
+    const user = userEvent.setup();
+    render(<ThreatOverlay />);
+    select();
+    act(() => {
+      expect(focusThreatPanel()).toBe(true);
+    });
+    await user.keyboard('{Escape}');
+
+    act(() => {
+      dispatch(
+        Action.MoveElement({
+          elementId: actorElement,
+          offset: { x: 20, y: 0 },
+        }),
+      );
+    });
+
+    expect(panel()).toBeNull();
+  });
+
   it('is asked for nothing while no panel is open', () => {
     render(<ThreatOverlay />);
 
@@ -126,6 +148,31 @@ describe('ThreatOverlay', () => {
     });
 
     expect(screen.getByDisplayValue(`Pasted${softHyphen}prose`)).toBeDefined();
+  });
+
+  it('drops the drafts of a file that was closed, so the next open starts on the model', async () => {
+    const user = userEvent.setup();
+    render(<ThreatOverlay />);
+    select();
+    await refuseADraft(user);
+
+    act(() => {
+      dispatch(Action.Closed());
+    });
+    act(() => {
+      dispatch(
+        Action.Opened({
+          model: sampleModel,
+          name: 'store-fixture.yaml',
+          source: nativeSource,
+          divergences: [],
+        }),
+      );
+    });
+    select();
+    await user.click(screen.getByRole('button', { name: /A reader edits/u }));
+
+    expect(description()).toHaveProperty('value', '');
   });
 
   it('drops the draft the panel corrected, so the element opens on the model again', async () => {

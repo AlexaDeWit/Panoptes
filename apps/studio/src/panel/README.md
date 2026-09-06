@@ -15,9 +15,10 @@ whole canvas, which is why the panel is the only place a threat is added
 from. It is held clear of the zoom cluster in the corner below it rather than
 drawn over it, and the diagram is not resized when it opens: what the panel
 covers is dealt with by panning, not by taking the room off the canvas ([the
-canvas](../canvas/README.md)). Its width lives twice, in the stylesheet that
-draws it and as `panelWidth` in `../canvas/viewport.ts`, which is what the pan
-is computed against, and each says so beside the number.
+canvas](../canvas/README.md)). How much it covers is one number, `panelWidth`
+in `../canvas/viewport.ts`: the canvas hands it to this stylesheet as
+`--pn-panel-cover` and the panel sizes its border box from that, so the width
+the panel draws and the width the pan reasons about cannot differ.
 
 `threat-overlay.tsx` is the mount: it reads the selection, decides whether
 there is a panel at all, holds the drafts and answers for the keyboard.
@@ -58,16 +59,20 @@ Escape inside the panel closes it and puts focus back on the element, which
 stays selected, so a second Escape is the studio's own and clears the
 selection ([the commands](../commands/README.md)). The panel claims that first
 press, which is what keeps one Escape from doing both. A listbox open inside
-the panel is handling Escape itself, so the press is left to it. A panel
-closed that way is closed for that element alone: selecting anything else
-opens it again, and so does asking for it with Enter.
+the panel is handling Escape itself, so the press is left to it. What is
+closed is the element rather than the panel: it stays closed for as long as it
+is the selection, whatever is then moved, resized or undone on it, and the
+selection moving is what opens the panel again, as does asking for it with
+Enter.
 
 Closing takes nothing with it. A refused draft is held per element in the
 overlay, which outlives the panel, so a draft survives the panel closing, the
 selection moving to another element and coming back, and is put back in the
 field it was typed in with the threat it was typed on expanded. What drops a
 draft is the text being settled, by a correction or by an edit landing under
-it, or the threat it named leaving the element.
+it, the threat it named leaving the element, or the file it was typed in being
+closed or replaced: a model that arrives carrying the same ids is a different
+sitting, and starts on what the model says.
 
 ## The commit rule
 

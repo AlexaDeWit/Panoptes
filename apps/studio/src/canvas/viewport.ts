@@ -18,14 +18,17 @@ export const canvasPadding = 64;
 
 /**
  * How much of the canvas's right edge the threat panel covers, in pixels of
- * the page: its own width and the inset it floats at, both in
- * `../panel/threat-panel.module.css`. A pan that reveals a selected element
- * has to know what the panel is over, the way a fit has to know how much room
- * the floating chrome takes. It is the panel's width at the root font size
- * the studio is drawn at, so a browser drawn larger leaves a little of the
- * element under the panel rather than nothing of it.
+ * the page: the whole of its box, border and padding included, and the inset
+ * it floats at. A pan that reveals a selected element has to know what the
+ * panel is over, the way a fit has to know how much room the floating chrome
+ * takes.
+ *
+ * This is the one place the number lives. The canvas hands it to the
+ * stylesheet as `--pn-panel-cover` and the panel sizes its border box from
+ * that, so nothing can draw a panel of one width while the pan reasons about
+ * another.
  */
-export const panelWidth = 332;
+export const panelWidth = 358;
 
 /**
  * How far the canvas zooms either way. React Flow is given the same pair, so
