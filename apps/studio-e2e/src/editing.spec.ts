@@ -2,7 +2,9 @@ import { expect, test } from '@playwright/test';
 import {
   beforeCanvas,
   canvasSurface,
+  connectTarget,
   dragBy,
+  dragOnto,
   editAnnouncement,
   elementNodes,
   nodeNamed,
