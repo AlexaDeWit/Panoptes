@@ -6,6 +6,11 @@ import { tokenStylesheet } from '@panoptes/canvas';
  * the values are the canvas package's: the chrome and the diagram inside it
  * are coloured from one table, and a stylesheet here would be a copy of it
  * that nothing keeps in step.
+ *
+ * The sheet carries the light table and the dark one, the second under
+ * `prefers-color-scheme: dark`, so the whole of the mode switch is these
+ * properties resolving to other values and no component below asks which
+ * mode it is in.
  */
 export function DesignTokens() {
   return <style>{tokenStylesheet}</style>;

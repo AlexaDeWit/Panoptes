@@ -1,5 +1,11 @@
 import type { Severity } from '@panoptes/model';
-import { canvasType, lightPalette, strokeWidths } from './tokens.js';
+import {
+  canvasType,
+  lightPalette,
+  paletteProperty,
+  strokeWidths,
+  type Palette,
+} from './tokens.js';
 
 /**
  * Every class name the primitives emit. A consumer names a class through
@@ -89,33 +95,21 @@ const type = canvasType;
 
 const stroke = strokeWidths;
 
-const colour = lightPalette;
-
-/**
- * The one stylesheet the primitives are drawn with. The headless renderer
- * embeds it in a `<style>` element inside the standalone SVG and the studio
- * injects it once, so both draw one diagram. Only properties SVG applies
- * appear, so the sheet works with no HTML around it, and interactive states
- * join it as further classes rather than as a second sheet.
- *
- * Every value comes out of {@link lightPalette} and {@link canvasType}
- * resolved rather than as a custom property, because the standalone SVG has
- * no document around it to hold a `:root` and the PDF that embeds those bytes
- * has none either.
- */
-export const canvasStylesheet = `.${name.element} {
+const sheetFrom = (
+  colour: (role: keyof Palette) => string,
+): string => `.${name.element} {
   font-family: ${type.family};
 }
 .${name.shape} {
-  fill: ${colour.surfacePanel};
-  stroke: ${colour.textPrimary};
+  fill: ${colour('surfacePanel')};
+  stroke: ${colour('textPrimary')};
   stroke-width: ${stroke.outline};
 }
 .${name.actor} {
-  fill: ${colour.surfaceActor};
+  fill: ${colour('surfaceActor')};
 }
 .${name.process} {
-  fill: ${colour.surfaceProcess};
+  fill: ${colour('surfaceProcess')};
 }
 .${name.store} {
   fill: none;
@@ -124,7 +118,7 @@ export const canvasStylesheet = `.${name.element} {
 .${name.boundaryBox},
 .${name.boundaryCurve} {
   fill: none;
-  stroke: ${colour.textSecondary};
+  stroke: ${colour('textSecondary')};
   stroke-width: ${boundaryStrokeWidth};
   stroke-dasharray: 8 6;
 }
@@ -135,14 +129,14 @@ export const canvasStylesheet = `.${name.element} {
   stroke-dasharray: 6 4;
 }
 .${text.label.className} {
-  fill: ${colour.textPrimary};
+  fill: ${colour('textPrimary')};
   font-size: ${text.label.fontSize}px;
   font-weight: 500;
   text-anchor: middle;
   dominant-baseline: central;
 }
 .${text.note.className} {
-  fill: ${colour.textSecondary};
+  fill: ${colour('textSecondary')};
   font-size: ${text.note.fontSize}px;
   text-anchor: middle;
   dominant-baseline: central;
@@ -151,25 +145,25 @@ export const canvasStylesheet = `.${name.element} {
   fill: none;
 }
 .${name.flowArrow} {
-  fill: ${colour.textPrimary};
+  fill: ${colour('textPrimary')};
   stroke: none;
 }
 .${text.flowLabel.className} {
-  fill: ${colour.textSecondary};
+  fill: ${colour('textSecondary')};
   font-size: ${text.flowLabel.fontSize}px;
   text-anchor: middle;
   dominant-baseline: central;
   paint-order: stroke;
-  stroke: ${colour.surfaceCanvas};
+  stroke: ${colour('surfaceCanvas')};
   stroke-width: ${stroke.labelHalo};
   stroke-linejoin: round;
 }
 .${name.badge} {
-  stroke: ${colour.badgeGround};
+  stroke: ${colour('badgeGround')};
   stroke-width: ${stroke.badgeRing};
 }
 .${name.badgeCount} {
-  fill: ${colour.badgeGround};
+  fill: ${colour('badgeGround')};
   stroke: none;
   font-weight: 600;
   text-anchor: middle;
@@ -182,7 +176,7 @@ export const canvasStylesheet = `.${name.element} {
   font-size: ${type.secondaryBadgeCount}px;
 }
 .${name.badgeMark} {
-  fill: ${colour.badgeGround};
+  fill: ${colour('badgeGround')};
   stroke: none;
   font-size: ${type.badgeMark}px;
   font-weight: 700;
@@ -190,18 +184,37 @@ export const canvasStylesheet = `.${name.element} {
   dominant-baseline: central;
 }
 .${name.toneCritical} {
-  fill: ${colour.toneCritical};
+  fill: ${colour('toneCritical')};
 }
 .${name.toneHigh} {
-  fill: ${colour.toneHigh};
+  fill: ${colour('toneHigh')};
 }
 .${name.toneMedium} {
-  fill: ${colour.toneMedium};
+  fill: ${colour('toneMedium')};
 }
 .${name.toneLow} {
-  fill: ${colour.toneLow};
+  fill: ${colour('toneLow')};
 }
 .${name.toneNeutral} {
-  fill: ${colour.toneNeutral};
+  fill: ${colour('toneNeutral')};
 }
 `;
+
+/**
+ * The one stylesheet the primitives are drawn with, with every colour
+ * resolved to a value. The headless renderer embeds it in a `<style>` element
+ * inside the standalone SVG, and the PDF that embeds those bytes carries it
+ * along: neither has a document around it to hold a `:root`, so neither can
+ * read a custom property. Only properties SVG applies appear, so the sheet
+ * works with no HTML around it, and interactive states join it as further
+ * classes rather than as a second sheet.
+ */
+export const canvasStylesheet = sheetFrom((role) => lightPalette[role]);
+
+/**
+ * The same sheet with every colour left to the custom properties
+ * `tokenStylesheet` declares on the document root, which is what the
+ * studio injects: the diagram follows the colour scheme the root resolved,
+ * where the standalone SVG keeps the light values.
+ */
+export const themedCanvasStylesheet = sheetFrom(paletteProperty);

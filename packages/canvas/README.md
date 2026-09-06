@@ -65,9 +65,11 @@ waypoints, still has an extent to pick.
 there is, and `canvasClassNames` is the typed map of every class it defines.
 The primitives carry class names and never inline styles or CSS modules, so
 the headless renderer embeds the one string in a `<style>` element inside its
-SVG and the studio injects the same string once. A renamed class is a compile
-error for every consumer, and the suite checks that the sheet and the
-primitives name exactly the same set of classes. Interactive states join as
+SVG, and the studio injects `themedCanvasStylesheet`, the same sheet with
+every colour written as the custom property that carries it. One function over
+its colours writes both, so a rule reaches the two of them or neither. A
+renamed class is a compile error for every consumer, and the suite checks that
+the sheet and the primitives name exactly the same set of classes. Interactive states join as
 further classes in the same sheet. Every value in that sheet comes out of the
 token module below rather than out of the sheet itself.
 
@@ -210,8 +212,9 @@ names roles rather than shades: the three surfaces, the two washes an actor
 and a process are filled with, the two inks, the hairline, the ruled line of
 the studio's graph paper, the primary action, the cream a badge is lettered
 in, and one tone per severity. `darkPalette` answers the same roles over warm
-ink grounds. Nothing applies the dark table yet, so it is data beside the
-light one rather than a theme.
+ink grounds, and the studio takes it under `prefers-color-scheme: dark`. The
+headless render stays on the light table whatever the machine that runs it
+prefers, a diagram it writes going into a document with a ground of its own.
 
 The palette is the maintainer's vintage draftsman colours with the lightness
 moved where a contrast floor demanded it and the hue left alone. Six values
@@ -256,7 +259,16 @@ SVG has no document around it to hold a `:root` and neither has the PDF that
 embeds those bytes. `tokenStylesheet` is the other projection of the same
 table, a `:root` block of the `--pn-*` custom properties the studio's CSS
 modules read, which the studio injects once at its own root
-(`apps/studio/src/theme.tsx`). Generating a `.css` file at build time would
+(`apps/studio/src/theme.tsx`), followed by a
+`@media (prefers-color-scheme: dark)` block overriding every one of them from
+the dark table. Both blocks come out of one function over a palette, so a
+property cannot reach one table and miss the other, and a role added to
+`Palette` does not compile until it has been named a property.
+`paletteProperty` is how a rule inside a document reaches one of those
+properties rather than a value, and `themedCanvasStylesheet` is the whole
+canvas sheet written that way: the diagram follows the mode because it is
+drawn from the same properties as the chrome around it, and nothing below the
+root asks which mode it is in. Generating a `.css` file at build time would
 work as well and was not taken: a generated file is a second copy that a check
 has to police, where a projection computed from the table cannot go stale.
 That is why the studio's custom-property names live in this package: the

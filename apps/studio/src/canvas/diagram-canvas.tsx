@@ -1,9 +1,9 @@
 import {
   canvasEdgeTypes,
   canvasNodeTypes,
-  canvasStylesheet,
   centreOf,
   gridSpacing,
+  themedCanvasStylesheet,
   type CanvasFlowEdge,
 } from '@panoptes/canvas';
 import {
@@ -75,6 +75,11 @@ const deleteKeys = new Set(['Delete', 'Backspace']);
  * the token module's grid spacing, so the lines scale with the viewport and a
  * zoom reads as one. Its colour comes from the studio's own custom property,
  * which the CSS module beside this file hands React Flow.
+ *
+ * The diagram's own colours arrive the same way. The sheet injected here is
+ * the canvas package's property-reading projection, so the drawing follows
+ * whichever table the app root resolved and no component learns which mode it
+ * is in. What the CLI writes keeps the light values.
  *
  * The view is fitted to the diagram whenever a model arrives rather than on
  * mount alone, which is React Flow's own `fitView`: a file opened over the
@@ -154,7 +159,7 @@ export function DiagramCanvas() {
 
   return (
     <div className={styles.canvas} data-testid="canvas-container">
-      <style>{canvasStylesheet}</style>
+      <style>{themedCanvasStylesheet}</style>
       <ReactFlow
         aria-label="Diagram"
         attributionPosition="bottom-left"

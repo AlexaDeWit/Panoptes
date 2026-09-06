@@ -7,6 +7,7 @@ import {
   canvasClassNames,
   canvasStylesheet,
   severityToneClass,
+  themedCanvasStylesheet,
   wrappedTextStyles,
 } from './stylesheet.js';
 
@@ -55,6 +56,22 @@ describe('canvasStylesheet', () => {
   it('is styled with properties SVG applies, so it needs no HTML around it', () => {
     expect(canvasStylesheet).not.toContain('background');
     expect(canvasStylesheet).toContain('stroke');
+  });
+});
+
+const withoutColours = (sheet: string): string =>
+  sheet.replace(/#[0-9A-Fa-f]{6}|var\(--pn-colour-[\w-]+\)/gu, 'colour');
+
+describe('themedCanvasStylesheet', () => {
+  it('is the same sheet with every colour left to a custom property', () => {
+    expect(withoutColours(themedCanvasStylesheet)).toBe(
+      withoutColours(canvasStylesheet),
+    );
+    expect(themedCanvasStylesheet).not.toMatch(/#[0-9A-Fa-f]{3,8}/u);
+  });
+
+  it('leaves the resolved sheet the values it has, the standalone SVG carrying no root to read a property from', () => {
+    expect(canvasStylesheet).not.toContain('var(');
   });
 });
 

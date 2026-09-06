@@ -4,6 +4,7 @@
   "private": true,
   "devDependencies": {
     "@axe-core/playwright": "catalog:",
+    "@panoptes/canvas": "workspace:*",
     "@panoptes/formats": "workspace:*",
     "@playwright/test": "catalog:",
     "effect": "catalog:"

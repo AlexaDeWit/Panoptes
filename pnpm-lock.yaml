@@ -327,6 +327,9 @@ importers:
       '@axe-core/playwright':
         specifier: 'catalog:'
         version: 4.13.0(playwright-core@1.59.1)
+      '@panoptes/canvas':
+        specifier: workspace:*
+        version: link:../../packages/canvas
       '@panoptes/formats':
         specifier: workspace:*
         version: link:../../packages/formats

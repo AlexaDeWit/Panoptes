@@ -123,10 +123,23 @@ describe('contrastRatio', () => {
   });
 });
 
+const darkScheme = '@media (prefers-color-scheme: dark)';
+
+const propertiesOf = (block: string): Set<string> =>
+  new Set(block.match(/--pn-colour-[\w-]+(?=:)/gu) ?? []);
+
 describe('tokenStylesheet', () => {
-  it('publishes the light table on the document root', () => {
+  const [root, dark] = tokenStylesheet.split(darkScheme);
+
+  it('publishes the light table on the document root, a property per role', () => {
     expect(tokenStylesheet.startsWith(':root {')).toBe(true);
-    expect(tokenStylesheet).toContain(lightPalette.surfaceApp);
-    expect(tokenStylesheet).not.toContain(darkPalette.surfaceApp);
+    expect(root).toContain(lightPalette.surfaceApp);
+    expect(root).not.toContain(darkPalette.surfaceApp);
+    expect(propertiesOf(root).size).toBe(Object.keys(lightPalette).length);
+  });
+
+  it('overrides those same properties from the dark table under the system preference', () => {
+    expect(dark).toContain(darkPalette.surfaceApp);
+    expect(propertiesOf(dark)).toEqual(propertiesOf(root));
   });
 });
