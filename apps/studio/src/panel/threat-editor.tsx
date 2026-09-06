@@ -4,18 +4,34 @@ import { useEffect, useId, useRef, useState } from 'react';
 import { CategoryField } from '../ui/category-field.js';
 import { SeverityField } from '../ui/severity-field.js';
 import { StatusField } from '../ui/status-field.js';
-import { ProseField, TextField } from '../ui/text-field.js';
+import { ProseField, TextField, type RefusedDraft } from '../ui/text-field.js';
 import styles from './threat-panel.module.css';
 
 const textFields = ['Title', 'Description', 'Mitigation'] as const;
 
-type TextFieldName = (typeof textFields)[number];
+/** Which text field of a threat a draft was typed in. */
+export type TextFieldName = (typeof textFields)[number];
 
-type Refusals = Partial<Record<TextFieldName, string>>;
+/** A refused draft with the field it was typed in, which is what puts it back. */
+export type RefusedField = RefusedDraft & { readonly field: TextFieldName };
 
-function firstRefusal(refusals: Refusals): string | undefined {
-  const refused = textFields.find((field) => refusals[field] !== undefined);
-  return refused === undefined ? undefined : refusals[refused];
+type Refusals = Partial<Record<TextFieldName, RefusedDraft>>;
+
+function firstRefusal(refusals: Refusals): RefusedField | undefined {
+  for (const field of textFields) {
+    const draft = refusals[field];
+    if (draft !== undefined) {
+      return { field, ...draft };
+    }
+  }
+  return undefined;
+}
+
+function draftIn(
+  held: RefusedField | undefined,
+  field: TextFieldName,
+): string | undefined {
+  return held?.field === field ? held.text : undefined;
 }
 
 /**
@@ -26,12 +42,17 @@ function firstRefusal(refusals: Refusals): string | undefined {
  */
 export type EditorFocus = 'title' | 'disclosure';
 
-/** One threat in the list, what an edit does, and where focus is being sent. */
+/**
+ * One threat in the list, what an edit does, where focus is being sent, and
+ * the draft the model refused the last time this threat was on screen, which
+ * the field it was typed in opens on.
+ */
 export type ThreatEditorProps = {
   readonly threat: Threat;
   readonly focus: EditorFocus | undefined;
+  readonly held: RefusedField | undefined;
   readonly onCommit: (patch: Partial<Threat>) => void;
-  readonly onRefusal: (refusal: string | undefined) => void;
+  readonly onRefusal: (refused: RefusedField | undefined) => void;
   readonly onDelete: () => void;
   readonly onFocused: () => void;
 };
@@ -45,14 +66,17 @@ export type ThreatEditorProps = {
  * can be collapsed: reaching the control that collapses the item, by pointer
  * or by Tab, takes focus out of the field first, which is the commit. A
  * commit the model refuses is the exception, and every text field's refusal
- * is reported through `onRefusal` so the panel can say so and keep the item
- * open while a refused draft stands. Which field is holding one is kept here
- * rather than in the panel, so a second field committing cleanly does not
- * report the first field's draft away.
+ * is reported through `onRefusal`, with the text and the field it was typed
+ * in, so the panel can say so, keep the item open while a refused draft
+ * stands, and hand the draft back through `held` the next time this threat is
+ * drawn. Which field is holding one is kept here rather than in the panel, so
+ * a second field committing cleanly does not report the first field's draft
+ * away.
  */
 export function ThreatEditor({
   threat,
   focus,
+  held,
   onCommit,
   onRefusal,
   onDelete,
@@ -78,8 +102,8 @@ export function ThreatEditor({
 
   const refused =
     (field: TextFieldName) =>
-    (refusal: string | undefined): void => {
-      const noted: Refusals = { ...refusals, [field]: refusal };
+    (draft: RefusedDraft | undefined): void => {
+      const noted: Refusals = { ...refusals, [field]: draft };
       setRefusals(noted);
       onRefusal(firstRefusal(noted));
     };
@@ -97,6 +121,7 @@ export function ThreatEditor({
       </Accordion.Header>
       <Accordion.Content className={styles.content}>
         <TextField
+          held={draftIn(held, 'Title')}
           label="Title"
           onCommit={(title) => {
             onCommit({ title });
@@ -124,6 +149,7 @@ export function ThreatEditor({
           value={threat.status}
         />
         <ProseField
+          held={draftIn(held, 'Description')}
           label="Description"
           onCommit={(description) => {
             onCommit({ description });
@@ -132,6 +158,7 @@ export function ThreatEditor({
           value={threat.description}
         />
         <ProseField
+          held={draftIn(held, 'Mitigation')}
           label="Mitigation"
           onCommit={(mitigation) => {
             onCommit({ mitigation });

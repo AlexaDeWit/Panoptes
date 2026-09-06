@@ -1,5 +1,5 @@
 import { threatDragonCodec } from '@panoptes/formats';
-import type { Element, Model, Threat } from '@panoptes/model';
+import type { Element, ElementId, Model, Threat } from '@panoptes/model';
 import {
   diagramId,
   elementId,
@@ -159,6 +159,19 @@ export const sampleModel: Model = parsedFixture(document);
 
 /** The fixture threat, as the register holds it. */
 export const sampleThreat: Threat = sampleModel.threats[0];
+
+/**
+ * One fixture element as the model holds it, for a spec that has the id and
+ * needs the record. An id the diagram does not hold gives a process of that
+ * id, so a spec naming the wrong one fails on what it asserts rather than on
+ * a missing value.
+ */
+export function sampleElement(id: ElementId): Element {
+  return (
+    sampleModel.diagrams[0].elements.find((element) => element.id === id) ??
+    newProcess(id, 'Missing')
+  );
+}
 
 /** A process the specs add, named by the caller so ids stay distinct. */
 export function newProcess(id: string, name: string): Element {

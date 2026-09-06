@@ -1,4 +1,10 @@
-import type { CanvasBounds, CanvasNode } from '@panoptes/canvas';
+import {
+  centreOf,
+  panelCover,
+  type CanvasBounds,
+  type CanvasNode,
+} from '@panoptes/canvas';
+import type { Point } from '@panoptes/model';
 import type { Viewport } from '@xyflow/react';
 
 /** How much of the page the canvas has, in its own pixels. */
@@ -41,6 +47,34 @@ export function nodeInView(
     left + node.size.width * viewport.zoom <= extent.width &&
     top + node.size.height * viewport.zoom <= extent.height
   );
+}
+
+/**
+ * The part of the canvas an element is drawn in the clear of while the threat
+ * panel is open, which is everything left of the panel. The panel is open
+ * whenever an element is selected, and a selection moving is what pans, so
+ * every pan is computed against this rather than against the whole canvas.
+ * What the panel covers is the token module's `panelCover`, which is also
+ * what the panel is drawn from ([the visual
+ * system](../../../../packages/canvas/README.md#the-visual-system)), so the
+ * two cannot differ.
+ */
+export function clearOfPanel(extent: CanvasExtent): CanvasExtent {
+  return {
+    width: Math.max(extent.width - panelCover, 0),
+    height: extent.height,
+  };
+}
+
+/**
+ * Where the view is centred to draw `node` in {@link clearOfPanel}: the
+ * node's own centre, carried right by half of what the panel covers, so the
+ * node lands in the middle of what is left rather than under the panel's
+ * inside edge.
+ */
+export function revealCentre(node: CanvasNode, zoom: number): Point {
+  const centre = centreOf(node);
+  return { x: centre.x + panelCover / 2 / zoom, y: centre.y };
 }
 
 /**

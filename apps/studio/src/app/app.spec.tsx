@@ -27,9 +27,9 @@ describe('App', () => {
     expect(screen.getByTestId('canvas-container')).toBeTruthy();
   });
 
-  it('mounts the threat panel beside it', () => {
+  it('draws no threat panel while nothing is selected', () => {
     render(<App />);
-    expect(screen.getByRole('region', { name: 'Threats' })).toBeDefined();
+    expect(screen.queryByRole('region', { name: 'Threats' })).toBeNull();
   });
 
   it('names the page for a reader without drawing a title bar over the canvas', () => {

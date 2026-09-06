@@ -8,16 +8,22 @@ type Draft = { readonly shown: string; readonly text: string };
 function useDraft(
   label: string,
   value: string,
+  held: string | undefined,
   onCommit: (text: string) => void,
-  onRefused: (refusal: string | undefined) => void,
+  onRefused: (refused: RefusedDraft | undefined) => void,
 ): {
   readonly text: string;
   readonly refusal: TextRefusal | undefined;
   readonly change: (text: string) => void;
   readonly commit: () => void;
 } {
-  const [draft, setDraft] = useState<Draft>({ shown: value, text: value });
-  const [refusal, setRefusal] = useState<TextRefusal | undefined>(undefined);
+  const [draft, setDraft] = useState<Draft>({
+    shown: value,
+    text: held ?? value,
+  });
+  const [refusal, setRefusal] = useState<TextRefusal | undefined>(() =>
+    held === undefined ? undefined : refusedText(label, held),
+  );
   const reported = useRef<TextRefusal | undefined>(undefined);
 
   if (draft.shown !== value) {
@@ -28,9 +34,13 @@ function useDraft(
   useEffect(() => {
     if (reported.current !== refusal) {
       reported.current = refusal;
-      onRefused(refusal?.said);
+      onRefused(
+        refusal === undefined
+          ? undefined
+          : { said: refusal.said, text: draft.text },
+      );
     }
-  }, [refusal, onRefused]);
+  }, [draft.text, refusal, onRefused]);
 
   return {
     text: draft.text,
@@ -59,6 +69,16 @@ export type TextRefusal = {
 };
 
 /**
+ * A refused draft as whatever mounts the field needs it: the sentence to say
+ * away from the control, and the text still on screen, which is what lets a
+ * draft be held while the field itself is gone.
+ */
+export type RefusedDraft = {
+  readonly said: string;
+  readonly text: string;
+};
+
+/**
  * Why the model would not take this text, or nothing for text it accepts.
  * Every string of the model is text of a defined character set, and a paste
  * is where a character outside it arrives, so the field says which character
@@ -82,12 +102,18 @@ export function refusedText(
   return { shown, said: `${label} was not saved. ${shown}` };
 }
 
-/** What a {@link TextField} or {@link ProseField} shows and where an edit goes. */
+/**
+ * What a {@link TextField} or {@link ProseField} shows and where an edit
+ * goes. `held` is a draft the model refused earlier, which the field opens on
+ * instead of the value it is given, so a panel that was unmounted with one on
+ * screen can put it back where it was being corrected.
+ */
 export type TextFieldProps = {
   readonly label: string;
   readonly value: string;
+  readonly held?: string;
   readonly onCommit: (text: string) => void;
-  readonly onRefused: (refusal: string | undefined) => void;
+  readonly onRefused: (refused: RefusedDraft | undefined) => void;
   readonly ref?: Ref<HTMLInputElement>;
 };
 
@@ -98,11 +124,13 @@ export type TextFieldProps = {
  *
  * What is typed is the field's until it is committed, which is what keeps a
  * refused character on screen to be corrected. Every change to whether the
- * model is refusing the draft reaches `onRefused`, so what mounts the field
- * can say so and keep the field on screen while a refused draft stands. It is
- * reported after the render rather than during it, because the field's own
- * refusal drops during render, when the value it is given moves, and a parent
- * cannot take a report from a child that is still rendering.
+ * model is refusing the draft reaches `onRefused`, carrying the text as well
+ * as the sentence, so what mounts the field can say so, keep the field on
+ * screen while a refused draft stands, and put that draft back in a field it
+ * mounts later. It is reported after the render rather than during it,
+ * because the field's own refusal drops during render, when the value it is
+ * given moves, and a parent cannot take a report from a child that is still
+ * rendering.
  *
  * An edit that lands from anywhere else, an undo among them, replaces the
  * draft: the field follows the value it is given whenever that value moves.
@@ -110,6 +138,7 @@ export type TextFieldProps = {
 export function TextField({
   label,
   value,
+  held,
   onCommit,
   onRefused,
   ref,
@@ -119,6 +148,7 @@ export function TextField({
   const { text, refusal, change, commit } = useDraft(
     label,
     value,
+    held,
     onCommit,
     onRefused,
   );
@@ -165,6 +195,7 @@ export function TextField({
 export function ProseField({
   label,
   value,
+  held,
   onCommit,
   onRefused,
 }: TextFieldProps) {
@@ -173,6 +204,7 @@ export function ProseField({
   const { text, refusal, change, commit } = useDraft(
     label,
     value,
+    held,
     onCommit,
     onRefused,
   );

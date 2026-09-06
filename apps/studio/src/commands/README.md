@@ -90,10 +90,12 @@ wherever a person is. Three rules decide whether a press is the studio's:
   whose typeahead is the same thing. Saving, saving as, undo and redo are the
   exemptions, so naming an element never deletes one, a save mid-sentence
   still saves, and no control leaves them dead under a person's hands.
-  Escape is not among them: it clears the selection, which unmounts the panel
-  and takes a refused draft with it, and the draft is the field's alone. The
-  panel overlay (#176) rules what Escape does from inside a field, and until
-  it does the field keeps the key.
+  Escape is not among them, and it is the threat panel that takes it from
+  inside a field: the panel claims the press, closes and hands focus back to
+  the element, and the second Escape, pressed on the element, is this
+  registry's and clears the selection ([the panel](../panel/README.md)). A
+  refused draft outlives both, the panel holding it per element, so neither
+  press is the one that destroys what was typed.
 
 A press that is the studio's is claimed from the browser, whether or not the
 command has a dispatch yet: a chord the studio advertises must not do

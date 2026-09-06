@@ -78,6 +78,30 @@ test('the studio carries no violation with the threat panel open on a selected e
   await audit(page, 'showing an open listbox', '[role="listbox"]');
 });
 
+test('the studio carries no violation with the panel open mid-drag', async ({
+  page,
+}) => {
+  await page.goto('/');
+  await expect(page.getByTestId('canvas-container')).toBeVisible();
+
+  const reader = page.getByRole('group', { name: /^Reader, actor/u });
+  await reader.click();
+  await expect(page.getByRole('region', { name: 'Threats' })).toBeVisible();
+
+  const box = await reader.boundingBox();
+  const from = {
+    x: (box?.x ?? 0) + (box?.width ?? 0) / 2,
+    y: (box?.y ?? 0) + (box?.height ?? 0) / 2,
+  };
+  await page.mouse.move(from.x, from.y);
+  await page.mouse.down();
+  await page.mouse.move(from.x - 40, from.y + 30, { steps: 8 });
+
+  await audit(page, 'mid-drag with the threat panel open');
+
+  await page.mouse.up();
+});
+
 // The two notice regions hold nothing at rest, so the audit above sees them
 // empty. This one gives one of them something to say. Nothing is hidden while
 // it does, so the audit stays page-wide rather than being scoped to the

@@ -1,11 +1,8 @@
 .shell {
-  display: flex;
-  align-items: stretch;
   min-height: 100vh;
 }
 
 .diagram {
-  flex: 1;
   padding: var(--pn-space-4);
 }
 

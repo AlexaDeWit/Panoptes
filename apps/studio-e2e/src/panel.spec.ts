@@ -1,20 +1,147 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import {
   beforeCanvas,
+  canvasSettled,
   chooseByKeyboard,
   chooseInPanel,
   nodeNamed,
   openEcluse,
+  openPlaceholder,
   runFromMenu,
+  selectByKeyboard,
   selectNode,
   threatPanel,
 } from './studio.fixtures.js';
+
+const softHyphen = '\u00ad';
 
 const disclosure = (page: Page, title: string | RegExp): Locator =>
   threatPanel(page).getByRole('button', { name: title });
 
 const badgeTone = (node: Locator): Locator =>
   node.locator('.pn-badge-primary circle');
+
+const titleField = (page: Page): Locator =>
+  threatPanel(page).getByRole('textbox', { name: 'Title' });
+
+const boxOf = async (locator: Locator): Promise<Record<string, number>> => {
+  const box = await locator.boundingBox();
+  expect(box, 'the box is on the page').not.toBeNull();
+  const drawn = box ?? { x: 0, y: 0, width: 0, height: 0 };
+  return { left: drawn.x, right: drawn.x + drawn.width };
+};
+
+const panAcross = async (page: Page, by: number): Promise<void> => {
+  const box = await page.locator('.react-flow__pane').boundingBox();
+  const pane = box ?? { x: 0, y: 0, width: 0, height: 0 };
+  const from = { x: pane.x + 24, y: pane.y + pane.height / 2 };
+  await page.mouse.move(from.x, from.y);
+  await page.mouse.down();
+  await page.mouse.move(from.x + by, from.y, { steps: 8 });
+  await page.mouse.up();
+  await canvasSettled(page);
+};
+
+test('the panel opens on the element selected and goes when the selection does', async ({
+  page,
+}) => {
+  await openPlaceholder(page);
+  await expect(threatPanel(page)).toHaveCount(0);
+
+  const reader = await selectNode(page, /^Reader, actor/u);
+
+  await expect(
+    threatPanel(page).getByRole('heading', { name: 'Threats on Reader' }),
+  ).toBeVisible();
+  await expect(
+    threatPanel(page).locator(':focus'),
+    'selecting an element does not move focus into the panel',
+  ).toHaveCount(0);
+
+  await page.keyboard.press('Escape');
+
+  await expect(reader).not.toHaveClass(/selected/u);
+  await expect(threatPanel(page)).toHaveCount(0);
+});
+
+test('Enter hands the panel the keyboard, and the two Escapes give it back and clear the selection', async ({
+  page,
+}) => {
+  await openPlaceholder(page);
+  const reader = await selectByKeyboard(page, /^Reader, actor/u);
+  const add = threatPanel(page).getByRole('button', { name: 'Add a threat' });
+  await expect(reader).toBeFocused();
+
+  await page.keyboard.press('Enter');
+  await expect(add).toBeFocused();
+
+  await page.keyboard.press('Escape');
+  await expect(threatPanel(page)).toHaveCount(0);
+  await expect(reader).toBeFocused();
+  await expect(reader).toHaveClass(/selected/u);
+
+  await page.keyboard.press('Escape');
+
+  await expect(reader).not.toHaveClass(/selected/u);
+});
+
+test('an element the panel would cover is panned clear of it', async ({
+  page,
+}) => {
+  await openPlaceholder(page);
+  const studio = nodeNamed(page, /^Studio, process/u);
+  const covered = await boxOf(studio);
+
+  await selectByKeyboard(page, /^Studio, process/u);
+
+  const panel = await boxOf(threatPanel(page));
+  expect(
+    covered.right,
+    'the element was drawn where the panel opens, so the pan has something to do',
+  ).toBeGreaterThan(panel.left);
+  expect((await boxOf(studio)).right).toBeLessThanOrEqual(panel.left);
+});
+
+test('a node just inside the panel edge is panned clear of it too', async ({
+  page,
+}) => {
+  await openPlaceholder(page);
+  const reader = nodeNamed(page, /^Reader, actor/u);
+  await selectNode(page, /^Reader, actor/u);
+  const panel = await boxOf(threatPanel(page));
+  await page.keyboard.press('Escape');
+  await expect(threatPanel(page)).toHaveCount(0);
+
+  const justInside = 10;
+  await panAcross(page, panel.left + justInside - (await boxOf(reader)).right);
+  const covered = await boxOf(reader);
+  expect(
+    covered.right,
+    'the node ends under the panel, in the strip its padding and border draw',
+  ).toBeGreaterThan(panel.left);
+
+  await selectNode(page, /^Reader, actor/u);
+
+  expect((await boxOf(reader)).right).toBeLessThanOrEqual(panel.left);
+});
+
+test('a draft the model refused comes back when its element is selected again', async ({
+  page,
+}) => {
+  await openPlaceholder(page);
+  await selectNode(page, /^Reader, actor/u);
+  await disclosure(page, /A reader edits/u).click();
+  await titleField(page).fill(`Soft${softHyphen}hyphen`);
+  await titleField(page).press('Enter');
+  await expect(titleField(page)).toHaveAttribute('aria-invalid', 'true');
+
+  await selectByKeyboard(page, /^Studio, process/u);
+  await expect(titleField(page)).toHaveCount(0);
+  await selectByKeyboard(page, /^Reader, actor/u);
+
+  await expect(titleField(page)).toHaveValue(`Soft${softHyphen}hyphen`);
+  await expect(titleField(page)).toHaveAttribute('aria-invalid', 'true');
+});
 
 test('a threat added in the panel reaches the canvas as a badge, and its severity colours it', async ({
   page,

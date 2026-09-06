@@ -5,20 +5,79 @@ selects, the panel follows, and an edit leaves as a store action, so the
 badges on the diagram and the panel are two views of one model with nothing
 synchronizing them.
 
+## Where it is
+
+The panel is an overlay on the canvas rather than a column beside it: it
+floats over the right edge of the canvas container, mounted from
+`../canvas/diagram-canvas.tsx`, and it is on the page only while something is
+selected. With nothing selected there is no panel and the diagram has the
+whole canvas, which is why the panel is the only place a threat is added
+from. It is held clear of the zoom cluster in the corner below it rather than
+drawn over it, and the diagram is not resized when it opens: what the panel
+covers is dealt with by panning, not by taking the room off the canvas ([the
+canvas](../canvas/README.md)). How much it covers is one token, `panelCover`
+in the canvas package's token module, which reaches the page as
+`--pn-panel-cover` ([the visual
+system](../../../../packages/canvas/README.md#the-visual-system)): the panel
+sizes its border box from it and the pan reads the same number, so the width
+the panel draws and the width the pan reasons about cannot differ.
+
+`threat-overlay.tsx` is the mount: it reads the selection, decides whether
+there is a panel at all, holds the drafts and answers for the keyboard.
+`threat-panel.tsx` is the panel itself, bound to one subject.
+
 ## What it binds to
 
 `threats.ts` holds the selectors and the pure functions the panel is built
-from. `panelElement` is the element `State.selection` names and
-`attachedThreats` the threats that name it, in register order. A flow is a
-selection like any other: it carries threats, so it opens the panel as a box
-does. Status plays no part in the list, where it decides the badge: the panel
-shows what has been recorded against the element, the canvas what is still
-open.
+from. `panelSubject` is what the panel is about, the element `State.selection`
+names or nothing at all, and `attachedThreats` the threats that name it, in
+register order. A flow is a selection like any other: it carries threats, so
+it opens the panel as a box does. Status plays no part in the list, where it
+decides the badge: the panel shows what has been recorded against the element,
+the canvas what is still open.
 
-With nothing selected the panel says so and offers no control that edits. The
-panel holds no copy of model state. What it does hold is its own view state:
-which threat is expanded, which control focus is being sent to, and what the
-live region last said.
+`PanelSubject` also has a branch for several elements selected at once, where
+the panel says how many and offers no field: there is no one element to record
+a threat against. Nothing produces that branch yet, the store holding one
+selection until #156 lands, and the panel is built to take it now so that
+issue changes the selector rather than the panel.
+
+The panel holds no copy of model state. What it does hold is its own view
+state: which threat is expanded, which control focus is being sent to, what
+the live region last said, and the draft a field is holding that the model
+refused.
+
+## The keyboard, and closing
+
+Selection alone never moves focus here. A person asks for the panel, with
+Enter on the element the canvas has selected, and lands on its first control.
+The canvas reads that press and offers it through `panel-focus.ts`, a channel
+of its own rather than a field of the store, the way the canvas announces an
+edit: where focus is is not the model and must not ride the undo stacks. A
+press the panel does not answer stays the canvas's, so Enter on an element
+that is not the selected one still selects it.
+
+Escape inside the panel closes it and puts focus back on the element, which
+stays selected, so a second Escape is the studio's own and clears the
+selection ([the commands](../commands/README.md)). The panel claims that first
+press, which is what keeps one Escape from doing both. A listbox open inside
+the panel is handling Escape itself, so the press is left to it. What is
+closed is the element rather than the panel: it stays closed for as long as it
+is the selection, whatever is then moved, resized or undone on it, and the
+selection moving is what opens the panel again, as does asking for it with
+Enter.
+
+Closing takes nothing with it. A refused draft is held per element in the
+overlay, which outlives the panel, so a draft survives the panel closing, the
+selection moving to another element and coming back, and is put back in the
+field it was typed in with the threat it was typed on expanded. What drops a
+draft is the text being settled, by a correction or by an edit landing under
+it, the threat it named leaving the element, or the file it was typed in
+changing: a model that arrives carrying the same ids is a different sitting,
+and starts on what the model says. Which file that is, is its name, so a save
+that writes another one starts the drafts afresh as an open does; keying them
+on the sitting rather than the name is a follow-up, the state carrying nothing
+else that tells the two apart.
 
 ## The commit rule
 
@@ -42,13 +101,14 @@ collapse would take the draft with it, and the panel refuses the collapse
 rather than the draft.
 
 The refusal is the panel's only view state that another view can settle, so
-it is dropped from both ends. The field reports every change to it, including
-the one it makes on its own when the value under a draft moves, an undo among
-those, and it reports after the render rather than during it, a parent having
-no way to take a report from a child that is still rendering. The panel drops
-it as well whenever nothing on screen is holding it, which is what a selection
-moving to another element does. Neither a sentence about a draft that is gone
-nor a threat held open by nothing survives.
+it is dropped from both ends. The field reports every change to it, the text
+included, which is what lets the draft be put back later, and including the
+change it makes on its own when the value under a draft moves, an undo among
+those. It reports after the render rather than during it, a parent having no
+way to take a report from a child that is still rendering. The panel drops it
+as well whenever nothing on screen is holding it, which is what the threat
+leaving the element does. Neither a sentence about a draft that is gone nor a
+threat held open by nothing survives.
 
 Adding is one `AddThreat`, attached to the selected element and carrying the
 number the model issues next. Deleting is one `RemoveThreat`. Both are
@@ -76,7 +136,10 @@ committing cleanly does not report the first field's draft away.
 The panel sits after the canvas in the DOM, so Tab reaches it after every
 element and every flow. Which of the two a keyboard user should reach first
 is the same decision as how a diagram is traversed, and belongs with the
-toolbar rather than here ([the canvas](../canvas/README.md)).
+toolbar rather than here ([the canvas](../canvas/README.md)). It is a region
+rather than a dialog: it takes no focus of its own when it opens, traps none
+while it is open, and leaves every shortcut in the studio live while a person
+is in it.
 
 ## What is not attempted here
 
@@ -99,3 +162,6 @@ toolbar rather than here ([the canvas](../canvas/README.md)).
 - One threat is expanded at a time, which keeps the panel short on an element
   carrying a dozen. Comparing two threats side by side is not offered.
 - The list is the register's order, with no filter, sort or search over it.
+- An element the panel covers cannot be clicked, the panel being over it. The
+  keyboard reaches it, and selecting it pans it into the clear, so nothing is
+  out of reach; the pointer alone is limited, as it is under a boundary.

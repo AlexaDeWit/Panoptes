@@ -207,7 +207,7 @@ test('a shortcut waits while a name is being typed, and saving and undo do not',
   ).toHaveCount(0);
 });
 
-test('escape leaves a refused draft in the field it is corrected in', async ({
+test('escape from a field closes the panel over the draft rather than clearing the selection', async ({
   page,
 }) => {
   await openPlaceholder(page);
@@ -220,9 +220,15 @@ test('escape leaves a refused draft in the field it is corrected in', async ({
 
   await title.press(registeredChords['clear-selection'][0]);
 
-  await expect(title).toHaveValue('Soft\u00adhyphen');
-  await expect(title).toHaveAttribute('aria-invalid', 'true');
+  await expect(threatPanel(page)).toHaveCount(0);
   await expect(reader).toHaveClass(/selected/u);
+  await expect(reader).toBeFocused();
+
+  await page.keyboard.press('Enter');
+  const held = threatPanel(page).getByRole('textbox', { name: 'Title' });
+
+  await expect(held).toHaveValue('Soft\u00adhyphen');
+  await expect(held).toHaveAttribute('aria-invalid', 'true');
 });
 
 test('every control says which key runs it: beside a menu item, and as a note beside a bare button', async ({
