@@ -11,12 +11,19 @@
       "import": "./src/index.ts",
       "default": "./src/index.ts"
     },
+    "./pdf": {
+      "types": "./src/pdf.ts",
+      "import": "./src/pdf.ts",
+      "default": "./src/pdf.ts"
+    },
     "./package.json": "./package.json"
   },
   "dependencies": {
+    "@myriaddreamin/typst-ts-web-compiler": "catalog:",
     "@panoptes/canvas": "workspace:*",
     "@panoptes/model": "workspace:*",
     "@types/mdast": "catalog:",
+    "effect": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
     "remark-gfm": "catalog:",
@@ -29,7 +36,6 @@
     "@types/jsdom": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
-    "effect": "catalog:",
     "jsdom": "catalog:"
   },
   "//": [

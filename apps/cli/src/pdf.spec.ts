@@ -70,37 +70,6 @@ describe('Typst source compiled to a PDF', () => {
   );
 
   it(
-    'reports what the compiler refused, rather than throwing it',
-    async () => {
-      expect(refusal(await compiled('#no-such-function()'))).toBe(
-        'cannot compile the PDF: unknown variable: no-such-function; if you meant to use subtraction, try adding spaces around the minus signs: `no - such - function`',
-      );
-    },
-    compileTimeout,
-  );
-
-  it(
-    "joins the compiler's hints into the sentence it reports",
-    async () => {
-      const deep = `${'#quote(block: true)['.repeat(20)}x${']'.repeat(20)}`;
-      expect(refusal(await compiled(document(deep)))).toBe(
-        'cannot compile the PDF: maximum show rule depth exceeded; maybe a show rule matches its own output; maybe there are too deeply nested elements',
-      );
-    },
-    compileTimeout,
-  );
-
-  it(
-    'gives back a quote the compiler escaped, as the quote it stands for',
-    async () => {
-      expect(refusal(await compiled('#panic("a quoted word")'))).toBe(
-        'cannot compile the PDF: panicked with: "a quoted word"',
-      );
-    },
-    compileTimeout,
-  );
-
-  it(
     'reports assets it cannot read as a reason to show a user',
     async () => {
       const outcome = await compilePdf(

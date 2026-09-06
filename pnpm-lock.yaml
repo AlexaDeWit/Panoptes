@@ -251,9 +251,6 @@ importers:
 
   apps/cli:
     dependencies:
-      '@myriaddreamin/typst-ts-web-compiler':
-        specifier: 'catalog:'
-        version: 0.7.0
       '@panoptes/formats':
         specifier: workspace:*
         version: link:../../packages/formats
@@ -401,6 +398,9 @@ importers:
 
   packages/render:
     dependencies:
+      '@myriaddreamin/typst-ts-web-compiler':
+        specifier: 'catalog:'
+        version: 0.7.0
       '@panoptes/canvas':
         specifier: workspace:*
         version: link:../canvas
@@ -410,6 +410,9 @@ importers:
       '@types/mdast':
         specifier: 'catalog:'
         version: 4.0.4
+      effect:
+        specifier: 'catalog:'
+        version: 3.22.1
       react:
         specifier: 'catalog:'
         version: 19.2.8
@@ -441,9 +444,6 @@ importers:
       '@types/react-dom':
         specifier: 'catalog:'
         version: 19.2.5(@types/react@19.2.18)
-      effect:
-        specifier: 'catalog:'
-        version: 3.22.1
       jsdom:
         specifier: 'catalog:'
         version: 30.0.1
