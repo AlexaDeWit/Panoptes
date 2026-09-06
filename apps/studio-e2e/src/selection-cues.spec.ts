@@ -7,9 +7,9 @@ import {
   selectNode,
 } from './studio.fixtures.js';
 
-const reader = /^Reader, actor/u;
+const actor = /^Actor, actor/u;
 
-const drawnFlow = /^New flow, flow, from Reader to Studio/u;
+const drawnFlow = /^New flow, flow, from Actor to Store/u;
 
 const canvas = (page: Page): Locator => page.getByTestId('canvas-container');
 
@@ -51,9 +51,9 @@ const halfwayAlong = (line: Locator): Promise<Point> =>
   });
 
 const drawFlow = async (page: Page): Promise<Locator> => {
-  await selectNode(page, reader);
+  await selectNode(page, actor);
   await connectTarget(page).press('Enter');
-  await page.getByRole('option', { name: 'Studio' }).press('Enter');
+  await page.getByRole('option', { name: 'Store' }).press('Enter');
   await page.getByRole('button', { name: 'Connect' }).click();
   const flow = nodeNamed(page, drawnFlow);
   await expect(flow).toHaveClass(/selected/u);
@@ -64,12 +64,12 @@ test('a selected element is framed heavier than the line it is drawn with, and s
   page,
 }) => {
   await openPlaceholder(page);
-  const node = nodeNamed(page, reader);
+  const node = nodeNamed(page, actor);
 
   expect(await frameAround(node)).toBe(0);
   await expect(handlesOn(node).first()).toBeHidden();
 
-  await selectNode(page, reader);
+  await selectNode(page, actor);
 
   expect(await frameAround(node)).toBeGreaterThan(await outlineOf(node));
   await expect(handlesOn(node).first()).toBeVisible();
@@ -84,7 +84,7 @@ test('an element under the pointer shows those same handles, and hides them once
   page,
 }) => {
   await openPlaceholder(page);
-  const node = nodeNamed(page, reader);
+  const node = nodeNamed(page, actor);
   const handle = handlesOn(node).first();
 
   await expect(handle).toBeHidden();
@@ -106,7 +106,7 @@ test('a flow reads heavier under the pointer, and heavier again once it is selec
   const line = lineOf(page, drawnFlow);
   const selected = await weightOf(line);
 
-  await selectNode(page, reader);
+  await selectNode(page, actor);
   await expect(flow).not.toHaveClass(/selected/u);
   const drawn = await weightOf(line);
 
@@ -121,7 +121,7 @@ test('the pointer says what a click would do, over an element, a handle, a flow 
   page,
 }) => {
   await openPlaceholder(page);
-  const node = nodeNamed(page, reader);
+  const node = nodeNamed(page, actor);
 
   await expect(node).toHaveCSS('cursor', 'pointer');
   await expect(handlesOn(node).first()).toHaveCSS('cursor', 'crosshair');
@@ -136,7 +136,7 @@ test('the tool the toolbox has active says it over the whole canvas', async ({
   page,
 }) => {
   await openPlaceholder(page);
-  const node = nodeNamed(page, reader);
+  const node = nodeNamed(page, actor);
   const tool = async (active: string): Promise<void> => {
     await canvas(page).evaluate((element, name) => {
       element.setAttribute('data-tool', name);
@@ -162,11 +162,11 @@ test('only the selected element carries the control that resizes it, and the poi
   page,
 }) => {
   await openPlaceholder(page);
-  const node = nodeNamed(page, reader);
+  const node = nodeNamed(page, actor);
 
   await expect(resizeControlOn(node)).toHaveCount(0);
 
-  await selectNode(page, reader);
+  await selectNode(page, actor);
 
   await expect(resizeControlOn(node)).toHaveCount(1);
   await expect(page.locator('.react-flow__resize-control')).toHaveCount(1);
