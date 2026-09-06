@@ -1,10 +1,8 @@
 import type { DiagramId, Model } from '@panoptes/model';
-import {
-  FileLifecycle,
-  placeholderModel,
-  untitledModel,
-  type State,
-} from './state.js';
+import { nameOf } from '../files/session.js';
+import { FileLifecycle, placeholderModel, type State } from './state.js';
+
+const productName = 'Panoptes';
 
 /**
  * The model on screen is not the model the file holds. It is identity, not a
@@ -71,18 +69,12 @@ export function showingPlaceholder(state: State): boolean {
 }
 
 /**
- * What the model on screen is called: the file it lives in, or its own title
- * while it lives in none, which is {@link untitledModel} for the model the
- * studio starts on. A model that arrived with no title at all still names
- * the tab rather than leaving it blank.
+ * What the browser tab is named: the model's name as {@link nameOf} gives it,
+ * the file it lives in or "Untitled" while it lives in none, ahead of the
+ * product name, since a narrow tab shows the head of a title. Reading the
+ * name through the same function as the menu is what keeps the two from
+ * disagreeing.
  */
 export function windowTitle(state: State): string {
-  return FileLifecycle.$match(state.file, {
-    NoFile: () => named(state.present.metadata.title),
-    Opened: ({ name }) => named(name),
-  });
-}
-
-function named(title: string): string {
-  return title.trim() === '' ? untitledModel : title;
+  return `${nameOf(state.file)} - ${productName}`;
 }

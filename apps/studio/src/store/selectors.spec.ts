@@ -11,7 +11,7 @@ import {
   showingPlaceholder,
   windowTitle,
 } from './selectors.js';
-import { initialState, placeholderModel, untitledModel } from './state.js';
+import { initialState, placeholderModel } from './state.js';
 import {
   mainDiagram,
   nativeSource,
@@ -119,11 +119,22 @@ describe('showingPlaceholder', () => {
   it('was never showing for a model that arrived any other way', () => {
     expect(showingPlaceholder(start)).toBe(false);
   });
+
+  it('comes back once the model is closed back to the one the studio opens on', () => {
+    const closed = reduce(
+      reduce(reduce(opening, added), saved),
+      Action.Closed(),
+    );
+
+    expect(showingPlaceholder(closed)).toBe(true);
+  });
 });
 
 describe('windowTitle', () => {
-  it('says a model with no file by its own title', () => {
-    expect(windowTitle(initialState(placeholderModel))).toBe(untitledModel);
+  it('says a model with no file as Untitled, ahead of the product name', () => {
+    expect(windowTitle(initialState(placeholderModel))).toBe(
+      'Untitled - Panoptes',
+    );
   });
 
   it('says the file once the model lives in one, opened or saved', () => {
@@ -141,11 +152,7 @@ describe('windowTitle', () => {
       Action.Saved({ name: 'model.yaml', source: nativeSource }),
     );
 
-    expect(windowTitle(opened)).toBe('other.yaml');
-    expect(windowTitle(saved)).toBe('model.yaml');
-  });
-
-  it('falls back rather than leaving the tab blank for an untitled model', () => {
-    expect(windowTitle(initialState(emptyModel))).toBe(untitledModel);
+    expect(windowTitle(opened)).toBe('other.yaml - Panoptes');
+    expect(windowTitle(saved)).toBe('model.yaml - Panoptes');
   });
 });

@@ -179,12 +179,13 @@ const placeholderDocument = {
  *
  * It draws the smallest thing that is still a data-flow diagram: an actor,
  * the records it sends, and the store they land in. Each box is a hundred by
- * fifty units, which is the room a five-column name needs at the canvas type
- * size by the canvas package's own estimate, plus the padding a glyph keeps
- * around its text, rounded up to the grid the studio rules. So no name wraps
- * and none of the three is sized by guesswork. The gap between the two boxes
- * is what leaves the flow's name a place to hang clear of both, which the
- * layout's own placement settles and `state.spec.ts` holds.
+ * fifty units: a two-to-one box on the grid the studio rules, chosen for its
+ * proportion, whose eighty-eight units inside the padding hold a five-column
+ * name of thirty-three at the canvas type size by the canvas package's own
+ * estimate, and whose height is one line plus that padding rounded up to the
+ * grid. So no name wraps. The gap between the two boxes is what leaves the
+ * flow's name a place to hang clear of both, which the layout's own
+ * placement settles and `state.spec.ts` holds.
  */
 export const placeholderModel: Model = Either.getOrElse(
   parseModel(placeholderDocument),
