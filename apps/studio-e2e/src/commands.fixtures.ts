@@ -1,4 +1,9 @@
-import { expect, type Locator, type Page } from '@playwright/test';
+import {
+  expect,
+  type Download,
+  type Locator,
+  type Page,
+} from '@playwright/test';
 import { readFileSync } from 'node:fs';
 
 /**
@@ -15,6 +20,11 @@ export type SavedByKey = {
   readonly text: string;
 };
 
+const downloaded = async (download: Download): Promise<SavedByKey> => ({
+  name: download.suggestedFilename(),
+  text: readFileSync(await download.path(), 'utf8'),
+});
+
 /** Presses `chord` and reads back the file the studio wrote through it. */
 export const savedByKey = async (
   page: Page,
@@ -24,10 +34,26 @@ export const savedByKey = async (
     page.waitForEvent('download'),
     page.keyboard.press(chord),
   ]);
-  return {
-    name: download.suggestedFilename(),
-    text: readFileSync(await download.path(), 'utf8'),
-  };
+  return downloaded(download);
+};
+
+/**
+ * Answers the format question the menu asks where the browser has no save
+ * picker, and reads back the file that went out. The question stands in the
+ * menu whether a chord or an item put it there, so this waits for the item
+ * rather than for the menu.
+ */
+export const savedFromMenu = async (
+  page: Page,
+  item: string,
+): Promise<SavedByKey> => {
+  const chosen = page.getByRole('menuitem', { name: item, exact: true });
+  await expect(chosen).toBeVisible();
+  const [download] = await Promise.all([
+    page.waitForEvent('download'),
+    chosen.click(),
+  ]);
+  return downloaded(download);
 };
 
 /** What a control says its shortcut is, to a pointer and to a reader alike. */

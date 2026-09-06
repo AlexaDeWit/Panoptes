@@ -6,6 +6,7 @@ import {
   readWithin,
   type ChosenFile,
   type FileBridge,
+  type SaveFileType,
 } from './bridge.js';
 
 /** A file a spec hands to a bridge, standing in for a browser `File`. */
@@ -43,22 +44,26 @@ export type Recorded = {
 export type Releases = { count: number };
 
 /**
- * A bridge whose answers a spec decides, and whose writes and releases it
- * reads back.
+ * A bridge whose answers a spec decides, and whose writes, offers and
+ * releases it reads back. `offered` holds the formats each save-as put in
+ * front of the person, in the order they were offered.
  */
 export type SpecBridge = FileBridge & {
   readonly writes: readonly Recorded[];
+  readonly offered: readonly (readonly SaveFileType[])[];
   readonly releases: Releases;
 };
 
 /**
- * What a {@link specBridge} answers: the file its picker hands over, whether
- * it has a picker at all, and what a write answers. The defaults are the
- * ordinary path: a picker that offers nothing is one the person dismissed,
- * and a write lands where it was pointed.
+ * What a {@link specBridge} answers: the file its picker hands over, the name
+ * a save picker answers with, whether it has pickers at all, and what a write
+ * answers. The defaults are the ordinary path: a picker that offers nothing
+ * is one the person dismissed, a save picker answers with the name it was
+ * pointed at, and a write lands where it was pointed.
  */
 export type SpecBridgeOptions = {
   readonly offers?: ChosenFile;
+  readonly chooses?: string;
   readonly picker?: boolean;
   readonly save?: SaveOutcome;
 };
@@ -70,9 +75,10 @@ export type SpecBridgeOptions = {
  */
 export function specBridge(options: SpecBridgeOptions = {}): SpecBridge {
   const writes: Recorded[] = [];
+  const offered: (readonly SaveFileType[])[] = [];
   const releases: Releases = { count: 0 };
 
-  const offered = (maxBytes: number): Promise<OpenOutcome> => {
+  const opened = (maxBytes: number): Promise<OpenOutcome> => {
     if (options.picker === false) {
       return Promise.resolve(OpenOutcome.NoPicker());
     }
@@ -95,11 +101,18 @@ export function specBridge(options: SpecBridgeOptions = {}): SpecBridge {
 
   return {
     writes,
+    offered,
     releases,
-    open: offered,
+    open: opened,
     received: (file, maxBytes) => readWithin(file, maxBytes),
     save: (name, text) => answer(name, text, false),
-    saveAs: (name, text) => answer(name, text, true),
+    saveAs: (name, types, text) => {
+      offered.push(types);
+      const chosen =
+        options.picker === false ? name : (options.chooses ?? name);
+      return answer(chosen, text(chosen), true);
+    },
+    asksWhere: () => options.picker !== false,
     release: () => {
       releases.count += 1;
     },

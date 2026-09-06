@@ -15,18 +15,32 @@ import type { Model } from '@panoptes/model';
 import { Either } from 'effect';
 import { Action } from '../store/actions.js';
 import { FileLifecycle, type RetainedSource } from '../store/state.js';
-import { OpenOutcome, SaveOutcome } from './bridge.js';
+import { OpenOutcome, SaveOutcome, type SaveFileType } from './bridge.js';
 
-const extensions: Record<FormatName, string> = {
-  'threat-dragon': '.json',
-  'panoptes-yaml': '.yaml',
+type FormatFile = {
+  readonly label: string;
+  readonly mediaType: string;
+  readonly extensions: readonly string[];
 };
 
-/** Each format as a person reads it, for a control that offers one. */
-export const formatLabels: Record<FormatName, string> = {
-  'threat-dragon': 'Threat Dragon JSON',
-  'panoptes-yaml': 'Panoptes YAML',
-};
+/**
+ * How each registered format appears as a file: the words a person reads,
+ * the media type a picker files it under, and the extensions it is written
+ * with. The first extension is the one a save proposes, and any of them
+ * names the format back when a picker answers with a file a person named.
+ */
+export const formatFiles = {
+  'threat-dragon': {
+    label: 'Threat Dragon JSON',
+    mediaType: 'application/json',
+    extensions: ['.json'],
+  },
+  'panoptes-yaml': {
+    label: 'Panoptes YAML',
+    mediaType: 'application/yaml',
+    extensions: ['.yaml', '.yml'],
+  },
+} as const satisfies Record<FormatName, FormatFile>;
 
 /**
  * The format a model with no file of its own is saved in: the native one,
@@ -54,14 +68,44 @@ export function formatOf(file: FileLifecycle): FormatName {
 }
 
 /**
- * The format a save-as offers: the first registered one the file is not
- * already in. It reads the registry rather than naming a format, so a third
- * codec offers something rather than nothing, and a lone format offers
- * itself. One control can only offer one format, so a third codec is where
- * the control becomes a menu over every format but the file's own.
+ * The formats a save-as offers, the file's own first, which is the one it
+ * proposes. It reads the registry rather than naming formats, so a third
+ * codec is offered rather than left out.
  */
-export function otherFormat(format: FormatName): FormatName {
-  return formatNameSchema.options.find((option) => option !== format) ?? format;
+export function formatsFrom(format: FormatName): readonly FormatName[] {
+  return [
+    format,
+    ...formatNameSchema.options.filter((option) => option !== format),
+  ];
+}
+
+/**
+ * The formats as a save picker offers them. A picker is handed every format
+ * so the person names the file in whichever they mean, and a platform with
+ * no picker is handed the one the studio asked for itself.
+ */
+export function saveTypes(
+  formats: readonly FormatName[],
+): readonly SaveFileType[] {
+  return formats.map((option) => ({
+    description: formatFiles[option].label,
+    accept: { [formatFiles[option].mediaType]: formatFiles[option].extensions },
+  }));
+}
+
+/**
+ * The format a file name is written in, and nothing at all where its
+ * extension names none. A picker answers with the name the person settled
+ * on, which is what says which codec writes the file, so this is the one
+ * place an extension is read as a format.
+ */
+export function formatOfName(name: string): FormatName | undefined {
+  const written = name.toLowerCase();
+  return formatNameSchema.options.find((option) =>
+    formatFiles[option].extensions.some((extension) =>
+      written.endsWith(extension),
+    ),
+  );
 }
 
 /**
@@ -71,7 +115,7 @@ export function otherFormat(format: FormatName): FormatName {
  */
 export function proposedName(name: string, format: FormatName): string {
   const stem = name.replace(/\.[^./\\]*$/u, '').trim();
-  return `${stem === '' ? unnamedModel : stem}${extensions[format]}`;
+  return `${stem === '' ? unnamedModel : stem}${formatFiles[format].extensions[0]}`;
 }
 
 /** Where a save writes, and the document it merges the model onto. */

@@ -15,12 +15,14 @@ import {
 import { OpenOutcome, SaveOutcome } from './bridge.js';
 import {
   formatOf,
+  formatOfName,
+  formatsFrom,
   nameOf,
   openedBy,
-  otherFormat,
   proposedName,
   reportLines,
   saveTarget,
+  saveTypes,
   savedBy,
   writeThrough,
 } from './session.js';
@@ -207,9 +209,36 @@ describe('naming', () => {
     expect(proposedName('.yaml', 'panoptes-yaml')).toBe('threat-model.yaml');
   });
 
-  it('offers the format the file is not in', () => {
-    expect(otherFormat('panoptes-yaml')).toBe('threat-dragon');
-    expect(otherFormat('threat-dragon')).toBe('panoptes-yaml');
+  it('offers every registered format, the one the file is in first', () => {
+    expect(formatsFrom('panoptes-yaml')).toEqual([
+      'panoptes-yaml',
+      'threat-dragon',
+    ]);
+    expect(formatsFrom('threat-dragon')).toEqual([
+      'threat-dragon',
+      'panoptes-yaml',
+    ]);
+  });
+
+  it('offers the same formats to a picker, described and with their extensions', () => {
+    expect(saveTypes(formatsFrom('panoptes-yaml'))).toEqual([
+      {
+        description: 'Panoptes YAML',
+        accept: { 'application/yaml': ['.yaml', '.yml'] },
+      },
+      {
+        description: 'Threat Dragon JSON',
+        accept: { 'application/json': ['.json'] },
+      },
+    ]);
+  });
+
+  it('reads back the format a picker answered with off the name it named', () => {
+    expect(formatOfName('model.json')).toBe('threat-dragon');
+    expect(formatOfName('model.yaml')).toBe('panoptes-yaml');
+    expect(formatOfName('model.yml')).toBe('panoptes-yaml');
+    expect(formatOfName('MODEL.YAML')).toBe('panoptes-yaml');
+    expect(formatOfName('notes.txt')).toBeUndefined();
   });
 
   it('reads the format and the name of the file the model lives in', () => {

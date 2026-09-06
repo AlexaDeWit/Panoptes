@@ -18,10 +18,10 @@ import { LiveRegion } from '../ui/live-region.js';
 import type { FileSession } from './file-commands.js';
 import styles from './menu.module.css';
 import {
-  formatLabels,
+  formatFiles,
   formatOf,
+  formatsFrom,
   nameOf,
-  otherFormat,
   reportHeadlines,
   reportLines,
 } from './session.js';
@@ -125,6 +125,13 @@ export type StudioMenuProps = { readonly session: FileSession };
  * keyboard is still on it and the second press is the answer. The chord asks
  * the same question with the menu shut, which is what opens the menu.
  *
+ * Save as asks the same way, and only where it has to. A platform with a
+ * picker of its own offers every format in it, so the item is one command and
+ * the question is the picker's. A platform with none cannot, so the item
+ * holds the menu open and becomes the formats in the place it stood, the
+ * file's own first: the same shape closing asks in, one press deep and with
+ * no second overlay to walk into.
+ *
  * The fallback picker's input is outside the menu as well, and hidden: only a
  * component can hold a file input, and the Open command is the one way to it.
  */
@@ -138,10 +145,15 @@ export function StudioMenu({ session }: StudioMenuProps) {
 
   useCloseGuard(dirty);
   useAsking(session.closing, dirty, setOpen, session.cancelClose);
+  useChoosing(session.choosing, setOpen);
 
   const {
+    asksFormat,
     attachPicker,
+    cancelChoice,
     cancelClose,
+    chooseFormat,
+    choosing,
     closing,
     commands,
     confirmClose,
@@ -150,9 +162,9 @@ export function StudioMenu({ session }: StudioMenuProps) {
     report,
   } = session;
   const closeCommand = commandById('close-file');
+  const saveAsCommand = commandById('save-as');
   const asking = closing && dirty;
   const format = formatOf(file);
-  const alternative = otherFormat(format);
 
   return (
     <div className={styles.menu}>
@@ -162,6 +174,7 @@ export function StudioMenu({ session }: StudioMenuProps) {
           setOpen(next);
           if (!next) {
             cancelClose();
+            cancelChoice();
           }
         }}
         open={open}
@@ -184,9 +197,45 @@ export function StudioMenu({ session }: StudioMenuProps) {
             </DropdownMenu.Label>
             <MenuCommand command="open" />
             <MenuCommand command="save" />
-            <MenuCommand command="save-as">
-              Save as {formatLabels[alternative]}
-            </MenuCommand>
+            <MenuItem
+              chord={
+                choosing
+                  ? undefined
+                  : spellShortcuts(saveAsCommand.shortcuts, hostPlatform)
+              }
+              keepOpen={asksFormat && !choosing}
+              keyShortcuts={
+                choosing
+                  ? undefined
+                  : keyShortcutsAttribute(saveAsCommand.shortcuts, hostPlatform)
+              }
+              onChoose={
+                choosing
+                  ? () => {
+                      chooseFormat(format);
+                    }
+                  : () => {
+                      commands.saveAs();
+                    }
+              }
+            >
+              {choosing
+                ? `Save as ${formatFiles[format].label}`
+                : saveAsCommand.label}
+            </MenuItem>
+            {choosing &&
+              formatsFrom(format)
+                .slice(1)
+                .map((option) => (
+                  <MenuItem
+                    key={option}
+                    onChoose={() => {
+                      chooseFormat(option);
+                    }}
+                  >
+                    Save as {formatFiles[option].label}
+                  </MenuItem>
+                ))}
             <MenuItem
               chord={
                 asking
@@ -224,7 +273,7 @@ export function StudioMenu({ session }: StudioMenuProps) {
           <DropdownMenu.Separator className={styles.rule} />
           <DropdownMenu.Group className={styles.about}>
             <p className={styles.state} data-testid="file-state">
-              {nameOf(file)}, {formatLabels[format]},{' '}
+              {nameOf(file)}, {formatFiles[format].label},{' '}
               {dirty ? 'unsaved changes' : 'no unsaved changes'}
             </p>
           </DropdownMenu.Group>
@@ -287,6 +336,14 @@ function useAsking(
     }
     cancel();
   }, [cancel, closing, dirty, show]);
+}
+
+function useChoosing(choosing: boolean, show: (open: boolean) => void): void {
+  useEffect(() => {
+    if (choosing) {
+      show(true);
+    }
+  }, [choosing, show]);
 }
 
 function useCloseGuard(dirty: boolean): void {

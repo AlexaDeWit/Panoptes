@@ -2,6 +2,7 @@ import { expect, test } from '@playwright/test';
 import { chordsWaitingOnASurface, registeredChords } from './chords.js';
 import {
   savedByKey,
+  savedFromMenu,
   shortcutShown,
   viewportTransform,
 } from './commands.fixtures.js';
@@ -112,7 +113,9 @@ test('zooming and fitting move the viewport and nothing else', async ({
   await expect(elementNodes(page)).toHaveCount(18);
 });
 
-test('saving and saving elsewhere are one chord each', async ({ page }) => {
+test('saving is one chord, and saving as asks the format the browser cannot', async ({
+  page,
+}) => {
   await page.addInitScript(withoutPickers);
   await openPlaceholder(page);
 
@@ -121,7 +124,9 @@ test('saving and saving elsewhere are one chord each', async ({ page }) => {
   expect(native.name).toBe('threat-model.yaml');
   expect(native.text).toContain('formatVersion');
 
-  const elsewhere = await savedByKey(page, registeredChords['save-as'][0]);
+  await page.keyboard.press(registeredChords['save-as'][0]);
+
+  const elsewhere = await savedFromMenu(page, 'Save as Threat Dragon JSON');
 
   expect(elsewhere.name).toBe('threat-model.json');
   expect(JSON.parse(elsewhere.text)).toMatchObject({ version: '2.6.2' });
