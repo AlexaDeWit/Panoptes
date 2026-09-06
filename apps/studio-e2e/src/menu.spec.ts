@@ -52,21 +52,19 @@ test('every item is reached, run and left by the keyboard alone', async ({
     await expect(menuItem(page, name)).toBeFocused();
   }
 
-  await page.keyboard.press('Escape');
+  await page.keyboard.press('Enter');
 
+  await expect(added).toHaveCount(0);
   await expect(page.getByRole('menu')).toHaveCount(0);
   await expect(menuButton(page)).toBeFocused();
 
   await page.keyboard.press('Enter');
   await expect(menuItem(page, 'Open a model')).toBeFocused();
-  for (const step of ['ArrowDown', 'ArrowDown', 'ArrowDown', 'ArrowDown']) {
-    await page.keyboard.press(step);
-  }
-  await expect(menuItem(page, 'Undo')).toBeFocused();
-  await page.keyboard.press('Enter');
 
-  await expect(added).toHaveCount(0);
+  await page.keyboard.press('Escape');
+
   await expect(page.getByRole('menu')).toHaveCount(0);
+  await expect(menuButton(page)).toBeFocused();
 });
 
 test('the canvas stays live behind the open menu', async ({ page }) => {
@@ -121,7 +119,8 @@ test('closing asks in the menu before it drops work that is in no file', async (
   await expect(elementNodes(page)).toHaveCount(19);
 
   await page.keyboard.press('ArrowDown');
-  await menuItem(page, 'Keep the file open').press('Enter');
+  await expect(menuItem(page, 'Keep the file open')).toBeFocused();
+  await page.keyboard.press('Enter');
 
   await expect(page.getByRole('menu')).toHaveCount(0);
   await expect(menuButton(page)).toBeFocused();
