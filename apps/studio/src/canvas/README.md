@@ -25,10 +25,9 @@ the grid spacing the canvas package's token module decides, so the lines scale
 with the viewport and a zoom reads as one rather than as a grid that stayed
 still. Its colour is handed over as `--xy-background-pattern-color` in the CSS
 module beside `diagram-canvas.tsx`, which is where the studio's own
-`--pn-colour-grid` reaches React Flow's pattern. The grid line is lighter than
-the hairline that outlines a control, because nothing on the canvas is read
-off it. The headless render draws no grid: the surface a diagram was drawn on
-is no part of the diagram.
+`--pn-colour-grid` reaches React Flow's pattern. What that colour is and why
+is the token module's
+([the visual system](../../../../packages/canvas/README.md#the-visual-system)).
 
 React Flow is mounted controlled. What it draws is rebuilt whole from the
 model on every render, so a selection re-renders every node and every flow:

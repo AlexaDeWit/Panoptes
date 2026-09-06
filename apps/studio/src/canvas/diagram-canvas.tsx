@@ -72,8 +72,7 @@ const deleteKeys = new Set(['Delete', 'Backspace']);
  * The ground is graph paper: React Flow's own background component ruled at
  * the token module's grid spacing, so the lines scale with the viewport and a
  * zoom reads as one. Its colour comes from the studio's own custom property,
- * which the CSS module beside this file hands React Flow. The headless render
- * draws no grid, the surface a diagram was drawn on being no part of it.
+ * which the CSS module beside this file hands React Flow.
  *
  * Deleting is bound here rather than left to React Flow, whose delete key
  * listens on the whole document and would remove the selected element from

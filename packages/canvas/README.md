@@ -233,10 +233,9 @@ ratio it reached. `channelDistance` is the coarse floor under the five tones,
 which catches two collapsing onto one shade and claims nothing more.
 
 The grid line is measured on a band rather than against a floor, at least 1.3
-and at most 1.6 on the canvas ground it is drawn over. Graph paper has to be
-visible without reading as a control's outline, so a later edit that darkens
-it to the hairline's 3 fails the suite as readily as one that loses it in the
-ground.
+and at most 1.6 on the canvas ground it is drawn over. It is the one role with
+a ceiling as well as a floor, because it is the one role that is worse for
+being darker.
 
 The module carries the sizes the drawing is built from as well as its colours.
 `strokeWidths` is every stroke a diagram lays down: one weight for an
@@ -245,8 +244,8 @@ for a store's two lines, which are the whole glyph and have no box to sit in,
 and the ring and the halo that cut a badge and a flow name out of whatever
 they are drawn over. `arrowhead` sizes the triangle a flow ends in,
 `badgeRadius` the two circles a badge stacks, and `gridSpacing` the graph
-paper the studio rules its canvas with, which the headless render lays down
-none of. The badge radii and the ring are one decision: the ring is centred on
+paper the studio rules its canvas with. The badge radii and the ring are one
+decision: the ring is centred on
 the circle, so half of it eats into the disc the count is lettered on, and the
 secondary radius is 9 because a two-digit count at that size, measured with
 the wrap's own ratio, reaches 6.69 units from the centre where a 3-unit ring

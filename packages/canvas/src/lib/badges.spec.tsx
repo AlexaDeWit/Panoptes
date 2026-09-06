@@ -11,6 +11,8 @@ import {
 } from './badges.js';
 import { everyGlyphModel } from './canvas.fixtures.js';
 import { canvasClassNames, severityToneClass } from './stylesheet.js';
+import { badgeRadius, canvasType, strokeWidths } from './tokens.js';
+import { textExtent } from './typography.js';
 
 const badges = badgesByElement(everyGlyphModel);
 
@@ -60,6 +62,33 @@ const modelWith = (threats: unknown[]) =>
 
 const badgeOfOne = (threats: unknown[]): ThreatBadge | undefined =>
   badgesByElement(modelWith(threats)).get(elementId('el-one'));
+
+const stacked = renderToStaticMarkup(
+  <ThreatBadgeGlyph
+    badge={{ count: 12, severity: 'high', secondary: 12 }}
+    at={{ x: 0, y: 0 }}
+  />,
+);
+
+const countOffsets = [
+  ...stacked.matchAll(
+    new RegExp(
+      `class="${canvasClassNames.badgeCount}"(?: y="(-?[\\d.]+)")?`,
+      'gu',
+    ),
+  ),
+].map((found) => Number(found[1] ?? '0'));
+
+const clearanceInsideRing = (
+  radius: number,
+  fontSize: number,
+  offset: number,
+  count: string,
+): number => {
+  const box = textExtent([count], fontSize);
+  const corner = Math.hypot(box.width / 2, Math.abs(offset) + box.height / 2);
+  return radius - strokeWidths.badgeRing / 2 - corner;
+};
 
 describe('severityRank', () => {
   it('ranks every severity the model declares and no other', () => {
@@ -169,6 +198,29 @@ describe('badgeExtent', () => {
     expect(
       badgeExtent({ count: 3, severity: 'low', secondary: 1 }).radius,
     ).toBe(badgeExtent({ count: 1, severity: 'low', secondary: 0 }).radius);
+  });
+});
+
+describe('the ring a badge cuts itself out with', () => {
+  it('leaves a two-digit count inside the disc it cuts, at both badge sizes, the ring and the count being the one cream and a count touching it reading as none', () => {
+    const [primary, secondary] = countOffsets;
+    expect(countOffsets).toHaveLength(2);
+    expect(
+      clearanceInsideRing(
+        badgeRadius.primary,
+        canvasType.badgeCount,
+        primary,
+        '12',
+      ),
+    ).toBeGreaterThan(0);
+    expect(
+      clearanceInsideRing(
+        badgeRadius.secondary,
+        canvasType.secondaryBadgeCount,
+        secondary,
+        '12',
+      ),
+    ).toBeGreaterThan(0);
   });
 });
 
