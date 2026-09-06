@@ -178,9 +178,16 @@ export function ThreatPanel({
   const refused =
     (threat: Threat) =>
     (refusal: RefusedField | undefined): void => {
-      setDraft(
-        refusal === undefined ? undefined : { threatId: threat.id, ...refusal },
-      );
+      const next =
+        refusal === undefined ? undefined : { threatId: threat.id, ...refusal };
+      setDraft(next);
+      if (element !== undefined) {
+        if (next === undefined) {
+          drafts.delete(element.id);
+        } else {
+          drafts.set(element.id, next);
+        }
+      }
       if (refusal !== undefined) {
         setAnnounced('');
       }
