@@ -1,19 +1,11 @@
 import {
   darkPalette,
   lightPalette,
-  type Colour,
+  rgbColour,
   type Palette,
 } from '@panoptes/canvas';
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { nodeNamed, openEcluse } from './studio.fixtures.js';
-
-/** A token as a browser reports it back out of a computed style. */
-const rendered = (colour: Colour): string => {
-  const [red, green, blue] = [1, 3, 5].map((at) =>
-    parseInt(colour.slice(at, at + 2), 16),
-  );
-  return `rgb(${red}, ${green}, ${blue})`;
-};
 
 /** What the diagram is drawn on, which the studio's own CSS module colours. */
 const ground = (page: Page): Locator => page.getByTestId('canvas-container');
@@ -34,11 +26,11 @@ const outline = (page: Page): Locator =>
 const drawnFrom = async (page: Page, palette: Palette): Promise<void> => {
   await expect(ground(page)).toHaveCSS(
     'background-color',
-    rendered(palette.surfaceCanvas),
+    rgbColour(palette.surfaceCanvas),
   );
   await expect(outline(page)).toHaveCSS(
     'stroke',
-    rendered(palette.textPrimary),
+    rgbColour(palette.textPrimary),
   );
 };
 

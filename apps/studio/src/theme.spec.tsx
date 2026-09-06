@@ -86,6 +86,8 @@ describe('DesignTokens', () => {
   });
 
   it('overrides them under the system dark preference, which is the whole of the mode switch', () => {
+    expect(stylesheet()).toContain(darkScheme);
+
     const [root, dark] = stylesheet().split(darkScheme);
     expect(colourDeclarations(dark)).toEqual(colourDeclarations(root));
   });

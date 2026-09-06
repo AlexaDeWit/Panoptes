@@ -33,6 +33,7 @@ describe('the package barrel', () => {
       'focusRing',
       'contrastRatio',
       'channelDistance',
+      'rgbColour',
       'badgesByElement',
       'badgeAnchor',
       'badgeExtent',

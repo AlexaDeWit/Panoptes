@@ -45,9 +45,12 @@ The two washes, the badge ground and the five tones are the diagram's own
 colours rather than the chrome's. No control here reads them: they are
 declared because the canvas stylesheet the studio injects is written in these
 properties, which is how the diagram follows the mode
-([the canvas](../canvas/README.md)). Every role in the palette has a property
-whether a control reads it yet or not, so the light and the dark block stay
-one list.
+([the canvas](../canvas/README.md)). Four rows are read from both sides:
+`--pn-colour-surface-raised` is a panel in the chrome and the fill inside
+every element outline on the diagram, `--pn-colour-canvas` is the ground and
+the halo cut under a flow name, and the two inks letter and draw the diagram
+as well as the chrome. Every role in the palette has a property whether a
+control reads it yet or not, so the light and the dark block stay one list.
 
 A control never suppresses the focus indicator and never invents its own: it
 applies the focus tokens in `:focus-visible`, swapping the ring's colour only

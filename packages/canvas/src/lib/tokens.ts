@@ -206,12 +206,6 @@ export const focusRing = {
   offset: '2px',
 } as const;
 
-/**
- * The custom property each colour role is published as. One table for the two
- * `:root` blocks below and for the canvas sheet the studio injects, so a role
- * reaches the chrome and the diagram under one name and a role added to
- * {@link Palette} is a compile error until it has one.
- */
 const colourProperties = {
   surfaceApp: '--pn-colour-surface',
   surfaceCanvas: '--pn-colour-canvas',
@@ -236,7 +230,10 @@ const colourProperties = {
 /**
  * How a stylesheet inside a document names one colour role: the custom
  * property carrying it rather than a value, so the rule draws with whichever
- * table the document root resolved.
+ * table the document root resolved. The names have one home, the table this
+ * reads, which the two `:root` blocks below are written from as well, and
+ * that table is total over the roles, so a role added to {@link Palette} does
+ * not compile until it has been named a property.
  */
 export function paletteProperty(role: keyof Palette): string {
   return `var(${colourProperties[role]})`;
@@ -311,6 +308,16 @@ const relativeLuminance = (colour: Colour): number => {
 export function contrastRatio(one: Colour, other: Colour): number {
   const [first, second] = [relativeLuminance(one), relativeLuminance(other)];
   return (Math.max(first, second) + 0.05) / (Math.min(first, second) + 0.05);
+}
+
+/**
+ * One colour as a browser writes it back out of a computed style, which is
+ * `rgb(r, g, b)` over the same channels. A spec that reads a rendered colour
+ * compares against this rather than against the hex a sheet was written in.
+ */
+export function rgbColour(colour: Colour): string {
+  const [red, green, blue] = channels(colour);
+  return `rgb(${red}, ${green}, ${blue})`;
 }
 
 /**

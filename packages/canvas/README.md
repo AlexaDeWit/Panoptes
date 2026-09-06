@@ -69,9 +69,10 @@ SVG, and the studio injects `themedCanvasStylesheet`, the same sheet with
 every colour written as the custom property that carries it. One function over
 its colours writes both, so a rule reaches the two of them or neither. A
 renamed class is a compile error for every consumer, and the suite checks that
-the sheet and the primitives name exactly the same set of classes. Interactive states join as
-further classes in the same sheet. Every value in that sheet comes out of the
-token module below rather than out of the sheet itself.
+the sheet and the primitives name exactly the same set of classes.
+Interactive states join as further classes in the same sheet. Every value in
+that sheet comes out of the token module below rather than out of the sheet
+itself.
 
 **Attachment is fixed side-midpoint handles.** Every element the canvas draws
 as a box exposes four handles, `top`, `right`, `bottom` and `left`, at the
@@ -234,6 +235,9 @@ badge is drawn over an element as readily as beside one. So the palette is
 measured rather than read, and a value moved by hand fails the suite with the
 ratio it reached. `channelDistance` is the coarse floor under the five tones,
 which catches two collapsing onto one shade and claims nothing more.
+`rgbColour` is those same channels written the way a browser serializes a
+computed style, which is how a browser spec holds what it read against a
+token rather than against a literal.
 
 The grid line is measured on a band rather than against a floor, at least 1.3
 and at most 1.6 on the canvas ground it is drawn over. It is the one role with

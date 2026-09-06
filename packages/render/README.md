@@ -26,10 +26,11 @@ element, and the diagram's glyphs in painting order, and it ends in a newline
 so the bytes are a text file. That stylesheet is the canvas package's resolved
 one, every colour a value from the light table: the studio has an app root
 carrying custom properties and follows the system colour scheme through them,
-where these bytes have nothing around them to resolve a property against. Nothing else is in it: no script, no external
-stylesheet, no font file, no reference of any kind to anything outside the
-document. The bytes therefore open on their own, embed in a PDF, and survive
-a content policy that forbids fetching.
+where these bytes have nothing around them to resolve a property against.
+Nothing else is in it: no script, no external stylesheet, no font file, no
+reference of any kind to anything outside the document. The bytes therefore
+open on their own, embed in a PDF, and survive a content policy that forbids
+fetching.
 
 The viewBox is the layout's bounds grown by a margin of 8 on every side, and
 `width` and `height` are that box. The canvas measures those bounds over

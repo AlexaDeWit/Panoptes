@@ -133,12 +133,14 @@ describe('tokenStylesheet', () => {
 
   it('publishes the light table on the document root, a property per role', () => {
     expect(tokenStylesheet.startsWith(':root {')).toBe(true);
+    expect(tokenStylesheet).toContain(darkScheme);
     expect(root).toContain(lightPalette.surfaceApp);
     expect(root).not.toContain(darkPalette.surfaceApp);
     expect(propertiesOf(root).size).toBe(Object.keys(lightPalette).length);
   });
 
   it('overrides those same properties from the dark table under the system preference', () => {
+    expect(dark).toBeDefined();
     expect(dark).toContain(darkPalette.surfaceApp);
     expect(propertiesOf(dark)).toEqual(propertiesOf(root));
   });
