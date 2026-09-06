@@ -1,4 +1,4 @@
-import type { ThreatDragonDocument } from '@panoptes/wire-threat-dragon';
+import type { ThreatDragonDocument } from '@saerskriven/wire-threat-dragon';
 import { Either } from 'effect';
 import {
   allCells,

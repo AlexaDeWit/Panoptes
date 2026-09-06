@@ -38,7 +38,7 @@ describe(
     it('names the page for a reader without drawing a title bar over the canvas', () => {
       render(<App />);
       expect(screen.getByRole('heading', { level: 1 }).textContent).toBe(
-        'Panoptes',
+        'Saerskriven',
       );
     });
 

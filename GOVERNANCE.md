@@ -1,9 +1,9 @@
 # Governance
 
-How decisions on Panoptes get made today, and how that can change. This is the
+How decisions on Saerskriven get made today, and how that can change. This is the
 current state, not an aspirational structure the project doesn't yet have.
 
-Panoptes is, right now, entirely the project of a single maintainer, me,
+Saerskriven is, right now, entirely the project of a single maintainer, me,
 [Alexandra de Wit (@AlexaDeWit)](https://github.com/AlexaDeWit). So governance
 is deliberately simple: a **benevolent-dictator (BDFL) model**.
 
@@ -34,6 +34,6 @@ a healthier bus factor.
 
 ## Continuity
 
-Panoptes is Apache-2.0 licensed: if I become unavailable, anyone may fork and
+Saerskriven is Apache-2.0 licensed: if I become unavailable, anyone may fork and
 continue the project without permission. Reducing the project's reliance on
 one person is an explicit goal as the project matures.

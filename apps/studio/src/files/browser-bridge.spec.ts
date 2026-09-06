@@ -8,7 +8,7 @@ import { chosenFile } from './files.fixtures.js';
 
 const types: readonly SaveFileType[] = [
   {
-    description: 'Panoptes YAML',
+    description: 'Saerskriven YAML',
     accept: { 'application/yaml': ['.yaml', '.yml'] },
   },
   {

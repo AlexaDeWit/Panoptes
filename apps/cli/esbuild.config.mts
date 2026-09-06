@@ -23,7 +23,7 @@ const resolve = createRequire(import.meta.url);
 // liberation_ttf. The fonts are a toolchain input rather than something the
 // tree carries, so their provenance is the nixpkgs revision flake.lock pins
 // (CODING.md, Dependencies and versions).
-const fontsVariable = 'PANOPTES_FONTS_DIR';
+const fontsVariable = 'SAERSKRIVEN_FONTS_DIR';
 
 // Named one at a time rather than copied wholesale: liberation_ttf ships
 // twelve faces, src/pdf.ts loads every .ttf it finds beside the bundle, and a
@@ -47,13 +47,13 @@ const licenceFile = 'LICENSE';
 
 const licenceName = 'LICENSE.liberation-fonts.txt';
 
-// Resolved from @panoptes/render, which declares the compiler, rather than
+// Resolved from @saerskriven/render, which declares the compiler, rather than
 // from this app, which no longer does (CODING.md, Dependencies and versions;
 // issue #210). The file staged beside the bundle is then the module of the
 // compiler build that render's pdf subpath inlines, which is the pairing
 // initSync needs.
 const fromRender = createRequire(
-  resolve.resolve('@panoptes/render/package.json'),
+  resolve.resolve('@saerskriven/render/package.json'),
 );
 
 const wasmModule = fromRender.resolve(
@@ -75,7 +75,7 @@ const fontsDirectory = (): string => {
   const configured = process.env[fontsVariable];
   return configured === undefined || configured === ''
     ? refuse(
-        `${fontsVariable} is unset, so this build has no fonts for the CLI to typeset with. Run it inside the flake shell, which exports them: nix develop --command pnpm nx build @panoptes/cli`,
+        `${fontsVariable} is unset, so this build has no fonts for the CLI to typeset with. Run it inside the flake shell, which exports them: nix develop --command pnpm nx build @saerskriven/cli`,
       )
     : configured;
 };
@@ -131,7 +131,7 @@ type EsbuildPlugin = {
 };
 
 const copyRuntimeAssets = {
-  name: 'panoptes-runtime-assets',
+  name: 'saerskriven-runtime-assets',
   setup(build: EsbuildPlugin): void {
     build.onEnd(() => {
       const { outfile, outdir } = build.initialOptions;

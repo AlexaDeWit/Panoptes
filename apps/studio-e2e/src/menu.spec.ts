@@ -45,7 +45,7 @@ test('save as asks the format in the menu where the browser has no picker of its
   await expect(page.getByRole('menuitem')).toHaveText([
     'Open a modelCtrl+O',
     'SaveCtrl+S',
-    'Save as Panoptes YAML',
+    'Save as Saerskriven YAML',
     'Save as Threat Dragon JSON',
     'Close the fileCtrl+Shift+X',
     'UndoCtrl+Z',
@@ -54,12 +54,12 @@ test('save as asks the format in the menu where the browser has no picker of its
     'Delete the selectionDelete or Backspace',
   ]);
 
-  const written = await savedFromMenu(page, 'Save as Panoptes YAML');
+  const written = await savedFromMenu(page, 'Save as Saerskriven YAML');
 
   expect(written.name).toBe('threat-model.yaml');
   await openMenu(page);
   await expect(page.getByTestId('file-state')).toHaveText(
-    'threat-model.yaml, Panoptes YAML, no unsaved changes',
+    'threat-model.yaml, Saerskriven YAML, no unsaved changes',
   );
 });
 
@@ -120,14 +120,14 @@ test('the button marks unsaved work, and the menu says so in words', async ({
   await expect(menuButton(page)).toHaveAccessibleName('Menu, unsaved changes');
   await openMenu(page);
   await expect(page.getByTestId('file-state')).toHaveText(
-    'Untitled, Panoptes YAML, unsaved changes',
+    'Untitled, Saerskriven YAML, unsaved changes',
   );
 });
 
 test('closing asks in the menu before it drops work that is in no file', async ({
   page,
 }) => {
-  await openFile(page, 'test-data/panoptes/ecluse.yaml');
+  await openFile(page, 'test-data/saerskriven/ecluse.yaml');
   await expect(elementNodes(page)).toHaveCount(18);
   await page.getByRole('button', { name: 'New actor', exact: true }).click();
   await expect(elementNodes(page)).toHaveCount(19);
@@ -162,14 +162,14 @@ test('closing asks in the menu before it drops work that is in no file', async (
   await expect(nodeNamed(page, /^Actor, actor/u)).toHaveCount(1);
   await openMenu(page);
   await expect(page.getByTestId('file-state')).toHaveText(
-    'Untitled, Panoptes YAML, no unsaved changes',
+    'Untitled, Saerskriven YAML, no unsaved changes',
   );
 });
 
 test('closing a file that holds everything on screen takes no second press', async ({
   page,
 }) => {
-  await openFile(page, 'test-data/panoptes/ecluse.yaml');
+  await openFile(page, 'test-data/saerskriven/ecluse.yaml');
   await expect(elementNodes(page)).toHaveCount(18);
 
   await runFromMenu(page, 'Close the file');
@@ -178,7 +178,7 @@ test('closing a file that holds everything on screen takes no second press', asy
   await expect(elementNodes(page)).toHaveCount(2);
   await openMenu(page);
   await expect(page.getByTestId('file-state')).toHaveText(
-    'Untitled, Panoptes YAML, no unsaved changes',
+    'Untitled, Saerskriven YAML, no unsaved changes',
   );
 });
 

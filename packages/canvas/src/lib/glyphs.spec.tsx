@@ -1,4 +1,4 @@
-import { elementId } from '@panoptes/model/fixtures';
+import { elementId } from '@saerskriven/model/fixtures';
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { renderToStaticMarkup } from 'react-dom/server';
@@ -11,7 +11,7 @@ import {
   wrappedTextStyles,
 } from './stylesheet.js';
 import { badgeExtent, type ThreatBadge } from './badges.js';
-import type { Point } from '@panoptes/model';
+import type { Point } from '@saerskriven/model';
 import { segmentMeetsBox, type Box } from './geometry.js';
 import { flowLabelPlacements } from './label-placement.js';
 import {

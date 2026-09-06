@@ -1,4 +1,4 @@
-import type { ElementId } from '@panoptes/model';
+import type { ElementId } from '@saerskriven/model';
 import { initialState } from '../store/state.js';
 import { modelStore } from '../store/store.js';
 import {

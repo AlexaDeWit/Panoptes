@@ -1,13 +1,13 @@
 # Cutting a release
 
-The procedure for shipping a version of Panoptes: what the version number is,
+The procedure for shipping a version of Saerskriven: what the version number is,
 who moves it, and what turns it into downloadable executables.
 
 ## What decides the version
 
 One number for the whole workspace. The root [`package.json`](../package.json)
 carries it, every project's manifest carries the same one, and the CLI build
-stamps it into the executable, so `panoptes --version` and the tag cannot
+stamps it into the executable, so `saerskriven --version` and the tag cannot
 disagree.
 
 `nx release` writes that number. It reads the [Conventional
@@ -100,7 +100,7 @@ wherever the squash left it, since a squash merge concatenates the branch's
 commit messages and the declaration lands in the middle of what reaches main.
 Nothing is committed beyond that: the packages that publish no attestation at
 all are printed as the residual, and that list is what a release accepts and
-what Panoptes' own threat model names.
+what Saerskriven's own threat model names.
 
 The CI gate runs the same check on this tag, and on a pull request whenever
 `pnpm-lock.yaml` or `pnpm-workspace.yaml` changed, which is where a bump
@@ -168,11 +168,11 @@ be moved and a stopped release would leave the version unshippable.
 
 Download one executable from the release page, verify it against
 `SHA256SUMS`, check its provenance with both flags, and run
-`panoptes --version`:
+`saerskriven --version`:
 
 ```sh
-gh attestation verify panoptes-* --repo AlexaDeWit/Panoptes \
-  --signer-workflow AlexaDeWit/Panoptes/.github/workflows/ci.yml
+gh attestation verify saerskriven-* --repo AlexaDeWit/Saerskriven \
+  --signer-workflow AlexaDeWit/Saerskriven/.github/workflows/ci.yml
 ```
 
 The
@@ -211,9 +211,9 @@ Each command is followed by what it printed on 2026-09-04, with the settings
 applied.
 
 ```sh
-for id in $(gh api repos/AlexaDeWit/Panoptes/rulesets \
+for id in $(gh api repos/AlexaDeWit/Saerskriven/rulesets \
               --jq '.[] | select(.target == "tag") | .id'); do
-  gh api "repos/AlexaDeWit/Panoptes/rulesets/$id" \
+  gh api "repos/AlexaDeWit/Saerskriven/rulesets/$id" \
     --jq '{name, rules: [.rules[].type], bypass_actors}'
 done
 ```
@@ -227,11 +227,11 @@ Tag Integrity's empty bypass is the part to watch: a bypass actor there, or a
 `creation` rule, would mean the two rulesets had been folded together.
 
 ```sh
-gh api repos/AlexaDeWit/Panoptes/environments/release \
+gh api repos/AlexaDeWit/Saerskriven/environments/release \
   --jq '{name, protection_rules: [.protection_rules[].type],
          deployment_branch_policy}'
 gh api \
-  repos/AlexaDeWit/Panoptes/environments/release/deployment-branch-policies \
+  repos/AlexaDeWit/Saerskriven/environments/release/deployment-branch-policies \
   --jq '[.branch_policies[] | {id, name, type}]'
 ```
 
@@ -244,7 +244,7 @@ gh api \
 required; a `required_reviewers` entry would appear there.
 
 ```sh
-gh api repos/AlexaDeWit/Panoptes/actions/permissions/workflow \
+gh api repos/AlexaDeWit/Saerskriven/actions/permissions/workflow \
   --jq '{default_workflow_permissions, can_approve_pull_request_reviews}'
 ```
 
@@ -289,7 +289,7 @@ replace that:
   layout deno reads before reaching for the network.
 - **The fonts come from a pin too.** The five Liberation faces a PDF is
   typeset with are not committed: `apps/cli/esbuild.config.mts` copies them
-  into `apps/cli/dist/assets` from `PANOPTES_FONTS_DIR`, which both dev shells
+  into `apps/cli/dist/assets` from `SAERSKRIVEN_FONTS_DIR`, which both dev shells
   export from the pinned nixpkgs' `liberation_ttf`, so their provenance is the
   `nixpkgs` revision in `flake.lock`. `scripts/package-cli.sh` prints each
   staged font's SHA-256, and their licence's, beside the bundle's, so a
@@ -363,7 +363,7 @@ Anyone can run this:
 ```sh
 git switch --detach "v<version>"
 nix develop --command pnpm install --frozen-lockfile
-nix develop --command pnpm nx build @panoptes/cli
+nix develop --command pnpm nx build @saerskriven/cli
 nix develop --command scripts/package-cli.sh
 ```
 

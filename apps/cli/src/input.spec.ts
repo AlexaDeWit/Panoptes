@@ -1,4 +1,8 @@
-import { DetectionFailure, ReadFailure, readLimits } from '@panoptes/formats';
+import {
+  DetectionFailure,
+  ReadFailure,
+  readLimits,
+} from '@saerskriven/formats';
 import { Either } from 'effect';
 import { mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -17,7 +21,7 @@ import {
 
 const repositoryRoot = join(import.meta.dirname, '../../..');
 
-const directory = mkdtempSync(join(tmpdir(), 'panoptes-cli-input-'));
+const directory = mkdtempSync(join(tmpdir(), 'saerskriven-cli-input-'));
 
 const refusedModel = (err: string) => Either.left({ code: 1, out: '', err });
 
@@ -140,11 +144,11 @@ describe('why a read produced nothing', () => {
     expect(
       describeReadFailure(
         DetectionFailure.NoFormatClaimed({
-          tried: ['threat-dragon', 'panoptes-yaml'],
+          tried: ['threat-dragon', 'saerskriven-yaml'],
         }),
       ),
     ).toEqual(
-      'No format claimed the file. Panoptes tried threat-dragon, panoptes-yaml.\n',
+      'No format claimed the file. Saerskriven tried threat-dragon, saerskriven-yaml.\n',
     );
   });
 });

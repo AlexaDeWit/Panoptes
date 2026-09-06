@@ -1,4 +1,4 @@
-import { flowEndNodeId, layoutDiagram } from '@panoptes/canvas';
+import { flowEndNodeId, layoutDiagram } from '@saerskriven/canvas';
 import {
   boundaryElement,
   canvasModel,

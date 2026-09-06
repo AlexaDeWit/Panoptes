@@ -1,5 +1,5 @@
-import type { CanvasFlowEdge, CanvasNode } from '@panoptes/canvas';
-import type { ElementId } from '@panoptes/model';
+import type { CanvasFlowEdge, CanvasNode } from '@saerskriven/canvas';
+import type { ElementId } from '@saerskriven/model';
 import type { Connection, Edge, EdgeChange, NodeChange } from '@xyflow/react';
 import { Action } from '../store/actions.js';
 import { dispatch, modelStore } from '../store/store.js';

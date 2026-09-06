@@ -4,8 +4,8 @@ import type {
   CanvasNode,
   CanvasNodeKind,
   ThreatBadge,
-} from '@panoptes/canvas';
-import type { ElementId } from '@panoptes/model';
+} from '@saerskriven/canvas';
+import type { ElementId } from '@saerskriven/model';
 
 const kindWords = {
   actor: 'actor',

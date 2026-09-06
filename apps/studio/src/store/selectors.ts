@@ -1,8 +1,8 @@
-import type { DiagramId, Element, ElementId, Model } from '@panoptes/model';
+import type { DiagramId, Element, ElementId, Model } from '@saerskriven/model';
 import { nameOf } from '../files/session.js';
 import { FileLifecycle, placeholderModel, type State } from './state.js';
 
-const productName = 'Panoptes';
+const productName = 'Saerskriven';
 
 /**
  * The model on screen is not the model the file holds. It is identity, not a

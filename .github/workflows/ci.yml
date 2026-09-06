@@ -103,7 +103,7 @@ jobs:
       # suite rather than drop a runner in silence.
       - name: Run the CLI tests against the compiled executable
         if: ${{ !startsWith(github.ref, 'refs/tags/v') }}
-        run: nix develop .#ci --command env PANOPTES_COMPILED_RUNNER=required pnpm nx test @panoptes/cli --skip-nx-cache
+        run: nix develop .#ci --command env SAERSKRIVEN_COMPILED_RUNNER=required pnpm nx test @saerskriven/cli --skip-nx-cache
 
       - name: Compile every target and run the host one
         if: startsWith(github.ref, 'refs/tags/v')
@@ -120,7 +120,7 @@ jobs:
           TAG: ${{ github.ref_name }}
         run: |
           version="${TAG#v}"
-          reported="$("./dist/cli/panoptes-${version}-x86_64-unknown-linux-gnu" --version)"
+          reported="$("./dist/cli/saerskriven-${version}-x86_64-unknown-linux-gnu" --version)"
           if [ "$reported" != "$version" ]; then
             echo "the executable reports ${reported}, the tag names ${version}" >&2
             exit 1
@@ -220,7 +220,7 @@ jobs:
           save-nix-store: 'false'
 
       - name: Run the smoke suite
-        run: nix develop .#ci --command pnpm nx e2e @panoptes/studio-e2e
+        run: nix develop .#ci --command pnpm nx e2e @saerskriven/studio-e2e
 
   # Whether this run touches the files that decide the dependency tree. The
   # provenance job below reaches the npm registry, so it runs when one of
@@ -378,7 +378,7 @@ jobs:
 
   # A provenance attestation over every file the release will carry, so
   # anyone can check an asset was built by this workflow, on this repository,
-  # at this commit: `gh attestation verify <asset> --repo AlexaDeWit/Panoptes`
+  # at this commit: `gh attestation verify <asset> --repo AlexaDeWit/Saerskriven`
   # (issue #114, and the README's install section).
   #
   # The event is tested as well as the ref: this workflow accepts
@@ -413,7 +413,7 @@ jobs:
         uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
           subject-path: |
-            cli/panoptes-*
+            cli/saerskriven-*
             cli/SHA256SUMS
 
   # A release, made only when the gate above is green on a v* tag and every
@@ -495,12 +495,12 @@ jobs:
           TAG: ${{ github.ref_name }}
         run: |
           if gh release view "$TAG" >/dev/null 2>&1; then
-            gh release upload "$TAG" --clobber cli/panoptes-* cli/SHA256SUMS
+            gh release upload "$TAG" --clobber cli/saerskriven-* cli/SHA256SUMS
           else
             notes=(--generate-notes)
             if [ -s release-notes.md ]; then
               notes=(--notes-file release-notes.md)
             fi
             gh release create "$TAG" --title "$TAG" --verify-tag \
-              "${notes[@]}" cli/panoptes-* cli/SHA256SUMS
+              "${notes[@]}" cli/saerskriven-* cli/SHA256SUMS
           fi

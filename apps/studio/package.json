@@ -1,11 +1,11 @@
 {
-  "name": "@panoptes/studio",
+  "name": "@saerskriven/studio",
   "version": "0.0.1",
   "private": true,
   "dependencies": {
-    "@panoptes/canvas": "workspace:*",
-    "@panoptes/formats": "workspace:*",
-    "@panoptes/model": "workspace:*",
+    "@saerskriven/canvas": "workspace:*",
+    "@saerskriven/formats": "workspace:*",
+    "@saerskriven/model": "workspace:*",
     "@xyflow/react": "catalog:",
     "effect": "catalog:",
     "radix-ui": "catalog:",

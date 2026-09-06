@@ -1,6 +1,6 @@
 import { Either } from 'effect';
 import { readFailureIssues } from './codec.js';
-import { readPanoptesYaml } from './panoptes-yaml-read.js';
+import { readSaerskrivenYaml } from './saerskriven-yaml-read.js';
 
 const minimalDocument = [
   'formatVersion: 1',
@@ -65,12 +65,12 @@ const withExtras = `${oneThreatDocument.replace(
 )}notes: kept nowhere\n`;
 
 function readingOf(text: string) {
-  const result = readPanoptesYaml(text);
+  const result = readSaerskrivenYaml(text);
   return Either.isRight(result) ? result.right : undefined;
 }
 
 function failureOf(text: string) {
-  const result = readPanoptesYaml(text);
+  const result = readSaerskrivenYaml(text);
   return Either.isLeft(result) ? result.left : undefined;
 }
 
@@ -81,7 +81,7 @@ function issuePathsOf(text: string) {
     : readFailureIssues(failure).map((issue) => issue.path);
 }
 
-describe('a Panoptes YAML read', () => {
+describe('a Saerskriven YAML read', () => {
   it('refuses a file with no formatVersion at that path', () => {
     const without = minimalDocument.replace('formatVersion: 1\n', '');
     expect(failureOf(without)?._tag).toBe('InvalidWireDocument');

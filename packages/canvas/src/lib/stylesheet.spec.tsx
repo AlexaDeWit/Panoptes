@@ -1,4 +1,4 @@
-import { severitySchema } from '@panoptes/model';
+import { severitySchema } from '@saerskriven/model';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { everyGlyphModel } from './canvas.fixtures.js';
 import { layoutDiagram } from './layout.js';

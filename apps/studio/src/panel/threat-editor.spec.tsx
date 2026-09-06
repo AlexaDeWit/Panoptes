@@ -1,4 +1,4 @@
-import type { Threat } from '@panoptes/model';
+import type { Threat } from '@saerskriven/model';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Accordion } from 'radix-ui';

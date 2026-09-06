@@ -1,5 +1,5 @@
 {
-  description = "panoptes: threat modelling studio";
+  description = "saerskriven: threat modelling studio";
 
   inputs = {
     # Single pinned nixpkgs: every tool comes from this one set.
@@ -23,12 +23,12 @@
 
           # The fonts the CLI typesets a PDF with, pinned by this flake's
           # nixpkgs revision rather than committed to the tree: a binary
-          # Panoptes did not author is a toolchain input (CODING.md,
+          # Saerskriven did not author is a toolchain input (CODING.md,
           # Dependencies and versions). apps/cli/esbuild.config.mts reads the
           # faces it needs by name from here, takes the licence from the same
           # store path, and refuses to build without this variable rather than
           # writing an executable that cannot typeset.
-          PANOPTES_FONTS_DIR = "${pkgs.liberation_ttf}/share/fonts/truetype";
+          SAERSKRIVEN_FONTS_DIR = "${pkgs.liberation_ttf}/share/fonts/truetype";
         };
 
         # The runtimes only. The flake pins node and pnpm; pnpm-workspace.yaml
@@ -88,8 +88,8 @@
         # rather than added to PATH, where util-linux would shadow tools
         # coreutils already provides.
         denortEnv = {
-          PANOPTES_DENORT_CACHE = denortCache;
-          PANOPTES_UNSHARE = "${pkgs.util-linux}/bin/unshare";
+          SAERSKRIVEN_DENORT_CACHE = denortCache;
+          SAERSKRIVEN_UNSHARE = "${pkgs.util-linux}/bin/unshare";
         };
 
         # Workflow linters. CI's static-checks job gates on these, and they
@@ -125,14 +125,14 @@
         devShells = {
           # The shell every CI job enters: one closure, one cache entry.
           ci = pkgs.mkShell (shellEnv // playwrightEnv // denortEnv // {
-            name = "panoptes-ci";
+            name = "saerskriven-ci";
             buildInputs = toolchainInputs ++ workflowLintInputs ++ sastInputs;
           });
 
           # The shell for humans. Currently identical to ci; interactive-only
           # tooling joins here, never in ci, so CI's closure stays lean.
           default = pkgs.mkShell (shellEnv // playwrightEnv // denortEnv // {
-            name = "panoptes";
+            name = "saerskriven";
             buildInputs = toolchainInputs ++ workflowLintInputs ++ sastInputs;
           });
         };

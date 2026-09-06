@@ -7,8 +7,8 @@ import {
   type CanvasFreeEndNode,
   type CanvasLayout,
   type CanvasNode,
-} from '@panoptes/canvas';
-import type { ElementId } from '@panoptes/model';
+} from '@saerskriven/canvas';
+import type { ElementId } from '@saerskriven/model';
 import { flowEnds } from './elements.js';
 import { accessibleNames } from './names.js';
 

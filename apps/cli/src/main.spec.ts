@@ -39,7 +39,7 @@ type Scenario = {
 
 const repositoryRoot = join(import.meta.dirname, '../../..');
 
-const directory = mkdtempSync(join(tmpdir(), 'panoptes-cli-main-'));
+const directory = mkdtempSync(join(tmpdir(), 'saerskriven-cli-main-'));
 
 const bundlePath = join(repositoryRoot, 'apps/cli/dist/main.js');
 
@@ -60,7 +60,7 @@ const hostTarget = (): string | undefined => {
 const executablePath = join(
   repositoryRoot,
   'dist/cli',
-  `panoptes-${cliVersion}-${hostTarget() ?? 'unknown-host-target'}`,
+  `saerskriven-${cliVersion}-${hostTarget() ?? 'unknown-host-target'}`,
 );
 
 const compiled: Runner = {
@@ -123,23 +123,23 @@ const scenarios: readonly Scenario[] = [
   },
   {
     name: 'validates the same model in the native format',
-    args: ['validate', 'test-data/panoptes/ecluse.yaml'],
+    args: ['validate', 'test-data/saerskriven/ecluse.yaml'],
     code: 0,
-    out: 'panoptes-yaml: 1 diagram, 38 elements, 29 threats\n',
+    out: 'saerskriven-yaml: 1 diagram, 38 elements, 29 threats\n',
     err: '',
   },
   {
-    name: "validates Panoptes' own threat model",
-    args: ['validate', 'threat-modelling/panoptes.yaml'],
+    name: "validates Saerskriven's own threat model",
+    args: ['validate', 'threat-modelling/saerskriven.yaml'],
     code: 0,
-    out: 'panoptes-yaml: 2 diagrams, 37 elements, 25 threats\n',
+    out: 'saerskriven-yaml: 2 diagrams, 37 elements, 25 threats\n',
     err: '',
   },
   {
     name: 'warns about what a read dropped, and still succeeds',
     args: ['validate', undeclaredFile],
     code: 0,
-    out: 'panoptes-yaml: 0 diagrams, 0 elements, 1 threat\n',
+    out: 'saerskriven-yaml: 0 diagrams, 0 elements, 1 threat\n',
     err:
       'warning: the file and the model do not correspond exactly.\n' +
       'model: the key nonsense (not declared by the wire schema)\n',
@@ -192,7 +192,7 @@ describe('the CLI as it is packaged', () => {
 
   it('has the compiled executable wherever the environment demands one', () => {
     expect(
-      process.env.PANOPTES_COMPILED_RUNNER === 'required'
+      process.env.SAERSKRIVEN_COMPILED_RUNNER === 'required'
         ? compiled.absence
         : undefined,
     ).toBeUndefined();
@@ -216,7 +216,7 @@ for (const runner of runners) {
         const result = text(runner, []);
         expect(result.code).toEqual(2);
         expect(result.out).toEqual('');
-        expect(result.err).toContain('Usage: panoptes [options] [command]');
+        expect(result.err).toContain('Usage: saerskriven [options] [command]');
       });
 
       it('writes the register of the Écluse fixture as the golden file', () => {
@@ -364,7 +364,7 @@ for (const runner of runners) {
         expect(
           text(runner, [
             'render',
-            'threat-modelling/panoptes.yaml',
+            'threat-modelling/saerskriven.yaml',
             '--format',
             'svg',
             '--out',
@@ -382,16 +382,16 @@ for (const runner of runners) {
 
       it('draws each diagram a model of several names', () => {
         const chosen = [
-          ['read-and-render', 'panoptes-read-and-render.snapshot.svg'],
+          ['read-and-render', 'saerskriven-read-and-render.snapshot.svg'],
           [
             'Agents and the desktop shell',
-            'panoptes-agent-and-desktop.snapshot.svg',
+            'saerskriven-agent-and-desktop.snapshot.svg',
           ],
         ];
         for (const [name, file] of chosen) {
           const result = ran(runner, [
             'render',
-            'threat-modelling/panoptes.yaml',
+            'threat-modelling/saerskriven.yaml',
             '--format',
             'svg',
             '--out',

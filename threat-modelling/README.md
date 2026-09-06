@@ -1,8 +1,8 @@
 # threat-modelling
 
-Panoptes' own threat model, in Panoptes' own format.
+Saerskriven's own threat model, in Saerskriven's own format.
 
-## `panoptes.yaml`
+## `saerskriven.yaml`
 
 Two diagrams. `read-and-render` is the path a model file takes from disk
 through the codecs into a register or a diagram. `agent-and-desktop` is the
@@ -33,19 +33,19 @@ rather than read out of Threat Dragon's.
 
 ## Where it gates
 
-| Suite              | What it holds the file to                                                                               |
-| ------------------ | ------------------------------------------------------------------------------------------------------- |
-| `packages/formats` | It reads with no divergence, it is its own golden, and it is opened as Panoptes YAML without being told |
-| `packages/formats` | No read bound refuses it, alongside the Écluse file and the Threat Dragon corpus                        |
-| `packages/render`  | `test-data/render/panoptes.register.snapshot.md` is its threat register                                 |
-| `packages/render`  | One standalone SVG document per diagram, under `test-data/render/`                                      |
-| `packages/canvas`  | One committed scene per diagram, beside `scene.spec.tsx`                                                |
-| `apps/cli`         | `validate` counts its diagrams, elements and threats, and `render` draws a diagram named by id or title |
-| `apps/studio`      | It opens in the browser and saves back as the format it arrived in                                      |
+| Suite              | What it holds the file to                                                                                  |
+| ------------------ | ---------------------------------------------------------------------------------------------------------- |
+| `packages/formats` | It reads with no divergence, it is its own golden, and it is opened as Saerskriven YAML without being told |
+| `packages/formats` | No read bound refuses it, alongside the Écluse file and the Threat Dragon corpus                           |
+| `packages/render`  | `test-data/render/saerskriven.register.snapshot.md` is its threat register                                 |
+| `packages/render`  | One standalone SVG document per diagram, under `test-data/render/`                                         |
+| `packages/canvas`  | One committed scene per diagram, beside `scene.spec.tsx`                                                   |
+| `apps/cli`         | `validate` counts its diagrams, elements and threats, and `render` draws a diagram named by id or title    |
+| `apps/studio`      | It opens in the browser and saves back as the format it arrived in                                         |
 
 The formats, render and canvas suites read lists rather than paths, so a
 third model file joins every one of them by being added to `nativeFixtures`
-in `packages/formats/src/lib/panoptes-yaml.fixtures.ts`, and to the register,
+in `packages/formats/src/lib/saerskriven-yaml.fixtures.ts`, and to the register,
 document and scene lists in the render and canvas specs. Each diagram is
 drawn twice on purpose: the canvas golden is the glyphs alone, and the render
 golden is the SVG document composed around them. The two app suites name the
@@ -53,9 +53,9 @@ path.
 
 This file is its own golden, so `packages/formats` writes it back where it
 differs under `-u` or where it has gone missing. `apps/cli` and `apps/studio`
-read the bytes themselves and depend on `@panoptes/formats` through
+read the bytes themselves and depend on `@saerskriven/formats` through
 `workspace:*`, so `^test` orders the write ahead of both reads. The render
-and canvas rows above reach the model through `test-data/panoptes.model.json`
+and canvas rows above reach the model through `test-data/saerskriven.model.json`
 instead, which the same suite writes and which their manifests name the task
 for, the layer matrix allowing them no dependency on it
 ([`CODING.md`](../CODING.md), Build targets;
@@ -63,7 +63,7 @@ for, the layer matrix allowing them no dependency on it
 the files under it).
 
 `packages/formats` also writes this model out as
-`test-data/panoptes.model.json`, because the render and canvas suites gate on
+`test-data/saerskriven.model.json`, because the render and canvas suites gate on
 a model and the layer matrix keeps the codec out of their reach. Where that
 goes is a field on the same `nativeFixtures` entry, so a third file brings
 its own. Écluse names none: `test-data/ecluse.model.json` is written by
@@ -76,15 +76,15 @@ That file is derived. This one is the source.
 
 ## Editing it
 
-The committed bytes are what `writePanoptesYaml` produces, compared as a
+The committed bytes are what `writeSaerskrivenYaml` produces, compared as a
 vitest file snapshot against the file itself. A hand edit that leaves the
 writer's canonical form therefore reds the suite rather than passing. Edit the
 file, then regenerate it in the same commit:
 
 ```sh
-pnpm nx test @panoptes/formats -- -u    # canonical form, and the model JSON
-pnpm nx test @panoptes/render -- -u     # the register
-pnpm nx test @panoptes/canvas -- -u     # one SVG per diagram
+pnpm nx test @saerskriven/formats -- -u    # canonical form, and the model JSON
+pnpm nx test @saerskriven/render -- -u     # the register
+pnpm nx test @saerskriven/canvas -- -u     # one SVG per diagram
 ```
 
 Read every diff before committing. Each of those files is an output by

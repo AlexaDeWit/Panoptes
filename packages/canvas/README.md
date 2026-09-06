@@ -1,11 +1,11 @@
-# @panoptes/canvas
+# @saerskriven/canvas
 
 The drawing primitives a diagram is made of, shared by the interactive studio
 and by headless rendering: one glyph component per element kind, the flow edge
 and its path maths, the threat badges, the handle geometry, the text wrapping,
 the box, circle and segment arithmetic label placement is settled with, and
 one stylesheet. Everything is presentational and stateless, and every
-number it draws comes out of the model. Imports `@panoptes/model` and no other
+number it draws comes out of the model. Imports `@saerskriven/model` and no other
 internal package.
 
 React Flow renders a node as positioned HTML rather than as part of one SVG
@@ -313,7 +313,7 @@ at every magnitude, so one model gives one set of bytes on every run and
 platform. The suite pins that with a golden file per scene: the Écluse model,
 `test-data/every-glyph.model.json`, the model that draws one of everything,
 and each of the two diagrams of
-[Panoptes' own threat model](../../threat-modelling/README.md). The
+[Saerskriven's own threat model](../../threat-modelling/README.md). The
 every-glyph model lives beside Écluse because `packages/render` draws it too
 and the layer matrix allows no package dependency between the two readers.
 `scene.spec.tsx` holds the scenes as one list, so a further one joins every
@@ -417,4 +417,4 @@ the canvas draws as no box. The model allows an endpoint to name any element
 id, another flow's included, so a flow with such an end is left out of the
 layout and named in `unplaced` instead of being given invented geometry.
 
-Unit tests: `pnpm nx test @panoptes/canvas`.
+Unit tests: `pnpm nx test @saerskriven/canvas`.

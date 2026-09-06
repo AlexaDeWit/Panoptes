@@ -1,4 +1,4 @@
-import { severitySchema, type Severity } from '@panoptes/model';
+import { severitySchema, type Severity } from '@saerskriven/model';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 

@@ -1,9 +1,9 @@
 import {
-  panoptesYamlWireSchema,
-  type PanoptesYamlDocument,
-} from './panoptes-yaml-wire.js';
+  saerskrivenYamlWireSchema,
+  type SaerskrivenYamlDocument,
+} from './saerskriven-yaml-wire.js';
 
-const document: PanoptesYamlDocument = {
+const document: SaerskrivenYamlDocument = {
   formatVersion: 1,
   metadata: {
     title: 'One threat',
@@ -48,16 +48,16 @@ const document: PanoptesYamlDocument = {
 };
 
 function parsedOf(value: unknown) {
-  const result = panoptesYamlWireSchema.safeParse(value);
+  const result = saerskrivenYamlWireSchema.safeParse(value);
   return result.success ? result.data : undefined;
 }
 
 function issuePathsOf(value: unknown) {
-  const result = panoptesYamlWireSchema.safeParse(value);
+  const result = saerskrivenYamlWireSchema.safeParse(value);
   return result.success ? [] : result.error.issues.map((issue) => issue.path);
 }
 
-describe('the Panoptes YAML wire schema', () => {
+describe('the Saerskriven YAML wire schema', () => {
   it('reads a file of the release it declares', () => {
     expect(parsedOf(document)).toEqual(document);
   });

@@ -9,8 +9,8 @@ import {
   type Box,
   type CanvasNode,
   type TextPlacement,
-} from '@panoptes/canvas';
-import { emptyModel } from '@panoptes/model';
+} from '@saerskriven/canvas';
+import { emptyModel } from '@saerskriven/model';
 import {
   FileLifecycle,
   initialState,

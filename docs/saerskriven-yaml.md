@@ -1,16 +1,16 @@
-# The Panoptes YAML format
+# The Saerskriven YAML format
 
-Panoptes' own file format, version 1. Everything the internal model holds has
+Saerskriven's own file format, version 1. Everything the internal model holds has
 a place in the file and everything the file holds has a place in the model, so
 reading a file and writing it back changes nothing and neither direction
-reports a divergence. The other format Panoptes reads, Threat Dragon v2 JSON,
+reports a divergence. The other format Saerskriven reads, Threat Dragon v2 JSON,
 is somebody else's shape and does not have that property.
 
-The format is declared by `@panoptes/wire-panoptes-yaml`, a package of one
+The format is declared by `@saerskriven/wire-saerskriven-yaml`, a package of one
 zod schema that imports nothing but zod. That is the format's definition, and
 this page describes it rather than restating it. The codec is
-`readPanoptesYaml` and `writePanoptesYaml` in `@panoptes/formats`, paired as
-`panoptesYamlCodec`, and it is the only place that knows both the file and
+`readSaerskrivenYaml` and `writeSaerskrivenYaml` in `@saerskriven/formats`, paired as
+`saerskrivenYamlCodec`, and it is the only place that knows both the file and
 the model.
 
 ## The file
@@ -47,7 +47,7 @@ first: `kind` for an element, a flow endpoint and a boundary shape,
 ## `formatVersion`
 
 The version is the whole of the compatibility contract, and it is also what
-tells a Panoptes file apart from a JSON format without consulting the file
+tells a Saerskriven file apart from a JSON format without consulting the file
 extension.
 
 - **Missing**: the read fails, with the issue at path `formatVersion`.
@@ -59,7 +59,7 @@ its own vocabularies, and its own record shapes, and the layer matrix forbids
 it from reusing the model's, so a model changed for the sake of the editor
 leaves version 1 alone. What the two have in common today they have by
 coincidence, and the mapping between them is written out in
-`@panoptes/formats`, member by member, so a change on either side stops
+`@saerskriven/formats`, member by member, so a change on either side stops
 compiling there rather than silently reaching a file. A change to what
 version 1 carries is a change to the wire schema, deliberately.
 
@@ -96,7 +96,7 @@ produce the same file, so a diff shows the edit and nothing else.
   under it.
 
 A read preserves the order the file states. It is a write that orders, so a
-hand-edited file reaches canonical order the next time Panoptes saves it.
+hand-edited file reaches canonical order the next time Saerskriven saves it.
 
 ## An example
 
@@ -148,8 +148,8 @@ lastIssuedThreatNumber: 1
 ```
 
 Two production-scale examples are committed.
-[`threat-modelling/panoptes.yaml`](../threat-modelling/README.md) is Panoptes'
+[`threat-modelling/saerskriven.yaml`](../threat-modelling/README.md) is Saerskriven's
 own threat model, the file to read first, because it was authored in this
-format rather than converted into it. `test-data/panoptes/ecluse.yaml` is the
+format rather than converted into it. `test-data/saerskriven/ecluse.yaml` is the
 Écluse threat model, read from its Threat Dragon file and written here, which
 is what a conversion into this format looks like.

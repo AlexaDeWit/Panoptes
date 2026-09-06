@@ -1,11 +1,11 @@
-import type { CanvasLayout, CanvasNode } from '@panoptes/canvas';
+import type { CanvasLayout, CanvasNode } from '@saerskriven/canvas';
 import {
   generateElementId,
   type Element,
   type ElementId,
   type Point,
   type Size,
-} from '@panoptes/model';
+} from '@saerskriven/model';
 
 /**
  * The element kinds the palette adds, one button each: five of the canvas's

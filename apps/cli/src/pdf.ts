@@ -2,7 +2,7 @@ import {
   compilePdf as compileTypst,
   PdfFailure,
   type PdfAssets,
-} from '@panoptes/render/pdf';
+} from '@saerskriven/render/pdf';
 import { Either } from 'effect';
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -26,7 +26,7 @@ export const typstAssets = join(import.meta.dirname, 'assets');
  * Typst source compiled to a PDF, or a sentence saying why it was not.
  *
  * Finding the bytes is this side's work and typesetting them is
- * `@panoptes/render/pdf`'s. The module and every `.ttf` in `assets`, in name
+ * `@saerskriven/render/pdf`'s. The module and every `.ttf` in `assets`, in name
  * order, are read here and handed over, so nothing is read from the host's
  * font directories and the same source gives the same PDF on every machine.
  * A directory missing them is a broken install rather than a bad model file,

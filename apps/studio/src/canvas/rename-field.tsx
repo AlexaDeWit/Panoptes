@@ -8,8 +8,8 @@ import {
   type CanvasFlowNode,
   type CanvasNodeKind,
   type TextPlacement,
-} from '@panoptes/canvas';
-import { isEmptyName, type ElementId } from '@panoptes/model';
+} from '@saerskriven/canvas';
+import { isEmptyName, type ElementId } from '@saerskriven/model';
 import {
   EdgeLabelRenderer,
   type EdgeProps,

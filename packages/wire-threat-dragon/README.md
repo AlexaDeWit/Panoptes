@@ -1,4 +1,4 @@
-# @panoptes/wire-threat-dragon
+# @saerskriven/wire-threat-dragon
 
 The OWASP Threat Dragon v2 file format as a zod schema and the types inferred
 from it. That is the whole package: no reading, no writing, no mapping.
@@ -23,7 +23,7 @@ label Threat Dragon translates and a two-character label in some language is
 not far-fetched. `test-data/README.md` records the same difference from the
 other side, beside the vendored copy.
 
-The schema declares every key the format carries, the parts Panoptes does not
+The schema declares every key the format carries, the parts Saerskriven does not
 model included, because a write merges onto the document a read returned and
 only a declared key is there to leave alone. What it declares it demands, and
 it demands nothing else: a value with no home in the internal model reaches
@@ -31,10 +31,10 @@ the document intact and is refused, if at all, by the mapping rather than
 here.
 
 The codec is `readThreatDragon` and `writeThreatDragon` in
-[`@panoptes/formats`](../formats/README.md), which maps between this format
+[`@saerskriven/formats`](../formats/README.md), which maps between this format
 and the model and is the only package that knows both. The corpus that gates
 it is thirteen files: the twelve threat models Threat Dragon ships, vendored
 under `test-data/threat-dragon` beside its published schema, and the Écluse
 model at `test-data/ecluse.json`.
 
-Unit tests: `pnpm nx test @panoptes/wire-threat-dragon`.
+Unit tests: `pnpm nx test @saerskriven/wire-threat-dragon`.

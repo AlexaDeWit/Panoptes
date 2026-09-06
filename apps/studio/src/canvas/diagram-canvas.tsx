@@ -2,7 +2,7 @@ import {
   gridSpacing,
   themedCanvasStylesheet,
   type CanvasFlowEdge,
-} from '@panoptes/canvas';
+} from '@saerskriven/canvas';
 import {
   applyNodeChanges,
   Background,
@@ -15,7 +15,7 @@ import {
   type NodeChange,
   type ReactFlowInstance,
 } from '@xyflow/react';
-import type { ElementId } from '@panoptes/model';
+import type { ElementId } from '@saerskriven/model';
 import {
   useCallback,
   useEffect,

@@ -58,7 +58,7 @@ function Studio() {
     <CommandSurfaceProvider surface={surface}>
       <div className={styles.shell}>
         <main className={styles.diagram}>
-          <h1 className={styles.title}>Panoptes</h1>
+          <h1 className={styles.title}>Saerskriven</h1>
           <EditPalette />
           <div className={styles.stage}>
             <StudioMenu session={session} />

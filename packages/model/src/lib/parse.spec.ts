@@ -32,7 +32,10 @@ describe('parseModel', () => {
   });
 
   it('reports violations through the same Either as plain tagged data', () => {
-    const result = parseModel({ ...validModelFixture, metadata: 'Panoptes' });
+    const result = parseModel({
+      ...validModelFixture,
+      metadata: 'Saerskriven',
+    });
     expect(Either.isLeft(result) && result.left._tag).toBe('InvalidModel');
     expect(issuesOf(result)).toContainEqual(
       expect.objectContaining({ code: 'invalid_type', path: ['metadata'] }),
@@ -40,7 +43,10 @@ describe('parseModel', () => {
   });
 
   it('serializes a failure to its plain tagged shape', () => {
-    const result = parseModel({ ...validModelFixture, metadata: 'Panoptes' });
+    const result = parseModel({
+      ...validModelFixture,
+      metadata: 'Saerskriven',
+    });
     if (Either.isRight(result)) {
       throw new Error('The invalid input must fail to parse.');
     }

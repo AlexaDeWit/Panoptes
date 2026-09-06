@@ -10,7 +10,7 @@
       "path": "./packages/formats"
     },
     {
-      "path": "./packages/wire-panoptes-yaml"
+      "path": "./packages/wire-saerskriven-yaml"
     },
     {
       "path": "./packages/wire-threat-dragon"

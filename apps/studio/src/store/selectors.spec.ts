@@ -1,4 +1,4 @@
-import { emptyModel } from '@panoptes/model';
+import { emptyModel } from '@saerskriven/model';
 import { Action } from './actions.js';
 import { reduce } from './reducer.js';
 import {
@@ -133,7 +133,7 @@ describe('showingPlaceholder', () => {
 describe('windowTitle', () => {
   it('says a model with no file as Untitled, ahead of the product name', () => {
     expect(windowTitle(initialState(placeholderModel))).toBe(
-      'Untitled - Panoptes',
+      'Untitled - Saerskriven',
     );
   });
 
@@ -152,7 +152,7 @@ describe('windowTitle', () => {
       Action.Saved({ name: 'model.yaml', source: nativeSource }),
     );
 
-    expect(windowTitle(opened)).toBe('other.yaml - Panoptes');
-    expect(windowTitle(saved)).toBe('model.yaml - Panoptes');
+    expect(windowTitle(opened)).toBe('other.yaml - Saerskriven');
+    expect(windowTitle(saved)).toBe('model.yaml - Saerskriven');
   });
 });

@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { readTextFile, reasonOf, writeFile } from './files.js';
 
-const directory = mkdtempSync(join(tmpdir(), 'panoptes-cli-files-'));
+const directory = mkdtempSync(join(tmpdir(), 'saerskriven-cli-files-'));
 
 describe('text files at the edge', () => {
   it('writes a text and reads back what it wrote', () => {

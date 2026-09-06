@@ -1,5 +1,5 @@
-import { elementSchema, type Element } from '@panoptes/model';
-import type { ThreatDragonCell } from '@panoptes/wire-threat-dragon';
+import { elementSchema, type Element } from '@saerskriven/model';
+import type { ThreatDragonCell } from '@saerskriven/wire-threat-dragon';
 import { renderDivergences } from './divergence.js';
 import { mergeCell } from './threat-dragon-cells.js';
 

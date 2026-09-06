@@ -2,7 +2,7 @@ import {
   ReadFailure,
   formatNameSchema,
   hasDiverged,
-  panoptesYamlCodec,
+  saerskrivenYamlCodec,
   readAnyFormat,
   renderDivergences,
   threatDragonCodec,
@@ -10,8 +10,8 @@ import {
   type Divergence,
   type FormatName,
   type WriteResult,
-} from '@panoptes/formats';
-import type { Model } from '@panoptes/model';
+} from '@saerskriven/formats';
+import type { Model } from '@saerskriven/model';
 import { Either } from 'effect';
 import { Action } from '../store/actions.js';
 import {
@@ -39,8 +39,8 @@ export const formatFiles = {
     mediaType: 'application/json',
     extensions: ['.json'],
   },
-  'panoptes-yaml': {
-    label: 'Panoptes YAML',
+  'saerskriven-yaml': {
+    label: 'Saerskriven YAML',
     mediaType: 'application/yaml',
     extensions: ['.yaml', '.yml'],
   },
@@ -50,7 +50,7 @@ export const formatFiles = {
  * The format a model with no file of its own is saved in: the native one,
  * which holds the whole model and so loses nothing on the way out.
  */
-export const nativeFormat: FormatName = 'panoptes-yaml';
+export const nativeFormat: FormatName = 'saerskriven-yaml';
 
 /** The name a model with no file of its own is proposed under. */
 export const unnamedModel = 'threat-model';
@@ -135,7 +135,7 @@ export type SaveTarget = {
 /**
  * The file a save writes to. Saving in the format the model was read from
  * writes back to the same name and merges onto the document that read
- * retained, which is what carries the parts of the file Panoptes does not
+ * retained, which is what carries the parts of the file Saerskriven does not
  * model. Saving in any other format has nothing to merge onto, so the codec
  * projects the model and reports what the format cannot hold.
  */
@@ -171,7 +171,7 @@ export function writeThrough(
 ): WriteResult {
   return source.format === 'threat-dragon'
     ? threatDragonCodec.write(model, source.document)
-    : panoptesYamlCodec.write(model, source.document);
+    : saerskrivenYamlCodec.write(model, source.document);
 }
 
 /**
@@ -241,7 +241,7 @@ export type LossReport = {
 
 /** How each occasion introduces its report to a person. */
 export const reportHeadlines: Record<LossOccasion, string> = {
-  open: 'Opening the file dropped what it holds and Panoptes does not:',
+  open: 'Opening the file dropped what it holds and Saerskriven does not:',
   save: 'The last save did not carry everything the model holds:',
 };
 
@@ -273,7 +273,7 @@ export function saveReport(
 export function retainedSource(read: DetectedRead): RetainedSource {
   return read.format === 'threat-dragon'
     ? { format: 'threat-dragon', document: read.source }
-    : { format: 'panoptes-yaml', document: read.source };
+    : { format: 'saerskriven-yaml', document: read.source };
 }
 
 function reported(

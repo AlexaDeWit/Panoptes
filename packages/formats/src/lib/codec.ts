@@ -1,4 +1,4 @@
-import type { Model, ParseIssue } from '@panoptes/model';
+import type { Model, ParseIssue } from '@saerskriven/model';
 import { Data, type Either } from 'effect';
 import type { z } from 'zod';
 import type { Divergence } from './divergence.js';
@@ -58,7 +58,7 @@ export function readFailureIssues(failure: ReadFailure): readonly ParseIssue[] {
  * What a read produced: the internal model, the wire document it was mapped
  * from, and where the two do not correspond. The document comes back so a
  * later write can merge onto it instead of serializing the model from
- * scratch, which is how the parts of a file Panoptes does not model reach
+ * scratch, which is how the parts of a file Saerskriven does not model reach
  * the output: the wire schema declares them, so a merge that does not touch
  * them leaves them as the file had them. `divergences` is the read side of
  * the same list a write returns: the keys the schema did not declare and so
@@ -91,7 +91,7 @@ export type WriteResult = {
  * only a document its own schema describes.
  *
  * What a wire schema owes this contract, none of which the types check. It
- * declares everything its format carries, the parts Panoptes does not model
+ * declares everything its format carries, the parts Saerskriven does not model
  * included, because that completeness is what preserves them: a merge
  * leaves untouched what it does not map, and only a declared key is there
  * to leave alone. It is demanding about what it declares and silent about

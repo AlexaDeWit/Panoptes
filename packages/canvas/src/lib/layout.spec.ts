@@ -1,5 +1,5 @@
-import type { Model } from '@panoptes/model';
-import { elementId, parsedFixture } from '@panoptes/model/fixtures';
+import type { Model } from '@saerskriven/model';
+import { elementId, parsedFixture } from '@saerskriven/model/fixtures';
 import { badgeExtent } from './badges.js';
 import { everyGlyphModel } from './canvas.fixtures.js';
 import { handlePositions, type NodeBox } from './handles.js';

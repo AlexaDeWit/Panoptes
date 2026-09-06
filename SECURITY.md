@@ -1,6 +1,6 @@
 # Security policy
 
-How to report a vulnerability in Panoptes, a threat modelling studio. I take
+How to report a vulnerability in Saerskriven, a threat modelling studio. I take
 security reports seriously and handle them with priority.
 
 ## Reporting a vulnerability

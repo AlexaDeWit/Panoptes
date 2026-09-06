@@ -98,10 +98,10 @@ test('the tab says Untitled until the model lives in a file', async ({
   await page.addInitScript(withoutPickers);
   await openPlaceholder(page);
 
-  await expect(page).toHaveTitle('Untitled - Panoptes');
+  await expect(page).toHaveTitle('Untitled - Saerskriven');
 
   const written = await savedFile(page);
 
   expect(written.name).toBe('threat-model.yaml');
-  await expect(page).toHaveTitle('threat-model.yaml - Panoptes');
+  await expect(page).toHaveTitle('threat-model.yaml - Saerskriven');
 });

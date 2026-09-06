@@ -8,7 +8,7 @@ import {
   toParseIssues,
   type Model,
   type ThreatCategory,
-} from '@panoptes/model';
+} from '@saerskriven/model';
 import {
   threatDragonWireSchema,
   type ThreatDragonCell,
@@ -16,7 +16,7 @@ import {
   type ThreatDragonDocument,
   type ThreatDragonEndpoint,
   type ThreatDragonThreat,
-} from '@panoptes/wire-threat-dragon';
+} from '@saerskriven/wire-threat-dragon';
 import { Either } from 'effect';
 import type { z } from 'zod';
 import { ReadFailure, type ReadResult } from './codec.js';
@@ -54,7 +54,7 @@ type ThreatEntry = {
  * A Threat Dragon v2 file as the internal model, the document it was mapped
  * from, and where the two do not correspond. The document comes back so the
  * write codec can merge onto it, which is how the parts of the file
- * Panoptes does not model reach the output.
+ * Saerskriven does not model reach the output.
  *
  * Threat Dragon nests each threat under one cell, so a threat found under
  * several cells is one record here, attached to each of them and carrying

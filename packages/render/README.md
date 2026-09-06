@@ -1,4 +1,4 @@
-# @panoptes/render
+# @saerskriven/render
 
 Projections of a model. `renderSvg` draws one diagram as a standalone SVG
 document, `renderRegister` writes the threat register as GFM markdown, shaped
@@ -14,7 +14,7 @@ that wants a drawing or a register loads no compiler.
 
 ## A diagram as an SVG document
 
-`renderSvg(diagram, model)` lays the diagram out with `@panoptes/canvas`,
+`renderSvg(diagram, model)` lays the diagram out with `@saerskriven/canvas`,
 draws the canvas primitives once through `renderToStaticMarkup`, and returns
 the document as text beside the flow endpoints the layout could not place.
 The studio will mount those same primitives in React Flow (M4), so what the
@@ -46,7 +46,7 @@ the canvas's to report rather than this package's to guess.
 A name, a title, and a note are free text, and a character XML 1.0 forbids
 can reach one. Every run of text goes through the canvas's `xmlSafeText` on
 its way into the document, the title element included, so one C0 control in
-a name cannot cost a reader the whole picture. `@panoptes/model` refuses
+a name cannot cost a reader the whole picture. `@saerskriven/model` refuses
 those characters at its own parse boundary, so a model read from a file
 carries none of them, and this replacement is the defence behind that one:
 `parseModel` is the only gate the model has, the edit operations taking a
@@ -112,7 +112,7 @@ observe.
   they are collapsed rather than escaped.
 - **Nothing goes missing.** An enum crosses to its display label through a
   table the compiler checks for totality, so a severity, status, or
-  methodology added to `@panoptes/model` stops this package compiling rather
+  methodology added to `@saerskriven/model` stops this package compiling rather
   than rendering blank, and `markdown-register.labels.snapshot.txt` beside
   the spec pins the label text of every member the model declares, rendered
   rather than restated. A threat attached to no element reads `None`, prose
@@ -185,7 +185,7 @@ to fail.
 
 ## Typst source as a PDF
 
-`compilePdf(source, assets)`, on the `@panoptes/render/pdf` subpath, is the
+`compilePdf(source, assets)`, on the `@saerskriven/render/pdf` subpath, is the
 compile step: the bytes of a PDF, or a `PdfFailure` saying why there are
 none. It sits on a subpath rather than the main entry because it pulls in 28
 MB of WebAssembly, which a caller drawing an SVG or writing a register has no
@@ -230,8 +230,8 @@ package's output, committed so a change to what it writes arrives as a diff
 on a file rather than as a test that still passes:
 
 - `ecluse.register.snapshot.md`, the Écluse model as a threat register.
-- `panoptes.register.snapshot.md`, the same of
-  [Panoptes' own threat model](../../threat-modelling/README.md), which
+- `saerskriven.register.snapshot.md`, the same of
+  [Saerskriven's own threat model](../../threat-modelling/README.md), which
   carries what Écluse does not: a custom methodology, a CIA category, threats
   attached to no element, and a mitigation written as a markdown list.
 - `ecluse.snapshot.svg`, the one diagram of the Écluse model.
@@ -239,10 +239,10 @@ on a file rather than as a test that still passes:
   `test-data/every-glyph.model.json`, drawing one of every glyph the canvas
   knows. Écluse carries no text element, no boundary curve, and no flow the
   layout refuses, so without it those would have no committed picture.
-  `@panoptes/canvas` draws the same model into a golden of its own, which is
+  `@saerskriven/canvas` draws the same model into a golden of its own, which is
   why the model sits under `test-data` rather than inside either package.
-- `panoptes-read-and-render.snapshot.svg` and
-  `panoptes-agent-and-desktop.snapshot.svg`, the two diagrams of the Panoptes
+- `saerskriven-read-and-render.snapshot.svg` and
+  `saerskriven-agent-and-desktop.snapshot.svg`, the two diagrams of the Saerskriven
   model, which is the only committed model holding more than one.
 - `ecluse.snapshot.typ`, the Écluse model as the Typst source of a whole
   document, which holds the diagram above inside it, so the two goldens move
@@ -254,13 +254,13 @@ The suite compares all seven on every run as vitest file snapshots and reds
 where a file and the output differ. A deleted golden is a hole in that gate
 rather than a failure: vitest writes a missing snapshot back and passes, and
 only a CI run, where writing is refused, reports it. Regenerate them with
-`pnpm nx test @panoptes/render -- -u` in the commit that moved them, and read
+`pnpm nx test @saerskriven/render -- -u` in the commit that moved them, and read
 the diff.
 
-Four of them are `apps/cli`'s fixtures as well, and the Panoptes model three
-of them are drawn from is itself written by `@panoptes/formats`, so this
+Four of them are `apps/cli`'s fixtures as well, and the Saerskriven model three
+of them are drawn from is itself written by `@saerskriven/formats`, so this
 suite runs after that one and ahead of the CLI's.
 [`test-data/README.md`](../../test-data/README.md) names every such pair and
 [`CODING.md`](../../CODING.md) the ordering that holds them apart.
 
-Unit tests: `pnpm nx test @panoptes/render`.
+Unit tests: `pnpm nx test @saerskriven/render`.

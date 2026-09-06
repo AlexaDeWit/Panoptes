@@ -74,7 +74,7 @@ runs:
     - name: Root the .#ci shell for the Nix-store cache save
       if: inputs.save-nix-store == 'true' && github.ref == 'refs/heads/main'
       shell: bash
-      run: nix develop .#ci --profile "$RUNNER_TEMP/panoptes-ci-profile" --command true
+      run: nix develop .#ci --profile "$RUNNER_TEMP/saerskriven-ci-profile" --command true
 
     - name: Install dependencies
       if: inputs.install-dependencies == 'true'

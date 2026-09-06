@@ -13,7 +13,7 @@ describe('DocumentTitle', () => {
   it('names the tab for a model that has never been in a file', () => {
     render(<DocumentTitle />);
 
-    expect(document.title).toBe('Untitled - Panoptes');
+    expect(document.title).toBe('Untitled - Saerskriven');
   });
 
   it('follows the file the model is saved into', () => {
@@ -23,6 +23,6 @@ describe('DocumentTitle', () => {
       dispatch(Action.Saved({ name: 'model.yaml', source: nativeSource }));
     });
 
-    expect(document.title).toBe('model.yaml - Panoptes');
+    expect(document.title).toBe('model.yaml - Saerskriven');
   });
 });

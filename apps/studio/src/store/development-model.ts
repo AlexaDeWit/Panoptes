@@ -1,9 +1,9 @@
-import { parseModel, type Model } from '@panoptes/model';
+import { parseModel, type Model } from '@saerskriven/model';
 import { Either } from 'effect';
 
 declare global {
   interface Window {
-    readonly panoptesDevelopmentModel?: unknown;
+    readonly saerskrivenDevelopmentModel?: unknown;
   }
 }
 
@@ -13,7 +13,7 @@ declare global {
  * while the file dialogs are still issue #37's, and nothing in the studio
  * writes it.
  */
-export const developmentModelKey = 'panoptesDevelopmentModel';
+export const developmentModelKey = 'saerskrivenDevelopmentModel';
 
 /**
  * The model the studio starts on when a development session names one, and

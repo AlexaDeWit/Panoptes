@@ -8,7 +8,7 @@ type GapLog = {
 
 declare global {
   interface Window {
-    panoptesGapLog?: GapLog;
+    saerskrivenGapLog?: GapLog;
   }
 }
 
@@ -60,13 +60,13 @@ export const displayPeriod = async (
  */
 export const recordGaps = async (page: Page): Promise<void> => {
   await page.evaluate(() => {
-    const replaced = window.panoptesGapLog;
+    const replaced = window.saerskrivenGapLog;
     if (replaced !== undefined) {
       replaced.running = false;
       window.cancelAnimationFrame(replaced.handle);
     }
     const log: GapLog = { readings: [], running: true, handle: 0 };
-    window.panoptesGapLog = log;
+    window.saerskrivenGapLog = log;
     const step = (): void => {
       log.readings.push(performance.now());
       if (log.running) {
@@ -83,8 +83,8 @@ export const recordGaps = async (page: Page): Promise<void> => {
  */
 export const gapsRecorded = async (page: Page): Promise<readonly number[]> => {
   const readings = await page.evaluate(() => {
-    const log = window.panoptesGapLog;
-    window.panoptesGapLog = undefined;
+    const log = window.saerskrivenGapLog;
+    window.saerskrivenGapLog = undefined;
     if (log === undefined) {
       return [];
     }

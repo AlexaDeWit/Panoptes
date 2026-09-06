@@ -1,5 +1,5 @@
-import { diagramIdSchema } from '@panoptes/model';
-import type { ThreatDragonDocument } from '@panoptes/wire-threat-dragon';
+import { diagramIdSchema } from '@saerskriven/model';
+import type { ThreatDragonDocument } from '@saerskriven/wire-threat-dragon';
 import { Ajv } from 'ajv';
 import { Either } from 'effect';
 import type { Divergence } from './divergence.js';

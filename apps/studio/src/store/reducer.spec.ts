@@ -1,6 +1,6 @@
-import { DetectionFailure, ReadFailure } from '@panoptes/formats';
-import { emptyModel } from '@panoptes/model';
-import { diagramId, elementId, threatId } from '@panoptes/model/fixtures';
+import { DetectionFailure, ReadFailure } from '@saerskriven/formats';
+import { emptyModel } from '@saerskriven/model';
+import { diagramId, elementId, threatId } from '@saerskriven/model/fixtures';
 import { Action } from './actions.js';
 import { reduce } from './reducer.js';
 import {
@@ -365,7 +365,7 @@ describe('a refusal outside the model', () => {
 
   it('records a detection failure as the read failure it is', () => {
     const failure = DetectionFailure.NoFormatClaimed({
-      tried: ['threat-dragon', 'panoptes-yaml'],
+      tried: ['threat-dragon', 'saerskriven-yaml'],
     });
     const next = reduce(
       start,

@@ -1,4 +1,4 @@
-import { deepestProse, renderTypst } from '@panoptes/render';
+import { deepestProse, renderTypst } from '@saerskriven/render';
 import { Either } from 'effect';
 import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -17,7 +17,7 @@ const hostileFile = join(
   'test-data/adversarial/typst-injection.yaml',
 );
 
-const directory = mkdtempSync(join(tmpdir(), 'panoptes-cli-pdf-'));
+const directory = mkdtempSync(join(tmpdir(), 'saerskriven-cli-pdf-'));
 
 const deepProseFile = fixtureFile(
   directory,

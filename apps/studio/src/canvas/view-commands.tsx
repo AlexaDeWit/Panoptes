@@ -1,4 +1,4 @@
-import type { Model } from '@panoptes/model';
+import type { Model } from '@saerskriven/model';
 import { useReactFlow, useStore } from '@xyflow/react';
 import { useEffect, useMemo, useRef } from 'react';
 import type { ViewCommands } from '../commands/registry.js';

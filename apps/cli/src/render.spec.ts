@@ -12,13 +12,13 @@ import { render, type RenderOptions } from './render.js';
 
 const repositoryRoot = join(import.meta.dirname, '../../..');
 
-const directory = mkdtempSync(join(tmpdir(), 'panoptes-cli-render-'));
+const directory = mkdtempSync(join(tmpdir(), 'saerskriven-cli-render-'));
 
 const ecluse = join(repositoryRoot, 'test-data/ecluse.json');
 
-const ecluseYaml = join(repositoryRoot, 'test-data/panoptes/ecluse.yaml');
+const ecluseYaml = join(repositoryRoot, 'test-data/saerskriven/ecluse.yaml');
 
-const panoptes = join(repositoryRoot, 'threat-modelling/panoptes.yaml');
+const saerskriven = join(repositoryRoot, 'threat-modelling/saerskriven.yaml');
 
 const golden = (name: string): string =>
   readFileSync(join(repositoryRoot, 'test-data/render', name), 'utf8');
@@ -99,26 +99,26 @@ describe('render', () => {
 
   it('draws the diagram a model of several names by id', async () => {
     await expect(
-      render(panoptes, options({ diagram: 'read-and-render' })),
+      render(saerskriven, options({ diagram: 'read-and-render' })),
     ).resolves.toEqual({
       code: 0,
-      out: golden('panoptes-read-and-render.snapshot.svg'),
+      out: golden('saerskriven-read-and-render.snapshot.svg'),
       err: '',
     });
   });
 
   it('draws the diagram a model of several names by title', async () => {
     await expect(
-      render(panoptes, options({ diagram: 'Agents and the desktop shell' })),
+      render(saerskriven, options({ diagram: 'Agents and the desktop shell' })),
     ).resolves.toEqual({
       code: 0,
-      out: golden('panoptes-agent-and-desktop.snapshot.svg'),
+      out: golden('saerskriven-agent-and-desktop.snapshot.svg'),
       err: '',
     });
   });
 
   it('lists the diagrams where a model of several names none', async () => {
-    await expect(render(panoptes, options({}))).resolves.toEqual({
+    await expect(render(saerskriven, options({}))).resolves.toEqual({
       code: 2,
       out: '',
       err:
@@ -130,7 +130,7 @@ describe('render', () => {
 
   it('lists the diagrams where the name given is none of them', async () => {
     await expect(
-      render(panoptes, options({ diagram: 'nope' })),
+      render(saerskriven, options({ diagram: 'nope' })),
     ).resolves.toEqual({
       code: 2,
       out: '',

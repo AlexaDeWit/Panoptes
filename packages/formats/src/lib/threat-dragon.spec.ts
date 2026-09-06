@@ -1,4 +1,4 @@
-import { threatDragonWireSchema } from '@panoptes/wire-threat-dragon';
+import { threatDragonWireSchema } from '@saerskriven/wire-threat-dragon';
 import { Either } from 'effect';
 import { ecluseText } from './threat-dragon.fixtures.js';
 import { threatDragonCodec } from './threat-dragon.js';

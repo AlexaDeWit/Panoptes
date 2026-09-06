@@ -37,7 +37,7 @@ describe('the arguments as the outcome they ask for', () => {
   it('answers --help on standard output, having been asked', async () => {
     const outcome = await runCli(['--help']);
     expect(outcome.code).toEqual(0);
-    expect(outcome.out).toContain('Usage: panoptes [options] [command]');
+    expect(outcome.out).toContain('Usage: saerskriven [options] [command]');
     expect(outcome.err).toEqual('');
   });
 
@@ -45,7 +45,7 @@ describe('the arguments as the outcome they ask for', () => {
     const outcome = await runCli([]);
     expect(outcome.code).toEqual(2);
     expect(outcome.out).toEqual('');
-    expect(outcome.err).toContain('Usage: panoptes [options] [command]');
+    expect(outcome.err).toContain('Usage: saerskriven [options] [command]');
   });
 
   it('refuses a flag it does not know', async () => {

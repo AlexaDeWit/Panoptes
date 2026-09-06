@@ -1,4 +1,4 @@
-import { severitySchema, type Severity } from '@panoptes/model';
+import { severitySchema, type Severity } from '@saerskriven/model';
 
 import { EnumField } from './enum-field.js';
 

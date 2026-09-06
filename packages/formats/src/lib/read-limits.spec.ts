@@ -3,9 +3,9 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { parse, parseDocument } from 'yaml';
 import type { ReadFailure } from './codec.js';
-import { aliasCostIn } from './panoptes-yaml-document.js';
-import { readPanoptesYaml } from './panoptes-yaml-read.js';
-import { nativeFixtures } from './panoptes-yaml.fixtures.js';
+import { aliasCostIn } from './saerskriven-yaml-document.js';
+import { readSaerskrivenYaml } from './saerskriven-yaml-read.js';
+import { nativeFixtures } from './saerskriven-yaml.fixtures.js';
 import { parseWithinLimits, readLimits } from './read-limits.js';
 import { readThreatDragon } from './threat-dragon-read.js';
 import { corpusTexts, corpusTimeout } from './threat-dragon.fixtures.js';
@@ -138,7 +138,7 @@ describe('the read limits against the files the repository vendors', () => {
     'stop no Threat Dragon file in the corpus, through either read',
     () => {
       const stopped = corpusTexts.flatMap((file) =>
-        [readThreatDragon, readPanoptesYaml].flatMap((read) =>
+        [readThreatDragon, readSaerskrivenYaml].flatMap((read) =>
           refusalOf(read, file.text).startsWith('max') ? [file.name] : [],
         ),
       );
@@ -147,11 +147,11 @@ describe('the read limits against the files the repository vendors', () => {
     corpusTimeout,
   );
 
-  it('stop none of the Panoptes YAML files this repository writes', () => {
+  it('stop none of the Saerskriven YAML files this repository writes', () => {
     expect(
       nativeFixtures.map((file) => [
         file.name,
-        refusalOf(readPanoptesYaml, file.text),
+        refusalOf(readSaerskrivenYaml, file.text),
       ]),
     ).toEqual(nativeFixtures.map((file) => [file.name, 'accepted']));
   });
@@ -172,11 +172,11 @@ describe('the read limits against the files the repository vendors', () => {
 });
 
 describe('an adversarial fixture', () => {
-  it('stops the Panoptes YAML read at the bound it was built for', () => {
+  it('stops the Saerskriven YAML read at the bound it was built for', () => {
     expect(
       fixtures.map((entry) => [
         entry.name,
-        refusalOf(readPanoptesYaml, entry.text),
+        refusalOf(readSaerskrivenYaml, entry.text),
       ]),
     ).toEqual(fixtures.map((entry) => [entry.name, entry.asYaml]));
   });
@@ -192,7 +192,7 @@ describe('an adversarial fixture', () => {
 
   it('is read to a failure by both, and throws out of neither', () => {
     const refusals = fixtures.flatMap((entry) => [
-      refusalOf(readPanoptesYaml, entry.text),
+      refusalOf(readSaerskrivenYaml, entry.text),
       refusalOf(readThreatDragon, entry.text),
     ]);
     expect(refusals).not.toContain('accepted');
@@ -270,7 +270,7 @@ describe('the nesting bound', () => {
       `${' '.repeat(31)}- *shared`,
       '',
     ].join('\n');
-    expect(refusalOf(readPanoptesYaml, text)).toBe('maxNestingDepth');
+    expect(refusalOf(readSaerskrivenYaml, text)).toBe('maxNestingDepth');
   });
 
   it('refuses a value one step past it, and says how far it got', () => {
@@ -295,7 +295,7 @@ describe('the alias bound', () => {
 
   it('stops that count where it holds, before an alias is resolved', () => {
     expect(
-      failureOf(readPanoptesYaml, vendored('alias-expansion.yaml')),
+      failureOf(readSaerskrivenYaml, vendored('alias-expansion.yaml')),
     ).toEqual({
       _tag: 'ExceededReadLimit',
       limit: 'maxAliasCount',
@@ -305,17 +305,19 @@ describe('the alias bound', () => {
   });
 
   it('refuses a cycle, which expands without end', () => {
-    expect(failureOf(readPanoptesYaml, vendored('wide-cycle.yaml'))).toEqual({
-      _tag: 'ExceededReadLimit',
-      limit: 'maxAliasCount',
-      bound: readLimits.maxAliasCount,
-      observed: readLimits.maxAliasCount + 1,
-    });
+    expect(failureOf(readSaerskrivenYaml, vendored('wide-cycle.yaml'))).toEqual(
+      {
+        _tag: 'ExceededReadLimit',
+        limit: 'maxAliasCount',
+        bound: readLimits.maxAliasCount,
+        observed: readLimits.maxAliasCount + 1,
+      },
+    );
   });
 
   it('refuses anchors within anchors, which the parser charges per anchor', () => {
     expect(
-      failureOf(readPanoptesYaml, vendored('nested-anchors.yaml')),
+      failureOf(readSaerskrivenYaml, vendored('nested-anchors.yaml')),
     ).toEqual({
       _tag: 'ExceededReadLimit',
       limit: 'maxAliasCount',
@@ -326,7 +328,7 @@ describe('the alias bound', () => {
 
   it('is this package measuring, where the parser is now handed nothing', () => {
     const text = vendored('alias-expansion.yaml');
-    expect(refusalOf(readPanoptesYaml, text)).toBe('maxAliasCount');
+    expect(refusalOf(readSaerskrivenYaml, text)).toBe('maxAliasCount');
     expect(() => {
       parse(text);
     }).not.toThrow();
@@ -335,18 +337,18 @@ describe('the alias bound', () => {
 
 describe('the alias expansion bound', () => {
   it('counts what the aliases reach, and stops counting where it holds', () => {
-    expect(failureOf(readPanoptesYaml, vendored('shared-anchor.yaml'))).toEqual(
-      {
-        _tag: 'ExceededReadLimit',
-        limit: 'maxAliasExpansion',
-        bound: readLimits.maxAliasExpansion,
-        observed: readLimits.maxAliasExpansion + 1,
-      },
-    );
+    expect(
+      failureOf(readSaerskrivenYaml, vendored('shared-anchor.yaml')),
+    ).toEqual({
+      _tag: 'ExceededReadLimit',
+      limit: 'maxAliasExpansion',
+      bound: readLimits.maxAliasExpansion,
+      observed: readLimits.maxAliasExpansion + 1,
+    });
   });
 
   it('is what an alias reaches rather than how many aliases there are', () => {
-    expect(refusalOf(readPanoptesYaml, sharedFromDepths(1, 40))).toBe(
+    expect(refusalOf(readSaerskrivenYaml, sharedFromDepths(1, 40))).toBe(
       'InvalidWireDocument',
     );
   });
@@ -361,7 +363,9 @@ describe('the alias expansion bound', () => {
   });
 
   it('leaves an alias with no anchor to the parser', () => {
-    expect(refusalOf(readPanoptesYaml, 'a: *missing\n')).toBe('MalformedText');
+    expect(refusalOf(readSaerskrivenYaml, 'a: *missing\n')).toBe(
+      'MalformedText',
+    );
   });
 });
 

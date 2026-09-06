@@ -8,19 +8,19 @@ import type {
   Model,
   ModelMetadata,
   Threat,
-} from '@panoptes/model';
+} from '@saerskriven/model';
 import {
-  panoptesYamlWireSchema,
-  type PanoptesYamlAssumption,
-  type PanoptesYamlBoundaryShape,
-  type PanoptesYamlDiagram,
-  type PanoptesYamlDocument,
-  type PanoptesYamlElement,
-  type PanoptesYamlEndpoint,
-  type PanoptesYamlMetadata,
-  type PanoptesYamlMitigation,
-  type PanoptesYamlThreat,
-} from '@panoptes/wire-panoptes-yaml';
+  saerskrivenYamlWireSchema,
+  type SaerskrivenYamlAssumption,
+  type SaerskrivenYamlBoundaryShape,
+  type SaerskrivenYamlDiagram,
+  type SaerskrivenYamlDocument,
+  type SaerskrivenYamlElement,
+  type SaerskrivenYamlEndpoint,
+  type SaerskrivenYamlMetadata,
+  type SaerskrivenYamlMitigation,
+  type SaerskrivenYamlThreat,
+} from '@saerskriven/wire-saerskriven-yaml';
 import { stringify } from 'yaml';
 import { canonicalOrder } from './canonical-order.js';
 import type { WriteResult } from './codec.js';
@@ -31,12 +31,12 @@ import {
   severitiesToWire,
   threatStatusesToWire,
   toWireCategory,
-} from './panoptes-yaml-vocabulary.js';
+} from './saerskriven-yaml-vocabulary.js';
 
 const stringifyOptions = { lineWidth: 0 };
 
 /**
- * A model as a Panoptes YAML file. The format holds the whole model, so
+ * A model as a Saerskriven YAML file. The format holds the whole model, so
  * there is nothing to leave out and the divergence list is empty by
  * construction.
  *
@@ -45,7 +45,7 @@ const stringifyOptions = { lineWidth: 0 };
  * declarations that say the same thing today and are free to stop. Ids go
  * out as the plain strings the format holds, brands being the model's own
  * business, and vocabularies go through the tables in
- * `panoptes-yaml-vocabulary.ts`.
+ * `saerskriven-yaml-vocabulary.ts`.
  *
  * Two writes of one model are byte-identical, which is what makes a model
  * file in git worth diffing. Three things fix the bytes. Keys are written in
@@ -71,20 +71,20 @@ const stringifyOptions = { lineWidth: 0 };
  * output, and passing a document read from some other file writes this
  * model rather than that one.
  */
-export function writePanoptesYaml(
+export function writeSaerskrivenYaml(
   model: Model,
-  _source?: PanoptesYamlDocument,
+  _source?: SaerskrivenYamlDocument,
 ): WriteResult {
   return {
     output: stringify(
-      canonicalOrder(panoptesYamlWireSchema, toDocument(model)),
+      canonicalOrder(saerskrivenYamlWireSchema, toDocument(model)),
       stringifyOptions,
     ),
     divergences: noDivergence,
   };
 }
 
-function toDocument(model: Model): PanoptesYamlDocument {
+function toDocument(model: Model): SaerskrivenYamlDocument {
   const threats = [...model.threats];
   threats.sort((left, right) => left.number - right.number);
   return {
@@ -98,7 +98,7 @@ function toDocument(model: Model): PanoptesYamlDocument {
   };
 }
 
-function toWireMetadata(metadata: ModelMetadata): PanoptesYamlMetadata {
+function toWireMetadata(metadata: ModelMetadata): SaerskrivenYamlMetadata {
   return {
     title: metadata.title,
     owner: metadata.owner,
@@ -107,7 +107,7 @@ function toWireMetadata(metadata: ModelMetadata): PanoptesYamlMetadata {
   };
 }
 
-function toWireDiagram(diagram: Diagram): PanoptesYamlDiagram {
+function toWireDiagram(diagram: Diagram): SaerskrivenYamlDiagram {
   return {
     id: diagram.id,
     title: diagram.title,
@@ -115,7 +115,7 @@ function toWireDiagram(diagram: Diagram): PanoptesYamlDiagram {
   };
 }
 
-function toWireElement(element: Element): PanoptesYamlElement {
+function toWireElement(element: Element): SaerskrivenYamlElement {
   if (element.kind === 'flow') {
     return {
       kind: 'flow',
@@ -159,19 +159,21 @@ function toWireCommon(element: Element) {
   };
 }
 
-function toWireEndpoint(endpoint: FlowEndpoint): PanoptesYamlEndpoint {
+function toWireEndpoint(endpoint: FlowEndpoint): SaerskrivenYamlEndpoint {
   return endpoint.kind === 'attached'
     ? { kind: 'attached', element: endpoint.element }
     : { kind: 'free', position: endpoint.position };
 }
 
-function toWireBoundaryShape(shape: BoundaryShape): PanoptesYamlBoundaryShape {
+function toWireBoundaryShape(
+  shape: BoundaryShape,
+): SaerskrivenYamlBoundaryShape {
   return shape.kind === 'box'
     ? { kind: 'box', position: shape.position, size: shape.size }
     : { kind: 'curve', waypoints: shape.waypoints };
 }
 
-function toWireThreat(threat: Threat): PanoptesYamlThreat {
+function toWireThreat(threat: Threat): SaerskrivenYamlThreat {
   return {
     id: threat.id,
     number: threat.number,
@@ -185,7 +187,7 @@ function toWireThreat(threat: Threat): PanoptesYamlThreat {
   };
 }
 
-function toWireMitigation(mitigation: Mitigation): PanoptesYamlMitigation {
+function toWireMitigation(mitigation: Mitigation): SaerskrivenYamlMitigation {
   return {
     id: mitigation.id,
     title: mitigation.title,
@@ -195,7 +197,7 @@ function toWireMitigation(mitigation: Mitigation): PanoptesYamlMitigation {
   };
 }
 
-function toWireAssumption(assumption: Assumption): PanoptesYamlAssumption {
+function toWireAssumption(assumption: Assumption): SaerskrivenYamlAssumption {
   return {
     id: assumption.id,
     prose: assumption.prose,

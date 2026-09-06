@@ -1,4 +1,4 @@
-import type { Point, Size } from '@panoptes/model';
+import type { Point, Size } from '@saerskriven/model';
 
 /** The sides of a node, in the order a tie between them breaks. */
 export const handleSides = ['top', 'right', 'bottom', 'left'] as const;

@@ -1,8 +1,8 @@
-import { parsedFixture } from '@panoptes/model/fixtures';
+import { parsedFixture } from '@saerskriven/model/fixtures';
 import type {
   ThreatDragonDiagram,
   ThreatDragonThreat,
-} from '@panoptes/wire-threat-dragon';
+} from '@saerskriven/wire-threat-dragon';
 import { renderDivergences } from './divergence.js';
 import {
   diagramsById,

@@ -1,10 +1,10 @@
-import type { Model, Point } from '@panoptes/model';
-import { elementId, parsedFixture } from '@panoptes/model/fixtures';
+import type { Model, Point } from '@saerskriven/model';
+import { elementId, parsedFixture } from '@saerskriven/model/fixtures';
 import { badgeAnchor, badgeBox } from './badges.js';
 import {
   ecluseModel,
   everyGlyphModel,
-  panoptesModel,
+  saerskrivenModel,
 } from './canvas.fixtures.js';
 import {
   boxesOverlap,
@@ -264,12 +264,12 @@ const scenes: readonly {
   { name: 'the Écluse diagram', layout: ecluseLayout },
   { name: 'every glyph', layout: layoutOf(everyGlyphModel) },
   {
-    name: 'the Panoptes read and render diagram',
-    layout: layoutOf(panoptesModel, 0),
+    name: 'the Saerskriven read and render diagram',
+    layout: layoutOf(saerskrivenModel, 0),
   },
   {
-    name: 'the Panoptes agent and desktop diagram',
-    layout: layoutOf(panoptesModel, 1),
+    name: 'the Saerskriven agent and desktop diagram',
+    layout: layoutOf(saerskrivenModel, 1),
   },
 ];
 

@@ -1,11 +1,11 @@
 # Agent instructions
 
-The constitution for agents working on Panoptes. These are requirements, not
+The constitution for agents working on Saerskriven. These are requirements, not
 suggestions.
 
 ## Start here
 
-- **Read [`README.md`](README.md) first**: what Panoptes is, the package map,
+- **Read [`README.md`](README.md) first**: what Saerskriven is, the package map,
   the development commands.
 - **Escalate, don't guess.** Stop on an ambiguous, missing, or contradictory
   requirement instead of inventing a way through it.
@@ -34,7 +34,7 @@ suggestions.
   global installs.
 - **Local verification**: `pnpm check`, everything the CI gate runs
   (exclusions noted beside the script definition in `package.json`), plus
-  the browser smoke as its own command: `pnpm nx e2e @panoptes/studio-e2e`,
+  the browser smoke as its own command: `pnpm nx e2e @saerskriven/studio-e2e`,
   and the dependency provenance check as another:
   `scripts/check-provenance.mjs`. `pnpm fix` runs the writing variants. An
   agent on the shared orchestration host runs the floor in

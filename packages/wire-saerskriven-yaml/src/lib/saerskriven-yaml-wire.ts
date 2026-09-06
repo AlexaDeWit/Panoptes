@@ -222,14 +222,14 @@ const metadataSchema = z.object({
 });
 
 /**
- * A Panoptes YAML file, whole, and the whole of what this package declares.
+ * A Saerskriven YAML file, whole, and the whole of what this package declares.
  *
  * The format is a contract with files people already have, so this schema is
  * the only authority on it. It states its own ids, its own vocabularies and
  * its own record shapes, and imports nothing but zod. Where a name here
  * matches one in the internal model, the two are the same today and are free
  * to stop being: a model changed for the sake of the editor must not change
- * what version 1 means, and only the mapping in `@panoptes/formats` knows
+ * what version 1 means, and only the mapping in `@saerskriven/formats` knows
  * both sides.
  *
  * Nothing is optional, nothing is defaulted, and nothing is transformed. An
@@ -238,7 +238,7 @@ const metadataSchema = z.object({
  *
  * `formatVersion` is a literal rather than a bounded number, so a file
  * stamped with any other release fails at that path rather than reaching the
- * mapping. It is also what tells a Panoptes file apart from a JSON format
+ * mapping. It is also what tells a Saerskriven file apart from a JSON format
  * without consulting the extension.
  *
  * A key this schema does not declare is dropped and reported by the codec as
@@ -251,7 +251,7 @@ const metadataSchema = z.object({
  * order, and the bookkeeping the editor keeps for itself. A key added to the
  * format later has an obvious place rather than an argued one.
  */
-export const panoptesYamlWireSchema = z.object({
+export const saerskrivenYamlWireSchema = z.object({
   formatVersion: z.literal(1),
   metadata: metadataSchema,
   assumptions: z.array(assumptionSchema),
@@ -261,66 +261,76 @@ export const panoptesYamlWireSchema = z.object({
   lastIssuedThreatNumber: z.int().nonnegative(),
 });
 
-/** A whole Panoptes YAML document. */
-export type PanoptesYamlDocument = z.infer<typeof panoptesYamlWireSchema>;
+/** A whole Saerskriven YAML document. */
+export type SaerskrivenYamlDocument = z.infer<typeof saerskrivenYamlWireSchema>;
 
-/** What a Panoptes YAML file says about the model as a whole. */
-export type PanoptesYamlMetadata = z.infer<typeof metadataSchema>;
+/** What a Saerskriven YAML file says about the model as a whole. */
+export type SaerskrivenYamlMetadata = z.infer<typeof metadataSchema>;
 
-/** One diagram of a Panoptes YAML document. */
-export type PanoptesYamlDiagram = z.infer<typeof diagramSchema>;
+/** One diagram of a Saerskriven YAML document. */
+export type SaerskrivenYamlDiagram = z.infer<typeof diagramSchema>;
 
-/** One element of a Panoptes YAML diagram. */
-export type PanoptesYamlElement = z.infer<typeof elementSchema>;
+/** One element of a Saerskriven YAML diagram. */
+export type SaerskrivenYamlElement = z.infer<typeof elementSchema>;
 
-/** Where a Panoptes YAML flow starts or ends. */
-export type PanoptesYamlEndpoint = z.infer<typeof endpointSchema>;
+/** Where a Saerskriven YAML flow starts or ends. */
+export type SaerskrivenYamlEndpoint = z.infer<typeof endpointSchema>;
 
-/** The geometry of a Panoptes YAML trust boundary. */
-export type PanoptesYamlBoundaryShape = z.infer<typeof boundaryShapeSchema>;
+/** The geometry of a Saerskriven YAML trust boundary. */
+export type SaerskrivenYamlBoundaryShape = z.infer<typeof boundaryShapeSchema>;
 
-/** One threat of a Panoptes YAML document. */
-export type PanoptesYamlThreat = z.infer<typeof threatSchema>;
+/** One threat of a Saerskriven YAML document. */
+export type SaerskrivenYamlThreat = z.infer<typeof threatSchema>;
 
-/** One mitigation of a Panoptes YAML document. */
-export type PanoptesYamlMitigation = z.infer<typeof mitigationSchema>;
+/** One mitigation of a Saerskriven YAML document. */
+export type SaerskrivenYamlMitigation = z.infer<typeof mitigationSchema>;
 
-/** One assumption of a Panoptes YAML document. */
-export type PanoptesYamlAssumption = z.infer<typeof assumptionSchema>;
+/** One assumption of a Saerskriven YAML document. */
+export type SaerskrivenYamlAssumption = z.infer<typeof assumptionSchema>;
 
-/** How bad a Panoptes YAML threat is if realized. */
-export type PanoptesYamlSeverity = z.infer<typeof severitySchema>;
+/** How bad a Saerskriven YAML threat is if realized. */
+export type SaerskrivenYamlSeverity = z.infer<typeof severitySchema>;
 
-/** Where a Panoptes YAML threat stands. */
-export type PanoptesYamlThreatStatus = z.infer<typeof threatStatusSchema>;
+/** Where a Saerskriven YAML threat stands. */
+export type SaerskrivenYamlThreatStatus = z.infer<typeof threatStatusSchema>;
 
-/** How far a Panoptes YAML mitigation has got. */
-export type PanoptesYamlMitigationStatus = z.infer<
+/** How far a Saerskriven YAML mitigation has got. */
+export type SaerskrivenYamlMitigationStatus = z.infer<
   typeof mitigationStatusSchema
 >;
 
-/** Whether a Panoptes YAML assumption still holds. */
-export type PanoptesYamlAssumptionStatus = z.infer<
+/** Whether a Saerskriven YAML assumption still holds. */
+export type SaerskrivenYamlAssumptionStatus = z.infer<
   typeof assumptionStatusSchema
 >;
 
-/** The category of a Panoptes YAML threat, by methodology. */
-export type PanoptesYamlCategory = z.infer<typeof categorySchema>;
+/** The category of a Saerskriven YAML threat, by methodology. */
+export type SaerskrivenYamlCategory = z.infer<typeof categorySchema>;
 
-/** A STRIDE category as a Panoptes YAML file states it. */
-export type PanoptesYamlStrideCategory = z.infer<typeof strideCategorySchema>;
+/** A STRIDE category as a Saerskriven YAML file states it. */
+export type SaerskrivenYamlStrideCategory = z.infer<
+  typeof strideCategorySchema
+>;
 
-/** A LINDDUN category as a Panoptes YAML file states it. */
-export type PanoptesYamlLinddunCategory = z.infer<typeof linddunCategorySchema>;
+/** A LINDDUN category as a Saerskriven YAML file states it. */
+export type SaerskrivenYamlLinddunCategory = z.infer<
+  typeof linddunCategorySchema
+>;
 
-/** A CIA category as a Panoptes YAML file states it. */
-export type PanoptesYamlCiaCategory = z.infer<typeof ciaCategorySchema>;
+/** A CIA category as a Saerskriven YAML file states it. */
+export type SaerskrivenYamlCiaCategory = z.infer<typeof ciaCategorySchema>;
 
-/** A CIA-DIE category as a Panoptes YAML file states it. */
-export type PanoptesYamlCiaDieCategory = z.infer<typeof ciaDieCategorySchema>;
+/** A CIA-DIE category as a Saerskriven YAML file states it. */
+export type SaerskrivenYamlCiaDieCategory = z.infer<
+  typeof ciaDieCategorySchema
+>;
 
-/** A PLOT4ai category as a Panoptes YAML file states it. */
-export type PanoptesYamlPlot4aiCategory = z.infer<typeof plot4aiCategorySchema>;
+/** A PLOT4ai category as a Saerskriven YAML file states it. */
+export type SaerskrivenYamlPlot4aiCategory = z.infer<
+  typeof plot4aiCategorySchema
+>;
 
 /** A category from a methodology the format does not enumerate. */
-export type PanoptesYamlCustomCategory = z.infer<typeof customCategorySchema>;
+export type SaerskrivenYamlCustomCategory = z.infer<
+  typeof customCategorySchema
+>;

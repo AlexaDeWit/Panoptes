@@ -145,7 +145,7 @@
         // in its project root, so the variable naming their store path is an
         // input: without it a nixpkgs bump that moves the fonts would replay
         // a build made from the old ones (CODING.md, Build targets).
-        { "env": "PANOPTES_FONTS_DIR" }
+        { "env": "SAERSKRIVEN_FONTS_DIR" }
       ],
       "outputs": ["{options.outputPath}"],
       "defaultConfiguration": "production",

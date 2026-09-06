@@ -1,4 +1,4 @@
-import type { ElementId, Model } from '@panoptes/model';
+import type { ElementId, Model } from '@saerskriven/model';
 import { Action } from '../store/actions.js';
 import {
   elementById,

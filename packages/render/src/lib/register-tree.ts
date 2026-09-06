@@ -6,7 +6,7 @@ import type {
   Threat,
   ThreatCategory,
   ThreatStatus,
-} from '@panoptes/model';
+} from '@saerskriven/model';
 import type {
   Heading,
   List,

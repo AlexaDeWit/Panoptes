@@ -6,7 +6,7 @@ import {
   strideCategorySchema,
   threatCategorySchema,
   type ThreatCategory,
-} from '@panoptes/model';
+} from '@saerskriven/model';
 
 import { EnumField } from './enum-field.js';
 

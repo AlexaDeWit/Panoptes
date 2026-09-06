@@ -4,19 +4,19 @@ import type {
   Model,
   Point,
   Size,
-} from '@panoptes/model';
+} from '@saerskriven/model';
 import {
-  panoptesYamlWireSchema,
-  type PanoptesYamlDocument,
-} from '@panoptes/wire-panoptes-yaml';
+  saerskrivenYamlWireSchema,
+  type SaerskrivenYamlDocument,
+} from '@saerskriven/wire-saerskriven-yaml';
 import { parse } from 'yaml';
-import { ecluseModel, goldenPath } from './panoptes-yaml.fixtures.js';
-import { writePanoptesYaml } from './panoptes-yaml-write.js';
+import { ecluseModel, goldenPath } from './saerskriven-yaml.fixtures.js';
+import { writeSaerskrivenYaml } from './saerskriven-yaml-write.js';
 import { isRecord } from './records.js';
 
 const parseDocument: (text: string) => unknown = parse;
 
-const written = writePanoptesYaml(ecluseModel);
+const written = writeSaerskrivenYaml(ecluseModel);
 
 function backwardsPoint(point: Point): Point {
   return { y: point.y, x: point.x };
@@ -72,7 +72,7 @@ const backwardsEcluse: Model = {
   metadata: ecluseModel.metadata,
 };
 
-const otherDocument: PanoptesYamlDocument = {
+const otherDocument: SaerskrivenYamlDocument = {
   formatVersion: 1,
   metadata: {
     title: 'Another file entirely',
@@ -103,7 +103,7 @@ function keysOf(value: unknown): readonly string[] {
   return isRecord(value) ? Object.keys(value) : [];
 }
 
-describe('the Écluse model as a Panoptes YAML file', () => {
+describe('the Écluse model as a Saerskriven YAML file', () => {
   it('matches the golden fixture committed under test-data', async () => {
     await expect(written.output).toMatchFileSnapshot(goldenPath);
   });
@@ -114,7 +114,7 @@ describe('the Écluse model as a Panoptes YAML file', () => {
 
   it('writes the root keys in the order the wire schema declares them', () => {
     expect(keysOf(parseDocument(written.output))).toEqual(
-      Object.keys(panoptesYamlWireSchema.shape),
+      Object.keys(saerskrivenYamlWireSchema.shape),
     );
   });
 
@@ -142,13 +142,13 @@ describe('the Écluse model as a Panoptes YAML file', () => {
   });
 });
 
-describe('a Panoptes YAML write', () => {
+describe('a Saerskriven YAML write', () => {
   it('writes the same bytes whatever order the model was built in', () => {
-    expect(writePanoptesYaml(backwardsEcluse).output).toBe(written.output);
+    expect(writeSaerskrivenYaml(backwardsEcluse).output).toBe(written.output);
   });
 
   it('cannot be changed by the source document the contract offers', () => {
-    expect(writePanoptesYaml(ecluseModel, otherDocument).output).toBe(
+    expect(writeSaerskrivenYaml(ecluseModel, otherDocument).output).toBe(
       written.output,
     );
   });

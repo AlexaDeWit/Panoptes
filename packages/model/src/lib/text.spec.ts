@@ -253,7 +253,7 @@ describe('the format characters the rule reaches', () => {
         `${String(accepted.length)} of the ${String(formatCharacters.length)} Cf code points it knows. An upgrade that`,
         'moves the set arrives as a diff on this file, and the model README',
         'says what to make of one. Regenerate with',
-        '`pnpm nx test @panoptes/model -- -u`.',
+        '`pnpm nx test @saerskriven/model -- -u`.',
         '',
         ...accepted.map(
           (entry) =>

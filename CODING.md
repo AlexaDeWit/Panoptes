@@ -1,6 +1,6 @@
 # Coding guidelines
 
-The coding guidelines for Panoptes, binding for humans and agents alike.
+The coding guidelines for Saerskriven, binding for humans and agents alike.
 These are requirements, not suggestions.
 
 ## Error handling
@@ -26,7 +26,7 @@ where a union is knowable.
 No recursive schema whose depth the input decides rather than the schema:
 a file names the depth, and a walk that follows it runs out of stack inside
 a function typed as returning a result union. Every path that reads foreign
-text is bounded against the numbers `@panoptes/formats` exports as
+text is bounded against the numbers `@saerskriven/formats` exports as
 `readLimits`: its size before it is parsed, its aliases as it is parsed, and
 how deeply it nests once it has been. A text past a bound comes back as a
 failure rather than throwing.
@@ -38,7 +38,7 @@ Shared object fields are expressed with zod's own composition: a base
 maps into schema literals.
 
 `z.object` is the default for every schema, including the ones whose shape
-Panoptes owns: demanding about what it declares, and dropping what it does
+Saerskriven owns: demanding about what it declares, and dropping what it does
 not. `strictObject` is not used. Refusing a whole payload over one unknown
 key is only safe with complete control of the data pipeline, which no
 reader here has, and a file gains a field the first time another tool or a
@@ -68,9 +68,9 @@ narrowest scope that needs it, with the reason beside it, as the CLI's PDF
 compiles do.
 
 The fixture helpers every suite shares have one home, the
-`@panoptes/model/fixtures` subpath, and only a spec or a `*.fixtures.*`
+`@saerskriven/model/fixtures` subpath, and only a spec or a `*.fixtures.*`
 module imports it. The subpath resolves to source, so every project that
-depends on `@panoptes/model` reaches it, and nothing structural stops a
+depends on `@saerskriven/model` reaches it, and nothing structural stops a
 downstream production module: the typecheck resolves it like any other
 entry point and the layer matrix reasons about projects rather than entry
 points, so a studio bundle carrying a fixture-derived value passes both. The
@@ -116,10 +116,10 @@ React, react-dom, the testing libraries and Playwright are on none of these
 lists, which is what the rule is for. A project that renders or tests React
 declares them itself, so no project resolves them through the root.
 
-A binary Panoptes did not author is a toolchain input rather than a file the
+A binary Saerskriven did not author is a toolchain input rather than a file the
 tree carries, so it comes from the flake or from the lockfile and its
 provenance is that pin. The Liberation fonts the CLI typesets a PDF with
-arrive as `PANOPTES_FONTS_DIR`, which both dev shells export from the pinned
+arrive as `SAERSKRIVEN_FONTS_DIR`, which both dev shells export from the pinned
 nixpkgs' `liberation_ttf`, and the Typst WebAssembly module arrives through
 the catalog. A build outside the flake fails naming the missing input rather
 than writing an executable that cannot typeset. Text a spec reads is a
@@ -149,7 +149,7 @@ dependency or `dependsOn`, never a relative path the graph cannot see.
 write is ordered ahead of the read along the `workspace:*` edges the two
 projects already have. Where the layer matrix allows no such edge, the
 reading project's own `test` names the writing task instead,
-`{ "projects": ["@panoptes/formats"], "target": "test" }`, which is a task
+`{ "projects": ["@saerskriven/formats"], "target": "test" }`, which is a task
 edge and no import: `packages/canvas` and `packages/render` read the model
 `packages/formats` writes and may not depend on it. Who writes and who reads
 each file is in [`test-data/README.md`](test-data/README.md). CI restores no

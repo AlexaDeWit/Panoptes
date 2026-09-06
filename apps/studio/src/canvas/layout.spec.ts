@@ -1,4 +1,4 @@
-import { emptyModel } from '@panoptes/model';
+import { emptyModel } from '@saerskriven/model';
 import { Action } from '../store/actions.js';
 import { reduce } from '../store/reducer.js';
 import { initialState } from '../store/state.js';

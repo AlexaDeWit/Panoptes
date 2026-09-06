@@ -1,19 +1,23 @@
-# Panoptes
+# Saerskriven
 
 A threat modelling studio: draw the system, and record the threats on the
-diagram itself. Named for Argus Panoptes, the watchman whose hundred eyes look
-in every direction at once, which is the posture threat modelling asks of you.
+diagram itself.
+
+The name `Saerskriven` is a simplified spelling of Swedish _särskriven_,
+"written separately." It nods to _särskrivningar_, compound words split into
+their parts. Threat modelling does similar work: it breaks apart a complex
+problem or design so each risk can be examined.
 
 ## Goal
 
-Panoptes keeps the paradigm of [OWASP Threat Dragon](https://github.com/OWASP/threat-dragon),
+Saerskriven keeps the paradigm of [OWASP Threat Dragon](https://github.com/OWASP/threat-dragon),
 element-attached threats edited in place on a data-flow diagram, and rebuilds
 it on a typed core:
 
 - **A typed internal model** as the single authority, richer than any one file
   format, with codecs at the edge.
 - **File formats as codecs**: read and write Threat Dragon v2 JSON, plus a
-  [YAML format of our own](docs/panoptes-yaml.md). A model file in git is the
+  [YAML format of our own](docs/saerskriven-yaml.md). A model file in git is the
   source of truth, and a codec names every place a file and the model do not
   correspond, rather than passing over it in silence.
 - **A drawing UI** (React) where the diagram is the editor, not a picture
@@ -23,58 +27,58 @@ it on a typed core:
 
 ## Relationship to OWASP Threat Dragon
 
-Panoptes is inspired by Threat Dragon and derives material from it, starting
+Saerskriven is inspired by Threat Dragon and derives material from it, starting
 with its model schema. We consider this project a derived work of Threat
 Dragon and license it under the same Apache License 2.0. See
 [`NOTICE`](NOTICE) for the upstream attribution.
 
 ## Structure
 
-| Project                       | What it holds                                                                                                                                                                                                                                                                                                                    |
-| ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `packages/model`              | The internal data structures and operations on them                                                                                                                                                                                                                                                                              |
-| `packages/wire-panoptes-yaml` | The Panoptes YAML format, version 1, as a schema and nothing else                                                                                                                                                                                                                                                                |
-| `packages/wire-threat-dragon` | The Threat Dragon v2 format as a schema and nothing else                                                                                                                                                                                                                                                                         |
-| `packages/formats`            | File-format codecs, and the mappings between a file and the model                                                                                                                                                                                                                                                                |
-| `packages/canvas`             | React canvas components, shared by the UI and headless rendering                                                                                                                                                                                                                                                                 |
-| `packages/render`             | Projections of a model: SVG, markdown, Typst source, and the `pdf` subpath that compiles that source                                                                                                                                                                                                                             |
-| `apps/studio`                 | The drawing UI: its [canvas](apps/studio/src/canvas/README.md), its [threat panel](apps/studio/src/panel/README.md), its [model store](apps/studio/src/store/README.md), its [file bridge](apps/studio/src/files/README.md), its [commands](apps/studio/src/commands/README.md) and its [controls](apps/studio/src/ui/README.md) |
-| `apps/cli`                    | The command-line interface                                                                                                                                                                                                                                                                                                       |
-| `apps/studio-e2e`             | The studio's [browser suite](apps/studio-e2e/README.md), and the round-trip coverage matrix it holds                                                                                                                                                                                                                             |
+| Project                          | What it holds                                                                                                                                                                                                                                                                                                                    |
+| -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `packages/model`                 | The internal data structures and operations on them                                                                                                                                                                                                                                                                              |
+| `packages/wire-saerskriven-yaml` | The Saerskriven YAML format, version 1, as a schema and nothing else                                                                                                                                                                                                                                                             |
+| `packages/wire-threat-dragon`    | The Threat Dragon v2 format as a schema and nothing else                                                                                                                                                                                                                                                                         |
+| `packages/formats`               | File-format codecs, and the mappings between a file and the model                                                                                                                                                                                                                                                                |
+| `packages/canvas`                | React canvas components, shared by the UI and headless rendering                                                                                                                                                                                                                                                                 |
+| `packages/render`                | Projections of a model: SVG, markdown, Typst source, and the `pdf` subpath that compiles that source                                                                                                                                                                                                                             |
+| `apps/studio`                    | The drawing UI: its [canvas](apps/studio/src/canvas/README.md), its [threat panel](apps/studio/src/panel/README.md), its [model store](apps/studio/src/store/README.md), its [file bridge](apps/studio/src/files/README.md), its [commands](apps/studio/src/commands/README.md) and its [controls](apps/studio/src/ui/README.md) |
+| `apps/cli`                       | The command-line interface                                                                                                                                                                                                                                                                                                       |
+| `apps/studio-e2e`                | The studio's [browser suite](apps/studio-e2e/README.md), and the round-trip coverage matrix it holds                                                                                                                                                                                                                             |
 
 A wire package declares one file format and depends on zod alone, so no
 change to the internal model can change what a released format version
 means. `packages/formats` is the only project that knows both a format and
 the model.
 
-[`threat-modelling/`](threat-modelling/README.md) holds Panoptes' own threat
+[`threat-modelling/`](threat-modelling/README.md) holds Saerskriven's own threat
 model, in the native format, kept valid by the same suites that read it as a
 fixture.
 
 ## Install
 
 The CLI ships as one executable per platform, attached to every
-[release](https://github.com/AlexaDeWit/Panoptes/releases). It carries its own
+[release](https://github.com/AlexaDeWit/Saerskriven/releases). It carries its own
 runtime, so there is nothing else to install: no node, no npm, no browser.
 
-| Executable                                      | Platform              |
-| ----------------------------------------------- | --------------------- |
-| `panoptes-<version>-x86_64-unknown-linux-gnu`   | Linux, Intel or AMD   |
-| `panoptes-<version>-aarch64-unknown-linux-gnu`  | Linux, 64-bit ARM     |
-| `panoptes-<version>-x86_64-apple-darwin`        | macOS, Intel          |
-| `panoptes-<version>-aarch64-apple-darwin`       | macOS, Apple silicon  |
-| `panoptes-<version>-x86_64-pc-windows-msvc.exe` | Windows, Intel or AMD |
+| Executable                                         | Platform              |
+| -------------------------------------------------- | --------------------- |
+| `saerskriven-<version>-x86_64-unknown-linux-gnu`   | Linux, Intel or AMD   |
+| `saerskriven-<version>-aarch64-unknown-linux-gnu`  | Linux, 64-bit ARM     |
+| `saerskriven-<version>-x86_64-apple-darwin`        | macOS, Intel          |
+| `saerskriven-<version>-aarch64-apple-darwin`       | macOS, Apple silicon  |
+| `saerskriven-<version>-x86_64-pc-windows-msvc.exe` | Windows, Intel or AMD |
 
 Download yours and the `SHA256SUMS` file beside it, then:
 
 ```sh
 sha256sum --check --ignore-missing SHA256SUMS
-gh attestation verify panoptes-* --repo AlexaDeWit/Panoptes \
-  --signer-workflow AlexaDeWit/Panoptes/.github/workflows/ci.yml
-chmod +x panoptes-*
+gh attestation verify saerskriven-* --repo AlexaDeWit/Saerskriven \
+  --signer-workflow AlexaDeWit/Saerskriven/.github/workflows/ci.yml
+chmod +x saerskriven-*
 mkdir -p ~/.local/bin
-mv panoptes-* ~/.local/bin/panoptes
-panoptes --version                 # prints the release's version
+mv saerskriven-* ~/.local/bin/saerskriven
+saerskriven --version                 # prints the release's version
 ```
 
 The checksum says the file arrived whole. The attestation says where it came
@@ -93,22 +97,22 @@ repository or another workflow, is not ours, whatever it is attached to. The
 command needs [the GitHub CLI](https://cli.github.com/) and reads the
 attestation from GitHub, not from the download.
 
-On Windows, rename the file to `panoptes.exe` and put it somewhere on `PATH`.
+On Windows, rename the file to `saerskriven.exe` and put it somewhere on `PATH`.
 On macOS the executables are unsigned, so Gatekeeper holds the first run:
-`xattr -cr ~/.local/bin/panoptes` clears the quarantine flag. Signing and
+`xattr -cr ~/.local/bin/saerskriven` clears the quarantine flag. Signing and
 notarization are deferred, not overlooked.
 
 ## Usage
 
 ```sh
-panoptes validate threat-model.yaml
-panoptes render threat-model.yaml --format md --out register.md
-panoptes render threat-model.yaml --format svg --out diagram.svg
-panoptes render threat-model.yaml --format pdf --out threat-model.pdf
-panoptes render threat-model.yaml --format svg --out -
+saerskriven validate threat-model.yaml
+saerskriven render threat-model.yaml --format md --out register.md
+saerskriven render threat-model.yaml --format svg --out diagram.svg
+saerskriven render threat-model.yaml --format pdf --out threat-model.pdf
+saerskriven render threat-model.yaml --format svg --out -
 ```
 
-Both commands read Threat Dragon v2 JSON and Panoptes YAML, and the content
+Both commands read Threat Dragon v2 JSON and Saerskriven YAML, and the content
 decides which: the file name is never consulted, so a model saved under any
 extension reads.
 
@@ -129,11 +133,11 @@ module together with the fonts it typesets with. Nothing is fetched and no
 browser is involved, so `--format pdf` works with no network and on a machine
 that has neither Typst nor a browser installed.
 
-| Exit code | What it means                                                                                                                                                                                                                                                                                                                                                                           |
-| --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 0         | The command did what it was asked.                                                                                                                                                                                                                                                                                                                                                      |
-| 1         | Panoptes read the file and refused it: no format claimed it, or one did and either the document or the model it maps to is not valid.                                                                                                                                                                                                                                                   |
-| 2         | The invocation cannot be carried out: the parser or the option schema refused it, a file cannot be read or written, a choice names no diagram, a stream refused the output, a pipe whose reader closed aside, or a projection could not be produced from a model Panoptes accepted, which is the PDF typesetter refusing the document or an install missing the files it typesets with. |
+| Exit code | What it means                                                                                                                                                                                                                                                                                                                                                                              |
+| --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 0         | The command did what it was asked.                                                                                                                                                                                                                                                                                                                                                         |
+| 1         | Saerskriven read the file and refused it: no format claimed it, or one did and either the document or the model it maps to is not valid.                                                                                                                                                                                                                                                   |
+| 2         | The invocation cannot be carried out: the parser or the option schema refused it, a file cannot be read or written, a choice names no diagram, a stream refused the output, a pipe whose reader closed aside, or a projection could not be produced from a model Saerskriven accepted, which is the PDF typesetter refusing the document or an install missing the files it typesets with. |
 
 Errors go to standard error, path-precise where a schema refused something,
 and no failure prints a stack trace.
@@ -148,7 +152,7 @@ nix develop            # or let direnv do it
 pnpm install
 pnpm check             # everything the CI gate runs
 pnpm fix               # write formatting and lint fixes
-pnpm nx e2e @panoptes/studio-e2e   # browser smoke, excluded from pnpm check
+pnpm nx e2e @saerskriven/studio-e2e   # browser smoke, excluded from pnpm check
 semgrep scan --config auto --severity ERROR --severity WARNING --error .   # SAST scan, excluded from pnpm check
 scripts/check-provenance.mjs       # dependency provenance, excluded from pnpm check
 ```
@@ -172,7 +176,7 @@ URLs without a separate build configuration.
 
 ### Packaging the CLI
 
-`nx build @panoptes/cli` bundles the CLI into one ESM file with every
+`nx build @saerskriven/cli` bundles the CLI into one ESM file with every
 workspace package and every dependency inlined, which is why that project's
 build deviates from the root esbuild defaults (the reasons sit in
 [`apps/cli/package.json`](apps/cli/package.json)). The bundle carries the
@@ -190,7 +194,7 @@ beside it. Deno is a packaging tool only: it never resolves the workspace, and
 node stays the development and test runtime.
 
 The pull request run then puts the CLI's whole scenario table through that
-executable, with `PANOPTES_COMPILED_RUNNER=required` so a missing executable
+executable, with `SAERSKRIVEN_COMPILED_RUNNER=required` so a missing executable
 fails the suite rather than dropping a runner in silence. `dist/cli` is
 gitignored and therefore no nx input, so that run skips the nx cache, and so
 should a local one after a recompile.
@@ -211,10 +215,10 @@ time through `import.meta.dirname`. Anything not included, and not inlined
 into the bundle by esbuild, does not exist for a user who has only the
 executable. `apps/cli/dist/assets` is that directory today: the Typst
 WebAssembly module, which the build copies out of the node_modules of
-`@panoptes/render`, the package that declares the compiler, and five
+`@saerskriven/render`, the package that declares the compiler, and five
 Liberation faces with their licence, which it copies out of the store path
-`PANOPTES_FONTS_DIR` names. Neither is committed. `apps/cli/src/pdf.ts` reads
-them back at run time and hands the bytes to `@panoptes/render/pdf`, which
+`SAERSKRIVEN_FONTS_DIR` names. Neither is committed. `apps/cli/src/pdf.ts` reads
+them back at run time and hands the bytes to `@saerskriven/render/pdf`, which
 compiles but reads no file, so the studio can compile the same document in a
 browser from bytes of its own. The module is pinned by the
 catalog and the lockfile and the fonts by the nixpkgs revision in

@@ -8,7 +8,7 @@ import type {
   Point,
   Size,
   TrustBoundary,
-} from '@panoptes/model';
+} from '@saerskriven/model';
 import {
   badgeAnchor,
   badgeBox,

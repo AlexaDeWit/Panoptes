@@ -14,7 +14,7 @@ import {
   threatStatusSchema,
   type Model,
   type ThreatCategory,
-} from '@panoptes/model';
+} from '@saerskriven/model';
 import { Either } from 'effect';
 import fc from 'fast-check';
 import { readFileSync } from 'node:fs';
@@ -42,21 +42,21 @@ export const ecluseModel: Model = Either.getOrThrow(
  */
 export const goldenPath: string = join(
   repositoryRoot,
-  'test-data/panoptes/ecluse.yaml',
+  'test-data/saerskriven/ecluse.yaml',
 );
 
-const panoptesModelPath = join(
+const saerskrivenModelPath = join(
   repositoryRoot,
-  'threat-modelling/panoptes.yaml',
+  'threat-modelling/saerskriven.yaml',
 );
 
-const panoptesModelJsonPath = join(
+const saerskrivenModelJsonPath = join(
   repositoryRoot,
-  'test-data/panoptes.model.json',
+  'test-data/saerskriven.model.json',
 );
 
 /**
- * A Panoptes YAML file this repository commits, with its committed bytes and,
+ * A Saerskriven YAML file this repository commits, with its committed bytes and,
  * where this suite is the producer of one, the path it writes the file's
  * internal model out to.
  */
@@ -75,7 +75,7 @@ export type EmittedModel = {
 };
 
 /**
- * Every Panoptes YAML file this repository commits. Each is a fixed point of
+ * Every Saerskriven YAML file this repository commits. Each is a fixed point of
  * the codec: what a read of the committed bytes writes back is those bytes
  * again. The suites that gate a native file read this list rather than a
  * path, so a third file joins all of them by being added here.
@@ -95,10 +95,10 @@ export const nativeFixtures: readonly NativeFixture[] = [
     modelJsonPath: undefined,
   },
   {
-    name: 'Panoptes model',
-    path: panoptesModelPath,
-    text: readFileSync(panoptesModelPath, 'utf8'),
-    modelJsonPath: panoptesModelJsonPath,
+    name: 'Saerskriven model',
+    path: saerskrivenModelPath,
+    text: readFileSync(saerskrivenModelPath, 'utf8'),
+    modelJsonPath: saerskrivenModelJsonPath,
   },
 ];
 

@@ -1,4 +1,4 @@
-import { panoptesYamlCodec } from '@panoptes/formats';
+import { saerskrivenYamlCodec } from '@saerskriven/formats';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { Action } from '../store/actions.js';
 import { initialState, placeholderModel } from '../store/state.js';
@@ -11,7 +11,7 @@ import {
 import { useFileSession } from './file-commands.js';
 import { chosenFile, specBridge, type SpecBridge } from './files.fixtures.js';
 
-const nativeText = panoptesYamlCodec.write(sampleModel).output;
+const nativeText = saerskrivenYamlCodec.write(sampleModel).output;
 
 const session = (bridge: SpecBridge) =>
   renderHook(() => useFileSession(bridge)).result;
@@ -79,7 +79,7 @@ describe('useFileSession', () => {
     expect(bridge.writes[0].name).toBe('threat-model.yaml');
     expect(bridge.writes[0].elsewhere).toBe(true);
     expect(bridge.offered[0].map((type) => type.description)).toEqual([
-      'Panoptes YAML',
+      'Saerskriven YAML',
       'Threat Dragon JSON',
     ]);
   });

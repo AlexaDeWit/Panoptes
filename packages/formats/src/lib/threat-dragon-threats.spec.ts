@@ -1,5 +1,5 @@
-import { parsedFixture } from '@panoptes/model/fixtures';
-import type { ThreatDragonDocument } from '@panoptes/wire-threat-dragon';
+import { parsedFixture } from '@saerskriven/model/fixtures';
+import type { ThreatDragonDocument } from '@saerskriven/wire-threat-dragon';
 import { Either } from 'effect';
 import { renderDivergences } from './divergence.js';
 import { readThreatDragon } from './threat-dragon-read.js';

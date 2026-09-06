@@ -1,4 +1,4 @@
-import type { ElementId } from '@panoptes/model';
+import type { ElementId } from '@saerskriven/model';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { currentAnnouncement, resetAnnouncements } from './announcements.js';
 import { Action } from '../store/actions.js';

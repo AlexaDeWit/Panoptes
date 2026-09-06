@@ -17,7 +17,7 @@ import {
   strideCategoriesToWire,
   threatStatusesToModel,
   threatStatusesToWire,
-} from './panoptes-yaml-vocabulary.js';
+} from './saerskriven-yaml-vocabulary.js';
 
 type Table = Readonly<Record<string, string>>;
 

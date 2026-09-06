@@ -9,19 +9,19 @@ import {
   parseModel,
   threatSchema,
   toParseIssues,
-} from '@panoptes/model';
+} from '@saerskriven/model';
 import {
-  panoptesYamlWireSchema,
-  type PanoptesYamlAssumption,
-  type PanoptesYamlBoundaryShape,
-  type PanoptesYamlDiagram,
-  type PanoptesYamlDocument,
-  type PanoptesYamlElement,
-  type PanoptesYamlEndpoint,
-  type PanoptesYamlMetadata,
-  type PanoptesYamlMitigation,
-  type PanoptesYamlThreat,
-} from '@panoptes/wire-panoptes-yaml';
+  saerskrivenYamlWireSchema,
+  type SaerskrivenYamlAssumption,
+  type SaerskrivenYamlBoundaryShape,
+  type SaerskrivenYamlDiagram,
+  type SaerskrivenYamlDocument,
+  type SaerskrivenYamlElement,
+  type SaerskrivenYamlEndpoint,
+  type SaerskrivenYamlMetadata,
+  type SaerskrivenYamlMitigation,
+  type SaerskrivenYamlThreat,
+} from '@saerskriven/wire-saerskriven-yaml';
 import { Either } from 'effect';
 import { parseDocument, YAMLParseError } from 'yaml';
 import type { z } from 'zod';
@@ -29,14 +29,14 @@ import { ReadFailure, type ReadResult } from './codec.js';
 import {
   aliasCostIn,
   type ComposedDocument,
-} from './panoptes-yaml-document.js';
+} from './saerskriven-yaml-document.js';
 import {
   assumptionStatusesToModel,
   mitigationStatusesToModel,
   severitiesToModel,
   threatStatusesToModel,
   toModelCategory,
-} from './panoptes-yaml-vocabulary.js';
+} from './saerskriven-yaml-vocabulary.js';
 import {
   exceededReadLimit,
   parseWithinLimits,
@@ -54,7 +54,7 @@ type MitigationInput = z.input<typeof mitigationSchema>;
 type AssumptionInput = z.input<typeof assumptionSchema>;
 
 /**
- * A Panoptes YAML file as the internal model, the document it was mapped
+ * A Saerskriven YAML file as the internal model, the document it was mapped
  * from, and where the two do not correspond.
  *
  * The file and the model are separate declarations that say the same thing
@@ -63,7 +63,7 @@ type AssumptionInput = z.input<typeof assumptionSchema>;
  * would show. Ids reach the model as the plain strings the file holds and
  * are branded by `parseModel`, the same way the Threat Dragon read hands
  * them over. Vocabularies go through the tables in
- * `panoptes-yaml-vocabulary.ts`, which are total in both directions at
+ * `saerskriven-yaml-vocabulary.ts`, which are total in both directions at
  * compile time. Geometry is a pair of numbers on either side and crosses
  * unchanged.
  *
@@ -80,7 +80,7 @@ type AssumptionInput = z.input<typeof assumptionSchema>;
  * files.
  *
  * Threats arrive in the order the file lists them, which for a file
- * Panoptes wrote is number order. Reading reorders nothing.
+ * Saerskriven wrote is number order. Reading reorders nothing.
  *
  * Nothing throws. A text past a bound in `readLimits` is
  * `ExceededReadLimit`. The read is in three steps rather than one call to
@@ -89,7 +89,7 @@ type AssumptionInput = z.input<typeof assumptionSchema>;
  * works through and how much of the document they repeat are measured
  * before any of them is resolved, and only then is the document turned into
  * a value. Resolving is where an alias costs anything, and
- * `panoptes-yaml-document.ts` carries what each measurement bounds.
+ * `saerskriven-yaml-document.ts` carries what each measurement bounds.
  *
  * The parser's alias accounting is turned off rather than tuned, since it
  * costs more than what it bounds: `toJS` is given `maxAliasCount: -1`, and
@@ -103,9 +103,9 @@ type AssumptionInput = z.input<typeof assumptionSchema>;
  * `InvalidWireDocument` with paths into the file. A mapping `parseModel`
  * refuses is `InvalidModel` with paths into the model.
  */
-export function readPanoptesYaml(
+export function readSaerskrivenYaml(
   text: string,
-): Either.Either<ReadResult<typeof panoptesYamlWireSchema>, ReadFailure> {
+): Either.Either<ReadResult<typeof saerskrivenYamlWireSchema>, ReadFailure> {
   return Either.flatMap(parseYaml(text), mapDocument);
 }
 
@@ -163,8 +163,8 @@ function toReadFailure(error: unknown): ReadFailure {
 
 function mapDocument(
   given: unknown,
-): Either.Either<ReadResult<typeof panoptesYamlWireSchema>, ReadFailure> {
-  const wire = panoptesYamlWireSchema.safeParse(given);
+): Either.Either<ReadResult<typeof saerskrivenYamlWireSchema>, ReadFailure> {
+  const wire = saerskrivenYamlWireSchema.safeParse(given);
   if (!wire.success) {
     return Either.left(
       ReadFailure.InvalidWireDocument({
@@ -182,7 +182,7 @@ function mapDocument(
   });
 }
 
-function toModelInput(document: PanoptesYamlDocument) {
+function toModelInput(document: SaerskrivenYamlDocument) {
   return {
     metadata: toMetadata(document.metadata),
     diagrams: document.diagrams.map(toDiagram),
@@ -193,7 +193,7 @@ function toModelInput(document: PanoptesYamlDocument) {
   };
 }
 
-function toMetadata(metadata: PanoptesYamlMetadata): MetadataInput {
+function toMetadata(metadata: SaerskrivenYamlMetadata): MetadataInput {
   return {
     title: metadata.title,
     owner: metadata.owner,
@@ -202,7 +202,7 @@ function toMetadata(metadata: PanoptesYamlMetadata): MetadataInput {
   };
 }
 
-function toDiagram(diagram: PanoptesYamlDiagram): DiagramInput {
+function toDiagram(diagram: SaerskrivenYamlDiagram): DiagramInput {
   return {
     id: diagram.id,
     title: diagram.title,
@@ -210,7 +210,7 @@ function toDiagram(diagram: PanoptesYamlDiagram): DiagramInput {
   };
 }
 
-function toElement(element: PanoptesYamlElement): ElementInput {
+function toElement(element: SaerskrivenYamlElement): ElementInput {
   if (element.kind === 'flow') {
     return {
       kind: 'flow',
@@ -244,7 +244,7 @@ function toElement(element: PanoptesYamlElement): ElementInput {
   };
 }
 
-function toCommon(element: PanoptesYamlElement) {
+function toCommon(element: SaerskrivenYamlElement) {
   return {
     id: element.id,
     name: element.name,
@@ -254,19 +254,21 @@ function toCommon(element: PanoptesYamlElement) {
   };
 }
 
-function toEndpoint(endpoint: PanoptesYamlEndpoint): EndpointInput {
+function toEndpoint(endpoint: SaerskrivenYamlEndpoint): EndpointInput {
   return endpoint.kind === 'attached'
     ? { kind: 'attached', element: endpoint.element }
     : { kind: 'free', position: endpoint.position };
 }
 
-function toBoundaryShape(shape: PanoptesYamlBoundaryShape): BoundaryShapeInput {
+function toBoundaryShape(
+  shape: SaerskrivenYamlBoundaryShape,
+): BoundaryShapeInput {
   return shape.kind === 'box'
     ? { kind: 'box', position: shape.position, size: shape.size }
     : { kind: 'curve', waypoints: shape.waypoints };
 }
 
-function toThreat(threat: PanoptesYamlThreat): ThreatInput {
+function toThreat(threat: SaerskrivenYamlThreat): ThreatInput {
   return {
     id: threat.id,
     number: threat.number,
@@ -280,7 +282,7 @@ function toThreat(threat: PanoptesYamlThreat): ThreatInput {
   };
 }
 
-function toMitigation(mitigation: PanoptesYamlMitigation): MitigationInput {
+function toMitigation(mitigation: SaerskrivenYamlMitigation): MitigationInput {
   return {
     id: mitigation.id,
     title: mitigation.title,
@@ -290,7 +292,7 @@ function toMitigation(mitigation: PanoptesYamlMitigation): MitigationInput {
   };
 }
 
-function toAssumption(assumption: PanoptesYamlAssumption): AssumptionInput {
+function toAssumption(assumption: SaerskrivenYamlAssumption): AssumptionInput {
   return {
     id: assumption.id,
     prose: assumption.prose,

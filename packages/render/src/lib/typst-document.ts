@@ -1,5 +1,5 @@
-import type { UnplacedEndpoint } from '@panoptes/canvas';
-import type { Model } from '@panoptes/model';
+import type { UnplacedEndpoint } from '@saerskriven/canvas';
+import type { Model } from '@saerskriven/model';
 import type { RootContent } from 'mdast';
 import { registerDocument } from './register-tree.js';
 import { renderSvg } from './svg-document.js';

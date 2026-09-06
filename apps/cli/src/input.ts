@@ -8,8 +8,8 @@ import {
   renderDivergences,
   type DetectedRead,
   type Divergence,
-} from '@panoptes/formats';
-import type { ParseIssue } from '@panoptes/model';
+} from '@saerskriven/formats';
+import type { ParseIssue } from '@saerskriven/model';
 import { Either } from 'effect';
 import { readTextFile, sizeOf } from './files.js';
 import {
@@ -44,7 +44,7 @@ export function describeReadFailure(
 ): string {
   return DetectionFailure.$is('NoFormatClaimed')(failure)
     ? lines(
-        `No format claimed the file. Panoptes tried ${failure.tried.join(', ')}.`,
+        `No format claimed the file. Saerskriven tried ${failure.tried.join(', ')}.`,
       )
     : ReadFailure.$match(failure, {
         ExceededReadLimit: ({ limit, bound, observed }) =>

@@ -1,4 +1,4 @@
-import { layoutDiagram, type CanvasLayout } from '@panoptes/canvas';
+import { layoutDiagram, type CanvasLayout } from '@saerskriven/canvas';
 import {
   canvasModel,
   probeFlow,

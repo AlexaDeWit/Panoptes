@@ -1,11 +1,11 @@
-import { escapedForTerminal } from '@panoptes/formats';
-import type { Diagram, Model } from '@panoptes/model';
+import { escapedForTerminal } from '@saerskriven/formats';
+import type { Diagram, Model } from '@saerskriven/model';
 import {
   renderRegister,
   renderSvg,
   renderTypst,
   type SvgDocument,
-} from '@panoptes/render';
+} from '@saerskriven/render';
 import { Either } from 'effect';
 import { z } from 'zod';
 import { writeFile } from './files.js';
@@ -44,7 +44,7 @@ const wholeModelFormats = {
 } satisfies Record<WholeModelFormat, string>;
 
 /**
- * `panoptes render <file> --format svg|md|pdf --out <path>`: a projection of
+ * `saerskriven render <file> --format svg|md|pdf --out <path>`: a projection of
  * the model the file holds, written to that path, or to standard output
  * where the path is `-`. `md` writes the whole threat register and `pdf`
  * writes every diagram followed by that register, so neither takes

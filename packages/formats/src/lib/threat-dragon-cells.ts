@@ -12,14 +12,14 @@ import type {
   Store,
   TextElement,
   TrustBoundary,
-} from '@panoptes/model';
+} from '@saerskriven/model';
 import type {
   ThreatDragonBaseData,
   ThreatDragonCell,
   ThreatDragonElementData,
   ThreatDragonEndpoint,
   ThreatDragonThreat,
-} from '@panoptes/wire-threat-dragon';
+} from '@saerskriven/wire-threat-dragon';
 import type { Divergence } from './divergence.js';
 import { equivalent } from './equivalence.js';
 import {

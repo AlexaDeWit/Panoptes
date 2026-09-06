@@ -1,4 +1,4 @@
-import { threatCategorySchema, type ThreatCategory } from '@panoptes/model';
+import { threatCategorySchema, type ThreatCategory } from '@saerskriven/model';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 

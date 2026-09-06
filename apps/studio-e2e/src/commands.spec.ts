@@ -141,12 +141,12 @@ test('opening is one chord, through the picker the browser offers', async ({
   const chooser = page.waitForEvent('filechooser');
   await expect(page.getByTestId('file-input')).toHaveCount(1);
   await page.keyboard.press(registeredChords.open[0]);
-  await (await chooser).setFiles(vendored('test-data/panoptes/ecluse.yaml'));
+  await (await chooser).setFiles(vendored('test-data/saerskriven/ecluse.yaml'));
 
   await expect(page.getByTestId('failure-notice')).toBeEmpty();
   await openMenu(page);
   await expect(page.getByTestId('file-state')).toHaveText(
-    'ecluse.yaml, Panoptes YAML, no unsaved changes',
+    'ecluse.yaml, Saerskriven YAML, no unsaved changes',
   );
   await closeMenu(page);
   await canvasSettled(page);
@@ -168,7 +168,7 @@ test('a command still waiting on its surface claims its chord and changes nothin
   await expect(actor).toHaveClass(/selected/u);
   await openMenu(page);
   await expect(page.getByTestId('file-state')).toHaveText(
-    'Untitled, Panoptes YAML, no unsaved changes',
+    'Untitled, Saerskriven YAML, no unsaved changes',
   );
   await closeMenu(page);
   expect(await viewportTransform(page)).toBe(settled);
@@ -199,7 +199,7 @@ test('a shortcut waits while a name is being typed, and saving and undo do not',
 
   await openMenu(page);
   await expect(page.getByTestId('file-state')).toHaveText(
-    'threat-model.yaml, Panoptes YAML, unsaved changes',
+    'threat-model.yaml, Saerskriven YAML, unsaved changes',
   );
   await closeMenu(page);
   await expect(

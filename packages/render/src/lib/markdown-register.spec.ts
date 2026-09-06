@@ -12,7 +12,7 @@ import {
   type Threat,
   type ThreatCategory,
   type ThreatStatus,
-} from '@panoptes/model';
+} from '@saerskriven/model';
 import { Either } from 'effect';
 import type { PhrasingContent } from 'mdast';
 import { readFileSync } from 'node:fs';
@@ -51,11 +51,11 @@ const registers: readonly {
     ),
   },
   {
-    name: 'Panoptes',
-    model: committedModel('test-data/panoptes.model.json'),
+    name: 'Saerskriven',
+    model: committedModel('test-data/saerskriven.model.json'),
     golden: join(
       repositoryRoot,
-      'test-data/render/panoptes.register.snapshot.md',
+      'test-data/render/saerskriven.register.snapshot.md',
     ),
   },
 ];

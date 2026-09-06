@@ -7,8 +7,8 @@ import {
   strideCategorySchema,
   threatCategorySchema,
   threatStatusSchema,
-} from '@panoptes/model';
-import type { ThreatDragonThreat } from '@panoptes/wire-threat-dragon';
+} from '@saerskriven/model';
+import type { ThreatDragonThreat } from '@saerskriven/wire-threat-dragon';
 import { equivalent } from './equivalence.js';
 import {
   fromSeverity,

@@ -6,7 +6,7 @@ import {
   type Point,
   type Severity,
   type Size,
-} from '@panoptes/model';
+} from '@saerskriven/model';
 import type { ReactElement } from 'react';
 import type { Box } from './geometry.js';
 import { svgNumber } from './numbers.js';

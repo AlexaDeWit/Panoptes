@@ -1,4 +1,4 @@
-import { threatStatusSchema, type ThreatStatus } from '@panoptes/model';
+import { threatStatusSchema, type ThreatStatus } from '@saerskriven/model';
 
 import { EnumField } from './enum-field.js';
 

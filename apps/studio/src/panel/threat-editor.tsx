@@ -1,4 +1,4 @@
-import type { Threat } from '@panoptes/model';
+import type { Threat } from '@saerskriven/model';
 import { Accordion } from 'radix-ui';
 import { useEffect, useId, useRef, useState } from 'react';
 import { CategoryField } from '../ui/category-field.js';

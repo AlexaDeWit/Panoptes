@@ -1,10 +1,14 @@
-import { diagramIdSchema, threatIdSchema, type Model } from '@panoptes/model';
+import {
+  diagramIdSchema,
+  threatIdSchema,
+  type Model,
+} from '@saerskriven/model';
 import type {
   ThreatDragonCell,
   ThreatDragonDiagram,
   ThreatDragonDocument,
   ThreatDragonThreat,
-} from '@panoptes/wire-threat-dragon';
+} from '@saerskriven/wire-threat-dragon';
 import type { WriteResult } from './codec.js';
 import type { Divergence } from './divergence.js';
 import { equivalent } from './equivalence.js';

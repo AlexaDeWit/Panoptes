@@ -5,7 +5,7 @@ import {
   renderDivergences,
   type Divergence,
   type FormatName,
-} from '@panoptes/formats';
+} from '@saerskriven/formats';
 import { Ajv } from 'ajv';
 import { Either } from 'effect';
 import { readFileSync } from 'node:fs';
@@ -34,7 +34,7 @@ type Gated = {
 
 const gated: readonly Gated[] = [
   { path: 'test-data/ecluse.json', format: 'threat-dragon' },
-  { path: 'threat-modelling/panoptes.yaml', format: 'panoptes-yaml' },
+  { path: 'threat-modelling/saerskriven.yaml', format: 'saerskriven-yaml' },
 ];
 
 /**

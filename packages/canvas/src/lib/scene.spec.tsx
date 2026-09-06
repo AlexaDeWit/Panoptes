@@ -1,9 +1,9 @@
-import type { Model } from '@panoptes/model';
+import type { Model } from '@saerskriven/model';
 import { renderToStaticMarkup } from 'react-dom/server';
 import {
   ecluseModel,
   everyGlyphModel,
-  panoptesModel,
+  saerskrivenModel,
 } from './canvas.fixtures.js';
 import { layoutDiagram } from './layout.js';
 import { svgNumber } from './numbers.js';
@@ -34,17 +34,17 @@ const scenes: readonly {
     unplaced: 1,
   },
   {
-    name: 'the Panoptes read and render diagram',
-    model: panoptesModel,
+    name: 'the Saerskriven read and render diagram',
+    model: saerskrivenModel,
     diagram: 0,
-    golden: './panoptes-read-and-render-diagram.snapshot.svg',
+    golden: './saerskriven-read-and-render-diagram.snapshot.svg',
     unplaced: 0,
   },
   {
-    name: 'the Panoptes agent and desktop diagram',
-    model: panoptesModel,
+    name: 'the Saerskriven agent and desktop diagram',
+    model: saerskrivenModel,
     diagram: 1,
-    golden: './panoptes-agent-and-desktop-diagram.snapshot.svg',
+    golden: './saerskriven-agent-and-desktop-diagram.snapshot.svg',
     unplaced: 0,
   },
 ];
