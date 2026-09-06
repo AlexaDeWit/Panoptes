@@ -13,7 +13,7 @@ const furthestAcross = /^OSV\.dev, actor/u;
 
 const furthestDown = /^Écluse Dredger, process/u;
 
-const placeholderCorner = /^Studio, process/u;
+const placeholderCorner = /^Store, store/u;
 
 const clearanceOf = async (
   page: Page,

@@ -121,7 +121,7 @@ describe('runCommand', () => {
 
     runCommand(commandById('actor-tool'), recording.surface);
 
-    expect(modelStore.getState().present.diagrams[0].elements).toHaveLength(3);
+    expect(modelStore.getState().present.diagrams[0].elements).toHaveLength(4);
     expect(recording.asked).toEqual([]);
   });
 

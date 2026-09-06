@@ -214,6 +214,71 @@ does not take is left to React Flow. The other way, Escape in the panel puts
 focus back on the element, through `focusElement`, which is the same route an
 added element takes to focus.
 
+## What a gesture will do, said before it is made
+
+Nothing about selection or hover is carried by colour alone, so what is
+selected reads in greyscale, in forced colours and at any zoom. A selected
+element takes a dashed frame a step heavier than the outline it is drawn
+with, and the handles a flow runs from. A flow has no box to frame, so the
+weight of its own line carries both states: heavier under the pointer, and
+heavier again once selected. The three weights are the token module's
+`cueWidths`
+([the visual system](../../../../packages/canvas/README.md#the-visual-system)),
+reaching the CSS module beside `diagram-canvas.tsx` as `--pn-cue-*`
+properties, so a cue is measured against the weight the drawing itself was
+laid down at rather than against a literal in a stylesheet.
+
+The canvas package draws its own edge body rather than React Flow's, and
+React Flow's is what carries the wider invisible path a built-in edge is hit
+tested on. So a flow here is hit tested on the line as drawn, which is what
+makes widening that line under the pointer both the cue and the band. What
+that band should be is issue 191's, along with the boundary hit testing named
+below.
+
+The pointer says what a click would do. React Flow's own sheet already lands
+`pointer` on a flow, `crosshair` on a handle a flow is drawn from, and `grab`
+then `grabbing` on the background that pans. What the studio adds is
+`pointer` over an element, which React Flow leaves at the `grab` it gives any
+draggable node, so the cursor speaks for the selection a click makes rather
+than for the drag. The other two cursors the epic asks for belong to the tool
+modes of issue 175, and the CSS module holds them against a `data-tool`
+attribute on the canvas container: `select`, which is the attribute absent
+and the rules above, `place`, a crosshair over the whole canvas because a
+placement tool draws where the click lands, and `hand`, the pan's own grab
+everywhere. Nothing sets the attribute until 175 does.
+
+The control that resizes the selected element is a square where the handle a
+flow is drawn from is a circle, and the two sit at the same corner, so shape
+rather than colour tells them apart. Its cursor names the direction it sizes
+in, and it is on the selected element alone, React Flow mounting it from
+`selected` (the Resize bullet above).
+
+What counts as in view is what the threat panel is not over. The panel opens
+on the same selection this pans for ([the panel](../panel/README.md)), so an
+element under it is an element out of sight, and the pan centres what it
+reveals in the room the panel leaves rather than in the canvas.
+`clearOfPanel` and `revealCentre` in `viewport.ts` are that arithmetic, over
+`panelCover`, which is what the panel covers: its border box and the inset it
+floats at. That number has one home, the canvas package's token module, which
+declares it on the document root as `--pn-panel-cover` for the panel's own
+stylesheet to size its box from ([the visual
+system](../../../../packages/canvas/README.md#the-visual-system)), so a panel
+drawn wider than the pan expects is not a state the two can reach.
+
+## The panel over it
+
+The threat panel is mounted here, inside the canvas container, which is what
+makes it an overlay on the diagram rather than a column taken off it ([the
+panel](../panel/README.md)). Two gestures cross the boundary between the two.
+Enter on the element the store has selected hands the panel the keyboard,
+which the canvas reads in the capture phase: React Flow answers Enter on a
+node itself, and by the time the press has bubbled the selection it reports
+has already moved, so a press read on the way up could not tell selecting an
+element from asking for the panel of one already selected. A press the panel
+does not take is left to React Flow. The other way, Escape in the panel puts
+focus back on the element, through `focusElement`, which is the same route an
+added element takes to focus.
+
 ## The view
 
 Opening a model fits the viewport to the whole of the diagram it carries.
@@ -239,6 +304,16 @@ The controls are `zoom-cluster.tsx`, three icons floating over the bottom
 right of the canvas, each one registered command showing its chord in a
 tooltip ([the commands](../commands/README.md)).
 
+`empty-state-hint.tsx` is the other piece of chrome floating over the canvas:
+one line across the top saying what to do next, while the studio is still on
+the model it opens with and nothing has happened to that model. The store
+answers whether it is ([the selectors](../store/selectors.ts)), so the line
+holds no flag of its own and goes at the first edit and at the first file. It
+is drawn here rather than in the canvas package, which draws the model and
+nothing beside it. It sits in the room the fit leaves clear, so it covers no
+part of the diagram, and it does not wrap, a second line being one that would
+reach into that diagram.
+
 ## Accessibility
 
 Every element is a tab stop, with an accessible name built out of model data:
@@ -247,11 +322,10 @@ says. The glyphs are hidden from assistive technology, so a badge would
 otherwise be visual alone. A flow also names the elements its ends attach to.
 
 Focus and selection are drawn apart and stack: focus is the app's own ring
-(`--pn-focus-ring`) on the element the browser focused, selection a dashed
-frame around a node or a heavier line along a flow. Both are an outline or a
-border rather than a shadow, so forced-colours mode keeps them. Severity is
-legible without colour on the canvas itself: a badge carries its count over a
-letter for the severity.
+(`--pn-focus-ring`) on the element the browser focused, selection the frame
+and the weights above. Both are an outline or a border rather than a shadow,
+so forced-colours mode keeps them. Severity is legible without colour on the
+canvas itself: a badge carries its count over a letter for the severity.
 
 Moving an element by keyboard is React Flow's own path: tab to it, Enter to
 select it, then an arrow key moves it five model units, twenty with shift
@@ -321,7 +395,9 @@ commands](../commands/README.md)). The
   outline alone, which trades this limit for a worse one, a boundary
   draggable only by the two pixels of its dashed stroke. The keyboard
   reaches the flow, selects it, deletes it and connects from it, so nothing
-  about a flow is out of reach by keyboard. The pointer alone is limited.
+  about a flow is out of reach by keyboard. The pointer alone is limited, and
+  it shows no hover cue there either, the boundary being what the pointer is
+  over.
 - React Flow's container carries `role="application"`, which turns off a
   screen reader's browse mode inside the canvas: Tab reaches every element
   but the reader's own navigation keys do not. React Flow writes the role

@@ -24,6 +24,14 @@ and no immutable snapshot to push onto a stack.
   state a model starts in, and the placeholder model the studio opens on until
   a file is opened. The stacks hold whole models: the model's operations return
   new models sharing everything they did not change, so a snapshot is cheap.
+  The placeholder is the smallest thing that is still a data-flow diagram, an
+  actor, the records it sends, and the store they land in, and each box is a
+  two-to-one box on the studio's grid, chosen for proportion, with room inside
+  for its name at the canvas type size and a height of one line plus padding
+  rounded up to the grid, so no name wraps and the flow's name has somewhere
+  to hang clear of both. Its title is `Untitled`, which is what a model that
+  has never been in a file is called, so the tab, the file controls and a
+  saved file all read one string rather than a word a view supplied.
 - `actions.ts` is the `Action` union, an Effect `Data.taggedEnum`. Ten tags
   carry a `@panoptes/model` operation and its arguments; the rest are undo,
   redo, selection, which element has its name open in a field on the canvas,
@@ -47,7 +55,13 @@ and no immutable snapshot to push onto a stack.
   a model to read.
 - `selectors.ts` derives what views show. Unsaved work is `present !== saved`
   by identity, so undoing back to the saved point clears it with no
-  bookkeeping.
+  bookkeeping. `windowTitle` is what the browser tab is named: the model's
+  name as the file session's `nameOf` gives it, ahead of the product name, so
+  the tab and the menu cannot disagree on what the model is called.
+  `showingPlaceholder` is whether the studio is still on the model it opened
+  with and nothing has happened to it, which is what the canvas hangs its
+  hint on
+  ([the canvas](../canvas/README.md)).
 
 Selection, the name a field is open on, and the file lifecycle stay out of the
 undo stacks, so an undo moves the model and leaves the user where they were. A

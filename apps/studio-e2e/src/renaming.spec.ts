@@ -18,59 +18,59 @@ const drawnName = (element: Locator, run: string): Locator =>
   element.locator(`text.${run}`);
 
 const drawFlow = async (page: Page): Promise<void> => {
-  const reader = nodeNamed(page, /^Reader, actor/u);
-  await reader.hover();
+  const actor = nodeNamed(page, /^Actor, actor/u);
+  await actor.hover();
   await dragOnto(
     page,
-    reader.locator('[data-handleid="right"]'),
-    nodeNamed(page, /^Studio, process/u).locator('[data-handleid="left"]'),
+    actor.locator('[data-handleid="right"]'),
+    nodeNamed(page, /^Store, store/u).locator('[data-handleid="left"]'),
   );
   await expect(nodeNamed(page, /^New flow, flow/u)).toHaveCount(1);
 };
 
-test('a process is renamed by double-clicking it, and undo puts the name back', async ({
+test('a store is renamed by double-clicking it, and undo puts the name back', async ({
   page,
 }) => {
   await openPlaceholder(page);
-  const studio = nodeNamed(page, /^Studio, process/u);
+  const store = nodeNamed(page, /^Store, store/u);
 
-  await studio.dblclick();
-  await rename(page, 'Studio').fill('Workshop');
-  await rename(page, 'Studio').press('Enter');
+  await store.dblclick();
+  await rename(page, 'Store').fill('Ledger');
+  await rename(page, 'Store').press('Enter');
 
-  const renamed = nodeNamed(page, /^Workshop, process/u);
+  const renamed = nodeNamed(page, /^Ledger, store/u);
   await expect(renamed).toHaveCount(1);
-  await expect(drawnName(renamed, 'pn-label')).toHaveText('Workshop');
+  await expect(drawnName(renamed, 'pn-label')).toHaveText('Ledger');
   await expect(renamed).toBeFocused();
 
   await runFromMenu(page, 'Undo');
 
-  await expect(nodeNamed(page, /^Studio, process/u)).toHaveCount(1);
+  await expect(nodeNamed(page, /^Store, store/u)).toHaveCount(1);
 });
 
-test('a process is renamed from the keyboard, on the selection', async ({
+test('a store is renamed from the keyboard, on the selection', async ({
   page,
 }) => {
   await openPlaceholder(page);
-  await selectNode(page, /^Studio, process/u);
+  await selectNode(page, /^Store, store/u);
 
   await page.keyboard.press(registeredChords.rename[0]);
-  await rename(page, 'Studio').fill('Workshop');
-  await rename(page, 'Studio').press('Enter');
+  await rename(page, 'Store').fill('Ledger');
+  await rename(page, 'Store').press('Enter');
 
-  await expect(nodeNamed(page, /^Workshop, process/u)).toHaveCount(1);
+  await expect(nodeNamed(page, /^Ledger, store/u)).toHaveCount(1);
 });
 
 test('escape leaves the name the model holds', async ({ page }) => {
   await openPlaceholder(page);
-  const reader = await selectNode(page, /^Reader, actor/u);
+  const reader = await selectNode(page, /^Actor, actor/u);
 
   await page.keyboard.press(registeredChords.rename[0]);
-  await rename(page, 'Reader').fill('Auditor');
-  await rename(page, 'Reader').press('Escape');
+  await rename(page, 'Actor').fill('Auditor');
+  await rename(page, 'Actor').press('Escape');
 
-  await expect(rename(page, 'Reader')).toHaveCount(0);
-  await expect(nodeNamed(page, /^Reader, actor/u)).toHaveCount(1);
+  await expect(rename(page, 'Actor')).toHaveCount(0);
+  await expect(nodeNamed(page, /^Actor, actor/u)).toHaveCount(1);
   await expect(reader).toBeFocused();
 });
 
@@ -78,28 +78,28 @@ test('the menu opens the name of the selection in a field', async ({
   page,
 }) => {
   await openPlaceholder(page);
-  await selectNode(page, /^Studio, process/u);
+  await selectNode(page, /^Store, store/u);
 
   await runFromMenu(page, 'Rename the selection');
 
-  await expect(rename(page, 'Studio')).toBeFocused();
-  await rename(page, 'Studio').fill('Workshop');
-  await rename(page, 'Studio').press('Enter');
+  await expect(rename(page, 'Store')).toBeFocused();
+  await rename(page, 'Store').fill('Ledger');
+  await rename(page, 'Store').press('Enter');
 
-  await expect(nodeNamed(page, /^Workshop, process/u)).toHaveCount(1);
+  await expect(nodeNamed(page, /^Ledger, store/u)).toHaveCount(1);
 });
 
 test('leaving the field for another control keeps the click that took focus', async ({
   page,
 }) => {
   await openPlaceholder(page);
-  await selectNode(page, /^Studio, process/u);
+  await selectNode(page, /^Store, store/u);
 
   await page.keyboard.press(registeredChords.rename[0]);
-  await rename(page, 'Studio').fill('Workshop');
+  await rename(page, 'Store').fill('Ledger');
   await menuButton(page).click();
 
-  await expect(nodeNamed(page, /^Workshop, process/u)).toHaveCount(1);
+  await expect(nodeNamed(page, /^Ledger, store/u)).toHaveCount(1);
   await expect(page.getByRole('menu')).toBeVisible();
 });
 

@@ -101,10 +101,10 @@ test('the canvas stays live behind the open menu', async ({ page }) => {
   await openMenu(page);
 
   await expect(page.getByRole('main')).not.toHaveAttribute('aria-hidden');
-  const studio = nodeNamed(page, /^Studio, process/u);
-  await studio.click();
+  const store = nodeNamed(page, /^Store, store/u);
+  await store.click();
 
-  await expect(studio).toHaveClass(/selected/u);
+  await expect(store).toHaveClass(/selected/u);
   await expect(page.getByRole('menu')).toHaveCount(0);
 });
 
@@ -120,7 +120,7 @@ test('the button marks unsaved work, and the menu says so in words', async ({
   await expect(menuButton(page)).toHaveAccessibleName('Menu, unsaved changes');
   await openMenu(page);
   await expect(page.getByTestId('file-state')).toHaveText(
-    'No file, Panoptes YAML, unsaved changes',
+    'Untitled, Panoptes YAML, unsaved changes',
   );
 });
 
@@ -159,10 +159,10 @@ test('closing asks in the menu before it drops work that is in no file', async (
   await discard.click();
 
   await canvasSettled(page);
-  await expect(nodeNamed(page, /^Reader, actor/u)).toHaveCount(1);
+  await expect(nodeNamed(page, /^Actor, actor/u)).toHaveCount(1);
   await openMenu(page);
   await expect(page.getByTestId('file-state')).toHaveText(
-    'No file, Panoptes YAML, no unsaved changes',
+    'Untitled, Panoptes YAML, no unsaved changes',
   );
 });
 
@@ -178,7 +178,7 @@ test('closing a file that holds everything on screen takes no second press', asy
   await expect(elementNodes(page)).toHaveCount(2);
   await openMenu(page);
   await expect(page.getByTestId('file-state')).toHaveText(
-    'No file, Panoptes YAML, no unsaved changes',
+    'Untitled, Panoptes YAML, no unsaved changes',
   );
 });
 

@@ -48,10 +48,10 @@ test('the panel opens on the element selected and goes when the selection does',
   await openPlaceholder(page);
   await expect(threatPanel(page)).toHaveCount(0);
 
-  const reader = await selectNode(page, /^Reader, actor/u);
+  const actor = await selectNode(page, /^Actor, actor/u);
 
   await expect(
-    threatPanel(page).getByRole('heading', { name: 'Threats on Reader' }),
+    threatPanel(page).getByRole('heading', { name: 'Threats on Actor' }),
   ).toBeVisible();
   await expect(
     threatPanel(page).locator(':focus'),
@@ -60,7 +60,7 @@ test('the panel opens on the element selected and goes when the selection does',
 
   await page.keyboard.press('Escape');
 
-  await expect(reader).not.toHaveClass(/selected/u);
+  await expect(actor).not.toHaveClass(/selected/u);
   await expect(threatPanel(page)).toHaveCount(0);
 });
 
@@ -68,76 +68,76 @@ test('Enter hands the panel the keyboard, and the two Escapes give it back and c
   page,
 }) => {
   await openPlaceholder(page);
-  const reader = await selectByKeyboard(page, /^Reader, actor/u);
+  const actor = await selectByKeyboard(page, /^Actor, actor/u);
   const add = threatPanel(page).getByRole('button', { name: 'Add a threat' });
-  await expect(reader).toBeFocused();
+  await expect(actor).toBeFocused();
 
   await page.keyboard.press('Enter');
   await expect(add).toBeFocused();
 
   await page.keyboard.press('Escape');
   await expect(threatPanel(page)).toHaveCount(0);
-  await expect(reader).toBeFocused();
-  await expect(reader).toHaveClass(/selected/u);
+  await expect(actor).toBeFocused();
+  await expect(actor).toHaveClass(/selected/u);
 
   await page.keyboard.press('Escape');
 
-  await expect(reader).not.toHaveClass(/selected/u);
+  await expect(actor).not.toHaveClass(/selected/u);
 });
 
 test('an element the panel would cover is panned clear of it', async ({
   page,
 }) => {
   await openPlaceholder(page);
-  const studio = nodeNamed(page, /^Studio, process/u);
-  const covered = await boxOf(studio);
+  const store = nodeNamed(page, /^Store, store/u);
+  const covered = await boxOf(store);
 
-  await selectByKeyboard(page, /^Studio, process/u);
+  await selectByKeyboard(page, /^Store, store/u);
 
   const panel = await boxOf(threatPanel(page));
   expect(
     covered.right,
     'the element was drawn where the panel opens, so the pan has something to do',
   ).toBeGreaterThan(panel.left);
-  expect((await boxOf(studio)).right).toBeLessThanOrEqual(panel.left);
+  expect((await boxOf(store)).right).toBeLessThanOrEqual(panel.left);
 });
 
 test('a node just inside the panel edge is panned clear of it too', async ({
   page,
 }) => {
   await openPlaceholder(page);
-  const reader = nodeNamed(page, /^Reader, actor/u);
-  await selectNode(page, /^Reader, actor/u);
+  const actor = nodeNamed(page, /^Actor, actor/u);
+  await selectNode(page, /^Actor, actor/u);
   const panel = await boxOf(threatPanel(page));
   await page.keyboard.press('Escape');
   await expect(threatPanel(page)).toHaveCount(0);
 
   const justInside = 10;
-  await panAcross(page, panel.left + justInside - (await boxOf(reader)).right);
-  const covered = await boxOf(reader);
+  await panAcross(page, panel.left + justInside - (await boxOf(actor)).right);
+  const covered = await boxOf(actor);
   expect(
     covered.right,
     'the node ends under the panel, in the strip its padding and border draw',
   ).toBeGreaterThan(panel.left);
 
-  await selectNode(page, /^Reader, actor/u);
+  await selectNode(page, /^Actor, actor/u);
 
-  expect((await boxOf(reader)).right).toBeLessThanOrEqual(panel.left);
+  expect((await boxOf(actor)).right).toBeLessThanOrEqual(panel.left);
 });
 
 test('a draft the model refused comes back when its element is selected again', async ({
   page,
 }) => {
   await openPlaceholder(page);
-  await selectNode(page, /^Reader, actor/u);
-  await disclosure(page, /A reader edits/u).click();
+  await selectNode(page, /^Actor, actor/u);
+  await threatPanel(page).getByRole('button', { name: 'Add a threat' }).click();
   await titleField(page).fill(`Soft${softHyphen}hyphen`);
   await titleField(page).press('Enter');
   await expect(titleField(page)).toHaveAttribute('aria-invalid', 'true');
 
-  await selectByKeyboard(page, /^Studio, process/u);
+  await selectByKeyboard(page, /^Store, store/u);
   await expect(titleField(page)).toHaveCount(0);
-  await selectByKeyboard(page, /^Reader, actor/u);
+  await selectByKeyboard(page, /^Actor, actor/u);
 
   await expect(titleField(page)).toHaveValue(`Soft${softHyphen}hyphen`);
   await expect(titleField(page)).toHaveAttribute('aria-invalid', 'true');

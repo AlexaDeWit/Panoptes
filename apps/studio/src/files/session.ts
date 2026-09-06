@@ -14,7 +14,11 @@ import {
 import type { Model } from '@panoptes/model';
 import { Either } from 'effect';
 import { Action } from '../store/actions.js';
-import { FileLifecycle, type RetainedSource } from '../store/state.js';
+import {
+  FileLifecycle,
+  untitledModel,
+  type RetainedSource,
+} from '../store/state.js';
 import { OpenOutcome, SaveOutcome, type SaveFileType } from './bridge.js';
 
 type FormatFile = {
@@ -51,10 +55,14 @@ export const nativeFormat: FormatName = 'panoptes-yaml';
 /** The name a model with no file of its own is proposed under. */
 export const unnamedModel = 'threat-model';
 
-/** What the open file is called, and a word for having none. */
+/**
+ * What the open file is called, and what a model that lives in none is
+ * called: the same word the model itself carries as its title and the tab
+ * shows, rather than a second way of saying there is no file.
+ */
 export function nameOf(file: FileLifecycle): string {
   return FileLifecycle.$match(file, {
-    NoFile: () => 'No file',
+    NoFile: () => untitledModel,
     Opened: ({ name }) => name,
   });
 }
