@@ -1,4 +1,4 @@
-# Panoptes threat register
+# Saerskriven threat register
 
 | Number | Title                                                              | Elements                                     | Category                            | Severity  | Status      |
 | ------ | ------------------------------------------------------------------ | -------------------------------------------- | ----------------------------------- | --------- | ----------- |
@@ -9,7 +9,7 @@
 | 5      | A read throws instead of returning a failure                       | Codec read                                   | Denial of service (STRIDE)          | Medium    | Mitigated   |
 | 6      | A key the schema does not declare disappears in silence            | Codec read                                   | Tampering (STRIDE)                  | Low       | Mitigated   |
 | 7      | A file builds a model whose references do not resolve              | Codec read, Internal model                   | Tampering (STRIDE)                  | Medium    | Mitigated   |
-| 8      | A file from a release Panoptes does not model is read in part      | Codec read                                   | Tampering (STRIDE)                  | Medium    | Mitigated   |
+| 8      | A file from a release Saerskriven does not model is read in part      | Codec read                                   | Tampering (STRIDE)                  | Medium    | Mitigated   |
 | 9      | A save drops what the file carried                                 | Codec write                                  | Tampering (STRIDE)                  | High      | Mitigated   |
 | 10     | Threat prose forges the register's own structure                   | Markdown register                            | Tampering (STRIDE)                  | High      | Mitigated   |
 | 11     | Raw HTML in threat prose reaches a published page                  | Markdown register, Downstream site generator | Tampering (STRIDE)                  | High      | Transferred |
@@ -24,7 +24,7 @@
 | 20     | A lossy save through an agent tool drops records without saying so | MCP server and tools, Model core and codecs  | Tampering (STRIDE)                  | Medium    | Open        |
 | 21     | Prose in a model file steers the agent that read it                | MCP server and tools, Model core and codecs  | Prompt injection (OWASP LLM Top 10) | Undecided | Open        |
 | 22     | A substituted dependency or action reaches the build               | None                                         | Tampering (STRIDE)                  | High      | Mitigated   |
-| 23     | Raw HTML in prose reaches Panoptes' own PDF composition            | Markdown register, Canvas glyphs and SVG     | Tampering (STRIDE)                  | Medium    | Open        |
+| 23     | Raw HTML in prose reaches Saerskriven's own PDF composition            | Markdown register, Canvas glyphs and SVG     | Tampering (STRIDE)                  | Medium    | Open        |
 | 24     | A text is claimed by the wrong codec, or declined by its own       | Codec read                                   | Tampering (STRIDE)                  | Medium    | Mitigated   |
 | 25     | A compromised upstream release is pinned as it stands              | None                                         | Tampering (STRIDE)                  | High      | Open        |
 
@@ -37,7 +37,7 @@
 
 **Description**
 
-A file large enough to fill memory is handed to Panoptes, and the parse itself is what costs, so a check after parsing arrives too late.
+A file large enough to fill memory is handed to Saerskriven, and the parse itself is what costs, so a check after parsing arrives too late.
 
 **Mitigation**
 
@@ -133,7 +133,7 @@ A threat naming an element no diagram holds, a duplicate id, a threat numbered a
 
 `parseModel` is the only way a model value comes into existence, and it enforces more than the shapes: ids unique where they must be, threat numbers unique and never above `lastIssuedThreatNumber`, flow endpoints anchored inside their own diagram and never to the flow itself, and every element and threat reference resolving. A refusal comes back with a path into the model, and `detect.spec.ts` pins the dangling case.
 
-## Threat 8: A file from a release Panoptes does not model is read in part
+## Threat 8: A file from a release Saerskriven does not model is read in part
 
 - **Elements**: Codec read
 - **Category**: Tampering (STRIDE)
@@ -146,7 +146,7 @@ A file stamped with a later format version is read by a reader that understands 
 
 **Mitigation**
 
-`formatVersion` is a zod literal, so a Panoptes file stamped anything but 1 fails at that path rather than reaching the mapping, and a Threat Dragon file outside major 2 is refused whole. Where no codec claims a text the failure names every format tried, in the order tried, so the person holding the file is told what was attempted rather than handed a partial read.
+`formatVersion` is a zod literal, so a Saerskriven file stamped anything but 1 fails at that path rather than reaching the mapping, and a Threat Dragon file outside major 2 is refused whole. Where no codec claims a text the failure names every format tried, in the order tried, so the person holding the file is told what was attempted rather than handed a partial read.
 
 ## Threat 9: A save drops what the file carried
 
@@ -161,7 +161,7 @@ Threat Dragon's format holds styling, ports, and per-type flags the internal mod
 
 **Mitigation**
 
-A format is adopted completely or not at all. The wire schema declares everything the format carries, the parts Panoptes does not model included, and a write merges onto the document the read returned, so what it does not map is left as the file had it. Where the model does hold something less exactly than the file stated it, the write reports that rather than overwriting. Three oracles gate this over the vendored corpus, among them a comparison of raw parsed input against raw parsed output in which no scalar may move unclaimed.
+A format is adopted completely or not at all. The wire schema declares everything the format carries, the parts Saerskriven does not model included, and a write merges onto the document the read returned, so what it does not map is left as the file had it. Where the model does hold something less exactly than the file stated it, the write reports that rather than overwriting. Three oracles gate this over the vendored corpus, among them a comparison of raw parsed input against raw parsed output in which no scalar may move unclaimed.
 
 ## Threat 10: Threat prose forges the register's own structure
 
@@ -341,7 +341,7 @@ A threat description is free text that an agent reads as part of its context. A 
 
 **Mitigation**
 
-Nothing is built, and nothing here can be assessed yet. The tools do not exist, and the harness that decides what an agent does with what it reads is out of scope. What Panoptes owns is the return path, where issue #48 puts every write through the model operations. The severity stays undecided until there is a tool surface to assess.
+Nothing is built, and nothing here can be assessed yet. The tools do not exist, and the harness that decides what an agent does with what it reads is out of scope. What Saerskriven owns is the return path, where issue #48 puts every write through the model operations. The severity stays undecided until there is a tool surface to assess.
 
 ## Threat 22: A substituted dependency or action reaches the build
 
@@ -362,7 +362,7 @@ Three mechanisms, all of them on main.
 - `pnpm install --frozen-lockfile` installs the lockfile rather than resolving against a registry, and external versions live only in the `pnpm-workspace.yaml` catalog.
 - Every GitHub Action is pinned to a full commit SHA with the version in a trailing comment. zizmor's hash-pin policy fails an unpinned one, and Renovate bumps them.
 
-## Threat 23: Raw HTML in prose reaches Panoptes' own PDF composition
+## Threat 23: Raw HTML in prose reaches Saerskriven's own PDF composition
 
 - **Elements**: Markdown register, Canvas glyphs and SVG
 - **Category**: Tampering (STRIDE)
@@ -371,11 +371,11 @@ Three mechanisms, all of them on main.
 
 **Description**
 
-Threat prose is markdown, and markdown carries raw HTML. The register hands the decision about that to whatever publishes it, because a register is markdown somebody else renders. The PDF path is Panoptes composing a document itself, so there is nobody to hand it to.
+Threat prose is markdown, and markdown carries raw HTML. The register hands the decision about that to whatever publishes it, because a register is markdown somebody else renders. The PDF path is Saerskriven composing a document itself, so there is nobody to hand it to.
 
 **Mitigation**
 
-Nothing is built. Issue #34 carries a criterion of its own for this: a hostile fixture holding a script tag and event-handler HTML in threat prose has to come out of the PDF path inert. This one is owned rather than transferred, because here Panoptes is the composer rather than the author of an intermediate. Medium for the reason threat 14 is medium: the ruled pipeline is Typst compiled to WebAssembly with no browser, so the markup reaches a typesetter rather than a scripting engine.
+Nothing is built. Issue #34 carries a criterion of its own for this: a hostile fixture holding a script tag and event-handler HTML in threat prose has to come out of the PDF path inert. This one is owned rather than transferred, because here Saerskriven is the composer rather than the author of an intermediate. Medium for the reason threat 14 is medium: the ruled pipeline is Typst compiled to WebAssembly with no browser, so the markup reaches a typesetter rather than a scripting engine.
 
 ## Threat 24: A text is claimed by the wrong codec, or declined by its own
 
@@ -386,11 +386,11 @@ Nothing is built. Issue #34 carries a criterion of its own for this: a hostile f
 
 **Description**
 
-Two codecs are offered every text, and exactly one should own it. Claim on the wrong signal and a broken Panoptes file is reported as a refused Threat Dragon document, or a broken file of a known format falls through to nobody and its holder is told that no format was recognized. Either way the paths into the file point at a document nobody wrote.
+Two codecs are offered every text, and exactly one should own it. Claim on the wrong signal and a broken Saerskriven file is reported as a refused Threat Dragon document, or a broken file of a known format falls through to nobody and its holder is told that no format was recognized. Either way the paths into the file point at a document nobody wrote.
 
 **Mitigation**
 
-The claim rule is the discriminator lists in `detect.ts`, and `detect.spec.ts` pins both halves of it. Seven texts that no codec may claim, three of them stamping a version inside major 2 and one of those carrying a detail but no summary. A document broken one level below a naming key, which is claimed and then refused with a path into the file. A Panoptes model saved as JSON, which opens as a Panoptes model because no file name is consulted. And the smallest file of each release the codecs do model, against a Threat Dragon major above 2 and a `formatVersion` other than 1, which are claimed by nobody.
+The claim rule is the discriminator lists in `detect.ts`, and `detect.spec.ts` pins both halves of it. Seven texts that no codec may claim, three of them stamping a version inside major 2 and one of those carrying a detail but no summary. A document broken one level below a naming key, which is claimed and then refused with a path into the file. A Saerskriven model saved as JSON, which opens as a Saerskriven model because no file name is consulted. And the smallest file of each release the codecs do model, against a Threat Dragon major above 2 and a `formatVersion` other than 1, which are claimed by nobody.
 
 ## Threat 25: A compromised upstream release is pinned as it stands
 

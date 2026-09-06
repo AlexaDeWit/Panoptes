@@ -1,11 +1,11 @@
 {
-  "name": "@panoptes/studio-e2e",
+  "name": "@saerskriven/studio-e2e",
   "version": "0.0.1",
   "private": true,
   "devDependencies": {
     "@axe-core/playwright": "catalog:",
-    "@panoptes/canvas": "workspace:*",
-    "@panoptes/formats": "workspace:*",
+    "@saerskriven/canvas": "workspace:*",
+    "@saerskriven/formats": "workspace:*",
     "@playwright/test": "catalog:",
     "effect": "catalog:"
   },
@@ -14,7 +14,7 @@
       "layer:app"
     ],
     "implicitDependencies": [
-      "@panoptes/studio"
+      "@saerskriven/studio"
     ],
     "targets": {
       "boundaries": {},

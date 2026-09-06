@@ -22,7 +22,7 @@ export default defineConfig({
     trace: 'on-first-retry',
   },
   webServer: {
-    command: 'pnpm exec nx run @panoptes/studio:serve',
+    command: 'pnpm exec nx run @saerskriven/studio:serve',
     url: 'http://localhost:4200',
     reuseExistingServer: !process.env['CI'],
     timeout: 120_000,

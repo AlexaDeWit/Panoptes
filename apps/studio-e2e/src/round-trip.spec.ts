@@ -2,7 +2,7 @@ import {
   readAnyFormat,
   renderDivergences,
   type DetectedRead,
-} from '@panoptes/formats';
+} from '@saerskriven/formats';
 import { expect, test } from '@playwright/test';
 import { Either } from 'effect';
 import { readFileSync } from 'node:fs';

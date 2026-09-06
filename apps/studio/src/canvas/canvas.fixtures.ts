@@ -1,5 +1,5 @@
-import type { Model } from '@panoptes/model';
-import { elementId, parsedFixture } from '@panoptes/model/fixtures';
+import type { Model } from '@saerskriven/model';
+import { elementId, parsedFixture } from '@saerskriven/model/fixtures';
 
 /** The actor the fixture threat is attached to. */
 export const readerElement = elementId('actor-reader');
@@ -22,7 +22,7 @@ export const noteElement = elementId('text-note');
 const document = {
   metadata: {
     title: 'Canvas fixture',
-    owner: 'Panoptes',
+    owner: 'Saerskriven',
     description: '',
     contributors: [],
   },

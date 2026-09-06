@@ -3,13 +3,13 @@ import {
   type Diagram,
   type DiagramId,
   type Model,
-} from '@panoptes/model';
+} from '@saerskriven/model';
 import type {
   ThreatDragonCell,
   ThreatDragonDiagram,
   ThreatDragonDocument,
   ThreatDragonThreat,
-} from '@panoptes/wire-threat-dragon';
+} from '@saerskriven/wire-threat-dragon';
 import type { Divergence } from './divergence.js';
 import { mergeCell } from './threat-dragon-cells.js';
 import { cellsOf, indexById } from './threat-dragon-document.js';

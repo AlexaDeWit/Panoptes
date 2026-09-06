@@ -1,4 +1,4 @@
-import type { Point } from '@panoptes/model';
+import type { Point } from '@saerskriven/model';
 import {
   arrowheadPath,
   controlPolygon,

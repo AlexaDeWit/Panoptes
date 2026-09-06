@@ -1,5 +1,5 @@
-import { emptyModel, type ElementId } from '@panoptes/model';
-import { elementId } from '@panoptes/model/fixtures';
+import { emptyModel, type ElementId } from '@saerskriven/model';
+import { elementId } from '@saerskriven/model/fixtures';
 import { initialState } from '../store/state.js';
 import { modelStore } from '../store/store.js';
 import { currentAnnouncement, resetAnnouncements } from './announcements.js';

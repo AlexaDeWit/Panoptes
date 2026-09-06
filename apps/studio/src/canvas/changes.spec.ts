@@ -1,5 +1,5 @@
-import { flowEndNodeId, layoutDiagram } from '@panoptes/canvas';
-import type { ElementId, Flow } from '@panoptes/model';
+import { flowEndNodeId, layoutDiagram } from '@saerskriven/canvas';
+import type { ElementId, Flow } from '@saerskriven/model';
 import { Action } from '../store/actions.js';
 import {
   canvasModel,

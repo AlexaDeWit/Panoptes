@@ -1,5 +1,5 @@
-import { layoutDiagram, type CanvasLayout } from '@panoptes/canvas';
-import type { DiagramId, ElementId, Model } from '@panoptes/model';
+import { layoutDiagram, type CanvasLayout } from '@saerskriven/canvas';
+import type { DiagramId, ElementId, Model } from '@saerskriven/model';
 import type { State } from '../store/state.js';
 
 type LaidOut = {

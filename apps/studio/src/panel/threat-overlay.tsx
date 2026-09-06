@@ -1,4 +1,4 @@
-import type { ElementId } from '@panoptes/model';
+import type { ElementId } from '@saerskriven/model';
 import { useCallback, useEffect, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { focusElement } from '../canvas/edits.js';

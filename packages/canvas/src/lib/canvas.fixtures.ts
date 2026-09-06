@@ -1,5 +1,5 @@
-import type { Model } from '@panoptes/model';
-import { parsedFixture } from '@panoptes/model/fixtures';
+import type { Model } from '@saerskriven/model';
+import { parsedFixture } from '@saerskriven/model/fixtures';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
@@ -31,10 +31,10 @@ export const everyGlyphModel: Model = parsedFixture(
 export const ecluseModel: Model = parsedFixture(modelFile('ecluse.model.json'));
 
 /**
- * Panoptes' own threat model in the internal form, written out of
- * `threat-modelling/panoptes.yaml` by the formats suite. Two diagrams, so
+ * Saerskriven's own threat model in the internal form, written out of
+ * `threat-modelling/saerskriven.yaml` by the formats suite. Two diagrams, so
  * the canvas draws a model that holds more than one.
  */
-export const panoptesModel: Model = parsedFixture(
-  modelFile('panoptes.model.json'),
+export const saerskrivenModel: Model = parsedFixture(
+  modelFile('saerskriven.model.json'),
 );

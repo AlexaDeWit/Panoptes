@@ -1,6 +1,6 @@
 # Code of Conduct
 
-Panoptes is one person's project right now, so I'll write this plainly and in my own
+Saerskriven is one person's project right now, so I'll write this plainly and in my own
 voice rather than borrow an institutional template that implies a moderation team I
 don't have. This is the conduct I hold myself to, and that I expect from anyone who
 takes part: in the repository's issues, pull requests, and discussions, and anywhere

@@ -33,7 +33,7 @@ and no immutable snapshot to push onto a stack.
   has never been in a file is called, so the tab, the file controls and a
   saved file all read one string rather than a word a view supplied.
 - `actions.ts` is the `Action` union, an Effect `Data.taggedEnum`. Ten tags
-  carry a `@panoptes/model` operation and its arguments; the rest are undo,
+  carry a `@saerskriven/model` operation and its arguments; the rest are undo,
   redo, selection, which element has its name open in a field on the canvas,
   the three ends of the file lifecycle, and the two ways the
   file path refuses. `Saved` names a file as `Opened` does, because a first
@@ -78,7 +78,7 @@ bridge](../files/README.md)).
 
 `FileLifecycle.Opened` carries the file's name and its `RetainedSource`: the
 format it was read as, and the wire document that read produced. The document
-is there because a save merges the model onto it, and what Panoptes does not
+is there because a save merges the model onto it, and what Saerskriven does not
 model survives only that way. It rides in the store rather than in a component
 so that one dispatch settles which file the model lives in and what a save
 merges onto, and it stays out of the stacks with the rest of the file: an undo
@@ -88,7 +88,7 @@ format and nothing has to assert which codec owns which.
 
 ## What a later slice does
 
-- A reducer arm changes the model only by calling a `@panoptes/model`
+- A reducer arm changes the model only by calling a `@saerskriven/model`
   operation and folding its `Either`. Never assign into `state.present` or
   into anything it holds: the stacks share those objects, so one write in
   place rewrites every snapshot at once and takes undo, redo and unsaved work

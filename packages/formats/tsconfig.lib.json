@@ -14,7 +14,7 @@
       "path": "../model/tsconfig.lib.json"
     },
     {
-      "path": "../wire-panoptes-yaml/tsconfig.lib.json"
+      "path": "../wire-saerskriven-yaml/tsconfig.lib.json"
     },
     {
       "path": "../wire-threat-dragon/tsconfig.lib.json"

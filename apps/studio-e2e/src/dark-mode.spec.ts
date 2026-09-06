@@ -3,7 +3,7 @@ import {
   lightPalette,
   rgbColour,
   type Palette,
-} from '@panoptes/canvas';
+} from '@saerskriven/canvas';
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { nodeNamed, openEcluse } from './studio.fixtures.js';
 

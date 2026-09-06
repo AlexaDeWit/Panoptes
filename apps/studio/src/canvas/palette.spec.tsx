@@ -1,4 +1,4 @@
-import type { ElementId } from '@panoptes/model';
+import type { ElementId } from '@saerskriven/model';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { initialState } from '../store/state.js';

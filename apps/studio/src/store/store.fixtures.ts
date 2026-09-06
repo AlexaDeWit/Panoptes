@@ -1,11 +1,11 @@
-import { threatDragonCodec } from '@panoptes/formats';
-import type { Element, ElementId, Model, Threat } from '@panoptes/model';
+import { threatDragonCodec } from '@saerskriven/formats';
+import type { Element, ElementId, Model, Threat } from '@saerskriven/model';
 import {
   diagramId,
   elementId,
   parsedFixture,
   threatId,
-} from '@panoptes/model/fixtures';
+} from '@saerskriven/model/fixtures';
 import { Either } from 'effect';
 import type { RetainedSource } from './state.js';
 
@@ -14,7 +14,7 @@ import type { RetainedSource } from './state.js';
  * save into a format a model was not read from has to merge onto.
  */
 export const nativeSource: RetainedSource = {
-  format: 'panoptes-yaml',
+  format: 'saerskriven-yaml',
   document: undefined,
 };
 
@@ -90,7 +90,7 @@ export const firstThreat = threatId('threat-tampering');
 const document = {
   metadata: {
     title: 'Store fixture',
-    owner: 'Panoptes',
+    owner: 'Saerskriven',
     description: '',
     contributors: [],
   },

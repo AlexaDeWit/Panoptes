@@ -48,8 +48,8 @@ export class ErrorBoundary extends Component<
     }
 
     return (
-      <section aria-label="Panoptes stopped" className={styles.stopped}>
-        <h1 className={styles.headline}>Panoptes stopped</h1>
+      <section aria-label="Saerskriven stopped" className={styles.stopped}>
+        <h1 className={styles.headline}>Saerskriven stopped</h1>
         <p>
           The studio ran into something it has no handling for, so what was on
           screen is gone. Reloading starts again from the file on disk, and

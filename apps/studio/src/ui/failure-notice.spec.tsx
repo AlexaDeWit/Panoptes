@@ -1,6 +1,6 @@
-import { DetectionFailure, ReadFailure } from '@panoptes/formats';
-import { OperationFailure } from '@panoptes/model';
-import { diagramId, elementId, threatId } from '@panoptes/model/fixtures';
+import { DetectionFailure, ReadFailure } from '@saerskriven/formats';
+import { OperationFailure } from '@saerskriven/model';
+import { diagramId, elementId, threatId } from '@saerskriven/model/fixtures';
 import { render, screen } from '@testing-library/react';
 import { StudioFailure } from '../store/state.js';
 import { FailureNotice, describeFailure } from './failure-notice.js';
@@ -109,13 +109,13 @@ describe('describeFailure', () => {
       StudioFailure.Read({
         name: 'notes.txt',
         failure: DetectionFailure.NoFormatClaimed({
-          tried: ['threat-dragon', 'panoptes-yaml'],
+          tried: ['threat-dragon', 'saerskriven-yaml'],
         }),
       }),
     );
 
     expect(described.headline).toContain('notes.txt');
-    expect(described.details[0]).toContain('threat-dragon, panoptes-yaml');
+    expect(described.details[0]).toContain('threat-dragon, saerskriven-yaml');
   });
 
   it('renders a path into the document a codec refused', () => {

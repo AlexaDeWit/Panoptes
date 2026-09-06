@@ -4,11 +4,11 @@ import {
   mitigationSchema,
   modelMetadataSchema,
   threatSchema,
-} from '@panoptes/model';
+} from '@saerskriven/model';
 import type {
   ThreatDragonDocument,
   ThreatDragonThreat,
-} from '@panoptes/wire-threat-dragon';
+} from '@saerskriven/wire-threat-dragon';
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { z } from 'zod';
@@ -58,7 +58,7 @@ const vendored = join(
 /**
  * How long the spec that reads the whole corpus twice is given, past the
  * root `vitest.shared.mts` sets. It puts every file in `corpusTexts` through
- * both the Threat Dragon read and the Panoptes YAML read, so its cost grows
+ * both the Threat Dragon read and the Saerskriven YAML read, so its cost grows
  * with the corpus rather than staying fixed, and ten runs of the whole
  * workspace's suites on a contended host measured it at 9.8 seconds.
  */

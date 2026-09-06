@@ -3,14 +3,14 @@ import type {
   DetectionFailure,
   FormatName,
   ReadFailure,
-} from '@panoptes/formats';
+} from '@saerskriven/formats';
 import {
   emptyModel,
   parseModel,
   type ElementId,
   type Model,
   type OperationFailure,
-} from '@panoptes/model';
+} from '@saerskriven/model';
 import { Data, Either } from 'effect';
 
 type Retained<Read> = Read extends {
@@ -23,7 +23,7 @@ type Retained<Read> = Read extends {
 /**
  * Where a save writes from: a format, and either the wire document a read of
  * that format retained or nothing at all. Given a document the save merges
- * onto it, so what Panoptes does not model survives the round trip; given
+ * onto it, so what Saerskriven does not model survives the round trip; given
  * none the codec projects the model, which is what a save into a format the
  * model was not read from has to do.
  *

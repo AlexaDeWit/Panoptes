@@ -1,13 +1,13 @@
-# @panoptes/formats
+# @saerskriven/formats
 
-The codec contract for Panoptes' file formats. `Codec` is one interface over
+The codec contract for Saerskriven's file formats. `Codec` is one interface over
 two paths. `read` returns the internal model together with the wire document
 it was mapped from. `write` takes that document back as an option: given one
 it merges onto it, so what the model does not describe stays as the file had
 it; given none it projects the model into the format's canonical form.
 
 A format is adopted completely or not at all. Its wire schema declares
-everything the format carries, the parts Panoptes does not model included,
+everything the format carries, the parts Saerskriven does not model included,
 because that completeness is what preserves them: a merge leaves untouched
 what it does not map, and only a declared key is there to leave alone. The
 schema is demanding about what it declares and drops what it does not, so
@@ -38,7 +38,7 @@ text the format's syntax refuses, a document the wire schema refuses, and a
 mapping `parseModel` refuses. The two schema variants carry the model
 package's `ParseIssue`, so issues read the same way whichever boundary
 produced them, and `readFailureIssues` folds any failure to the issues it
-carries. Nothing throws. Imports `@panoptes/model` and the two wire packages,
+carries. Nothing throws. Imports `@saerskriven/model` and the two wire packages,
 and no other internal package.
 
 `readLimits` is what a read may spend on a text before it refuses it. It is
@@ -94,12 +94,12 @@ without recursing, which leaves the walk as the only thing standing between a
 bounds reads exactly as it did before they existed.
 
 `readThreatDragon` is the Threat Dragon v2 read. The format is declared by
-[`@panoptes/wire-threat-dragon`](../wire-threat-dragon/README.md), which
+[`@saerskriven/wire-threat-dragon`](../wire-threat-dragon/README.md), which
 imports zod and nothing else, and this package is the only one that maps
 between it and the model. That wire schema declares the whole file, the X6
-styling, ports, text blocks, and boundary bookkeeping Panoptes does not model
+styling, ports, text blocks, and boundary bookkeeping Saerskriven does not model
 included. What it declares it demands, and it demands nothing else, because it
-describes the file rather than the subset Panoptes can represent: a threat's
+describes the file rather than the subset Saerskriven can represent: a threat's
 status, severity, category and methodology are text, since Threat Dragon
 stores each label in the author's own locale, and a threat number is optional,
 since most threats in Threat Dragon's own demo models carry none. `version`
@@ -132,27 +132,27 @@ wire schema being complete. The label tables it ships in sixteen languages
 are the gate on the recovery above, which those models cannot exercise: every
 one of them is written in English.
 
-`readPanoptesYaml` and `writePanoptesYaml` are the Panoptes YAML format,
-version 1, paired as `panoptesYamlCodec`. It is the native format: it holds
+`readSaerskrivenYaml` and `writeSaerskrivenYaml` are the Saerskriven YAML format,
+version 1, paired as `saerskrivenYamlCodec`. It is the native format: it holds
 the whole model, so a read maps nothing away, a write leaves nothing out, and
 both report an empty divergence list on every valid file.
-[`docs/panoptes-yaml.md`](../../docs/panoptes-yaml.md) describes the file
+[`docs/saerskriven-yaml.md`](../../docs/saerskriven-yaml.md) describes the file
 itself.
 
-The format is declared by [`@panoptes/wire-panoptes-yaml`](../wire-panoptes-yaml/README.md),
+The format is declared by [`@saerskriven/wire-saerskriven-yaml`](../wire-saerskriven-yaml/README.md),
 which imports zod and nothing else. A file is a contract with people who
 already have one and the model is ours to change, so the two are separate
 declarations that happen to say the same thing today, and this package is the
 only one that knows both. The mapping is written out record by record in both
 directions, and every vocabulary crosses through the tables in
-`panoptes-yaml-vocabulary.ts`, each annotated with the whole `Record` of the
+`saerskriven-yaml-vocabulary.ts`, each annotated with the whole `Record` of the
 side it reads: a member added to either vocabulary is a compile error in the
 mapping. Ids cross as the plain strings a file holds and are branded by
 `parseModel`, the same way the Threat Dragon read hands them over.
 
 `formatVersion` is a zod literal, so a file stamped with anything else fails
 at that path rather than reaching the mapping, which is what will let the
-detection layer tell a Panoptes file from a JSON one without the extension.
+detection layer tell a Saerskriven file from a JSON one without the extension.
 Within version 1 a key the schema does not declare is dropped and reported
 through `undeclaredDivergences`, the same walk the Threat Dragon read uses,
 so a file from a later release still reads.
@@ -168,18 +168,18 @@ nothing for a merge to preserve when the format holds the whole model.
 
 Two files in this format are committed and compared byte for byte on every
 run, so a change to what the format writes arrives as a diff on a file.
-`test-data/panoptes/ecluse.yaml` is the Écluse model, read from Threat Dragon
-and written here. [`threat-modelling/panoptes.yaml`](../../threat-modelling/README.md)
-is Panoptes' own threat model, authored in this format rather than read out
+`test-data/saerskriven/ecluse.yaml` is the Écluse model, read from Threat Dragon
+and written here. [`threat-modelling/saerskriven.yaml`](../../threat-modelling/README.md)
+is Saerskriven's own threat model, authored in this format rather than read out
 of another, and it is its own golden: the read of the committed bytes is
 written back and compared against the file itself. `nativeFixtures` is the
 list of them, and the reads, the detection and the read-limit gates all
 iterate it, so a third file joins all of them by being added there. Each
 entry also names where its internal model is written out for the packages
 that cannot import a codec, or names none where another package is that
-file's producer. `test-data/panoptes.model.json` is the one this suite writes
+file's producer. `test-data/saerskriven.model.json` is the one this suite writes
 out, read by `packages/canvas` and `packages/render`, while `apps/cli` reads
-both committed files above and `apps/studio` the Panoptes one, so all four of
+both committed files above and `apps/studio` the Saerskriven one, so all four of
 those suites run after this one:
 [`test-data/README.md`](../../test-data/README.md) names
 the pairs and [`CODING.md`](../../CODING.md) the rule that orders them.
@@ -197,7 +197,7 @@ helpers in `threat-dragon-document.ts` rather than with casts.
 
 The merge writes over the mapped fields and leaves the document otherwise as
 it found it, which is how ports, `attrs` styling, `zIndex`, `tools`, and the
-per-type flags Panoptes does not model survive a save. A mapped field is
+per-type flags Saerskriven does not model survive a save. A mapped field is
 rewritten only where what the source says no longer reads back as what the
 model says, because the mapping is not injective in two places the corpus
 holds: Threat Dragon stores a category as the label its author saw, so a
@@ -281,12 +281,12 @@ a text costs to read is a property of the text rather than of a format, so an
 `ExceededReadLimit` is the answer and no further codec is offered the text.
 
 Threat Dragon is tried first, and the order is a cost decision rather than a
-correctness one. JSON is YAML, so trying Panoptes YAML first would run the
+correctness one. JSON is YAML, so trying Saerskriven YAML first would run the
 YAML parser over the whole of every Threat Dragon file before the schema
 refused it at `formatVersion`, where trying Threat Dragon first stops on a
 YAML file at the first character JSON cannot begin with. A file name is never
-consulted in either direction, so a Panoptes model saved as `.json` opens as a
-Panoptes model.
+consulted in either direction, so a Saerskriven model saved as `.json` opens as a
+Saerskriven model.
 
 Where no codec claims, the failure is `NoFormatClaimed`, which names every
 format tried, in the order tried, and carries no codec's issues: a codec that
@@ -308,4 +308,4 @@ Nothing here parses a text of its own. Detection is the codec reads, so the
 bounds those reads put on size, nesting and aliases bound a detected read
 too.
 
-Unit tests: `pnpm nx test @panoptes/formats`.
+Unit tests: `pnpm nx test @saerskriven/formats`.

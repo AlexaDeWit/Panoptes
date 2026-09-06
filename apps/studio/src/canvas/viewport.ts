@@ -3,8 +3,8 @@ import {
   panelCover,
   type CanvasBounds,
   type CanvasNode,
-} from '@panoptes/canvas';
-import type { Point } from '@panoptes/model';
+} from '@saerskriven/canvas';
+import type { Point } from '@saerskriven/model';
 import type { Viewport } from '@xyflow/react';
 
 /** How much of the page the canvas has, in its own pixels. */

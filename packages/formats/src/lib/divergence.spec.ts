@@ -4,7 +4,7 @@ import {
   elementIdSchema,
   mitigationIdSchema,
   threatIdSchema,
-} from '@panoptes/model';
+} from '@saerskriven/model';
 import {
   escapedForTerminal,
   hasDiverged,

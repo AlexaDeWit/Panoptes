@@ -8,9 +8,9 @@ import {
   readAnyFormat,
   type DetectedRead,
 } from './detect.js';
-import { goldenPath, nativeFixtures } from './panoptes-yaml.fixtures.js';
-import { panoptesYamlCodec } from './panoptes-yaml.js';
-import { readPanoptesYaml } from './panoptes-yaml-read.js';
+import { goldenPath, nativeFixtures } from './saerskriven-yaml.fixtures.js';
+import { saerskrivenYamlCodec } from './saerskriven-yaml.js';
+import { readSaerskrivenYaml } from './saerskriven-yaml-read.js';
 import { readLimits } from './read-limits.js';
 import { corpusTexts, ecluseText } from './threat-dragon.fixtures.js';
 import { threatDragonCodec } from './threat-dragon.js';
@@ -77,7 +77,7 @@ const refusedCell =
   '{"version":"2.6.2","summary":{"title":"Refused"},"detail":{"diagrams":[{"id":0,"title":"Level 0","diagramType":"STRIDE","cells":[{"id":"a","shape":"process","position":{"x":0,"y":0},"size":{"width":10,"height":10},"data":{"type":"tm.Process"}}]}]}}';
 
 const nativeAsJson = JSON.stringify(
-  Either.getOrThrow(panoptesYamlCodec.read(nativeText)).source,
+  Either.getOrThrow(saerskrivenYamlCodec.read(nativeText)).source,
 );
 
 const unclaimed: readonly { name: string; text: string }[] = [
@@ -110,11 +110,11 @@ const issuePaths = (given: unknown): readonly string[] =>
     ? given.issues.map((issue) => issue.path.join('.'))
     : [];
 
-function writtenAsPanoptesYaml(answer: DetectedRead): string {
+function writtenAsSaerskrivenYaml(answer: DetectedRead): string {
   if (answer.format === 'threat-dragon') {
-    return panoptesYamlCodec.write(
+    return saerskrivenYamlCodec.write(
       answer.model,
-      // @ts-expect-error a Threat Dragon document is no Panoptes YAML document
+      // @ts-expect-error a Threat Dragon document is no Saerskriven YAML document
       answer.source,
     ).output;
   }
@@ -144,24 +144,24 @@ describe('opening a text without being told its format', () => {
     expect(answer.codec).toBe(threatDragonCodec);
   });
 
-  it.each(nativeFixtures)('reads the $name as Panoptes YAML', ({ text }) => {
+  it.each(nativeFixtures)('reads the $name as Saerskriven YAML', ({ text }) => {
     const answer = opened(text);
-    expect(answer.format).toBe('panoptes-yaml');
-    expect(answer.codec).toBe(panoptesYamlCodec);
+    expect(answer.format).toBe('saerskriven-yaml');
+    expect(answer.codec).toBe(saerskrivenYamlCodec);
   });
 
   it.each(corpusTexts)('reads $name as Threat Dragon', ({ text }) => {
     expect(opened(text).format).toBe('threat-dragon');
   });
 
-  it('reads a Panoptes model saved as JSON as Panoptes YAML', () => {
-    expect(opened(nativeAsJson).format).toBe('panoptes-yaml');
+  it('reads a Saerskriven model saved as JSON as Saerskriven YAML', () => {
+    expect(opened(nativeAsJson).format).toBe('saerskriven-yaml');
   });
 
   it('hands back everything the codec that answered produced', () => {
     const answer = opened(nativeText);
     expect(answer.model).toEqual(
-      Either.getOrThrow(readPanoptesYaml(nativeText)).model,
+      Either.getOrThrow(readSaerskrivenYaml(nativeText)).model,
     );
     expect(answer.divergences).toEqual([]);
   });
@@ -180,8 +180,8 @@ describe('a file of one format offered to the other codec', () => {
     expect(issuePaths(refused)).toEqual(['version', 'summary', 'detail']);
   });
 
-  it('is YAML, so the Panoptes codec refuses the Écluse file at its stamp', () => {
-    const refused = Either.merge(panoptesYamlCodec.read(ecluseText));
+  it('is YAML, so the Saerskriven codec refuses the Écluse file at its stamp', () => {
+    const refused = Either.merge(saerskrivenYamlCodec.read(ecluseText));
     expect(refused).toMatchObject({ _tag: 'InvalidWireDocument' });
     expect(issuePaths(refused)).toContain('formatVersion');
   });
@@ -194,10 +194,10 @@ describe('a text no codec claims', () => {
     );
   });
 
-  it('tries Threat Dragon first and Panoptes YAML second', () => {
+  it('tries Threat Dragon first and Saerskriven YAML second', () => {
     expect(outcome('{"hello":"you"}')).toEqual(
       DetectionFailure.NoFormatClaimed({
-        tried: ['threat-dragon', 'panoptes-yaml'],
+        tried: ['threat-dragon', 'saerskriven-yaml'],
       }),
     );
   });
@@ -220,7 +220,7 @@ describe('a text past a read limit', () => {
 });
 
 describe('a file a codec claimed and then refused', () => {
-  it('reports a dangling reference as the Panoptes mapping refusing it', () => {
+  it('reports a dangling reference as the Saerskriven mapping refusing it', () => {
     const failure = outcome(danglingReference);
     expect(failure).toMatchObject({ _tag: 'InvalidModel' });
     expect(issuePaths(failure)).toContain('threats.0.elements.0');
@@ -236,7 +236,7 @@ describe('a file a codec claimed and then refused', () => {
 describe('a file from a release neither codec models', () => {
   it('opens the smallest file of each release they do model', () => {
     expect(opened(threatDragonMinimal).format).toBe('threat-dragon');
-    expect(opened(nativeMinimal).format).toBe('panoptes-yaml');
+    expect(opened(nativeMinimal).format).toBe('saerskriven-yaml');
   });
 
   it('claims no Threat Dragon file from a major above 2', () => {
@@ -245,7 +245,7 @@ describe('a file from a release neither codec models', () => {
     );
   });
 
-  it('claims no Panoptes file stamped other than 1', () => {
+  it('claims no Saerskriven file stamped other than 1', () => {
     expect(outcome(laterFormatVersion)).toEqual(
       DetectionFailure.NoFormatClaimed({ tried: formatNameSchema.options }),
     );
@@ -266,8 +266,8 @@ describe('the codec the result carries', () => {
   });
 
   it('refuses at compile time what nothing refuses at run time', () => {
-    expect(opened(writtenAsPanoptesYaml(opened(ecluseText))).format).toBe(
-      'panoptes-yaml',
+    expect(opened(writtenAsSaerskrivenYaml(opened(ecluseText))).format).toBe(
+      'saerskriven-yaml',
     );
   });
 });

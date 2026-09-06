@@ -1,4 +1,4 @@
-import { threatStatusSchema, type ThreatStatus } from '@panoptes/model';
+import { threatStatusSchema, type ThreatStatus } from '@saerskriven/model';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 

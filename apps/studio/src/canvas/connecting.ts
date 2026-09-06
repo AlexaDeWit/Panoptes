@@ -1,4 +1,4 @@
-import type { ElementId } from '@panoptes/model';
+import type { ElementId } from '@saerskriven/model';
 import { useSyncExternalStore } from 'react';
 import { modelStore } from '../store/store.js';
 import { connectElements } from './edits.js';

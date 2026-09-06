@@ -1,4 +1,4 @@
-import type { Point } from '@panoptes/model';
+import type { Point } from '@saerskriven/model';
 
 /** An axis-aligned box, as the low and high bound on each axis. */
 export type Box = {

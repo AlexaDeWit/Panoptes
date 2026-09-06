@@ -4,11 +4,11 @@
 #   scripts/package-cli.sh          the host target alone (what CI runs per PR)
 #   scripts/package-cli.sh --all    every target a release carries
 #
-# Input is apps/cli/dist/main.js, which `nx build @panoptes/cli` writes, and
+# Input is apps/cli/dist/main.js, which `nx build @saerskriven/cli` writes, and
 # apps/cli/dist/assets beside it, which the same build fills with the Typst
 # WebAssembly module out of node_modules and the fonts a PDF needs out of the
 # flake. Output is
-# dist/cli/panoptes-<version>-<target>[.exe] and SHA256SUMS beside them. The
+# dist/cli/saerskriven-<version>-<target>[.exe] and SHA256SUMS beside them. The
 # host executable is then run three times: with --version, whose output is
 # compared with the workspace version, over a committed fixture with validate,
 # and over the same fixture with render --format pdf, so a bundle deno cannot
@@ -48,7 +48,7 @@ readonly all_targets=(
 )
 
 # util-linux from the flake where the flake is in play, the host's otherwise.
-readonly unshare_bin="${PANOPTES_UNSHARE:-unshare}"
+readonly unshare_bin="${SAERSKRIVEN_UNSHARE:-unshare}"
 if ! command -v -- "${unshare_bin}" >/dev/null 2>&1; then
   echo "no unshare at '${unshare_bin}'. A network namespace is a Linux" >&2
   echo "facility, so this script does not run on macOS or Windows: compile" >&2
@@ -67,8 +67,8 @@ fi
 
 # The pinned runtimes are not optional: without them deno would compile
 # against whatever a warm DENO_DIR happens to hold, or fetch.
-if [ -z "${PANOPTES_DENORT_CACHE-}" ]; then
-  echo "PANOPTES_DENORT_CACHE is unset, so nothing pins the runtime deno" >&2
+if [ -z "${SAERSKRIVEN_DENORT_CACHE-}" ]; then
+  echo "SAERSKRIVEN_DENORT_CACHE is unset, so nothing pins the runtime deno" >&2
   echo "embeds. Run this inside the flake shell, which sets it:" >&2
   echo "  nix develop .#ci --command $0${1+ $1}" >&2
   exit 1
@@ -87,7 +87,7 @@ trap 'rm -rf -- "${scratch}"' EXIT
 deno_dir="${scratch}/deno"
 readonly deno_dir
 mkdir -p -- "${deno_dir}"
-ln -s -- "${PANOPTES_DENORT_CACHE}/dl" "${deno_dir}/dl"
+ln -s -- "${SAERSKRIVEN_DENORT_CACHE}/dl" "${deno_dir}/dl"
 export DENO_DIR="${deno_dir}"
 
 host_target="$(deno eval 'console.log(Deno.build.target)')"
@@ -104,7 +104,7 @@ elif [ "$#" -ne 0 ]; then
 fi
 
 for target in "${targets[@]}"; do
-  pinned="${PANOPTES_DENORT_CACHE}/dl/release/v${deno_version}/denort-${target}.zip"
+  pinned="${SAERSKRIVEN_DENORT_CACHE}/dl/release/v${deno_version}/denort-${target}.zip"
   if [ ! -e "${pinned}" ]; then
     echo "no pinned denort runtime for ${target} at ${pinned}." >&2
     echo "Add its hash to denortHashes in flake.nix; the compile fetches" >&2
@@ -114,12 +114,12 @@ for target in "${targets[@]}"; do
 done
 
 if [ ! -f "${bundle}" ]; then
-  echo "no bundle at ${bundle}: run 'nx build @panoptes/cli' first" >&2
+  echo "no bundle at ${bundle}: run 'nx build @saerskriven/cli' first" >&2
   exit 1
 fi
 
 if [ ! -d "${assets}" ]; then
-  echo "no assets at ${assets}: run 'nx build @panoptes/cli' first" >&2
+  echo "no assets at ${assets}: run 'nx build @saerskriven/cli' first" >&2
   exit 1
 fi
 
@@ -187,7 +187,7 @@ rm -rf -- "${out_dir}" "${repeat_dir}"
 mkdir -p -- "${out_dir}" "${repeat_dir}"
 
 for target in "${targets[@]}"; do
-  name="panoptes-${version}-${target}"
+  name="saerskriven-${version}-${target}"
   case "${target}" in
     *-windows-*) name="${name}.exe" ;;
   esac
@@ -207,9 +207,9 @@ done
 
 rm -rf -- "${repeat_dir}"
 
-(cd -- "${out_dir}" && sha256sum -- panoptes-* >SHA256SUMS)
+(cd -- "${out_dir}" && sha256sum -- saerskriven-* >SHA256SUMS)
 
-readonly host_binary="${out_dir}/panoptes-${version}-${host_target}"
+readonly host_binary="${out_dir}/saerskriven-${version}-${host_target}"
 if [ ! -x "${host_binary}" ]; then
   echo "no executable at ${host_binary} to run: this host's target" >&2
   echo "(${host_target}) is not one deno compiled, so nothing checked the" >&2
@@ -245,13 +245,13 @@ readonly pdf_check="${scratch}/pdf-check.pdf"
 pdf_header="$(head -c 5 -- "${pdf_check}")"
 readonly pdf_header
 if [ "${pdf_header}" != '%PDF-' ]; then
-  echo "panoptes render --format pdf wrote a file opening '${pdf_header}'," >&2
+  echo "saerskriven render --format pdf wrote a file opening '${pdf_header}'," >&2
   echo "not a PDF. The executable carries no working Typst compiler." >&2
   exit 1
 fi
 
-echo "panoptes --version reports ${reported}, panoptes validate ${fixture}"
-echo "reports ${summary}, panoptes render --format pdf writes a PDF, and"
+echo "saerskriven --version reports ${reported}, saerskriven validate ${fixture}"
+echo "reports ${summary}, saerskriven render --format pdf writes a PDF, and"
 echo "every target compiled twice to the same bytes"
 
 # The inputs' hashes and then the outputs', so a run's log carries what a

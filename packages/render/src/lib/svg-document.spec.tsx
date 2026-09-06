@@ -4,13 +4,13 @@ import {
   textExtent,
   wrappedTextStyles,
   type TextStyleRule,
-} from '@panoptes/canvas';
+} from '@saerskriven/canvas';
 import {
   parseModel,
   type Diagram,
   type Element as DiagramElement,
   type Model,
-} from '@panoptes/model';
+} from '@saerskriven/model';
 import { Either } from 'effect';
 import { JSDOM } from 'jsdom';
 import { readFileSync } from 'node:fs';
@@ -34,7 +34,7 @@ const ecluseModel = modelFile('ecluse.model.json');
 
 const everyGlyphModel = modelFile('every-glyph.model.json');
 
-const panoptesModel = modelFile('panoptes.model.json');
+const saerskrivenModel = modelFile('saerskriven.model.json');
 
 const modelOf = (elements: unknown[], title = 'Diagram'): Model =>
   Either.getOrThrow(
@@ -453,16 +453,16 @@ const documents: readonly {
     golden: 'test-data/render/every-glyph.snapshot.svg',
   },
   {
-    name: "Panoptes' read and render diagram",
-    model: panoptesModel,
+    name: "Saerskriven's read and render diagram",
+    model: saerskrivenModel,
     diagram: 0,
-    golden: 'test-data/render/panoptes-read-and-render.snapshot.svg',
+    golden: 'test-data/render/saerskriven-read-and-render.snapshot.svg',
   },
   {
-    name: "Panoptes' agent and desktop diagram",
-    model: panoptesModel,
+    name: "Saerskriven's agent and desktop diagram",
+    model: saerskrivenModel,
     diagram: 1,
-    golden: 'test-data/render/panoptes-agent-and-desktop.snapshot.svg',
+    golden: 'test-data/render/saerskriven-agent-and-desktop.snapshot.svg',
   },
 ];
 

@@ -1,4 +1,4 @@
-import type { Severity } from '@panoptes/model';
+import type { Severity } from '@saerskriven/model';
 import {
   canvasType,
   lightPalette,

@@ -1,5 +1,5 @@
-import { DetectionFailure, ReadFailure } from '@panoptes/formats';
-import { OperationFailure, type ParseIssue } from '@panoptes/model';
+import { DetectionFailure, ReadFailure } from '@saerskriven/formats';
+import { OperationFailure, type ParseIssue } from '@saerskriven/model';
 import { StudioFailure } from '../store/state.js';
 import styles from './failure-notice.module.css';
 import { LiveRegion } from './live-region.js';
@@ -23,7 +23,7 @@ export function describeFailure(failure: StudioFailure): FailureDescription {
     }),
     Read: ({ name, failure: refusal }) => describeRead(name, refusal),
     File: ({ reason }) => ({
-      headline: 'Panoptes could not reach the file.',
+      headline: 'Saerskriven could not reach the file.',
       details: [reason],
     }),
   });
@@ -72,7 +72,7 @@ function describeRead(
   return DetectionFailure.$is('NoFormatClaimed')(failure)
     ? {
         headline: `No format claimed ${name}.`,
-        details: [`Panoptes tried ${failure.tried.join(', ')}.`],
+        details: [`Saerskriven tried ${failure.tried.join(', ')}.`],
       }
     : ReadFailure.$match(failure, {
         ExceededReadLimit: ({ limit, bound, observed }) => ({

@@ -2,7 +2,7 @@ import type {
   DetectionFailure,
   Divergence,
   ReadFailure,
-} from '@panoptes/formats';
+} from '@saerskriven/formats';
 import type {
   DiagramId,
   Element,
@@ -12,7 +12,7 @@ import type {
   Size,
   Threat,
   ThreatId,
-} from '@panoptes/model';
+} from '@saerskriven/model';
 import { Data } from 'effect';
 import type { RetainedSource } from './state.js';
 

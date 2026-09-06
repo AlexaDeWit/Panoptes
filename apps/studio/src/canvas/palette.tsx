@@ -1,4 +1,4 @@
-import type { ElementId } from '@panoptes/model';
+import type { ElementId } from '@saerskriven/model';
 import { Select } from 'radix-ui';
 import { useId, useState } from 'react';
 import { CommandButton } from '../commands/command-button.js';

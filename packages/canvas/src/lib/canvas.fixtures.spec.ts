@@ -1,4 +1,4 @@
-import { elementSchema } from '@panoptes/model';
+import { elementSchema } from '@saerskriven/model';
 import { ecluseModel, everyGlyphModel } from './canvas.fixtures.js';
 
 const declaredKinds = new Set<string>(

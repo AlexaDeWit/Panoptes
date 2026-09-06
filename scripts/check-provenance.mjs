@@ -146,7 +146,7 @@ const catalogResolutions = (lock) => {
 
 const writeProbeTree = (root, catalog) => {
   const probe = {
-    name: 'panoptes-provenance-probe',
+    name: 'saerskriven-provenance-probe',
     version: '0.0.0',
     private: true,
     dependencies: Object.fromEntries([...catalog].sort()),
@@ -465,7 +465,7 @@ const main = () => {
   );
 
   const root = attempt(() =>
-    mkdtempSync(join(tmpdir(), 'panoptes-provenance-')),
+    mkdtempSync(join(tmpdir(), 'saerskriven-provenance-')),
   );
   if (root === null) {
     return cannotRun([

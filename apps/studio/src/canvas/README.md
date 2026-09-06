@@ -1,7 +1,7 @@
 # The studio's canvas
 
 The diagram, interactive: React Flow mounted around the drawing primitives
-in [`@panoptes/canvas`](../../../../packages/canvas/README.md), so the studio
+in [`@saerskriven/canvas`](../../../../packages/canvas/README.md), so the studio
 and the headless renderer draw one picture from one set of numbers.
 
 ## What it derives, and what it holds

@@ -13,8 +13,8 @@ import {
   type StrideCategory,
   type ThreatCategory,
   type ThreatStatus,
-} from '@panoptes/model';
-import type { ThreatDragonThreat } from '@panoptes/wire-threat-dragon';
+} from '@saerskriven/model';
+import type { ThreatDragonThreat } from '@saerskriven/wire-threat-dragon';
 import { categoryTranslations } from './threat-dragon-locales.js';
 
 /**

@@ -1,5 +1,5 @@
-import { severitySchema } from '@panoptes/model';
-import { elementId, parsedFixture } from '@panoptes/model/fixtures';
+import { severitySchema } from '@saerskriven/model';
+import { elementId, parsedFixture } from '@saerskriven/model/fixtures';
 import { renderToStaticMarkup } from 'react-dom/server';
 import {
   badgeExtent,

@@ -12,7 +12,7 @@ import {
   type ElementId,
   type Model,
   type OperationFailure,
-} from '@panoptes/model';
+} from '@saerskriven/model';
 import { Either } from 'effect';
 import { Action } from './actions.js';
 import {

@@ -1,4 +1,4 @@
-import type { Model } from '@panoptes/model';
+import type { Model } from '@saerskriven/model';
 import remarkGfm from 'remark-gfm';
 import remarkStringify from 'remark-stringify';
 import { unified } from 'unified';

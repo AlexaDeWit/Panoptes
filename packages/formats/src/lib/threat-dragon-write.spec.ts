@@ -1,8 +1,8 @@
-import { parsedFixture } from '@panoptes/model/fixtures';
+import { parsedFixture } from '@saerskriven/model/fixtures';
 import {
   threatDragonWireSchema,
   type ThreatDragonDocument,
-} from '@panoptes/wire-threat-dragon';
+} from '@saerskriven/wire-threat-dragon';
 import { Ajv } from 'ajv';
 import { Either } from 'effect';
 import type { Codec } from './codec.js';

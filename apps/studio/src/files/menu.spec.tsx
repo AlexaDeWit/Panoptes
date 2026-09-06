@@ -1,4 +1,4 @@
-import { panoptesYamlCodec } from '@panoptes/formats';
+import { saerskrivenYamlCodec } from '@saerskriven/formats';
 import {
   act,
   fireEvent,
@@ -35,7 +35,7 @@ import {
 } from './files.fixtures.js';
 import { StudioMenu } from './menu.js';
 
-const nativeText = panoptesYamlCodec.write(sampleModel).output;
+const nativeText = saerskrivenYamlCodec.write(sampleModel).output;
 
 type User = ReturnType<typeof userEvent.setup>;
 
@@ -171,7 +171,9 @@ describe('what the menu offers', () => {
 
     expect(burger().getAttribute('aria-label')).toBe('Menu, unsaved changes');
 
-    expect(await shown(user)).toBe('Untitled, Panoptes YAML, unsaved changes');
+    expect(await shown(user)).toBe(
+      'Untitled, Saerskriven YAML, unsaved changes',
+    );
   });
 
   it('offers a history move only once there is one to make', async () => {
@@ -255,7 +257,7 @@ describe('what the studio says about the file', () => {
     mounted(specBridge());
 
     expect(await shown(user)).toBe(
-      'Untitled, Panoptes YAML, no unsaved changes',
+      'Untitled, Saerskriven YAML, no unsaved changes',
     );
   });
 
@@ -288,7 +290,7 @@ describe('opening', () => {
       expect(nameOf(modelStore.getState().file)).toBe('model.yaml');
     });
     expect(await shown(user)).toBe(
-      'model.yaml, Panoptes YAML, no unsaved changes',
+      'model.yaml, Saerskriven YAML, no unsaved changes',
     );
   });
 
@@ -304,7 +306,9 @@ describe('opening', () => {
     await choose(user, 'Open a model');
 
     expect(globalThis.confirm).toHaveBeenCalledTimes(1);
-    expect(await shown(user)).toBe('Untitled, Panoptes YAML, unsaved changes');
+    expect(await shown(user)).toBe(
+      'Untitled, Saerskriven YAML, unsaved changes',
+    );
   });
 
   it('surfaces what the codec refused, with the paths it carries, rather than stopping', async () => {
@@ -340,7 +344,7 @@ describe('opening', () => {
     await openMenu(user);
 
     await waitFor(() => {
-      expect(state()).toBe('model.yaml, Panoptes YAML, no unsaved changes');
+      expect(state()).toBe('model.yaml, Saerskriven YAML, no unsaved changes');
     });
   });
 
@@ -380,7 +384,7 @@ describe('opening', () => {
     await choose(user, 'Open a model');
 
     expect(await shown(user)).toBe(
-      'Untitled, Panoptes YAML, no unsaved changes',
+      'Untitled, Saerskriven YAML, no unsaved changes',
     );
     expect(screen.getByTestId('failure-notice').textContent).toBe('');
     expect(reportEntries()).toEqual([]);
@@ -454,7 +458,7 @@ describe('saving', () => {
     expect(bridge.writes[0].name).toBe('threat-model.yaml');
     expect(bridge.writes[0].elsewhere).toBe(true);
     expect(await shown(user)).toBe(
-      'threat-model.yaml, Panoptes YAML, no unsaved changes',
+      'threat-model.yaml, Saerskriven YAML, no unsaved changes',
     );
   });
 
@@ -465,13 +469,13 @@ describe('saving', () => {
 
     await choose(user, 'Save as');
 
-    await screen.findByRole('menuitem', { name: 'Save as Panoptes YAML' });
+    await screen.findByRole('menuitem', { name: 'Save as Saerskriven YAML' });
     expect(
       screen.getAllByRole('menuitem').map((entry) => entry.textContent),
     ).toEqual([
       'Open a modelCtrl+O',
       'SaveCtrl+S',
-      'Save as Panoptes YAML',
+      'Save as Saerskriven YAML',
       'Save as Threat Dragon JSON',
       'Close the fileCtrl+Shift+X',
       'UndoCtrl+Z',
@@ -539,7 +543,7 @@ describe('closing', () => {
 
     expect(modelStore.getState().present).toBe(placeholderModel);
     expect(await shown(user)).toBe(
-      'Untitled, Panoptes YAML, no unsaved changes',
+      'Untitled, Saerskriven YAML, no unsaved changes',
     );
   });
 
@@ -577,7 +581,7 @@ describe('closing', () => {
 
     expect(modelStore.getState().present).toBe(placeholderModel);
     expect(await shown(user)).toBe(
-      'Untitled, Panoptes YAML, no unsaved changes',
+      'Untitled, Saerskriven YAML, no unsaved changes',
     );
   });
 

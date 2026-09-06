@@ -34,7 +34,7 @@ extension is what says which codec writes the text. Nothing else reads an
 extension as a format.
 
 Which document a write merges onto is the whole difference between keeping
-what Panoptes does not model and dropping it, so the document a read retained
+what Saerskriven does not model and dropping it, so the document a read retained
 rides in the store beside the file's name ([the store's
 README](../store/README.md)). Saving in the format a model was read from merges
 onto it; saving in any other format has nothing to merge onto and the codec

@@ -12,7 +12,7 @@ import { validate } from './validate.js';
 
 const repositoryRoot = join(import.meta.dirname, '../../..');
 
-const directory = mkdtempSync(join(tmpdir(), 'panoptes-cli-validate-'));
+const directory = mkdtempSync(join(tmpdir(), 'saerskriven-cli-validate-'));
 
 const validated = (name: string, text: string) =>
   validate(fixtureFile(directory, name, text));
@@ -28,20 +28,20 @@ describe('validate', () => {
 
   it('reads the same model in the native format', () => {
     expect(
-      validate(join(repositoryRoot, 'test-data/panoptes/ecluse.yaml')),
+      validate(join(repositoryRoot, 'test-data/saerskriven/ecluse.yaml')),
     ).toEqual({
       code: 0,
-      out: 'panoptes-yaml: 1 diagram, 38 elements, 29 threats\n',
+      out: 'saerskriven-yaml: 1 diagram, 38 elements, 29 threats\n',
       err: '',
     });
   });
 
-  it("reads Panoptes' own threat model, which holds two diagrams", () => {
+  it("reads Saerskriven's own threat model, which holds two diagrams", () => {
     expect(
-      validate(join(repositoryRoot, 'threat-modelling/panoptes.yaml')),
+      validate(join(repositoryRoot, 'threat-modelling/saerskriven.yaml')),
     ).toEqual({
       code: 0,
-      out: 'panoptes-yaml: 2 diagrams, 37 elements, 25 threats\n',
+      out: 'saerskriven-yaml: 2 diagrams, 37 elements, 25 threats\n',
       err: '',
     });
   });
@@ -49,7 +49,7 @@ describe('validate', () => {
   it('warns about what a read dropped, and still succeeds', () => {
     expect(validated('undeclared.yaml', undeclaredKeyYaml)).toEqual({
       code: 0,
-      out: 'panoptes-yaml: 0 diagrams, 0 elements, 1 threat\n',
+      out: 'saerskriven-yaml: 0 diagrams, 0 elements, 1 threat\n',
       err:
         'warning: the file and the model do not correspond exactly.\n' +
         'model: the key nonsense (not declared by the wire schema)\n',

@@ -1,4 +1,4 @@
-import type { threatDragonWireSchema } from '@panoptes/wire-threat-dragon';
+import type { threatDragonWireSchema } from '@saerskriven/wire-threat-dragon';
 import { Either } from 'effect';
 import { readFailureIssues, ReadFailure, type ReadResult } from './codec.js';
 import { renderDivergences } from './divergence.js';

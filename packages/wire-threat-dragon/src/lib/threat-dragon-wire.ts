@@ -264,7 +264,7 @@ const diagramSchema = z.object({
 
 /**
  * A Threat Dragon v2 file, whole, and the whole of what this package
- * declares. Every key the format carries is here, the parts Panoptes does
+ * declares. Every key the format carries is here, the parts Saerskriven does
  * not model included (text blocks, ports, `attrs` styling, `zIndex`,
  * `tools`, `placeholder`, `thumbnail`, `diagramTop`), because a write
  * merges onto this document and only a declared key is there to leave
@@ -273,7 +273,7 @@ const diagramSchema = z.object({
  *
  * What this schema declares, it demands, and it demands nothing else. An
  * undeclared key is dropped rather than refused, since Threat Dragon owns
- * this shape and may add to it, and `@panoptes/formats` reports each
+ * this shape and may add to it, and `@saerskriven/formats` reports each
  * dropped key, so a schema that has fallen behind the format announces
  * itself rather than quietly shortening a file.
  *

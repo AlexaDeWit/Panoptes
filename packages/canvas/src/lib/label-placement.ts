@@ -1,4 +1,4 @@
-import type { ElementId, Point, Size } from '@panoptes/model';
+import type { ElementId, Point, Size } from '@saerskriven/model';
 import {
   badgeAnchor,
   badgeBox,

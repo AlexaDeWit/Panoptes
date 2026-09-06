@@ -32,7 +32,7 @@ describe('ErrorBoundary', () => {
       </ErrorBoundary>,
     );
 
-    expect(screen.getByText('Panoptes stopped')).toBeDefined();
+    expect(screen.getByText('Saerskriven stopped')).toBeDefined();
     expect(screen.getByText('The canvas ran out of room.')).toBeDefined();
   });
 

@@ -35,11 +35,11 @@ test('opens a model, saves it back, and writes a file that parses again', async 
 test('opens the native format by its content, and draws the same diagram', async ({
   page,
 }) => {
-  await openFile(page, 'test-data/panoptes/ecluse.yaml');
+  await openFile(page, 'test-data/saerskriven/ecluse.yaml');
 
   await openMenu(page);
   await expect(page.getByTestId('file-state')).toHaveText(
-    'ecluse.yaml, Panoptes YAML, no unsaved changes',
+    'ecluse.yaml, Saerskriven YAML, no unsaved changes',
   );
   await closeMenu(page);
   await expect(elementNodes(page)).toHaveCount(18);

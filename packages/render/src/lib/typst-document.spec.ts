@@ -3,7 +3,7 @@ import {
   threatSchema,
   type Model,
   type Threat,
-} from '@panoptes/model';
+} from '@saerskriven/model';
 import { Either } from 'effect';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -22,7 +22,7 @@ const committedModel = (name: string): Model =>
 
 const ecluseModel = committedModel('test-data/ecluse.model.json');
 
-const panoptesModel = committedModel('test-data/panoptes.model.json');
+const saerskrivenModel = committedModel('test-data/saerskriven.model.json');
 
 const threatOf = (fields: {
   readonly number: number;
@@ -73,9 +73,9 @@ describe('the Typst document', () => {
   });
 
   it('draws every diagram of the model, ahead of the register', () => {
-    const source = sourceOf(panoptesModel);
+    const source = sourceOf(saerskrivenModel);
     const images = source.split('#image(bytes(').length - 1;
-    expect(images).toBe(panoptesModel.diagrams.length);
+    expect(images).toBe(saerskrivenModel.diagrams.length);
     expect(source.indexOf('#image(bytes(')).toBeLessThan(
       source.indexOf('threat register'),
     );

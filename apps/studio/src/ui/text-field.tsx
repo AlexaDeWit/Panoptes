@@ -1,4 +1,4 @@
-import { firstRefusedCharacter } from '@panoptes/model';
+import { firstRefusedCharacter } from '@saerskriven/model';
 import { useEffect, useId, useRef, useState, type Ref } from 'react';
 
 import styles from './text-field.module.css';

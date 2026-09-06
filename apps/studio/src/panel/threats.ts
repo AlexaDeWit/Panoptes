@@ -6,7 +6,7 @@ import {
   type ElementId,
   type Threat,
   type ThreatId,
-} from '@panoptes/model';
+} from '@saerskriven/model';
 import { Action } from '../store/actions.js';
 import type { State } from '../store/state.js';
 

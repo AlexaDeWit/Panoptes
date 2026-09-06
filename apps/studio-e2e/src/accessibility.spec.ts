@@ -188,7 +188,7 @@ test('the studio carries no violation with the menu open', async ({ page }) => {
   await audit(page, 'showing the open menu');
 
   await menuItem(page, 'Save as').click();
-  await expect(menuItem(page, 'Save as Panoptes YAML')).toBeVisible();
+  await expect(menuItem(page, 'Save as Saerskriven YAML')).toBeVisible();
 
   await audit(page, 'showing the menu asking which format a save-as writes');
 

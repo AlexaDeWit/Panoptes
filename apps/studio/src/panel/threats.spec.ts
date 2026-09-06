@@ -1,5 +1,5 @@
-import { replaceThreat, type Model, type Threat } from '@panoptes/model';
-import { elementId, threatId } from '@panoptes/model/fixtures';
+import { replaceThreat, type Model, type Threat } from '@saerskriven/model';
+import { elementId, threatId } from '@saerskriven/model/fixtures';
 import { Either } from 'effect';
 import { Action } from '../store/actions.js';
 import { initialState, type State } from '../store/state.js';

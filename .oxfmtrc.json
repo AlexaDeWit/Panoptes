@@ -11,7 +11,7 @@
   // any other document, which is why the markdown pattern names the snapshot
   // suffix rather than every `.md` file under test-data.
   //
-  // threat-modelling/ holds Panoptes' own threat model. The codec writes
+  // threat-modelling/ holds Saerskriven' own threat model. The codec writes
   // that file and a spec compares it byte for byte, so the formatter leaves
   // the YAML there alone for the same reason. The README beside it is prose
   // and is formatted like any other document.

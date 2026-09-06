@@ -1,8 +1,8 @@
-import type { Element, Model, Threat, ThreatId } from '@panoptes/model';
+import type { Element, Model, Threat, ThreatId } from '@saerskriven/model';
 import type {
   ThreatDragonDocument,
   ThreatDragonThreat,
-} from '@panoptes/wire-threat-dragon';
+} from '@saerskriven/wire-threat-dragon';
 import type { Divergence } from './divergence.js';
 import { equivalent } from './equivalence.js';
 import {

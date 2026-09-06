@@ -1,9 +1,9 @@
-import { panoptesYamlWireSchema } from '@panoptes/wire-panoptes-yaml';
-import { threatDragonWireSchema } from '@panoptes/wire-threat-dragon';
+import { saerskrivenYamlWireSchema } from '@saerskriven/wire-saerskriven-yaml';
+import { threatDragonWireSchema } from '@saerskriven/wire-threat-dragon';
 import { Data, Either } from 'effect';
 import { z } from 'zod';
 import { ReadFailure, type Codec, type ReadResult } from './codec.js';
-import { panoptesYamlCodec } from './panoptes-yaml.js';
+import { saerskrivenYamlCodec } from './saerskriven-yaml.js';
 import { threatDragonCodec } from './threat-dragon.js';
 
 /**
@@ -13,7 +13,7 @@ import { threatDragonCodec } from './threat-dragon.js';
  * added here without a codec beside it fails the suite rather than becoming
  * a format nothing reads.
  */
-export const formatNameSchema = z.enum(['threat-dragon', 'panoptes-yaml']);
+export const formatNameSchema = z.enum(['threat-dragon', 'saerskriven-yaml']);
 
 /** One registered format, named. */
 export type FormatName = z.infer<typeof formatNameSchema>;
@@ -41,7 +41,7 @@ type Answer<
  */
 export type DetectedRead =
   | Answer<'threat-dragon', typeof threatDragonWireSchema>
-  | Answer<'panoptes-yaml', typeof panoptesYamlWireSchema>;
+  | Answer<'saerskriven-yaml', typeof saerskrivenYamlWireSchema>;
 
 /**
  * Why detection produced no reading: no registered codec claimed the text.
@@ -70,7 +70,7 @@ const threatDragonDiscriminators: readonly DiscriminatorPath[] = [
   ['detail'],
 ];
 
-const panoptesYamlDiscriminators: readonly DiscriminatorPath[] = [
+const saerskrivenYamlDiscriminators: readonly DiscriminatorPath[] = [
   ['formatVersion'],
 ];
 
@@ -83,13 +83,17 @@ type Attempt = {
 
 const registry: readonly Attempt[] = [
   attempt('threat-dragon', threatDragonCodec, threatDragonDiscriminators),
-  attempt('panoptes-yaml', panoptesYamlCodec, panoptesYamlDiscriminators),
+  attempt(
+    'saerskriven-yaml',
+    saerskrivenYamlCodec,
+    saerskrivenYamlDiscriminators,
+  ),
 ];
 
 /**
  * A text as the model it holds, read by whichever registered codec claims
  * it, with that codec beside the result so a later write goes back through
- * the same one. A file name is never consulted: a Panoptes model saved as
+ * the same one. A file name is never consulted: a Saerskriven model saved as
  * `.json` and a Threat Dragon model saved as nothing at all are both
  * ordinary, so the content decides.
  *
@@ -118,7 +122,7 @@ const registry: readonly Attempt[] = [
  * cost to learn the same thing.
  *
  * The order is a cost decision and either order is correct. JSON is YAML,
- * so trying Panoptes YAML first runs the YAML parser over every Threat
+ * so trying Saerskriven YAML first runs the YAML parser over every Threat
  * Dragon file before the schema refuses it at `formatVersion`, where trying
  * Threat Dragon first stops on a YAML file at the first character JSON
  * cannot begin with. Threat Dragon goes first.

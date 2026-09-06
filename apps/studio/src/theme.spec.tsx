@@ -1,4 +1,4 @@
-import { themedCanvasStylesheet } from '@panoptes/canvas';
+import { themedCanvasStylesheet } from '@saerskriven/canvas';
 import { render } from '@testing-library/react';
 import { readdirSync, readFileSync } from 'node:fs';
 import { join, relative } from 'node:path';

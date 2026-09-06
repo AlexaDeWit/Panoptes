@@ -18,5 +18,5 @@ export const workspaceVersion = (): string =>
  * and a test cannot disagree about which version they carry.
  */
 export const versionDefine = (): Record<string, string> => ({
-  PANOPTES_VERSION: JSON.stringify(workspaceVersion()),
+  SAERSKRIVEN_VERSION: JSON.stringify(workspaceVersion()),
 });

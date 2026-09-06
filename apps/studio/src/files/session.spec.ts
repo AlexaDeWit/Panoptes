@@ -1,10 +1,10 @@
 import {
   ReadFailure,
   hasDiverged,
-  panoptesYamlCodec,
+  saerskrivenYamlCodec,
   threatDragonCodec,
   type Divergence,
-} from '@panoptes/formats';
+} from '@saerskriven/formats';
 import { Action } from '../store/actions.js';
 import {
   FileLifecycle,
@@ -35,7 +35,7 @@ type OutcomesByTag<Outcome extends { readonly _tag: string }> = {
   readonly [Tag in Outcome['_tag']]: Extract<Outcome, { readonly _tag: Tag }>;
 };
 
-const nativeText = panoptesYamlCodec.write(sampleModel).output;
+const nativeText = saerskrivenYamlCodec.write(sampleModel).output;
 
 const foreignText = threatDragonCodec.write(sampleModel).output;
 
@@ -79,7 +79,7 @@ describe('openedBy', () => {
     expect(action?._tag).toBe('Opened');
     expect(action).toMatchObject({
       name: 'model.yaml',
-      source: { format: 'panoptes-yaml' },
+      source: { format: 'saerskriven-yaml' },
     });
   });
 
@@ -178,7 +178,7 @@ describe('savedBy', () => {
 
 describe('saveTarget', () => {
   it('proposes a file in the native format while the model is in none', () => {
-    expect(saveTarget(FileLifecycle.NoFile(), 'panoptes-yaml')).toEqual({
+    expect(saveTarget(FileLifecycle.NoFile(), 'saerskriven-yaml')).toEqual({
       name: 'threat-model.yaml',
       source: nativeSource,
     });
@@ -189,14 +189,14 @@ describe('saveTarget', () => {
       name: 'model.json',
       source: foreignSource,
     });
-    expect(saveTarget(openedNative, 'panoptes-yaml')).toEqual({
+    expect(saveTarget(openedNative, 'saerskriven-yaml')).toEqual({
       name: 'model.yaml',
       source: nativeSource,
     });
   });
 
   it('has nothing to merge onto when the target is another format', () => {
-    expect(saveTarget(openedForeign, 'panoptes-yaml')).toEqual({
+    expect(saveTarget(openedForeign, 'saerskriven-yaml')).toEqual({
       name: 'model.yaml',
       source: nativeSource,
     });
@@ -205,29 +205,29 @@ describe('saveTarget', () => {
 
 describe('naming', () => {
   it('carries the extension of the format it targets', () => {
-    expect(proposedName('model.json', 'panoptes-yaml')).toBe('model.yaml');
+    expect(proposedName('model.json', 'saerskriven-yaml')).toBe('model.yaml');
     expect(proposedName('model.yaml', 'threat-dragon')).toBe('model.json');
   });
 
   it('names a file that would otherwise be all extension', () => {
-    expect(proposedName('.yaml', 'panoptes-yaml')).toBe('threat-model.yaml');
+    expect(proposedName('.yaml', 'saerskriven-yaml')).toBe('threat-model.yaml');
   });
 
   it('offers every registered format, the one the file is in first', () => {
-    expect(formatsFrom('panoptes-yaml')).toEqual([
-      'panoptes-yaml',
+    expect(formatsFrom('saerskriven-yaml')).toEqual([
+      'saerskriven-yaml',
       'threat-dragon',
     ]);
     expect(formatsFrom('threat-dragon')).toEqual([
       'threat-dragon',
-      'panoptes-yaml',
+      'saerskriven-yaml',
     ]);
   });
 
   it('offers the same formats to a picker, described and with their extensions', () => {
-    expect(saveTypes(formatsFrom('panoptes-yaml'))).toEqual([
+    expect(saveTypes(formatsFrom('saerskriven-yaml'))).toEqual([
       {
-        description: 'Panoptes YAML',
+        description: 'Saerskriven YAML',
         accept: { 'application/yaml': ['.yaml', '.yml'] },
       },
       {
@@ -239,14 +239,14 @@ describe('naming', () => {
 
   it('reads back the format a picker answered with off the name it named', () => {
     expect(formatOfName('model.json')).toBe('threat-dragon');
-    expect(formatOfName('model.yaml')).toBe('panoptes-yaml');
-    expect(formatOfName('model.yml')).toBe('panoptes-yaml');
-    expect(formatOfName('MODEL.YAML')).toBe('panoptes-yaml');
+    expect(formatOfName('model.yaml')).toBe('saerskriven-yaml');
+    expect(formatOfName('model.yml')).toBe('saerskriven-yaml');
+    expect(formatOfName('MODEL.YAML')).toBe('saerskriven-yaml');
     expect(formatOfName('notes.txt')).toBeUndefined();
   });
 
   it('reads the format and the name of the file the model lives in', () => {
-    expect(formatOf(FileLifecycle.NoFile())).toBe('panoptes-yaml');
+    expect(formatOf(FileLifecycle.NoFile())).toBe('saerskriven-yaml');
     expect(formatOf(openedForeign)).toBe('threat-dragon');
     expect(nameOf(FileLifecycle.NoFile())).toBe(untitledModel);
     expect(nameOf(openedForeign)).toBe('model.json');

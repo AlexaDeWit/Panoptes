@@ -1,4 +1,4 @@
-import type { ElementId, Threat, ThreatId } from '@panoptes/model';
+import type { ElementId, Threat, ThreatId } from '@saerskriven/model';
 import { Accordion } from 'radix-ui';
 import {
   useCallback,

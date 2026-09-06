@@ -1,4 +1,4 @@
-import { tokenStylesheet } from '@panoptes/canvas';
+import { tokenStylesheet } from '@saerskriven/canvas';
 
 /**
  * The design tokens, as the custom properties every CSS module in the studio

@@ -1,4 +1,4 @@
-import type { Point } from '@panoptes/model';
+import type { Point } from '@saerskriven/model';
 import type { ReactElement } from 'react';
 import { svgNumber } from './numbers.js';
 import { wrappedTextStyles, type WrappedTextStyle } from './stylesheet.js';

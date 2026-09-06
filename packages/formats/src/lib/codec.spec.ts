@@ -3,7 +3,7 @@ import {
   parseModel,
   toParseIssues,
   type Model,
-} from '@panoptes/model';
+} from '@saerskriven/model';
 import { Either } from 'effect';
 import { z } from 'zod';
 import {

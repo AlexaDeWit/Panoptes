@@ -1,12 +1,12 @@
-import type { DetectedRead } from '@panoptes/formats';
+import type { DetectedRead } from '@saerskriven/formats';
 import { Either } from 'effect';
 import { describeDivergences, readModel } from './input.js';
 import { lines, succeeded, type CommandOutcome } from './outcome.js';
 
 /**
- * `panoptes validate <file>`: the file read as whichever format claims its
+ * `saerskriven validate <file>`: the file read as whichever format claims its
  * content, reported as one line naming that format and what the model
- * holds. The file name is never consulted, so a Panoptes model saved as
+ * holds. The file name is never consulted, so a Saerskriven model saved as
  * `.json` reads as well as one saved as `.yaml`.
  */
 export function validate(file: string): CommandOutcome {

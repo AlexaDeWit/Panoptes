@@ -1,10 +1,10 @@
-import { parseModel, type Model } from '@panoptes/model';
-import { panoptesYamlWireSchema } from '@panoptes/wire-panoptes-yaml';
+import { parseModel, type Model } from '@saerskriven/model';
+import { saerskrivenYamlWireSchema } from '@saerskriven/wire-saerskriven-yaml';
 import { Either } from 'effect';
 import fc from 'fast-check';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { panoptesYamlCodec } from './panoptes-yaml.js';
+import { saerskrivenYamlCodec } from './saerskriven-yaml.js';
 import {
   ecluseModel,
   emittedModels,
@@ -12,12 +12,12 @@ import {
   modelInputArbitrary,
   nativeFixtures,
   propertyTimeout,
-} from './panoptes-yaml.fixtures.js';
+} from './saerskriven-yaml.fixtures.js';
 
 const golden = readFileSync(goldenPath, 'utf8');
 
 const description = readFileSync(
-  join(import.meta.dirname, '../../../../docs/panoptes-yaml.md'),
+  join(import.meta.dirname, '../../../../docs/saerskriven-yaml.md'),
   'utf8',
 );
 
@@ -37,12 +37,12 @@ function inNumberOrder(model: Model): Model {
 }
 
 function readOrThrow(text: string) {
-  return Either.getOrThrow(panoptesYamlCodec.read(text));
+  return Either.getOrThrow(saerskrivenYamlCodec.read(text));
 }
 
-describe('the Panoptes YAML codec', () => {
+describe('the Saerskriven YAML codec', () => {
   it('pairs the read and the write with the schema they share', () => {
-    expect(panoptesYamlCodec.wire).toBe(panoptesYamlWireSchema);
+    expect(saerskrivenYamlCodec.wire).toBe(saerskrivenYamlWireSchema);
   });
 
   it('reads the committed fixture as the model it was written from', () => {
@@ -54,7 +54,7 @@ describe('the Panoptes YAML codec', () => {
   it('wrote the example the format description prints, to the byte', () => {
     const reading = readOrThrow(documentedExample);
     expect(reading.divergences).toEqual([]);
-    expect(panoptesYamlCodec.write(reading.model).output).toBe(
+    expect(saerskrivenYamlCodec.write(reading.model).output).toBe(
       documentedExample,
     );
   });
@@ -69,7 +69,7 @@ describe.each(nativeFixtures)('the committed $name', ({ path, text }) => {
     const reading = readOrThrow(text);
     expect(reading.divergences).toEqual([]);
     await expect(
-      panoptesYamlCodec.write(reading.model).output,
+      saerskrivenYamlCodec.write(reading.model).output,
     ).toMatchFileSnapshot(path);
   });
 });
@@ -92,7 +92,7 @@ describe(
       fc.assert(
         fc.property(modelInputArbitrary, (input) => {
           const model = Either.getOrThrow(parseModel(input));
-          const written = panoptesYamlCodec.write(model);
+          const written = saerskrivenYamlCodec.write(model);
           expect(written.divergences).toEqual([]);
           const reading = readOrThrow(written.output);
           expect(reading.divergences).toEqual([]);
@@ -104,11 +104,11 @@ describe(
     it('writes the same bytes however its records were built', () => {
       fc.assert(
         fc.property(modelInputArbitrary, (input) => {
-          const output = panoptesYamlCodec.write(
+          const output = saerskrivenYamlCodec.write(
             Either.getOrThrow(parseModel(input)),
           ).output;
           expect(
-            panoptesYamlCodec.write(readOrThrow(output).model).output,
+            saerskrivenYamlCodec.write(readOrThrow(output).model).output,
           ).toBe(output);
         }),
       );

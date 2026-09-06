@@ -4,7 +4,7 @@ import {
   elementIdSchema,
   mitigationIdSchema,
   threatIdSchema,
-} from '@panoptes/model';
+} from '@saerskriven/model';
 import { z } from 'zod';
 
 const modelSubjectSchema = z.object({ kind: z.literal('model') });

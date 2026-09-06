@@ -3,7 +3,7 @@ rule in `src/lib/text.ts` as this runtime's Unicode data has it:
 33 of the 170 Cf code points it knows. An upgrade that
 moves the set arrives as a diff on this file, and the model README
 says what to make of one. Regenerate with
-`pnpm nx test @panoptes/model -- -u`.
+`pnpm nx test @saerskriven/model -- -u`.
 
 U+0600
 U+0601

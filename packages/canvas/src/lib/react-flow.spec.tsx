@@ -1,4 +1,4 @@
-import { elementId } from '@panoptes/model/fixtures';
+import { elementId } from '@saerskriven/model/fixtures';
 import { Position, ReactFlowProvider, type EdgeProps } from '@xyflow/react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { everyGlyphModel } from './canvas.fixtures.js';

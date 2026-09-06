@@ -1,4 +1,4 @@
-# @panoptes/model
+# @saerskriven/model
 
 Zod schemas and inferred types for the threat model core: ids, geometry,
 elements, diagrams, threats, mitigations, assumptions, and model metadata.
@@ -71,12 +71,12 @@ named assertion or the type-check. The source file is vendored at
 [`test-data/ecluse.model.json`](../../test-data/ecluse.model.json) as a file
 snapshot, which is where `packages/formats` compares its own read of the same
 threat model against this one. Regenerate it with `pnpm nx test
-@panoptes/model -- -u` in the commit that moved it.
+@saerskriven/model -- -u` in the commit that moved it.
 [`test-data/README.md`](../../test-data/README.md) says when the snapshot is
 written, and [`CODING.md`](../../CODING.md) states the ordering that keeps a
 reader out of that write.
 
-`@panoptes/model/fixtures` is the one home for the fixture helpers every
+`@saerskriven/model/fixtures` is the one home for the fixture helpers every
 suite in the workspace shares: `elementId`, `diagramId` and `threatId`, which
 parse a spec's literal string into a branded id, and `parsedFixture`, the
 fold from a fixture document to a `Model` that throws where the fixture stops
@@ -88,4 +88,4 @@ build. Who may import it is a workspace rule, stated in
 [`SCHEMA.md`](SCHEMA.md) is the whole model expanded from the schemas
 themselves, regenerated and checked on every test run.
 
-Unit tests: `pnpm nx test @panoptes/model`.
+Unit tests: `pnpm nx test @saerskriven/model`.

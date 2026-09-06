@@ -42,18 +42,18 @@ allows no package dependency from the reader to the writer, an entry naming
 the writing task in the reader's own manifest
 ([`CODING.md`](../CODING.md), Build targets).
 
-| File                                             | Written by         | Read by                                                                     |
-| ------------------------------------------------ | ------------------ | --------------------------------------------------------------------------- |
-| `ecluse.model.json`                              | `packages/model`   | `packages/formats`, `packages/canvas`, `packages/render`, `apps/studio-e2e` |
-| `panoptes.model.json`                            | `packages/formats` | `packages/canvas`, `packages/render`                                        |
-| `panoptes/ecluse.yaml`                           | `packages/formats` | `apps/cli`, `apps/studio-e2e`                                               |
-| `render/ecluse.register.snapshot.md`             | `packages/render`  | `apps/cli`                                                                  |
-| `render/ecluse.snapshot.svg`                     | `packages/render`  | `apps/cli`                                                                  |
-| `render/panoptes-read-and-render.snapshot.svg`   | `packages/render`  | `apps/cli`                                                                  |
-| `render/panoptes-agent-and-desktop.snapshot.svg` | `packages/render`  | `apps/cli`                                                                  |
-| `render/panoptes.register.snapshot.md`           | `packages/render`  | no other suite                                                              |
-| `render/every-glyph.snapshot.svg`                | `packages/render`  | no other suite                                                              |
-| `render/ecluse.snapshot.typ`                     | `packages/render`  | no other suite                                                              |
+| File                                                | Written by         | Read by                                                                     |
+| --------------------------------------------------- | ------------------ | --------------------------------------------------------------------------- |
+| `ecluse.model.json`                                 | `packages/model`   | `packages/formats`, `packages/canvas`, `packages/render`, `apps/studio-e2e` |
+| `saerskriven.model.json`                            | `packages/formats` | `packages/canvas`, `packages/render`                                        |
+| `saerskriven/ecluse.yaml`                           | `packages/formats` | `apps/cli`, `apps/studio-e2e`                                               |
+| `render/ecluse.register.snapshot.md`                | `packages/render`  | `apps/cli`                                                                  |
+| `render/ecluse.snapshot.svg`                        | `packages/render`  | `apps/cli`                                                                  |
+| `render/saerskriven-read-and-render.snapshot.svg`   | `packages/render`  | `apps/cli`                                                                  |
+| `render/saerskriven-agent-and-desktop.snapshot.svg` | `packages/render`  | `apps/cli`                                                                  |
+| `render/saerskriven.register.snapshot.md`           | `packages/render`  | no other suite                                                              |
+| `render/every-glyph.snapshot.svg`                   | `packages/render`  | no other suite                                                              |
+| `render/ecluse.snapshot.typ`                        | `packages/render`  | no other suite                                                              |
 
 Every other file here is input nothing writes: `ecluse.json`,
 `every-glyph.model.json`, the Threat Dragon corpus with its schema and its
@@ -97,16 +97,16 @@ Neither half alone is enough. `threatTop` alone breaks on this file, and the
 highest number alone drops the gap left by a removed highest-numbered threat,
 which is the record the field exists to keep.
 
-## `panoptes/ecluse.yaml`
+## `saerskriven/ecluse.yaml`
 
 Not vendored: this one is written here. It is the Écluse model above, read
-through the Threat Dragon codec and written through the Panoptes YAML codec,
+through the Threat Dragon codec and written through the Saerskriven YAML codec,
 committed so a change to what the native format writes arrives as a diff on a
 file rather than as a test that still passes.
 
 `packages/formats` compares the write against it on every run, as a vitest
 file snapshot, so it cannot fall behind the codec. Regenerate it with
-`pnpm nx test @panoptes/formats -- -u`, and read the diff: the file is the
+`pnpm nx test @saerskriven/formats -- -u`, and read the diff: the file is the
 format's output by definition, so a change to it is a change to the format.
 
 The committed bytes are read back as well, and have to parse to the model
@@ -128,7 +128,7 @@ and reds where the two differ. `packages/formats` compares the whole read of
 `ecluse.json` against it, and compares again what a write of that read reads
 back.
 
-Regenerate it with `pnpm nx test @panoptes/model -- -u`, in the same commit as
+Regenerate it with `pnpm nx test @saerskriven/model -- -u`, in the same commit as
 the change that moved it, and read the diff: it is what the model core holds
 of a real threat model.
 
@@ -136,10 +136,10 @@ of a real threat model.
 rendered from, so this file is where a projection meets the model core
 without either package importing the other's fixtures.
 
-## `panoptes.model.json`
+## `saerskriven.model.json`
 
-Panoptes' own threat model in the internal form, from
-[`threat-modelling/panoptes.yaml`](../threat-modelling/README.md) read through
+Saerskriven's own threat model in the internal form, from
+[`threat-modelling/saerskriven.yaml`](../threat-modelling/README.md) read through
 the native codec. Not vendored, and derived: that file is the source.
 
 It is here for the reason `ecluse.model.json` is. `packages/render` and
@@ -155,7 +155,7 @@ because nobody wrote the model twice: `packages/formats` reads the YAML and
 is its only producer. Which path a native fixture's model goes to is a field
 on its `nativeFixtures` entry, and Écluse's entry names none.
 
-Regenerate it with `pnpm nx test @panoptes/formats -- -u`, in the same commit
+Regenerate it with `pnpm nx test @saerskriven/formats -- -u`, in the same commit
 as the edit to the YAML that moved it.
 
 ## `render/ecluse.register.snapshot.md`
@@ -170,20 +170,20 @@ it on every test run with `toMatchFileSnapshot`, and it is the only place the
 register's whole shape, escaping and prose handling included, is held against
 a production-scale model.
 
-Regenerate it with `pnpm nx test @panoptes/render -- -u`, in the same commit
+Regenerate it with `pnpm nx test @saerskriven/render -- -u`, in the same commit
 as the change that moved it, and read the diff: the file is the register's
 output by definition, so a change to it is a change to what every consumer of
 the register sees.
 
-## `render/panoptes.register.snapshot.md`
+## `render/saerskriven.register.snapshot.md`
 
-Panoptes' own threat model as the same register, from `panoptes.model.json`
+Saerskriven's own threat model as the same register, from `saerskriven.model.json`
 above. It is the second model that register is held against, and the one that
 carries a custom methodology, a CIA category, two threats attached to no
 element, and a mitigation written as a markdown list, none of which the
 Écluse model has.
 
-Regenerate it the same way, with `pnpm nx test @panoptes/render -- -u`.
+Regenerate it the same way, with `pnpm nx test @saerskriven/render -- -u`.
 
 ## `every-glyph.model.json`
 
@@ -212,7 +212,7 @@ value out of the model, or to the drawing embedded inside it, arrives as a
 diff here. `ecluse.snapshot.svg` below is inside it verbatim, so the two move
 together and a diff on one without the other is a bug.
 
-Regenerate it with `pnpm nx test @panoptes/render -- -u`, in the same commit
+Regenerate it with `pnpm nx test @saerskriven/render -- -u`, in the same commit
 as the change that moved it. Nothing formats it: oxfmt does not know Typst,
 which is the decision this file's format needed under the rule above.
 
@@ -225,16 +225,16 @@ vendored: this repository generates all four.
 above, read through `parseModel`, so the drawing and the register come from
 the one model the model core and the codecs are held to.
 `every-glyph.snapshot.svg` is `every-glyph.model.json` above drawn the same
-way. `panoptes-read-and-render.snapshot.svg` and
-`panoptes-agent-and-desktop.snapshot.svg` are the two diagrams of
-`panoptes.model.json`, which is the only committed model that
+way. `saerskriven-read-and-render.snapshot.svg` and
+`saerskriven-agent-and-desktop.snapshot.svg` are the two diagrams of
+`saerskriven.model.json`, which is the only committed model that
 holds more than one, so they are also where a model of several diagrams is
 drawn at all.
 
 All are committed for the reason the registers above are, and gated the same
 way: `packages/render` compares them on every test run with
 `toMatchFileSnapshot` and reds where a file and the drawing differ.
-Regenerate them with `pnpm nx test @panoptes/render -- -u`, in the same commit
+Regenerate them with `pnpm nx test @saerskriven/render -- -u`, in the same commit
 as the change that moved them.
 
 ## `threat-dragon/`
@@ -342,12 +342,12 @@ update changes the file below and the test says which table fell behind.
 ## `adversarial/`
 
 Hostile inputs, none of them vendored. Most are small payloads built to break
-one of the read bounds `@panoptes/formats` exports as `readLimits`, so each
+one of the read bounds `@saerskriven/formats` exports as `readLimits`, so each
 bound is pinned by an input rather than by its own definition. None of those
 is a threat model, and none is large: an oversized text is generated in the
 spec instead, since committing megabytes to prove a size bound would be the
 wrong trade. `read-limits.spec.ts` hands every one of them to both reads, the
-Panoptes YAML read and the Threat Dragon read, because YAML is a superset of
+Saerskriven YAML read and the Threat Dragon read, because YAML is a superset of
 JSON and a hostile file arrives with whatever extension its author chose.
 
 `typst-injection.yaml` is the exception, and is described under its own

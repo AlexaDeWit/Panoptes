@@ -2,7 +2,7 @@ import {
   readLimits,
   type FormatName,
   type WriteResult,
-} from '@panoptes/formats';
+} from '@saerskriven/formats';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import type { FileCommands } from '../commands/registry.js';
 import { Action } from '../store/actions.js';

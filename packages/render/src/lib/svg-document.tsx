@@ -6,8 +6,8 @@ import {
   xmlSafeText,
   type CanvasBounds,
   type UnplacedEndpoint,
-} from '@panoptes/canvas';
-import type { Diagram, Model } from '@panoptes/model';
+} from '@saerskriven/canvas';
+import type { Diagram, Model } from '@saerskriven/model';
 import { renderToStaticMarkup } from 'react-dom/server';
 
 const margin = 8;

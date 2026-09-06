@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { Box, Point } from './canvas-geometry.fixtures.js';
 
-const developmentModelKey = 'panoptesDevelopmentModel';
+const developmentModelKey = 'saerskrivenDevelopmentModel';
 
 /** A file of the repository, named from the root, as a path on disk. */
 export const vendored = (path: string): string =>

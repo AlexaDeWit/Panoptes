@@ -1,4 +1,4 @@
-import { layoutDiagram, panelCover } from '@panoptes/canvas';
+import { layoutDiagram, panelCover } from '@saerskriven/canvas';
 import { canvasModel, readerElement } from './canvas.fixtures.js';
 import {
   clearOfPanel,

@@ -15,13 +15,15 @@ describe('CommandButton', () => {
     render(
       <>
         <CommandButton command="save" />
-        <CommandButton command="save-as">Save as Panoptes YAML</CommandButton>
+        <CommandButton command="save-as">
+          Save as Saerskriven YAML
+        </CommandButton>
       </>,
     );
 
     expect(screen.getByRole('button', { name: 'Save' })).toBeDefined();
     expect(
-      screen.getByRole('button', { name: 'Save as Panoptes YAML' }),
+      screen.getByRole('button', { name: 'Save as Saerskriven YAML' }),
     ).toBeDefined();
   });
 

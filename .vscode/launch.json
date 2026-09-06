@@ -4,9 +4,9 @@
     {
       "type": "node",
       "request": "launch",
-      "name": "Debug @panoptes/cli with Nx",
+      "name": "Debug @saerskriven/cli with Nx",
       "runtimeExecutable": "pnpm",
-      "runtimeArgs": ["exec", "nx", "serve", "@panoptes/cli"],
+      "runtimeArgs": ["exec", "nx", "serve", "@saerskriven/cli"],
       "env": {
         "NODE_OPTIONS": "--inspect=9229"
       },

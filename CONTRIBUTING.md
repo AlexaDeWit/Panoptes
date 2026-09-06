@@ -1,6 +1,6 @@
 # Contributing
 
-How we work on Panoptes: the contribution process and the repository's
+How we work on Saerskriven: the contribution process and the repository's
 requirements. Setup and build live in the [README](README.md#development).
 
 ## Working language
@@ -30,13 +30,13 @@ low-effort, unreviewed AI output ("slop").
 
 ## Developer Certificate of Origin (DCO)
 
-Panoptes is, and will remain, free and open-source software. We accept
+Saerskriven is, and will remain, free and open-source software. We accept
 contributions under the **[Developer Certificate of Origin](DCO)** (DCO,
 v1.1). It is a lightweight per-commit affirmation that you have the right to
 submit your work under the project's [Apache-2.0 licence](LICENSE). We chose
 the DCO over a Contributor Licence Agreement on purpose. It asks you only to
 certify provenance. It grants the project no power to relicense or close the
-code, so Panoptes stays permanently FOSS.
+code, so Saerskriven stays permanently FOSS.
 
 **Sign off every commit**. `git commit -s` (or `--signoff`) appends a
 `Signed-off-by` trailer from your git identity:

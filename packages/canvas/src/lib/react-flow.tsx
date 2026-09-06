@@ -1,4 +1,4 @@
-import type { ElementId } from '@panoptes/model';
+import type { ElementId } from '@saerskriven/model';
 import {
   Handle,
   NodeResizeControl,
@@ -39,16 +39,16 @@ const handlePlacement = {
   left: Position.Left,
 } as const satisfies Record<HandleSide, Position>;
 
-/** What a React Flow node of a Panoptes diagram carries: the laid-out node. */
+/** What a React Flow node of a Saerskriven diagram carries: the laid-out node. */
 export type CanvasNodeData = { readonly node: CanvasNode };
 
-/** One React Flow node of a Panoptes diagram. */
+/** One React Flow node of a Saerskriven diagram. */
 export type CanvasFlowNode = Node<CanvasNodeData, CanvasNodeKind>;
 
-/** What a React Flow edge of a Panoptes diagram carries: the laid-out flow. */
+/** What a React Flow edge of a Saerskriven diagram carries: the laid-out flow. */
 export type CanvasEdgeData = { readonly edge: CanvasEdge };
 
-/** One React Flow edge of a Panoptes diagram. */
+/** One React Flow edge of a Saerskriven diagram. */
 export type CanvasFlowEdge = Edge<CanvasEdgeData, 'flow'>;
 
 /** The React Flow node type of the anchor a flow's free end rides on. */

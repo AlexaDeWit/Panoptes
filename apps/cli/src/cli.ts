@@ -98,7 +98,7 @@ function parseStopped(state: ParseState, error: unknown): CommandOutcome {
 
 function programFor(state: ParseState): Command {
   const program = new Command()
-    .name('panoptes')
+    .name('saerskriven')
     .description('Threat models on the command line.')
     .version(cliVersion)
     .exitOverride((error) => {
