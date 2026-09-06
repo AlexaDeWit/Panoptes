@@ -1,3 +1,4 @@
+import { parsedFixture } from '@panoptes/model/fixtures';
 import type {
   ThreatDragonDiagram,
   ThreatDragonThreat,
@@ -8,7 +9,7 @@ import {
   mergeDiagram,
   numberDiagrams,
 } from './threat-dragon-diagrams.js';
-import { parsedFixture, type ModelInput } from './threat-dragon.fixtures.js';
+import type { ModelInput } from './threat-dragon.fixtures.js';
 
 const diagram = (id: string): ModelInput['diagrams'][number] => ({
   id,
@@ -24,7 +25,7 @@ const model = (ids: readonly string[]) =>
     lastIssuedThreatNumber: 0,
     mitigations: [],
     assumptions: [],
-  });
+  } satisfies ModelInput);
 
 const held = (ids: readonly number[]): ThreatDragonDiagram[] =>
   ids.map((id) => ({

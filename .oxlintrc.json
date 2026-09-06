@@ -50,6 +50,31 @@
     "typescript/switch-exhaustiveness-check": "error",
     "typescript/use-unknown-in-catch-callback-variable": "error"
   },
+  "overrides": [
+    {
+      // Test helpers on a subpath every downstream project can reach, which
+      // the layer matrix does not see because it reasons about projects
+      // rather than entry points. Only a spec or a fixture module may import
+      // them (CODING.md, Tests), so the rule is declared here, on every file
+      // but those, rather than in the rules above with an exemption that
+      // would also switch off any path added to the rule later.
+      "files": ["**/*"],
+      "excludeFiles": ["**/*.spec.*", "**/*.fixtures.*"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "paths": [
+              {
+                "name": "@panoptes/model/fixtures",
+                "message": "Fixture helpers belong to a *.spec.* or *.fixtures.* module. A production module that imports them ships them (CODING.md, Tests)."
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ],
   // Generated output; node_modules is ignored by default.
   "ignorePatterns": ["**/dist/**", "**/out-tsc/**", "**/coverage/**"]
 }

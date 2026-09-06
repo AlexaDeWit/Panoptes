@@ -1,3 +1,4 @@
+import { parsedFixture } from '@panoptes/model/fixtures';
 import type { ThreatDragonDocument } from '@panoptes/wire-threat-dragon';
 import { Either } from 'effect';
 import { renderDivergences } from './divergence.js';
@@ -6,7 +7,6 @@ import { planThreats } from './threat-dragon-threats.js';
 import {
   complementFixture,
   ecluseText,
-  parsedFixture,
   richerThanFormatFixture,
   type ModelInput,
 } from './threat-dragon.fixtures.js';
@@ -49,7 +49,7 @@ const model = (
     lastIssuedThreatNumber,
     mitigations: [],
     assumptions: [],
-  });
+  } satisfies ModelInput);
 
 const threat = (number: number): ModelInput['threats'][number] => ({
   id: `threat-${number}`,
