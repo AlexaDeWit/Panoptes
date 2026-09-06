@@ -69,8 +69,8 @@ test('the studio carries no violation with the threat panel open on a selected e
   await page.goto('/');
   await expect(page.getByTestId('canvas-container')).toBeVisible();
 
-  await page.getByRole('group', { name: /^Reader, actor/u }).click();
-  await page.getByRole('button', { name: /A reader edits/u }).click();
+  await page.getByRole('group', { name: /^Actor, actor/u }).click();
+  await page.getByRole('button', { name: /sends records/u }).click();
   await expect(page.getByRole('textbox', { name: 'Title' })).toBeVisible();
 
   await audit(page, 'showing the threat panel');
@@ -90,11 +90,11 @@ test('the studio carries no violation with the panel open mid-drag', async ({
   await page.goto('/');
   await expect(page.getByTestId('canvas-container')).toBeVisible();
 
-  const reader = page.getByRole('group', { name: /^Reader, actor/u });
-  await reader.click();
+  const actor = page.getByRole('group', { name: /^Actor, actor/u });
+  await actor.click();
   await expect(page.getByRole('region', { name: 'Threats' })).toBeVisible();
 
-  const box = await reader.boundingBox();
+  const box = await actor.boundingBox();
   const from = {
     x: (box?.x ?? 0) + (box?.width ?? 0) / 2,
     y: (box?.y ?? 0) + (box?.height ?? 0) / 2,
@@ -141,9 +141,9 @@ test('the studio carries no violation with an element selected and its handles s
   await page.goto('/');
   await expect(page.getByTestId('canvas-container')).toBeVisible();
 
-  const reader = nodeNamed(page, /^Reader, actor/u);
-  await reader.click();
-  await expect(handleOn(reader, 'right')).toBeVisible();
+  const actor = nodeNamed(page, /^Actor, actor/u);
+  await actor.click();
+  await expect(handleOn(actor, 'right')).toBeVisible();
 
   await audit(page, 'showing a selected element and its handles');
 });
@@ -220,16 +220,16 @@ test('the studio carries no violation with an element selected, or with a flow s
   await page.goto('/');
   await expect(page.getByTestId('canvas-container')).toBeVisible();
 
-  await page.getByRole('group', { name: /^Reader, actor/u }).click();
+  await page.getByRole('group', { name: /^Actor, actor/u }).click();
 
   await audit(page, 'showing a selected element');
 
   await page.getByRole('combobox', { name: 'Flow to' }).press('Enter');
-  await page.getByRole('option', { name: 'Studio' }).press('Enter');
+  await page.getByRole('option', { name: 'Store' }).press('Enter');
   await page.getByRole('button', { name: 'Connect' }).click();
   await expect(
     page.getByRole('group', {
-      name: /^New flow, flow, from Reader to Studio/u,
+      name: /^New flow, flow, from Actor to Store/u,
     }),
   ).toHaveClass(/selected/u);
 

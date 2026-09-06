@@ -6,7 +6,11 @@ import {
   type Divergence,
 } from '@panoptes/formats';
 import { Action } from '../store/actions.js';
-import { FileLifecycle, type RetainedSource } from '../store/state.js';
+import {
+  FileLifecycle,
+  untitledModel,
+  type RetainedSource,
+} from '../store/state.js';
 import {
   foreignSource,
   nativeSource,
@@ -244,7 +248,7 @@ describe('naming', () => {
   it('reads the format and the name of the file the model lives in', () => {
     expect(formatOf(FileLifecycle.NoFile())).toBe('panoptes-yaml');
     expect(formatOf(openedForeign)).toBe('threat-dragon');
-    expect(nameOf(FileLifecycle.NoFile())).toBe('No file');
+    expect(nameOf(FileLifecycle.NoFile())).toBe(untitledModel);
     expect(nameOf(openedForeign)).toBe('model.json');
   });
 });

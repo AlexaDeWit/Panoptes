@@ -283,6 +283,16 @@ The controls are `zoom-cluster.tsx`, three icons floating over the bottom
 right of the canvas, each one registered command showing its chord in a
 tooltip ([the commands](../commands/README.md)).
 
+`empty-state-hint.tsx` is the other piece of chrome floating over the canvas:
+one line across the top saying what to do next, while the studio is still on
+the model it opens with and nothing has happened to that model. The store
+answers whether it is ([the selectors](../store/selectors.ts)), so the line
+holds no flag of its own and goes at the first edit and at the first file. It
+is drawn here rather than in the canvas package, which draws the model and
+nothing beside it. It sits in the room the fit leaves clear, so it covers no
+part of the diagram, and it does not wrap, a second line being one that would
+reach into that diagram.
+
 ## Accessibility
 
 Every element is a tab stop, with an accessible name built out of model data:

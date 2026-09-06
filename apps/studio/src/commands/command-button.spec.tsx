@@ -67,7 +67,7 @@ describe('CommandButton', () => {
 
     await user.click(screen.getByRole('button', { name: 'New actor' }));
 
-    expect(modelStore.getState().present.diagrams[0].elements).toHaveLength(3);
+    expect(modelStore.getState().present.diagrams[0].elements).toHaveLength(4);
   });
 });
 

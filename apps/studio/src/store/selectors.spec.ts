@@ -8,8 +8,10 @@ import {
   firstDiagramId,
   isDirty,
   modelAsOpened,
+  showingPlaceholder,
+  windowTitle,
 } from './selectors.js';
-import { initialState } from './state.js';
+import { initialState, placeholderModel } from './state.js';
 import {
   mainDiagram,
   nativeSource,
@@ -78,5 +80,79 @@ describe('selectors', () => {
   it('names no diagram in a model that holds none', () => {
     expect(firstDiagramId(start)).toBe(mainDiagram);
     expect(firstDiagramId(initialState(emptyModel))).toBeUndefined();
+  });
+});
+
+describe('showingPlaceholder', () => {
+  const opening = initialState(placeholderModel);
+
+  const opened = Action.Opened({
+    model: sampleModel,
+    name: 'other.yaml',
+    source: nativeSource,
+    divergences: [],
+  });
+
+  const saved = Action.Saved({ name: 'model.yaml', source: nativeSource });
+
+  const added = Action.AddElement({
+    diagramId: placeholderModel.diagrams[0].id,
+    element: newProcess('process-added', 'Added'),
+  });
+
+  it('holds while nothing has happened to the model the studio opens on', () => {
+    expect(showingPlaceholder(opening)).toBe(true);
+  });
+
+  it('is over at the first edit, and stays over once that edit is undone', () => {
+    const drawn = reduce(opening, added);
+
+    expect(showingPlaceholder(drawn)).toBe(false);
+    expect(showingPlaceholder(reduce(drawn, Action.Undo()))).toBe(false);
+  });
+
+  it('is over once the model lives in a file, opened or saved into one', () => {
+    expect(showingPlaceholder(reduce(opening, opened))).toBe(false);
+    expect(showingPlaceholder(reduce(opening, saved))).toBe(false);
+  });
+
+  it('was never showing for a model that arrived any other way', () => {
+    expect(showingPlaceholder(start)).toBe(false);
+  });
+
+  it('comes back once the model is closed back to the one the studio opens on', () => {
+    const closed = reduce(
+      reduce(reduce(opening, added), saved),
+      Action.Closed(),
+    );
+
+    expect(showingPlaceholder(closed)).toBe(true);
+  });
+});
+
+describe('windowTitle', () => {
+  it('says a model with no file as Untitled, ahead of the product name', () => {
+    expect(windowTitle(initialState(placeholderModel))).toBe(
+      'Untitled - Panoptes',
+    );
+  });
+
+  it('says the file once the model lives in one, opened or saved', () => {
+    const opened = reduce(
+      start,
+      Action.Opened({
+        model: sampleModel,
+        name: 'other.yaml',
+        source: nativeSource,
+        divergences: [],
+      }),
+    );
+    const saved = reduce(
+      start,
+      Action.Saved({ name: 'model.yaml', source: nativeSource }),
+    );
+
+    expect(windowTitle(opened)).toBe('other.yaml - Panoptes');
+    expect(windowTitle(saved)).toBe('model.yaml - Panoptes');
   });
 });

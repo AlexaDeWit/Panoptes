@@ -19,9 +19,9 @@ import {
   stepThroughOptions,
 } from './studio.fixtures.js';
 
-const reader = /^Reader, actor/u;
+const actor = /^Actor, actor/u;
 
-const studio = /^Studio, process/u;
+const store = /^Store, store/u;
 
 const proxy = /^Écluse proxy, process/u;
 
@@ -31,12 +31,12 @@ test('an element shows its handles under the pointer and hides them again', asyn
   page,
 }) => {
   await openPlaceholder(page);
-  const handle = handleOn(nodeNamed(page, reader), 'right');
+  const handle = handleOn(nodeNamed(page, actor), 'right');
   const away = await emptyCanvasPoint(page);
 
   await expect(handle).toBeHidden();
 
-  await nodeNamed(page, reader).hover();
+  await nodeNamed(page, actor).hover();
 
   await expect(handle).toBeVisible();
 
@@ -51,11 +51,11 @@ test('a selected element keeps its handles with the pointer elsewhere', async ({
   await openPlaceholder(page);
   const away = await emptyCanvasPoint(page);
 
-  await selectNode(page, reader);
+  await selectNode(page, actor);
   await page.mouse.move(away.x, away.y);
 
-  await expect(handleOn(nodeNamed(page, reader), 'right')).toBeVisible();
-  await expect(handleOn(nodeNamed(page, studio), 'left')).toBeHidden();
+  await expect(handleOn(nodeNamed(page, actor), 'right')).toBeVisible();
+  await expect(handleOn(nodeNamed(page, store), 'left')).toBeHidden();
 });
 
 test('a flow is drawn by dragging from one handle to another', async ({
@@ -63,16 +63,16 @@ test('a flow is drawn by dragging from one handle to another', async ({
 }) => {
   await openPlaceholder(page);
 
-  await nodeNamed(page, reader).hover();
+  await nodeNamed(page, actor).hover();
   await dragOnto(
     page,
-    handleOn(nodeNamed(page, reader), 'right'),
-    handleOn(nodeNamed(page, studio), 'left'),
+    handleOn(nodeNamed(page, actor), 'right'),
+    handleOn(nodeNamed(page, store), 'left'),
   );
 
-  await expect(page.locator(flows)).toHaveCount(1);
+  await expect(page.locator(flows)).toHaveCount(2);
   await expect(editAnnouncement(page)).toHaveText(
-    'Added New flow, flow, from Reader to Studio.',
+    'Added New flow, flow, from Actor to Store.',
   );
 });
 
@@ -83,14 +83,14 @@ test('a drag released over empty canvas draws nothing and costs no undo step', a
   await page.getByRole('button', { name: 'New actor', exact: true }).click();
   await expect(nodeNamed(page, /^New actor, actor/u)).toHaveCount(1);
 
-  await nodeNamed(page, reader).hover();
+  await nodeNamed(page, actor).hover();
   await dragTo(
     page,
-    handleOn(nodeNamed(page, reader), 'right'),
+    handleOn(nodeNamed(page, actor), 'right'),
     await emptyCanvasPoint(page),
   );
 
-  await expect(page.locator(flows)).toHaveCount(0);
+  await expect(page.locator(flows)).toHaveCount(1);
 
   await runFromMenu(page, 'Undo');
 
@@ -138,20 +138,24 @@ test('a flow is drawn by keyboard alone, from the selected element', async ({
 
   await beforeCanvas(page).focus();
   await page.keyboard.press('Tab');
-  await expect(nodeNamed(page, reader)).toBeFocused();
+  await expect(nodeNamed(page, /^Records, flow/u)).toBeFocused();
+  await page.keyboard.press('Tab');
+  await expect(nodeNamed(page, actor)).toBeFocused();
   await page.keyboard.press('Enter');
 
+  await page.keyboard.press('Shift+Tab');
+  await expect(nodeNamed(page, /^Records, flow/u)).toBeFocused();
   await page.keyboard.press('Shift+Tab');
   await expect(beforeCanvas(page)).toBeFocused();
   await page.keyboard.press('Shift+Tab');
   await expect(connectTarget(page)).toBeFocused();
   await page.keyboard.press('Enter');
-  await page.getByRole('option', { name: 'Studio' }).press('Enter');
+  await page.getByRole('option', { name: 'Store' }).press('Enter');
   await page.keyboard.press('Tab');
   await page.getByRole('button', { name: 'Connect' }).press('Enter');
 
-  await expect(page.locator(flows)).toHaveCount(1);
+  await expect(page.locator(flows)).toHaveCount(2);
   await expect(editAnnouncement(page)).toHaveText(
-    'Added New flow, flow, from Reader to Studio.',
+    'Added New flow, flow, from Actor to Store.',
   );
 });
