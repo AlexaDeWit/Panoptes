@@ -10,7 +10,7 @@ import {
   elementIdsIn,
   endpointViolationsOf,
 } from './references.js';
-import { firstRefusedCharacter } from './text.js';
+import { firstRefusedCharacter, isEmptyName } from './text.js';
 
 /** The failures {@link addElement} can produce. */
 export type AddElementFailure = Extract<
@@ -195,8 +195,8 @@ export function resizeElement(
  * the failure carries where the first such character sits, from
  * {@link firstRefusedCharacter}. This is the one operation that screens a
  * caller's string, because renaming in place is where text typed after the
- * parse reaches the model. A name of spaces is a name, the empty string
- * alone being empty. The input model is never mutated.
+ * parse reaches the model. Empty is {@link isEmptyName}, so a name of spaces
+ * is refused with the empty string. The input model is never mutated.
  */
 export function renameElement(
   model: Model,
@@ -207,7 +207,7 @@ export function renameElement(
   if (!located) {
     return Either.left(OperationFailure.UnknownElement({ elementId }));
   }
-  if (name === '') {
+  if (isEmptyName(name)) {
     return Either.left(OperationFailure.EmptyName({ elementId }));
   }
   const at = firstRefusedCharacter(name);

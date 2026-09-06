@@ -1,6 +1,11 @@
 import type { ElementId, Model } from '@panoptes/model';
 import { Action } from '../store/actions.js';
-import { elementById, firstDiagramId } from '../store/selectors.js';
+import {
+  elementById,
+  firstDiagramId,
+  nameEditable,
+  renameable,
+} from '../store/selectors.js';
 import type { State } from '../store/state.js';
 import { dispatch, modelStore } from '../store/store.js';
 import { announce } from './announcements.js';
@@ -131,34 +136,42 @@ export function describeRemoval(name: string, cascade: RemovalCascade): string {
  * store](../store/README.md)).
  */
 export function renameSelected(): void {
-  const elementId = modelStore.getState().selection;
-  if (elementId !== undefined) {
-    beginRenaming(elementId);
+  const state = modelStore.getState();
+  const elementId = state.selection;
+  if (elementId !== undefined && renameable(state)) {
+    dispatch(Action.Renaming({ elementId }));
   }
 }
 
 /**
- * Opens `elementId`'s name in a field, which is what a double-click does. A
- * text note is refused here rather than at either control: what it draws is
- * its prose and not its name, so a field over it would edit nothing a person
- * can see.
+ * Opens `elementId`'s name in a field, which is what a double-click does. It
+ * reads the same rule the control offering the command reads, so a gesture
+ * and a menu item agree about what has a name to edit.
  */
 export function beginRenaming(elementId: ElementId): void {
-  const element = elementById(modelStore.getState(), elementId);
-  if (element === undefined || element.kind === 'text') {
-    return;
+  if (nameEditable(modelStore.getState(), elementId)) {
+    dispatch(Action.Renaming({ elementId }));
   }
-  dispatch(Action.Renaming({ elementId }));
 }
 
 /**
  * Closes the open field and puts focus back on the element it was drawn
- * over. It follows a commit and is the whole of what Escape does, the name
- * being left as the model holds it.
+ * over. It is what a key press settles on, Enter and Escape alike, where the
+ * person left focus in the field and would otherwise be dropped onto the
+ * page.
  */
 export function endRenaming(elementId: ElementId): void {
   dispatch(Action.Renaming({ elementId: undefined }));
   focusElement(elementId);
+}
+
+/**
+ * Closes the open field and leaves focus where it is. It is what a field
+ * settles on when it is left, the person having already put focus on
+ * something else: sending it back would undo the click that landed there.
+ */
+export function stopRenaming(): void {
+  dispatch(Action.Renaming({ elementId: undefined }));
 }
 
 /**

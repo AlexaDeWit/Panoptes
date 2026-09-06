@@ -9,7 +9,7 @@ import {
   type CanvasNodeKind,
   type TextPlacement,
 } from '@panoptes/canvas';
-import type { ElementId } from '@panoptes/model';
+import { isEmptyName, type ElementId } from '@panoptes/model';
 import {
   EdgeLabelRenderer,
   type EdgeProps,
@@ -27,16 +27,22 @@ import type { State } from '../store/state.js';
 import { useModelStore } from '../store/store.js';
 import { refusedText, type TextRefusal } from '../ui/text-field.js';
 import { announce } from './announcements.js';
-import { commitRename, endRenaming } from './edits.js';
+import { commitRename, endRenaming, stopRenaming } from './edits.js';
 import { edgeLabel, nodeLabel } from './names.js';
 import styles from './rename-field.module.css';
 
 type Draft = { readonly shown: string; readonly text: string };
 
+type NameFieldProps = {
+  readonly elementId: ElementId;
+  readonly label: string;
+  readonly name: string;
+};
+
 const emptyRefusal = 'A name cannot be empty.';
 
 function refusedName(label: string, text: string): TextRefusal | undefined {
-  return text === ''
+  return isEmptyName(text)
     ? { shown: emptyRefusal, said: `${label} was not saved. ${emptyRefusal}` }
     : refusedText(label, text);
 }
@@ -53,28 +59,7 @@ function placedAt(placement: TextPlacement): CSSProperties {
   };
 }
 
-/** Which element the field renames, what it is labelled, and its name now. */
-export type NameFieldProps = {
-  readonly elementId: ElementId;
-  readonly label: string;
-  readonly name: string;
-};
-
-/**
- * The name of one element, edited where it is drawn. Enter commits, Escape
- * cancels and leaves the model's own name, and leaving the field commits as
- * well, so a rename settles however a person leaves it. Focus goes back to
- * the element either way, the field having been drawn over it.
- *
- * What is typed is the field's until it is committed, which is what keeps a
- * name the model refuses on screen to be corrected. A refusal is said in the
- * canvas's live region with the field named, since a refusal that lands as
- * focus leaves would otherwise be silent, and it is shown under the field
- * with the character named ([the controls](../ui/README.md)). The field
- * follows the name it is given whenever that moves, so an undo taken while
- * it is open lands in it.
- */
-export function NameField({ elementId, label, name }: NameFieldProps) {
+function NameField({ elementId, label, name }: NameFieldProps) {
   const refusalId = useId();
   const field = useRef<HTMLInputElement>(null);
   const settled = useRef(false);
@@ -91,20 +76,25 @@ export function NameField({ elementId, label, name }: NameFieldProps) {
     field.current?.select();
   }, []);
 
-  const close = (): void => {
+  const cancel = (): void => {
     settled.current = true;
     endRenaming(elementId);
   };
 
-  const commit = (): void => {
+  const commit = (handBack: boolean): void => {
     const refused = refusedName(label, draft.text);
     setRefusal(refused);
-    if (refused === undefined) {
-      commitRename(elementId, draft.text);
-      close();
+    if (refused !== undefined) {
+      announce(refused.said);
       return;
     }
-    announce(refused.said);
+    commitRename(elementId, draft.text);
+    settled.current = true;
+    if (handBack) {
+      endRenaming(elementId);
+    } else {
+      stopRenaming();
+    }
   };
 
   return (
@@ -113,10 +103,10 @@ export function NameField({ elementId, label, name }: NameFieldProps) {
         aria-describedby={refusal === undefined ? undefined : refusalId}
         aria-invalid={refusal !== undefined}
         aria-label={label}
-        className={`${styles.field} nodrag nopan`}
+        className={styles.field}
         onBlur={() => {
           if (!settled.current) {
-            commit();
+            commit(false);
           }
         }}
         onChange={(event) => {
@@ -125,11 +115,11 @@ export function NameField({ elementId, label, name }: NameFieldProps) {
         onKeyDown={(event) => {
           if (event.key === 'Enter') {
             event.preventDefault();
-            commit();
+            commit(true);
           }
           if (event.key === 'Escape') {
             event.preventDefault();
-            close();
+            cancel();
           }
         }}
         ref={field}
@@ -145,18 +135,7 @@ export function NameField({ elementId, label, name }: NameFieldProps) {
   );
 }
 
-/**
- * One element as a React Flow node, with the field over its name while the
- * store has that name open. The drawing is the canvas package's own and is
- * untouched: the field is the studio's, mounted beside it and placed where
- * the glyph draws the name, so the two cannot sit apart.
- *
- * The subscription answers whether this node is the one being renamed rather
- * than which node is, so a rename re-renders that node alone, and the
- * selector is held across renders so a node React Flow redraws mid-drag reads
- * the store no more often than it did before there was a field to mount.
- */
-export function RenamingNodeBody(props: NodeProps<CanvasFlowNode>) {
+function RenamingNodeBody(props: NodeProps<CanvasFlowNode>) {
   const { node } = props.data;
   const renaming = useModelStore(
     useCallback((state: State) => state.renaming === node.id, [node.id]),
@@ -167,7 +146,7 @@ export function RenamingNodeBody(props: NodeProps<CanvasFlowNode>) {
       <CanvasNodeBody {...props} />
       {renaming && (
         <div
-          className={styles.overNode}
+          className={`${styles.overNode} nodrag nopan`}
           style={placedAt(nodeTextPlacement(node))}
         >
           <NameField
@@ -181,14 +160,7 @@ export function RenamingNodeBody(props: NodeProps<CanvasFlowNode>) {
   );
 }
 
-/**
- * One flow as a React Flow edge, with the field over its label on the same
- * terms. The label's placement is the one the layout settled over the whole
- * diagram, so the field lands where the name was drawn rather than at a
- * midpoint of its own. It rides in React Flow's edge label layer, an edge
- * itself being drawn in an SVG that no field can sit in.
- */
-export function RenamingEdgeBody(props: EdgeProps<CanvasFlowEdge>) {
+function RenamingEdgeBody(props: EdgeProps<CanvasFlowEdge>) {
   const edge = props.data?.edge;
   const renaming = useModelStore(
     useCallback((state: State) => state.renaming === edge?.id, [edge?.id]),
@@ -199,7 +171,10 @@ export function RenamingEdgeBody(props: EdgeProps<CanvasFlowEdge>) {
       <CanvasEdgeBody {...props} />
       {renaming && edge !== undefined && (
         <EdgeLabelRenderer>
-          <div className={styles.overFlow} style={placedAt(edge.label.name)}>
+          <div
+            className={`${styles.overFlow} nodrag nopan`}
+            style={placedAt(edge.label.name)}
+          >
             <NameField
               elementId={edge.id}
               label={`Name of ${edgeLabel(edge)}`}
@@ -214,8 +189,20 @@ export function RenamingEdgeBody(props: EdgeProps<CanvasFlowEdge>) {
 
 /**
  * The node types the studio mounts: the canvas package's drawing of every
- * element kind, each able to carry the rename field, and the anchor a flow's
- * free end rides on, which draws nothing and is renamed by nothing.
+ * element kind, wrapped so it can carry a field over the name while the store
+ * has that name open, and the anchor a flow's free end rides on, which draws
+ * nothing and is renamed by nothing. The drawing itself is untouched; the
+ * field is the studio's, placed where the glyph draws the name so the two
+ * cannot sit apart.
+ *
+ * Each node subscribes to whether it is the one being renamed rather than to
+ * which node is, so a rename re-renders that node alone, and its selector is
+ * held across renders so a node React Flow redraws mid-drag reads the store no
+ * more often than it did before there was a field to mount.
+ *
+ * What the field then does is [the canvas](README.md): Enter commits and
+ * Escape leaves the model's name, both handing focus back to the element,
+ * while leaving the field commits and leaves focus where the person put it.
  */
 export const renamingNodeTypes = {
   actor: RenamingNodeBody,
@@ -228,5 +215,10 @@ export const renamingNodeTypes = {
 } as const satisfies Record<CanvasNodeKind, typeof RenamingNodeBody> &
   Record<typeof freeEndNodeKind, typeof CanvasFreeEndBody>;
 
-/** The edge type the studio mounts, which is a flow that carries the field. */
+/**
+ * The edge type the studio mounts, which is a flow carrying the same field
+ * over its label, at the placement the layout settled over the whole diagram
+ * rather than at a midpoint of its own. It rides in React Flow's edge label
+ * layer, an edge itself being drawn in an SVG that no field can sit in.
+ */
 export const renamingEdgeTypes = { flow: RenamingEdgeBody } as const;

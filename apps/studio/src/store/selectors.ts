@@ -52,6 +52,25 @@ export function elementById(
 }
 
 /**
+ * Whether the element `elementId` names has a name a field can open. A text
+ * note has not: what it draws is its prose rather than its name, so a field
+ * over one would edit nothing a person can see.
+ */
+export function nameEditable(state: State, elementId: ElementId): boolean {
+  const element = elementById(state, elementId);
+  return element !== undefined && element.kind !== 'text';
+}
+
+/**
+ * Whether the rename command has something to open a field on, which is what
+ * the control offering it reads so it is not live over a selection it would
+ * do nothing to.
+ */
+export function renameable(state: State): boolean {
+  return state.selection !== undefined && nameEditable(state, state.selection);
+}
+
+/**
  * The model as it arrived, which is a file just opened or the placeholder the
  * studio starts on, and nothing at all once anything has been edited, undone
  * or redone. The canvas fits the viewport to it and reads it by identity, so

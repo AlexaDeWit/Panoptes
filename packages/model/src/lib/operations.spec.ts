@@ -394,6 +394,14 @@ describe('renameElement', () => {
     );
   });
 
+  it('refuses a name of whitespace, which draws as no name at all', () => {
+    expect(
+      errorOf(renameElement(base, elementId('element-api'), '   ')),
+    ).toEqual(
+      OperationFailure.EmptyName({ elementId: elementId('element-api') }),
+    );
+  });
+
   it('refuses a character the parse boundary refuses, saying where it sits', () => {
     expect(
       errorOf(renameElement(base, elementId('element-api'), 'Order\u00adAPI')),

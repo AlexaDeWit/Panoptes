@@ -20,6 +20,7 @@ import {
   actorElement,
   mainDiagram,
   nativeSource,
+  newNote,
   newProcess,
   sampleModel,
 } from '../store/store.fixtures.js';
@@ -213,6 +214,25 @@ describe('what the studio says about the file', () => {
     expect(
       item('Rename the selection').getAttribute('data-disabled'),
     ).toBeNull();
+    expect(
+      item('Delete the selection').getAttribute('data-disabled'),
+    ).toBeNull();
+  });
+
+  it('offers no rename over a text note, which draws prose rather than a name', async () => {
+    const user = userEvent.setup();
+    const note = newNote('text-note', 'The studio opens on this model.');
+    mounted(specBridge());
+    act(() => {
+      dispatch(Action.AddElement({ diagramId: mainDiagram, element: note }));
+      dispatch(Action.Select({ elementId: note.id }));
+    });
+
+    await openMenu(user);
+
+    expect(
+      item('Rename the selection').getAttribute('data-disabled'),
+    ).not.toBeNull();
     expect(
       item('Delete the selection').getAttribute('data-disabled'),
     ).toBeNull();

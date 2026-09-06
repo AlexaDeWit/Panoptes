@@ -11,7 +11,7 @@ import {
   keyShortcutsAttribute,
   spellShortcuts,
 } from '../commands/shortcuts.js';
-import { canRedo, canUndo, isDirty } from '../store/selectors.js';
+import { canRedo, canUndo, isDirty, renameable } from '../store/selectors.js';
 import { useModelStore } from '../store/store.js';
 import { FailureNotice } from '../ui/failure-notice.js';
 import { LiveRegion } from '../ui/live-region.js';
@@ -112,7 +112,9 @@ export type StudioMenuProps = { readonly session: FileSession };
  * the canvas has selected, each disabled while there is nothing for it to do,
  * as Undo is disabled on an empty stack: a person reaching a command by
  * keyboard alone is told it has nothing to work on rather than pressing it
- * for no result.
+ * for no result. Rename reads more than whether something is selected, a text
+ * note having prose rather than a name to edit ([the
+ * selectors](../store/selectors.ts)).
  *
  * The loss report and the failure notice are the menu's chrome rather than
  * its items, drawn under the button and over the canvas. Both are the shared
@@ -148,6 +150,7 @@ export function StudioMenu({ session }: StudioMenuProps) {
   const undoable = useModelStore(canUndo);
   const redoable = useModelStore(canRedo);
   const nothing = useModelStore((state) => state.selection === undefined);
+  const renamable = useModelStore(renameable);
   const [open, setOpen] = useState(false);
 
   useCloseGuard(dirty);
@@ -276,7 +279,7 @@ export function StudioMenu({ session }: StudioMenuProps) {
             </DropdownMenu.Label>
             <MenuCommand command="undo" disabled={!undoable} />
             <MenuCommand command="redo" disabled={!redoable} />
-            <MenuCommand command="rename" disabled={nothing} />
+            <MenuCommand command="rename" disabled={!renamable} />
             <MenuCommand command="delete" disabled={nothing} />
           </DropdownMenu.Group>
           <DropdownMenu.Separator className={styles.rule} />

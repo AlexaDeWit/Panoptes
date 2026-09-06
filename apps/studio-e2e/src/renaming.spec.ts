@@ -1,8 +1,8 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { registeredChords } from './chords.js';
-import { lineOf } from './canvas-geometry.fixtures.js';
 import {
   dragOnto,
+  menuButton,
   nodeNamed,
   openEcluse,
   openPlaceholder,
@@ -89,17 +89,30 @@ test('the menu opens the name of the selection in a field', async ({
   await expect(nodeNamed(page, /^Workshop, process/u)).toHaveCount(1);
 });
 
-test('a flow is renamed by double-clicking the line it draws', async ({
+test('leaving the field for another control keeps the click that took focus', async ({
+  page,
+}) => {
+  await openPlaceholder(page);
+  await selectNode(page, /^Studio, process/u);
+
+  await page.keyboard.press(registeredChords.rename[0]);
+  await rename(page, 'Studio').fill('Workshop');
+  await menuButton(page).click();
+
+  await expect(nodeNamed(page, /^Workshop, process/u)).toHaveCount(1);
+  await expect(page.getByRole('menu')).toBeVisible();
+});
+
+test('a flow is renamed by double-clicking the label it draws', async ({
   page,
 }) => {
   await openPlaceholder(page);
   await drawFlow(page);
 
-  // A flow's line is drawn horizontally between these two elements, so its
-  // box has no height and Playwright reads it as invisible. The stroke is
-  // still what the pointer hits, which is the gesture under test, so the
-  // actionability check is skipped rather than the click moved off the line.
-  await lineOf(page, /^New flow, flow/u).dblclick({ force: true });
+  await drawnName(
+    nodeNamed(page, /^New flow, flow/u),
+    'pn-flow-label',
+  ).dblclick();
   await rename(page, 'New flow').fill('Opens');
   await rename(page, 'New flow').press('Enter');
 

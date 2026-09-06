@@ -45,9 +45,10 @@ describe('the rename field', () => {
     expect(nameOf(readerElement)).toBe('Auditor');
     expect(state().past).toHaveLength(1);
     expect(state().renaming).toBeUndefined();
+    expect(document.activeElement?.getAttribute('data-id')).toBe(readerElement);
   });
 
-  it('commits when it is left', async () => {
+  it('commits when it is left, leaving focus where it went', async () => {
     const user = userEvent.setup();
     renaming(readerElement);
     render(<DiagramCanvas />);
@@ -57,6 +58,9 @@ describe('the rename field', () => {
     await user.tab();
 
     expect(nameOf(readerElement)).toBe('Auditor');
+    expect(document.activeElement?.getAttribute('data-id')).not.toBe(
+      readerElement,
+    );
   });
 
   it('leaves the name alone on Escape', async () => {
@@ -97,6 +101,21 @@ describe('the rename field', () => {
     expect(field('Name of Reader')).toHaveProperty('value', 'Soft­hyphen');
     expect(currentAnnouncement().message).toBe(
       'Name of Reader was not saved. Character 5 is one the model does not accept.',
+    );
+  });
+
+  it('refuses a name of whitespace, which draws as no name at all', async () => {
+    const user = userEvent.setup();
+    renaming(readerElement);
+    render(<DiagramCanvas />);
+
+    await user.clear(field('Name of Reader'));
+    await user.type(field('Name of Reader'), '   {Enter}');
+
+    expect(nameOf(readerElement)).toBe('Reader');
+    expect(state().renaming).toBe(readerElement);
+    expect(currentAnnouncement().message).toBe(
+      'Name of Reader was not saved. A name cannot be empty.',
     );
   });
 

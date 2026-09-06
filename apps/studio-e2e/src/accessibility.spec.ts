@@ -204,10 +204,6 @@ test('the studio carries no violation with the menu open', async ({ page }) => {
   await audit(page, 'showing the menu asking before it closes a file');
 });
 
-// The rename field is drawn over the element it renames rather than in a
-// panel, so the audit stays page-wide. What it has to hold is that a field
-// carrying no visible label of its own still has an accessible name, and that
-// the canvas it sits inside is unchanged around it.
 test('the studio carries no violation with a name open in a field', async ({
   page,
 }) => {

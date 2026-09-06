@@ -297,7 +297,11 @@ commands](../commands/README.md)). The
 - A rename the model refuses keeps its field open until the name is corrected
   or Escape is pressed, wherever the selection goes meanwhile. The draft is
   the field's alone, as a refused threat field is the panel's, and dropping it
-  on a selection moving would drop what was typed.
+  on a selection moving would drop what was typed. Beginning a rename on
+  another element is where it does go: that field is the one that opens, and
+  the refused draft goes with the field it was in.
+- Nothing pans to a flow that was just connected: a flow has no box, so
+  whether it is in view is not the question a node's is.
 - Selection is single. Multi-select and box select are unbound, because the
   store holds one selection and a plural gesture has no plural action behind
   it.
