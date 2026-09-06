@@ -21,6 +21,12 @@
           LANG = "C.UTF-8";
           LC_ALL = "C.UTF-8";
 
+          # Nx sets FORCE_COLOR for child processes. Drop a host NO_COLOR so
+          # Node does not warn when both variables reach those processes.
+          shellHook = ''
+            unset NO_COLOR
+          '';
+
           # The fonts the CLI typesets a PDF with, pinned by this flake's
           # nixpkgs revision rather than committed to the tree: a binary
           # Saerskriven did not author is a toolchain input (CODING.md,
