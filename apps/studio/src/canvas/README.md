@@ -145,10 +145,11 @@ the region below, which speaks only for edits that landed.
 - **Rename.** Double-clicking an element or a flow, or pressing F2 with one
   selected, opens a field over the name where the diagram draws it: over the
   glyph for an element and over the label for a flow, at the placement the
-  layout settled, so nothing has to be looked for. Enter commits, Escape
-  leaves the name as the model holds it, and leaving the field commits as
-  well; focus goes back to the element either way, and the field is labelled
-  "Name of" what it renames, so a screen reader hears which element it is in.
+  layout settled, so nothing has to be looked for. Enter commits and Escape
+  leaves the name as the model holds it, and focus goes back to the element
+  on both. Leaving the field for another control commits as well and leaves
+  focus where the click put it. The field is labelled "Name of" what it
+  renames, so a screen reader hears which element it is in.
   A commit is one `RenameElement` and so one undo step, and a name the model
   already holds dispatches nothing, on the panel's own commit rule ([the
   panel](../panel/README.md)). This is what replaces the names the palette
