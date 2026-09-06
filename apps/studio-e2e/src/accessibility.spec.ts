@@ -141,9 +141,9 @@ test('the studio carries no violation with an element selected and its handles s
   await page.goto('/');
   await expect(page.getByTestId('canvas-container')).toBeVisible();
 
-  const reader = nodeNamed(page, /^Reader, actor/u);
-  await reader.click();
-  await expect(handleOn(reader, 'right')).toBeVisible();
+  const actor = nodeNamed(page, /^Actor, actor/u);
+  await actor.click();
+  await expect(handleOn(actor, 'right')).toBeVisible();
 
   await audit(page, 'showing a selected element and its handles');
 });
