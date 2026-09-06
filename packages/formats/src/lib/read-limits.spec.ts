@@ -8,7 +8,7 @@ import { readPanoptesYaml } from './panoptes-yaml-read.js';
 import { nativeFixtures } from './panoptes-yaml.fixtures.js';
 import { parseWithinLimits, readLimits } from './read-limits.js';
 import { readThreatDragon } from './threat-dragon-read.js';
-import { corpusTexts } from './threat-dragon.fixtures.js';
+import { corpusTexts, corpusTimeout } from './threat-dragon.fixtures.js';
 
 type Read = (text: string) => Either.Either<unknown, ReadFailure>;
 
@@ -134,14 +134,18 @@ function failureOf(read: Read, text: string): ReadFailure | undefined {
 }
 
 describe('the read limits against the files the repository vendors', () => {
-  it('stop no Threat Dragon file in the corpus, through either read', () => {
-    const stopped = corpusTexts.flatMap((file) =>
-      [readThreatDragon, readPanoptesYaml].flatMap((read) =>
-        refusalOf(read, file.text).startsWith('max') ? [file.name] : [],
-      ),
-    );
-    expect(stopped).toEqual([]);
-  });
+  it(
+    'stop no Threat Dragon file in the corpus, through either read',
+    () => {
+      const stopped = corpusTexts.flatMap((file) =>
+        [readThreatDragon, readPanoptesYaml].flatMap((read) =>
+          refusalOf(read, file.text).startsWith('max') ? [file.name] : [],
+        ),
+      );
+      expect(stopped).toEqual([]);
+    },
+    corpusTimeout,
+  );
 
   it('stop none of the Panoptes YAML files this repository writes', () => {
     expect(

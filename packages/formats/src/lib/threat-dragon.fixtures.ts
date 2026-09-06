@@ -56,6 +56,15 @@ const vendored = join(
 );
 
 /**
+ * How long the spec that reads the whole corpus twice is given, past the
+ * root `vitest.shared.mts` sets. It puts every file in `corpusTexts` through
+ * both the Threat Dragon read and the Panoptes YAML read, so its cost grows
+ * with the corpus rather than staying fixed, and ten runs of the whole
+ * workspace's suites on a contended host measured it at 9.8 seconds.
+ */
+export const corpusTimeout = 30_000;
+
+/**
  * Every Threat Dragon threat model the repository vendors, named by its
  * path under `test-data`. The twelve models Threat Dragon ships in its own
  * repository, described in `test-data/README.md`, plus the Écluse model,

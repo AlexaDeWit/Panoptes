@@ -33,6 +33,13 @@ export const sharedTest = (
 ) => ({
   name: projectName(projectRoot),
   watch: false,
+  // Ten seconds rather than vitest's five, and the ceiling for the root: the
+  // maintainer's machine and GitHub's shared runners both run these suites
+  // under contention, where the heaviest specs take two to three times their
+  // unloaded wall clock. A suite that needs longer declares it at its own
+  // scope, never here (CODING.md, Tests).
+  testTimeout: 10_000,
+  hookTimeout: 10_000,
   globals: true,
   environment,
   include,

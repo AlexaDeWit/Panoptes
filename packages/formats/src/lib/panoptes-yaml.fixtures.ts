@@ -213,6 +213,15 @@ const threatNumbersArbitrary = fc
   .filter((numbers) => numbers.length < 2 || !isAscending(numbers));
 
 /**
+ * How long a property over `modelInputArbitrary` is given, past the root
+ * `vitest.shared.mts` sets. fast-check runs a property a hundred times by
+ * default, and each run parses a model, writes it and reads it back, which
+ * ten runs of the whole workspace's suites on a contended host measured at
+ * 9.5 seconds.
+ */
+export const propertyTimeout = 30_000;
+
+/**
  * Models covering every record kind the internal model has, as `parseModel`
  * input rather than as models: a spec parses them, so a generator that
  * strays outside what the model accepts fails the run that produced it

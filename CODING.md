@@ -60,13 +60,20 @@ Tests pin this project's decisions and regressions in broad strokes. They
 do not re-verify what a dependency's own test suite or the type-checker
 already guarantees.
 
+A test is given ten seconds, set once in `vitest.shared.mts` for
+`testTimeout` and `hookTimeout`, because the maintainer's machine and
+GitHub's shared runners both run these suites under contention. That is the
+ceiling for the root value: a spec needing longer declares its own at the
+narrowest scope that needs it, with the reason beside it, as the CLI's PDF
+compiles do.
+
 The fixture helpers every suite shares have one home, the
 `@panoptes/model/fixtures` subpath, and only a spec or a `*.fixtures.*`
 module imports it. The subpath resolves to source, so every project that
 depends on `@panoptes/model` reaches it, and nothing structural stops a
-downstream production module: the typecheck resolves it like any other entry point and
-the layer matrix reasons about projects rather than entry points, so a
-studio bundle carrying a fixture-derived value passes both. The
+downstream production module: the typecheck resolves it like any other
+entry point and the layer matrix reasons about projects rather than entry
+points, so a studio bundle carrying a fixture-derived value passes both. The
 `no-restricted-imports` rule in `.oxlintrc.json` refuses that import, and the
 override beside it names the two file patterns that keep it.
 

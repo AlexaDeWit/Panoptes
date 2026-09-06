@@ -11,6 +11,7 @@ import {
   goldenPath,
   modelInputArbitrary,
   nativeFixtures,
+  propertyTimeout,
 } from './panoptes-yaml.fixtures.js';
 
 const golden = readFileSync(goldenPath, 'utf8');
@@ -84,30 +85,34 @@ describe.each(emittedModels)(
   },
 );
 
-describe('any model at all', () => {
-  it('survives a write and a read as itself, threats in number order', () => {
-    fc.assert(
-      fc.property(modelInputArbitrary, (input) => {
-        const model = Either.getOrThrow(parseModel(input));
-        const written = panoptesYamlCodec.write(model);
-        expect(written.divergences).toEqual([]);
-        const reading = readOrThrow(written.output);
-        expect(reading.divergences).toEqual([]);
-        expect(reading.model).toEqual(inNumberOrder(model));
-      }),
-    );
-  });
+describe(
+  'any model at all',
+  () => {
+    it('survives a write and a read as itself, threats in number order', () => {
+      fc.assert(
+        fc.property(modelInputArbitrary, (input) => {
+          const model = Either.getOrThrow(parseModel(input));
+          const written = panoptesYamlCodec.write(model);
+          expect(written.divergences).toEqual([]);
+          const reading = readOrThrow(written.output);
+          expect(reading.divergences).toEqual([]);
+          expect(reading.model).toEqual(inNumberOrder(model));
+        }),
+      );
+    });
 
-  it('writes the same bytes however its records were built', () => {
-    fc.assert(
-      fc.property(modelInputArbitrary, (input) => {
-        const output = panoptesYamlCodec.write(
-          Either.getOrThrow(parseModel(input)),
-        ).output;
-        expect(panoptesYamlCodec.write(readOrThrow(output).model).output).toBe(
-          output,
-        );
-      }),
-    );
-  });
-});
+    it('writes the same bytes however its records were built', () => {
+      fc.assert(
+        fc.property(modelInputArbitrary, (input) => {
+          const output = panoptesYamlCodec.write(
+            Either.getOrThrow(parseModel(input)),
+          ).output;
+          expect(
+            panoptesYamlCodec.write(readOrThrow(output).model).output,
+          ).toBe(output);
+        }),
+      );
+    });
+  },
+  propertyTimeout,
+);
