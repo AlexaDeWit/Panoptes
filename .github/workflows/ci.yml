@@ -49,15 +49,8 @@ jobs:
 
       - name: Set up toolchain
         uses: ./.github/actions/setup-toolchain
-
-      # cache-nix-action trims the store with `nix store gc` before saving, and
-      # a dev shell holds no GC root, so without this profile the saved entry
-      # loses `.#ci`.
-      - name: Root the .#ci shell for the Nix-store cache save
-        run: nix develop .#ci --profile "$RUNNER_TEMP/panoptes-ci-profile" --command true
-
-      - name: Install dependencies
-        run: nix develop .#ci --command pnpm install --frozen-lockfile
+        with:
+          install-dependencies: 'true'
 
       # The same command a contributor runs locally, so local and CI cannot
       # drift. The script (package.json) chains sync check, lint, boundaries,
@@ -222,11 +215,9 @@ jobs:
       - name: Set up toolchain
         uses: ./.github/actions/setup-toolchain
         with:
+          install-dependencies: 'true'
           # build-test is the one writer for the shared "nix" prefix.
           save-nix-store: 'false'
-
-      - name: Install dependencies
-        run: nix develop .#ci --command pnpm install --frozen-lockfile
 
       - name: Run the smoke suite
         run: nix develop .#ci --command pnpm nx e2e @panoptes/studio-e2e
