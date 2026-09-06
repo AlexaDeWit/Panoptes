@@ -108,6 +108,12 @@ export type StudioMenuProps = { readonly session: FileSession };
  * outside it lands where it was aimed. Choosing an item puts the menu away,
  * which is also what uncovers the report a save leaves under the button.
  *
+ * The Edit group holds the history moves and the commands that act on what
+ * the canvas has selected, each disabled while there is nothing for it to do,
+ * as Undo is disabled on an empty stack: a person reaching a command by
+ * keyboard alone is told it has nothing to work on rather than pressing it
+ * for no result.
+ *
  * The loss report and the failure notice are the menu's chrome rather than
  * its items, drawn under the button and over the canvas. Both are the shared
  * live region ([the controls](../ui/README.md)), and neither can go inside
@@ -141,6 +147,7 @@ export function StudioMenu({ session }: StudioMenuProps) {
   const dirty = useModelStore(isDirty);
   const undoable = useModelStore(canUndo);
   const redoable = useModelStore(canRedo);
+  const nothing = useModelStore((state) => state.selection === undefined);
   const [open, setOpen] = useState(false);
 
   useCloseGuard(dirty);
@@ -269,6 +276,8 @@ export function StudioMenu({ session }: StudioMenuProps) {
             </DropdownMenu.Label>
             <MenuCommand command="undo" disabled={!undoable} />
             <MenuCommand command="redo" disabled={!redoable} />
+            <MenuCommand command="rename" disabled={nothing} />
+            <MenuCommand command="delete" disabled={nothing} />
           </DropdownMenu.Group>
           <DropdownMenu.Separator className={styles.rule} />
           <DropdownMenu.Group className={styles.about}>

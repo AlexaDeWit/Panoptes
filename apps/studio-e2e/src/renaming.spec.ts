@@ -74,6 +74,21 @@ test('escape leaves the name the model holds', async ({ page }) => {
   await expect(reader).toBeFocused();
 });
 
+test('the menu opens the name of the selection in a field', async ({
+  page,
+}) => {
+  await openPlaceholder(page);
+  await selectNode(page, /^Studio, process/u);
+
+  await runFromMenu(page, 'Rename the selection');
+
+  await expect(rename(page, 'Studio')).toBeFocused();
+  await rename(page, 'Studio').fill('Workshop');
+  await rename(page, 'Studio').press('Enter');
+
+  await expect(nodeNamed(page, /^Workshop, process/u)).toHaveCount(1);
+});
+
 test('a flow is renamed by double-clicking the line it draws', async ({
   page,
 }) => {

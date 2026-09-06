@@ -28,6 +28,8 @@ test('the menu holds the file and edit commands, each showing its shortcut', asy
     'Close the fileCtrl+Shift+X',
     'UndoCtrl+Z',
     'RedoCtrl+Shift+Z or Ctrl+Y',
+    'Rename the selectionF2',
+    'Delete the selectionDelete or Backspace',
   ]);
 });
 
