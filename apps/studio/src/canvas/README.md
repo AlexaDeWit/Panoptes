@@ -192,6 +192,7 @@ element from asking for the panel of one already selected. A press the panel
 does not take is left to React Flow. The other way, Escape in the panel puts
 focus back on the element, through `focusElement`, which is the same route an
 added element takes to focus.
+
 ## What a gesture will do, said before it is made
 
 Nothing about selection or hover is carried by colour alone, so what is
@@ -256,7 +257,6 @@ element from asking for the panel of one already selected. A press the panel
 does not take is left to React Flow. The other way, Escape in the panel puts
 focus back on the element, through `focusElement`, which is the same route an
 added element takes to focus.
-
 
 ## The view
 
