@@ -7,10 +7,13 @@ import {
   editAnnouncement,
   emptyCanvasPoint,
   handleOn,
+  menuItem,
   nodeNamed,
   openEcluse,
+  openMenu,
   openPlaceholder,
   beforeCanvas,
+  runFromMenu,
   selectByKeyboard,
   selectNode,
   stepThroughOptions,
@@ -77,7 +80,6 @@ test('a drag released over empty canvas draws nothing and costs no undo step', a
   page,
 }) => {
   await openPlaceholder(page);
-  const undo = page.getByRole('button', { name: 'Undo' });
   await page.getByRole('button', { name: 'New actor', exact: true }).click();
   await expect(nodeNamed(page, /^New actor, actor/u)).toHaveCount(1);
 
@@ -90,10 +92,11 @@ test('a drag released over empty canvas draws nothing and costs no undo step', a
 
   await expect(page.locator(flows)).toHaveCount(0);
 
-  await undo.click();
+  await runFromMenu(page, 'Undo');
 
   await expect(nodeNamed(page, /^New actor, actor/u)).toHaveCount(0);
-  await expect(undo).toBeDisabled();
+  await openMenu(page);
+  await expect(menuItem(page, 'Undo')).toHaveAttribute('aria-disabled', 'true');
 });
 
 test('the start-flow chord draws a flow from the selected element', async ({
@@ -138,6 +141,8 @@ test('a flow is drawn by keyboard alone, from the selected element', async ({
   await expect(nodeNamed(page, reader)).toBeFocused();
   await page.keyboard.press('Enter');
 
+  await page.keyboard.press('Shift+Tab');
+  await expect(beforeCanvas(page)).toBeFocused();
   await page.keyboard.press('Shift+Tab');
   await expect(connectTarget(page)).toBeFocused();
   await page.keyboard.press('Enter');
