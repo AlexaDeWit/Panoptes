@@ -1,9 +1,9 @@
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { initialState, placeholderModel } from '../store/state.js';
 import { modelStore } from '../store/store.js';
 import { CommandSurfaceProvider } from './binding.js';
-import { CommandButton } from './command-button.js';
+import { CommandButton, IconCommandButton } from './command-button.js';
 import { recordingSurface } from './commands.fixtures.js';
 
 describe('CommandButton', () => {
@@ -68,5 +68,49 @@ describe('CommandButton', () => {
     await user.click(screen.getByRole('button', { name: 'New actor' }));
 
     expect(modelStore.getState().present.diagrams[0].elements).toHaveLength(3);
+  });
+});
+
+describe('IconCommandButton', () => {
+  it('takes its accessible name from the registry, the glyph carrying none', () => {
+    render(
+      <IconCommandButton command="zoom-in">
+        <svg aria-hidden="true" />
+      </IconCommandButton>,
+    );
+
+    expect(screen.getByRole('button', { name: 'Zoom in' })).toBeDefined();
+  });
+
+  it('says the command and its chord in a tooltip, on focus as well as on hover', async () => {
+    render(
+      <IconCommandButton command="fit-to-view">
+        <svg aria-hidden="true" />
+      </IconCommandButton>,
+    );
+
+    act(() => {
+      screen.getByRole('button', { name: 'Fit to view' }).focus();
+    });
+
+    expect((await screen.findByRole('tooltip')).textContent).toBe(
+      'Fit to view Ctrl+0',
+    );
+  });
+
+  it('runs the command against the surface it is mounted under', async () => {
+    const user = userEvent.setup();
+    const recording = recordingSurface();
+    render(
+      <CommandSurfaceProvider surface={recording.surface}>
+        <IconCommandButton command="zoom-out">
+          <svg aria-hidden="true" />
+        </IconCommandButton>
+      </CommandSurfaceProvider>,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Zoom out' }));
+
+    expect(recording.asked).toEqual(['zoomOut']);
   });
 });

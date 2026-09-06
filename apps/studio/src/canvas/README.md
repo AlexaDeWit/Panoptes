@@ -17,8 +17,10 @@ Flow's nodes and edges, and `changes.ts` turns what React Flow reports back
 into store actions and dispatches them. `elements.ts` builds the elements the
 palette adds, `edits.ts` is the command side of the same boundary, one
 function per edit a control asks for, `announcements.ts` carries what an edit
-did to the region that says it, `viewport.ts` says whether a node is drawn
-inside the canvas, and `palette.tsx` is the controls.
+did to the region that says it, `viewport.ts` is the arithmetic of the view,
+whether a node is drawn inside the canvas and the viewport that fits a diagram
+into it, `view-commands.tsx` applies that to React Flow, and `palette.tsx` and
+`zoom-cluster.tsx` are the controls.
 
 The ground is graph paper: React Flow's own `Background` component ruled at
 the grid spacing the canvas package's token module decides, so the lines scale
@@ -128,6 +130,31 @@ is the selection moving that pans rather than the model changing under a
 selection that stays, so dragging the selected element to the edge leaves it
 where it was dropped.
 
+## The view
+
+Opening a model fits the viewport to the whole of the diagram it carries.
+React Flow fits on mount alone, so a file opened over the model before it was
+drawn at that model's zoom and mostly off screen. `viewport.ts` holds the
+calculation, pure over the laid-out diagram's ink and the canvas's extent,
+with one padding constant that leaves the floating chrome room: the zoom
+cluster bottom right, and the toolbox of issue 175, which reads the same
+number. The zoom a fit lands on is held inside the range React Flow itself is
+given, so a fit cannot leave the view somewhere a later gesture snaps away
+from, and React Flow's own floor of 0.5 is not far enough out to draw Écluse's
+model whole.
+
+What is fitted is the model as it arrived, read by identity from the store
+([the selectors](../store/selectors.ts)): a second open is a second model
+object and fits again, an edit is not a model as it arrived and moves nothing,
+and a save leaves the model where it is. `FitOnOpen` applies it from inside
+React Flow, which is what holds the canvas's extent, and the same calculation
+answers the fit-to-view command, so a control and an open cannot disagree
+about where the diagram sits.
+
+The controls are `zoom-cluster.tsx`, three icons floating over the bottom
+right of the canvas, each one registered command showing its chord in a
+tooltip ([the commands](../commands/README.md)).
+
 ## Accessibility
 
 Every element is a tab stop, with an accessible name built out of model data:
@@ -177,9 +204,8 @@ a keyboard user passes no dead stop between the buttons and the canvas.
   it.
 - Panning has no keyboard path: a drag of the background does it. Reaching an
   element does not need one, since focusing an element pans it into view.
-  Zooming and fitting are registered commands with chords of their own ([the
-  commands](../commands/README.md)); the controls for them belong with the
-  toolbar.
+  Zooming and fitting have both a chord and a control of their own ([the
+  commands](../commands/README.md)).
 - Tab order is React Flow's DOM order, every flow before every element, so a
   keyboard user reaches the flows first. Choosing another order means
   ordering the DOM, which is the same decision as how a diagram is

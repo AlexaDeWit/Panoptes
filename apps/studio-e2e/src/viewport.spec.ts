@@ -1,0 +1,127 @@
+import { expect, test, type Page } from '@playwright/test';
+import { viewportTransform } from './commands.fixtures.js';
+import {
+  nodeNamed,
+  openEcluse,
+  openFile,
+  openPlaceholder,
+} from './studio.fixtures.js';
+
+const nowhere = { x: 0, y: 0, width: 0, height: 0 };
+
+const furthestAcross = /^OSV\.dev, actor/u;
+
+const furthestDown = /^Écluse Dredger, process/u;
+
+const placeholderCorner = /^Studio, process/u;
+
+const clearanceOf = async (
+  page: Page,
+  name: RegExp,
+): Promise<Record<string, number>> => {
+  const measured = await page.getByTestId('canvas-container').boundingBox();
+  const drawn = await nodeNamed(page, name).boundingBox();
+  expect(measured, 'the canvas is on the page').not.toBeNull();
+  expect(drawn, `${name.source} is drawn`).not.toBeNull();
+  const canvas = measured ?? nowhere;
+  const node = drawn ?? nowhere;
+  return {
+    left: node.x - canvas.x,
+    top: node.y - canvas.y,
+    right: canvas.x + canvas.width - (node.x + node.width),
+    bottom: canvas.y + canvas.height - (node.y + node.height),
+  };
+};
+
+const drawnInside = async (page: Page, name: RegExp): Promise<void> => {
+  const clear = await clearanceOf(page, name);
+  expect(
+    Math.min(...Object.values(clear)),
+    `${name.source} sits inside the canvas: ${JSON.stringify(clear)}`,
+  ).toBeGreaterThan(0);
+};
+
+test('a real model opens fitted, so the elements at its far corners are drawn inside the canvas', async ({
+  page,
+}) => {
+  await openEcluse(page);
+
+  await drawnInside(page, furthestAcross);
+  await drawnInside(page, furthestDown);
+});
+
+test('the placeholder opens fitted as well', async ({ page }) => {
+  await openPlaceholder(page);
+
+  await drawnInside(page, placeholderCorner);
+});
+
+test('a file opened over the model on screen is fitted again', async ({
+  page,
+}) => {
+  await openFile(page, 'test-data/ecluse.json');
+
+  await drawnInside(page, furthestAcross);
+  await drawnInside(page, furthestDown);
+});
+
+test('the cluster floats over the bottom right corner of the canvas', async ({
+  page,
+}) => {
+  await openPlaceholder(page);
+
+  const measured = await page.getByTestId('canvas-container').boundingBox();
+  const floating = await page
+    .getByRole('region', { name: 'Zoom and fit' })
+    .boundingBox();
+  expect(measured, 'the canvas is on the page').not.toBeNull();
+  expect(floating, 'the cluster is on the page').not.toBeNull();
+  const canvas = measured ?? nowhere;
+  const cluster = floating ?? nowhere;
+
+  expect(cluster.x).toBeGreaterThan(canvas.x + canvas.width / 2);
+  expect(cluster.y).toBeGreaterThan(canvas.y + canvas.height / 2);
+  expect(cluster.x + cluster.width).toBeLessThanOrEqual(
+    canvas.x + canvas.width,
+  );
+  expect(cluster.y + cluster.height).toBeLessThanOrEqual(
+    canvas.y + canvas.height,
+  );
+});
+
+test('the cluster zooms and fits by pointer, and says which chord does the same', async ({
+  page,
+}) => {
+  await openEcluse(page);
+  const fitted = await viewportTransform(page);
+
+  await page.getByRole('button', { name: 'Zoom in' }).click();
+  await expect.poll(async () => viewportTransform(page)).not.toBe(fitted);
+  const closer = await viewportTransform(page);
+
+  await page.getByRole('button', { name: 'Zoom out' }).click();
+  await expect.poll(async () => viewportTransform(page)).not.toBe(closer);
+
+  await page.getByRole('button', { name: 'Fit to view' }).click();
+  await expect.poll(async () => viewportTransform(page)).toBe(fitted);
+  await drawnInside(page, furthestAcross);
+});
+
+test('each control in the cluster says which chord runs it, to a pointer and to a reader alike', async ({
+  page,
+}) => {
+  await openPlaceholder(page);
+  const tooltip = page.getByRole('tooltip');
+  const fit = page.getByRole('button', { name: 'Fit to view' });
+
+  await expect(fit).toHaveAttribute('aria-keyshortcuts', 'Control+0');
+  await fit.hover();
+  await expect(tooltip).toHaveText('Fit to view Ctrl+0');
+
+  await page.mouse.move(0, 0);
+  await expect(tooltip).toHaveCount(0);
+
+  await page.getByRole('button', { name: 'Zoom in' }).focus();
+
+  await expect(tooltip).toHaveText('Zoom in Ctrl+=');
+});

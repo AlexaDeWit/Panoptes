@@ -1,0 +1,55 @@
+/* The cluster floats over the canvas's bottom right corner. It follows the
+   canvas in the flow and is then pulled back over it by its own height, so it
+   rides the canvas's own bottom edge however much room the shell leaves
+   below, without the canvas having to become its containing block. The height
+   the margin takes back is the buttons, this element's padding and its
+   border, plus the gap left under it. */
+.cluster {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  gap: var(--pn-space-1);
+  width: max-content;
+  margin-block-start: calc(
+    -1 * (2rem + 2 * var(--pn-space-1) + 2px + var(--pn-space-3))
+  );
+  margin-inline: auto var(--pn-space-3);
+  padding: var(--pn-space-1);
+  border: 1px solid var(--pn-colour-border);
+  border-radius: var(--pn-radius);
+  background: var(--pn-colour-surface-raised);
+}
+
+.control {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: 0;
+  border-radius: var(--pn-radius);
+  background: none;
+  color: var(--pn-colour-text);
+}
+
+.control:hover {
+  background: var(--pn-colour-surface);
+}
+
+.control:focus-visible {
+  outline: var(--pn-focus-ring);
+  outline-offset: var(--pn-focus-ring-offset);
+}
+
+/* The glyph is a stroke rather than a fill, so it takes the button's own
+   colour and stays legible under forced colours. */
+.glyph {
+  width: 1rem;
+  height: 1rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}

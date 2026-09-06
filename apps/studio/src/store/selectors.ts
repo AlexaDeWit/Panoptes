@@ -1,4 +1,4 @@
-import type { DiagramId } from '@panoptes/model';
+import type { DiagramId, Model } from '@panoptes/model';
 import type { State } from './state.js';
 
 /**
@@ -36,4 +36,17 @@ export function elementCount(state: State): number {
  */
 export function firstDiagramId(state: State): DiagramId | undefined {
   return state.present.diagrams.at(0)?.id;
+}
+
+/**
+ * The model as it arrived, which is a file just opened or the placeholder the
+ * studio starts on, and nothing at all once anything has been edited, undone
+ * or redone. The canvas fits the viewport to it and reads it by identity, so
+ * opening a file again fits the diagram again, while a save, which leaves the
+ * model where it is, moves nothing.
+ */
+export function modelAsOpened(state: State): Model | undefined {
+  return state.past.length === 0 && state.future.length === 0
+    ? state.present
+    : undefined;
 }
