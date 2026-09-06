@@ -177,9 +177,14 @@ list of them, and the reads, the detection and the read-limit gates all
 iterate it, so a third file joins all of them by being added there. Each
 entry also names where its internal model is written out for the packages
 that cannot import a codec, or names none where another package is that
-file's producer. Models generated over the model's own shape gate the rest:
-each survives a write and a read as itself, with its threats in number
-order.
+file's producer. `test-data/panoptes.model.json` is the one this suite writes
+out, read by `packages/canvas` and `packages/render`, while `apps/cli` reads
+both committed files above and `apps/studio` the Panoptes one, so all four of
+those suites run after this one:
+[`test-data/README.md`](../../test-data/README.md) names
+the pairs and [`CODING.md`](../../CODING.md) the rule that orders them.
+Models generated over the model's own shape gate the rest: each survives a
+write and a read as itself, with its threats in number order.
 
 `writeThreatDragon` is the other half, and the two are paired as
 `threatDragonCodec`. Given the document a read returned it merges the model

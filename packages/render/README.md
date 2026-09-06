@@ -215,4 +215,10 @@ only a CI run, where writing is refused, reports it. Regenerate them with
 `pnpm nx test @panoptes/render -- -u` in the commit that moved them, and read
 the diff.
 
+Four of them are `apps/cli`'s fixtures as well, and the Panoptes model three
+of them are drawn from is itself written by `@panoptes/formats`, so this
+suite runs after that one and ahead of the CLI's.
+[`test-data/README.md`](../../test-data/README.md) names every such pair and
+[`CODING.md`](../../CODING.md) the ordering that holds them apart.
+
 Unit tests: `pnpm nx test @panoptes/render`.

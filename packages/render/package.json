@@ -32,13 +32,28 @@
     "effect": "catalog:",
     "jsdom": "catalog:"
   },
+  "//": [
+    "test deviates from the root dependsOn (CODING.md, Build targets) to name @panoptes/formats' suite: markdown-register.spec.ts, svg-document.spec.tsx and typst-document.spec.ts read test-data/panoptes.model.json and that suite is what writes it. The layer matrix forbids a package dependency on formats, so ^test cannot reach it, and a dependsOn entry naming the task orders the two with no import. The root's own entries are repeated because a leaf dependsOn replaces the default rather than adding to it."
+  ],
   "nx": {
     "tags": [
       "layer:render"
     ],
     "targets": {
       "boundaries": {},
-      "lint": {}
+      "lint": {},
+      "test": {
+        "dependsOn": [
+          "^build",
+          "^test",
+          {
+            "projects": [
+              "@panoptes/formats"
+            ],
+            "target": "test"
+          }
+        ]
+      }
     }
   }
 }

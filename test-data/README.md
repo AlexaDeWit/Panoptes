@@ -28,6 +28,41 @@ and checks the bytes before deciding it needs none either.
 invalidates the cached result of every task that reads it. Without that a
 suite reading these files reports the green it cached before the edit.
 
+## Who writes each file, and who reads it
+
+Ten of the files below are output: one suite writes each as a vitest file
+snapshot, and seven of the ten are read by a suite other than the one that
+writes them. A file snapshot is written where the file is absent, under the
+non-CI default, and rewritten where it differs under `-u`; CI writes in
+neither case and reds on an absent file instead. So such a reader can run
+while the writer is in one of the two states that do write, and what keeps it
+out of that window is a task edge in the project graph: either
+the `^test` `nx.json` puts on every `test` target, or, where the layer matrix
+allows no package dependency from the reader to the writer, an entry naming
+the writing task in the reader's own manifest
+([`CODING.md`](../CODING.md), Build targets).
+
+| File                                             | Written by         | Read by                                                                     |
+| ------------------------------------------------ | ------------------ | --------------------------------------------------------------------------- |
+| `ecluse.model.json`                              | `packages/model`   | `packages/formats`, `packages/canvas`, `packages/render`, `apps/studio-e2e` |
+| `panoptes.model.json`                            | `packages/formats` | `packages/canvas`, `packages/render`                                        |
+| `panoptes/ecluse.yaml`                           | `packages/formats` | `apps/cli`, `apps/studio-e2e`                                               |
+| `render/ecluse.register.snapshot.md`             | `packages/render`  | `apps/cli`                                                                  |
+| `render/ecluse.snapshot.svg`                     | `packages/render`  | `apps/cli`                                                                  |
+| `render/panoptes-read-and-render.snapshot.svg`   | `packages/render`  | `apps/cli`                                                                  |
+| `render/panoptes-agent-and-desktop.snapshot.svg` | `packages/render`  | `apps/cli`                                                                  |
+| `render/panoptes.register.snapshot.md`           | `packages/render`  | no other suite                                                              |
+| `render/every-glyph.snapshot.svg`                | `packages/render`  | no other suite                                                              |
+| `render/ecluse.snapshot.typ`                     | `packages/render`  | no other suite                                                              |
+
+Every other file here is input nothing writes: `ecluse.json`,
+`every-glyph.model.json`, the Threat Dragon corpus with its schema and its
+labels, and the adversarial payloads.
+
+`apps/studio-e2e` reads its two from the `e2e` target rather than from a
+`test` target, and no edge orders that one. Nothing writes beside it: the
+smoke suite runs in a CI job of its own, and `pnpm check` leaves it out.
+
 ## `ecluse.json`
 
 The threat model of [Écluse](https://github.com/AlexaDeWit/Ecluse), a
@@ -95,11 +130,7 @@ back.
 
 Regenerate it with `pnpm nx test @panoptes/model -- -u`, in the same commit as
 the change that moved it, and read the diff: it is what the model core holds
-of a real threat model. A file snapshot is written where the file is absent,
-under the non-CI default, and rewritten where it differs under `-u`. CI
-writes in neither case: an absent file reds there instead. A reader's suite
-can be running in either of the two that do write, and the ordering that
-keeps it out of them is stated in [`CODING.md`](../CODING.md).
+of a real threat model.
 
 `packages/render` reads it too, as the input its markdown register is
 rendered from, so this file is where a projection meets the model core

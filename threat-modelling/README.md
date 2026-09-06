@@ -40,13 +40,27 @@ rather than read out of Threat Dragon's.
 | `packages/render`  | `test-data/render/panoptes.register.snapshot.md` is its threat register                                 |
 | `packages/render`  | One standalone SVG document per diagram, under `test-data/render/`                                      |
 | `packages/canvas`  | One committed scene per diagram, beside `scene.spec.tsx`                                                |
+| `apps/cli`         | `validate` counts its diagrams, elements and threats, and `render` draws a diagram named by id or title |
+| `apps/studio`      | It opens in the browser and saves back as the format it arrived in                                      |
 
-Those suites read lists rather than paths, so a third model file joins every
-one of them by being added to `nativeFixtures` in
-`packages/formats/src/lib/panoptes-yaml.fixtures.ts`, and to the register,
+The formats, render and canvas suites read lists rather than paths, so a
+third model file joins every one of them by being added to `nativeFixtures`
+in `packages/formats/src/lib/panoptes-yaml.fixtures.ts`, and to the register,
 document and scene lists in the render and canvas specs. Each diagram is
 drawn twice on purpose: the canvas golden is the glyphs alone, and the render
-golden is the SVG document composed around them.
+golden is the SVG document composed around them. The two app suites name the
+path.
+
+This file is its own golden, so `packages/formats` writes it back where it
+differs under `-u` or where it has gone missing. `apps/cli` and `apps/studio`
+read the bytes themselves and depend on `@panoptes/formats` through
+`workspace:*`, so `^test` orders the write ahead of both reads. The render
+and canvas rows above reach the model through `test-data/panoptes.model.json`
+instead, which the same suite writes and which their manifests name the task
+for, the layer matrix allowing them no dependency on it
+([`CODING.md`](../CODING.md), Build targets;
+[`test-data/README.md`](../test-data/README.md) carries the same account for
+the files under it).
 
 `packages/formats` also writes this model out as
 `test-data/panoptes.model.json`, because the render and canvas suites gate on
