@@ -9,7 +9,7 @@
 | 5      | A read throws instead of returning a failure                       | Codec read                                   | Denial of service (STRIDE)          | Medium    | Mitigated   |
 | 6      | A key the schema does not declare disappears in silence            | Codec read                                   | Tampering (STRIDE)                  | Low       | Mitigated   |
 | 7      | A file builds a model whose references do not resolve              | Codec read, Internal model                   | Tampering (STRIDE)                  | Medium    | Mitigated   |
-| 8      | A file from a release Saerskriven does not model is read in part      | Codec read                                   | Tampering (STRIDE)                  | Medium    | Mitigated   |
+| 8      | A file from a release Saerskriven does not model is read in part   | Codec read                                   | Tampering (STRIDE)                  | Medium    | Mitigated   |
 | 9      | A save drops what the file carried                                 | Codec write                                  | Tampering (STRIDE)                  | High      | Mitigated   |
 | 10     | Threat prose forges the register's own structure                   | Markdown register                            | Tampering (STRIDE)                  | High      | Mitigated   |
 | 11     | Raw HTML in threat prose reaches a published page                  | Markdown register, Downstream site generator | Tampering (STRIDE)                  | High      | Transferred |
@@ -24,7 +24,7 @@
 | 20     | A lossy save through an agent tool drops records without saying so | MCP server and tools, Model core and codecs  | Tampering (STRIDE)                  | Medium    | Open        |
 | 21     | Prose in a model file steers the agent that read it                | MCP server and tools, Model core and codecs  | Prompt injection (OWASP LLM Top 10) | Undecided | Open        |
 | 22     | A substituted dependency or action reaches the build               | None                                         | Tampering (STRIDE)                  | High      | Mitigated   |
-| 23     | Raw HTML in prose reaches Saerskriven's own PDF composition            | Markdown register, Canvas glyphs and SVG     | Tampering (STRIDE)                  | Medium    | Open        |
+| 23     | Raw HTML in prose reaches Saerskriven's own PDF composition        | Markdown register, Canvas glyphs and SVG     | Tampering (STRIDE)                  | Medium    | Open        |
 | 24     | A text is claimed by the wrong codec, or declined by its own       | Codec read                                   | Tampering (STRIDE)                  | Medium    | Mitigated   |
 | 25     | A compromised upstream release is pinned as it stands              | None                                         | Tampering (STRIDE)                  | High      | Open        |
 
