@@ -1,13 +1,22 @@
 /**
- * How long a spec that compiles a PDF is given, past the ten seconds
- * `vitest.shared.mts` allows every other test. The first compile in a process
- * initialises 28 MB of WebAssembly before it typesets anything, and the
- * scenario that checks the byte path spawns the whole CLI twice, so it pays
- * for two of those: ten runs of the whole workspace's suites on a contended
- * host measured it at 59 seconds at its worst, against the minute it was
- * allowed. The number is twice that worst rather than a guess at a compile.
+ * How long a spec that compiles a PDF is given, past the root
+ * `vitest.shared.mts` sets. The first compile in a process initialises 28 MB
+ * of WebAssembly before it typesets anything, so what it costs is the
+ * runtime coming up rather than the document being typeset. Ten runs of the
+ * whole workspace's suites on a contended host put the slowest of these at
+ * 24.5 seconds.
  */
-export const compileTimeout = 120_000;
+export const compileTimeout = 60_000;
+
+/**
+ * How long the one scenario that streams a PDF to standard output is given,
+ * past even `compileTimeout`. It spawns the whole CLI twice, once for the
+ * stream and once for the file it compares the stream against, so it pays
+ * for two runtime initialisations and two compiles where every other PDF
+ * spec pays for one. The same ten runs measured it at 59 seconds, close
+ * enough to a minute that it needs its own number rather than the class's.
+ */
+export const bytePathCompileTimeout = 120_000;
 
 const pageTree = /\/Type\s*\/Pages[\s\S]*?\/Count\s+(\d+)/u;
 

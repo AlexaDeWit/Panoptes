@@ -14,7 +14,12 @@ import {
   spawnTimeout,
   undeclaredKeyYaml,
 } from './cli.fixtures.js';
-import { compileTimeout, outlineTitles, pageCount } from './pdf.fixtures.js';
+import {
+  bytePathCompileTimeout,
+  compileTimeout,
+  outlineTitles,
+  pageCount,
+} from './pdf.fixtures.js';
 import { cliVersion } from './version.js';
 
 type Runner = {
@@ -293,7 +298,7 @@ for (const runner of runners) {
           expect(pageCount(streamed.out)).toBe(14);
           expect(streamed.out).toEqual(readFileSync(out));
         },
-        compileTimeout,
+        bytePathCompileTimeout,
       );
 
       it(

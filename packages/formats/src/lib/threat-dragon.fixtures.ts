@@ -56,11 +56,11 @@ const vendored = join(
 );
 
 /**
- * How long the spec that reads the whole corpus twice is given, past the ten
- * seconds `vitest.shared.mts` allows every other test. It puts every file
- * below through both the Threat Dragon read and the Panoptes YAML read, so
- * its cost grows with the corpus rather than staying fixed, and under a full
- * workspace run on a contended host it has been measured at 9.8 seconds.
+ * How long the spec that reads the whole corpus twice is given, past the
+ * root `vitest.shared.mts` sets. It puts every file in `corpusTexts` through
+ * both the Threat Dragon read and the Panoptes YAML read, so its cost grows
+ * with the corpus rather than staying fixed, and ten runs of the whole
+ * workspace's suites on a contended host measured it at 9.8 seconds.
  */
 export const corpusTimeout = 30_000;
 

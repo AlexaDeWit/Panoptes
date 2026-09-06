@@ -213,13 +213,11 @@ const threatNumbersArbitrary = fc
   .filter((numbers) => numbers.length < 2 || !isAscending(numbers));
 
 /**
- * How long a property over the arbitrary below is given, past the ten
- * seconds `vitest.shared.mts` allows every other test. fast-check runs a
- * property a hundred times by default, and each run parses a model, writes
- * it and reads it back, which under a full workspace run on a contended host
- * has been measured at 9.5 seconds. Lowering `numRuns` or reaching for
- * `interruptAfterTimeLimit` would buy the time by testing less, and least on
- * exactly the machines that are slowest.
+ * How long a property over `modelInputArbitrary` is given, past the root
+ * `vitest.shared.mts` sets. fast-check runs a property a hundred times by
+ * default, and each run parses a model, writes it and reads it back, which
+ * ten runs of the whole workspace's suites on a contended host measured at
+ * 9.5 seconds.
  */
 export const propertyTimeout = 30_000;
 
