@@ -8,6 +8,7 @@ import {
   categoryKey,
   enumeratedCategoryKeys,
 } from './category-field.js';
+import { listboxTimeout } from './ui.fixtures.js';
 
 const stride: ThreatCategory = {
   methodology: 'STRIDE',
@@ -63,68 +64,74 @@ describe('categoryCommitter', () => {
   });
 });
 
-describe('CategoryField', () => {
-  it('names its trigger Category, as a combobox showing the pair', () => {
-    render(<CategoryField onCommit={noop} value={stride} />);
+describe(
+  'CategoryField',
+  () => {
+    it('names its trigger Category, as a combobox showing the pair', () => {
+      render(<CategoryField onCommit={noop} value={stride} />);
 
-    expect(
-      screen.getByRole('combobox', { name: 'Category' }).textContent,
-    ).toContain('STRIDE tampering');
-  });
-
-  it('offers every enumerated pair', async () => {
-    const user = userEvent.setup();
-    render(<CategoryField onCommit={noop} value={stride} />);
-
-    await user.tab();
-    await user.keyboard('{Enter}');
-
-    expect(screen.getAllByRole('option')).toHaveLength(
-      enumeratedCategoryKeys.length,
-    );
-  });
-
-  it('groups the pairs under the methodology each belongs to', async () => {
-    const user = userEvent.setup();
-    render(<CategoryField onCommit={noop} value={stride} />);
-
-    await user.tab();
-    await user.keyboard('{Enter}');
-
-    expect(screen.getAllByRole('group')).toHaveLength(
-      threatCategorySchema.options.length - 1,
-    );
-    expect(screen.getByRole('group', { name: 'STRIDE' }).textContent).toContain(
-      'STRIDE tampering',
-    );
-  });
-
-  it('shows a custom category the file carried, beside the enumerated pairs', async () => {
-    const user = userEvent.setup();
-    render(<CategoryField onCommit={noop} value={custom} />);
-
-    await user.tab();
-    await user.keyboard('{Enter}');
-
-    expect(
-      screen.getByRole('option', { name: 'custom House rules billing abuse' }),
-    ).toBeDefined();
-    expect(screen.getAllByRole('option')).toHaveLength(
-      enumeratedCategoryKeys.length + 1,
-    );
-  });
-
-  it('commits the pair chosen with the keyboard alone', async () => {
-    const user = userEvent.setup();
-    const onCommit = vi.fn<(category: ThreatCategory) => void>();
-    render(<CategoryField onCommit={onCommit} value={stride} />);
-
-    await user.tab();
-    await user.keyboard('{Enter}{ArrowDown}{Enter}');
-
-    expect(onCommit).toHaveBeenCalledWith({
-      methodology: 'STRIDE',
-      category: 'repudiation',
+      expect(
+        screen.getByRole('combobox', { name: 'Category' }).textContent,
+      ).toContain('STRIDE tampering');
     });
-  });
-});
+
+    it('offers every enumerated pair', async () => {
+      const user = userEvent.setup();
+      render(<CategoryField onCommit={noop} value={stride} />);
+
+      await user.tab();
+      await user.keyboard('{Enter}');
+
+      expect(screen.getAllByRole('option')).toHaveLength(
+        enumeratedCategoryKeys.length,
+      );
+    });
+
+    it('groups the pairs under the methodology each belongs to', async () => {
+      const user = userEvent.setup();
+      render(<CategoryField onCommit={noop} value={stride} />);
+
+      await user.tab();
+      await user.keyboard('{Enter}');
+
+      expect(screen.getAllByRole('group')).toHaveLength(
+        threatCategorySchema.options.length - 1,
+      );
+      expect(
+        screen.getByRole('group', { name: 'STRIDE' }).textContent,
+      ).toContain('STRIDE tampering');
+    });
+
+    it('shows a custom category the file carried, beside the enumerated pairs', async () => {
+      const user = userEvent.setup();
+      render(<CategoryField onCommit={noop} value={custom} />);
+
+      await user.tab();
+      await user.keyboard('{Enter}');
+
+      expect(
+        screen.getByRole('option', {
+          name: 'custom House rules billing abuse',
+        }),
+      ).toBeDefined();
+      expect(screen.getAllByRole('option')).toHaveLength(
+        enumeratedCategoryKeys.length + 1,
+      );
+    });
+
+    it('commits the pair chosen with the keyboard alone', async () => {
+      const user = userEvent.setup();
+      const onCommit = vi.fn<(category: ThreatCategory) => void>();
+      render(<CategoryField onCommit={onCommit} value={stride} />);
+
+      await user.tab();
+      await user.keyboard('{Enter}{ArrowDown}{Enter}');
+
+      expect(onCommit).toHaveBeenCalledWith({
+        methodology: 'STRIDE',
+        category: 'repudiation',
+      });
+    });
+  },
+  listboxTimeout,
+);

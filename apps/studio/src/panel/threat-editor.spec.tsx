@@ -7,6 +7,7 @@ import {
   sampleThreat,
   storeElement,
 } from '../store/store.fixtures.js';
+import { editorTimeout } from './panel.fixtures.js';
 import {
   ThreatEditor,
   type RefusedField,
@@ -63,153 +64,161 @@ const typeInto = async (field: string, text: string): Promise<void> => {
   await user.tab();
 };
 
-describe('ThreatEditor', () => {
-  it('is named by its number and title while it is collapsed', () => {
-    showEditor({}, false);
+describe(
+  'ThreatEditor',
+  () => {
+    it('is named by its number and title while it is collapsed', () => {
+      showEditor({}, false);
 
-    expect(disclosure().textContent).toContain('1');
-    expect(screen.queryByRole('textbox', { name: 'Title' })).toBeNull();
-  });
-
-  it('shows every field of the threat once it is expanded', () => {
-    showEditor();
-
-    for (const name of ['Title', 'Description', 'Mitigation']) {
-      expect(textbox(name)).toBeDefined();
-    }
-    for (const name of ['Category', 'Severity', 'Status']) {
-      expect(screen.getByRole('combobox', { name })).toBeDefined();
-    }
-    expect(
-      screen.getByRole('button', { name: 'Delete threat 1' }),
-    ).toBeDefined();
-  });
-
-  it('commits a title left behind as a patch of that field alone', async () => {
-    const user = userEvent.setup();
-    const onCommit = commits();
-    showEditor({ onCommit });
-
-    await user.clear(textbox('Title'));
-    await user.keyboard('A reader edits a model{Enter}');
-
-    expect(onCommit).toHaveBeenCalledWith({ title: 'A reader edits a model' });
-  });
-
-  it('commits a description left behind as a patch of that field alone', async () => {
-    const onCommit = commits();
-    showEditor({ onCommit });
-
-    await typeInto(
-      'Description',
-      'The reader has a token they may only read with.',
-    );
-
-    expect(onCommit).toHaveBeenCalledTimes(1);
-    expect(onCommit).toHaveBeenCalledWith({
-      description: 'The reader has a token they may only read with.',
+      expect(disclosure().textContent).toContain('1');
+      expect(screen.queryByRole('textbox', { name: 'Title' })).toBeNull();
     });
-  });
 
-  it('commits a mitigation left behind as a patch of that field alone', async () => {
-    const onCommit = commits();
-    showEditor({ onCommit });
+    it('shows every field of the threat once it is expanded', () => {
+      showEditor();
 
-    await typeInto('Mitigation', 'Check the token on every write.');
-
-    expect(onCommit).toHaveBeenCalledTimes(1);
-    expect(onCommit).toHaveBeenCalledWith({
-      mitigation: 'Check the token on every write.',
+      for (const name of ['Title', 'Description', 'Mitigation']) {
+        expect(textbox(name)).toBeDefined();
+      }
+      for (const name of ['Category', 'Severity', 'Status']) {
+        expect(screen.getByRole('combobox', { name })).toBeDefined();
+      }
+      expect(
+        screen.getByRole('button', { name: 'Delete threat 1' }),
+      ).toBeDefined();
     });
-  });
 
-  it('commits a severity chosen as a patch of that field alone', async () => {
-    const onCommit = commits();
-    showEditor({ onCommit });
+    it('commits a title left behind as a patch of that field alone', async () => {
+      const user = userEvent.setup();
+      const onCommit = commits();
+      showEditor({ onCommit });
 
-    await chooseFrom('Severity', 'critical');
+      await user.clear(textbox('Title'));
+      await user.keyboard('A reader edits a model{Enter}');
 
-    expect(onCommit).toHaveBeenCalledWith({ severity: 'critical' });
-  });
-
-  it('commits a status chosen as a patch of that field alone', async () => {
-    const onCommit = commits();
-    showEditor({ onCommit });
-
-    await chooseFrom('Status', 'mitigated');
-
-    expect(onCommit).toHaveBeenCalledWith({ status: 'mitigated' });
-  });
-
-  it('commits a category chosen as a patch of that field alone', async () => {
-    const onCommit = commits();
-    showEditor({ onCommit });
-
-    await chooseFrom('Category', 'STRIDE spoofing');
-
-    expect(onCommit).toHaveBeenCalledWith({
-      category: { methodology: 'STRIDE', category: 'spoofing' },
+      expect(onCommit).toHaveBeenCalledWith({
+        title: 'A reader edits a model',
+      });
     });
-  });
 
-  it('reports a refused draft, and keeps reporting it while a clean field commits beside it', async () => {
-    const onRefusal = vi.fn<(refused: RefusedField | undefined) => void>();
-    const refusedDescription = {
-      field: 'Description',
-      text: `Pasted${softHyphen}prose`,
-      said: 'Description was not saved. Character 7 is one the model does not accept.',
-    };
-    showEditor({ onRefusal });
+    it('commits a description left behind as a patch of that field alone', async () => {
+      const onCommit = commits();
+      showEditor({ onCommit });
 
-    await typeInto('Description', `Pasted${softHyphen}prose`);
-    expect(onRefusal).toHaveBeenLastCalledWith(refusedDescription);
+      await typeInto(
+        'Description',
+        'The reader has a token they may only read with.',
+      );
 
-    await typeInto('Mitigation', 'Check the token.');
+      expect(onCommit).toHaveBeenCalledTimes(1);
+      expect(onCommit).toHaveBeenCalledWith({
+        description: 'The reader has a token they may only read with.',
+      });
+    });
 
-    expect(onRefusal).toHaveBeenLastCalledWith(refusedDescription);
-  });
+    it('commits a mitigation left behind as a patch of that field alone', async () => {
+      const onCommit = commits();
+      showEditor({ onCommit });
 
-  it('opens the field a held draft was typed in on that draft, refusal and all', () => {
-    showEditor({
-      held: {
+      await typeInto('Mitigation', 'Check the token on every write.');
+
+      expect(onCommit).toHaveBeenCalledTimes(1);
+      expect(onCommit).toHaveBeenCalledWith({
+        mitigation: 'Check the token on every write.',
+      });
+    });
+
+    it('commits a severity chosen as a patch of that field alone', async () => {
+      const onCommit = commits();
+      showEditor({ onCommit });
+
+      await chooseFrom('Severity', 'critical');
+
+      expect(onCommit).toHaveBeenCalledWith({ severity: 'critical' });
+    });
+
+    it('commits a status chosen as a patch of that field alone', async () => {
+      const onCommit = commits();
+      showEditor({ onCommit });
+
+      await chooseFrom('Status', 'mitigated');
+
+      expect(onCommit).toHaveBeenCalledWith({ status: 'mitigated' });
+    });
+
+    it('commits a category chosen as a patch of that field alone', async () => {
+      const onCommit = commits();
+      showEditor({ onCommit });
+
+      await chooseFrom('Category', 'STRIDE spoofing');
+
+      expect(onCommit).toHaveBeenCalledWith({
+        category: { methodology: 'STRIDE', category: 'spoofing' },
+      });
+    });
+
+    it('reports a refused draft, and keeps reporting it while a clean field commits beside it', async () => {
+      const onRefusal = vi.fn<(refused: RefusedField | undefined) => void>();
+      const refusedDescription = {
         field: 'Description',
         text: `Pasted${softHyphen}prose`,
         said: 'Description was not saved. Character 7 is one the model does not accept.',
-      },
+      };
+      showEditor({ onRefusal });
+
+      await typeInto('Description', `Pasted${softHyphen}prose`);
+      expect(onRefusal).toHaveBeenLastCalledWith(refusedDescription);
+
+      await typeInto('Mitigation', 'Check the token.');
+
+      expect(onRefusal).toHaveBeenLastCalledWith(refusedDescription);
     });
 
-    expect(screen.getByDisplayValue(`Pasted${softHyphen}prose`)).toBeDefined();
-    expect(
-      screen
-        .getByRole('textbox', { name: 'Description' })
-        .getAttribute('aria-invalid'),
-    ).toBe('true');
-  });
+    it('opens the field a held draft was typed in on that draft, refusal and all', () => {
+      showEditor({
+        held: {
+          field: 'Description',
+          text: `Pasted${softHyphen}prose`,
+          said: 'Description was not saved. Character 7 is one the model does not accept.',
+        },
+      });
 
-  it('says that deleting a threat several elements name takes it off all of them', () => {
-    showEditor({
-      threat: { ...sampleThreat, elements: [processElement, storeElement] },
+      expect(
+        screen.getByDisplayValue(`Pasted${softHyphen}prose`),
+      ).toBeDefined();
+      expect(
+        screen
+          .getByRole('textbox', { name: 'Description' })
+          .getAttribute('aria-invalid'),
+      ).toBe('true');
     });
 
-    expect(screen.getByText(/names 2 elements/u)).toBeDefined();
-    expect(
-      screen
-        .getByRole('button', { name: 'Delete threat 1' })
-        .getAttribute('aria-describedby'),
-    ).not.toBeNull();
-  });
+    it('says that deleting a threat several elements name takes it off all of them', () => {
+      showEditor({
+        threat: { ...sampleThreat, elements: [processElement, storeElement] },
+      });
 
-  it('takes the focus the panel sends into the title, and reports it', () => {
-    const onFocused = vi.fn<() => void>();
-    showEditor({ focus: 'title', onFocused });
+      expect(screen.getByText(/names 2 elements/u)).toBeDefined();
+      expect(
+        screen
+          .getByRole('button', { name: 'Delete threat 1' })
+          .getAttribute('aria-describedby'),
+      ).not.toBeNull();
+    });
 
-    expect(document.activeElement).toBe(textbox('Title'));
-    expect(onFocused).toHaveBeenCalledTimes(1);
-  });
+    it('takes the focus the panel sends into the title, and reports it', () => {
+      const onFocused = vi.fn<() => void>();
+      showEditor({ focus: 'title', onFocused });
 
-  it('takes the focus the panel sends onto the control that expands it', () => {
-    showEditor({ focus: 'disclosure' }, false);
+      expect(document.activeElement).toBe(textbox('Title'));
+      expect(onFocused).toHaveBeenCalledTimes(1);
+    });
 
-    expect(document.activeElement).toBe(disclosure());
-  });
-});
+    it('takes the focus the panel sends onto the control that expands it', () => {
+      showEditor({ focus: 'disclosure' }, false);
+
+      expect(document.activeElement).toBe(disclosure());
+    });
+  },
+  editorTimeout,
+);
