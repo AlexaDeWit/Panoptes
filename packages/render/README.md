@@ -195,8 +195,8 @@ use for.
 is the Typst WebAssembly module, and `fonts` are the faces, added to the
 compiler in the order they are listed. Nothing is read from a file and
 nothing from the host's font directories. `apps/cli` reads them beside its
-bundle and the studio loads them as build-time assets, so what a browser
-compiles and what the CLI writes are one document.
+bundle; a browser can hand over the same bytes, so what it compiles and what
+the CLI writes can be one document.
 
 The compiler is given no access model, so it has no filesystem and no package
 registry. That is the other half of what `renderTypst` promises: the source
@@ -215,8 +215,7 @@ A refusal is a value rather than a throw, and a tagged one this package owns
 carries the compiler's sentences in the order it reported them, and
 `PdfFailure.NoDocument` is the compiler answering with something that is not
 bytes. Whoever calls words them: `apps/cli` joins the sentences with
-semicolons into the one line a command prints, and the studio matches on the
-tag for its own notice.
+semicolons into the one line a command prints.
 
 Those sentences come out of a throw. The compiler reports a failure by
 throwing a string holding Rust's own debug rendering of its diagnostics, of
