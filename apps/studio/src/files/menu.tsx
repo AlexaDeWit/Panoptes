@@ -137,7 +137,7 @@ export function StudioMenu({ session }: StudioMenuProps) {
   const [open, setOpen] = useState(false);
 
   useCloseGuard(dirty);
-  useAsking(session.closing, setOpen);
+  useAsking(session.closing, dirty, setOpen, session.cancelClose);
 
   const {
     attachPicker,
@@ -150,6 +150,7 @@ export function StudioMenu({ session }: StudioMenuProps) {
     report,
   } = session;
   const closeCommand = commandById('close-file');
+  const asking = closing && dirty;
   const format = formatOf(file);
   const alternative = otherFormat(format);
 
@@ -188,27 +189,27 @@ export function StudioMenu({ session }: StudioMenuProps) {
             </MenuCommand>
             <MenuItem
               chord={
-                closing
+                asking
                   ? undefined
                   : spellShortcuts(closeCommand.shortcuts, hostPlatform)
               }
-              keepOpen={dirty && !closing}
+              keepOpen={dirty && !asking}
               keyShortcuts={
-                closing
+                asking
                   ? undefined
                   : keyShortcutsAttribute(closeCommand.shortcuts, hostPlatform)
               }
               onChoose={
-                closing
+                asking
                   ? confirmClose
                   : () => {
                       commands.close();
                     }
               }
             >
-              {closing ? 'Discard the changes and close' : closeCommand.label}
+              {asking ? 'Discard the changes and close' : closeCommand.label}
             </MenuItem>
-            {closing && (
+            {asking && (
               <MenuItem onChoose={cancelClose}>Keep the file open</MenuItem>
             )}
           </DropdownMenu.Group>
@@ -270,12 +271,22 @@ export function StudioMenu({ session }: StudioMenuProps) {
   );
 }
 
-function useAsking(closing: boolean, show: (open: boolean) => void): void {
+function useAsking(
+  closing: boolean,
+  dirty: boolean,
+  show: (open: boolean) => void,
+  cancel: () => void,
+): void {
   useEffect(() => {
-    if (closing) {
-      show(true);
+    if (!closing) {
+      return;
     }
-  }, [closing, show]);
+    if (dirty) {
+      show(true);
+      return;
+    }
+    cancel();
+  }, [cancel, closing, dirty, show]);
 }
 
 function useCloseGuard(dirty: boolean): void {

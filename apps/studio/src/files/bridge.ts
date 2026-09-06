@@ -67,11 +67,13 @@ export const SaveOutcome = Data.taggedEnum<SaveOutcome>();
  *
  * `open` puts a picker on screen and answers with the text. `received` is
  * that same answer for a file the caller's own file input produced, which is
- * how a browser with no picker of its own opens one; it also forgets
+ * how a browser with no picker of its own opens one, and it also forgets
  * whatever `open` retained, so a later save does not write over the file the
  * person moved away from. `save` writes back to the file the model came from
  * where the bridge still holds it and offers a download otherwise, and
- * `saveAs` always asks where.
+ * `saveAs` always asks where. `release` forgets that file without opening
+ * another, which is what closing one is: the studio stops naming a file, so
+ * nothing may be written back to the one it named.
  *
  * Every path answers with an outcome rather than throwing, and the bound a
  * read may spend is passed in rather than known here, so one number
@@ -82,6 +84,7 @@ export type FileBridge = {
   received(file: ChosenFile, maxBytes: number): Promise<OpenOutcome>;
   save(name: string, text: string): Promise<SaveOutcome>;
   saveAs(name: string, text: string): Promise<SaveOutcome>;
+  release(): void;
 };
 
 /**

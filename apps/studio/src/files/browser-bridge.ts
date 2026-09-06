@@ -53,6 +53,10 @@ function received(file: ChosenFile, maxBytes: number): Promise<OpenOutcome> {
   return readWithin(file, maxBytes);
 }
 
+function release(): void {
+  held = undefined;
+}
+
 function save(name: string, text: string): Promise<SaveOutcome> {
   return held === undefined
     ? Promise.resolve(download(name, text))
@@ -138,4 +142,5 @@ export const browserFileBridge: FileBridge = {
   received,
   save,
   saveAs,
+  release,
 };

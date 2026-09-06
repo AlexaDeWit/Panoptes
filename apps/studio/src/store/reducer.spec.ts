@@ -300,8 +300,13 @@ describe('the file lifecycle', () => {
   });
 
   it('closes back to the state the studio booted in, keeping nothing of the file', () => {
-    const opened = reduce(start, studioActions.Opened);
-    const working = reduce(opened, applied.AddElement);
+    const working = reduce(
+      withHistory,
+      Action.Select({ elementId: actorElement }),
+    );
+    expect(working.past).toHaveLength(1);
+    expect(working.future).toHaveLength(1);
+
     const closed = reduce(working, Action.Closed());
 
     expect(closed.file).toEqual(FileLifecycle.NoFile());

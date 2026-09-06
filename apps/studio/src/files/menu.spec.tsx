@@ -18,6 +18,7 @@ import { initialState, placeholderModel } from '../store/state.js';
 import { dispatch, modelStore } from '../store/store.js';
 import {
   mainDiagram,
+  nativeSource,
   newProcess,
   sampleModel,
 } from '../store/store.fixtures.js';
@@ -481,6 +482,27 @@ describe('closing', () => {
       }),
     ).toBeDefined();
     expect(isDirty(modelStore.getState())).toBe(true);
+  });
+
+  it('takes the question back when a save lands under it', async () => {
+    const user = userEvent.setup();
+    mounted(specBridge());
+    edit();
+
+    await choose(user, 'Close the file');
+
+    expect(item('Discard the changes and close')).toBeDefined();
+
+    act(() => {
+      dispatch(Action.Saved({ name: 'model.yaml', source: nativeSource }));
+    });
+
+    expect(
+      screen.queryByRole('menuitem', {
+        name: 'Discard the changes and close',
+      }),
+    ).toBe(null);
+    expect(item('Close the file')).toBeDefined();
   });
 
   it('takes the question back when the menu is dismissed', async () => {

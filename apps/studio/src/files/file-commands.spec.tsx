@@ -1,7 +1,7 @@
 import { panoptesYamlCodec } from '@panoptes/formats';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { Action } from '../store/actions.js';
-import { initialState } from '../store/state.js';
+import { initialState, placeholderModel } from '../store/state.js';
 import { dispatch, modelStore } from '../store/store.js';
 import {
   mainDiagram,
@@ -41,7 +41,7 @@ afterEach(() => {
 });
 
 describe('useFileSession', () => {
-  it('holds one set of commands, so a control and a key press run the same three', () => {
+  it('holds one set of commands, so a control and a key press run the same four', () => {
     const result = session(specBridge());
     const first = result.current.commands;
 
@@ -112,6 +112,38 @@ describe('useFileSession', () => {
     });
 
     expect(result.current.report).toBeUndefined();
+  });
+
+  it('lets the bridge go of the file it was holding once the file is closed', () => {
+    const bridge = specBridge();
+    const result = session(bridge);
+
+    act(() => {
+      result.current.commands.close();
+    });
+
+    expect(bridge.releases.count).toBe(1);
+    expect(modelStore.getState().present).toBe(placeholderModel);
+  });
+
+  it('holds the file until the question over unsaved work is answered', () => {
+    const bridge = specBridge();
+    const result = session(bridge);
+    edit();
+
+    act(() => {
+      result.current.commands.close();
+    });
+
+    expect(result.current.closing).toBe(true);
+    expect(bridge.releases.count).toBe(0);
+
+    act(() => {
+      result.current.confirmClose();
+    });
+
+    expect(bridge.releases.count).toBe(1);
+    expect(modelStore.getState().present).toBe(placeholderModel);
   });
 
   it('leaves the model alone when the person refuses to lose work in no file', async () => {

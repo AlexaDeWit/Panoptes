@@ -30,8 +30,9 @@ projects, which is where a loss report comes from. A read reports too: a wire
 schema drops every key it does not declare, and the retained document has lost
 them as well, so no later save can say what became of them. Both are held by
 the component, each describing one crossing of the file boundary rather than
-the model, and each stands until a save starts or an open lands: an open that
-was refused leaves the report alone, nothing having crossed.
+the model, and each stands until a save starts, an open lands, or the file is
+closed: an open that was refused leaves the report alone, nothing having
+crossed, and a close drops it because the file it describes is gone.
 
 `file-commands.ts` holds the four commands as one session the app owns
 rather than handlers a control closes over: Open, Save, Save as and Close the

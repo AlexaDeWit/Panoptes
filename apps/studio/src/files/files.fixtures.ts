@@ -39,8 +39,17 @@ export type Recorded = {
   readonly elsewhere: boolean;
 };
 
-/** A bridge whose answers a spec decides, and whose writes it reads back. */
-export type SpecBridge = FileBridge & { readonly writes: readonly Recorded[] };
+/** How many times a bridge was told to forget the file it was holding. */
+export type Releases = { count: number };
+
+/**
+ * A bridge whose answers a spec decides, and whose writes and releases it
+ * reads back.
+ */
+export type SpecBridge = FileBridge & {
+  readonly writes: readonly Recorded[];
+  readonly releases: Releases;
+};
 
 /**
  * What a {@link specBridge} answers: the file its picker hands over, whether
@@ -61,6 +70,7 @@ export type SpecBridgeOptions = {
  */
 export function specBridge(options: SpecBridgeOptions = {}): SpecBridge {
   const writes: Recorded[] = [];
+  const releases: Releases = { count: 0 };
 
   const offered = (maxBytes: number): Promise<OpenOutcome> => {
     if (options.picker === false) {
@@ -85,9 +95,13 @@ export function specBridge(options: SpecBridgeOptions = {}): SpecBridge {
 
   return {
     writes,
+    releases,
     open: offered,
     received: (file, maxBytes) => readWithin(file, maxBytes),
     save: (name, text) => answer(name, text, false),
     saveAs: (name, text) => answer(name, text, true),
+    release: () => {
+      releases.count += 1;
+    },
   };
 }

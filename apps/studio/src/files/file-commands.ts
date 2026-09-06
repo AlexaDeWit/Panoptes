@@ -58,7 +58,9 @@ export type FileSession = {
  * the model and the file at the moment the key was pressed.
  *
  * Closing drops the report with the file, the report describing a crossing of
- * a boundary the closed file was one side of.
+ * a boundary the closed file was one side of, and tells the bridge to let the
+ * file go: the studio names no file after a close, so nothing may be written
+ * back to the one it named.
  */
 export function useFileSession(
   bridge: FileBridge = browserFileBridge,
@@ -74,8 +76,9 @@ export function useFileSession(
   const closeFile = useCallback((): void => {
     setClosing(false);
     setReport(undefined);
+    bridge.release();
     dispatch(Action.Closed());
-  }, []);
+  }, [bridge]);
 
   const applyOpen = useCallback((outcome: OpenOutcome): void => {
     const action = openedBy(outcome);

@@ -164,9 +164,10 @@ export const editAnnouncement = (page: Page): Locator =>
 
 /**
  * The last control on the tab path before the canvas, which is where a spec
- * that tabs into the diagram starts. The menu's button is drawn over the
- * canvas and comes last of the studio's own controls, so it is that stop
- * whether or not anything is selected.
+ * that tabs into the diagram starts. The menu's button is that stop whether or
+ * not anything is selected, the only control after it being the one that
+ * dismisses a loss report, which is in the page only while a crossing of the
+ * file boundary has cost something.
  */
 export const beforeCanvas = (page: Page): Locator => menuButton(page);
 

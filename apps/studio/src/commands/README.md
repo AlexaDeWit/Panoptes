@@ -67,7 +67,9 @@ a pointer alone, and an icon has to say what it is to a keyboard as well. The
 tooltip renders where it stands rather than through a portal, so it stays in
 whichever landmark the control sits in, and it leaves with the pointer that
 opened it. The zoom cluster is the first control drawn that way ([the
-canvas](../canvas/README.md)); the toolbox and the burger menu are next.
+canvas](../canvas/README.md)), and the toolbox (#175) is next. The burger
+menu is not: its button is a glyph, but every command inside it is worded and
+draws its chord beside the label.
 
 ## Who holds the keyboard
 
