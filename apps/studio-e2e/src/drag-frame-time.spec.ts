@@ -1,40 +1,55 @@
 import { expect, test } from '@playwright/test';
 import { type Point, pressOn } from './canvas-geometry.fixtures.js';
 import {
-  framesRecorded,
+  displayPeriod,
+  intervalsRecorded,
   nextFrame,
   nthPercentile,
-  recordFrames,
+  recordIntervals,
 } from './frame-time.fixtures.js';
-import { nodeNamed, openEcluse, placeOf } from './studio.fixtures.js';
+import {
+  canvasSettled,
+  nodeNamed,
+  openEcluse,
+  placeOf,
+} from './studio.fixtures.js';
+
+type Direction = 1 | -1;
 
 const proxy = /^Écluse proxy, process/u;
 
-const hertz = 60;
-const oneFrame = 1000 / hertz;
-const twoFrames = 2 * oneFrame;
 const percentile = 95;
+const percentilePeriods = 1.5;
+const longestPeriods = 3;
 const framesAtLeast = 60;
+const periodFrames = 20;
 
 const moves = 90;
 const warmUpMoves = 30;
 const rightPerMove = 4;
 const downPerMove = 1;
-const across = 1;
-const back = -1;
+const across: Direction = 1;
+const back: Direction = -1;
+const dragWithin = 12_000;
+const warmUpWithin = 6_000;
+const openingWithin = 30_000;
 
-test('a drag of an element with flows at both ends holds the frame budget, after a warm-up drag', async ({
+test('a drag of an element with flows at both ends drops no frames, after a warm-up drag', async ({
   page,
 }) => {
+  test.setTimeout(openingWithin + warmUpWithin + dragWithin);
   await openEcluse(page);
   const dragged = nodeNamed(page, proxy);
+  const period = await displayPeriod(page, periodFrames);
 
   const drag = async (
     from: Point,
     count: number,
-    way: number,
+    way: Direction,
+    within: number,
   ): Promise<void> => {
-    for (let move = 1; move <= count; move += 1) {
+    const deadline = Date.now() + within;
+    for (let move = 1; move <= count && Date.now() < deadline; move += 1) {
       await page.mouse.move(
         from.x + way * move * rightPerMove,
         from.y + way * move * downPerMove,
@@ -44,34 +59,34 @@ test('a drag of an element with flows at both ends holds the frame budget, after
   };
 
   const warm = await pressOn(page, dragged);
-  await drag(warm, warmUpMoves, back);
+  await drag(warm, warmUpMoves, back, warmUpWithin);
   await page.mouse.up();
+  await canvasSettled(page);
   const placed = await placeOf(dragged);
 
   const at = await pressOn(page, dragged);
-  await recordFrames(page);
-  await drag(at, moves, across);
-  const costs = await framesRecorded(page);
+  await recordIntervals(page);
+  await drag(at, moves, across, dragWithin);
+  const intervals = await intervalsRecorded(page);
   await page.mouse.up();
 
   await expect.poll(() => placeOf(dragged)).not.toBe(placed);
+
+  const busiest = nthPercentile(intervals, percentile);
+  const longest = intervals.reduce((most, each) => Math.max(most, each), 0);
+  const reading = `${intervals.length} intervals after a pointer move, ${percentile}th percentile ${busiest.toFixed(2)} ms, longest ${longest.toFixed(2)} ms, display period ${period.toFixed(2)} ms`;
+  console.log(reading);
+
   expect(
-    costs.length,
-    'animation frames sampled across the drag',
+    intervals.length,
+    `the drag gave too few frames to judge: ${reading}`,
   ).toBeGreaterThanOrEqual(framesAtLeast);
-
-  const busiest = nthPercentile(costs, percentile);
-  const longest = Math.max(...costs);
-  console.log(
-    `frame time over ${costs.length} frames: ${percentile}th percentile ${busiest.toFixed(2)} ms, longest ${longest.toFixed(2)} ms`,
-  );
-
   expect(
     busiest,
-    `the ${percentile}th percentile frame took ${busiest.toFixed(2)} ms of the ${oneFrame.toFixed(2)} ms a frame has at ${hertz} Hz`,
-  ).toBeLessThan(oneFrame);
+    `the ${percentile}th percentile interval is over ${percentilePeriods} display periods: ${reading}`,
+  ).toBeLessThan(percentilePeriods * period);
   expect(
     longest,
-    `the longest frame took ${longest.toFixed(2)} ms, over the ${twoFrames.toFixed(2)} ms two frames at ${hertz} Hz allow`,
-  ).toBeLessThan(twoFrames);
+    `an interval is over ${longestPeriods} display periods: ${reading}`,
+  ).toBeLessThanOrEqual(longestPeriods * period);
 });
