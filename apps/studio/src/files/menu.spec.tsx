@@ -167,7 +167,7 @@ describe('what the menu offers', () => {
 
     expect(burger().getAttribute('aria-label')).toBe('Menu, unsaved changes');
 
-    expect(await shown(user)).toBe('No file, Panoptes YAML, unsaved changes');
+    expect(await shown(user)).toBe('Untitled, Panoptes YAML, unsaved changes');
   });
 
   it('offers a history move only once there is one to make', async () => {
@@ -196,7 +196,7 @@ describe('what the studio says about the file', () => {
     mounted(specBridge());
 
     expect(await shown(user)).toBe(
-      'No file, Panoptes YAML, no unsaved changes',
+      'Untitled, Panoptes YAML, no unsaved changes',
     );
   });
 
@@ -245,7 +245,7 @@ describe('opening', () => {
     await choose(user, 'Open a model');
 
     expect(globalThis.confirm).toHaveBeenCalledTimes(1);
-    expect(await shown(user)).toBe('No file, Panoptes YAML, unsaved changes');
+    expect(await shown(user)).toBe('Untitled, Panoptes YAML, unsaved changes');
   });
 
   it('surfaces what the codec refused, with the paths it carries, rather than stopping', async () => {
@@ -321,7 +321,7 @@ describe('opening', () => {
     await choose(user, 'Open a model');
 
     expect(await shown(user)).toBe(
-      'No file, Panoptes YAML, no unsaved changes',
+      'Untitled, Panoptes YAML, no unsaved changes',
     );
     expect(screen.getByTestId('failure-notice').textContent).toBe('');
     expect(reportEntries()).toEqual([]);
@@ -478,7 +478,7 @@ describe('closing', () => {
 
     expect(modelStore.getState().present).toBe(placeholderModel);
     expect(await shown(user)).toBe(
-      'No file, Panoptes YAML, no unsaved changes',
+      'Untitled, Panoptes YAML, no unsaved changes',
     );
   });
 
@@ -516,7 +516,7 @@ describe('closing', () => {
 
     expect(modelStore.getState().present).toBe(placeholderModel);
     expect(await shown(user)).toBe(
-      'No file, Panoptes YAML, no unsaved changes',
+      'Untitled, Panoptes YAML, no unsaved changes',
     );
   });
 

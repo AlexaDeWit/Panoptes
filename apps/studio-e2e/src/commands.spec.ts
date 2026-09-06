@@ -168,7 +168,7 @@ test('a command still waiting on its surface claims its chord and changes nothin
   await expect(actor).toHaveClass(/selected/u);
   await openMenu(page);
   await expect(page.getByTestId('file-state')).toHaveText(
-    'No file, Panoptes YAML, no unsaved changes',
+    'Untitled, Panoptes YAML, no unsaved changes',
   );
   await closeMenu(page);
   expect(await viewportTransform(page)).toBe(settled);

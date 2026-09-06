@@ -116,7 +116,7 @@ test('the button marks unsaved work, and the menu says so in words', async ({
   await expect(menuButton(page)).toHaveAccessibleName('Menu, unsaved changes');
   await openMenu(page);
   await expect(page.getByTestId('file-state')).toHaveText(
-    'No file, Panoptes YAML, unsaved changes',
+    'Untitled, Panoptes YAML, unsaved changes',
   );
 });
 
@@ -158,7 +158,7 @@ test('closing asks in the menu before it drops work that is in no file', async (
   await expect(nodeNamed(page, /^Actor, actor/u)).toHaveCount(1);
   await openMenu(page);
   await expect(page.getByTestId('file-state')).toHaveText(
-    'No file, Panoptes YAML, no unsaved changes',
+    'Untitled, Panoptes YAML, no unsaved changes',
   );
 });
 
@@ -174,7 +174,7 @@ test('closing a file that holds everything on screen takes no second press', asy
   await expect(elementNodes(page)).toHaveCount(2);
   await openMenu(page);
   await expect(page.getByTestId('file-state')).toHaveText(
-    'No file, Panoptes YAML, no unsaved changes',
+    'Untitled, Panoptes YAML, no unsaved changes',
   );
 });
 

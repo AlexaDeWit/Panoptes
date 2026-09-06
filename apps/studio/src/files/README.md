@@ -81,7 +81,10 @@ the menu and open it again around an answer.
 
 `menu.tsx` mounts the rest: the burger button over the top left of the canvas,
 the file and edit commands, and what file the model lives in and whether it
-holds everything on screen. It holds the fallback picker's input, which only a
+holds everything on screen. A model that lives in no file is said by the name
+it carries as its own title, `Untitled` ([the store](../store/README.md)),
+which is what the browser tab shows as well, rather than by a second way of
+saying there is no file. It holds the fallback picker's input, which only a
 component can, and the guard on closing the tab, armed by the same unsaved
 state the asking reads.
 
