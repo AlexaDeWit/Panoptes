@@ -64,7 +64,7 @@ The fixture helpers every suite shares have one home, the
 `@panoptes/model/fixtures` subpath, and only a spec or a `*.fixtures.*`
 module imports it. The subpath resolves to source, so every project that
 depends on `@panoptes/model` reaches it, and nothing structural stops a
-production module: the typecheck resolves it like any other entry point and
+downstream production module: the typecheck resolves it like any other entry point and
 the layer matrix reasons about projects rather than entry points, so a
 studio bundle carrying a fixture-derived value passes both. The
 `no-restricted-imports` rule in `.oxlintrc.json` refuses that import, and the
