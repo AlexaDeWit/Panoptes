@@ -12,10 +12,7 @@ import type { Box } from './geometry.js';
 import { svgNumber } from './numbers.js';
 import { translate } from './paths.js';
 import { canvasClassNames, severityToneClass } from './stylesheet.js';
-
-const primaryRadius = 13;
-
-const secondaryRadius = 8;
+import { badgeRadius } from './tokens.js';
 
 const badgeGap = 3;
 
@@ -109,11 +106,11 @@ export type BadgeExtent = {
  */
 export function badgeExtent(badge: ThreatBadge): BadgeExtent {
   return {
-    radius: primaryRadius,
+    radius: badgeRadius.primary,
     depth:
       badge.secondary === 0
-        ? primaryRadius
-        : primaryRadius + badgeGap + secondaryRadius * 2,
+        ? badgeRadius.primary
+        : badgeRadius.primary + badgeGap + badgeRadius.secondary * 2,
   };
 }
 
@@ -151,7 +148,7 @@ export function ThreatBadgeGlyph({
       <g className={canvasClassNames.badgePrimary}>
         <circle
           className={severityToneClass[badge.severity]}
-          r={svgNumber(primaryRadius)}
+          r={svgNumber(badgeRadius.primary)}
         />
         <text
           className={canvasClassNames.badgeCount}
@@ -168,12 +165,12 @@ export function ThreatBadgeGlyph({
           className={canvasClassNames.badgeSecondary}
           transform={translate({
             x: 0,
-            y: primaryRadius + badgeGap + secondaryRadius,
+            y: badgeRadius.primary + badgeGap + badgeRadius.secondary,
           })}
         >
           <circle
             className={severityToneClass.undecided}
-            r={svgNumber(secondaryRadius)}
+            r={svgNumber(badgeRadius.secondary)}
           />
           <text className={canvasClassNames.badgeCount}>{badge.secondary}</text>
         </g>

@@ -34,6 +34,10 @@ const markFloor = 3;
 
 const toneDistanceFloor = 40;
 
+const gridFloor = 1.3;
+
+const gridCeiling = 1.6;
+
 type Pair = {
   readonly ink: keyof Palette;
   readonly ground: keyof Palette;
@@ -87,6 +91,12 @@ describe.each(palettes)('$name', ({ palette }) => {
         pairsOf([...tones, 'border', 'actionPrimary'], surfaces, markFloor),
       ),
     ).toEqual([]);
+  });
+
+  it('rules the graph paper at a weight nothing is read off, above its ground and far under the 3 a mark needs, so darkening it to a control weight fails here', () => {
+    const ruled = contrastRatio(palette.gridLine, palette.surfaceCanvas);
+    expect(ruled).toBeGreaterThanOrEqual(gridFloor);
+    expect(ruled).toBeLessThanOrEqual(gridCeiling);
   });
 
   it('keeps the five severity tones apart', () => {

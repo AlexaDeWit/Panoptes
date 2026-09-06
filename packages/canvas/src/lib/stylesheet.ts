@@ -1,5 +1,5 @@
 import type { Severity } from '@panoptes/model';
-import { canvasType, lightPalette } from './tokens.js';
+import { canvasType, lightPalette, strokeWidths } from './tokens.js';
 
 /**
  * Every class name the primitives emit. A consumer names a class through
@@ -75,16 +75,19 @@ export const severityToneClass = {
 } as const satisfies Record<Severity, string>;
 
 /**
- * Stroke width a trust boundary is drawn with. The layout grows a boundary
- * curve's derived box by it, so the stroke falls inside the node.
+ * Stroke width a trust boundary is drawn with, the outline's own weight. The
+ * layout grows a boundary curve's derived box by it, so the stroke falls
+ * inside the node.
  */
-export const boundaryStrokeWidth = 2;
+export const boundaryStrokeWidth = strokeWidths.outline;
 
 const name = canvasClassNames;
 
 const text = wrappedTextStyles;
 
 const type = canvasType;
+
+const stroke = strokeWidths;
 
 const colour = lightPalette;
 
@@ -106,7 +109,7 @@ export const canvasStylesheet = `.${name.element} {
 .${name.shape} {
   fill: ${colour.surfacePanel};
   stroke: ${colour.textPrimary};
-  stroke-width: 1.5;
+  stroke-width: ${stroke.outline};
 }
 .${name.actor} {
   fill: ${colour.surfaceActor};
@@ -116,7 +119,7 @@ export const canvasStylesheet = `.${name.element} {
 }
 .${name.store} {
   fill: none;
-  stroke-width: 2;
+  stroke-width: ${stroke.store};
 }
 .${name.boundaryBox},
 .${name.boundaryCurve} {
@@ -158,12 +161,12 @@ export const canvasStylesheet = `.${name.element} {
   dominant-baseline: central;
   paint-order: stroke;
   stroke: ${colour.surfaceCanvas};
-  stroke-width: 3;
+  stroke-width: ${stroke.labelHalo};
   stroke-linejoin: round;
 }
 .${name.badge} {
   stroke: ${colour.badgeGround};
-  stroke-width: 1.5;
+  stroke-width: ${stroke.badgeRing};
 }
 .${name.badgeCount} {
   fill: ${colour.badgeGround};

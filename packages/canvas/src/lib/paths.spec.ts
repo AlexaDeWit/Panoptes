@@ -74,19 +74,19 @@ describe('smoothPath', () => {
 describe('arrowheadPath', () => {
   it('points along the segment it ends', () => {
     expect(arrowheadPath({ x: 100, y: 0 }, { x: 0, y: 0 })).toBe(
-      'M 100 0 L 88 5 L 88 -5 Z',
+      'M 100 0 L 82 7 L 82 -7 Z',
     );
   });
 
   it('turns with the segment', () => {
     expect(arrowheadPath({ x: 0, y: 100 }, { x: 0, y: 0 })).toBe(
-      'M 0 100 L -5 88 L 5 88 Z',
+      'M 0 100 L -7 82 L 7 82 Z',
     );
   });
 
   it('points to the right where the segment has no length', () => {
     expect(arrowheadPath({ x: 40, y: 40 }, { x: 40, y: 40 })).toBe(
-      'M 40 40 L 28 45 L 28 35 Z',
+      'M 40 40 L 22 47 L 22 33 Z',
     );
   });
 });

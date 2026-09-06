@@ -20,6 +20,15 @@ function per edit a control asks for, `announcements.ts` carries what an edit
 did to the region that says it, `viewport.ts` says whether a node is drawn
 inside the canvas, and `palette.tsx` is the controls.
 
+The ground is graph paper: React Flow's own `Background` component ruled at
+the grid spacing the canvas package's token module decides, so the lines scale
+with the viewport and a zoom reads as one rather than as a grid that stayed
+still. Its colour is handed over as `--xy-background-pattern-color` in the CSS
+module beside `diagram-canvas.tsx`, which is where the studio's own
+`--pn-colour-grid` reaches React Flow's pattern. What that colour is and why
+is the token module's
+([the visual system](../../../../packages/canvas/README.md#the-visual-system)).
+
 React Flow is mounted controlled. What it draws is rebuilt whole from the
 model on every render, so a selection re-renders every node and every flow:
 one pass over a diagram's elements with nothing measured, which is what lets
