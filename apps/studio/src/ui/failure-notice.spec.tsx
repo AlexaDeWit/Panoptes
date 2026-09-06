@@ -54,6 +54,13 @@ const operationFailures: ByTag<OperationFailure> = {
   NotResizable: OperationFailure.NotResizable({
     elementId: elementId('element-curve'),
   }),
+  EmptyName: OperationFailure.EmptyName({
+    elementId: elementId('element-unnamed'),
+  }),
+  RefusedCharacter: OperationFailure.RefusedCharacter({
+    elementId: elementId('element-unnamed'),
+    at: 3,
+  }),
 };
 
 const studioFailures: ByTag<StudioFailure> = {

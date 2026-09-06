@@ -186,3 +186,18 @@ export function newProcess(id: string, name: string): Element {
     size: { width: 120, height: 60 },
   };
 }
+
+/** A text note the specs add, which draws prose rather than a name. */
+export function newNote(id: string, text: string): Element {
+  return {
+    kind: 'text',
+    id: elementId(id),
+    name: '',
+    description: '',
+    outOfScope: false,
+    reasonOutOfScope: '',
+    text,
+    position: { x: 0, y: 320 },
+    size: { width: 200, height: 40 },
+  };
+}

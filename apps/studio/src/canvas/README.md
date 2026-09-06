@@ -17,9 +17,10 @@ Flow's nodes and edges, and `changes.ts` turns what React Flow reports back
 into store actions and dispatches them. `elements.ts` builds the elements the
 palette adds, `edits.ts` is the command side of the same boundary, one
 function per edit a control asks for, `connecting.ts` holds the flow a chord
-started until a target is chosen or the chooser closes, `announcements.ts`
-carries what an edit did to the region that says it, `viewport.ts` is the
-arithmetic of the view,
+started until a target is chosen or the chooser closes, `rename-field.tsx` is
+the field an element's name is edited in and the node and edge bodies that
+mount it, `announcements.ts` carries what an edit did to the region that says it,
+and `viewport.ts` is the arithmetic of the view,
 whether a node is drawn inside the canvas and the viewport that fits a diagram
 into it, `view-commands.tsx` applies that to React Flow, and `palette.tsx` and
 `zoom-cluster.tsx` are the controls.
@@ -141,6 +142,26 @@ the region below, which speaks only for edits that landed.
   announcement counts both before the dispatch, since afterwards there is
   nothing left to count them from. Focus lands on the canvas, the element that
   held it having gone.
+- **Rename.** Double-clicking an element or a flow, or pressing F2 with one
+  selected, opens a field over the name where the diagram draws it: over the
+  glyph for an element and over the label for a flow, at the placement the
+  layout settled, so nothing has to be looked for. Enter commits and Escape
+  leaves the name as the model holds it, and focus goes back to the element
+  on both. Leaving the field for another control commits as well and leaves
+  focus where the click put it. The field is labelled "Name of" what it
+  renames, so a screen reader hears which element it is in.
+  A commit is one `RenameElement` and so one undo step, and a name the model
+  already holds dispatches nothing, on the panel's own commit rule ([the
+  panel](../panel/README.md)). This is what replaces the names the palette
+  gives: an added element is called after the button that added it, "New
+  actor" through "New trust boundary curve", and a drawn flow "New flow",
+  which is a placeholder until it is renamed rather than a name anyone chose.
+  Which element has its name open is store state, not the canvas's own, so the
+  command reaches it with nothing of the canvas mounted above it ([the
+  store](../store/README.md)). A name the model refuses is not committed at
+  all: it stays in the field to be corrected, with the character named under
+  it and the same sentence said in the region below, the way the panel refuses
+  a threat's field. Because a double-click renames, it no longer zooms.
 - **Resize.** A selected element the model can resize carries one control, at
   its bottom right corner, and the gesture reaches the store once, at its end,
   as one `ResizeElement`. React Flow reports an extent on every frame and
@@ -322,6 +343,10 @@ Connect control beside it. Deleting is the Delete or Backspace key, from
 anywhere in the studio. The palette's two connecting controls are disabled
 while nothing is selected, so a keyboard user passes no dead stop between the
 buttons and the canvas.
+Renaming is F2 on the selection, and the field it opens keeps every key a
+person types, Escape and Backspace among them: a chord fires inside a control
+that takes characters only where the registry exempts it ([the
+commands](../commands/README.md)). The
 
 ## What is not attempted here
 
@@ -334,8 +359,6 @@ buttons and the canvas.
   none, the model giving it no extent to set.
 - A flow selects but does not move, and its waypoints cannot be edited: its
   geometry follows the elements its ends are attached to.
-- Nothing renames an element, so the elements the palette adds keep the names
-  it gave them until a panel or an inspector can take one.
 - Nothing pans to a flow that was just connected, and nothing pans a selected
   flow out from under the threat panel: a flow has no box, so whether it is in
   view is not the question a node's is.
@@ -343,6 +366,17 @@ buttons and the canvas.
   an element there and attaching the flow to it is quick-create, which the
   epic holds for its second wave and names an alias of the toolbox rather than
   a command of its own.
+- A text note is not renamed on the canvas. What it draws is its prose rather
+  than its name, so a field over it would edit nothing a person can see, and
+  there is no control for that prose and no palette button that adds one.
+- A rename the model refuses keeps its field open until the name is corrected
+  or Escape is pressed, wherever the selection goes meanwhile. The draft is
+  the field's alone, as a refused threat field is the panel's, and dropping it
+  on a selection moving would drop what was typed. Beginning a rename on
+  another element is where it does go: that field is the one that opens, and
+  the refused draft goes with the field it was in.
+- Nothing pans to a flow that was just connected: a flow has no box, so
+  whether it is in view is not the question a node's is.
 - Selection is single. Multi-select and box select are unbound, because the
   store holds one selection and a plural gesture has no plural action behind
   it.

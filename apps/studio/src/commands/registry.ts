@@ -1,5 +1,9 @@
 import { startFlow } from '../canvas/connecting.js';
-import { addPaletteElement, removeSelected } from '../canvas/edits.js';
+import {
+  addPaletteElement,
+  removeSelected,
+  renameSelected,
+} from '../canvas/edits.js';
 import type { PaletteKind } from '../canvas/elements.js';
 import { Action } from '../store/actions.js';
 import { dispatch } from '../store/store.js';
@@ -149,6 +153,15 @@ const table = {
     inTextFields: false,
     dispatch: runs(() => {
       removeSelected();
+    }),
+  },
+  rename: {
+    id: 'rename',
+    label: 'Rename the selection',
+    shortcuts: [bare('F2')],
+    inTextFields: false,
+    dispatch: runs(() => {
+      renameSelected();
     }),
   },
   'select-all': {

@@ -28,6 +28,7 @@ type StudioActionTag =
   | 'Undo'
   | 'Redo'
   | 'Select'
+  | 'Renaming'
   | 'Opened'
   | 'Saved'
   | 'Closed'
@@ -53,6 +54,10 @@ const applied: ActionsByTag<ModelActionTag> = {
   ResizeElement: Action.ResizeElement({
     elementId: processElement,
     size: { width: 200, height: 90 },
+  }),
+  RenameElement: Action.RenameElement({
+    elementId: processElement,
+    name: 'Renamed',
   }),
   AddThreat: Action.AddThreat({
     threat: { ...sampleThreat, id: threatId('threat-added'), number: 2 },
@@ -87,6 +92,10 @@ const refused: ActionsByTag<ModelActionTag> = {
     elementId: elementId('element-missing'),
     size: { width: 10, height: 10 },
   }),
+  RenameElement: Action.RenameElement({
+    elementId: processElement,
+    name: '',
+  }),
   AddThreat: Action.AddThreat({
     threat: { ...sampleThreat, id: threatId('threat-reused'), number: 1 },
   }),
@@ -115,6 +124,7 @@ const studioActions: ActionsByTag<StudioActionTag> = {
   Undo: Action.Undo(),
   Redo: Action.Redo(),
   Select: Action.Select({ elementId: actorElement }),
+  Renaming: Action.Renaming({ elementId: actorElement }),
   Opened: Action.Opened({
     model: emptyModel,
     name: 'model.json',
@@ -223,6 +233,28 @@ describe('selection', () => {
     expect(reduce(selected, applied.RemoveElement).selection).toBe(
       actorElement,
     );
+  });
+});
+
+describe('the name a field is open on', () => {
+  const opened = reduce(start, Action.Renaming({ elementId: processElement }));
+
+  it('follows what the canvas opens and closes', () => {
+    expect(opened.renaming).toBe(processElement);
+    expect(
+      reduce(opened, Action.Renaming({ elementId: undefined })).renaming,
+    ).toBeUndefined();
+  });
+
+  it('stays out of the undo stacks, an edit being the only thing they hold', () => {
+    expect(opened.past).toEqual([]);
+    expect(opened.present).toBe(start.present);
+    const edited = reduce(opened, applied.RenameElement);
+    expect(reduce(edited, Action.Undo()).renaming).toBe(processElement);
+  });
+
+  it('closes when the element it names is removed', () => {
+    expect(reduce(opened, applied.RemoveElement).renaming).toBeUndefined();
   });
 });
 

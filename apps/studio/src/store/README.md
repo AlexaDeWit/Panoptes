@@ -32,9 +32,10 @@ and no immutable snapshot to push onto a stack.
   to hang clear of both. Its title is `Untitled`, which is what a model that
   has never been in a file is called, so the tab, the file controls and a
   saved file all read one string rather than a word a view supplied.
-- `actions.ts` is the `Action` union, an Effect `Data.taggedEnum`. Nine tags
+- `actions.ts` is the `Action` union, an Effect `Data.taggedEnum`. Ten tags
   carry a `@panoptes/model` operation and its arguments; the rest are undo,
-  redo, selection, the three ends of the file lifecycle, and the two ways the
+  redo, selection, which element has its name open in a field on the canvas,
+  the three ends of the file lifecycle, and the two ways the
   file path refuses. `Saved` names a file as `Opened` does, because a first
   save is a save-as, and folding both into `file` keeps "this model lives in
   this file" one fact. `Closed` is the third: the studio goes back to the
@@ -62,10 +63,15 @@ and no immutable snapshot to push onto a stack.
   hint on
   ([the canvas](../canvas/README.md)).
 
-Selection and the file lifecycle stay out of the undo stacks, so an undo moves
-the model and leaves the user where they were. A removal clears a selection
-that names the element it removed, so `selection` dangles only where a
-dispatch selected an id the model never held. Being total, the reducer cannot
+Selection, the name a field is open on, and the file lifecycle stay out of the
+undo stacks, so an undo moves the model and leaves the user where they were. A
+removal clears a selection that names the element it removed, and the open
+name field with it, so `selection` dangles only where a
+dispatch selected an id the model never held. `renaming` is view state of the
+canvas the way the panel's expanded threat is the panel's, and it is in the
+store rather than in a component because a command reaches it from the
+keyboard with nothing of the canvas mounted above it
+([the canvas](../canvas/README.md)). Being total, the reducer cannot
 refuse `Opened` or `Closed` over unsaved work, so the guards on those, and the
 one on closing the tab, belong in the view ([the file
 bridge](../files/README.md)).

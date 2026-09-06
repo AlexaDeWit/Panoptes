@@ -29,6 +29,7 @@ export const chordKeys = [
   'Backspace',
   'Delete',
   'Escape',
+  'F2',
 ] as const;
 
 /** One key a chord ends on, written as a `KeyboardEvent.key` reports it. */

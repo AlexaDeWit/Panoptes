@@ -1,4 +1,4 @@
-import type { DiagramId, Model } from '@panoptes/model';
+import type { DiagramId, Element, ElementId, Model } from '@panoptes/model';
 import { nameOf } from '../files/session.js';
 import { FileLifecycle, placeholderModel, type State } from './state.js';
 
@@ -39,6 +39,38 @@ export function elementCount(state: State): number {
  */
 export function firstDiagramId(state: State): DiagramId | undefined {
   return state.present.diagrams.at(0)?.id;
+}
+
+/**
+ * The element `elementId` names, in whichever diagram the model draws it,
+ * and nothing at all where the model holds none by that id.
+ */
+export function elementById(
+  state: State,
+  elementId: ElementId,
+): Element | undefined {
+  return state.present.diagrams
+    .flatMap((diagram) => diagram.elements)
+    .find((element) => element.id === elementId);
+}
+
+/**
+ * Whether the element `elementId` names has a name a field can open. A text
+ * note has not: what it draws is its prose rather than its name, so a field
+ * over one would edit nothing a person can see.
+ */
+export function nameEditable(state: State, elementId: ElementId): boolean {
+  const element = elementById(state, elementId);
+  return element !== undefined && element.kind !== 'text';
+}
+
+/**
+ * Whether the rename command has something to open a field on, which is what
+ * the control offering it reads so it is not live over a selection it would
+ * do nothing to.
+ */
+export function renameable(state: State): boolean {
+  return state.selection !== undefined && nameEditable(state, state.selection);
 }
 
 /**

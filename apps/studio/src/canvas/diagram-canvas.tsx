@@ -1,6 +1,4 @@
 import {
-  canvasEdgeTypes,
-  canvasNodeTypes,
   gridSpacing,
   themedCanvasStylesheet,
   type CanvasFlowEdge,
@@ -13,26 +11,30 @@ import {
   ReactFlow,
   type Connection,
   type EdgeChange,
+  type EdgeMouseHandler,
   type NodeChange,
   type ReactFlowInstance,
 } from '@xyflow/react';
 import type { ElementId } from '@panoptes/model';
 import {
+  useCallback,
   useEffect,
   useMemo,
   useRef,
   useState,
   type KeyboardEvent,
+  type MouseEvent,
 } from 'react';
 import { focusThreatPanel } from '../panel/panel-focus.js';
 import { ThreatOverlay } from '../panel/threat-overlay.js';
+import { keyboardOwner } from '../commands/binding.js';
 import { useModelStore } from '../store/store.js';
 import {
   applyChanges,
   applyConnection,
   betweenTwoElements,
 } from './changes.js';
-import { drawnElement, removeSelected } from './edits.js';
+import { beginRenaming, drawnElement, removeSelected } from './edits.js';
 import { EmptyStateHint } from './empty-state-hint.js';
 import { currentLayout, selectedElement } from './layout.js';
 import {
@@ -42,6 +44,7 @@ import {
   withMeasurements,
   type DiagramNode,
 } from './nodes.js';
+import { renamingEdgeTypes, renamingNodeTypes } from './rename-field.js';
 import { FitOnOpen } from './view-commands.js';
 import {
   clearOfPanel,
@@ -114,7 +117,13 @@ const deleteKeys = new Set(['Delete', 'Backspace']);
  * anywhere in the studio, and whose cascade over the flows attached to it is
  * not the model's. One key press asks the store for one removal and the model
  * settles the rest. Focus lands on the canvas afterwards, the element that
- * held it having gone.
+ * held it having gone. A press typed into a control that takes characters is
+ * left to that control, so Backspace inside the rename field corrects the
+ * name rather than deleting what it renames.
+ *
+ * A double-click renames what it lands on, which is why React Flow's own
+ * double-click zoom is off: a gesture means one thing, and zooming has a
+ * chord and a control of its own.
  */
 export function DiagramCanvas() {
   const layout = useModelStore(currentLayout);
@@ -171,7 +180,10 @@ export function DiagramCanvas() {
   };
 
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>): void => {
-    if (!deleteKeys.has(event.key) || !removeSelected()) {
+    if (keyboardOwner(event.target) !== 'page' || !deleteKeys.has(event.key)) {
+      return;
+    }
+    if (!removeSelected()) {
       return;
     }
     event.preventDefault();
@@ -192,10 +204,54 @@ export function DiagramCanvas() {
     event.stopPropagation();
   };
 
+  const onRename = useCallback(
+    (id: string): void => {
+      const element = elements.get(id);
+      if (element !== undefined) {
+        beginRenaming(element);
+      }
+    },
+    [elements],
+  );
+
+  // A pointer double-click renames the element it lands on. It is read here,
+  // over the whole canvas, rather than from React Flow's node double-click,
+  // because selecting a node opens the threat panel and pans the node clear
+  // of it between the two clicks: the second click lands on the pane the node
+  // has left, so no node hears both. The element the first click of the pair
+  // fell on is what is renamed, found once and held, and the browser's own
+  // click count is what tells the pair from two separate clicks.
+  const clickedFirst = useRef<ElementId | undefined>(undefined);
+
+  const onCanvasClickCapture = (event: MouseEvent<HTMLDivElement>): void => {
+    if (
+      !(event.target instanceof Element) ||
+      event.target.closest('input, textarea, button') !== null
+    ) {
+      return;
+    }
+    if (event.detail > 1) {
+      const element = clickedFirst.current;
+      if (element !== undefined) {
+        beginRenaming(element);
+      }
+      return;
+    }
+    clickedFirst.current = drawnElement(event.target, elements);
+  };
+
+  const onEdgeDoubleClick = useCallback<EdgeMouseHandler<CanvasFlowEdge>>(
+    (_, edge) => {
+      onRename(edge.id);
+    },
+    [onRename],
+  );
+
   return (
     <div
       className={styles.canvas}
       data-testid="canvas-container"
+      onClickCapture={onCanvasClickCapture}
       onKeyDownCapture={onKeyDownCapture}
     >
       <style>{themedCanvasStylesheet}</style>
@@ -205,15 +261,16 @@ export function DiagramCanvas() {
         connectionMode={ConnectionMode.Loose}
         deleteKeyCode={null}
         edges={graph.edges}
-        edgeTypes={canvasEdgeTypes}
+        edgeTypes={renamingEdgeTypes}
         isValidConnection={betweenTwoElements}
         maxZoom={zoomLimits.maximum}
         minZoom={zoomLimits.minimum}
         multiSelectionKeyCode={null}
         nodes={onScreen}
         nodesConnectable
-        nodeTypes={canvasNodeTypes}
+        nodeTypes={renamingNodeTypes}
         onConnect={onConnect}
+        onEdgeDoubleClick={onEdgeDoubleClick}
         onEdgesChange={onEdgesChange}
         onInit={(instance) => {
           view.current = instance;
@@ -223,6 +280,7 @@ export function DiagramCanvas() {
         ref={surface}
         selectionKeyCode={null}
         tabIndex={-1}
+        zoomOnDoubleClick={false}
       >
         <Background gap={gridSpacing} variant={BackgroundVariant.Lines} />
         <FitOnOpen />

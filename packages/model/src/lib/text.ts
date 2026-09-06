@@ -66,6 +66,18 @@ export const acceptedTextSchema = z
   );
 
 /**
+ * Whether `text` is a name with nothing in it. Whitespace counts: the
+ * character set admits spaces, tabs and line breaks, so a name of them
+ * re-parses and is a name to the schema, while a person reading the diagram
+ * sees an element with no name at all. It is the one home of that rule, so
+ * an operation refusing such a name and an editor screening one before it
+ * dispatches agree.
+ */
+export function isEmptyName(text: string): boolean {
+  return text.trim() === '';
+}
+
+/**
  * Where the first character {@link acceptedTextSchema} refuses sits, as an
  * index in UTF-16 code units, or undefined for text it accepts whole. An
  * editor has the parse issue's path to the field and this to the character

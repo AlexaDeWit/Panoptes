@@ -17,11 +17,12 @@ import { Data } from 'effect';
 import type { RetainedSource } from './state.js';
 
 /**
- * Everything that can change the studio's state. Nine tags carry a model
+ * Everything that can change the studio's state. Ten tags carry a model
  * operation and nothing else, each holding exactly the arguments that
  * operation takes, so the reducer applies one and folds its answer. The
- * remaining eight are the studio's own: the two history moves, selection,
- * the three ends of the file lifecycle, and the two ways the file path
+ * remaining nine are the studio's own: the two history moves, selection,
+ * which element has its name open in a field, the three ends of the file
+ * lifecycle, and the two ways the file path
  * refuses. `Opened` and `Saved` both name a file, because a first save is a
  * save-as and settles which file the model lives in, and both carry the
  * source a later save merges onto. `Closed` is the other end: the studio
@@ -47,6 +48,7 @@ export type Action = Data.TaggedEnum<{
   RemoveElement: { readonly elementId: ElementId };
   MoveElement: { readonly elementId: ElementId; readonly offset: Point };
   ResizeElement: { readonly elementId: ElementId; readonly size: Size };
+  RenameElement: { readonly elementId: ElementId; readonly name: string };
   AddThreat: { readonly threat: Threat };
   RemoveThreat: { readonly threatId: ThreatId };
   ReplaceThreat: { readonly threat: Threat };
@@ -55,6 +57,7 @@ export type Action = Data.TaggedEnum<{
   Undo: {};
   Redo: {};
   Select: { readonly elementId: ElementId | undefined };
+  Renaming: { readonly elementId: ElementId | undefined };
   Opened: {
     readonly model: Model;
     readonly name: string;

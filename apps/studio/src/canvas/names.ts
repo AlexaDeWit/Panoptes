@@ -35,6 +35,21 @@ export function accessibleNames(
   ]);
 }
 
+/**
+ * What one drawn element is called where a control has to name it in a
+ * sentence: its own name, or what kind of thing it is while it has none. It
+ * is the phrase the rename field is labelled with, so a screen reader hears
+ * which element the field renames rather than that a field is open.
+ */
+export function nodeLabel(node: CanvasNode): string {
+  return node.name === '' ? `the ${kindWords[node.kind]}` : node.name;
+}
+
+/** What one drawn flow is called, on the same terms as {@link nodeLabel}. */
+export function edgeLabel(edge: CanvasEdge): string {
+  return edge.name === '' ? 'the flow' : edge.name;
+}
+
 function nodeName(node: CanvasNode): string {
   return spoken([node.name, kindWords[node.kind], ...badgeWords(node.badge)]);
 }

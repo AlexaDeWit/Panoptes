@@ -1,0 +1,46 @@
+/* The field is placed at the point the canvas package draws the name on,
+   which is the node's own coordinates over a node and the diagram's over a
+   flow. React Flow's edge label layer passes pointer events through, so the
+   field takes them back. */
+.overNode,
+.overFlow {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  gap: var(--pn-space-1);
+  min-width: 6rem;
+  pointer-events: all;
+}
+
+.field {
+  box-sizing: border-box;
+  width: 100%;
+  padding: var(--pn-space-1) var(--pn-space-2);
+  border: 1px solid var(--pn-colour-border);
+  border-radius: var(--pn-radius);
+  background: var(--pn-colour-surface);
+  color: var(--pn-colour-text);
+  font: inherit;
+  text-align: center;
+}
+
+.field:focus-visible {
+  outline: var(--pn-focus-ring);
+  outline-offset: var(--pn-focus-ring-offset);
+}
+
+/* The refusal reads as text rather than as a colour alone, as the panel's
+   fields do: forced colours drop the border tint, and the sentence below the
+   field is there either way. */
+.field[aria-invalid='true'] {
+  border-color: var(--pn-colour-text);
+  border-width: 2px;
+}
+
+.refusal {
+  margin: 0;
+  padding: var(--pn-space-1) var(--pn-space-2);
+  border-radius: var(--pn-radius);
+  background: var(--pn-colour-surface);
+  color: var(--pn-colour-text);
+}

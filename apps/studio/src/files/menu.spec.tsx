@@ -17,8 +17,10 @@ import { isDirty } from '../store/selectors.js';
 import { initialState, placeholderModel } from '../store/state.js';
 import { dispatch, modelStore } from '../store/store.js';
 import {
+  actorElement,
   mainDiagram,
   nativeSource,
+  newNote,
   newProcess,
   sampleModel,
 } from '../store/store.fixtures.js';
@@ -140,6 +142,8 @@ describe('what the menu offers', () => {
       'Close the fileCtrl+Shift+X',
       'UndoCtrl+Z',
       'RedoCtrl+Shift+Z or Ctrl+Y',
+      'Rename the selectionF2',
+      'Delete the selectionDelete or Backspace',
     ]);
     expect(
       screen.getAllByRole('group').map((group) => group.textContent),
@@ -191,6 +195,61 @@ describe('what the menu offers', () => {
 });
 
 describe('what the studio says about the file', () => {
+  it('offers a command on the selection only once there is one', async () => {
+    const user = userEvent.setup();
+    mounted(specBridge());
+
+    await openMenu(user);
+    expect(
+      item('Rename the selection').getAttribute('data-disabled'),
+    ).not.toBeNull();
+    expect(
+      item('Delete the selection').getAttribute('data-disabled'),
+    ).not.toBeNull();
+
+    act(() => {
+      dispatch(Action.Select({ elementId: actorElement }));
+    });
+
+    expect(
+      item('Rename the selection').getAttribute('data-disabled'),
+    ).toBeNull();
+    expect(
+      item('Delete the selection').getAttribute('data-disabled'),
+    ).toBeNull();
+  });
+
+  it('offers no rename over a text note, which draws prose rather than a name', async () => {
+    const user = userEvent.setup();
+    const note = newNote('text-note', 'The studio opens on this model.');
+    mounted(specBridge());
+    act(() => {
+      dispatch(Action.AddElement({ diagramId: mainDiagram, element: note }));
+      dispatch(Action.Select({ elementId: note.id }));
+    });
+
+    await openMenu(user);
+
+    expect(
+      item('Rename the selection').getAttribute('data-disabled'),
+    ).not.toBeNull();
+    expect(
+      item('Delete the selection').getAttribute('data-disabled'),
+    ).toBeNull();
+  });
+
+  it('opens the name of the selection in a field, from the menu', async () => {
+    const user = userEvent.setup();
+    mounted(specBridge());
+    act(() => {
+      dispatch(Action.Select({ elementId: actorElement }));
+    });
+
+    await choose(user, 'Rename the selection');
+
+    expect(modelStore.getState().renaming).toBe(actorElement);
+  });
+
   it('names the file, its format, and whether it holds everything on screen', async () => {
     const user = userEvent.setup();
     mounted(specBridge());
@@ -417,6 +476,8 @@ describe('saving', () => {
       'Close the fileCtrl+Shift+X',
       'UndoCtrl+Z',
       'RedoCtrl+Shift+Z or Ctrl+Y',
+      'Rename the selectionF2',
+      'Delete the selectionDelete or Backspace',
     ]);
     expect(bridge.writes).toEqual([]);
 

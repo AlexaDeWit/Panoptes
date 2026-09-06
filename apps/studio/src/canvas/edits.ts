@@ -1,6 +1,11 @@
 import type { ElementId, Model } from '@panoptes/model';
 import { Action } from '../store/actions.js';
-import { firstDiagramId } from '../store/selectors.js';
+import {
+  elementById,
+  firstDiagramId,
+  nameEditable,
+  renameable,
+} from '../store/selectors.js';
 import type { State } from '../store/state.js';
 import { dispatch, modelStore } from '../store/store.js';
 import { announce } from './announcements.js';
@@ -122,6 +127,68 @@ export function describeRemoval(name: string, cascade: RemovalCascade): string {
   return `Removed ${name}. ${flows} detached, ${threats} dropped.`;
 }
 
+/**
+ * Opens the selected element's name in a field on the canvas, and does
+ * nothing while nothing is selected. It is what the rename command runs, so
+ * the key and the double-click reach one place. Which element is being
+ * renamed is store state rather than the canvas's own, because the command
+ * is pressed with nothing of the canvas mounted above it ([the
+ * store](../store/README.md)).
+ */
+export function renameSelected(): void {
+  const state = modelStore.getState();
+  const elementId = state.selection;
+  if (elementId !== undefined && renameable(state)) {
+    dispatch(Action.Renaming({ elementId }));
+  }
+}
+
+/**
+ * Opens `elementId`'s name in a field, which is what a double-click does. It
+ * reads the same rule the control offering the command reads, so a gesture
+ * and a menu item agree about what has a name to edit.
+ */
+export function beginRenaming(elementId: ElementId): void {
+  if (nameEditable(modelStore.getState(), elementId)) {
+    dispatch(Action.Renaming({ elementId }));
+  }
+}
+
+/**
+ * Closes the open field and puts focus back on the element it was drawn
+ * over. It is what a key press settles on, Enter and Escape alike, where the
+ * person left focus in the field and would otherwise be dropped onto the
+ * page.
+ */
+export function endRenaming(elementId: ElementId): void {
+  dispatch(Action.Renaming({ elementId: undefined }));
+  focusElement(elementId);
+}
+
+/**
+ * Closes the open field and leaves focus where it is. It is what a field
+ * settles on when it is left, the person having already put focus on
+ * something else: sending it back would undo the click that landed there.
+ */
+export function stopRenaming(): void {
+  dispatch(Action.Renaming({ elementId: undefined }));
+}
+
+/**
+ * Renames `elementId`, as one action and so one undo step. A name the model
+ * already holds dispatches nothing: a model operation returns a new model
+ * whatever it was asked to do, so the store would push an undo entry and
+ * mark the file dirty over an edit nobody made, which is the rule the panel
+ * commits its fields under ([the panel](../panel/README.md)).
+ */
+export function commitRename(elementId: ElementId, name: string): void {
+  const element = elementById(modelStore.getState(), elementId);
+  if (element === undefined || element.name === name) {
+    return;
+  }
+  dispatch(Action.RenameElement({ elementId, name }));
+}
+
 function added(action: Action, elementId: ElementId): void {
   if (!changedModel(action)) {
     return;
@@ -187,6 +254,11 @@ export function focusElement(
   );
   if (drawn instanceof HTMLElement || drawn instanceof SVGElement) {
     drawn.focus();
+    if (attempts > 1) {
+      setTimeout(() => {
+        focusElement(elementId, attempts - 1);
+      }, 0);
+    }
     return;
   }
   if (attempts > 1) {

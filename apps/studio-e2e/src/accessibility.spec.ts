@@ -7,6 +7,7 @@ import {
   menuItem,
   nodeNamed,
   openMenu,
+  openPlaceholder,
   withoutPickers,
 } from './studio.fixtures.js';
 
@@ -201,6 +202,19 @@ test('the studio carries no violation with the menu open', async ({ page }) => {
   await expect(menuItem(page, 'Discard the changes and close')).toBeVisible();
 
   await audit(page, 'showing the menu asking before it closes a file');
+});
+
+test('the studio carries no violation with a name open in a field', async ({
+  page,
+}) => {
+  await openPlaceholder(page);
+
+  await page.getByRole('group', { name: /^Actor, actor/u }).dblclick();
+  await expect(
+    page.getByRole('textbox', { name: 'Name of Actor' }),
+  ).toBeVisible();
+
+  await audit(page, 'renaming an element');
 });
 
 test('the open connect listbox carries no violation', async ({ page }) => {

@@ -148,4 +148,24 @@ describe('DiagramCanvas', () => {
 
     expect(modelStore.getState().selection).toBeUndefined();
   });
+
+  it('opens the name of a node in a field on the second click of a pair', () => {
+    render(<DiagramCanvas />);
+
+    fireEvent.click(reader(), { detail: 1 });
+    fireEvent.click(reader(), { detail: 2 });
+
+    expect(modelStore.getState().renaming).toBe(readerElement);
+  });
+
+  it('leaves a click on a canvas control out of the rename gesture', () => {
+    render(<DiagramCanvas />);
+
+    fireEvent.click(reader(), { detail: 1 });
+    fireEvent.click(screen.getByRole('button', { name: 'Zoom in' }), {
+      detail: 2,
+    });
+
+    expect(modelStore.getState().renaming).toBeUndefined();
+  });
 });
