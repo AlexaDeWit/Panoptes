@@ -435,7 +435,8 @@ describe('closing', () => {
 
   it('asks in the menu rather than in a dialog, and puts it away when the file is kept', async () => {
     const user = userEvent.setup();
-    mounted(specBridge());
+    const bridge = specBridge();
+    mounted(bridge);
     edit();
 
     await choose(user, 'Close the file');
@@ -449,6 +450,7 @@ describe('closing', () => {
       expect(screen.queryByRole('menu')).toBe(null);
     });
     expect(isDirty(modelStore.getState())).toBe(true);
+    expect(bridge.releases.count).toBe(0);
 
     await openMenu(user);
 

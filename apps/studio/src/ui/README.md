@@ -54,18 +54,19 @@ stays in the page while it has nothing to say and collapses rather than
 hiding while it is empty, because a region inserted and filled in the same
 frame announces nothing. One cannot go inside a menu, which owns items and
 groups of them and nothing else, so the two the menu speaks through stand
-beside it ([the file bridge](../files/README.md)). `FailureNotice` renders `StudioFailure` inside one,
-whatever produced it, so one region shows the model refusing an edit, a codec
-refusing a file, and the platform refusing to hand one over. It words every
-variant: nothing reaches a person as a tag, and a codec's paths are kept
-because they say which line of a file was refused rather than that the file
-was. The threat panel announces an added or deleted threat through the same
-component ([the panel](../panel/README.md)), and the canvas palette says what
-an edit did through it as well ([the canvas](../canvas/README.md)). Each
-names its own region, so a landmark list says which one a reader reached. `ErrorBoundary` is the last stop
-for a throw from anywhere below it, and is a class because React offers no
-other way to catch one; it holds the only component state in this directory
-for that reason. It needs no live region, because it replaces the tree it was
+beside it ([the file bridge](../files/README.md)). `FailureNotice` renders
+`StudioFailure` inside one, whatever produced it, so one region shows the
+model refusing an edit, a codec refusing a file, and the platform refusing to
+hand one over. It words every variant: nothing reaches a person as a tag, and
+a codec's paths are kept because they say which line of a file was refused
+rather than that the file was. The threat panel announces an added or deleted
+threat through the same component ([the panel](../panel/README.md)), and the
+canvas palette says what an edit did through it as well ([the
+canvas](../canvas/README.md)). Each names its own region, so a landmark list
+says which one a reader reached. `ErrorBoundary` is the last stop for a throw
+from anywhere below it, and is a class because React offers no other way to
+catch one; it holds the only component state in this directory for that
+reason. It needs no live region, because it replaces the tree it was
 guarding rather than announcing into it.
 
 ## What a composed control owes

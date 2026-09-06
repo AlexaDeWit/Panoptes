@@ -48,8 +48,10 @@ dialog being one of this milestone's rules. The session holds the question as
 state, `closing`, and the menu draws it as a second press on the same item:
 Close the file becomes Discard the changes and close, with Keep the file open
 beside it. The state is the session's rather than the menu's so that the chord
-asks the same question, opening the menu on it. Answering either way, or
-dismissing the menu, takes the question back.
+asks the same question, opening the menu on it. Answering either way takes the
+question back, and so does dismissing the menu, and so does the model going
+clean underneath it: a save that lands, or an undo back to the saved model,
+leaves nothing to lose and no question to ask.
 
 `menu.tsx` mounts the rest: the burger button over the top left of the canvas,
 the file and edit commands, and what file the model lives in and whether it

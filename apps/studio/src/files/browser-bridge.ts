@@ -127,10 +127,11 @@ function download(name: string, text: string): SaveOutcome {
  * happened: a read that produced a text, and a save-as whose write landed. A
  * file that would not open, and one that refused what was written to it, are
  * not files this model may be written over. It is dropped the moment the
- * model moves to another file, which is an open through the caller's own
- * input and a save-as that ends in a download. A save-as the person dismissed
- * and one the platform refused move nothing, so both leave the handle where
- * it was.
+ * model stops living in that file, which is an open through the caller's own
+ * input, a save-as that ends in a download, and a release, which is the file
+ * being closed ({@link FileBridge} carries what each one is). A save-as the
+ * person dismissed and one the platform refused move nothing, so both leave
+ * the handle where it was.
  *
  * The two pickers are declared here because TypeScript's DOM library does
  * not declare them, and each is read off `window` as an optional member, so
