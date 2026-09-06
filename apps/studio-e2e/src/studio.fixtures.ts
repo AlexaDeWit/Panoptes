@@ -1,6 +1,7 @@
 import { expect, type Locator, type Page } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import type { Box, Point } from './canvas-geometry.fixtures.js';
 
 const developmentModelKey = 'panoptesDevelopmentModel';
 
@@ -11,6 +12,10 @@ export const vendored = (path: string): string =>
 const ecluse: unknown = JSON.parse(
   readFileSync(vendored('test-data/ecluse.model.json'), 'utf8'),
 );
+
+/** The box the diagram is drawn in, chrome and graph paper included. */
+export const canvasContainer = (page: Page): Locator =>
+  page.getByTestId('canvas-container');
 
 /**
  * Waits for the canvas to stop moving. `FitOnOpen` fits the view to the
@@ -47,14 +52,14 @@ export const openEcluse = async (page: Page): Promise<void> => {
     { key: developmentModelKey, model: ecluse },
   );
   await page.goto('/');
-  await expect(page.getByTestId('canvas-container')).toBeVisible();
+  await expect(canvasContainer(page)).toBeVisible();
   await canvasSettled(page);
 };
 
 /** Opens the studio on the model it carries until a file can be opened. */
 export const openPlaceholder = async (page: Page): Promise<void> => {
   await page.goto('/');
-  await expect(page.getByTestId('canvas-container')).toBeVisible();
+  await expect(canvasContainer(page)).toBeVisible();
   await canvasSettled(page);
 };
 
@@ -77,7 +82,7 @@ export const withoutPickers = (): void => {
 export const openFile = async (page: Page, path: string): Promise<void> => {
   await page.addInitScript(withoutPickers);
   await page.goto('/');
-  await expect(page.getByTestId('canvas-container')).toBeVisible();
+  await expect(canvasContainer(page)).toBeVisible();
   await page.getByTestId('file-input').setInputFiles(vendored(path));
   await expect(page.getByTestId('failure-notice')).toBeEmpty();
   await canvasSettled(page);
@@ -151,6 +156,16 @@ export const nodeNamed = (page: Page, name: string | RegExp): Locator =>
   page.getByRole('group', { name });
 
 /**
+ * One of the four handles a flow attaches to, by the side of the element it
+ * sits at. React Flow names a handle by the id the canvas gave it, which is
+ * that side.
+ */
+export const handleOn = (
+  node: Locator,
+  side: 'top' | 'right' | 'bottom' | 'left',
+): Locator => node.locator(`[data-handleid="${side}"]`);
+
+/**
  * The canvas itself, which React Flow gives the application role and the
  * canvas its name. It is where focus lands once the element that held it has
  * been deleted.
@@ -205,21 +220,38 @@ export const widthOf = async (node: Locator): Promise<string> => {
   return /width:\s*[^;]*/u.exec(style)?.[0] ?? style;
 };
 
+const centreOf = async (target: Locator): Promise<Point> => {
+  const box = await target.boundingBox();
+  expect(box).not.toBeNull();
+  return {
+    x: (box?.x ?? 0) + (box?.width ?? 0) / 2,
+    y: (box?.y ?? 0) + (box?.height ?? 0) / 2,
+  };
+};
+
 /** Drags whatever is at the centre of `target` by `by` pixels each way. */
 export const dragBy = async (
   page: Page,
   target: Locator,
   by: number,
 ): Promise<void> => {
-  const box = await target.boundingBox();
-  expect(box).not.toBeNull();
-  const from = {
-    x: (box?.x ?? 0) + (box?.width ?? 0) / 2,
-    y: (box?.y ?? 0) + (box?.height ?? 0) / 2,
-  };
+  const from = await centreOf(target);
   await page.mouse.move(from.x, from.y);
   await page.mouse.down();
   await page.mouse.move(from.x + by, from.y + by, { steps: 8 });
+  await page.mouse.up();
+};
+
+/** Drags from the centre of a locator to a point on the page. */
+export const dragTo = async (
+  page: Page,
+  from: Locator,
+  to: Point,
+): Promise<void> => {
+  const start = await centreOf(from);
+  await page.mouse.move(start.x, start.y);
+  await page.mouse.down();
+  await page.mouse.move(to.x, to.y, { steps: 12 });
   await page.mouse.up();
 };
 
@@ -229,21 +261,58 @@ export const dragOnto = async (
   from: Locator,
   onto: Locator,
 ): Promise<void> => {
-  const start = await from.boundingBox();
-  const end = await onto.boundingBox();
-  expect(start).not.toBeNull();
-  expect(end).not.toBeNull();
-  await page.mouse.move(
-    (start?.x ?? 0) + (start?.width ?? 0) / 2,
-    (start?.y ?? 0) + (start?.height ?? 0) / 2,
+  await dragTo(page, from, await centreOf(onto));
+};
+
+const clearBy = 48;
+
+const steps = 8;
+
+const chromeFree = 0.75;
+
+const grid = Array.from({ length: steps - 1 }, (unused, step) => step + 1);
+
+const clearOf = (boxes: readonly (Box | null)[], at: Point): boolean =>
+  boxes.every(
+    (box) =>
+      box === null ||
+      at.x < box.x - clearBy ||
+      at.x > box.x + box.width + clearBy ||
+      at.y < box.y - clearBy ||
+      at.y > box.y + box.height + clearBy,
   );
-  await page.mouse.down();
-  await page.mouse.move(
-    (end?.x ?? 0) + (end?.width ?? 0) / 2,
-    (end?.y ?? 0) + (end?.height ?? 0) / 2,
-    { steps: 12 },
+
+/**
+ * A point on the canvas that no element is drawn near, which is where a
+ * connection released cancels. It is searched for rather than assumed: a fit
+ * puts the diagram wherever the model it opened needs, so which part of the
+ * canvas is clear moves with the file. The margin is well past React Flow's
+ * connection radius, so a drop there resolves to no handle rather than
+ * snapping to the nearest one. The bottom quarter is left out, being where
+ * the floating chrome sits.
+ */
+export const emptyCanvasPoint = async (page: Page): Promise<Point> => {
+  const canvas = await canvasContainer(page).boundingBox();
+  expect(canvas).not.toBeNull();
+  const corner = { x: canvas?.x ?? 0, y: canvas?.y ?? 0 };
+  const room = {
+    width: canvas?.width ?? 0,
+    height: (canvas?.height ?? 0) * chromeFree,
+  };
+  const drawn = await Promise.all(
+    (await elementNodes(page).all()).map(async (node) => node.boundingBox()),
   );
-  await page.mouse.up();
+  const clear = grid
+    .flatMap((column) =>
+      grid.map((row) => ({
+        x: corner.x + (room.width * column) / steps,
+        y: corner.y + (room.height * row) / steps,
+      })),
+    )
+    .find((at) => clearOf(drawn, at));
+
+  expect(clear, 'the canvas has no point clear of every element').toBeDefined();
+  return clear ?? corner;
 };
 
 /**
@@ -294,17 +363,16 @@ export const focusedOption = (page: Page): Locator =>
   page.locator('[role="option"]:focus');
 
 /**
- * Chooses the option one step from the one already set, from the focused
- * listbox trigger, by keyboard alone. Radix focuses the chosen item as the
- * listbox opens and again once the popper has been positioned, so an arrow
- * key pressed between the two moves nothing: the press is repeated until the
- * highlight lands somewhere else.
+ * Moves the highlight one step through the open listbox and answers where it
+ * landed. Radix focuses the chosen item as the listbox opens and again once
+ * the popper has been positioned, so an arrow key pressed between the two
+ * moves nothing: the press is repeated until the highlight lands somewhere
+ * else.
  */
-export const chooseByKeyboard = async (
+export const stepThroughOptions = async (
   page: Page,
   step: 'ArrowDown' | 'ArrowUp',
-): Promise<void> => {
-  await page.keyboard.press('Enter');
+): Promise<string> => {
   await expect(focusedOption(page)).toHaveCount(1);
   const already = (await focusedOption(page).textContent()) ?? '';
   await expect(async () => {
@@ -313,6 +381,19 @@ export const chooseByKeyboard = async (
       timeout: 250,
     });
   }).toPass();
+  return (await focusedOption(page).textContent()) ?? '';
+};
+
+/**
+ * Chooses the option one step from the one already set, from the focused
+ * listbox trigger, by keyboard alone.
+ */
+export const chooseByKeyboard = async (
+  page: Page,
+  step: 'ArrowDown' | 'ArrowUp',
+): Promise<void> => {
+  await page.keyboard.press('Enter');
+  await stepThroughOptions(page, step);
   await page.keyboard.press('Enter');
   await expect(page.getByRole('listbox')).toHaveCount(0);
 };

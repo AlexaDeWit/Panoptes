@@ -1,7 +1,13 @@
 import { AxeBuilder } from '@axe-core/playwright';
 import { expect, type Page, test } from '@playwright/test';
 import { registeredChords } from './chords.js';
-import { menuItem, openMenu, withoutPickers } from './studio.fixtures.js';
+import {
+  handleOn,
+  menuItem,
+  nodeNamed,
+  openMenu,
+  withoutPickers,
+} from './studio.fixtures.js';
 
 const audit = async (
   page: Page,
@@ -102,6 +108,22 @@ test('the studio carries no violation while it shows a refusal', async ({
   );
 
   await audit(page, 'showing a refusal');
+});
+
+// Selecting an element shows the handles a flow is drawn from, which are the
+// one part of the canvas React Flow draws rather than the canvas package, so
+// they reach the page only in this state.
+test('the studio carries no violation with an element selected and its handles showing', async ({
+  page,
+}) => {
+  await page.goto('/');
+  await expect(page.getByTestId('canvas-container')).toBeVisible();
+
+  const reader = nodeNamed(page, /^Reader, actor/u);
+  await reader.click();
+  await expect(handleOn(reader, 'right')).toBeVisible();
+
+  await audit(page, 'showing a selected element and its handles');
 });
 
 // The palette is on the page at rest, so the audit above covers its controls

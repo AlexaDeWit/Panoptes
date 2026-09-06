@@ -1,3 +1,4 @@
+import { startFlow } from '../canvas/connecting.js';
 import { addPaletteElement, removeSelected } from '../canvas/edits.js';
 import type { PaletteKind } from '../canvas/elements.js';
 import { Action } from '../store/actions.js';
@@ -198,7 +199,9 @@ const table = {
     label: 'Start a flow',
     shortcuts: [bare('f')],
     inTextFields: false,
-    dispatch: pending(175),
+    dispatch: runs(() => {
+      startFlow();
+    }),
   },
   'select-tool': {
     id: 'select-tool',
