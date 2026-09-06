@@ -47,7 +47,18 @@ const licenceFile = 'LICENSE';
 
 const licenceName = 'LICENSE.liberation-fonts.txt';
 
-const wasmModule = resolve.resolve('@myriaddreamin/typst-ts-web-compiler/wasm');
+// Resolved from @panoptes/render, which declares the compiler, rather than
+// from this app, which no longer does (CODING.md, Dependencies and versions;
+// issue #210). The file staged beside the bundle is then the module of the
+// compiler build that render's pdf subpath inlines, which is the pairing
+// initSync needs.
+const fromRender = createRequire(
+  resolve.resolve('@panoptes/render/package.json'),
+);
+
+const wasmModule = fromRender.resolve(
+  '@myriaddreamin/typst-ts-web-compiler/wasm',
+);
 
 type RuntimeAsset = { readonly from: string; readonly to: string };
 
