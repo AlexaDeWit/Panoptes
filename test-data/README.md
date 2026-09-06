@@ -88,14 +88,18 @@ held to each other. `packages/model` owned the transcription and
 `packages/formats` pinned the same counts and vocabularies beside it, so a
 drift in an element description, an endpoint, or `outOfScope` passed both
 suites. Three assertions now hold the two to each other. `packages/model`
-regenerates it on every test run with `toMatchFileSnapshot` and reds where the
-fixture and the file differ. `packages/formats` compares the whole read of
+compares it against the fixture on every test run with `toMatchFileSnapshot`
+and reds where the two differ. `packages/formats` compares the whole read of
 `ecluse.json` against it, and compares again what a write of that read reads
 back.
 
 Regenerate it with `pnpm nx test @panoptes/model -- -u`, in the same commit as
 the change that moved it, and read the diff: it is what the model core holds
-of a real threat model.
+of a real threat model. A file snapshot is written where the file is absent,
+under the non-CI default, and rewritten where it differs under `-u`. CI
+writes in neither case: an absent file reds there instead. A reader's suite
+can be running in either of the two that do write, and the ordering that
+keeps it out of them is stated in [`CODING.md`](../CODING.md).
 
 `packages/render` reads it too, as the input its markdown register is
 rendered from, so this file is where a projection meets the model core
@@ -130,7 +134,7 @@ table of the 29 threats, then one section each. Not vendored. This repository
 generates it, from `ecluse.model.json` above read through `parseModel`.
 
 It is committed so a change to what the register writes arrives as a diff on
-a file rather than as a test that still passes. `packages/render` regenerates
+a file rather than as a test that still passes. `packages/render` compares
 it on every test run with `toMatchFileSnapshot`, and it is the only place the
 register's whole shape, escaping and prose handling included, is held against
 a production-scale model.
@@ -197,7 +201,7 @@ holds more than one, so they are also where a model of several diagrams is
 drawn at all.
 
 All are committed for the reason the registers above are, and gated the same
-way: `packages/render` regenerates them on every test run with
+way: `packages/render` compares them on every test run with
 `toMatchFileSnapshot` and reds where a file and the drawing differ.
 Regenerate them with `pnpm nx test @panoptes/render -- -u`, in the same commit
 as the change that moved them.
