@@ -6,12 +6,7 @@
     "outDir": "out-tsc/app",
     "tsBuildInfoFile": "out-tsc/app/tsconfig.app.tsbuildinfo",
     "lib": ["dom", "es2022"],
-    "types": [
-      "node",
-      "@nx/react/typings/cssmodule.d.ts",
-      "@nx/react/typings/image.d.ts",
-      "vite/client"
-    ],
+    "types": ["node", "vite/client"],
     "rootDir": "src",
     "module": "esnext",
     "moduleResolution": "bundler"

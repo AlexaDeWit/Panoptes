@@ -40,10 +40,8 @@ minimumReleaseAgeExclude:
   - '@nx/nx-win32-arm64-msvc@23.1.2'
   - '@nx/nx-win32-x64-msvc@23.1.2'
   - '@nx/playwright@23.1.2'
-  - '@nx/react@23.1.2'
   - '@nx/vite@23.1.2'
   - '@nx/vitest@23.1.2'
-  - '@nx/web@23.1.2'
   - '@nx/workspace@23.1.2'
   - '@testing-library/react@16.3.3'
   # oxlint 1.80.0 was published 2026-08-24, inside the window when adopted.
@@ -73,8 +71,6 @@ catalog:
   # accessibility gate, catching contrast, focus order and computed roles
   # that static analysis cannot see.
   '@axe-core/playwright': ^4.13.0
-  '@babel/core': ^8.0.0
-  '@babel/preset-react': ^8.0.0
   # The Typst compiler as a WebAssembly module, which is what puts PDF output
   # inside the CLI's single executable: no browser, no native addon, and
   # nothing fetched at run time (issue #34). The node compiler package of the
@@ -88,10 +84,8 @@ catalog:
   '@nx/eslint-plugin': 23.1.2
   '@nx/js': 23.1.2
   '@nx/playwright': 23.1.2
-  '@nx/react': 23.1.2
   '@nx/vite': 23.1.2
   '@nx/vitest': 23.1.2
-  '@nx/web': 23.1.2
   # Pinned exactly to the nixpkgs playwright-driver version: the browsers come
   # from the flake, and a driver of one version cannot run browsers installed
   # for another. The version-equality test in apps/studio-e2e reds a mismatch,
