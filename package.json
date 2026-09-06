@@ -16,16 +16,12 @@
     "format:check": "oxfmt --check"
   },
   "devDependencies": {
-    "@babel/core": "catalog:",
-    "@babel/preset-react": "catalog:",
     "@nx/esbuild": "catalog:",
     "@nx/eslint-plugin": "catalog:",
     "@nx/js": "catalog:",
     "@nx/playwright": "catalog:",
-    "@nx/react": "catalog:",
     "@nx/vite": "catalog:",
     "@nx/vitest": "catalog:",
-    "@nx/web": "catalog:",
     "@swc-node/register": "catalog:",
     "@swc/core": "catalog:",
     "@swc/helpers": "catalog:",

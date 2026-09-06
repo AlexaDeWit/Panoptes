@@ -173,24 +173,6 @@
       }
     }
   },
-  "generators": {
-    "@nx/react": {
-      "library": {
-        "style": "css",
-        "linter": "none",
-        "unitTestRunner": "vitest"
-      },
-      "application": {
-        "babel": true,
-        "style": "css",
-        "linter": "none",
-        "bundler": "vite"
-      },
-      "component": {
-        "style": "css"
-      }
-    }
-  },
   // The workspace version authority (issue #50). One fixed group, so every
   // manifest carries the same number and the CLI can stamp it without asking
   // which package it belongs to. The bump comes from the conventional-commit
