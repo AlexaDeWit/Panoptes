@@ -160,6 +160,16 @@ workspace TypeScript and wires format-on-save to the oxc extension
 (`oxc.oxc-vscode`), which formats through the repository's pinned oxfmt,
 so the editor and the format check inside `pnpm check` agree.
 
+### Publishing the studio
+
+[`pages.yml`](.github/workflows/pages.yml) builds the studio from `main` and
+deploys it to GitHub Pages each night at 05:17 UTC. It also accepts a manual
+dispatch from `main`, including for the first deployment. In the repository's
+Pages settings, select **GitHub Actions** as the build and deployment source
+before that first dispatch. The workflow reads the site's base path from
+GitHub, so both a project site and a later custom domain receive valid asset
+URLs without a separate build configuration.
+
 ### Packaging the CLI
 
 `nx build @panoptes/cli` bundles the CLI into one ESM file with every

@@ -1,14 +1,20 @@
 name: Set up toolchain
 description: >-
   Install the flake-pinned Nix, restore the Nix store, and restore the pnpm
-  store. One home for the SHA-pinned setup actions and the cache config, so
-  Renovate bumps each pin once.
+  store, with an optional frozen dependency install. One home for the
+  SHA-pinned setup actions and the cache config, so Renovate bumps each pin
+  once.
 
   Caching policy, following Écluse: restore everywhere, save only on main, one
   writer per key. A PR restores main's entries through GitHub's base-branch
   fallback and never saves.
 
 inputs:
+  install-dependencies:
+    description: >-
+      Whether to install the workspace dependencies from the frozen lockfile.
+      Jobs needing a deliberately different install keep that step themselves.
+    default: 'false'
   save-nix-store:
     description: >-
       Whether this job may save the Nix-store cache (only ever on main). Set
@@ -62,3 +68,15 @@ runs:
         key: pnpm-store-${{ runner.os }}-${{ hashFiles('flake.lock', 'pnpm-lock.yaml') }}
         restore-keys: |
           pnpm-store-${{ runner.os }}-
+
+    # cache-nix-action trims with `nix store gc` before saving. A dev shell is
+    # not a GC root by itself, so retain the closure the main-only save needs.
+    - name: Root the .#ci shell for the Nix-store cache save
+      if: inputs.save-nix-store == 'true' && github.ref == 'refs/heads/main'
+      shell: bash
+      run: nix develop .#ci --profile "$RUNNER_TEMP/panoptes-ci-profile" --command true
+
+    - name: Install dependencies
+      if: inputs.install-dependencies == 'true'
+      shell: bash
+      run: nix develop .#ci --command pnpm install --frozen-lockfile
