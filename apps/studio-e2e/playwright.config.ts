@@ -40,11 +40,14 @@ export default defineConfig({
     // by a factor of ten between two and four workers, so it is comparable
     // only at a worker count the config fixes rather than the host's core
     // count. One worker here, and the rest of the suite keeps its own
-    // parallelism.
+    // parallelism. The reading is comparable only where no other browser
+    // shares the host, so this project depends on the other and runs alone
+    // once the others are done rather than beside them.
     {
       name: 'frame-time',
       use: { ...devices['Desktop Chrome'] },
       testMatch: frameTimeFloor,
+      dependencies: ['chromium'],
       workers: 1,
       fullyParallel: false,
     },
