@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { initialState } from '../store/state.js';
 import { modelStore } from '../store/store.js';
 import { resetAnnouncements } from './announcements.js';
+import { resetConnecting, startFlow } from './connecting.js';
 import {
   boundaryElement,
   canvasModel,
@@ -26,6 +27,7 @@ const nextFrame = async (): Promise<void> => {
 const opened = (selection?: ElementId): void => {
   modelStore.setState({ ...initialState(canvasModel), selection }, true);
   resetAnnouncements();
+  resetConnecting();
 };
 
 const elementCount = (): number =>
@@ -157,6 +159,26 @@ describe('EditPalette', () => {
     await user.click(screen.getByRole('combobox', { name: 'Flow to' }));
     await user.click(screen.getByRole('option', { name: 'Studio' }));
     await user.click(screen.getByRole('button', { name: 'Connect' }));
+
+    expect(elementCount()).toBe(7);
+    expect(announced()).toBe('Added New flow, flow, from Reader to Studio.');
+  });
+
+  it('opens the chooser where the start-flow command started a flow', () => {
+    opened(readerElement);
+    startFlow();
+    render(<EditPalette />);
+
+    expect(screen.getByRole('listbox')).toBeDefined();
+  });
+
+  it('draws the flow a chosen target commits, with no second control pressed', async () => {
+    const user = userEvent.setup();
+    opened(readerElement);
+    startFlow();
+    render(<EditPalette />);
+
+    await user.click(screen.getByRole('option', { name: 'Studio' }));
 
     expect(elementCount()).toBe(7);
     expect(announced()).toBe('Added New flow, flow, from Reader to Studio.');

@@ -16,8 +16,10 @@ is called to assistive technology, `nodes.ts` turns the layout into React
 Flow's nodes and edges, and `changes.ts` turns what React Flow reports back
 into store actions and dispatches them. `elements.ts` builds the elements the
 palette adds, `edits.ts` is the command side of the same boundary, one
-function per edit a control asks for, `announcements.ts` carries what an edit
-did to the region that says it, `viewport.ts` is the arithmetic of the view,
+function per edit a control asks for, `connecting.ts` holds the flow a chord
+started until a target is chosen or the chooser closes, `announcements.ts`
+carries what an edit did to the region that says it, `viewport.ts` is the
+arithmetic of the view,
 whether a node is drawn inside the canvas and the viewport that fits a diagram
 into it, `view-commands.tsx` applies that to React Flow, and `palette.tsx` and
 `zoom-cluster.tsx` are the controls.
@@ -27,8 +29,15 @@ the grid spacing the canvas package's token module decides, so the lines scale
 with the viewport and a zoom reads as one rather than as a grid that stayed
 still. Its colour is handed over as `--xy-background-pattern-color` in the CSS
 module beside `diagram-canvas.tsx`, which is where the studio's own
-`--pn-colour-grid` reaches React Flow's pattern. What that colour is and why
-is the token module's
+`--pn-colour-grid` reaches React Flow's pattern. The two colours a connection
+handle is drawn in arrive the same way, as `--xy-handle-background-color` and
+`--xy-handle-border-color`: React Flow reads each of its colours from a
+property on the container before falling back to a `-default` it declares on
+`.react-flow` itself, so the name without that suffix is the one a value set
+above it reaches. The grid and the handles are what the studio colours in
+React Flow's own parts here. The resize control at a selected element's corner
+still wears React Flow's colour until #180 recolours it. What those colours are and why is the token
+module's
 ([the visual system](../../../../packages/canvas/README.md#the-visual-system)).
 
 The diagram's own colours arrive by the same route. What `diagram-canvas.tsx`
@@ -95,10 +104,32 @@ the region below, which speaks only for edits that landed.
   the pointer and on the selected one, so a diagram at rest is not covered in
   dots, and a handle that stays hidden is still a place to drop a flow, React
   Flow resolving the nearest handle within its connection radius rather than
-  hit testing the dot. Either way it is one `AddElement` carrying a flow with
-  both ends attached and no waypoints, so the layout routes it. An element
-  cannot be connected to itself: the layout resolves both ends of such a flow
-  to one handle and would draw nothing.
+  hit testing the dot. Which element is under the pointer is read in the CSS
+  module beside `diagram-canvas.tsx` rather than held as state, so hovering
+  costs no render of a canvas that rebuilds every node from the model.
+  Releasing over empty canvas draws nothing and costs no undo step: React Flow
+  reports a connection only where it resolved one, so `onConnect` is never
+  reached and nothing is dispatched. Nothing is created there either, the
+  epic's second wave holding quick-create back for the toolbox. Either way a
+  flow drawn is one `AddElement` carrying a flow with both ends attached and
+  no waypoints, so the layout routes it. An element cannot be connected to
+  itself: the layout resolves both ends of such a flow to one handle and would
+  draw nothing.
+- **Start a flow.** The chord the registry gives the start-flow command opens
+  the target chooser on the selected element, from wherever a person is and
+  with nothing in the palette clicked ([the commands](../commands/README.md)).
+  The chooser is the palette's own listbox, so the arrow keys and its
+  typeahead move the choice, Enter commits and Escape cancels. What tells the
+  two apart is `connecting.ts`: opened by the command it is a flow already in
+  progress, and the choice draws it, where opened by hand it names a target
+  the Connect control then draws between. Escape reaches Radix rather than the
+  registry, an open overlay owning its own keys, so cancelling a flow leaves
+  the selection where it was rather than clearing it. A selection no flow can
+  run from starts nothing, the chooser being disabled there. The listbox
+  carries no value while a flow is in progress, so a fresh flow opens with
+  nothing chosen and the same target twice over is two flows. The toolbox
+  replaces the palette in issue 175 and takes the chooser with it; what stays
+  is the command.
 - **Delete.** Delete or Backspace removes the selected element or flow as one
   `RemoveElement`. The command registry binds the two keys for the whole page
   ([the commands](../commands/README.md)), and the canvas binds them again for
@@ -209,12 +240,14 @@ in a live region of its own and pans a newly focused element into view.
 Every edit has a keyboard path of its own, and every one of them is a
 registered command with its chord shown beside it ([the
 commands](../commands/README.md)). Adding is a button or the tool's own
-letter. Connecting is selecting an element on the canvas, then choosing the
-other end in the listbox beside those buttons and pressing Connect, which is
-why the source is the selection rather than a mode to enter and leave.
-Deleting is the Delete or Backspace key, from anywhere in the studio. The
-palette's two connecting controls are disabled while nothing is selected, so
-a keyboard user passes no dead stop between the buttons and the canvas.
+letter. Connecting is selecting an element on the canvas and then pressing the
+start-flow chord, which opens the chooser on it and draws the flow the choice
+commits, which is why the source is the selection rather than a mode to enter
+and leave. The same listbox reached by hand still names a target for the
+Connect control beside it. Deleting is the Delete or Backspace key, from
+anywhere in the studio. The palette's two connecting controls are disabled
+while nothing is selected, so a keyboard user passes no dead stop between the
+buttons and the canvas.
 
 ## What is not attempted here
 
@@ -232,6 +265,10 @@ a keyboard user passes no dead stop between the buttons and the canvas.
 - Nothing pans to a flow that was just connected, and nothing pans a selected
   flow out from under the threat panel: a flow has no box, so whether it is in
   view is not the question a node's is.
+- A connection released over empty canvas cancels and creates nothing. Drawing
+  an element there and attaching the flow to it is quick-create, which the
+  epic holds for its second wave and names an alias of the toolbox rather than
+  a command of its own.
 - Selection is single. Multi-select and box select are unbound, because the
   store holds one selection and a plural gesture has no plural action behind
   it.

@@ -59,7 +59,6 @@ describe('the command registry', () => {
       ]),
     ).toEqual([
       ['select-all', 156],
-      ['start-flow', 175],
       ['select-tool', 175],
       ['hand-tool', 175],
     ]);

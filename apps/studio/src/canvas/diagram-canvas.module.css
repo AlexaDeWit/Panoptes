@@ -6,10 +6,15 @@
   border-radius: var(--pn-radius);
   background: var(--pn-colour-canvas);
 
-  /* React Flow's background component reads its pattern colour from this
-     property, so the grid is handed the token here rather than as a literal
-     in the component. */
+  /* React Flow reads each of its own colours from a property here before
+     falling back to a `-default` it declares on `.react-flow` itself, so a
+     token handed over on this container reaches the part and the `-default`
+     pair is left alone: setting those here would sit above the declaration
+     that shadows them. The grid, and the two colours a connection handle is
+     drawn in, are the parts the studio owns rather than the component. */
   --xy-background-pattern-color: var(--pn-colour-grid);
+  --xy-handle-background-color: var(--pn-colour-accent);
+  --xy-handle-border-color: var(--pn-colour-badge-ground);
 }
 
 /* React Flow names its own parts with global classes, so the studio reaches
@@ -54,6 +59,10 @@
   visibility: hidden;
 }
 
+/* Which element a gesture is aimed at: the one under the pointer, and the
+   one selected. Hover is read here rather than held as state, so it costs no
+   render of a controlled canvas that rebuilds every node. Issue 180 draws
+   more on the same two states, and this is where they are named. */
 .canvas :global(.react-flow__node:hover .react-flow__handle.connectable),
 .canvas :global(.react-flow__node.selected .react-flow__handle.connectable) {
   visibility: visible;

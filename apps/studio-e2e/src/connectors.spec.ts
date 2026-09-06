@@ -1,0 +1,157 @@
+import { expect, test } from '@playwright/test';
+import { registeredChords } from './chords.js';
+import {
+  connectTarget,
+  dragOnto,
+  dragTo,
+  editAnnouncement,
+  emptyCanvasPoint,
+  handleOn,
+  menuItem,
+  nodeNamed,
+  openEcluse,
+  openMenu,
+  openPlaceholder,
+  beforeCanvas,
+  runFromMenu,
+  selectByKeyboard,
+  selectNode,
+  stepThroughOptions,
+} from './studio.fixtures.js';
+
+const reader = /^Reader, actor/u;
+
+const studio = /^Studio, process/u;
+
+const proxy = /^Écluse proxy, process/u;
+
+const flows = '.react-flow__edge';
+
+test('an element shows its handles under the pointer and hides them again', async ({
+  page,
+}) => {
+  await openPlaceholder(page);
+  const handle = handleOn(nodeNamed(page, reader), 'right');
+  const away = await emptyCanvasPoint(page);
+
+  await expect(handle).toBeHidden();
+
+  await nodeNamed(page, reader).hover();
+
+  await expect(handle).toBeVisible();
+
+  await page.mouse.move(away.x, away.y);
+
+  await expect(handle).toBeHidden();
+});
+
+test('a selected element keeps its handles with the pointer elsewhere', async ({
+  page,
+}) => {
+  await openPlaceholder(page);
+  const away = await emptyCanvasPoint(page);
+
+  await selectNode(page, reader);
+  await page.mouse.move(away.x, away.y);
+
+  await expect(handleOn(nodeNamed(page, reader), 'right')).toBeVisible();
+  await expect(handleOn(nodeNamed(page, studio), 'left')).toBeHidden();
+});
+
+test('a flow is drawn by dragging from one handle to another', async ({
+  page,
+}) => {
+  await openPlaceholder(page);
+
+  await nodeNamed(page, reader).hover();
+  await dragOnto(
+    page,
+    handleOn(nodeNamed(page, reader), 'right'),
+    handleOn(nodeNamed(page, studio), 'left'),
+  );
+
+  await expect(page.locator(flows)).toHaveCount(1);
+  await expect(editAnnouncement(page)).toHaveText(
+    'Added New flow, flow, from Reader to Studio.',
+  );
+});
+
+test('a drag released over empty canvas draws nothing and costs no undo step', async ({
+  page,
+}) => {
+  await openPlaceholder(page);
+  await page.getByRole('button', { name: 'New actor', exact: true }).click();
+  await expect(nodeNamed(page, /^New actor, actor/u)).toHaveCount(1);
+
+  await nodeNamed(page, reader).hover();
+  await dragTo(
+    page,
+    handleOn(nodeNamed(page, reader), 'right'),
+    await emptyCanvasPoint(page),
+  );
+
+  await expect(page.locator(flows)).toHaveCount(0);
+
+  await runFromMenu(page, 'Undo');
+
+  await expect(nodeNamed(page, /^New actor, actor/u)).toHaveCount(0);
+  await openMenu(page);
+  await expect(menuItem(page, 'Undo')).toHaveAttribute('aria-disabled', 'true');
+});
+
+test('the start-flow chord draws a flow from the selected element', async ({
+  page,
+}) => {
+  await openEcluse(page);
+  await selectByKeyboard(page, proxy);
+
+  await page.keyboard.press(registeredChords['start-flow'][0]);
+  await expect(page.getByRole('listbox')).toBeVisible();
+  const chosen = await stepThroughOptions(page, 'ArrowDown');
+  await page.keyboard.press('Enter');
+
+  await expect(page.locator(flows)).toHaveCount(21);
+  await expect(editAnnouncement(page)).toHaveText(
+    `Added New flow, flow, from Écluse proxy to ${chosen}.`,
+  );
+});
+
+test('escape cancels a flow the chord started and leaves the selection', async ({
+  page,
+}) => {
+  await openEcluse(page);
+  const selected = await selectByKeyboard(page, proxy);
+
+  await page.keyboard.press(registeredChords['start-flow'][0]);
+  await expect(page.getByRole('listbox')).toBeVisible();
+  await page.keyboard.press(registeredChords['clear-selection'][0]);
+
+  await expect(page.getByRole('listbox')).toHaveCount(0);
+  await expect(page.locator(flows)).toHaveCount(20);
+  await expect(selected).toHaveClass(/selected/u);
+});
+
+test('a flow is drawn by keyboard alone, from the selected element', async ({
+  page,
+}) => {
+  await openPlaceholder(page);
+
+  await beforeCanvas(page).focus();
+  await page.keyboard.press('Tab');
+  await expect(nodeNamed(page, reader)).toBeFocused();
+  await page.keyboard.press('Enter');
+
+  await page.keyboard.press('Shift+Tab');
+  await expect(beforeCanvas(page)).toBeFocused();
+  await page.keyboard.press('Shift+Tab');
+  await expect(connectTarget(page)).toBeFocused();
+  await page.keyboard.press('Enter');
+  await page.getByRole('option', { name: 'Studio' }).press('Enter');
+  await page.keyboard.press('Tab');
+  await page.getByRole('button', { name: 'Connect' }).press('Enter');
+
+  await expect(page.locator(flows)).toHaveCount(1);
+  await expect(editAnnouncement(page)).toHaveText(
+    'Added New flow, flow, from Reader to Studio.',
+  );
+});

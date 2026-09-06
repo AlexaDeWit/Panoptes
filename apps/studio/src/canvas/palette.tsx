@@ -6,6 +6,11 @@ import { paletteCommands } from '../commands/registry.js';
 import { useModelStore } from '../store/store.js';
 import { LiveRegion } from '../ui/live-region.js';
 import { useAnnouncement } from './announcements.js';
+import {
+  chooserOpened,
+  commitFlowTarget,
+  useConnecting,
+} from './connecting.js';
 import { connectElements } from './edits.js';
 import { flowEnds, paletteKinds, paletteNames } from './elements.js';
 import { currentLayout, selectedElement } from './layout.js';
@@ -26,6 +31,14 @@ import styles from './palette.module.css';
  * one of the elements a flow runs between, and the listbox offers only those,
  * so neither end can be a trust boundary, a text note or a flow.
  *
+ * The listbox is the one chooser and it is reached two ways. Opened by hand
+ * it names a target and the Connect control draws the flow, which is two
+ * steps because a person clicking a listbox has not said they want a flow.
+ * Opened by the start-flow command it is a flow already in progress, held by
+ * `connecting.ts`, so the choice commits it and the listbox carries no value
+ * while that is what it is: a fresh flow has no target chosen, and the same
+ * target twice over is two flows.
+ *
  * The region is the studio's own `LiveRegion` ([the studio's
  * UI](../ui/README.md)), named so a screen reader's landmark list says which
  * region it reached. What it says is keyed by the announcement's own count,
@@ -38,6 +51,7 @@ export function EditPalette() {
   const selection = useModelStore(selectedElement);
   const announcement = useAnnouncement();
   const [target, setTarget] = useState<ElementId | undefined>(undefined);
+  const connecting = useConnecting();
   const triggerId = useId();
 
   const ends = flowEnds(layout);
@@ -66,10 +80,15 @@ export function EditPalette() {
           Flow to
         </label>
         <Select.Root
+          onOpenChange={chooserOpened}
           onValueChange={(value) => {
-            setTarget(targets.find((node) => node.id === value)?.id);
+            const picked = targets.find((node) => node.id === value)?.id;
+            if (picked !== undefined && !commitFlowTarget(picked)) {
+              setTarget(picked);
+            }
           }}
-          value={target ?? ''}
+          open={connecting.open}
+          value={connecting.from === undefined ? (target ?? '') : ''}
         >
           <Select.Trigger
             className={styles.trigger}
