@@ -7,6 +7,7 @@ import {
   FileLifecycle,
   StudioFailure,
   initialState,
+  placeholderModel,
   type State,
 } from './state.js';
 import {
@@ -29,6 +30,7 @@ type StudioActionTag =
   | 'Select'
   | 'Opened'
   | 'Saved'
+  | 'Closed'
   | 'ReadFailed'
   | 'FileRefused';
 
@@ -120,6 +122,7 @@ const studioActions: ActionsByTag<StudioActionTag> = {
     divergences: [],
   }),
   Saved: Action.Saved({ name: 'model.yaml', source: nativeSource }),
+  Closed: Action.Closed(),
   ReadFailed: Action.ReadFailed({
     name: 'model.yaml',
     failure: ReadFailure.MalformedText({ message: 'not YAML' }),
@@ -294,6 +297,24 @@ describe('the file lifecycle', () => {
     const opened = reduce(start, studioActions.Opened);
     const working = reduce(opened, applied.AddElement);
     expect(reduce(working, Action.Undo()).file).toBe(opened.file);
+  });
+
+  it('closes back to the state the studio booted in, keeping nothing of the file', () => {
+    const working = reduce(
+      withHistory,
+      Action.Select({ elementId: actorElement }),
+    );
+    expect(working.past).toHaveLength(1);
+    expect(working.future).toHaveLength(1);
+
+    const closed = reduce(working, Action.Closed());
+
+    expect(closed.file).toEqual(FileLifecycle.NoFile());
+    expect(closed.present).toBe(placeholderModel);
+    expect(closed.saved).toBe(placeholderModel);
+    expect(closed.past).toEqual([]);
+    expect(closed.future).toEqual([]);
+    expect(closed.selection).toBeUndefined();
   });
 });
 

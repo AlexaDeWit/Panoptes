@@ -9,7 +9,23 @@
   padding: var(--pn-space-4);
 }
 
+/* The heading names the page for a screen reader and for the audit that asks
+   every page for one. It is out of the page rather than merely invisible, so
+   the diagram keeps the width a title bar would take. */
 .title {
-  margin: 0 0 var(--pn-space-4);
-  font-size: 1.125rem;
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+/* What the chrome overlays: the menu is positioned against this box, so it
+   sits over the canvas rather than beside it. */
+.stage {
+  position: relative;
 }

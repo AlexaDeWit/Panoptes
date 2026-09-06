@@ -10,11 +10,17 @@ import {
   type Platform,
 } from './shortcuts.js';
 
-/** Opening and saving, which reach the file bridge rather than the store. */
+/**
+ * Opening, saving and closing, which reach the file bridge and the session
+ * around it rather than the store alone. `close` asks rather than closes
+ * where the model has changes in no file: the reducer is total and cannot
+ * refuse, so the guard sits with the session that holds the answer.
+ */
 export type FileCommands = {
   open(): void;
   save(): void;
   saveAs(): void;
+  close(): void;
 };
 
 /** Moving the canvas, which is React Flow's viewport rather than the model. */
@@ -113,7 +119,9 @@ const table = {
     label: 'Close the file',
     shortcuts: [modShift('x')],
     inTextFields: false,
-    dispatch: pending(174),
+    dispatch: runs((surface) => {
+      surface.files.close();
+    }),
   },
   undo: {
     id: 'undo',

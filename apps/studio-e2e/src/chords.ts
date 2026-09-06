@@ -33,7 +33,6 @@ export const registeredChords = {
 
 /** The commands whose surface has not landed, and the chord each claims. */
 export const chordsWaitingOnASurface = [
-  registeredChords['close-file'][0],
   registeredChords['select-all'][0],
   registeredChords['start-flow'][0],
   registeredChords['select-tool'][0],

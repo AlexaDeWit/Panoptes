@@ -15,7 +15,12 @@ export function recordingSurface(): RecordingSurface {
   return {
     asked,
     surface: {
-      files: { open: note('open'), save: note('save'), saveAs: note('saveAs') },
+      files: {
+        open: note('open'),
+        save: note('save'),
+        saveAs: note('saveAs'),
+        close: note('close'),
+      },
       view: {
         zoomIn: note('zoomIn'),
         zoomOut: note('zoomOut'),

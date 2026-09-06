@@ -8,9 +8,12 @@ import {
 import {
   beforeCanvas,
   canvasSettled,
+  closeMenu,
   elementNodes,
+  menuItem,
   nodeNamed,
   openEcluse,
+  openMenu,
   openPlaceholder,
   selectNode,
   threatPanel,
@@ -136,9 +139,11 @@ test('opening is one chord, through the picker the browser offers', async ({
   await (await chooser).setFiles(vendored('test-data/panoptes/ecluse.yaml'));
 
   await expect(page.getByTestId('failure-notice')).toBeEmpty();
+  await openMenu(page);
   await expect(page.getByTestId('file-state')).toHaveText(
     'ecluse.yaml, Panoptes YAML, no unsaved changes',
   );
+  await closeMenu(page);
   await canvasSettled(page);
   await expect(elementNodes(page)).toHaveCount(18);
 });
@@ -156,9 +161,11 @@ test('a command still waiting on its surface claims its chord and changes nothin
 
   await expect(elementNodes(page)).toHaveCount(2);
   await expect(reader).toHaveClass(/selected/u);
+  await openMenu(page);
   await expect(page.getByTestId('file-state')).toHaveText(
     'No file, Panoptes YAML, no unsaved changes',
   );
+  await closeMenu(page);
   expect(await viewportTransform(page)).toBe(settled);
 });
 
@@ -185,9 +192,11 @@ test('a shortcut waits while a name is being typed, and saving and undo do not',
   await title.focus();
   await page.keyboard.press(registeredChords.undo[0]);
 
+  await openMenu(page);
   await expect(page.getByTestId('file-state')).toHaveText(
     'threat-model.yaml, Panoptes YAML, unsaved changes',
   );
+  await closeMenu(page);
   await expect(
     threatPanel(page).getByRole('textbox', { name: 'Title' }),
   ).toHaveCount(0);
@@ -211,26 +220,10 @@ test('escape leaves a refused draft in the field it is corrected in', async ({
   await expect(reader).toHaveClass(/selected/u);
 });
 
-test('every control says which key runs it, to a pointer and to a reader alike', async ({
+test('every control says which key runs it: beside a menu item, and as a note beside a bare button', async ({
   page,
 }) => {
   await openPlaceholder(page);
-
-  const save = await shortcutShown(
-    page,
-    page.getByRole('button', { name: 'Save', exact: true }),
-  );
-  expect(save).toEqual({
-    tooltip: 'Ctrl+S',
-    keyShortcuts: 'Control+S',
-    description: 'Shortcut: Ctrl+S',
-  });
-
-  const undo = await shortcutShown(
-    page,
-    page.getByRole('button', { name: 'Undo' }),
-  );
-  expect(undo.keyShortcuts).toBe('Control+Z');
 
   const actor = await shortcutShown(
     page,
@@ -241,4 +234,16 @@ test('every control says which key runs it, to a pointer and to a reader alike',
     keyShortcuts: 'A',
     description: 'Shortcut: A',
   });
+
+  await openMenu(page);
+
+  await expect(menuItem(page, 'Save')).toHaveText('SaveCtrl+S');
+  await expect(menuItem(page, 'Save')).toHaveAttribute(
+    'aria-keyshortcuts',
+    'Control+S',
+  );
+  await expect(menuItem(page, 'Undo')).toHaveAttribute(
+    'aria-keyshortcuts',
+    'Control+Z',
+  );
 });

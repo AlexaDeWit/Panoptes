@@ -58,7 +58,6 @@ describe('the command registry', () => {
         command.dispatch.kind === 'pending' ? command.dispatch.issue : 0,
       ]),
     ).toEqual([
-      ['close-file', 174],
       ['select-all', 156],
       ['start-flow', 175],
       ['select-tool', 175],

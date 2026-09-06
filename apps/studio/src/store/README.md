@@ -26,10 +26,12 @@ and no immutable snapshot to push onto a stack.
   new models sharing everything they did not change, so a snapshot is cheap.
 - `actions.ts` is the `Action` union, an Effect `Data.taggedEnum`. Nine tags
   carry a `@panoptes/model` operation and its arguments; the rest are undo,
-  redo, selection, the two ends of the file lifecycle, and the two ways the
+  redo, selection, the three ends of the file lifecycle, and the two ways the
   file path refuses. `Saved` names a file as `Opened` does, because a first
   save is a save-as, and folding both into `file` keeps "this model lives in
-  this file" one fact.
+  this file" one fact. `Closed` is the third: the studio goes back to the
+  state it booted in, placeholder model and all, so nothing of the file that
+  was open survives for a later save to merge onto.
 - `reducer.ts` is the one pure function, beside the private helpers its arms
   share. It is total: an operation the model refuses leaves the present and
   both stacks alone and records the refusal in `lastFailure`, so no dispatch
@@ -50,8 +52,9 @@ Selection and the file lifecycle stay out of the undo stacks, so an undo moves
 the model and leaves the user where they were. A removal clears a selection
 that names the element it removed, so `selection` dangles only where a
 dispatch selected an id the model never held. Being total, the reducer cannot
-refuse `Opened` over unsaved work, so the guard on that, and the one on
-closing the tab, belong in the view ([the file bridge](../files/README.md)).
+refuse `Opened` or `Closed` over unsaved work, so the guards on those, and the
+one on closing the tab, belong in the view ([the file
+bridge](../files/README.md)).
 
 `FileLifecycle.Opened` carries the file's name and its `RetainedSource`: the
 format it was read as, and the wire document that read produced. The document

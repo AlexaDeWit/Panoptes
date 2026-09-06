@@ -20,11 +20,13 @@ import type { RetainedSource } from './state.js';
  * Everything that can change the studio's state. Nine tags carry a model
  * operation and nothing else, each holding exactly the arguments that
  * operation takes, so the reducer applies one and folds its answer. The
- * remaining seven are the studio's own: the two history moves, selection,
- * the two ends of the file lifecycle, and the two ways the file path
+ * remaining eight are the studio's own: the two history moves, selection,
+ * the three ends of the file lifecycle, and the two ways the file path
  * refuses. `Opened` and `Saved` both name a file, because a first save is a
  * save-as and settles which file the model lives in, and both carry the
- * source a later save merges onto.
+ * source a later save merges onto. `Closed` is the other end: the studio
+ * goes back to the state it booted in, so nothing of the file that was open
+ * is left behind for the next save to merge onto.
  *
  * `ReadFailed` and `FileRefused` are how a failure outside the model
  * reaches the state: the reducer records it, so the view that asked for the
@@ -60,6 +62,7 @@ export type Action = Data.TaggedEnum<{
     readonly divergences: readonly Divergence[];
   };
   Saved: { readonly name: string; readonly source: RetainedSource };
+  Closed: {};
   ReadFailed: {
     readonly name: string;
     readonly failure: ReadFailure | DetectionFailure;

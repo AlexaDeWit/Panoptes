@@ -226,4 +226,19 @@ describe('saving', () => {
     expect(written).toEqual([]);
     expect(downloads).toEqual(['other.yaml']);
   });
+
+  it('forgets it when the file is released, so a later save writes nowhere near it', async () => {
+    const written: string[] = [];
+    vi.stubGlobal('showOpenFilePicker', () =>
+      Promise.resolve([handleFor('model.json', '{}', written)]),
+    );
+    const bridge = await freshBridge();
+    await bridge.open(1024);
+
+    bridge.release();
+    await bridge.save('threat-model.yaml', 'a: 1');
+
+    expect(written).toEqual([]);
+    expect(downloads).toEqual(['threat-model.yaml']);
+  });
 });

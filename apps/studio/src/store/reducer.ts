@@ -18,6 +18,7 @@ import {
   FileLifecycle,
   StudioFailure,
   initialState,
+  placeholderModel,
   type State,
 } from './state.js';
 
@@ -62,6 +63,7 @@ export function reduce(state: State, action: Action): State {
       file: FileLifecycle.Opened({ name, source }),
       lastFailure: undefined,
     }),
+    Closed: () => initialState(placeholderModel),
     ReadFailed: ({ name, failure }) => ({
       ...state,
       lastFailure: StudioFailure.Read({ name, failure }),

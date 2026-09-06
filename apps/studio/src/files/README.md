@@ -30,19 +30,40 @@ projects, which is where a loss report comes from. A read reports too: a wire
 schema drops every key it does not declare, and the retained document has lost
 them as well, so no later save can say what became of them. Both are held by
 the component, each describing one crossing of the file boundary rather than
-the model, and each stands until a save starts or an open lands: an open that
-was refused leaves the report alone, nothing having crossed.
+the model, and each stands until a save starts, an open lands, or the file is
+closed: an open that was refused leaves the report alone, nothing having
+crossed, and a close drops it because the file it describes is gone.
 
-`file-commands.ts` holds the three commands as one session the app owns
-rather than handlers a control closes over: Open, Save and Save as are
-registered commands ([the commands](../commands/README.md)), so a chord and a
-button run the same three and the report one of them produces is the one the
-view beside them shows. Each reads the store as it runs rather than closing
-over a render, which is what lets the three be built once. The reducer is
-total and cannot refuse an open over work in no file, so the session asks
-first.
+`file-commands.ts` holds the four commands as one session the app owns
+rather than handlers a control closes over: Open, Save, Save as and Close the
+file are registered commands ([the commands](../commands/README.md)), so a
+chord and a menu item run the same four and the report one of them produces is
+the one the view beside them shows. Each reads the store as it runs rather than
+closing over a render, which is what lets the four be built once. The reducer
+is total and cannot refuse an open or a close over work in no file, so the
+session asks first.
 
-`file-bar.tsx` mounts the rest: the controls, what file the model lives in
-and whether it holds everything on screen, the last refusal, and the report.
-It holds the fallback picker's input, which only a component can, and the
-guard on closing the tab, armed by the same unsaved state the asking reads.
+Closing asks in the studio's own words rather than in a dialog, no modal
+dialog being one of this milestone's rules. The session holds the question as
+state, `closing`, and the menu draws it as a second press on the same item:
+Close the file becomes Discard the changes and close, with Keep the file open
+beside it. The state is the session's rather than the menu's so that the chord
+asks the same question, opening the menu on it. Answering either way takes the
+question back, and so does dismissing the menu, and so does the model going
+clean underneath it: a save that lands, or an undo back to the saved model,
+leaves nothing to lose and no question to ask.
+
+`menu.tsx` mounts the rest: the burger button over the top left of the canvas,
+the file and edit commands, and what file the model lives in and whether it
+holds everything on screen. It holds the fallback picker's input, which only a
+component can, and the guard on closing the tab, armed by the same unsaved
+state the asking reads.
+
+The report of the last crossing and the failure notice are the menu's chrome
+rather than its items, drawn under the button and over the canvas. Both are the
+studio's shared live region ([the controls](../ui/README.md)), and neither can
+go inside the menu: a menu owns items and groups of them, and the axe run reads
+a live region there as a menu that has lost its shape. Standing outside it is
+also what lets each announce as it arrives rather than only once the menu is
+opened, which is what a save through a chord needs. The open path still asks
+through the browser's own confirmation, which is the last modal dialog left.
