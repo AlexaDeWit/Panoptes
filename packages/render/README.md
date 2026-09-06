@@ -186,10 +186,10 @@ to fail.
 ## Typst source as a PDF
 
 `compilePdf(source, assets)`, on the `@panoptes/render/pdf` subpath, is the
-compile step: the bytes of a PDF, or a sentence saying why there are none.
-It sits on a subpath rather than the main entry because it pulls in 28 MB of
-WebAssembly, which a caller drawing an SVG or writing a register has no use
-for.
+compile step: the bytes of a PDF, or a `PdfFailure` saying why there are
+none. It sits on a subpath rather than the main entry because it pulls in 28
+MB of WebAssembly, which a caller drawing an SVG or writing a register has no
+use for.
 
 `assets` is where the bytes come from, since this package holds none: `wasm`
 is the Typst WebAssembly module, and `fonts` are the faces, added to the
@@ -210,11 +210,19 @@ guard and reaches an initialisation that returns without looking at the
 bytes. Either way the first module a process starts is the one it keeps, so a
 second cannot replace it.
 
-A refusal is a sentence rather than a throw. The compiler reports a failure
-by throwing a string holding Rust's own debug rendering of its diagnostics,
-of which a reader needs the message and the hints, joined with semicolons.
-The byte offsets and empty traces beside them are dropped, and a rendering
-this does not recognize is reported as it stands rather than swallowed.
+A refusal is a value rather than a throw, and a tagged one this package owns
+([`CODING.md`](../../CODING.md), Error handling). `PdfFailure.Refused`
+carries the compiler's sentences in the order it reported them, and
+`PdfFailure.NoDocument` is the compiler answering with something that is not
+bytes. Whoever calls words them: `apps/cli` joins the sentences with
+semicolons into the one line a command prints, and the studio matches on the
+tag for its own notice.
+
+Those sentences come out of a throw. The compiler reports a failure by
+throwing a string holding Rust's own debug rendering of its diagnostics, of
+which a reader needs the message and the hints. The byte offsets and empty
+traces beside them are dropped, and a rendering this does not recognize is
+carried as it stands rather than swallowed.
 
 ## The goldens
 

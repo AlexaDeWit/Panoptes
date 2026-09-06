@@ -3,6 +3,9 @@ import {
   TypstCompilerBuilder,
 } from '@myriaddreamin/typst-ts-web-compiler';
 import { Either } from 'effect';
+import { PdfFailure } from './pdf-failures.js';
+
+export { PdfFailure } from './pdf-failures.js';
 
 const mainFile = '/main.typ';
 
@@ -31,7 +34,8 @@ export type PdfAssets = {
 };
 
 /**
- * Typst source compiled to a PDF, or a sentence saying why it was not.
+ * Typst source compiled to a PDF, or a {@link PdfFailure} saying why it was
+ * not.
  *
  * The compiler is the Typst WebAssembly build, given no access model, so it
  * has no filesystem and no package registry: the source has to carry
@@ -49,15 +53,15 @@ export type PdfAssets = {
  *
  * Nothing here throws. The WebAssembly module reports a compile failure by
  * throwing a string holding Rust's own debug rendering of its diagnostics,
- * which comes back on the left as a sentence for a user to read. What that
+ * which comes back on the left as the sentences a reader needs. What that
  * rendering carries and a user needs is the message and the hints; the byte
  * offsets and the empty traces beside them are not, and a rendering this
- * does not recognize is reported as it stands rather than swallowed.
+ * does not recognize is carried as it stands rather than swallowed.
  */
 export async function compilePdf(
   source: string,
   assets: PdfAssets,
-): Promise<Either.Either<Uint8Array, string>> {
+): Promise<Either.Either<Uint8Array, PdfFailure>> {
   try {
     const compiler = await compilerWith(assets);
     compiler.add_source(mainFile, source);
@@ -69,9 +73,9 @@ export async function compilePdf(
     );
     return artifact instanceof Uint8Array
       ? Either.right(artifact)
-      : Either.left('the Typst compiler produced no PDF');
+      : Either.left(PdfFailure.NoDocument());
   } catch (error) {
-    return Either.left(`cannot compile the PDF: ${refusalOf(error)}`);
+    return Either.left(PdfFailure.Refused({ sentences: refusalOf(error) }));
   }
 }
 
@@ -93,12 +97,11 @@ function started(wasm: Uint8Array): void {
   initialised.add(wasm);
 }
 
-function refusalOf(error: unknown): string {
+function refusalOf(error: unknown): readonly string[] {
   const reported = typeof error === 'string' ? sentencesIn(error) : [];
-  if (reported.length > 0) {
-    return reported.join('; ');
-  }
-  return error instanceof Error ? error.message : String(error);
+  return reported.length > 0
+    ? reported
+    : [error instanceof Error ? error.message : String(error)];
 }
 
 function sentencesIn(reported: string): readonly string[] {

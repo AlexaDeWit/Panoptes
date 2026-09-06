@@ -70,6 +70,16 @@ describe('Typst source compiled to a PDF', () => {
   );
 
   it(
+    'joins what the compiler refused into the one line a command prints',
+    async () => {
+      expect(refusal(await compiled('#no-such-function()'))).toBe(
+        'cannot compile the PDF: unknown variable: no-such-function; if you meant to use subtraction, try adding spaces around the minus signs: `no - such - function`',
+      );
+    },
+    compileTimeout,
+  );
+
+  it(
     'reports assets it cannot read as a reason to show a user',
     async () => {
       const outcome = await compilePdf(

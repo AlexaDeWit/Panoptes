@@ -1,5 +1,6 @@
 import {
   compilePdf as compileTypst,
+  PdfFailure,
   type PdfAssets,
 } from '@panoptes/render/pdf';
 import { Either } from 'effect';
@@ -35,6 +36,10 @@ export const typstAssets = join(import.meta.dirname, 'assets');
  * What a directory holds is read once per process. That spares a second
  * compile the 28 MB WebAssembly module, and it is what lets the subpath's
  * guard see that the process has already started from these bytes.
+ *
+ * The subpath answers with a tagged failure, which this side words: a
+ * command prints one line, so the compiler's sentences are joined with
+ * semicolons behind the same opening the unreadable directory gets.
  */
 export function compilePdf(
   source: string,
@@ -43,7 +48,22 @@ export function compilePdf(
   return Either.match(bytesIn(assets), {
     onLeft: (reason) =>
       Promise.resolve(Either.left(`cannot compile the PDF: ${reason}`)),
-    onRight: (found) => compileTypst(source, found),
+    onRight: (found) => typeset(source, found),
+  });
+}
+
+async function typeset(
+  source: string,
+  assets: PdfAssets,
+): Promise<Either.Either<Uint8Array, string>> {
+  return Either.mapLeft(await compileTypst(source, assets), reported);
+}
+
+function reported(failure: PdfFailure): string {
+  return PdfFailure.$match(failure, {
+    Refused: ({ sentences }) =>
+      `cannot compile the PDF: ${sentences.join('; ')}`,
+    NoDocument: () => 'the Typst compiler produced no PDF',
   });
 }
 
