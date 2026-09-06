@@ -48,6 +48,53 @@ test('an added element takes focus, is announced, and undo takes it back', async
   await expect(nodeNamed(page, /^New actor, actor/u)).toHaveCount(0);
 });
 
+test('a flow is drawn by dragging from one handle to another', async ({
+  page,
+}) => {
+  await openPlaceholder(page);
+  const actor = nodeNamed(page, /^Actor, actor/u);
+  const store = nodeNamed(page, /^Store, store/u);
+
+  await actor.hover();
+  await dragOnto(
+    page,
+    actor.locator('[data-handleid="right"]'),
+    store.locator('[data-handleid="left"]'),
+  );
+
+  await expect(page.locator('.react-flow__edge')).toHaveCount(2);
+  await expect(editAnnouncement(page)).toHaveText(
+    'Added New flow, flow, from Actor to Store.',
+  );
+});
+
+test('a flow is drawn by keyboard alone, from the selected element', async ({
+  page,
+}) => {
+  await openPlaceholder(page);
+
+  await beforeCanvas(page).focus();
+  await page.keyboard.press('Tab');
+  await page.keyboard.press('Tab');
+  await expect(nodeNamed(page, /^Actor, actor/u)).toBeFocused();
+  await page.keyboard.press('Enter');
+
+  await page.keyboard.press('Shift+Tab');
+  await expect(nodeNamed(page, /^Records, flow/u)).toBeFocused();
+  await page.keyboard.press('Shift+Tab');
+  await expect(beforeCanvas(page)).toBeFocused();
+  await page.keyboard.press('Shift+Tab');
+  await expect(connectTarget(page)).toBeFocused();
+  await page.keyboard.press('Enter');
+  await page.getByRole('option', { name: 'Store' }).press('Enter');
+  await page.keyboard.press('Tab');
+  await page.getByRole('button', { name: 'Connect' }).press('Enter');
+
+  await expect(page.locator('.react-flow__edge')).toHaveCount(2);
+  await expect(editAnnouncement(page)).toHaveText(
+    'Added New flow, flow, from Actor to Store.',
+  );
+});
 test('the delete key removes the element, and the flows it held lose an end', async ({
   page,
 }) => {

@@ -100,37 +100,55 @@ export type State = {
   readonly lastFailure: StudioFailure | undefined;
 };
 
+/**
+ * What a model that has never been in a file is called. It is the
+ * placeholder's own title rather than a word a view supplies, so the tab,
+ * the file controls and a saved file all read one string.
+ */
+export const untitledModel = 'Untitled';
+
 const placeholderDocument = {
   metadata: {
-    title: 'Placeholder model',
+    title: untitledModel,
     owner: '',
-    description: 'Stands in until a file is opened.',
+    description: '',
     contributors: [],
   },
   diagrams: [
     {
       id: 'placeholder-diagram',
-      title: 'Placeholder diagram',
+      title: 'Untitled diagram',
       elements: [
         {
           kind: 'actor',
           id: 'placeholder-actor',
-          name: 'Reader',
+          name: 'Actor',
           description: '',
           outOfScope: false,
           reasonOutOfScope: '',
           position: { x: 40, y: 40 },
-          size: { width: 120, height: 60 },
+          size: { width: 100, height: 50 },
         },
         {
-          kind: 'process',
-          id: 'placeholder-process',
-          name: 'Studio',
+          kind: 'store',
+          id: 'placeholder-store',
+          name: 'Store',
           description: '',
           outOfScope: false,
           reasonOutOfScope: '',
-          position: { x: 240, y: 40 },
-          size: { width: 120, height: 60 },
+          position: { x: 280, y: 40 },
+          size: { width: 100, height: 50 },
+        },
+        {
+          kind: 'flow',
+          id: 'placeholder-flow',
+          name: 'Records',
+          description: '',
+          outOfScope: false,
+          reasonOutOfScope: '',
+          source: { kind: 'attached', element: 'placeholder-actor' },
+          target: { kind: 'attached', element: 'placeholder-store' },
+          waypoints: [],
         },
       ],
     },
@@ -139,7 +157,7 @@ const placeholderDocument = {
     {
       id: 'placeholder-threat',
       number: 1,
-      title: 'A reader edits a model they may only read',
+      title: 'The actor sends records nothing has checked',
       category: { methodology: 'STRIDE', category: 'tampering' },
       severity: 'medium',
       status: 'open',
@@ -158,6 +176,15 @@ const placeholderDocument = {
  * before a file is opened. Opening one replaces it with the model that file
  * carries. It comes through parseModel, and folds to the model package's
  * empty model rather than throwing if the literal ever stops parsing.
+ *
+ * It draws the smallest thing that is still a data-flow diagram: an actor,
+ * the records it sends, and the store they land in. Each box is a hundred by
+ * fifty units, which is the room a five-column name needs at the canvas type
+ * size by the canvas package's own estimate, plus the padding a glyph keeps
+ * around its text, rounded up to the grid the studio rules. So no name wraps
+ * and none of the three is sized by guesswork. The gap between the two boxes
+ * is what leaves the flow's name a place to hang clear of both, which the
+ * layout's own placement settles and `state.spec.ts` holds.
  */
 export const placeholderModel: Model = Either.getOrElse(
   parseModel(placeholderDocument),

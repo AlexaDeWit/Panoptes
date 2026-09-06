@@ -69,8 +69,8 @@ test('the studio carries no violation with the threat panel open on a selected e
   await page.goto('/');
   await expect(page.getByTestId('canvas-container')).toBeVisible();
 
-  await page.getByRole('group', { name: /^Reader, actor/u }).click();
-  await page.getByRole('button', { name: /A reader edits/u }).click();
+  await page.getByRole('group', { name: /^Actor, actor/u }).click();
+  await page.getByRole('button', { name: /sends records/u }).click();
   await expect(page.getByRole('textbox', { name: 'Title' })).toBeVisible();
 
   await audit(page, 'showing the threat panel');

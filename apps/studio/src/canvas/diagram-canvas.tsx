@@ -33,6 +33,7 @@ import {
   betweenTwoElements,
 } from './changes.js';
 import { drawnElement, removeSelected } from './edits.js';
+import { EmptyStateHint } from './empty-state-hint.js';
 import { currentLayout, selectedElement } from './layout.js';
 import {
   diagramGraph,
@@ -226,6 +227,7 @@ export function DiagramCanvas() {
         <Background gap={gridSpacing} variant={BackgroundVariant.Lines} />
         <FitOnOpen />
       </ReactFlow>
+      <EmptyStateHint />
       <ZoomCluster />
       <ThreatOverlay />
     </div>

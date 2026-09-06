@@ -72,13 +72,13 @@ test('delete removes the selection from outside the canvas, on either key', asyn
 }) => {
   await openPlaceholder(page);
 
-  await selectNode(page, /^Reader, actor/u);
+  await selectNode(page, /^Actor, actor/u);
   await beforeCanvas(page).focus();
   await page.keyboard.press(registeredChords.delete[0]);
 
-  await expect(nodeNamed(page, /^Reader, actor/u)).toHaveCount(0);
+  await expect(nodeNamed(page, /^Actor, actor/u)).toHaveCount(0);
 
-  await selectNode(page, /^Studio, process/u);
+  await selectNode(page, /^Store, store/u);
   await beforeCanvas(page).focus();
   await page.keyboard.press(registeredChords.delete[1]);
 
@@ -87,11 +87,11 @@ test('delete removes the selection from outside the canvas, on either key', asyn
 
 test('escape clears the selection', async ({ page }) => {
   await openPlaceholder(page);
-  const reader = await selectNode(page, /^Reader, actor/u);
+  const actor = await selectNode(page, /^Actor, actor/u);
 
   await page.keyboard.press(registeredChords['clear-selection'][0]);
 
-  await expect(reader).not.toHaveClass(/selected/u);
+  await expect(actor).not.toHaveClass(/selected/u);
 });
 
 test('zooming and fitting move the viewport and nothing else', async ({
@@ -157,7 +157,7 @@ test('a command still waiting on its surface claims its chord and changes nothin
   page,
 }) => {
   await openPlaceholder(page);
-  const reader = await selectNode(page, /^Reader, actor/u);
+  const actor = await selectNode(page, /^Actor, actor/u);
   const settled = await viewportTransform(page);
 
   for (const chord of chordsWaitingOnASurface) {
@@ -165,7 +165,7 @@ test('a command still waiting on its surface claims its chord and changes nothin
   }
 
   await expect(elementNodes(page)).toHaveCount(2);
-  await expect(reader).toHaveClass(/selected/u);
+  await expect(actor).toHaveClass(/selected/u);
   await openMenu(page);
   await expect(page.getByTestId('file-state')).toHaveText(
     'No file, Panoptes YAML, no unsaved changes',
@@ -179,7 +179,7 @@ test('a shortcut waits while a name is being typed, and saving and undo do not',
 }) => {
   await page.addInitScript(withoutPickers);
   await openPlaceholder(page);
-  await selectNode(page, /^Reader, actor/u);
+  await selectNode(page, /^Actor, actor/u);
   await threatPanel(page).getByRole('button', { name: 'Add a threat' }).click();
   const title = threatPanel(page).getByRole('textbox', { name: 'Title' });
   await expect(title).toBeFocused();
@@ -211,7 +211,7 @@ test('escape from a field closes the panel over the draft rather than clearing t
   page,
 }) => {
   await openPlaceholder(page);
-  const reader = await selectNode(page, /^Reader, actor/u);
+  const actor = await selectNode(page, /^Actor, actor/u);
   await threatPanel(page).getByRole('button', { name: 'Add a threat' }).click();
   const title = threatPanel(page).getByRole('textbox', { name: 'Title' });
   await title.fill('Soft\u00adhyphen');
@@ -221,8 +221,8 @@ test('escape from a field closes the panel over the draft rather than clearing t
   await title.press(registeredChords['clear-selection'][0]);
 
   await expect(threatPanel(page)).toHaveCount(0);
-  await expect(reader).toHaveClass(/selected/u);
-  await expect(reader).toBeFocused();
+  await expect(actor).toHaveClass(/selected/u);
+  await expect(actor).toBeFocused();
 
   await page.keyboard.press('Enter');
   const held = threatPanel(page).getByRole('textbox', { name: 'Title' });

@@ -1,5 +1,10 @@
 import type { DiagramId, Model } from '@panoptes/model';
-import type { State } from './state.js';
+import {
+  FileLifecycle,
+  placeholderModel,
+  untitledModel,
+  type State,
+} from './state.js';
 
 /**
  * The model on screen is not the model the file holds. It is identity, not a
@@ -49,4 +54,35 @@ export function modelAsOpened(state: State): Model | undefined {
   return state.past.length === 0 && state.future.length === 0
     ? state.present
     : undefined;
+}
+
+/**
+ * Whether the studio is still on the model it opens with and nothing has
+ * happened to it: no edit, no undo, no redo, and no file. Both halves are
+ * needed, because a save leaves the model where it is and only the file
+ * moves. It is what the canvas hangs its hint on, so the hint goes at the
+ * first edit and comes back when the model is closed back to this one.
+ */
+export function showingPlaceholder(state: State): boolean {
+  return (
+    modelAsOpened(state) === placeholderModel &&
+    FileLifecycle.$is('NoFile')(state.file)
+  );
+}
+
+/**
+ * What the model on screen is called: the file it lives in, or its own title
+ * while it lives in none, which is {@link untitledModel} for the model the
+ * studio starts on. A model that arrived with no title at all still names
+ * the tab rather than leaving it blank.
+ */
+export function windowTitle(state: State): string {
+  return FileLifecycle.$match(state.file, {
+    NoFile: () => named(state.present.metadata.title),
+    Opened: ({ name }) => named(name),
+  });
+}
+
+function named(title: string): string {
+  return title.trim() === '' ? untitledModel : title;
 }

@@ -1,0 +1,19 @@
+/* The line floats over the top of the canvas, centred between the burger
+   menu's corner and the zoom cluster's, inside the room the fit leaves
+   clear, so it covers no part of the diagram it is telling a person about.
+   It never wraps: a second line would reach into that diagram. */
+.hint {
+  position: absolute;
+  z-index: 1;
+  inset-block-start: var(--pn-space-3);
+  inset-inline-start: 50%;
+  transform: translateX(-50%);
+  margin: 0;
+  padding: var(--pn-space-1) var(--pn-space-3);
+  border: 1px solid var(--pn-colour-border);
+  border-radius: var(--pn-radius);
+  background: var(--pn-colour-surface-raised);
+  color: var(--pn-colour-text-muted);
+  white-space: nowrap;
+  pointer-events: none;
+}

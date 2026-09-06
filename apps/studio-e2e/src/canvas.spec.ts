@@ -35,14 +35,12 @@ test('a click selects an element and the canvas draws the selection', async ({
   page,
 }) => {
   await openPlaceholder(page);
-  const reader = nodeNamed(page, /^Reader, actor/u);
+  const actor = nodeNamed(page, /^Actor, actor/u);
 
-  await reader.click();
+  await actor.click();
 
-  await expect(reader).toHaveClass(/selected/u);
-  await expect(nodeNamed(page, /^Studio, process/u)).not.toHaveClass(
-    /selected/u,
-  );
+  await expect(actor).toHaveClass(/selected/u);
+  await expect(nodeNamed(page, /^Store, store/u)).not.toHaveClass(/selected/u);
 });
 
 test('the selection moves between an element and a flow, either way', async ({
@@ -70,39 +68,41 @@ test('a drag moves the element through the store, and undo puts it back', async 
   page,
 }) => {
   await openPlaceholder(page);
-  const reader = nodeNamed(page, /^Reader, actor/u);
-  const before = await placeOf(reader);
+  const actor = nodeNamed(page, /^Actor, actor/u);
+  const before = await placeOf(actor);
 
-  await dragBy(page, reader, 60);
+  await dragBy(page, actor, 60);
 
-  await expect.poll(() => placeOf(reader)).not.toBe(before);
+  await expect.poll(() => placeOf(actor)).not.toBe(before);
 
   await runFromMenu(page, 'Undo');
 
-  await expect.poll(() => placeOf(reader)).toBe(before);
+  await expect.poll(() => placeOf(actor)).toBe(before);
 });
 
 test('an element is reachable, selectable and movable by keyboard alone', async ({
   page,
 }) => {
   await openPlaceholder(page);
-  const reader = nodeNamed(page, /^Reader, actor/u);
+  const actor = nodeNamed(page, /^Actor, actor/u);
 
   await beforeCanvas(page).focus();
   await page.keyboard.press('Tab');
-  await expect(reader).toBeFocused();
+  await expect(nodeNamed(page, /^Records, flow/u)).toBeFocused();
   await page.keyboard.press('Tab');
-  await expect(nodeNamed(page, /^Studio, process/u)).toBeFocused();
+  await expect(actor).toBeFocused();
+  await page.keyboard.press('Tab');
+  await expect(nodeNamed(page, /^Store, store/u)).toBeFocused();
   await page.keyboard.press('Shift+Tab');
-  await expect(reader).toBeFocused();
+  await expect(actor).toBeFocused();
 
   await page.keyboard.press('Enter');
-  await expect(reader).toHaveClass(/selected/u);
+  await expect(actor).toHaveClass(/selected/u);
 
-  const selected = await placeOf(reader);
+  const selected = await placeOf(actor);
   await page.keyboard.press('ArrowRight');
-  await expect.poll(() => placeOf(reader)).not.toBe(selected);
+  await expect.poll(() => placeOf(actor)).not.toBe(selected);
 
   await runFromMenu(page, 'Undo');
-  await expect.poll(() => placeOf(reader)).toBe(selected);
+  await expect.poll(() => placeOf(actor)).toBe(selected);
 });

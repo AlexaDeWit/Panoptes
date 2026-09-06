@@ -45,13 +45,13 @@ describe(
     it('shows an edit the palette dispatched and takes it back through the menu', async () => {
       const user = userEvent.setup();
       render(<App />);
-      expect(elementsHeld()).toBe(2);
-
-      await user.click(paletteButton());
       expect(elementsHeld()).toBe(3);
 
+      await user.click(paletteButton());
+      expect(elementsHeld()).toBe(4);
+
       await undoThroughMenu(user);
-      expect(elementsHeld()).toBe(2);
+      expect(elementsHeld()).toBe(3);
     });
   },
   appTimeout,
