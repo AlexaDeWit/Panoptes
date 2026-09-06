@@ -3,6 +3,7 @@ import { type Page } from '@playwright/test';
 type GapLog = {
   readonly readings: number[];
   running: boolean;
+  handle: number;
 };
 
 declare global {
@@ -11,11 +12,10 @@ declare global {
   }
 }
 
-const nthPercentile = (readings: readonly number[], nth: number): number => {
+const median = (readings: readonly number[]): number => {
   const sorted = [...readings];
   sorted.sort((left, right) => left - right);
-  const rank = Math.ceil((nth / 100) * sorted.length);
-  return sorted.at(Math.max(rank - 1, 0)) ?? Number.NaN;
+  return sorted.at(Math.floor(sorted.length / 2)) ?? Number.NaN;
 };
 
 const gapsBetween = (readings: readonly number[]): readonly number[] =>
@@ -47,7 +47,7 @@ export const displayPeriod = async (
       }),
     frames,
   );
-  return nthPercentile(gapsBetween(idle), 50);
+  return median(gapsBetween(idle));
 };
 
 /**
@@ -60,15 +60,20 @@ export const displayPeriod = async (
  */
 export const recordGaps = async (page: Page): Promise<void> => {
   await page.evaluate(() => {
-    const log: GapLog = { readings: [], running: true };
+    const replaced = window.panoptesGapLog;
+    if (replaced !== undefined) {
+      replaced.running = false;
+      window.cancelAnimationFrame(replaced.handle);
+    }
+    const log: GapLog = { readings: [], running: true, handle: 0 };
     window.panoptesGapLog = log;
     const step = (): void => {
       log.readings.push(performance.now());
       if (log.running) {
-        window.requestAnimationFrame(step);
+        log.handle = window.requestAnimationFrame(step);
       }
     };
-    window.requestAnimationFrame(step);
+    log.handle = window.requestAnimationFrame(step);
   });
 };
 

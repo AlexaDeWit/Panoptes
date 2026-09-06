@@ -36,15 +36,18 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
       testIgnore: frameTimeFloor,
     },
-    // The floor reads what the machine gives the page, and that reading moved
-    // by a factor of ten between two and four workers, so it is comparable
-    // only at a worker count the config fixes rather than the host's core
-    // count. One worker here, and the rest of the suite keeps its own
-    // parallelism. The reading is comparable only where no other browser
-    // shares the host, so this project depends on the other and runs alone
-    // once the others are done rather than beside them. Playwright skips a
-    // project whose dependency failed, so a red anywhere else in the smoke
-    // leaves the floor unreported rather than reported green.
+    // The floor reads what the machine gives the page, so it is comparable
+    // only where no other browser shares the host: copies of this spec run at
+    // the same time all fail, where the same spec alone reads not one frame
+    // late. How far over they read is the host's, not this project's, so no
+    // figure is quoted here. Hence one worker, and a dependency on the
+    // project carrying the rest of the suite, so this one runs alone once the
+    // others are done rather than beside them, while they keep their own
+    // parallelism. Playwright skips a project whose dependency failed, so a
+    // red anywhere else in the smoke leaves the floor unreported rather than
+    // reported green. A burst of activity elsewhere on the host can still
+    // land inside the drag, so a single noisy run is retried once and a
+    // second failure is the reading; the ceilings themselves do not move.
     {
       name: 'frame-time',
       use: { ...devices['Desktop Chrome'] },
@@ -52,6 +55,7 @@ export default defineConfig({
       dependencies: ['chromium'],
       workers: 1,
       fullyParallel: false,
+      retries: 1,
     },
   ],
 });
