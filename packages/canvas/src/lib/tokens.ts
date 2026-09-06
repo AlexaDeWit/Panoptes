@@ -87,8 +87,8 @@ export const lightPalette = {
 /**
  * The dark palette: the same hues over warm ink grounds, measured against the
  * same floors, its hairline lightened a step past the first table so it clears
- * 3 on the wash a process is filled with. Nothing applies it yet, so it is a
- * table and not a theme.
+ * 3 on the wash a process is filled with. The studio takes it under the
+ * system's dark preference. The headless render stays on the light table.
  */
 export const darkPalette = {
   surfaceApp: '#24211D',
@@ -206,27 +206,66 @@ export const focusRing = {
   offset: '2px',
 } as const;
 
+const colourProperties = {
+  surfaceApp: '--pn-colour-surface',
+  surfaceCanvas: '--pn-colour-canvas',
+  surfacePanel: '--pn-colour-surface-raised',
+  surfaceActor: '--pn-colour-actor',
+  surfaceProcess: '--pn-colour-process',
+  textPrimary: '--pn-colour-text',
+  textSecondary: '--pn-colour-text-muted',
+  border: '--pn-colour-border',
+  gridLine: '--pn-colour-grid',
+  actionPrimary: '--pn-colour-accent',
+  actionHover: '--pn-colour-accent-hover',
+  actionText: '--pn-colour-accent-text',
+  badgeGround: '--pn-colour-badge-ground',
+  toneCritical: '--pn-colour-tone-critical',
+  toneHigh: '--pn-colour-tone-high',
+  toneMedium: '--pn-colour-tone-medium',
+  toneLow: '--pn-colour-tone-low',
+  toneNeutral: '--pn-colour-tone-neutral',
+} as const satisfies Record<keyof Palette, string>;
+
 /**
- * The light tokens as the custom properties the studio's CSS modules read,
- * for injection once at the app root. It carries what those modules read and
- * nothing else: a diagram's own colours reach the drawing through
- * `canvasStylesheet`, which resolves them to values rather than to properties,
- * since the standalone SVG has no document around it to hold a `:root`.
+ * How a stylesheet inside a document names one colour role: the custom
+ * property carrying it rather than a value, so the rule draws with whichever
+ * table the document root resolved. The names have one home, the table this
+ * reads, which the two `:root` blocks below are written from as well, and
+ * that table is total over the roles, so a role added to {@link Palette} does
+ * not compile until it has been named a property.
+ */
+export function paletteProperty(role: keyof Palette): string {
+  return `var(${colourProperties[role]})`;
+}
+
+const colourBlock = (palette: Palette, indent: string): string => {
+  const byRole: Record<string, Colour> = palette;
+  return Object.entries(colourProperties)
+    .map(([role, property]) => `${indent}${property}: ${byRole[role]};`)
+    .join('\n');
+};
+
+/**
+ * The tokens as the custom properties the studio's CSS modules read, for
+ * injection once at the app root: the light table on the root, the dark one
+ * over it under the system's dark preference, so nothing below the root
+ * learns which mode it is in. `color-scheme` rides along, which is what makes
+ * a scrollbar and a native control follow the same preference.
+ *
+ * One function over a palette writes both blocks, so a property cannot reach
+ * one table and miss the other. The headless render reads neither:
+ * `canvasStylesheet` resolves its colours to values, the standalone SVG
+ * having no document around it to hold a `:root`.
  */
 export const tokenStylesheet = `:root {
+  color-scheme: light dark;
+
   --pn-font-family: ${uiType.family};
   --pn-font-size: ${uiType.size};
   --pn-line-height: ${uiType.lineHeight};
 
-  --pn-colour-surface: ${lightPalette.surfaceApp};
-  --pn-colour-surface-raised: ${lightPalette.surfacePanel};
-  --pn-colour-canvas: ${lightPalette.surfaceCanvas};
-  --pn-colour-text: ${lightPalette.textPrimary};
-  --pn-colour-text-muted: ${lightPalette.textSecondary};
-  --pn-colour-border: ${lightPalette.border};
-  --pn-colour-grid: ${lightPalette.gridLine};
-  --pn-colour-accent: ${lightPalette.actionPrimary};
-  --pn-colour-accent-text: ${lightPalette.actionText};
+${colourBlock(lightPalette, '  ')}
 
   --pn-space-1: ${spacingScale[1]};
   --pn-space-2: ${spacingScale[2]};
@@ -238,6 +277,12 @@ export const tokenStylesheet = `:root {
   --pn-focus-ring-width: ${focusRing.width};
   --pn-focus-ring: var(--pn-focus-ring-width) solid var(--pn-colour-accent);
   --pn-focus-ring-offset: ${focusRing.offset};
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+${colourBlock(darkPalette, '    ')}
+  }
 }
 `;
 
@@ -263,6 +308,16 @@ const relativeLuminance = (colour: Colour): number => {
 export function contrastRatio(one: Colour, other: Colour): number {
   const [first, second] = [relativeLuminance(one), relativeLuminance(other)];
   return (Math.max(first, second) + 0.05) / (Math.min(first, second) + 0.05);
+}
+
+/**
+ * One colour as a browser writes it back out of a computed style, which is
+ * `rgb(r, g, b)` over the same channels. A spec that reads a rendered colour
+ * compares against this rather than against the hex a sheet was written in.
+ */
+export function rgbColour(colour: Colour): string {
+  const [red, green, blue] = channels(colour);
+  return `rgb(${red}, ${green}, ${blue})`;
 }
 
 /**

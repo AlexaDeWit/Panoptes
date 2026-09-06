@@ -1,3 +1,4 @@
+import { themedCanvasStylesheet } from '@panoptes/canvas';
 import { render } from '@testing-library/react';
 import { readdirSync, readFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
@@ -42,13 +43,13 @@ const stylesheet = (): string => {
   return container.querySelector('style')?.textContent ?? '';
 };
 
-const readProperties = new Set(
-  sources.flatMap((source) =>
-    (source.text.match(/var\(--pn-[\w-]+/gu) ?? []).map((token) =>
-      token.slice(4),
-    ),
-  ),
-);
+const referenced = (text: string): string[] =>
+  (text.match(/var\(--pn-[\w-]+/gu) ?? []).map((token) => token.slice(4));
+
+const readProperties = new Set([
+  ...sources.flatMap((source) => referenced(source.text)),
+  ...referenced(themedCanvasStylesheet),
+]);
 
 describe('the studio and the canvas, coloured from one table', () => {
   it('carries no literal colour outside the token module', () => {
@@ -66,8 +67,13 @@ describe('the studio and the canvas, coloured from one table', () => {
   });
 });
 
+const darkScheme = '@media (prefers-color-scheme: dark)';
+
+const colourDeclarations = (block: string): Set<string> =>
+  new Set(block.match(/--pn-colour-[\w-]+(?=:)/gu) ?? []);
+
 describe('DesignTokens', () => {
-  it('declares every custom property the studio reads', () => {
+  it('declares every custom property the studio reads, the injected canvas sheet among them', () => {
     const declared = stylesheet();
     const missing = [...readProperties].filter(
       (property) => !declared.includes(`${property}:`),
@@ -77,5 +83,12 @@ describe('DesignTokens', () => {
 
   it('declares them on the document root, so any module reads them', () => {
     expect(stylesheet().startsWith(':root {')).toBe(true);
+  });
+
+  it('overrides them under the system dark preference, which is the whole of the mode switch', () => {
+    expect(stylesheet()).toContain(darkScheme);
+
+    const [root, dark] = stylesheet().split(darkScheme);
+    expect(colourDeclarations(dark)).toEqual(colourDeclarations(root));
   });
 });

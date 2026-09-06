@@ -31,6 +31,12 @@ module beside `diagram-canvas.tsx`, which is where the studio's own
 is the token module's
 ([the visual system](../../../../packages/canvas/README.md#the-visual-system)).
 
+The diagram's own colours arrive by the same route. What `diagram-canvas.tsx`
+injects is `themedCanvasStylesheet`, the canvas sheet written in those same
+custom properties rather than in values, so the drawing follows the colour
+scheme the app root resolved and nothing here reads a scheme or holds a mode.
+The CLI embeds the resolved sheet instead and stays light.
+
 React Flow is mounted controlled. What it draws is rebuilt whole from the
 model on every render, so a selection re-renders every node and every flow:
 one pass over a diagram's elements with nothing measured, which is what lets

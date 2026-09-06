@@ -18,6 +18,12 @@ coloured from one table. A colour written into a stylesheet here instead is a
 failing spec, `../theme.spec.tsx`, which walks the production files of this app
 and of the canvas package for one.
 
+Every colour token is declared twice, the second time under
+`prefers-color-scheme: dark` from the dark table. That is the whole of dark
+mode: a control reads the same property either way and no component asks which
+mode it is in. The properties below the colours, the type scale, the spacing
+and the focus ring, are declared once, being the same in both.
+
 | Token                                                                | What it decides                    |
 | -------------------------------------------------------------------- | ---------------------------------- |
 | `--pn-font-family`, `--pn-font-size`, `--pn-line-height`             | The type scale                     |
@@ -27,9 +33,24 @@ and of the canvas package for one.
 | `--pn-colour-border`                                                 | Every hairline                     |
 | `--pn-colour-grid`                                                   | The canvas's graph-paper ruling    |
 | `--pn-colour-accent`, `--pn-colour-accent-text`                      | Selection and the focus indicator  |
+| `--pn-colour-accent-hover`                                           | The primary action under a pointer |
+| `--pn-colour-actor`, `--pn-colour-process`                           | The wash inside those two glyphs   |
+| `--pn-colour-badge-ground`                                           | What a threat badge is lettered in |
+| `--pn-colour-tone-critical` to `--pn-colour-tone-neutral`            | One per severity                   |
 | `--pn-space-1` to `--pn-space-4`                                     | Every gap and every pad            |
 | `--pn-radius`                                                        | Every corner                       |
 | `--pn-focus-ring`, `--pn-focus-ring-width`, `--pn-focus-ring-offset` | The one visible focus indicator    |
+
+The two washes, the badge ground and the five tones are the diagram's own
+colours rather than the chrome's. No control here reads them: they are
+declared because the canvas stylesheet the studio injects is written in these
+properties, which is how the diagram follows the mode
+([the canvas](../canvas/README.md)). Four rows are read from both sides:
+`--pn-colour-surface-raised` is a panel in the chrome and the fill inside
+every element outline on the diagram, `--pn-colour-canvas` is the ground and
+the halo cut under a flow name, and the two inks letter and draw the diagram
+as well as the chrome. Every role in the palette has a property whether a
+control reads it yet or not, so the light and the dark block stay one list.
 
 A control never suppresses the focus indicator and never invents its own: it
 applies the focus tokens in `:focus-visible`, swapping the ring's colour only

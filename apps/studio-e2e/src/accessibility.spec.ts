@@ -35,6 +35,21 @@ test('the studio page carries no axe-core accessibility violation', async ({
   await audit(page, 'at rest');
 });
 
+// Both colour schemes are audited, because the tokens the properties resolve
+// to are what a contrast rule reads and the dark table is a second set of
+// them. The state is the page at rest: the states below reach further into
+// the studio and do so in whichever scheme the browser is asked for by
+// default, which is the light one.
+test('the studio carries no violation under the system dark preference', async ({
+  page,
+}) => {
+  await page.emulateMedia({ colorScheme: 'dark' });
+  await page.goto('/');
+  await expect(page.getByTestId('canvas-container')).toBeVisible();
+
+  await audit(page, 'at rest in the dark scheme');
+});
+
 // The panel is bound to the selection and holds no editable control without
 // one, so the audit of its fields needs an element selected and a threat
 // expanded. It is the studio's densest form: every composed control at once,
