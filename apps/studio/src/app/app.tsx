@@ -3,7 +3,6 @@ import { useMemo } from 'react';
 import { DiagramCanvas } from '../canvas/diagram-canvas.js';
 import { EditPalette } from '../canvas/palette.js';
 import { useViewCommands } from '../canvas/view-commands.js';
-import { ZoomCluster } from '../canvas/zoom-cluster.js';
 import { CommandSurfaceProvider } from '../commands/binding.js';
 import { CommandButton } from '../commands/command-button.js';
 import type { CommandSurface } from '../commands/registry.js';
@@ -69,7 +68,6 @@ function Studio() {
           <CommandButton command="undo" disabled={!undoable} />
           <EditPalette />
           <DiagramCanvas />
-          <ZoomCluster />
         </main>
         <ThreatPanel />
       </div>

@@ -48,7 +48,9 @@ export function nodeInView(
  * with {@link canvasPadding} clear on every side, and nothing at all where
  * there is no ink to fit or no room left to fit it into. The zoom is held
  * inside {@link zoomLimits}, so a diagram far smaller than the canvas is not
- * blown up past what a zoom gesture then reaches.
+ * blown up past what a zoom gesture then reaches, and one so large that
+ * fitting it would go below the floor is drawn at the floor with whatever
+ * room that leaves rather than with the padding clear.
  */
 export function fitViewport(
   bounds: CanvasBounds,

@@ -104,9 +104,8 @@ something else instead.
   all.
 - Render a command through `CommandButton`, or `IconCommandButton` where the
   control is a glyph, or read `commandById` for a surface that draws its own
-  control. Never hold a label or a chord beside a
-  control: the menu, the toolbox, the panel and the zoom cluster read both
-  from here.
+  control. Never hold a label or a chord beside a control: the menu, the
+  toolbox, the panel and the zoom cluster read both from here.
 - Bind a new command by adding an entry, not by adding a listener. The spec
   beside the registry fails a chord that collides with one already bound.
 - The tool commands add an element today, which is what the palette's buttons

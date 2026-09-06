@@ -1,4 +1,5 @@
 .canvas {
+  position: relative;
   height: 60vh;
   min-height: 20rem;
   border: 1px solid var(--pn-colour-border);

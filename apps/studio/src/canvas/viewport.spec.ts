@@ -1,7 +1,6 @@
 import { layoutDiagram } from '@panoptes/canvas';
 import { canvasModel, readerElement } from './canvas.fixtures.js';
 import {
-  canvasPadding,
   fitViewport,
   nodeInView,
   zoomLimits,
@@ -56,12 +55,12 @@ const placed = (canvas: CanvasExtent) => {
 const canvas = { width: 1000, height: 600 };
 
 describe('fitViewport', () => {
-  it('centres the diagram and leaves the padding clear on the tighter axis', () => {
+  it('centres the diagram and leaves 64 pixels clear on the tighter axis', () => {
     const drawn = placed(canvas);
 
     expect(drawn.left).toBeCloseTo(canvas.width - drawn.right);
     expect(drawn.top).toBeCloseTo(canvas.height - drawn.bottom);
-    expect(Math.min(drawn.left, drawn.top)).toBeCloseTo(canvasPadding);
+    expect(Math.min(drawn.left, drawn.top)).toBeCloseTo(64);
   });
 
   it('draws a diagram far smaller than the canvas no larger than the zoom limit', () => {

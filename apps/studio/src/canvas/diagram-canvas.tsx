@@ -42,6 +42,7 @@ import {
 } from './nodes.js';
 import { FitOnOpen } from './view-commands.js';
 import { nodeInView, zoomLimits } from './viewport.js';
+import { ZoomCluster } from './zoom-cluster.js';
 import styles from './diagram-canvas.module.css';
 
 const deleteKeys = new Set(['Delete', 'Backspace']);
@@ -182,6 +183,7 @@ export function DiagramCanvas() {
         <Background gap={gridSpacing} variant={BackgroundVariant.Lines} />
         <FitOnOpen />
       </ReactFlow>
+      <ZoomCluster />
     </div>
   );
 }

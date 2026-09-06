@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '@playwright/test';
 import { viewportTransform } from './commands.fixtures.js';
 import {
   nodeNamed,
@@ -41,6 +41,26 @@ const drawnInside = async (page: Page, name: RegExp): Promise<void> => {
   ).toBeGreaterThan(0);
 };
 
+const clusterRegion = (page: Page): Locator =>
+  page.getByRole('region', { name: 'Zoom and fit' });
+
+const clearOfTheCluster = async (page: Page, name: RegExp): Promise<void> => {
+  const floating = await clusterRegion(page).boundingBox();
+  const drawn = await nodeNamed(page, name).boundingBox();
+  expect(floating, 'the cluster is on the page').not.toBeNull();
+  expect(drawn, `${name.source} is drawn`).not.toBeNull();
+  const cluster = floating ?? nowhere;
+  const node = drawn ?? nowhere;
+
+  expect(
+    cluster.y - (node.y + node.height),
+    `${name.source} clears the cluster the padding keeps room for`,
+  ).toBeGreaterThan(0);
+};
+
+const zoomOf = async (page: Page): Promise<number> =>
+  Number(/scale\(([\d.]+)\)/u.exec(await viewportTransform(page))?.[1]);
+
 test('a real model opens fitted, so the elements at its far corners are drawn inside the canvas', async ({
   page,
 }) => {
@@ -48,12 +68,17 @@ test('a real model opens fitted, so the elements at its far corners are drawn in
 
   await drawnInside(page, furthestAcross);
   await drawnInside(page, furthestDown);
+  await clearOfTheCluster(page, furthestDown);
 });
 
 test('the placeholder opens fitted as well', async ({ page }) => {
   await openPlaceholder(page);
 
   await drawnInside(page, placeholderCorner);
+  expect(
+    await zoomOf(page),
+    'the placeholder is drawn larger than life, which only a fit does',
+  ).toBeGreaterThan(1);
 });
 
 test('a file opened over the model on screen is fitted again', async ({
@@ -71,9 +96,7 @@ test('the cluster floats over the bottom right corner of the canvas', async ({
   await openPlaceholder(page);
 
   const measured = await page.getByTestId('canvas-container').boundingBox();
-  const floating = await page
-    .getByRole('region', { name: 'Zoom and fit' })
-    .boundingBox();
+  const floating = await clusterRegion(page).boundingBox();
   expect(measured, 'the canvas is on the page').not.toBeNull();
   expect(floating, 'the cluster is on the page').not.toBeNull();
   const canvas = measured ?? nowhere;
