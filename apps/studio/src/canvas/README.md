@@ -34,8 +34,9 @@ handle is drawn in arrive the same way, as `--xy-handle-background-color` and
 `--xy-handle-border-color`: React Flow reads each of its colours from a
 property on the container before falling back to a `-default` it declares on
 `.react-flow` itself, so the name without that suffix is the one a value set
-above it reaches. The grid and the handles are the whole of what the studio
-colours in React Flow's own parts. What those colours are and why is the token
+above it reaches. The grid and the handles are what the studio colours in
+React Flow's own parts here. The resize control at a selected element's corner
+still wears React Flow's colour until #180 recolours it. What those colours are and why is the token
 module's
 ([the visual system](../../../../packages/canvas/README.md#the-visual-system)).
 

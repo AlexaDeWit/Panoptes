@@ -110,9 +110,6 @@ test('the studio carries no violation while it shows a refusal', async ({
   await audit(page, 'showing a refusal');
 });
 
-// Selecting an element shows the handles a flow is drawn from, which are the
-// one part of the canvas React Flow draws rather than the canvas package, so
-// they reach the page only in this state.
 test('the studio carries no violation with an element selected and its handles showing', async ({
   page,
 }) => {
