@@ -22,19 +22,30 @@ const kindWords = {
 } as const satisfies Record<Element['kind'], string>;
 
 /**
- * The element the panel edits, which is the one the canvas has selected, and
- * nothing at all while nothing is selected. A flow is an element like any
- * other here: it carries threats, so it opens the panel as a box does. The
- * canvas has a selector of its own over the same field, which returns the id
- * it draws the selection from rather than the record this one reads.
+ * What an open panel is about: the one element whose threats it edits, or how
+ * many are selected where more than one is. The count is the branch issue 156
+ * fills, the store holding one selection until it lands.
  */
-export function panelElement(state: State): Element | undefined {
+export type PanelSubject =
+  | { readonly kind: 'element'; readonly element: Element }
+  | { readonly kind: 'several'; readonly count: number };
+
+/**
+ * What the panel is bound to, and nothing at all while nothing is selected,
+ * which is where no panel is drawn. A flow is an element like any other here:
+ * it carries threats, so it opens the panel as a box does. The canvas has a
+ * selector of its own over the same field, which returns the id it draws the
+ * selection from rather than the record this one reads.
+ */
+export function panelSubject(state: State): PanelSubject | undefined {
   const selected = state.selection;
-  return selected === undefined
-    ? undefined
-    : state.present.diagrams
-        .flatMap((diagram) => diagram.elements)
-        .find((element) => element.id === selected);
+  const element =
+    selected === undefined
+      ? undefined
+      : state.present.diagrams
+          .flatMap((diagram) => diagram.elements)
+          .find((candidate) => candidate.id === selected);
+  return element === undefined ? undefined : { kind: 'element', element };
 }
 
 /**

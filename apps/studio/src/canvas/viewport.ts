@@ -1,4 +1,5 @@
-import type { CanvasBounds, CanvasNode } from '@panoptes/canvas';
+import { centreOf, type CanvasBounds, type CanvasNode } from '@panoptes/canvas';
+import type { Point } from '@panoptes/model';
 import type { Viewport } from '@xyflow/react';
 
 /** How much of the page the canvas has, in its own pixels. */
@@ -14,6 +15,17 @@ export type CanvasExtent = {
  * number, so the two agree on how much room that chrome takes.
  */
 export const canvasPadding = 64;
+
+/**
+ * How much of the canvas's right edge the threat panel covers, in pixels of
+ * the page: its own width and the inset it floats at, both in
+ * `../panel/threat-panel.module.css`. A pan that reveals a selected element
+ * has to know what the panel is over, the way a fit has to know how much room
+ * the floating chrome takes. It is the panel's width at the root font size
+ * the studio is drawn at, so a browser drawn larger leaves a little of the
+ * element under the panel rather than nothing of it.
+ */
+export const panelWidth = 332;
 
 /**
  * How far the canvas zooms either way. React Flow is given the same pair, so
@@ -41,6 +53,30 @@ export function nodeInView(
     left + node.size.width * viewport.zoom <= extent.width &&
     top + node.size.height * viewport.zoom <= extent.height
   );
+}
+
+/**
+ * The part of the canvas an element is drawn in the clear of while the threat
+ * panel is open, which is everything left of the panel. The panel is open
+ * whenever an element is selected, and a selection moving is what pans, so
+ * every pan is computed against this rather than against the whole canvas.
+ */
+export function clearOfPanel(extent: CanvasExtent): CanvasExtent {
+  return {
+    width: Math.max(extent.width - panelWidth, 0),
+    height: extent.height,
+  };
+}
+
+/**
+ * Where the view is centred to draw `node` in {@link clearOfPanel}: the
+ * node's own centre, carried right by half of what the panel covers, so the
+ * node lands in the middle of what is left rather than under the panel's
+ * inside edge.
+ */
+export function revealCentre(node: CanvasNode, zoom: number): Point {
+  const centre = centreOf(node);
+  return { x: centre.x + panelWidth / 2 / zoom, y: centre.y };
 }
 
 /**

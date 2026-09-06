@@ -1,11 +1,27 @@
+/* The panel floats over the right edge of the canvas container, which is
+   where the diagram is drawn, so nothing but the panel's own box is taken
+   from the diagram. Its width is the number `../canvas/viewport.ts` holds as
+   `panelWidth`, which is what the pan that reveals a selected element under
+   the panel is computed against.
+
+   The zoom cluster floats in the bottom right corner of the same container
+   (`../canvas/zoom-cluster.module.css`), so the panel is held clear of it
+   rather than covering it. What the height leaves is this panel's own inset
+   at the top, then the cluster's box and inset at the bottom, with a gap of
+   that same inset between the two. */
 .panel {
+  position: absolute;
+  z-index: 1;
+  inset-block-start: var(--pn-space-3);
+  inset-inline-end: var(--pn-space-3);
   display: flex;
   flex-direction: column;
-  flex-shrink: 0;
   gap: var(--pn-space-3);
   width: 20rem;
-  padding: var(--pn-space-4);
-  border-left: 1px solid var(--pn-colour-border);
+  max-block-size: calc(100% - var(--pn-space-3) * 3 - 2.75rem);
+  padding: var(--pn-space-3);
+  border: 1px solid var(--pn-colour-border);
+  border-radius: var(--pn-radius);
   background: var(--pn-colour-surface-raised);
   overflow-y: auto;
 }

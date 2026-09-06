@@ -121,4 +121,7 @@ through a second callback, because a refusal shown in the field alone is a
 refusal nothing announces and nothing can keep on screen. The refusal it
 shows is the character clause alone, the label above it already naming the
 field; the sentence the callback carries names the field, for whatever reads
-it away from the control.
+it away from the control, and the text goes with it. A field can be opened on
+a draft reported that way rather than on the value it is given, which is how
+the threat panel puts a refused draft back in the field it was typed in after
+the panel itself has been unmounted ([the panel](../panel/README.md)).

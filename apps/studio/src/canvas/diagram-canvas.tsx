@@ -1,7 +1,6 @@
 import {
   canvasEdgeTypes,
   canvasNodeTypes,
-  centreOf,
   gridSpacing,
   themedCanvasStylesheet,
   type CanvasFlowEdge,
@@ -17,6 +16,7 @@ import {
   type NodeChange,
   type ReactFlowInstance,
 } from '@xyflow/react';
+import type { ElementId } from '@panoptes/model';
 import {
   useEffect,
   useMemo,
@@ -24,14 +24,15 @@ import {
   useState,
   type KeyboardEvent,
 } from 'react';
-import type { ElementId } from '@panoptes/model';
+import { focusThreatPanel } from '../panel/panel-focus.js';
+import { ThreatOverlay } from '../panel/threat-overlay.js';
 import { useModelStore } from '../store/store.js';
 import {
   applyChanges,
   applyConnection,
   betweenTwoElements,
 } from './changes.js';
-import { removeSelected } from './edits.js';
+import { drawnElement, removeSelected } from './edits.js';
 import { currentLayout, selectedElement } from './layout.js';
 import {
   diagramGraph,
@@ -41,7 +42,12 @@ import {
   type DiagramNode,
 } from './nodes.js';
 import { FitOnOpen } from './view-commands.js';
-import { nodeInView, zoomLimits } from './viewport.js';
+import {
+  clearOfPanel,
+  nodeInView,
+  revealCentre,
+  zoomLimits,
+} from './viewport.js';
 import { ZoomCluster } from './zoom-cluster.js';
 import styles from './diagram-canvas.module.css';
 
@@ -70,6 +76,17 @@ const deleteKeys = new Set(['Delete', 'Backspace']);
  * came from the keyboard, and an edit's focus is neither. It is the move that
  * pans, not the model changing under a selection that stays, so dragging the
  * selected element to the edge of the canvas leaves it where it was dropped.
+ * What counts as in view is what the threat panel is not over: the panel
+ * opens on the same selection this pans for, so an element under it is an
+ * element out of sight ([the panel](../panel/README.md)).
+ *
+ * The panel is mounted here rather than beside the canvas, because that is
+ * what makes it an overlay on the diagram rather than a column taken off it.
+ * Enter on the element the store has selected hands it the keyboard, which is
+ * read in the capture phase: React Flow answers Enter on a node itself, and
+ * by the time the press has bubbled the selection it reports has already
+ * moved, so a press read on the way up could not tell selecting an element
+ * from asking for the panel of one already selected.
  *
  * The ground is graph paper: React Flow's own background component ruled at
  * the token module's grid spacing, so the lines scale with the viewport and a
@@ -129,10 +146,10 @@ export function DiagramCanvas() {
       return;
     }
     const viewport = instance.getViewport();
-    if (nodeInView(node, viewport, extent)) {
+    if (nodeInView(node, viewport, clearOfPanel(extent))) {
       return;
     }
-    const centre = centreOf(node);
+    const centre = revealCentre(node, viewport.zoom);
     void instance.setCenter(centre.x, centre.y, { zoom: viewport.zoom });
   }, [positions, selection]);
 
@@ -157,8 +174,26 @@ export function DiagramCanvas() {
     surface.current?.focus();
   };
 
+  const onKeyDownCapture = (event: KeyboardEvent<HTMLDivElement>): void => {
+    if (event.key !== 'Enter' || selection === undefined) {
+      return;
+    }
+    if (
+      drawnElement(event.target, elements) !== selection ||
+      !focusThreatPanel()
+    ) {
+      return;
+    }
+    event.preventDefault();
+    event.stopPropagation();
+  };
+
   return (
-    <div className={styles.canvas} data-testid="canvas-container">
+    <div
+      className={styles.canvas}
+      data-testid="canvas-container"
+      onKeyDownCapture={onKeyDownCapture}
+    >
       <style>{themedCanvasStylesheet}</style>
       <ReactFlow
         aria-label="Diagram"
@@ -189,6 +224,7 @@ export function DiagramCanvas() {
         <FitOnOpen />
       </ReactFlow>
       <ZoomCluster />
+      <ThreatOverlay />
     </div>
   );
 }

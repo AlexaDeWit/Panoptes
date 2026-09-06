@@ -7,7 +7,11 @@ import {
   sampleThreat,
   storeElement,
 } from '../store/store.fixtures.js';
-import { ThreatEditor, type ThreatEditorProps } from './threat-editor.js';
+import {
+  ThreatEditor,
+  type RefusedField,
+  type ThreatEditorProps,
+} from './threat-editor.js';
 
 const softHyphen = '­';
 
@@ -22,6 +26,7 @@ const showEditor = (
   const props: ThreatEditorProps = {
     threat: sampleThreat,
     focus: undefined,
+    held: undefined,
     onCommit: noop,
     onRefusal: noop,
     onDelete: noop,
@@ -148,19 +153,37 @@ describe('ThreatEditor', () => {
   });
 
   it('reports a refused draft, and keeps reporting it while a clean field commits beside it', async () => {
-    const onRefusal = vi.fn<(refusal: string | undefined) => void>();
+    const onRefusal = vi.fn<(refused: RefusedField | undefined) => void>();
+    const refusedDescription = {
+      field: 'Description',
+      text: `Pasted${softHyphen}prose`,
+      said: 'Description was not saved. Character 7 is one the model does not accept.',
+    };
     showEditor({ onRefusal });
 
     await typeInto('Description', `Pasted${softHyphen}prose`);
-    expect(onRefusal).toHaveBeenLastCalledWith(
-      'Description was not saved. Character 7 is one the model does not accept.',
-    );
+    expect(onRefusal).toHaveBeenLastCalledWith(refusedDescription);
 
     await typeInto('Mitigation', 'Check the token.');
 
-    expect(onRefusal).toHaveBeenLastCalledWith(
-      'Description was not saved. Character 7 is one the model does not accept.',
-    );
+    expect(onRefusal).toHaveBeenLastCalledWith(refusedDescription);
+  });
+
+  it('opens the field a held draft was typed in on that draft, refusal and all', () => {
+    showEditor({
+      held: {
+        field: 'Description',
+        text: `Pasted${softHyphen}prose`,
+        said: 'Description was not saved. Character 7 is one the model does not accept.',
+      },
+    });
+
+    expect(screen.getByDisplayValue(`Pasted${softHyphen}prose`)).toBeDefined();
+    expect(
+      screen
+        .getByRole('textbox', { name: 'Description' })
+        .getAttribute('aria-invalid'),
+    ).toBe('true');
   });
 
   it('says that deleting a threat several elements name takes it off all of them', () => {
