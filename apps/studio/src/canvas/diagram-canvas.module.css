@@ -55,15 +55,19 @@
   stroke-width: var(--pn-cue-flow-selection);
 }
 
-/* What a click would do, said by the pointer. React Flow marks a node both
-   selectable and draggable and its own sheet lands `grab` on the pair, which
-   speaks for the drag rather than for the selection a click makes. A flow's
-   `pointer`, a handle's `crosshair` and the background's `grab` are React
-   Flow's own and already say it, so nothing here restates them. */
-.canvas :global(.react-flow__node.selectable) {
-  cursor: pointer;
+/* The canvas rests with the plain arrow. React Flow marks the pane
+   draggable and every node selectable and draggable, and its own sheet
+   lands `grab` on the pair, which speaks for a drag that is not happening.
+   The hand returns only while something is actually being dragged. A flow's
+   `pointer` and a handle's `crosshair` are React Flow's own and already say
+   it, so nothing here restates them. */
+.canvas :global(.react-flow__pane.draggable),
+.canvas :global(.react-flow__node.selectable),
+.canvas :global(.react-flow__node.draggable) {
+  cursor: default;
 }
 
+.canvas :global(.react-flow__pane.dragging),
 .canvas :global(.react-flow__node.draggable.dragging) {
   cursor: grabbing;
 }

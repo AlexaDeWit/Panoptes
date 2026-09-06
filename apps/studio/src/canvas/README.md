@@ -214,13 +214,13 @@ makes widening that line under the pointer both the cue and the band. What
 that band should be is issue 191's, along with the boundary hit testing named
 below.
 
-The pointer says what a click would do. React Flow's own sheet already lands
-`pointer` on a flow, `crosshair` on a handle a flow is drawn from, and `grab`
-then `grabbing` on the background that pans. What the studio adds is
-`pointer` over an element, which React Flow leaves at the `grab` it gives any
-draggable node, so the cursor speaks for the selection a click makes rather
-than for the drag. The other two cursors the epic asks for belong to the tool
-modes of issue 175, and the CSS module holds them against a `data-tool`
+The canvas rests with the plain arrow, and the hand returns only while
+something is dragged. React Flow's own sheet lands `pointer` on a flow,
+`crosshair` on a handle a flow is drawn from, and `grab` on the pane and on
+every draggable node; the studio's sheet turns that `grab` pair into the
+arrow and keeps the `grabbing` pair for the drag itself, so at rest nothing
+reads as grabbable. The other two cursors the epic asks for belong to the
+tool modes of issue 175, and the CSS module holds them against a `data-tool`
 attribute on the canvas container: `select`, which is the attribute absent
 and the rules above, `place`, a crosshair over the whole canvas because a
 placement tool draws where the click lands, and `hand`, the pan's own grab
