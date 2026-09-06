@@ -3,12 +3,9 @@ import { defineConfig, devices } from '@playwright/test';
 const frameTimeFloor = /drag-frame-time\.spec\.ts$/u;
 
 // Browsers come from the flake (PLAYWRIGHT_BROWSERS_PATH points into the nix
-// store), never from playwright's downloader. The suite covers the boot smoke,
-// the axe-core accessibility check, which is the half of the studio's
-// accessibility gate that needs a real browser, opening and saving a file,
-// which needs a browser for the file input and the download, and the canvas
-// gestures, which need one to drag, focus and move an element, and the frame
-// time floor a drag of Écluse holds to (issue #181).
+// store), never from playwright's downloader. What the suite covers, why each
+// spec needs a browser at all, and which line of M4's definition of done each
+// one holds are in README.md beside this file.
 export default defineConfig({
   testDir: './src',
   outputDir: './test-output/playwright/output',
