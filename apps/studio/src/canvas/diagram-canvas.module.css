@@ -44,13 +44,9 @@
   pointer-events: none;
 }
 
-/* A flow has no box to frame, so the weight of its line says both what the
-   pointer is over and what is selected. The canvas package draws its own edge
-   body rather than React Flow's, which is what carries the wider invisible
-   path a built-in edge is hit tested on, so a flow here is hit tested on the
-   line itself: widening it under the pointer both says where the band is and
-   is the band. Hover is written first so a selected flow the pointer is over
-   keeps the heavier of the two, the pair counting the same. */
+/* Hover is written before selected because the two selectors count the same,
+   so source order is what keeps a selected flow under the pointer at the
+   heavier weight. */
 .canvas :global(.react-flow__edge:hover .pn-shape) {
   stroke-width: var(--pn-cue-flow-hover);
 }
@@ -72,14 +68,9 @@
   cursor: grabbing;
 }
 
-/* The active tool, which issue 175 sets on this container as `select`,
-   `place` or `hand`. A placement tool draws where the click lands, so the
-   whole canvas is a crosshair, and the hand pans it, so the whole canvas is
-   the grab the background already carries. Nothing sets the attribute until
-   175 does, which leaves `select` and the two rules above. They are written
-   after those rules rather than before because the selectors count the same
-   and the tool has to win. The cursor is set on React Flow's own parts rather
-   than on this container, which the floating chrome would inherit it from. */
+/* Written after the rules above because the selectors count the same and the
+   tool has to win, and set on React Flow's own parts rather than on this
+   container, which the floating chrome would inherit a cursor from. */
 .canvas[data-tool='place'] :global(.react-flow__pane),
 .canvas[data-tool='place'] :global(.react-flow__node),
 .canvas[data-tool='place'] :global(.react-flow__edge) {

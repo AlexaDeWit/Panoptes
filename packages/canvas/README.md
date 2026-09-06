@@ -265,14 +265,16 @@ they are drawn over. `cueWidths` is the same measure for the marks the studio
 lays over a diagram rather than in it: the frame around a selected element,
 and the two weights a flow's line takes under the pointer and once selected.
 Each is a step above the outline weight, which is what makes a selection
-legible with no colour read off it, and the headless render lays none of them
-down. `arrowhead` sizes the triangle a flow ends in, `badgeRadius` the two
-circles a badge stacks, and `gridSpacing` the graph paper the studio rules its
-canvas with. The badge radii and the ring are one decision: the ring is
-centred on the circle, so half of it eats into the disc the count is lettered
-on, and the secondary radius is 9 because a two-digit count at that size,
-measured with the wrap's own ratio, reaches 6.69 units from the centre where a
-3-unit ring would leave 6.5.
+legible with no colour read off it, and none is more than one step past the
+heaviest weight the drawing itself lays down, so a cue stays inside the hand
+the diagram is drawn by. The headless render lays none of them down.
+`arrowhead` sizes the triangle a flow ends in, `badgeRadius` the two circles a
+badge stacks, and `gridSpacing` the graph paper the studio rules its canvas
+with. The badge radii and the ring are one decision: the ring is centred on
+the circle, so half of it eats into the disc the count is lettered on, and the
+secondary radius is 9 because a two-digit count at that size, measured with
+the wrap's own ratio, reaches 6.69 units from the centre where a 3-unit ring
+would leave 6.5.
 
 `canvasStylesheet` resolves the light tokens to values, because the standalone
 SVG has no document around it to hold a `:root` and neither has the PDF that

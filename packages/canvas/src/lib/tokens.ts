@@ -159,12 +159,15 @@ export const strokeWidths = {
  * How heavily the studio marks what is selected and what the pointer is over,
  * in the same user units as {@link strokeWidths}: the canvas draws a model
  * unit as a pixel, so a cue laid over the drawing is measured against the
- * weight the drawing was laid down at. Each is a step above `outline`, which
- * is what makes a selection legible with no colour read off it, in greyscale
- * and at any zoom. A flow's two are apart because a flow has no box to frame
- * and its line carries both, so a selected flow under the pointer has to stay
- * the heavier of the two. The headless render lays none of them down: a file
- * has nothing selected and nothing under a pointer.
+ * weight the drawing was laid down at. Each is a step above the outline
+ * weight, which is what makes a selection legible with no colour read off it,
+ * in greyscale and at any zoom, and none is more than one step past the
+ * heaviest weight the drawing itself lays down, so a cue stays inside the
+ * hand the diagram is drawn by: a flow taken further swells past the
+ * arrowhead that ends it. A flow's two are apart because a flow has no box to
+ * frame and its line carries both, so a selected flow under the pointer has
+ * to stay the heavier of the two. The headless render lays none of them down:
+ * a file has nothing selected and nothing under a pointer.
  *
  * {@link tokenStylesheet} writes each as a pixel length, which a CSS border
  * demands and an SVG stroke reads as that many units of the space it is drawn
@@ -173,8 +176,8 @@ export const strokeWidths = {
  */
 export const cueWidths = {
   selection: 3,
-  flowHover: 4,
-  flowSelection: 6,
+  flowHover: 3,
+  flowSelection: 4,
 } as const;
 
 /**
