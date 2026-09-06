@@ -67,11 +67,12 @@
   ],
   "analytics": false,
   "targetDefaults": {
-    // ^test because packages/model writes test-data/ecluse.model.json as a
-    // file snapshot and the formats, canvas and render suites read it, so a
-    // run-many could read it mid-write (CODING.md, Build targets). apps/cli
-    // overrides this and drops ^test: CI runs its suite a second time with
-    // --skip-nx-cache, where ^test would rerun every dependency suite.
+    // ^test because a suite writes a file under test-data that another
+    // suite reads, so a run-many could read one mid-write (CODING.md, Build
+    // targets; test-data/README.md holds the writer and readers of each).
+    // It reaches only a pair with a workspace:* edge between the two, so a
+    // reader the layer matrix keeps off its writer names the writing task
+    // in its own manifest instead.
     "test": {
       "dependsOn": ["^build", "^test"]
     },

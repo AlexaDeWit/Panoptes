@@ -137,11 +137,16 @@ for what a task produces and consumes: files a task writes are restored
 from cache only when listed in its `outputs`, and a task that needs another
 project's output reaches it through the project graph, a `workspace:*`
 dependency or `dependsOn`, never a relative path the graph cannot see.
-`test` carries `^test` for that reason: `packages/model` writes
-`test-data/ecluse.model.json` as a file snapshot, and the formats, canvas and
-render suites read it, so the write is ordered ahead of every read in a test
-task, along the `workspace:*` edges those projects already have. CI restores
-no cache, so a hole shows only in local runs.
+`test` carries `^test` for that reason: several suites write a file under
+`test-data/` as a vitest file snapshot that another suite reads, and the
+write is ordered ahead of the read along the `workspace:*` edges the two
+projects already have. Where the layer matrix allows no such edge, the
+reading project's own `test` names the writing task instead,
+`{ "projects": ["@panoptes/formats"], "target": "test" }`, which is a task
+edge and no import: `packages/canvas` and `packages/render` read the model
+`packages/formats` writes and may not depend on it. Who writes and who reads
+each file is in [`test-data/README.md`](test-data/README.md). CI restores no
+cache, so a hole shows only in local runs.
 
 A target that empties its output directory owns that directory alone. The
 studio's vite build empties `dist/` on every run and nothing orders it
