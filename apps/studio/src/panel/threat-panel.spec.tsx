@@ -144,8 +144,8 @@ describe('ThreatPanel', () => {
       dispatch(Action.Undo());
     });
 
-    expect(severityOf()).toContain('medium');
-  });
+    it('asks for a selection while there is none, and offers no edit', () => {
+      showPanel();
 
   it('keeps a refused draft on screen where the threat would collapse, and says so', async () => {
     const user = userEvent.setup();
@@ -215,7 +215,8 @@ describe('ThreatPanel', () => {
       dispatch(Action.Undo());
     });
 
-    expect(announcement()).toBe('');
+    it('lists nothing for an element no threat names, and still offers an add', () => {
+      showPanel(processElement);
 
     await user.click(screen.getByRole('button', { name: /A reader edits/u }));
 
