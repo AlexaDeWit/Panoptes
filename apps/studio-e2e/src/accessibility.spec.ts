@@ -90,11 +90,11 @@ test('the studio carries no violation with the panel open mid-drag', async ({
   await page.goto('/');
   await expect(page.getByTestId('canvas-container')).toBeVisible();
 
-  const reader = page.getByRole('group', { name: /^Reader, actor/u });
-  await reader.click();
+  const actor = page.getByRole('group', { name: /^Actor, actor/u });
+  await actor.click();
   await expect(page.getByRole('region', { name: 'Threats' })).toBeVisible();
 
-  const box = await reader.boundingBox();
+  const box = await actor.boundingBox();
   const from = {
     x: (box?.x ?? 0) + (box?.width ?? 0) / 2,
     y: (box?.y ?? 0) + (box?.height ?? 0) / 2,
