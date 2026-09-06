@@ -13,7 +13,6 @@ import {
   type EdgeChange,
   type EdgeMouseHandler,
   type NodeChange,
-  type NodeMouseHandler,
   type ReactFlowInstance,
 } from '@xyflow/react';
 import type { ElementId } from '@panoptes/model';
@@ -24,6 +23,7 @@ import {
   useRef,
   useState,
   type KeyboardEvent,
+  type MouseEvent,
 } from 'react';
 import { focusThreatPanel } from '../panel/panel-focus.js';
 import { ThreatOverlay } from '../panel/threat-overlay.js';
@@ -213,12 +213,31 @@ export function DiagramCanvas() {
     [elements],
   );
 
-  const onNodeDoubleClick = useCallback<NodeMouseHandler<DiagramNode>>(
-    (_, node) => {
-      onRename(node.id);
-    },
-    [onRename],
-  );
+  // A pointer double-click renames the element it lands on. It is read here,
+  // over the whole canvas, rather than from React Flow's node double-click,
+  // because selecting a node opens the threat panel and pans the node clear
+  // of it between the two clicks: the second click lands on the pane the node
+  // has left, so no node hears both. The element the first click of the pair
+  // fell on is what is renamed, found once and held, and the browser's own
+  // click count is what tells the pair from two separate clicks.
+  const clickedFirst = useRef<ElementId | undefined>(undefined);
+
+  const onCanvasClickCapture = (event: MouseEvent<HTMLDivElement>): void => {
+    if (
+      !(event.target instanceof Element) ||
+      event.target.closest('input, textarea, button') !== null
+    ) {
+      return;
+    }
+    if (event.detail > 1) {
+      const element = clickedFirst.current;
+      if (element !== undefined) {
+        beginRenaming(element);
+      }
+      return;
+    }
+    clickedFirst.current = drawnElement(event.target, elements);
+  };
 
   const onEdgeDoubleClick = useCallback<EdgeMouseHandler<CanvasFlowEdge>>(
     (_, edge) => {
@@ -231,6 +250,7 @@ export function DiagramCanvas() {
     <div
       className={styles.canvas}
       data-testid="canvas-container"
+      onClickCapture={onCanvasClickCapture}
       onKeyDownCapture={onKeyDownCapture}
     >
       <style>{themedCanvasStylesheet}</style>
@@ -255,7 +275,6 @@ export function DiagramCanvas() {
           view.current = instance;
         }}
         onKeyDown={onKeyDown}
-        onNodeDoubleClick={onNodeDoubleClick}
         onNodesChange={onNodesChange}
         ref={surface}
         selectionKeyCode={null}

@@ -50,6 +50,8 @@ test('save as asks the format in the menu where the browser has no picker of its
     'Close the fileCtrl+Shift+X',
     'UndoCtrl+Z',
     'RedoCtrl+Shift+Z or Ctrl+Y',
+    'Rename the selectionF2',
+    'Delete the selectionDelete or Backspace',
   ]);
 
   const written = await savedFromMenu(page, 'Save as Panoptes YAML');
