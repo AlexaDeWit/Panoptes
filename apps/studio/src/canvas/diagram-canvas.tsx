@@ -1,6 +1,4 @@
 import {
-  canvasEdgeTypes,
-  canvasNodeTypes,
   gridSpacing,
   themedCanvasStylesheet,
   type CanvasFlowEdge,
