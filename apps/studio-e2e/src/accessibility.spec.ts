@@ -213,3 +213,25 @@ test('the open connect listbox carries no violation', async ({ page }) => {
 
   await audit(page, 'showing the open connect listbox', '[role="listbox"]');
 });
+
+test('the studio carries no violation with an element selected, or with a flow selected', async ({
+  page,
+}) => {
+  await page.goto('/');
+  await expect(page.getByTestId('canvas-container')).toBeVisible();
+
+  await page.getByRole('group', { name: /^Reader, actor/u }).click();
+
+  await audit(page, 'showing a selected element');
+
+  await page.getByRole('combobox', { name: 'Flow to' }).press('Enter');
+  await page.getByRole('option', { name: 'Studio' }).press('Enter');
+  await page.getByRole('button', { name: 'Connect' }).click();
+  await expect(
+    page.getByRole('group', {
+      name: /^New flow, flow, from Reader to Studio/u,
+    }),
+  ).toHaveClass(/selected/u);
+
+  await audit(page, 'showing a selected flow');
+});

@@ -32,19 +32,72 @@
 
 /* Selection is a dashed frame around the node: a border rather than an
    outline, so it stacks with the focus ring and survives forced colours,
-   which drop a shadow. */
+   which drop a shadow. Its weight is a step above the one the element's own
+   outline is drawn at, so the frame reads as a frame with no colour told
+   apart, in greyscale and at any zoom. */
 .canvas :global(.react-flow__node.selected)::after {
   content: '';
   position: absolute;
   inset: calc(-1 * var(--pn-space-2));
-  border: 2px dashed var(--pn-colour-text);
+  border: var(--pn-cue-selection) dashed var(--pn-colour-text);
   border-radius: var(--pn-radius);
   pointer-events: none;
 }
 
-/* A flow has no box to frame, so a selected one is drawn heavier. */
+/* Hover is written before selected because the two selectors count the same,
+   so source order is what keeps a selected flow under the pointer at the
+   heavier weight. */
+.canvas :global(.react-flow__edge:hover .pn-shape) {
+  stroke-width: var(--pn-cue-flow-hover);
+}
+
 .canvas :global(.react-flow__edge.selected .pn-shape) {
-  stroke-width: 4;
+  stroke-width: var(--pn-cue-flow-selection);
+}
+
+/* What a click would do, said by the pointer. React Flow marks a node both
+   selectable and draggable and its own sheet lands `grab` on the pair, which
+   speaks for the drag rather than for the selection a click makes. A flow's
+   `pointer`, a handle's `crosshair` and the background's `grab` are React
+   Flow's own and already say it, so nothing here restates them. */
+.canvas :global(.react-flow__node.selectable) {
+  cursor: pointer;
+}
+
+.canvas :global(.react-flow__node.draggable.dragging) {
+  cursor: grabbing;
+}
+
+/* Written after the rules above because the selectors count the same and the
+   tool has to win, and set on React Flow's own parts rather than on this
+   container, which the floating chrome would inherit a cursor from. */
+.canvas[data-tool='place'] :global(.react-flow__pane),
+.canvas[data-tool='place'] :global(.react-flow__node),
+.canvas[data-tool='place'] :global(.react-flow__edge) {
+  cursor: crosshair;
+}
+
+.canvas[data-tool='hand'] :global(.react-flow__pane),
+.canvas[data-tool='hand'] :global(.react-flow__node),
+.canvas[data-tool='hand'] :global(.react-flow__edge) {
+  cursor: grab;
+}
+
+.canvas[data-tool='hand'] :global(.react-flow__pane.dragging),
+.canvas[data-tool='hand'] :global(.react-flow__node.dragging) {
+  cursor: grabbing;
+}
+
+/* The control that resizes the selected element, which React Flow draws as a
+   blue square outlined in white. Neither is a colour the studio draws in, and
+   the white is a literal in React Flow's own sheet rather than a property to
+   hand a token to, so the control is restyled here. The square is left square:
+   it is what tells the control apart from the round handle a flow is drawn
+   from, which sits at the same corner. The cursor naming the direction it
+   sizes in is React Flow's own. */
+.canvas :global(.react-flow__resize-control.handle) {
+  background: var(--pn-colour-text);
+  border-color: var(--pn-colour-badge-ground);
 }
 
 /* The handles a flow attaches to are drawn on the element under the pointer
