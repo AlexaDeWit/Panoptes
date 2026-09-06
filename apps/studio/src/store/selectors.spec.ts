@@ -7,9 +7,15 @@ import {
   elementCount,
   firstDiagramId,
   isDirty,
+  modelAsOpened,
 } from './selectors.js';
 import { initialState } from './state.js';
-import { mainDiagram, newProcess, sampleModel } from './store.fixtures.js';
+import {
+  mainDiagram,
+  nativeSource,
+  newProcess,
+  sampleModel,
+} from './store.fixtures.js';
 
 const start = initialState(sampleModel);
 
@@ -38,6 +44,35 @@ describe('selectors', () => {
     expect(canRedo(start)).toBe(false);
     expect(canUndo(edited)).toBe(true);
     expect(canRedo(reduce(edited, Action.Undo()))).toBe(true);
+  });
+
+  it('reads the model as it arrived, and nothing at all once the history has moved', () => {
+    expect(modelAsOpened(start)).toBe(sampleModel);
+    expect(modelAsOpened(edited)).toBeUndefined();
+    expect(modelAsOpened(reduce(edited, Action.Undo()))).toBeUndefined();
+  });
+
+  it('holds the model a save leaves alone, so a save does not fit the view again', () => {
+    const saved = reduce(
+      start,
+      Action.Saved({ name: 'model.yaml', source: nativeSource }),
+    );
+
+    expect(modelAsOpened(saved)).toBe(sampleModel);
+  });
+
+  it('reads a newly opened model, so a second open fits the view again', () => {
+    const opened = reduce(
+      edited,
+      Action.Opened({
+        model: sampleModel,
+        name: 'other.yaml',
+        source: nativeSource,
+        divergences: [],
+      }),
+    );
+
+    expect(modelAsOpened(opened)).toBe(sampleModel);
   });
 
   it('names no diagram in a model that holds none', () => {

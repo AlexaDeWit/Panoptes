@@ -40,7 +40,9 @@ import {
   withMeasurements,
   type DiagramNode,
 } from './nodes.js';
-import { nodeInView } from './viewport.js';
+import { FitOnOpen } from './view-commands.js';
+import { nodeInView, zoomLimits } from './viewport.js';
+import { ZoomCluster } from './zoom-cluster.js';
 import styles from './diagram-canvas.module.css';
 
 const deleteKeys = new Set(['Delete', 'Backspace']);
@@ -73,6 +75,13 @@ const deleteKeys = new Set(['Delete', 'Backspace']);
  * the token module's grid spacing, so the lines scale with the viewport and a
  * zoom reads as one. Its colour comes from the studio's own custom property,
  * which the CSS module beside this file hands React Flow.
+ *
+ * The view is fitted to the diagram whenever a model arrives rather than on
+ * mount alone, which is React Flow's own `fitView`: a file opened over the
+ * model before it would otherwise be drawn at that model's zoom and mostly
+ * off screen. The calculation and the room it leaves for the floating chrome
+ * are `viewport.ts`, and `FitOnOpen` is what applies it, from inside React
+ * Flow, which is what holds the canvas's extent.
  *
  * Deleting is bound here rather than left to React Flow, whose delete key
  * listens on the whole document and would remove the selected element from
@@ -148,12 +157,14 @@ export function DiagramCanvas() {
       <style>{canvasStylesheet}</style>
       <ReactFlow
         aria-label="Diagram"
+        attributionPosition="bottom-left"
         connectionMode={ConnectionMode.Loose}
         deleteKeyCode={null}
         edges={graph.edges}
         edgeTypes={canvasEdgeTypes}
-        fitView
         isValidConnection={betweenTwoElements}
+        maxZoom={zoomLimits.maximum}
+        minZoom={zoomLimits.minimum}
         multiSelectionKeyCode={null}
         nodes={onScreen}
         nodesConnectable
@@ -170,7 +181,9 @@ export function DiagramCanvas() {
         tabIndex={-1}
       >
         <Background gap={gridSpacing} variant={BackgroundVariant.Lines} />
+        <FitOnOpen />
       </ReactFlow>
+      <ZoomCluster />
     </div>
   );
 }

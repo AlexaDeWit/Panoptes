@@ -29,7 +29,9 @@ and React Flow's viewport, which lives as long as the canvas is mounted. The
 store's own dispatches and the canvas edits need no surface, which is why a
 control runs those with nothing mounted above it. The app builds the one
 surface, in `app.tsx`, because that is the single place holding both the file
-session and the viewport.
+session and the viewport. The viewport half is a hook the canvas exports, so
+the fit a command runs and the fit an open runs are one calculation ([the
+canvas](../canvas/README.md)).
 
 ## Chords, and how a platform writes them
 
@@ -55,6 +57,16 @@ technology reads the binding from it. The spelling a person reads is the
 tooltip and the control's accessible description, which is what
 `CommandButton` renders beside the button rather than inside it: inside, the
 accessible name of Save would read "Save Ctrl+S".
+
+A control with no words on it needs more than that, so `IconCommandButton` is
+the same control drawn as a glyph. The registry's label becomes the accessible
+name, the glyph carrying none, and the label with its chord is a Radix tooltip
+rather than the `title` attribute its worded sibling holds: `title` is shown to
+a pointer alone, and an icon has to say what it is to a keyboard as well. The
+tooltip renders where it stands rather than through a portal, so it stays in
+whichever landmark the control sits in, and it leaves with the pointer that
+opened it. The zoom cluster is the first control drawn that way ([the
+canvas](../canvas/README.md)); the toolbox and the burger menu are next.
 
 ## Who holds the keyboard
 
@@ -90,10 +102,10 @@ something else instead.
   burger menu (#174) carries close, the toolbox (#175) the tool modes and the
   connector (#175, #178) the start of a flow, and multi-select (#156) select
   all.
-- Render a command through `CommandButton`, or read `commandById` for a
-  surface that draws its own control. Never hold a label or a chord beside a
-  control: the menu, the toolbox, the panel and the zoom cluster read both
-  from here.
+- Render a command through `CommandButton`, or `IconCommandButton` where the
+  control is a glyph, or read `commandById` for a surface that draws its own
+  control. Never hold a label or a chord beside a control: the menu, the
+  toolbox, the panel and the zoom cluster read both from here.
 - Bind a new command by adding an entry, not by adding a listener. The spec
   beside the registry fails a chord that collides with one already bound.
 - The tool commands add an element today, which is what the palette's buttons

@@ -1,0 +1,46 @@
+.cluster {
+  position: absolute;
+  z-index: 1;
+  inset-block-end: var(--pn-space-3);
+  inset-inline-end: var(--pn-space-3);
+  display: flex;
+  gap: var(--pn-space-1);
+  padding: var(--pn-space-1);
+  border: 1px solid var(--pn-colour-border);
+  border-radius: var(--pn-radius);
+  background: var(--pn-colour-surface-raised);
+}
+
+.control {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: 0;
+  border-radius: var(--pn-radius);
+  background: none;
+  color: var(--pn-colour-text);
+}
+
+.control:hover {
+  background: var(--pn-colour-surface);
+}
+
+.control:focus-visible {
+  outline: var(--pn-focus-ring);
+  outline-offset: var(--pn-focus-ring-offset);
+}
+
+/* The glyph is a stroke rather than a fill, so it takes the button's own
+   colour and stays legible under forced colours. */
+.glyph {
+  width: 1rem;
+  height: 1rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}

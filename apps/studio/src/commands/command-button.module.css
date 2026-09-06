@@ -13,3 +13,22 @@
   white-space: nowrap;
   overflow: hidden;
 }
+
+/* The icon control's tooltip, which is Radix's rather than the `title` the
+   worded control carries: an icon says nothing on its own, and `title` is
+   shown on hover alone. It is not portalled, so it sits inside whichever
+   landmark holds the control. */
+.tooltip {
+  display: flex;
+  gap: var(--pn-space-2);
+  padding: var(--pn-space-1) var(--pn-space-2);
+  border: 1px solid var(--pn-colour-border);
+  border-radius: var(--pn-radius);
+  background: var(--pn-colour-surface-raised);
+  color: var(--pn-colour-text);
+  white-space: nowrap;
+}
+
+.chord {
+  color: var(--pn-colour-text-muted);
+}

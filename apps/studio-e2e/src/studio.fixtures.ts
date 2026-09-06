@@ -13,9 +13,10 @@ const ecluse: unknown = JSON.parse(
 );
 
 /**
- * Waits for the canvas to stop moving. React Flow measures the nodes it has
- * drawn and fits the view to them a frame later, so a click sent before that
- * lands where a node is about to be rather than where it is. The viewport's
+ * Waits for the canvas to stop moving. `FitOnOpen` fits the view to the
+ * diagram from an effect, once React Flow has measured the canvas, so a click
+ * sent before that lands where a node is about to be rather than where it
+ * is. The viewport's
  * own transform is the signal, and it is read twice: it has settled when a
  * poll finds it where the poll before found it.
  */

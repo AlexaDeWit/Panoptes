@@ -1,7 +1,8 @@
-import { ReactFlowProvider, useReactFlow } from '@xyflow/react';
+import { ReactFlowProvider } from '@xyflow/react';
 import { useMemo } from 'react';
 import { DiagramCanvas } from '../canvas/diagram-canvas.js';
 import { EditPalette } from '../canvas/palette.js';
+import { useViewCommands } from '../canvas/view-commands.js';
 import { CommandSurfaceProvider } from '../commands/binding.js';
 import { CommandButton } from '../commands/command-button.js';
 import type { CommandSurface } from '../commands/registry.js';
@@ -33,7 +34,12 @@ export function App() {
  *
  * The surface every command runs against is built here, because this is the
  * one place that holds both the file session and the viewport ([the
- * commands](../commands/README.md)). Opening and saving live in the file bar
+ * commands](../commands/README.md)). The viewport half comes from the canvas,
+ * which is what knows how a diagram is fitted into it ([the
+ * canvas](../canvas/README.md)), so the zoom cluster's fit and the fit an
+ * open performs are one answer rather than two that drift.
+ *
+ * Opening and saving live in the file bar
  * ([the file bridge](../files/README.md)), drawing in the canvas ([the
  * canvas](../canvas/README.md)) and the threats in the panel ([the
  * panel](../panel/README.md)), so this mounts them rather than growing a
@@ -43,24 +49,11 @@ function Studio() {
   const elements = useModelStore(elementCount);
   const undoable = useModelStore(canUndo);
   const session = useFileSession();
-  const flow = useReactFlow();
+  const view = useViewCommands();
 
   const surface = useMemo<CommandSurface>(
-    () => ({
-      files: session.commands,
-      view: {
-        zoomIn: () => {
-          void flow.zoomIn();
-        },
-        zoomOut: () => {
-          void flow.zoomOut();
-        },
-        fitToView: () => {
-          void flow.fitView();
-        },
-      },
-    }),
-    [flow, session.commands],
+    () => ({ files: session.commands, view }),
+    [session.commands, view],
   );
 
   return (
