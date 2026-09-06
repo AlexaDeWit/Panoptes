@@ -8,7 +8,7 @@ import {
   categoryKey,
   enumeratedCategoryKeys,
 } from './category-field.js';
-import { listboxTimeout } from './fields.fixtures.js';
+import { listboxTimeout } from './ui.fixtures.js';
 
 const stride: ThreatCategory = {
   methodology: 'STRIDE',
