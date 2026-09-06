@@ -50,7 +50,7 @@ properties, which is how the diagram follows the mode
 `--pn-colour-surface-raised` is a panel in the chrome and the fill inside
 every element outline on the diagram, `--pn-colour-canvas` is the ground and
 the halo cut under a flow name, and the two inks letter and draw the diagram
-as well as the chrome. Every role in the palette has a property whether a
+as well as the chrome. Every colour role has a property whether a
 control reads it yet or not, so the light and the dark block stay one list.
 
 A control never suppresses the focus indicator and never invents its own: it
@@ -83,7 +83,7 @@ hand one over. It words every variant: nothing reaches a person as a tag, and
 a codec's paths are kept because they say which line of a file was refused
 rather than that the file was. The threat panel announces an added or deleted
 threat through the same component ([the panel](../panel/README.md)), and the
-canvas palette says what an edit did through it as well ([the
+canvas toolbox says what an edit did through it as well ([the
 canvas](../canvas/README.md)). Each names its own region, so a landmark list
 says which one a reader reached. `ErrorBoundary` is the last stop for a throw
 from anywhere below it, and is a class because React offers no other way to

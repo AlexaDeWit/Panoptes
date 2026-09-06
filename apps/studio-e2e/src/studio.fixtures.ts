@@ -177,6 +177,10 @@ export const canvasSurface = (page: Page): Locator =>
 export const editAnnouncement = (page: Page): Locator =>
   page.getByTestId('canvas-announcement');
 
+/** One icon in the floating toolbox. */
+export const toolButton = (page: Page, name: string): Locator =>
+  page.getByRole('button', { name, exact: true });
+
 /**
  * The last control on the tab path before the canvas, which is where a spec
  * that tabs into the diagram starts. The menu's button is that stop whether or
@@ -185,10 +189,6 @@ export const editAnnouncement = (page: Page): Locator =>
  * file boundary has cost something.
  */
 export const beforeCanvas = (page: Page): Locator => menuButton(page);
-
-/** The listbox a flow's other end is chosen from. */
-export const connectTarget = (page: Page): Locator =>
-  page.getByRole('combobox', { name: 'Flow to' });
 
 /** The panel holding the threats of whatever the canvas has selected. */
 export const threatPanel = (page: Page): Locator =>
@@ -313,6 +313,23 @@ export const emptyCanvasPoint = async (page: Page): Promise<Point> => {
 
   expect(clear, 'the canvas has no point clear of every element').toBeDefined();
   return clear ?? corner;
+};
+
+/**
+ * Selects an element tool and clicks a clear point on the canvas. The placed
+ * element is returned with its placeholder name open in the in-place field.
+ */
+export const placeByClick = async (
+  page: Page,
+  tool: 'Actor' | 'Process' | 'Store' | 'Trust boundary',
+  named: RegExp,
+): Promise<Locator> => {
+  const at = await emptyCanvasPoint(page);
+  await toolButton(page, tool).click();
+  await page.mouse.click(at.x, at.y);
+  const placed = nodeNamed(page, named);
+  await expect(placed).toHaveCount(1);
+  return placed;
 };
 
 /**

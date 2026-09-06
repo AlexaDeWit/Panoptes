@@ -1,5 +1,6 @@
 import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { currentTool, resetTools } from '../canvas/tools.js';
 import { initialState, placeholderModel } from '../store/state.js';
 import { modelStore } from '../store/store.js';
 import { CommandSurfaceProvider } from './binding.js';
@@ -9,6 +10,7 @@ import { recordingSurface } from './commands.fixtures.js';
 describe('CommandButton', () => {
   beforeEach(() => {
     modelStore.setState(initialState(placeholderModel), true);
+    resetTools();
   });
 
   it('takes its words from the registry, and gives way to a caller that says more', () => {
@@ -61,13 +63,13 @@ describe('CommandButton', () => {
     expect(recording.asked).toEqual(['open']);
   });
 
-  it('runs a command the store answers for with no surface mounted at all', async () => {
+  it('runs a toolbox command with no surface mounted at all', async () => {
     const user = userEvent.setup();
     render(<CommandButton command="actor-tool">New actor</CommandButton>);
 
     await user.click(screen.getByRole('button', { name: 'New actor' }));
 
-    expect(modelStore.getState().present.diagrams[0].elements).toHaveLength(4);
+    expect(currentTool().active).toBe('actor');
   });
 });
 
@@ -112,5 +114,19 @@ describe('IconCommandButton', () => {
     await user.click(screen.getByRole('button', { name: 'Zoom out' }));
 
     expect(recording.asked).toEqual(['zoomOut']);
+  });
+
+  it('reports whether a tool mode is active', () => {
+    render(
+      <IconCommandButton command="actor-tool" pressed>
+        <svg aria-hidden="true" />
+      </IconCommandButton>,
+    );
+
+    expect(
+      screen
+        .getByRole('button', { name: 'Actor' })
+        .getAttribute('aria-pressed'),
+    ).toBe('true');
   });
 });

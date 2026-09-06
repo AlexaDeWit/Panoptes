@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, type ReactNode } from 'react';
+import { holdHandTool, releaseHandTool } from '../canvas/tools.js';
 import {
   commandFor,
   runCommand,
@@ -97,11 +98,24 @@ export function useCommandKeys(surface: CommandSurface): void {
         return;
       }
       event.preventDefault();
-      runCommand(command, surface);
+      if (command.id === 'hand-tool' && event.key === ' ') {
+        holdHandTool();
+      } else {
+        runCommand(command, surface);
+      }
+    };
+    const released = (event: KeyboardEvent): void => {
+      if (event.key === ' ') {
+        releaseHandTool();
+      }
     };
     document.addEventListener('keydown', pressed);
+    document.addEventListener('keyup', released);
+    window.addEventListener('blur', releaseHandTool);
     return () => {
       document.removeEventListener('keydown', pressed);
+      document.removeEventListener('keyup', released);
+      window.removeEventListener('blur', releaseHandTool);
     };
   }, [surface]);
 }

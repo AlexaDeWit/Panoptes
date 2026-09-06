@@ -1,0 +1,18 @@
+/* The draft uses model coordinates inside React Flow's transformed viewport. */
+.curve {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  color: var(--pn-colour-text);
+  overflow: visible;
+  pointer-events: none;
+}
+
+.curve path,
+.curve circle {
+  fill: var(--pn-colour-canvas);
+  stroke: currentColor;
+  stroke-width: var(--pn-cue-selection);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}

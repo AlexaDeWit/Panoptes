@@ -1,12 +1,13 @@
 import { initialState, placeholderModel } from '../store/state.js';
 import { modelStore } from '../store/store.js';
+import { currentTool, resetTools, tools } from '../canvas/tools.js';
 import { recordingSurface } from './commands.fixtures.js';
 import {
   commandById,
   commandFor,
   commands,
-  paletteCommands,
   runCommand,
+  toolCommands,
   type CommandId,
 } from './registry.js';
 import { platforms, spellChord } from './shortcuts.js';
@@ -45,7 +46,7 @@ describe('the command registry', () => {
   });
 
   it('leaves Escape to the field a refused draft is being corrected in', () => {
-    expect(commandById('clear-selection').inTextFields).toBe(false);
+    expect(commandById('select-tool').inTextFields).toBe(false);
   });
 
   it('names the issue that will give each command still without a dispatch one', () => {
@@ -57,18 +58,14 @@ describe('the command registry', () => {
         command.id,
         command.dispatch.kind === 'pending' ? command.dispatch.issue : 0,
       ]),
-    ).toEqual([
-      ['select-all', 156],
-      ['select-tool', 175],
-      ['hand-tool', 175],
-    ]);
+    ).toEqual([['select-all', 156]]);
   });
 
-  it('binds each kind the palette adds to a tool command of its own', () => {
-    const bound = Object.values(paletteCommands);
+  it('binds every toolbox mode to a command of its own', () => {
+    const bound = Object.values(toolCommands);
     expect(new Set(bound).size).toBe(bound.length);
-    for (const id of bound) {
-      expect(commandById(id).dispatch.kind).toBe('runs');
+    for (const tool of tools) {
+      expect(commandById(toolCommands[tool]).dispatch.kind).toBe('runs');
     }
   });
 });
@@ -86,11 +83,34 @@ describe('commandFor', () => {
     expect(commandFor({ ...press, shiftKey: true }, 'other')?.id).toBe('redo');
     expect(commandFor({ ...press, key: 'q' }, 'other')).toBeUndefined();
   });
+
+  it.each([
+    ['1', 'select-tool'],
+    ['2', 'actor-tool'],
+    ['3', 'process-tool'],
+    ['4', 'store-tool'],
+    ['5', 'boundary-box-tool'],
+    ['6', 'boundary-curve-tool'],
+  ] as const)('maps number %s to %s', (key, command) => {
+    expect(
+      commandFor(
+        {
+          key,
+          ctrlKey: false,
+          metaKey: false,
+          shiftKey: false,
+          altKey: false,
+        },
+        'other',
+      )?.id,
+    ).toBe(command);
+  });
 });
 
 describe('runCommand', () => {
   beforeEach(() => {
     modelStore.setState(initialState(placeholderModel), true);
+    resetTools();
   });
 
   it('asks the surface for the commands it answers for', () => {
@@ -116,12 +136,14 @@ describe('runCommand', () => {
     ]);
   });
 
-  it('dispatches an edit against the store', () => {
+  it('selects an element mode without editing the store', () => {
     const recording = recordingSurface();
+    const before = modelStore.getState();
 
     runCommand(commandById('actor-tool'), recording.surface);
 
-    expect(modelStore.getState().present.diagrams[0].elements).toHaveLength(4);
+    expect(currentTool()).toMatchObject({ active: 'actor', locked: false });
+    expect(modelStore.getState()).toBe(before);
     expect(recording.asked).toEqual([]);
   });
 
@@ -130,7 +152,6 @@ describe('runCommand', () => {
     const before = modelStore.getState();
 
     runCommand(commandById('select-all'), recording.surface);
-    runCommand(commandById('hand-tool'), recording.surface);
 
     expect(modelStore.getState()).toBe(before);
     expect(recording.asked).toEqual([]);

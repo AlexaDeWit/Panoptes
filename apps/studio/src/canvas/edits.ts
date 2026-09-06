@@ -1,4 +1,4 @@
-import type { ElementId, Model } from '@saerskriven/model';
+import type { ElementId, Model, Point, Size } from '@saerskriven/model';
 import { Action } from '../store/actions.js';
 import {
   elementById,
@@ -11,10 +11,10 @@ import { dispatch, modelStore } from '../store/store.js';
 import { announce } from './announcements.js';
 import {
   flowEnds,
-  freePosition,
+  freshBoundaryCurve,
   freshElement,
   freshFlow,
-  type PaletteKind,
+  type ElementTool,
 } from './elements.js';
 import { currentLayout } from './layout.js';
 import { accessibleNames } from './names.js';
@@ -30,32 +30,35 @@ export type RemovalCascade = {
   readonly threats: number;
 };
 
-/**
- * Adds one element of `kind` to the diagram on screen, selects it, says so,
- * and moves focus to it. The add is one action and so one step of the undo
- * stack; the selection that follows is not, the store keeping selection out
- * of its history.
- */
-export function addPaletteElement(kind: PaletteKind): void {
+/** Places and selects one element, then opens its placeholder name. */
+export function placeElement(
+  kind: Exclude<ElementTool, 'boundary-curve'>,
+  position: Point,
+  size: Size,
+): boolean {
   const state = modelStore.getState();
   const diagramId = firstDiagramId(state);
   if (diagramId === undefined) {
-    return;
+    return false;
   }
-  const element = freshElement(kind, freePosition(currentLayout(state)));
-  added(Action.AddElement({ diagramId, element }), element.id);
+  const element = freshElement(kind, position, size);
+  return placed(Action.AddElement({ diagramId, element }), element.id);
+}
+
+/** Places a trust-boundary curve through its committed waypoints. */
+export function placeBoundaryCurve(waypoints: readonly Point[]): boolean {
+  const state = modelStore.getState();
+  const diagramId = firstDiagramId(state);
+  if (diagramId === undefined || waypoints.length < 2) {
+    return false;
+  }
+  const element = freshBoundaryCurve(waypoints);
+  return placed(Action.AddElement({ diagramId, element }), element.id);
 }
 
 /**
- * Draws a flow from one element to another, on the same terms as
- * {@link addPaletteElement}: one action, then the selection and the focus.
- * Both ways of connecting land here, so a drag between handles and a choice
- * from the palette's listbox add the same flow, and both are refused an end
- * that is not one of {@link flowEnds}. The refusal is here rather than in
- * either control because the model takes an endpoint naming any element of
- * the diagram, a flow included, and the layout then drops the flow it cannot
- * place: an unplaceable flow would sit in the model and in the next saved
- * file while being drawn nowhere.
+ * Draws a flow between two valid ends. This rejects other element kinds
+ * before the model can retain a flow that the layout cannot draw.
  */
 export function connectElements(source: ElementId, target: ElementId): void {
   const state = modelStore.getState();
@@ -196,6 +199,16 @@ function added(action: Action, elementId: ElementId): void {
   dispatch(Action.Select({ elementId }));
   announce(`Added ${spokenName(modelStore.getState(), elementId)}.`);
   focusElement(elementId);
+}
+
+function placed(action: Action, elementId: ElementId): boolean {
+  if (!changedModel(action)) {
+    return false;
+  }
+  dispatch(Action.Select({ elementId }));
+  dispatch(Action.Renaming({ elementId }));
+  announce(`Added ${spokenName(modelStore.getState(), elementId)}.`);
+  return true;
 }
 
 function changedModel(action: Action): boolean {

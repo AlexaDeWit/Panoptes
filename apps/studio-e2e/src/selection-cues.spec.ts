@@ -1,11 +1,7 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { lineOf, type Point } from './canvas-geometry.fixtures.js';
-import {
-  connectTarget,
-  nodeNamed,
-  openPlaceholder,
-  selectNode,
-} from './studio.fixtures.js';
+import { registeredChords } from './chords.js';
+import { nodeNamed, openPlaceholder, selectNode } from './studio.fixtures.js';
 
 const actor = /^Actor, actor/u;
 
@@ -52,9 +48,8 @@ const halfwayAlong = (line: Locator): Promise<Point> =>
 
 const drawFlow = async (page: Page): Promise<Locator> => {
   await selectNode(page, actor);
-  await connectTarget(page).press('Enter');
+  await page.keyboard.press(registeredChords['start-flow'][0]);
   await page.getByRole('option', { name: 'Store' }).press('Enter');
-  await page.getByRole('button', { name: 'Connect' }).click();
   const flow = nodeNamed(page, drawnFlow);
   await expect(flow).toHaveClass(/selected/u);
   return flow;
@@ -125,7 +120,7 @@ test('the pointer says what a click would do, over an element, a handle, a flow 
 
   await expect(node).toHaveCSS('cursor', 'pointer');
   await expect(handlesOn(node).first()).toHaveCSS('cursor', 'crosshair');
-  await expect(pane(page)).toHaveCSS('cursor', 'grab');
+  await expect(pane(page)).toHaveCSS('cursor', 'default');
 
   const flow = await drawFlow(page);
 

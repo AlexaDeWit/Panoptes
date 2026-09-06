@@ -15,15 +15,22 @@ snapshot that is a new object on every call. `names.ts` says what an element
 is called to assistive technology, `nodes.ts` turns the layout into React
 Flow's nodes and edges, and `changes.ts` turns what React Flow reports back
 into store actions and dispatches them. `elements.ts` builds the elements the
-palette adds, `edits.ts` is the command side of the same boundary, one
-function per edit a control asks for, `connecting.ts` holds the flow a chord
-started until a target is chosen or the chooser closes, `rename-field.tsx` is
+toolbox places and settles click and drag geometry, `tools.ts` holds the active
+mode outside the model store, and `placement.tsx` binds that mode to pointer
+and Enter gestures. `edits.ts` is the command side of the same boundary, one
+function per edit a control asks for. `connecting.ts` holds the
+flow a chord started until a target is chosen or the chooser closes,
+`rename-field.tsx` is
 the field an element's name is edited in and the node and edge bodies that
 mount it, `announcements.ts` carries what an edit did to the region that says it,
 and `viewport.ts` is the arithmetic of the view,
 whether a node is drawn inside the canvas and the viewport that fits a diagram
-into it, `view-commands.tsx` applies that to React Flow, and `palette.tsx` and
+into it, `view-commands.tsx` applies that to React Flow, and `toolbox.tsx` and
 `zoom-cluster.tsx` are the controls.
+
+The canvas is the studio's window: it fills the viewport, and the menu,
+toolbox, threat panel, empty-state hint and zoom cluster float inside it rather
+than taking a row or column away from the diagram.
 
 The ground is graph paper: React Flow's own `Background` component ruled at
 the grid spacing the canvas package's token module decides, so the lines scale
@@ -79,25 +86,31 @@ costs no history, the store keeping selection out of its stacks. An edit the
 model refuses moves nothing and is said by the failure notice rather than by
 the region below, which speaks only for edits that landed.
 
-- **Add.** One button per element kind, in the palette above the canvas, each
-  running the tool command for the kind it adds and showing that command's
-  key ([the commands](../commands/README.md)). The
-  element lands at the left edge of the diagram a gap below everything it
-  draws, which is free whatever the diagram holds, since `bounds` is the ink
-  the diagram lays down. It arrives named after the button that added it,
-  selected, and holding focus. Successive adds stack downward, each below the
-  one before.
-- **Connect.** A flow runs from the selected element to the one chosen in the
-  palette's listbox, which offers every other element a flow can run between:
-  the actors, processes and stores the diagram draws. A trust boundary is not
-  one of them at either end, being what a flow crosses rather than a thing it
-  flows to, and neither is a text note, which is about the diagram rather than
-  a part of the system, as the model's own text schema describes it, a note
-  carrying no threats. So a selected boundary or note leaves both controls
-  disabled, neither is offered as a target, and neither draws a handle. Nor is
-  a flow one of them, the layout having no geometry for a flow that ends on a
-  flow. `connectElements` refuses both ends itself rather than leaving it to
-  the controls, because the model takes an endpoint naming any element of the
+- **Place.** Select, Actor, Process, Store, Boundary box, Boundary curve and
+  Hand are icon buttons in the floating toolbox, each showing every shortcut
+  its registered command owns ([the commands](../commands/README.md)). A click
+  with an element tool places its default size centred under the pointer. A
+  drag places the box between its opposite corners; a process takes the
+  shorter side for its circular glyph. Movement under four screen pixels is a
+  click whatever the zoom. Enter places the default at the viewport centre.
+  A placed element arrives with a placeholder name, selected, with that name
+  open in the in-place field; its one `AddElement` is one undo step. The tool
+  then returns to Select, unless a double click on its icon locked it for
+  repeated placement. Escape returns to Select and unlocks it.
+- **Boundary curve.** Each click commits one waypoint and the transformed
+  viewport shows the route in progress. Enter or a double click finishes once
+  it has at least two waypoints. Escape changes back to Select and drops the
+  draft, which never reached the model and costs no undo step. A curve placed
+  by Enter before a waypoint exists uses the same default arch a click-sized
+  curve does. Freehand sampling is a later wave.
+- **Connect.** A flow runs between the actors, processes and stores the
+  diagram draws. A trust boundary is not one of them at either end, being what
+  a flow crosses rather than a thing it flows to, and neither is a text note,
+  which is about the diagram rather than a part of the system, as the model's
+  own text schema describes it, a note carrying no threats. Nor is a flow one
+  of them, the layout having no geometry for a flow that ends on a flow.
+  `connectElements` refuses both ends itself rather than leaving it to the
+  controls, because the model takes an endpoint naming any element of the
   diagram and the layout then drops the flow it cannot place, which would
   leave a flow in the model and in the next saved file while it is drawn
   nowhere. The pointer draws the same flow by dragging from a handle on one
@@ -118,19 +131,12 @@ the region below, which speaks only for edits that landed.
   draw nothing.
 - **Start a flow.** The chord the registry gives the start-flow command opens
   the target chooser on the selected element, from wherever a person is and
-  with nothing in the palette clicked ([the commands](../commands/README.md)).
-  The chooser is the palette's own listbox, so the arrow keys and its
-  typeahead move the choice, Enter commits and Escape cancels. What tells the
-  two apart is `connecting.ts`: opened by the command it is a flow already in
-  progress, and the choice draws it, where opened by hand it names a target
-  the Connect control then draws between. Escape reaches Radix rather than the
-  registry, an open overlay owning its own keys, so cancelling a flow leaves
-  the selection where it was rather than clearing it. A selection no flow can
-  run from starts nothing, the chooser being disabled there. The listbox
-  carries no value while a flow is in progress, so a fresh flow opens with
-  nothing chosen and the same target twice over is two flows. The toolbox
-  replaces the palette in issue 175 and takes the chooser with it; what stays
-  is the command.
+  with no flow tool ([the commands](../commands/README.md)). The toolbox mounts
+  its listbox only while that command is in progress, so the arrow keys and
+  typeahead move the choice, Enter commits and Escape cancels. Escape reaches
+  Radix rather than the registry, an open overlay owning its own keys, so
+  cancelling leaves the selection where it was. A selection no flow can run
+  from starts nothing.
 - **Delete.** Delete or Backspace removes the selected element or flow as one
   `RemoveElement`. The command registry binds the two keys for the whole page
   ([the commands](../commands/README.md)), and the canvas binds them again for
@@ -152,8 +158,7 @@ the region below, which speaks only for edits that landed.
   renames, so a screen reader hears which element it is in.
   A commit is one `RenameElement` and so one undo step, and a name the model
   already holds dispatches nothing, on the panel's own commit rule ([the
-  panel](../panel/README.md)). This is what replaces the names the palette
-  gives: an added element is called after the button that added it, "New
+  panel](../panel/README.md)). A placed element starts with "New
   actor" through "New trust boundary curve", and a drawn flow "New flow",
   which is a placeholder until it is renamed rather than a name anyone chose.
   Which element has its name open is store state, not the canvas's own, so the
@@ -168,19 +173,19 @@ the region below, which speaks only for edits that landed.
   again when it settles, and the settled report is the only one folded into an
   action, as with a drag.
 
-The palette holds the region that says what an edit did, the studio's own
+The toolbox holds the region that says what an edit did, the studio's own
 `LiveRegion` ([the controls](../ui/README.md)), always in the page and named
 so a screen reader's landmark list says which region it reached.
 It is fed through a channel of its own rather than through the model store: an
 announcement is not the model and must not ride the undo stacks, and the
-palette and the canvas are siblings that both speak into the one region. What
+toolbox and the canvas are siblings that both speak into the one region. What
 it says is keyed by a count, so the same words twice over are announced twice:
 a live region speaks when its content changes, and two adds of one kind say
 the same sentence.
 
 The canvas pans to the selected element where the whole of it is not in view,
-which is what makes an element added below the diagram worth selecting and
-focusing. React Flow pans to a focused node of its own accord, but only where
+which is what makes an element placed at an edge worth selecting and naming.
+React Flow pans to a focused node of its own accord, but only where
 the node is wholly outside the view and the focus came from the keyboard, and
 an edit's focus is neither. The test is the whole of the element, so clicking
 a node the edge of the canvas clips re-centres the view under the pointer. It
@@ -334,19 +339,18 @@ in a live region of its own and pans a newly focused element into view.
 
 Every edit has a keyboard path of its own, and every one of them is a
 registered command with its chord shown beside it ([the
-commands](../commands/README.md)). Adding is a button or the tool's own
-letter. Connecting is selecting an element on the canvas and then pressing the
+commands](../commands/README.md)). Placing is selecting a tool by its button,
+letter or number and then clicking, dragging or pressing Enter. Connecting is
+selecting an element on the canvas and then pressing the
 start-flow chord, which opens the chooser on it and draws the flow the choice
 commits, which is why the source is the selection rather than a mode to enter
-and leave. The same listbox reached by hand still names a target for the
-Connect control beside it. Deleting is the Delete or Backspace key, from
-anywhere in the studio. The palette's two connecting controls are disabled
-while nothing is selected, so a keyboard user passes no dead stop between the
-buttons and the canvas.
+and leave. Deleting is the Delete or Backspace key, from anywhere in the
+studio. The connector listbox exists only while that command is in progress,
+so the toolbox adds no dead stop to the tab path.
 Renaming is F2 on the selection, and the field it opens keeps every key a
 person types, Escape and Backspace among them: a chord fires inside a control
 that takes characters only where the registry exempts it ([the
-commands](../commands/README.md)). The
+commands](../commands/README.md)).
 
 ## What is not attempted here
 
@@ -368,7 +372,7 @@ commands](../commands/README.md)). The
   a command of its own.
 - A text note is not renamed on the canvas. What it draws is its prose rather
   than its name, so a field over it would edit nothing a person can see, and
-  there is no control for that prose and no palette button that adds one.
+  there is no control for that prose and no toolbox button that adds one.
 - A rename the model refuses keeps its field open until the name is corrected
   or Escape is pressed, wherever the selection goes meanwhile. The draft is
   the field's alone, as a refused threat field is the panel's, and dropping it
@@ -380,8 +384,9 @@ commands](../commands/README.md)). The
 - Selection is single. Multi-select and box select are unbound, because the
   store holds one selection and a plural gesture has no plural action behind
   it.
-- Panning has no keyboard path: a drag of the background does it. Reaching an
-  element does not need one, since focusing an element pans it into view.
+- Panning remains a pointer drag. Hand makes that drag own the whole canvas,
+  selected by H or held temporarily with Space. Reaching an element does not
+  need a keyboard pan, since focusing an element pans it into view.
   Zooming and fitting have both a chord and a control of their own ([the
   commands](../commands/README.md)).
 - Tab order is React Flow's DOM order, every flow before every element, so a

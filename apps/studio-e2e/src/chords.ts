@@ -18,23 +18,18 @@ export const registeredChords = {
   delete: ['Delete', 'Backspace'],
   rename: ['F2'],
   'select-all': ['ControlOrMeta+a'],
-  'clear-selection': ['Escape'],
   'fit-to-view': ['ControlOrMeta+0'],
   'zoom-in': ['ControlOrMeta+='],
   'zoom-out': ['ControlOrMeta+-'],
   'start-flow': ['f'],
-  'select-tool': ['v'],
-  'hand-tool': ['h'],
-  'actor-tool': ['a'],
-  'process-tool': ['p'],
-  'store-tool': ['s'],
-  'boundary-box-tool': ['b'],
-  'boundary-curve-tool': ['c'],
+  'select-tool': ['v', 'Escape', '1'],
+  'hand-tool': ['h', 'Space'],
+  'actor-tool': ['a', '2'],
+  'process-tool': ['p', '3'],
+  'store-tool': ['s', '4'],
+  'boundary-box-tool': ['b', '5'],
+  'boundary-curve-tool': ['c', '6'],
 } as const;
 
 /** The commands whose surface has not landed, and the chord each claims. */
-export const chordsWaitingOnASurface = [
-  registeredChords['select-all'][0],
-  registeredChords['select-tool'][0],
-  registeredChords['hand-tool'][0],
-];
+export const chordsWaitingOnASurface = [registeredChords['select-all'][0]];

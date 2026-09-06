@@ -7,14 +7,8 @@ import {
   type Size,
 } from '@saerskriven/model';
 
-/**
- * The element kinds the palette adds, one button each: five of the canvas's
- * own kinds rather than the model's, because the two shapes a trust boundary
- * takes are drawn, added and reasoned about separately while the model holds
- * them under one kind. The sixth the canvas draws, a text note, has no button
- * until there is somewhere to type its prose.
- */
-export const paletteKinds = [
+/** The five element shapes that the toolbox places. */
+export const elementTools = [
   'actor',
   'process',
   'store',
@@ -22,35 +16,22 @@ export const paletteKinds = [
   'boundary-curve',
 ] as const;
 
-/** One kind of element the palette adds. */
-export type PaletteKind = (typeof paletteKinds)[number];
+/** One kind of element the toolbox places. */
+export type ElementTool = (typeof elementTools)[number];
 
-/**
- * What each palette button says, and what the element it adds is called. One
- * map, so the words a person presses are the words they then hear on the
- * canvas and read on the diagram.
- */
-export const paletteNames = {
+/** What each placed element is called until it is renamed. */
+export const placeholderNames = {
   actor: 'New actor',
   process: 'New process',
   store: 'New store',
   'boundary-box': 'New trust boundary',
   'boundary-curve': 'New trust boundary curve',
-} as const satisfies Record<PaletteKind, string>;
+} as const satisfies Record<ElementTool, string>;
 
 /** What a flow drawn on the canvas is called until something renames it. */
 export const newFlowName = 'New flow';
 
-/**
- * The elements a flow can run between: the actors, processes and stores the
- * diagram draws. A trust boundary is what a flow crosses rather than an end
- * of one, and a text element is a note about the diagram rather than a part
- * of the system, which is how the model's own text schema describes it, a
- * note carrying no threats. Both ways of
- * connecting read this, so neither offers an end the other refuses, and a
- * flow is not among them at all, the layout having no geometry for a flow
- * that ends on a flow.
- */
+/** The actors, processes and stores that a flow can connect. */
 export function flowEnds(layout: CanvasLayout): CanvasNode[] {
   return layout.nodes.filter(
     (node) =>
@@ -64,38 +45,91 @@ const nominalSizes = {
   store: { width: 120, height: 60 },
   'boundary-box': { width: 240, height: 160 },
   'boundary-curve': { width: 240, height: 80 },
-} as const satisfies Record<PaletteKind, Size>;
+} as const satisfies Record<ElementTool, Size>;
 
-const rowGap = 40;
+/** The screen-pixel movement below which a placement remains a click. */
+export const placementClickDistance = 4;
 
-/**
- * Where the palette puts a new element: at the left edge of the diagram, a
- * gap below everything it draws. `bounds` is the ink the diagram lays down,
- * so nothing at all is drawn there whatever the diagram holds, and the added
- * element joins that ink, which puts the next one below it again.
- */
-export function freePosition(layout: CanvasLayout): Point {
+/** The default size of an element placed by a click or by Enter. */
+export function defaultSize(kind: ElementTool): Size {
+  return nominalSizes[kind];
+}
+
+/** A default-sized element centred on `centre`. */
+export function centredPlacement(
+  kind: ElementTool,
+  centre: Point,
+): { readonly position: Point; readonly size: Size } {
+  const size = defaultSize(kind);
   return {
-    x: layout.bounds.x,
-    y: layout.bounds.y + layout.bounds.height + rowGap,
+    position: {
+      x: centre.x - size.width / 2,
+      y: centre.y - size.height / 2,
+    },
+    size,
   };
 }
 
 /**
- * One new element of `kind`, at `position`, with a fresh id. Every field the
- * model demands is filled in: an element arrives named, in scope, and
- * described by nothing, since the studio has no place to type a description
- * yet.
+ * An element sized between opposite corners. A process takes the shorter
+ * side, so the box it gives the circular glyph is square. A zero side is
+ * kept drawable at one model unit rather than asking the model for a zero
+ * extent it refuses.
  */
-export function freshElement(kind: PaletteKind, position: Point): Element {
+export function draggedPlacement(
+  kind: Exclude<ElementTool, 'boundary-curve'>,
+  from: Point,
+  to: Point,
+): { readonly position: Point; readonly size: Size } {
+  const width = Math.max(Math.abs(to.x - from.x), 1);
+  const height = Math.max(Math.abs(to.y - from.y), 1);
+  if (kind === 'process') {
+    const side = Math.min(width, height);
+    return {
+      position: {
+        x: to.x < from.x ? from.x - side : from.x,
+        y: to.y < from.y ? from.y - side : from.y,
+      },
+      size: { width: side, height: side },
+    };
+  }
+  return {
+    position: { x: Math.min(from.x, to.x), y: Math.min(from.y, to.y) },
+    size: { width, height },
+  };
+}
+
+/** The geometry a completed pointer press asks an element tool to place. */
+export function pointerPlacement(
+  kind: Exclude<ElementTool, 'boundary-curve'>,
+  from: Point,
+  to: Point,
+  screenDistance: number,
+): { readonly position: Point; readonly size: Size } {
+  return screenDistance < placementClickDistance
+    ? centredPlacement(kind, from)
+    : draggedPlacement(kind, from, to);
+}
+
+/** The default boundary curve centred on a click or on the viewport. */
+export function defaultCurveWaypoints(centre: Point): readonly Point[] {
+  const placed = centredPlacement('boundary-curve', centre);
+  return arch(placed.position, placed.size);
+}
+
+/** A new element with its required defaults and a fresh id. */
+export function freshElement(
+  kind: ElementTool,
+  position: Point,
+  size: Size = defaultSize(kind),
+): Element {
   const named = {
     id: generateElementId(),
-    name: paletteNames[kind],
+    name: placeholderNames[kind],
     description: '',
     outOfScope: false,
     reasonOutOfScope: '',
   };
-  const size = nominalSizes[kind];
   if (kind === 'boundary-box') {
     return {
       ...named,
@@ -111,6 +145,19 @@ export function freshElement(kind: PaletteKind, position: Point): Element {
     };
   }
   return { ...named, kind, position, size };
+}
+
+/** A boundary curve through the waypoints a person committed. */
+export function freshBoundaryCurve(waypoints: readonly Point[]): Element {
+  return {
+    id: generateElementId(),
+    kind: 'trust-boundary',
+    name: placeholderNames['boundary-curve'],
+    description: '',
+    outOfScope: false,
+    reasonOutOfScope: '',
+    shape: { kind: 'curve', waypoints: [...waypoints] },
+  };
 }
 
 /**

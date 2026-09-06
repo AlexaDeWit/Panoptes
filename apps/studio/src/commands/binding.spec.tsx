@@ -1,4 +1,5 @@
 import { render, renderHook, screen } from '@testing-library/react';
+import { currentTool, resetTools, selectTool } from '../canvas/tools.js';
 import { initialState, placeholderModel } from '../store/state.js';
 import { modelStore } from '../store/store.js';
 import {
@@ -117,7 +118,7 @@ describe('commandForKey', () => {
       commandForKey(press(field, { key: 'Escape' }), 'other'),
     ).toBeUndefined();
     expect(commandForKey(press(holder, { key: 'Escape' }), 'other')?.id).toBe(
-      'clear-selection',
+      'select-tool',
     );
   });
 
@@ -154,6 +155,7 @@ describe('commandForKey', () => {
 describe('useCommandKeys', () => {
   beforeEach(() => {
     modelStore.setState(initialState(placeholderModel), true);
+    resetTools();
   });
 
   it('runs the command a press names, and claims the press from the browser', () => {
@@ -190,6 +192,22 @@ describe('useCommandKeys', () => {
     press(document.body, { key: 's', ctrlKey: true });
 
     expect(recording.asked).toEqual([]);
+  });
+
+  it('holds Hand for Space and restores the prior tool on release', () => {
+    const recording = recordingSurface();
+    selectTool('actor');
+    renderHook(() => {
+      useCommandKeys(recording.surface);
+    });
+
+    press(document.body, { key: ' ' });
+    expect(currentTool().active).toBe('hand');
+
+    document.body.dispatchEvent(
+      new KeyboardEvent('keyup', { bubbles: true, key: ' ' }),
+    );
+    expect(currentTool().active).toBe('actor');
   });
 });
 

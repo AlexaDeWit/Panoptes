@@ -9,7 +9,8 @@ const registry = readFileSync(
 
 const asChordCall = (chord: string): string => {
   const pressed = chord.split('+');
-  const key = pressed.at(-1) ?? '';
+  const shown = pressed.at(-1) ?? '';
+  const key = shown === 'Space' ? ' ' : shown;
   const held = pressed.slice(0, -1);
   if (held.length === 0) {
     return `bare('${key}')`;

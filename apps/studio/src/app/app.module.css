@@ -1,9 +1,12 @@
 .shell {
-  min-height: 100vh;
+  width: 100vw;
+  height: 100dvh;
+  overflow: hidden;
 }
 
 .diagram {
-  padding: var(--pn-space-4);
+  width: 100%;
+  height: 100%;
 }
 
 /* The heading names the page for a screen reader and for the audit that asks
@@ -25,4 +28,6 @@
    sits over the canvas rather than beside it. */
 .stage {
   position: relative;
+  width: 100%;
+  height: 100%;
 }

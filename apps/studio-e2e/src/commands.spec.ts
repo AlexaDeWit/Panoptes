@@ -3,7 +3,6 @@ import { chordsWaitingOnASurface, registeredChords } from './chords.js';
 import {
   savedByKey,
   savedFromMenu,
-  shortcutShown,
   viewportTransform,
 } from './commands.fixtures.js';
 import {
@@ -23,29 +22,6 @@ import {
   withoutPickers,
 } from './studio.fixtures.js';
 
-const drawn = [
-  [registeredChords['actor-tool'][0], /^New actor, actor/u],
-  [registeredChords['process-tool'][0], /^New process, process/u],
-  [registeredChords['store-tool'][0], /^New store, store/u],
-  [registeredChords['boundary-box-tool'][0], /^New trust boundary, trust/u],
-  [registeredChords['boundary-curve-tool'][0], /^New trust boundary curve/u],
-] as const;
-
-test('each tool key draws the element its palette control draws', async ({
-  page,
-}) => {
-  await openPlaceholder(page);
-
-  for (const [chord] of drawn) {
-    await page.keyboard.press(chord);
-  }
-
-  for (const [, named] of drawn) {
-    await expect(nodeNamed(page, named)).toHaveCount(1);
-  }
-  await expect(elementNodes(page)).toHaveCount(7);
-});
-
 test('undo and redo move the history from the keyboard, on either redo chord', async ({
   page,
 }) => {
@@ -53,6 +29,8 @@ test('undo and redo move the history from the keyboard, on either redo chord', a
   const added = nodeNamed(page, /^New actor, actor/u);
 
   await page.keyboard.press(registeredChords['actor-tool'][0]);
+  await page.keyboard.press('Enter');
+  await page.keyboard.press('Enter');
   await expect(added).toHaveCount(1);
 
   await page.keyboard.press(registeredChords.undo[0]);
@@ -90,7 +68,7 @@ test('escape clears the selection', async ({ page }) => {
   await openPlaceholder(page);
   const actor = await selectNode(page, /^Actor, actor/u);
 
-  await page.keyboard.press(registeredChords['clear-selection'][0]);
+  await page.keyboard.press(registeredChords['select-tool'][1]);
 
   await expect(actor).not.toHaveClass(/selected/u);
 });
@@ -225,7 +203,7 @@ test('escape from a field closes the panel over the draft rather than clearing t
   await title.press('Enter');
   await expect(title).toHaveAttribute('aria-invalid', 'true');
 
-  await title.press(registeredChords['clear-selection'][0]);
+  await title.press(registeredChords['select-tool'][1]);
 
   await expect(threatPanel(page)).toHaveCount(0);
   await expect(actor).toHaveClass(/selected/u);
@@ -243,15 +221,10 @@ test('every control says which key runs it: beside a menu item, and as a note be
 }) => {
   await openPlaceholder(page);
 
-  const actor = await shortcutShown(
-    page,
-    page.getByRole('button', { name: 'New actor', exact: true }),
-  );
-  expect(actor).toEqual({
-    tooltip: 'A',
-    keyShortcuts: 'A',
-    description: 'Shortcut: A',
-  });
+  const actor = page.getByRole('button', { name: 'Actor', exact: true });
+  await actor.focus();
+  await expect(page.getByRole('tooltip')).toHaveText('Actor A or 2');
+  await expect(actor).toHaveAttribute('aria-keyshortcuts', 'A 2');
 
   await openMenu(page);
 

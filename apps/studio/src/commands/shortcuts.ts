@@ -23,6 +23,13 @@ export const chordKeys = [
   'x',
   'y',
   'z',
+  ' ',
+  '1',
+  '2',
+  '3',
+  '4',
+  '5',
+  '6',
   '=',
   '-',
   '0',
@@ -204,5 +211,8 @@ function heldIn(chord: Chord, platform: Platform): readonly ChordModifier[] {
 }
 
 function spellKey(key: ChordKey): string {
+  if (key === ' ') {
+    return 'Space';
+  }
   return key.length === 1 ? key.toUpperCase() : key;
 }

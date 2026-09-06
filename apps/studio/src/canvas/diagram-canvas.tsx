@@ -45,6 +45,8 @@ import {
   type DiagramNode,
 } from './nodes.js';
 import { renamingEdgeTypes, renamingNodeTypes } from './rename-field.js';
+import { PlacementPreview, usePlacement } from './placement.js';
+import { Toolbox } from './toolbox.js';
 import { FitOnOpen } from './view-commands.js';
 import {
   clearOfPanel,
@@ -57,74 +59,7 @@ import styles from './diagram-canvas.module.css';
 
 const deleteKeys = new Set(['Delete', 'Backspace']);
 
-/**
- * The diagram, interactive. Everything drawn is derived from the store by
- * selector, so an edit made anywhere in the studio arrives here by the same
- * route a drag does and nothing invalidates the canvas by hand.
- *
- * React Flow is mounted controlled: the nodes and flows it draws come from
- * the model on every render, and the copy held beside the model carries only
- * what React Flow reports about a gesture in flight, the position of a node
- * under the pointer among it, so a drag stays smooth. That copy is folded
- * back onto the model's own nodes as soon as the model moves, during render
- * rather than in an effect, so the canvas draws the store and nothing else.
- * The gesture reaches the store once, when it settles, as one offset, and
- * what it asks of the store is settled against the store's own selection
- * rather than this render's. The reasoning and the limits are in this
- * directory's README.
- *
- * The canvas pans to the element a selection moves to where the whole of it
- * is not in view, which is what makes an element added off screen worth
- * selecting and focusing: React Flow pans to a focused node of its own
- * accord, but only where the node is wholly outside the view and the focus
- * came from the keyboard, and an edit's focus is neither. It is the move that
- * pans, not the model changing under a selection that stays, so dragging the
- * selected element to the edge of the canvas leaves it where it was dropped.
- * What counts as in view is what the threat panel is not over: the panel
- * opens on the same selection this pans for, so an element under it is an
- * element out of sight ([the panel](../panel/README.md)).
- *
- * The panel is mounted here rather than beside the canvas, because that is
- * what makes it an overlay on the diagram rather than a column taken off it.
- * How much of the canvas it covers is one token, which the panel is drawn
- * from and the pan reads, so the width the panel draws and the width the pan
- * reasons about are one number.
- * Enter on the element the store has selected hands it the keyboard, which is
- * read in the capture phase: React Flow answers Enter on a node itself, and
- * by the time the press has bubbled the selection it reports has already
- * moved, so a press read on the way up could not tell selecting an element
- * from asking for the panel of one already selected.
- *
- * The ground is graph paper: React Flow's own background component ruled at
- * the token module's grid spacing, so the lines scale with the viewport and a
- * zoom reads as one. Its colour comes from the studio's own custom property,
- * which the CSS module beside this file hands React Flow.
- *
- * The diagram's own colours arrive the same way. The sheet injected here is
- * the canvas package's property-reading projection, so the drawing follows
- * whichever table the app root resolved and no component learns which mode it
- * is in. What the CLI writes keeps the light values.
- *
- * The view is fitted to the diagram whenever a model arrives rather than on
- * mount alone, which is React Flow's own `fitView`: a file opened over the
- * model before it would otherwise be drawn at that model's zoom and mostly
- * off screen. The calculation and the room it leaves for the floating chrome
- * are `viewport.ts`, and `FitOnOpen` is what applies it, from inside React
- * Flow, which is what holds the canvas's extent.
- *
- * Deleting is bound here rather than left to React Flow, whose delete key
- * listens on the whole document and would remove the selected element from
- * anywhere in the studio, and whose cascade over the flows attached to it is
- * not the model's. One key press asks the store for one removal and the model
- * settles the rest. Focus lands on the canvas afterwards, the element that
- * held it having gone. A press typed into a control that takes characters is
- * left to that control, so Backspace inside the rename field corrects the
- * name rather than deleting what it renames.
- *
- * A double-click renames what it lands on, which is why React Flow's own
- * double-click zoom is off: a gesture means one thing, and zooming has a
- * chord and a control of its own.
- */
+/** The controlled diagram canvas and its floating editing controls. */
 export function DiagramCanvas() {
   const layout = useModelStore(currentLayout);
   const selection = useModelStore(selectedElement);
@@ -141,6 +76,8 @@ export function DiagramCanvas() {
     null,
   );
   const revealed = useRef<ElementId | undefined>(undefined);
+  const placement = usePlacement(surface, view);
+  const { mode } = placement;
 
   if (folded !== graph.nodes) {
     setFolded(graph.nodes);
@@ -191,7 +128,11 @@ export function DiagramCanvas() {
   };
 
   const onKeyDownCapture = (event: KeyboardEvent<HTMLDivElement>): void => {
-    if (event.key !== 'Enter' || selection === undefined) {
+    if (
+      mode.active !== 'select' ||
+      event.key !== 'Enter' ||
+      selection === undefined
+    ) {
       return;
     }
     if (
@@ -214,13 +155,8 @@ export function DiagramCanvas() {
     [elements],
   );
 
-  // A pointer double-click renames the element it lands on. It is read here,
-  // over the whole canvas, rather than from React Flow's node double-click,
-  // because selecting a node opens the threat panel and pans the node clear
-  // of it between the two clicks: the second click lands on the pane the node
-  // has left, so no node hears both. The element the first click of the pair
-  // fell on is what is renamed, found once and held, and the browser's own
-  // click count is what tells the pair from two separate clicks.
+  // Selection can pan a node between two clicks. Retain the first click's
+  // element so the second click still renames it.
   const clickedFirst = useRef<ElementId | undefined>(undefined);
 
   const onCanvasClickCapture = (event: MouseEvent<HTMLDivElement>): void => {
@@ -228,6 +164,9 @@ export function DiagramCanvas() {
       !(event.target instanceof Element) ||
       event.target.closest('input, textarea, button') !== null
     ) {
+      return;
+    }
+    if (placement.click(event)) {
       return;
     }
     if (event.detail > 1) {
@@ -250,9 +189,21 @@ export function DiagramCanvas() {
   return (
     <div
       className={styles.canvas}
+      data-active-tool={mode.active}
+      data-tool={
+        mode.active === 'select'
+          ? undefined
+          : mode.active === 'hand'
+            ? 'hand'
+            : 'place'
+      }
       data-testid="canvas-container"
       onClickCapture={onCanvasClickCapture}
       onKeyDownCapture={onKeyDownCapture}
+      onPointerCancelCapture={placement.pointerCancel}
+      onPointerDownCapture={placement.pointerDown}
+      onPointerMoveCapture={placement.pointerMove}
+      onPointerUpCapture={placement.pointerUp}
     >
       <style>{themedCanvasStylesheet}</style>
       <ReactFlow
@@ -262,12 +213,14 @@ export function DiagramCanvas() {
         deleteKeyCode={null}
         edges={graph.edges}
         edgeTypes={renamingEdgeTypes}
+        elementsSelectable={mode.active === 'select'}
         isValidConnection={betweenTwoElements}
         maxZoom={zoomLimits.maximum}
         minZoom={zoomLimits.minimum}
         multiSelectionKeyCode={null}
         nodes={onScreen}
-        nodesConnectable
+        nodesConnectable={mode.active === 'select'}
+        nodesDraggable={mode.active === 'select'}
         nodeTypes={renamingNodeTypes}
         onConnect={onConnect}
         onEdgeDoubleClick={onEdgeDoubleClick}
@@ -277,15 +230,19 @@ export function DiagramCanvas() {
         }}
         onKeyDown={onKeyDown}
         onNodesChange={onNodesChange}
+        panActivationKeyCode={null}
+        panOnDrag={mode.active === 'hand'}
         ref={surface}
         selectionKeyCode={null}
         tabIndex={-1}
         zoomOnDoubleClick={false}
       >
         <Background gap={gridSpacing} variant={BackgroundVariant.Lines} />
+        <PlacementPreview points={placement.preview} />
         <FitOnOpen />
       </ReactFlow>
       <EmptyStateHint />
+      <Toolbox />
       <ZoomCluster />
       <ThreatOverlay />
     </div>
