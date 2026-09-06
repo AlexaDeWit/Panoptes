@@ -231,6 +231,33 @@ rather than colour tells them apart. Its cursor names the direction it sizes
 in, and it is on the selected element alone, React Flow mounting it from
 `selected` (the Resize bullet above).
 
+What counts as in view is what the threat panel is not over. The panel opens
+on the same selection this pans for ([the panel](../panel/README.md)), so an
+element under it is an element out of sight, and the pan centres what it
+reveals in the room the panel leaves rather than in the canvas.
+`clearOfPanel` and `revealCentre` in `viewport.ts` are that arithmetic, over
+`panelCover`, which is what the panel covers: its border box and the inset it
+floats at. That number has one home, the canvas package's token module, which
+declares it on the document root as `--pn-panel-cover` for the panel's own
+stylesheet to size its box from ([the visual
+system](../../../../packages/canvas/README.md#the-visual-system)), so a panel
+drawn wider than the pan expects is not a state the two can reach.
+
+## The panel over it
+
+The threat panel is mounted here, inside the canvas container, which is what
+makes it an overlay on the diagram rather than a column taken off it ([the
+panel](../panel/README.md)). Two gestures cross the boundary between the two.
+Enter on the element the store has selected hands the panel the keyboard,
+which the canvas reads in the capture phase: React Flow answers Enter on a
+node itself, and by the time the press has bubbled the selection it reports
+has already moved, so a press read on the way up could not tell selecting an
+element from asking for the panel of one already selected. A press the panel
+does not take is left to React Flow. The other way, Escape in the panel puts
+focus back on the element, through `focusElement`, which is the same route an
+added element takes to focus.
+
+
 ## The view
 
 Opening a model fits the viewport to the whole of the diagram it carries.
