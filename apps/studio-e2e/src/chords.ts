@@ -16,6 +16,7 @@ export const registeredChords = {
   undo: ['ControlOrMeta+z'],
   redo: ['ControlOrMeta+Shift+z', 'ControlOrMeta+y'],
   delete: ['Delete', 'Backspace'],
+  rename: ['F2'],
   'select-all': ['ControlOrMeta+a'],
   'clear-selection': ['Escape'],
   'fit-to-view': ['ControlOrMeta+0'],

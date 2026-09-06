@@ -1,4 +1,4 @@
-import type { DiagramId, Model } from '@panoptes/model';
+import type { DiagramId, Element, ElementId, Model } from '@panoptes/model';
 import type { State } from './state.js';
 
 /**
@@ -36,6 +36,19 @@ export function elementCount(state: State): number {
  */
 export function firstDiagramId(state: State): DiagramId | undefined {
   return state.present.diagrams.at(0)?.id;
+}
+
+/**
+ * The element `elementId` names, in whichever diagram the model draws it,
+ * and nothing at all where the model holds none by that id.
+ */
+export function elementById(
+  state: State,
+  elementId: ElementId,
+): Element | undefined {
+  return state.present.diagrams
+    .flatMap((diagram) => diagram.elements)
+    .find((element) => element.id === elementId);
 }
 
 /**

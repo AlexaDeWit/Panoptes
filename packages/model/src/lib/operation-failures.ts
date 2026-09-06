@@ -10,7 +10,9 @@ import type { DiagramId, ElementId, ThreatId } from './ids.js';
  * operation's Either narrows its error channel to the members it can
  * actually produce. `ReusedThreatNumber` and `ChangedThreatNumber` guard
  * the same rule from two sides: a threat number is issued once and never
- * moves.
+ * moves. `EmptyName` and `RefusedCharacter` are the two ways a new name is
+ * refused, the second carrying where the character sits so an editor can
+ * point at it.
  */
 export type OperationFailure = Data.TaggedEnum<{
   UnknownDiagram: { readonly diagramId: DiagramId };
@@ -28,6 +30,11 @@ export type OperationFailure = Data.TaggedEnum<{
     readonly reference: ElementId;
   };
   NotResizable: { readonly elementId: ElementId };
+  EmptyName: { readonly elementId: ElementId };
+  RefusedCharacter: {
+    readonly elementId: ElementId;
+    readonly at: number;
+  };
 }>;
 
 /**

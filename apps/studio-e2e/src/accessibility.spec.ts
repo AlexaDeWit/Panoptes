@@ -7,6 +7,7 @@ import {
   menuItem,
   nodeNamed,
   openMenu,
+  openPlaceholder,
   withoutPickers,
 } from './studio.fixtures.js';
 
@@ -201,6 +202,23 @@ test('the studio carries no violation with the menu open', async ({ page }) => {
   await expect(menuItem(page, 'Discard the changes and close')).toBeVisible();
 
   await audit(page, 'showing the menu asking before it closes a file');
+});
+
+// The rename field is drawn over the element it renames rather than in a
+// panel, so the audit stays page-wide. What it has to hold is that a field
+// carrying no visible label of its own still has an accessible name, and that
+// the canvas it sits inside is unchanged around it.
+test('the studio carries no violation with a name open in a field', async ({
+  page,
+}) => {
+  await openPlaceholder(page);
+
+  await page.getByRole('group', { name: /^Reader, actor/u }).dblclick();
+  await expect(
+    page.getByRole('textbox', { name: 'Name of Reader' }),
+  ).toBeVisible();
+
+  await audit(page, 'renaming an element');
 });
 
 test('the open connect listbox carries no violation', async ({ page }) => {

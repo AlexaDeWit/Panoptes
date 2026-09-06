@@ -26,13 +26,14 @@ import {
 } from 'react';
 import { focusThreatPanel } from '../panel/panel-focus.js';
 import { ThreatOverlay } from '../panel/threat-overlay.js';
+import { keyboardOwner } from '../commands/binding.js';
 import { useModelStore } from '../store/store.js';
 import {
   applyChanges,
   applyConnection,
   betweenTwoElements,
 } from './changes.js';
-import { drawnElement, removeSelected } from './edits.js';
+import { beginRenaming, drawnElement, removeSelected } from './edits.js';
 import { currentLayout, selectedElement } from './layout.js';
 import {
   diagramGraph,
@@ -41,6 +42,7 @@ import {
   withMeasurements,
   type DiagramNode,
 } from './nodes.js';
+import { renamingEdgeTypes, renamingNodeTypes } from './rename-field.js';
 import { FitOnOpen } from './view-commands.js';
 import {
   clearOfPanel,
@@ -113,7 +115,13 @@ const deleteKeys = new Set(['Delete', 'Backspace']);
  * anywhere in the studio, and whose cascade over the flows attached to it is
  * not the model's. One key press asks the store for one removal and the model
  * settles the rest. Focus lands on the canvas afterwards, the element that
- * held it having gone.
+ * held it having gone. A press typed into a control that takes characters is
+ * left to that control, so Backspace inside the rename field corrects the
+ * name rather than deleting what it renames.
+ *
+ * A double-click renames what it lands on, which is why React Flow's own
+ * double-click zoom is off: a gesture means one thing, and zooming has a
+ * chord and a control of its own.
  */
 export function DiagramCanvas() {
   const layout = useModelStore(currentLayout);
@@ -170,7 +178,10 @@ export function DiagramCanvas() {
   };
 
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>): void => {
-    if (!deleteKeys.has(event.key) || !removeSelected()) {
+    if (keyboardOwner(event.target) !== 'page' || !deleteKeys.has(event.key)) {
+      return;
+    }
+    if (!removeSelected()) {
       return;
     }
     event.preventDefault();
@@ -191,6 +202,13 @@ export function DiagramCanvas() {
     event.stopPropagation();
   };
 
+  const onRename = (id: string): void => {
+    const element = elements.get(id);
+    if (element !== undefined) {
+      beginRenaming(element);
+    }
+  };
+
   return (
     <div
       className={styles.canvas}
@@ -204,24 +222,31 @@ export function DiagramCanvas() {
         connectionMode={ConnectionMode.Loose}
         deleteKeyCode={null}
         edges={graph.edges}
-        edgeTypes={canvasEdgeTypes}
+        edgeTypes={renamingEdgeTypes}
         isValidConnection={betweenTwoElements}
         maxZoom={zoomLimits.maximum}
         minZoom={zoomLimits.minimum}
         multiSelectionKeyCode={null}
         nodes={onScreen}
         nodesConnectable
-        nodeTypes={canvasNodeTypes}
+        nodeTypes={renamingNodeTypes}
         onConnect={onConnect}
+        onEdgeDoubleClick={(_, edge) => {
+          onRename(edge.id);
+        }}
         onEdgesChange={onEdgesChange}
         onInit={(instance) => {
           view.current = instance;
         }}
         onKeyDown={onKeyDown}
+        onNodeDoubleClick={(_, node) => {
+          onRename(node.id);
+        }}
         onNodesChange={onNodesChange}
         ref={surface}
         selectionKeyCode={null}
         tabIndex={-1}
+        zoomOnDoubleClick={false}
       >
         <Background gap={gridSpacing} variant={BackgroundVariant.Lines} />
         <FitOnOpen />

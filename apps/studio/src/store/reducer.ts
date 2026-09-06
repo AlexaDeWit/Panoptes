@@ -6,6 +6,7 @@ import {
   moveElement,
   removeElement,
   removeThreat,
+  renameElement,
   replaceThreat,
   resizeElement,
   type ElementId,
@@ -41,6 +42,8 @@ export function reduce(state: State, action: Action): State {
       edited(state, moveElement(state.present, elementId, offset)),
     ResizeElement: ({ elementId, size }) =>
       edited(state, resizeElement(state.present, elementId, size)),
+    RenameElement: ({ elementId, name }) =>
+      edited(state, renameElement(state.present, elementId, name)),
     AddThreat: ({ threat }) => edited(state, addThreat(state.present, threat)),
     RemoveThreat: ({ threatId }) =>
       edited(state, removeThreat(state.present, threatId)),
@@ -53,6 +56,7 @@ export function reduce(state: State, action: Action): State {
     Undo: () => undone(state),
     Redo: () => redone(state),
     Select: ({ elementId }) => ({ ...state, selection: elementId }),
+    Renaming: ({ elementId }) => ({ ...state, renaming: elementId }),
     Opened: ({ model, name, source }) => ({
       ...initialState(model),
       file: FileLifecycle.Opened({ name, source }),
@@ -97,9 +101,14 @@ function edited(
 function removedElement(state: State, elementId: ElementId): State {
   const outcome = removeElement(state.present, elementId);
   const next = edited(state, outcome);
-  return Either.isRight(outcome) && next.selection === elementId
-    ? { ...next, selection: undefined }
-    : next;
+  if (Either.isLeft(outcome)) {
+    return next;
+  }
+  return {
+    ...next,
+    selection: next.selection === elementId ? undefined : next.selection,
+    renaming: next.renaming === elementId ? undefined : next.renaming,
+  };
 }
 
 function undone(state: State): State {

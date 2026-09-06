@@ -1,6 +1,6 @@
 import type { ElementId, Model } from '@panoptes/model';
 import { Action } from '../store/actions.js';
-import { firstDiagramId } from '../store/selectors.js';
+import { elementById, firstDiagramId } from '../store/selectors.js';
 import type { State } from '../store/state.js';
 import { dispatch, modelStore } from '../store/store.js';
 import { announce } from './announcements.js';
@@ -120,6 +120,60 @@ export function describeRemoval(name: string, cascade: RemovalCascade): string {
   const flows = counted(cascade.flows, 'flow');
   const threats = counted(cascade.threats, 'threat link');
   return `Removed ${name}. ${flows} detached, ${threats} dropped.`;
+}
+
+/**
+ * Opens the selected element's name in a field on the canvas, and does
+ * nothing while nothing is selected. It is what the rename command runs, so
+ * the key and the double-click reach one place. Which element is being
+ * renamed is store state rather than the canvas's own, because the command
+ * is pressed with nothing of the canvas mounted above it ([the
+ * store](../store/README.md)).
+ */
+export function renameSelected(): void {
+  const elementId = modelStore.getState().selection;
+  if (elementId !== undefined) {
+    beginRenaming(elementId);
+  }
+}
+
+/**
+ * Opens `elementId`'s name in a field, which is what a double-click does. A
+ * text note is refused here rather than at either control: what it draws is
+ * its prose and not its name, so a field over it would edit nothing a person
+ * can see.
+ */
+export function beginRenaming(elementId: ElementId): void {
+  const element = elementById(modelStore.getState(), elementId);
+  if (element === undefined || element.kind === 'text') {
+    return;
+  }
+  dispatch(Action.Renaming({ elementId }));
+}
+
+/**
+ * Closes the open field and puts focus back on the element it was drawn
+ * over. It follows a commit and is the whole of what Escape does, the name
+ * being left as the model holds it.
+ */
+export function endRenaming(elementId: ElementId): void {
+  dispatch(Action.Renaming({ elementId: undefined }));
+  focusElement(elementId);
+}
+
+/**
+ * Renames `elementId`, as one action and so one undo step. A name the model
+ * already holds dispatches nothing: a model operation returns a new model
+ * whatever it was asked to do, so the store would push an undo entry and
+ * mark the file dirty over an edit nobody made, which is the rule the panel
+ * commits its fields under ([the panel](../panel/README.md)).
+ */
+export function commitRename(elementId: ElementId, name: string): void {
+  const element = elementById(modelStore.getState(), elementId);
+  if (element === undefined || element.name === name) {
+    return;
+  }
+  dispatch(Action.RenameElement({ elementId, name }));
 }
 
 function added(action: Action, elementId: ElementId): void {

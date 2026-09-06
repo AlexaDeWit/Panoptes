@@ -10,6 +10,7 @@ import {
   elementIdsIn,
   endpointViolationsOf,
 } from './references.js';
+import { firstRefusedCharacter } from './text.js';
 
 /** The failures {@link addElement} can produce. */
 export type AddElementFailure = Extract<
@@ -33,6 +34,12 @@ export type MoveElementFailure = Extract<
 export type ResizeElementFailure = Extract<
   OperationFailure,
   { _tag: 'UnknownElement' | 'NotResizable' }
+>;
+
+/** The failures {@link renameElement} can produce. */
+export type RenameElementFailure = Extract<
+  OperationFailure,
+  { _tag: 'UnknownElement' | 'EmptyName' | 'RefusedCharacter' }
 >;
 
 /**
@@ -177,6 +184,39 @@ export function resizeElement(
     return Either.left(OperationFailure.NotResizable({ elementId }));
   }
   return Either.right(withElement(model, located.diagramIndex, next));
+}
+
+/**
+ * Returns a new model with the element named by `elementId` called `name`.
+ * Every element kind renames this way, a flow's name being what the canvas
+ * draws as its label. Fails when the element is unknown, when the name is
+ * empty, and when the name carries a character the model's text rule
+ * refuses, which is the rule the parse boundary screens a foreign file by:
+ * the failure carries where the first such character sits, from
+ * {@link firstRefusedCharacter}. This is the one operation that screens a
+ * caller's string, because renaming in place is where text typed after the
+ * parse reaches the model. A name of spaces is a name, the empty string
+ * alone being empty. The input model is never mutated.
+ */
+export function renameElement(
+  model: Model,
+  elementId: ElementId,
+  name: string,
+): Either.Either<Model, RenameElementFailure> {
+  const located = locateElement(model, elementId);
+  if (!located) {
+    return Either.left(OperationFailure.UnknownElement({ elementId }));
+  }
+  if (name === '') {
+    return Either.left(OperationFailure.EmptyName({ elementId }));
+  }
+  const at = firstRefusedCharacter(name);
+  if (at !== undefined) {
+    return Either.left(OperationFailure.RefusedCharacter({ elementId, at }));
+  }
+  return Either.right(
+    withElement(model, located.diagramIndex, { ...located.element, name }),
+  );
 }
 
 type LocatedElement = {

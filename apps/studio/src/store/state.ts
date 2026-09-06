@@ -82,7 +82,8 @@ export const StudioFailure = Data.taggedEnum<StudioFailure>();
  * Everything the studio holds. `present` is the model on screen, and `past`
  * and `future` are the undo and redo stacks, each entry a whole model and
  * nothing else. `saved` is the model the open file holds, `selection` names
- * an element of `present`, and `lastFailure` is the last refusal, cleared by
+ * an element of `present`, `renaming` names the one whose name is open in a
+ * field on the canvas, and `lastFailure` is the last refusal, cleared by
  * the next change to the model and by the next save that lands, a save being
  * the answer to the refusal it followed. The reasoning behind the shape is in
  * this directory's README.
@@ -96,6 +97,7 @@ export type State = {
   readonly future: readonly Model[];
   readonly saved: Model;
   readonly selection: ElementId | undefined;
+  readonly renaming: ElementId | undefined;
   readonly file: FileLifecycle;
   readonly lastFailure: StudioFailure | undefined;
 };
@@ -175,6 +177,7 @@ export function initialState(model: Model): State {
     future: [],
     saved: model,
     selection: undefined,
+    renaming: undefined,
     file: FileLifecycle.NoFile(),
     lastFailure: undefined,
   };

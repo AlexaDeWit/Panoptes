@@ -7,6 +7,7 @@ import {
   addElement,
   moveElement,
   removeElement,
+  renameElement,
   resizeElement,
 } from './operations.js';
 import { parseModel, type Model } from './parse.js';
@@ -372,6 +373,49 @@ describe('resizeElement', () => {
   });
 });
 
+describe('renameElement', () => {
+  it('renames a node', () => {
+    const next = modelOf(
+      renameElement(base, elementId('element-customer'), 'Buyer'),
+    );
+    expect(elementIn(next, 'element-customer').name).toBe('Buyer');
+  });
+
+  it('renames a flow, which is what the canvas draws as its label', () => {
+    const next = modelOf(
+      renameElement(base, elementId('element-order-flow'), 'Place order'),
+    );
+    expect(flowIn(next, 'element-order-flow').name).toBe('Place order');
+  });
+
+  it('refuses an empty name', () => {
+    expect(errorOf(renameElement(base, elementId('element-api'), ''))).toEqual(
+      OperationFailure.EmptyName({ elementId: elementId('element-api') }),
+    );
+  });
+
+  it('refuses a character the parse boundary refuses, saying where it sits', () => {
+    expect(
+      errorOf(renameElement(base, elementId('element-api'), 'Order\u00adAPI')),
+    ).toEqual(
+      OperationFailure.RefusedCharacter({
+        elementId: elementId('element-api'),
+        at: 5,
+      }),
+    );
+  });
+
+  it('fails on an unknown element', () => {
+    expect(
+      errorOf(renameElement(base, elementId('element-ghost'), 'Ghost')),
+    ).toEqual(
+      OperationFailure.UnknownElement({
+        elementId: elementId('element-ghost'),
+      }),
+    );
+  });
+});
+
 describe('operation purity', () => {
   it('leaves the input model untouched', () => {
     const pristine = structuredClone(base);
@@ -379,6 +423,7 @@ describe('operation purity', () => {
     removeElement(base, elementId('element-customer'));
     moveElement(base, elementId('element-api'), { x: 1, y: 1 });
     resizeElement(base, elementId('element-api'), { width: 5, height: 5 });
+    renameElement(base, elementId('element-api'), 'Renamed');
     expect(base).toEqual(pristine);
   });
 });
@@ -397,6 +442,10 @@ describe('operation outputs re-parse through parseModel', () => {
         width: 200,
         height: 100,
       }),
+    ],
+    [
+      'renameElement',
+      renameElement(base, elementId('element-api'), 'Orders API'),
     ],
   ];
 

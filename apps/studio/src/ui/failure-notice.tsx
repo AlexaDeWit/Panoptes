@@ -114,6 +114,10 @@ function describeOperation(failure: OperationFailure): string {
     InvalidFlowEndpoint: ({ side, reference }) =>
       `The flow's ${side} names ${reference}, which cannot be one.`,
     NotResizable: ({ elementId }) => `Element ${elementId} has no size to set.`,
+    EmptyName: ({ elementId }) =>
+      `Element ${elementId} cannot be left without a name.`,
+    RefusedCharacter: ({ elementId }) =>
+      `The name for element ${elementId} carries a character the model does not accept.`,
   });
 }
 
