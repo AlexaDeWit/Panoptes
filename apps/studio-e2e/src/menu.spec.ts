@@ -23,11 +23,42 @@ test('the menu holds the file and edit commands, each showing its shortcut', asy
   await expect(page.getByRole('menuitem')).toHaveText([
     'Open a modelCtrl+O',
     'SaveCtrl+S',
-    'Save as Threat Dragon JSONCtrl+Shift+S',
+    'Save asCtrl+Shift+S',
     'Close the fileCtrl+Shift+X',
     'UndoCtrl+Z',
     'RedoCtrl+Shift+Z or Ctrl+Y',
   ]);
+});
+
+test('save as asks the format in the menu where the browser has no picker of its own', async ({
+  page,
+}) => {
+  await page.addInitScript(withoutPickers);
+  await openPlaceholder(page);
+
+  await openMenu(page);
+  await menuItem(page, 'Save as').click();
+
+  await expect(page.getByRole('menuitem')).toHaveText([
+    'Open a modelCtrl+O',
+    'SaveCtrl+S',
+    'Save as Panoptes YAML',
+    'Save as Threat Dragon JSON',
+    'Close the fileCtrl+Shift+X',
+    'UndoCtrl+Z',
+    'RedoCtrl+Shift+Z or Ctrl+Y',
+  ]);
+
+  const [download] = await Promise.all([
+    page.waitForEvent('download'),
+    menuItem(page, 'Save as Panoptes YAML').click(),
+  ]);
+
+  expect(download.suggestedFilename()).toBe('threat-model.yaml');
+  await openMenu(page);
+  await expect(page.getByTestId('file-state')).toHaveText(
+    'threat-model.yaml, Panoptes YAML, no unsaved changes',
+  );
 });
 
 test('every item is reached, run and left by the keyboard alone', async ({
@@ -42,12 +73,7 @@ test('every item is reached, run and left by the keyboard alone', async ({
   await page.keyboard.press('Enter');
   await expect(menuItem(page, 'Open a model')).toBeFocused();
 
-  for (const name of [
-    'Save',
-    'Save as Threat Dragon JSON',
-    'Close the file',
-    'Undo',
-  ]) {
+  for (const name of ['Save', 'Save as', 'Close the file', 'Undo']) {
     await page.keyboard.press('ArrowDown');
     await expect(menuItem(page, name)).toBeFocused();
   }
@@ -107,7 +133,7 @@ test('closing asks in the menu before it drops work that is in no file', async (
   await menuButton(page).focus();
   await page.keyboard.press('Enter');
   await expect(menuItem(page, 'Open a model')).toBeFocused();
-  for (const name of ['Save', 'Save as Threat Dragon JSON', 'Close the file']) {
+  for (const name of ['Save', 'Save as', 'Close the file']) {
     await page.keyboard.press('ArrowDown');
     await expect(menuItem(page, name)).toBeFocused();
   }
@@ -161,6 +187,8 @@ test('the menu chrome carries what a save could not hold, and puts it away again
   await openPlaceholder(page);
 
   await openMenu(page);
+  await menuItem(page, 'Save as').click();
+  await expect(menuItem(page, 'Save as Panoptes YAML')).toBeVisible();
   const [download] = await Promise.all([
     page.waitForEvent('download'),
     menuItem(page, 'Save as Threat Dragon JSON').click(),

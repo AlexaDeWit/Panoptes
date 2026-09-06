@@ -30,6 +30,27 @@ export const savedByKey = async (
   };
 };
 
+/**
+ * Answers the format question the menu asks where the browser has no save
+ * picker, and reads back the file that went out. The chord opens the menu on
+ * the question, so this waits for the item rather than for the menu.
+ */
+export const savedFromMenu = async (
+  page: Page,
+  item: string,
+): Promise<SavedByKey> => {
+  const chosen = page.getByRole('menuitem', { name: item, exact: true });
+  await expect(chosen).toBeVisible();
+  const [download] = await Promise.all([
+    page.waitForEvent('download'),
+    chosen.click(),
+  ]);
+  return {
+    name: download.suggestedFilename(),
+    text: readFileSync(await download.path(), 'utf8'),
+  };
+};
+
 /** What a control says its shortcut is, to a pointer and to a reader alike. */
 export const shortcutShown = async (
   page: Page,

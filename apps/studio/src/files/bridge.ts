@@ -44,8 +44,9 @@ export const OpenOutcome = Data.taggedEnum<OpenOutcome>();
 /**
  * What asking to write a file produced. `Written` names the file the text
  * reached, which is the one the person chose where they were asked and not
- * always the one that was proposed. `Cancelled` is the person dismissing the
- * picker. `Refused` is the platform declining to write.
+ * always the one that was proposed, so it is also what says which format was
+ * written. `Cancelled` is the person dismissing the picker. `Refused` is the
+ * platform declining to write.
  */
 export type SaveOutcome = Data.TaggedEnum<{
   Written: { readonly name: string };
@@ -60,6 +61,24 @@ export type SaveOutcome = Data.TaggedEnum<{
 export const SaveOutcome = Data.taggedEnum<SaveOutcome>();
 
 /**
+ * One format a save picker offers, shaped as the File System Access API asks
+ * for it: the words a person reads in the picker, and the extensions each
+ * media type is written under.
+ */
+export type SaveFileType = {
+  readonly description: string;
+  readonly accept: Readonly<Record<string, readonly string[]>>;
+};
+
+/**
+ * The text a save-as writes, once the file it goes to has a name. A picker
+ * offering more than one format lets the person name the file in any of
+ * them, and the name they settle on is what decides the codec, so the text
+ * cannot be settled before the picker has answered.
+ */
+export type SaveText = (name: string) => string;
+
+/**
  * How the studio reaches files: a record of functions the app is handed
  * rather than a platform it calls, so the browser implementation, a spec's
  * recording one, and the typed IPC an Electron shell will offer (issue #43)
@@ -70,8 +89,13 @@ export const SaveOutcome = Data.taggedEnum<SaveOutcome>();
  * how a browser with no picker of its own opens one, and it also forgets
  * whatever `open` retained, so a later save does not write over the file the
  * person moved away from. `save` writes back to the file the model came from
- * where the bridge still holds it and offers a download otherwise, and
- * `saveAs` always asks where. `release` forgets that file without opening
+ * where the bridge still holds it and offers a download otherwise. `saveAs`
+ * places a new file: it offers `types` as the formats it may be named in,
+ * asks for the text once it has a name, since the name is what settles the
+ * format, and writes it there. `asksWhere` is whether it can put that
+ * question to a person at all: a bridge that cannot is handed one format and
+ * the name to write it under, the studio having asked in its own words, and
+ * downloads. `release` forgets the file the bridge holds without opening
  * another, which is what closing one is: the studio stops naming a file, so
  * nothing may be written back to the one it named.
  *
@@ -83,7 +107,12 @@ export type FileBridge = {
   open(maxBytes: number): Promise<OpenOutcome>;
   received(file: ChosenFile, maxBytes: number): Promise<OpenOutcome>;
   save(name: string, text: string): Promise<SaveOutcome>;
-  saveAs(name: string, text: string): Promise<SaveOutcome>;
+  saveAs(
+    name: string,
+    types: readonly SaveFileType[],
+    text: SaveText,
+  ): Promise<SaveOutcome>;
+  asksWhere(): boolean;
   release(): void;
 };
 

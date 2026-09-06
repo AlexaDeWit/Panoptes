@@ -136,7 +136,7 @@ describe('what the menu offers', () => {
     ).toEqual([
       'Open a modelCtrl+O',
       'SaveCtrl+S',
-      'Save as Threat Dragon JSONCtrl+Shift+S',
+      'Save asCtrl+Shift+S',
       'Close the fileCtrl+Shift+X',
       'UndoCtrl+Z',
       'RedoCtrl+Shift+Z or Ctrl+Y',
@@ -144,7 +144,7 @@ describe('what the menu offers', () => {
     expect(
       screen.getAllByRole('group').map((group) => group.textContent),
     ).toContain(
-      'FileOpen a modelCtrl+OSaveCtrl+SSave as Threat Dragon JSONCtrl+Shift+SClose the fileCtrl+Shift+X',
+      'FileOpen a modelCtrl+OSaveCtrl+SSave asCtrl+Shift+SClose the fileCtrl+Shift+X',
     );
   });
 
@@ -382,12 +382,61 @@ describe('saving', () => {
     expect(bridge.writes[0].text).toContain('formatVersion');
   });
 
-  it('reports what the format it was asked for could not hold, and puts the report away again', async () => {
+  it('places the file in its own format, through the picker the platform offers', async () => {
     const user = userEvent.setup();
     const bridge = specBridge();
     mounted(bridge);
 
-    await choose(user, 'Save as Threat Dragon JSON');
+    await choose(user, 'Save as');
+
+    await waitFor(() => {
+      expect(bridge.writes).toHaveLength(1);
+    });
+    expect(bridge.writes[0].name).toBe('threat-model.yaml');
+    expect(bridge.writes[0].elsewhere).toBe(true);
+    expect(await shown(user)).toBe(
+      'threat-model.yaml, Panoptes YAML, no unsaved changes',
+    );
+  });
+
+  it('asks the format in the menu where the platform has no picker, and takes the question back', async () => {
+    const user = userEvent.setup();
+    const bridge = specBridge({ picker: false });
+    mounted(bridge);
+
+    await choose(user, 'Save as');
+
+    await screen.findByRole('menuitem', { name: 'Save as Panoptes YAML' });
+    expect(
+      screen.getAllByRole('menuitem').map((entry) => entry.textContent),
+    ).toEqual([
+      'Open a modelCtrl+O',
+      'SaveCtrl+S',
+      'Save as Panoptes YAML',
+      'Save as Threat Dragon JSON',
+      'Close the fileCtrl+Shift+X',
+      'UndoCtrl+Z',
+      'RedoCtrl+Shift+Z or Ctrl+Y',
+    ]);
+    expect(bridge.writes).toEqual([]);
+
+    await user.keyboard('{Escape}');
+    await waitFor(() => {
+      expect(screen.queryByRole('menu')).toBe(null);
+    });
+    await openMenu(user);
+
+    expect(item('Save as')).toBeDefined();
+  });
+
+  it('reports what the format it was asked for could not hold, and puts the report away again', async () => {
+    const user = userEvent.setup();
+    const bridge = specBridge({ picker: false });
+    mounted(bridge);
+
+    await choose(user, 'Save as');
+    await screen.findByRole('menuitem', { name: 'Save as Threat Dragon JSON' });
+    await user.click(item('Save as Threat Dragon JSON'));
 
     await waitFor(() => {
       expect(reportEntries().length > 0).toBe(true);

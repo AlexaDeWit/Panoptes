@@ -5,6 +5,8 @@ import {
   reasonOf,
   type ChosenFile,
   type FileBridge,
+  type SaveFileType,
+  type SaveText,
 } from './bridge.js';
 
 type OpenPicker = (options: {
@@ -13,6 +15,7 @@ type OpenPicker = (options: {
 
 type SavePicker = (options: {
   readonly suggestedName: string;
+  readonly types: readonly SaveFileType[];
 }) => Promise<FileSystemFileHandle>;
 
 declare global {
@@ -63,15 +66,19 @@ function save(name: string, text: string): Promise<SaveOutcome> {
     : writeTo(held, held.name, text);
 }
 
-async function saveAs(name: string, text: string): Promise<SaveOutcome> {
+async function saveAs(
+  name: string,
+  types: readonly SaveFileType[],
+  text: SaveText,
+): Promise<SaveOutcome> {
   const picker = window.showSaveFilePicker;
   if (picker === undefined) {
     held = undefined;
-    return download(name, text);
+    return download(name, text(name));
   }
   try {
-    const handle = await picker({ suggestedName: name });
-    const outcome = await writeTo(handle, handle.name, text);
+    const handle = await picker({ suggestedName: name, types });
+    const outcome = await writeTo(handle, handle.name, text(handle.name));
     if (SaveOutcome.$is('Written')(outcome)) {
       held = handle;
     }
@@ -81,6 +88,10 @@ async function saveAs(name: string, text: string): Promise<SaveOutcome> {
       ? SaveOutcome.Cancelled()
       : SaveOutcome.Refused({ reason: reasonOf(cause) });
   }
+}
+
+function asksWhere(): boolean {
+  return window.showSaveFilePicker !== undefined;
 }
 
 async function writeTo(
@@ -121,6 +132,13 @@ function download(name: string, text: string): SaveOutcome {
  * `NoPicker` for the caller's own file input to take over and a save offers
  * the text as a download, which every browser has.
  *
+ * A save-as offers every registered format in the picker, and the name that
+ * comes back is what decides which codec writes the file, so the text is
+ * asked for once there is a name rather than handed over before there is
+ * one. Where there is no save picker there is no question to put in one, so
+ * `asksWhere` says as much, the studio asks the format in its own menu, and
+ * the save-as it then runs downloads under the name it was given.
+ *
  * The handle a picker returned is held here rather than in the store,
  * because it is neither plain data nor undoable: it is which file on disk
  * this tab may write. It is taken only where the crossing it names actually
@@ -128,10 +146,10 @@ function download(name: string, text: string): SaveOutcome {
  * file that would not open, and one that refused what was written to it, are
  * not files this model may be written over. It is dropped the moment the
  * model stops living in that file, which is an open through the caller's own
- * input, a save-as that ends in a download, and a release, which is the file
- * being closed ({@link FileBridge} carries what each one is). A save-as the
- * person dismissed and one the platform refused move nothing, so both leave
- * the handle where it was.
+ * input, a save the studio named the file for itself, and a release, which
+ * is the file being closed ({@link FileBridge} carries what each one is). A
+ * save-as the person dismissed and one the platform refused move nothing, so
+ * both leave the handle where it was.
  *
  * The two pickers are declared here because TypeScript's DOM library does
  * not declare them, and each is read off `window` as an optional member, so
@@ -143,5 +161,6 @@ export const browserFileBridge: FileBridge = {
   received,
   save,
   saveAs,
+  asksWhere,
   release,
 };

@@ -1,5 +1,24 @@
-import { OpenOutcome, SaveOutcome, type FileBridge } from './bridge.js';
+import {
+  OpenOutcome,
+  SaveOutcome,
+  type FileBridge,
+  type SaveFileType,
+} from './bridge.js';
 import { chosenFile } from './files.fixtures.js';
+
+const types: readonly SaveFileType[] = [
+  {
+    description: 'Panoptes YAML',
+    accept: { 'application/yaml': ['.yaml', '.yml'] },
+  },
+  {
+    description: 'Threat Dragon JSON',
+    accept: { 'application/json': ['.json'] },
+  },
+];
+
+const inTheFormatOf = (name: string): string =>
+  name.endsWith('.json') ? '{}' : 'a: 1';
 
 const downloads: string[] = [];
 
@@ -144,16 +163,33 @@ describe('saving', () => {
   it('writes where a save-as asked, and a later save follows it there', async () => {
     const written: string[] = [];
     vi.stubGlobal('showSaveFilePicker', () =>
-      Promise.resolve(handleFor('chosen.json', '', written)),
+      Promise.resolve(handleFor('chosen.yaml', '', written)),
     );
     const bridge = await freshBridge();
 
-    expect(await bridge.saveAs('proposed.json', 'first')).toEqual(
+    expect(await bridge.saveAs('proposed.yaml', types, inTheFormatOf)).toEqual(
+      SaveOutcome.Written({ name: 'chosen.yaml' }),
+    );
+    await bridge.save('proposed.yaml', 'second');
+
+    expect(written).toEqual(['a: 1', 'second']);
+  });
+
+  it('offers every format, and writes the one the name it came back with is in', async () => {
+    const written: string[] = [];
+    const asked: unknown[] = [];
+    vi.stubGlobal('showSaveFilePicker', (options: unknown) => {
+      asked.push(options);
+      return Promise.resolve(handleFor('chosen.json', '', written));
+    });
+    const bridge = await freshBridge();
+
+    expect(await bridge.saveAs('proposed.yaml', types, inTheFormatOf)).toEqual(
       SaveOutcome.Written({ name: 'chosen.json' }),
     );
-    await bridge.save('proposed.json', 'second');
 
-    expect(written).toEqual(['first', 'second']);
+    expect(asked).toEqual([{ suggestedName: 'proposed.yaml', types }]);
+    expect(written).toEqual(['{}']);
   });
 
   it('keeps writing back to the open file when a save-as is refused where it was pointed', async () => {
@@ -170,7 +206,7 @@ describe('saving', () => {
     const bridge = await freshBridge();
     await bridge.open(1024);
 
-    expect(await bridge.saveAs('elsewhere.json', 'first')).toEqual(
+    expect(await bridge.saveAs('elsewhere.json', types, inTheFormatOf)).toEqual(
       SaveOutcome.Refused({ reason: 'NotAllowedError' }),
     );
     await bridge.save('model.json', 'second');
@@ -188,7 +224,7 @@ describe('saving', () => {
     const bridge = await freshBridge();
     await bridge.open(1024);
 
-    expect(await bridge.saveAs('model.yaml', 'a: 1')).toEqual(
+    expect(await bridge.saveAs('model.yaml', types, inTheFormatOf)).toEqual(
       SaveOutcome.Cancelled(),
     );
     await bridge.save('model.json', 'second');
@@ -197,7 +233,7 @@ describe('saving', () => {
     expect(downloads).toEqual([]);
   });
 
-  it('forgets the file the model came from once a save-as downloads instead', async () => {
+  it('says it cannot ask where, and downloads the format it was handed, on a browser with no save picker', async () => {
     const written: string[] = [];
     vi.stubGlobal('showOpenFilePicker', () =>
       Promise.resolve([handleFor('model.json', '{}', written)]),
@@ -205,11 +241,23 @@ describe('saving', () => {
     const bridge = await freshBridge();
     await bridge.open(1024);
 
-    await bridge.saveAs('model.yaml', 'a: 1');
+    expect(bridge.asksWhere()).toBe(false);
+    expect(await bridge.saveAs('model.yaml', types, inTheFormatOf)).toEqual(
+      SaveOutcome.Written({ name: 'model.yaml' }),
+    );
     await bridge.save('model.yaml', 'a: 1');
 
     expect(written).toEqual([]);
     expect(downloads).toEqual(['model.yaml', 'model.yaml']);
+  });
+
+  it('says it can ask where wherever the browser has that picker', async () => {
+    vi.stubGlobal('showSaveFilePicker', () =>
+      Promise.resolve(handleFor('chosen.yaml', '', [])),
+    );
+    const bridge = await freshBridge();
+
+    expect(bridge.asksWhere()).toBe(true);
   });
 
   it('forgets it too when the caller opened through its own file input', async () => {

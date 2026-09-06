@@ -65,7 +65,7 @@ describe('useFileSession', () => {
     expect(bridge.writes[0].text).toContain('Added');
   });
 
-  it('saves elsewhere in the format the file is not already in', async () => {
+  it('places the file in the format it is already in, offering the picker every one', async () => {
     const bridge = specBridge();
     const result = session(bridge);
 
@@ -76,8 +76,66 @@ describe('useFileSession', () => {
     await waitFor(() => {
       expect(bridge.writes).toHaveLength(1);
     });
-    expect(bridge.writes[0].name).toBe('threat-model.json');
+    expect(bridge.writes[0].name).toBe('threat-model.yaml');
     expect(bridge.writes[0].elsewhere).toBe(true);
+    expect(bridge.offered[0].map((type) => type.description)).toEqual([
+      'Panoptes YAML',
+      'Threat Dragon JSON',
+    ]);
+  });
+
+  it('writes through the codec the name the picker came back with names, and saves there after', async () => {
+    const bridge = specBridge({ chooses: 'chosen.json' });
+    const result = session(bridge);
+
+    act(() => {
+      result.current.commands.saveAs();
+    });
+
+    await waitFor(() => {
+      expect(bridge.writes).toHaveLength(1);
+    });
+    expect(bridge.writes[0].name).toBe('chosen.json');
+    expect(bridge.writes[0].text).toContain('"version"');
+
+    act(() => {
+      result.current.commands.save();
+    });
+
+    await waitFor(() => {
+      expect(bridge.writes).toHaveLength(2);
+    });
+    expect(bridge.writes[1]).toMatchObject({
+      name: 'chosen.json',
+      elsewhere: false,
+    });
+  });
+
+  it('asks the format itself where the bridge has no picker to ask it in', async () => {
+    const bridge = specBridge({ picker: false });
+    const result = session(bridge);
+
+    expect(result.current.asksFormat).toBe(true);
+
+    act(() => {
+      result.current.commands.saveAs();
+    });
+
+    expect(result.current.choosing).toBe(true);
+    expect(bridge.writes).toEqual([]);
+
+    act(() => {
+      result.current.chooseFormat('threat-dragon');
+    });
+
+    await waitFor(() => {
+      expect(bridge.writes).toHaveLength(1);
+    });
+    expect(bridge.writes[0]).toMatchObject({
+      name: 'threat-model.json',
+      elsewhere: true,
+    });
+    expect(result.current.choosing).toBe(false);
   });
 
   it('opens through the fallback picker where the bridge has none of its own', async () => {
@@ -95,9 +153,7 @@ describe('useFileSession', () => {
   });
 
   it('holds what the last crossing cost until it is put away', async () => {
-    const result = session(
-      specBridge({ offers: chosenFile('model.yaml', nativeText) }),
-    );
+    const result = session(specBridge({ chooses: 'model.json' }));
 
     act(() => {
       result.current.commands.saveAs();
