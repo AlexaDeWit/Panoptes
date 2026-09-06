@@ -1,37 +1,31 @@
 import { type Page } from '@playwright/test';
 
-type IntervalLog = {
-  readonly afterAMove: number[];
+type GapLog = {
+  readonly readings: number[];
   running: boolean;
 };
 
 declare global {
   interface Window {
-    panoptesIntervalLog?: IntervalLog;
+    panoptesGapLog?: GapLog;
   }
 }
 
-/**
- * The nth percentile of a set of readings, by nearest rank: the smallest
- * reading that at least that share of the set falls at or under. Rank zero
- * names no reading, so an nth of zero answers the smallest.
- */
-export const nthPercentile = (
-  readings: readonly number[],
-  nth: number,
-): number => {
+const nthPercentile = (readings: readonly number[], nth: number): number => {
   const sorted = [...readings];
   sorted.sort((left, right) => left - right);
   const rank = Math.ceil((nth / 100) * sorted.length);
   return sorted.at(Math.max(rank - 1, 0)) ?? Number.NaN;
 };
 
+const gapsBetween = (readings: readonly number[]): readonly number[] =>
+  readings.slice(1).map((reading, index) => reading - readings[index]);
+
 /**
- * The page's display period in milliseconds: the median interval between
- * animation frame callbacks over `frames` of an idle page. An animation frame
- * callback is handed the frame's own start time, so a page with nothing to do
- * reports its refresh rate and nothing else. Reading it beats assuming 60 Hz,
- * which is neither every machine's rate nor every runner's.
+ * The page's display period in milliseconds: the median gap between animation
+ * frame callbacks over `frames` of an idle page, read by the same clock the
+ * drag is measured with. Reading it beats assuming 60 Hz, which is neither
+ * every machine's rate nor every runner's.
  */
 export const displayPeriod = async (
   page: Page,
@@ -40,82 +34,59 @@ export const displayPeriod = async (
   const idle = await page.evaluate(
     (count) =>
       new Promise<number[]>((resolve) => {
-        const intervals: number[] = [];
-        let previous: number | undefined = undefined;
-        const step = (now: number): void => {
-          if (previous !== undefined) {
-            intervals.push(now - previous);
-          }
-          previous = now;
-          if (intervals.length < count) {
+        const readings: number[] = [];
+        const step = (): void => {
+          readings.push(performance.now());
+          if (readings.length <= count) {
             window.requestAnimationFrame(step);
           } else {
-            resolve(intervals);
+            resolve(readings);
           }
         };
         window.requestAnimationFrame(step);
       }),
     frames,
   );
-  return nthPercentile(idle, 50);
+  return nthPercentile(gapsBetween(idle), 50);
 };
 
 /**
- * Starts recording the interval between the page's animation frame callbacks,
- * until {@link intervalsRecorded} reads the recording back, and keeps only the
- * intervals that follow a frame which carried a pointer move. An interval is
- * one display period where the page kept up and a multiple of it where a frame
- * was dropped, so any main-thread work the page does raises the reading. The
- * work a pointer move causes runs in the frame that dispatched it and shows in
- * the interval after that frame, which is why a frame the gesture never
- * touched is left out rather than counted as a frame the page held.
+ * Starts recording `performance.now()` at the top of every animation frame
+ * callback, until {@link gapsRecorded} reads the recording back. The clock is
+ * read rather than the timestamp the callback is handed, because in headless
+ * Chromium that argument is the frame's nominal slot on a fixed grid: a frame
+ * delivered late still carries the slot it was meant for, so work that holds
+ * the main thread leaves the argument unchanged and the clock shows it.
  */
-export const recordIntervals = async (page: Page): Promise<void> => {
+export const recordGaps = async (page: Page): Promise<void> => {
   await page.evaluate(() => {
-    const log: IntervalLog = { afterAMove: [], running: true };
-    window.panoptesIntervalLog = log;
-    const listening = new AbortController();
-    let moveSeen = false;
-    let previousCarriedMove = false;
-    let previous: number | undefined = undefined;
-    window.addEventListener(
-      'pointermove',
-      () => {
-        moveSeen = true;
-      },
-      { capture: true, signal: listening.signal },
-    );
-    const step = (now: number): void => {
-      if (previous !== undefined && previousCarriedMove) {
-        log.afterAMove.push(now - previous);
-      }
-      previousCarriedMove = moveSeen;
-      moveSeen = false;
-      previous = now;
+    const log: GapLog = { readings: [], running: true };
+    window.panoptesGapLog = log;
+    const step = (): void => {
+      log.readings.push(performance.now());
       if (log.running) {
         window.requestAnimationFrame(step);
-      } else {
-        listening.abort();
       }
     };
     window.requestAnimationFrame(step);
   });
 };
 
-/** Stops the recording {@link recordIntervals} started and reads it back. */
-export const intervalsRecorded = async (
-  page: Page,
-): Promise<readonly number[]> => {
-  const recorded = await page.evaluate(() => {
-    const log = window.panoptesIntervalLog;
-    window.panoptesIntervalLog = undefined;
+/**
+ * Stops the recording {@link recordGaps} started and answers the gaps between
+ * the frames it saw.
+ */
+export const gapsRecorded = async (page: Page): Promise<readonly number[]> => {
+  const readings = await page.evaluate(() => {
+    const log = window.panoptesGapLog;
+    window.panoptesGapLog = undefined;
     if (log === undefined) {
       return [];
     }
     log.running = false;
-    return [...log.afterAMove];
+    return [...log.readings];
   });
-  return recorded;
+  return gapsBetween(readings);
 };
 
 /**

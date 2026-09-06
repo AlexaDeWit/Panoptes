@@ -42,7 +42,9 @@ export default defineConfig({
     // count. One worker here, and the rest of the suite keeps its own
     // parallelism. The reading is comparable only where no other browser
     // shares the host, so this project depends on the other and runs alone
-    // once the others are done rather than beside them.
+    // once the others are done rather than beside them. Playwright skips a
+    // project whose dependency failed, so a red anywhere else in the smoke
+    // leaves the floor unreported rather than reported green.
     {
       name: 'frame-time',
       use: { ...devices['Desktop Chrome'] },

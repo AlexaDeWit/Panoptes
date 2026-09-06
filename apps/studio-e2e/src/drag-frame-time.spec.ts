@@ -2,10 +2,9 @@ import { expect, test } from '@playwright/test';
 import { type Point, pressOn } from './canvas-geometry.fixtures.js';
 import {
   displayPeriod,
-  intervalsRecorded,
+  gapsRecorded,
   nextFrame,
-  nthPercentile,
-  recordIntervals,
+  recordGaps,
 } from './frame-time.fixtures.js';
 import {
   canvasSettled,
@@ -18,8 +17,8 @@ type Direction = 1 | -1;
 
 const proxy = /^Écluse proxy, process/u;
 
-const percentile = 95;
-const percentilePeriods = 1.5;
+const longGapPeriods = 1.5;
+const longGapShare = 0.05;
 const longestPeriods = 3;
 const framesAtLeast = 60;
 const periodFrames = 20;
@@ -32,15 +31,17 @@ const across: Direction = 1;
 const back: Direction = -1;
 const dragWithin = 12_000;
 const warmUpWithin = 6_000;
-const openingWithin = 30_000;
+const roomForTheRest = 30_000;
 
 test('a drag of an element with flows at both ends drops no frames, after a warm-up drag', async ({
   page,
 }) => {
-  test.setTimeout(openingWithin + warmUpWithin + dragWithin);
+  test.setTimeout(warmUpWithin + dragWithin + roomForTheRest);
   await openEcluse(page);
   const dragged = nodeNamed(page, proxy);
   const period = await displayPeriod(page, periodFrames);
+  const longEnough = longGapPeriods * period;
+  const worstAllowed = longestPeriods * period;
 
   const drag = async (
     from: Point,
@@ -65,28 +66,29 @@ test('a drag of an element with flows at both ends drops no frames, after a warm
   const placed = await placeOf(dragged);
 
   const at = await pressOn(page, dragged);
-  await recordIntervals(page);
+  await recordGaps(page);
   await drag(at, moves, across, dragWithin);
-  const intervals = await intervalsRecorded(page);
+  const gaps = await gapsRecorded(page);
   await page.mouse.up();
 
   await expect.poll(() => placeOf(dragged)).not.toBe(placed);
 
-  const busiest = nthPercentile(intervals, percentile);
-  const longest = intervals.reduce((most, each) => Math.max(most, each), 0);
-  const reading = `${intervals.length} intervals after a pointer move, ${percentile}th percentile ${busiest.toFixed(2)} ms, longest ${longest.toFixed(2)} ms, display period ${period.toFixed(2)} ms`;
+  const long = gaps.filter((gap) => gap > longEnough).length;
+  const share = gaps.length === 0 ? 1 : long / gaps.length;
+  const longest = gaps.reduce((most, gap) => Math.max(most, gap), 0);
+  const reading = `${gaps.length} frame gaps, ${long} over ${longGapPeriods} display periods (${(share * 100).toFixed(1)} percent), longest ${longest.toFixed(2)} ms, display period ${period.toFixed(2)} ms`;
   console.log(reading);
 
   expect(
-    intervals.length,
+    gaps.length,
     `the drag gave too few frames to judge: ${reading}`,
   ).toBeGreaterThanOrEqual(framesAtLeast);
   expect(
-    busiest,
-    `the ${percentile}th percentile interval is over ${percentilePeriods} display periods: ${reading}`,
-  ).toBeLessThan(percentilePeriods * period);
+    share,
+    `more than ${longGapShare * 100} percent of the drag's frames came late: ${reading}`,
+  ).toBeLessThanOrEqual(longGapShare);
   expect(
     longest,
-    `an interval is over ${longestPeriods} display periods: ${reading}`,
-  ).toBeLessThanOrEqual(longestPeriods * period);
+    `a frame came more than ${longestPeriods} display periods late: ${reading}`,
+  ).toBeLessThanOrEqual(worstAllowed);
 });
