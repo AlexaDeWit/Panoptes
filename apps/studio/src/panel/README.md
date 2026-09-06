@@ -17,7 +17,7 @@ drawn over it, and the diagram is not resized when it opens: what the panel
 covers is dealt with by panning, not by taking the room off the canvas ([the
 canvas](../canvas/README.md)). How much it covers is one number, `panelWidth`
 in `../canvas/viewport.ts`: the canvas hands it to this stylesheet as
-`--pn-panel-cover` and the panel sizes its border box from that, so the width
+`--studio-panel-cover` and the panel sizes its border box from that, so the width
 the panel draws and the width the pan reasons about cannot differ.
 
 `threat-overlay.tsx` is the mount: it reads the selection, decides whether

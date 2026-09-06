@@ -56,7 +56,7 @@ import styles from './diagram-canvas.module.css';
 const deleteKeys = new Set(['Delete', 'Backspace']);
 
 const panelCover: CSSProperties & Record<string, string> = {
-  '--pn-panel-cover': `${String(panelWidth)}px`,
+  '--studio-panel-cover': `${String(panelWidth)}px`,
 };
 
 /**

@@ -24,7 +24,7 @@ export const canvasPadding = 64;
  * takes.
  *
  * This is the one place the number lives. The canvas hands it to the
- * stylesheet as `--pn-panel-cover` and the panel sizes its border box from
+ * stylesheet as `--studio-panel-cover` and the panel sizes its border box from
  * that, so nothing can draw a panel of one width while the pan reasons about
  * another.
  */

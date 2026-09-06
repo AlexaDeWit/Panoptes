@@ -143,7 +143,7 @@ reveals in the room the panel leaves rather than in the canvas.
 `clearOfPanel` and `revealCentre` in `viewport.ts` are that arithmetic, and
 `panelWidth` beside them is what the panel covers, border and padding and the
 inset it floats at included. That number has one home: the canvas container
-carries it as the `--pn-panel-cover` custom property and the panel's own
+carries it as the `--studio-panel-cover` custom property and the panel's own
 stylesheet sizes its border box from it, so a panel drawn wider than the pan
 expects is not a state the two can reach.
 
