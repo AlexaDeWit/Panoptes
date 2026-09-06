@@ -30,10 +30,10 @@ describe(
       expect(screen.getByTestId('canvas-container')).toBeTruthy();
     });
 
-  it('draws no threat panel while nothing is selected', () => {
-    render(<App />);
-    expect(screen.queryByRole('region', { name: 'Threats' })).toBeNull();
-  });
+    it('draws no threat panel while nothing is selected', () => {
+      render(<App />);
+      expect(screen.queryByRole('region', { name: 'Threats' })).toBeNull();
+    });
 
     it('names the page for a reader without drawing a title bar over the canvas', () => {
       render(<App />);

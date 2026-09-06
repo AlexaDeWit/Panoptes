@@ -7,6 +7,7 @@ import {
   sampleThreat,
   storeElement,
 } from '../store/store.fixtures.js';
+import { editorTimeout } from './panel.fixtures.js';
 import {
   ThreatEditor,
   type RefusedField,
@@ -69,128 +70,8 @@ describe(
     it('is named by its number and title while it is collapsed', () => {
       showEditor({}, false);
 
-    expect(disclosure().textContent).toContain('1');
-    expect(screen.queryByRole('textbox', { name: 'Title' })).toBeNull();
-  });
-
-  it('shows every field of the threat once it is expanded', () => {
-    showEditor();
-
-    for (const name of ['Title', 'Description', 'Mitigation']) {
-      expect(textbox(name)).toBeDefined();
-    }
-    for (const name of ['Category', 'Severity', 'Status']) {
-      expect(screen.getByRole('combobox', { name })).toBeDefined();
-    }
-    expect(
-      screen.getByRole('button', { name: 'Delete threat 1' }),
-    ).toBeDefined();
-  });
-
-  it('commits a title left behind as a patch of that field alone', async () => {
-    const user = userEvent.setup();
-    const onCommit = commits();
-    showEditor({ onCommit });
-
-    await user.clear(textbox('Title'));
-    await user.keyboard('A reader edits a model{Enter}');
-
-    expect(onCommit).toHaveBeenCalledWith({ title: 'A reader edits a model' });
-  });
-
-  it('commits a description left behind as a patch of that field alone', async () => {
-    const onCommit = commits();
-    showEditor({ onCommit });
-
-    await typeInto(
-      'Description',
-      'The reader has a token they may only read with.',
-    );
-
-    expect(onCommit).toHaveBeenCalledTimes(1);
-    expect(onCommit).toHaveBeenCalledWith({
-      description: 'The reader has a token they may only read with.',
-    });
-  });
-
-  it('commits a mitigation left behind as a patch of that field alone', async () => {
-    const onCommit = commits();
-    showEditor({ onCommit });
-
-    await typeInto('Mitigation', 'Check the token on every write.');
-
-    expect(onCommit).toHaveBeenCalledTimes(1);
-    expect(onCommit).toHaveBeenCalledWith({
-      mitigation: 'Check the token on every write.',
-    });
-  });
-
-  it('commits a severity chosen as a patch of that field alone', async () => {
-    const onCommit = commits();
-    showEditor({ onCommit });
-
-    await chooseFrom('Severity', 'critical');
-
-    expect(onCommit).toHaveBeenCalledWith({ severity: 'critical' });
-  });
-
-  it('commits a status chosen as a patch of that field alone', async () => {
-    const onCommit = commits();
-    showEditor({ onCommit });
-
-    await chooseFrom('Status', 'mitigated');
-
-    expect(onCommit).toHaveBeenCalledWith({ status: 'mitigated' });
-  });
-
-  it('commits a category chosen as a patch of that field alone', async () => {
-    const onCommit = commits();
-    showEditor({ onCommit });
-
-    await chooseFrom('Category', 'STRIDE spoofing');
-
-    expect(onCommit).toHaveBeenCalledWith({
-      category: { methodology: 'STRIDE', category: 'spoofing' },
-    });
-  });
-
-  it('reports a refused draft, and keeps reporting it while a clean field commits beside it', async () => {
-    const onRefusal = vi.fn<(refused: RefusedField | undefined) => void>();
-    const refusedDescription = {
-      field: 'Description',
-      text: `Pasted${softHyphen}prose`,
-      said: 'Description was not saved. Character 7 is one the model does not accept.',
-    };
-    showEditor({ onRefusal });
-
-    await typeInto('Description', `Pasted${softHyphen}prose`);
-    expect(onRefusal).toHaveBeenLastCalledWith(refusedDescription);
-
-    await typeInto('Mitigation', 'Check the token.');
-
-    expect(onRefusal).toHaveBeenLastCalledWith(refusedDescription);
-  });
-
-  it('opens the field a held draft was typed in on that draft, refusal and all', () => {
-    showEditor({
-      held: {
-        field: 'Description',
-        text: `Pasted${softHyphen}prose`,
-        said: 'Description was not saved. Character 7 is one the model does not accept.',
-      },
-    });
-
-    expect(screen.getByDisplayValue(`Pasted${softHyphen}prose`)).toBeDefined();
-    expect(
-      screen
-        .getByRole('textbox', { name: 'Description' })
-        .getAttribute('aria-invalid'),
-    ).toBe('true');
-  });
-
-  it('says that deleting a threat several elements name takes it off all of them', () => {
-    showEditor({
-      threat: { ...sampleThreat, elements: [processElement, storeElement] },
+      expect(disclosure().textContent).toContain('1');
+      expect(screen.queryByRole('textbox', { name: 'Title' })).toBeNull();
     });
 
     it('shows every field of the threat once it is expanded', () => {
@@ -277,19 +158,39 @@ describe(
     });
 
     it('reports a refused draft, and keeps reporting it while a clean field commits beside it', async () => {
-      const onRefusal = vi.fn<(refusal: string | undefined) => void>();
+      const onRefusal = vi.fn<(refused: RefusedField | undefined) => void>();
+      const refusedDescription = {
+        field: 'Description',
+        text: `Pasted${softHyphen}prose`,
+        said: 'Description was not saved. Character 7 is one the model does not accept.',
+      };
       showEditor({ onRefusal });
 
       await typeInto('Description', `Pasted${softHyphen}prose`);
-      expect(onRefusal).toHaveBeenLastCalledWith(
-        'Description was not saved. Character 7 is one the model does not accept.',
-      );
+      expect(onRefusal).toHaveBeenLastCalledWith(refusedDescription);
 
       await typeInto('Mitigation', 'Check the token.');
 
-      expect(onRefusal).toHaveBeenLastCalledWith(
-        'Description was not saved. Character 7 is one the model does not accept.',
-      );
+      expect(onRefusal).toHaveBeenLastCalledWith(refusedDescription);
+    });
+
+    it('opens the field a held draft was typed in on that draft, refusal and all', () => {
+      showEditor({
+        held: {
+          field: 'Description',
+          text: `Pasted${softHyphen}prose`,
+          said: 'Description was not saved. Character 7 is one the model does not accept.',
+        },
+      });
+
+      expect(
+        screen.getByDisplayValue(`Pasted${softHyphen}prose`),
+      ).toBeDefined();
+      expect(
+        screen
+          .getByRole('textbox', { name: 'Description' })
+          .getAttribute('aria-invalid'),
+      ).toBe('true');
     });
 
     it('says that deleting a threat several elements name takes it off all of them', () => {
