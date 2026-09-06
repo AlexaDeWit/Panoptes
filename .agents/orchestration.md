@@ -45,6 +45,26 @@ Edit here when the process changes, in the same PR as the change.
 - Documentation updated in the same PR wherever behaviour, interfaces, or
   configuration changed.
 
+## Verification mode
+
+- The host is shared by every agent the lead runs, so local verification is
+  a floor and the draft PR's CI run is the test evidence. Before the first
+  push an implementer runs the lint and the typecheck of the projects it
+  touched, the formatter, and the one spec file that pins its change, once,
+  with `--skip-nx-cache`; proving a test bites by breaking it happens at that
+  scope. Nothing heavier runs locally: no `pnpm check`, no `run-many` across
+  the workspace, and no Playwright unless the slice is a browser spec, and
+  then that spec alone.
+- The implementer pushes the draft at once. The lead starts the CI watch at
+  the PR-open report and dispatches the fresh review beside it, so CI and
+  the review run in parallel rather than in series. A review reads the CI
+  run's logs for the suite evidence and runs locally only spec-scoped break
+  experiments: a single spec file, never a project's suite.
+- A red CI run is routed as a fix commit on the same PR and both re-verify
+  on the new head. A criterion that measures the host itself (a repeated-run
+  flake count, a frame-time floor) is the exception and says so in its
+  issue.
+
 ## Worktrees
 
 - One worktree per agent:

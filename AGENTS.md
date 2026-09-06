@@ -36,7 +36,10 @@ suggestions.
   (exclusions noted beside the script definition in `package.json`), plus
   the browser smoke as its own command: `pnpm nx e2e @panoptes/studio-e2e`,
   and the dependency provenance check as another:
-  `scripts/check-provenance.mjs`. `pnpm fix` runs the writing variants.
+  `scripts/check-provenance.mjs`. `pnpm fix` runs the writing variants. An
+  agent on the shared orchestration host runs the floor in
+  [`.agents/orchestration.md`, Verification mode](.agents/orchestration.md#verification-mode)
+  and lets the draft PR's CI run carry the rest.
 - **One fact, one home.** Decision records only on the maintainer's explicit
   request ([CONTRIBUTING, Decision records](CONTRIBUTING.md#decision-records)).
 
