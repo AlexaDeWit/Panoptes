@@ -111,6 +111,33 @@ describe('useFileSession', () => {
     });
   });
 
+  it('writes a name in no registered format in the one the file is already in', async () => {
+    const bridge = specBridge({ chooses: 'notes.txt' });
+    const result = session(bridge);
+
+    act(() => {
+      result.current.commands.saveAs();
+    });
+
+    await waitFor(() => {
+      expect(bridge.writes).toHaveLength(1);
+    });
+    expect(bridge.writes[0].name).toBe('notes.txt');
+    expect(bridge.writes[0].text).toContain('formatVersion');
+
+    act(() => {
+      result.current.commands.save();
+    });
+
+    await waitFor(() => {
+      expect(bridge.writes).toHaveLength(2);
+    });
+    expect(bridge.writes[1]).toMatchObject({
+      name: 'notes.txt',
+      elsewhere: false,
+    });
+  });
+
   it('asks the format itself where the bridge has no picker to ask it in', async () => {
     const bridge = specBridge({ picker: false });
     const result = session(bridge);

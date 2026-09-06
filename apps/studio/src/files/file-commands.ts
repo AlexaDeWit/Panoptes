@@ -85,10 +85,12 @@ export type FileSession = {
  * back to the one it named.
  *
  * A save-as offers every format in the platform's own picker and writes
- * through the codec the name that comes back belongs to. Where the platform
- * has no picker to ask in, the format becomes a question the view asks in
- * its own words, the way closing asks about unsaved work, and the answer is
- * the one format the save-as then writes.
+ * through the codec the name that comes back belongs to, and a name in no
+ * registered format is written in the one the file is already in, which is
+ * the format the picker proposed. Where the platform has no picker to ask
+ * in, the format becomes a question the view asks in its own words, the way
+ * closing asks about unsaved work, and the answer is the one format the
+ * save-as then writes.
  */
 export function useFileSession(
   bridge: FileBridge = browserFileBridge,

@@ -72,8 +72,8 @@ leaves nothing to lose and no question to ask.
 the studio asks it only where the platform has no picker to ask it in. Save as
 holds the menu open and becomes the registered formats, the file's own in the
 place the item stood, so the person is still on the item they pressed. Firefox
-and Safari are that browser today, so the question is a first-class path
-rather than a fallback. It is a second press on an item rather than a submenu
+and Safari are that browser today, so the question is a path in its own
+right, not a fallback. It is a second press on an item rather than a submenu
 because that is one press deep, keeps the keyboard where it already was, and
 adds no second overlay to walk into. Whether the platform asks is read as the
 item is drawn rather than after a save-as has started, so nothing has to close

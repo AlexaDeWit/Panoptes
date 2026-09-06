@@ -1,6 +1,7 @@
 import { AxeBuilder } from '@axe-core/playwright';
 import { expect, type Page, test } from '@playwright/test';
 import { registeredChords } from './chords.js';
+import { savedFromMenu } from './commands.fixtures.js';
 import { menuItem, openMenu, withoutPickers } from './studio.fixtures.js';
 
 const audit = async (
@@ -132,9 +133,7 @@ test('the studio carries no violation while it says what an edit did', async ({
 // The menu is the studio's one command surface, and it is not modal: the
 // canvas stays in the accessibility tree behind it, so the audit stays
 // page-wide. The report region beside it holds nothing until a file crossing
-// costs something, which the save below is what gives it. The pickers are off
-// the page, so Save as asks the format in the menu, which is the second state
-// audited here.
+// costs something, which the save below is what gives it.
 test('the studio carries no violation with the menu open', async ({ page }) => {
   await page.addInitScript(withoutPickers);
   await page.goto('/');
@@ -149,10 +148,7 @@ test('the studio carries no violation with the menu open', async ({ page }) => {
 
   await audit(page, 'showing the menu asking which format a save-as writes');
 
-  await Promise.all([
-    page.waitForEvent('download'),
-    menuItem(page, 'Save as Threat Dragon JSON').click(),
-  ]);
+  await savedFromMenu(page, 'Save as Threat Dragon JSON');
   await expect(page.getByTestId('loss-report')).not.toBeEmpty();
 
   await audit(page, 'showing a loss report');

@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { registeredChords } from './chords.js';
+import { savedFromMenu } from './commands.fixtures.js';
 import {
   canvasSettled,
   elementNodes,
@@ -49,12 +50,9 @@ test('save as asks the format in the menu where the browser has no picker of its
     'RedoCtrl+Shift+Z or Ctrl+Y',
   ]);
 
-  const [download] = await Promise.all([
-    page.waitForEvent('download'),
-    menuItem(page, 'Save as Panoptes YAML').click(),
-  ]);
+  const written = await savedFromMenu(page, 'Save as Panoptes YAML');
 
-  expect(download.suggestedFilename()).toBe('threat-model.yaml');
+  expect(written.name).toBe('threat-model.yaml');
   await openMenu(page);
   await expect(page.getByTestId('file-state')).toHaveText(
     'threat-model.yaml, Panoptes YAML, no unsaved changes',
@@ -188,13 +186,9 @@ test('the menu chrome carries what a save could not hold, and puts it away again
 
   await openMenu(page);
   await menuItem(page, 'Save as').click();
-  await expect(menuItem(page, 'Save as Panoptes YAML')).toBeVisible();
-  const [download] = await Promise.all([
-    page.waitForEvent('download'),
-    menuItem(page, 'Save as Threat Dragon JSON').click(),
-  ]);
+  const written = await savedFromMenu(page, 'Save as Threat Dragon JSON');
 
-  expect(download.suggestedFilename()).toBe('threat-model.json');
+  expect(written.name).toBe('threat-model.json');
   await expect(page.getByTestId('loss-report')).toContainText(
     'The last save did not carry everything the model holds:',
   );
