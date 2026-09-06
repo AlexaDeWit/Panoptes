@@ -213,6 +213,17 @@ const threatNumbersArbitrary = fc
   .filter((numbers) => numbers.length < 2 || !isAscending(numbers));
 
 /**
+ * How long a property over the arbitrary below is given, past the ten
+ * seconds `vitest.shared.mts` allows every other test. fast-check runs a
+ * property a hundred times by default, and each run parses a model, writes
+ * it and reads it back, which under a full workspace run on a contended host
+ * has been measured at 9.5 seconds. Lowering `numRuns` or reaching for
+ * `interruptAfterTimeLimit` would buy the time by testing less, and least on
+ * exactly the machines that are slowest.
+ */
+export const propertyTimeout = 30_000;
+
+/**
  * Models covering every record kind the internal model has, as `parseModel`
  * input rather than as models: a spec parses them, so a generator that
  * strays outside what the model accepts fails the run that produced it

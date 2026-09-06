@@ -1,12 +1,13 @@
 /**
- * How long a spec that compiles a PDF is given, against vitest's default of
- * five seconds. The first compile in a process initialises 28 MB of
- * WebAssembly before it typesets anything, and the scenario that checks the
- * byte path spawns the whole CLI twice, so a loaded machine takes longer than
- * the default allows. It is generous rather than measured: the number is here
- * to stop a slow machine reporting a failure, not to describe one.
+ * How long a spec that compiles a PDF is given, past the ten seconds
+ * `vitest.shared.mts` allows every other test. The first compile in a process
+ * initialises 28 MB of WebAssembly before it typesets anything, and the
+ * scenario that checks the byte path spawns the whole CLI twice, so it pays
+ * for two of those: ten runs of the whole workspace's suites on a contended
+ * host measured it at 59 seconds at its worst, against the minute it was
+ * allowed. The number is twice that worst rather than a guess at a compile.
  */
-export const compileTimeout = 60_000;
+export const compileTimeout = 120_000;
 
 const pageTree = /\/Type\s*\/Pages[\s\S]*?\/Count\s+(\d+)/u;
 

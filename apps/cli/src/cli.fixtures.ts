@@ -139,6 +139,16 @@ lastIssuedThreatNumber: 1
 /** A YAML text no registered codec claims. */
 export const unclaimedYaml = 'hello: world\n';
 
+/**
+ * How long a spec that runs the packaged CLI is given, past the ten seconds
+ * `vitest.shared.mts` allows every other test. Each of these spawns node on
+ * the bundle, so it pays for a process start and the bundle's whole import
+ * graph before an argument is parsed, and under a full workspace run on a
+ * contended host one of them has been measured past ten seconds where the
+ * same test costs under a second on an idle one.
+ */
+export const spawnTimeout = 30_000;
+
 /** One fixture on disk, at the path it was written to. */
 export function fixtureFile(
   directory: string,
