@@ -254,6 +254,9 @@ export function focusElement(
   );
   if (drawn instanceof HTMLElement || drawn instanceof SVGElement) {
     drawn.focus();
+    if (attempts > 1) {
+      setTimeout(() => focusElement(elementId, attempts - 1), 0);
+    }
     return;
   }
   if (attempts > 1) {

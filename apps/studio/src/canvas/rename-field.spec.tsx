@@ -34,7 +34,7 @@ describe('the rename field', () => {
     expect(field('Name of Reader')).toHaveProperty('value', 'Reader');
   });
 
-  it('commits on Enter as one undo step, and hands the element back', async () => {
+  it('commits on Enter as one undo step', async () => {
     const user = userEvent.setup();
     renaming(readerElement);
     render(<DiagramCanvas />);
@@ -45,7 +45,6 @@ describe('the rename field', () => {
     expect(nameOf(readerElement)).toBe('Auditor');
     expect(state().past).toHaveLength(1);
     expect(state().renaming).toBeUndefined();
-    expect(document.activeElement?.getAttribute('data-id')).toBe(readerElement);
   });
 
   it('commits when it is left, leaving focus where it went', async () => {

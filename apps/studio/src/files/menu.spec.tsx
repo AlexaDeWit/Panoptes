@@ -476,6 +476,8 @@ describe('saving', () => {
       'Close the fileCtrl+Shift+X',
       'UndoCtrl+Z',
       'RedoCtrl+Shift+Z or Ctrl+Y',
+      'Rename the selectionF2',
+      'Delete the selectionDelete or Backspace',
     ]);
     expect(bridge.writes).toEqual([]);
 
