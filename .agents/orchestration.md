@@ -96,8 +96,8 @@ window resets.
 ## Worktrees
 
 - One worktree per agent:
-  `git worktree add ../panoptes-<branch> -b <branch>` from the repository
-  root; `git worktree remove ../panoptes-<branch>` after merge.
+  `git worktree add .agents/worktrees/<branch> -b <branch>` from the repository
+  root; `git worktree remove .agents/worktrees/<branch>` after merge.
 - `node_modules` is per-worktree: run `pnpm install` inside the flake in each
   new worktree. The flake and direnv resolve per-worktree.
 

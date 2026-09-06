@@ -4,6 +4,7 @@ dist/
 out/
 out-tsc/
 tmp/
+.agents/worktrees/
 coverage/
 
 # Test artifacts (vitest coverage, playwright reports and traces)
