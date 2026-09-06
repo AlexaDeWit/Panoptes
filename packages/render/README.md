@@ -6,9 +6,11 @@ to replace a register a downstream site generator builds by hand, and
 `renderTypst` writes the whole model, every diagram and that same register, as
 the source of one Typst document.
 
-Every projection is a pure function of the model. Nothing here compiles a
-PDF, carries a font, or reads a file: `apps/cli` carries the Typst compiler
-and turns the source into the bytes.
+Every projection is a pure function of the model. The `pdf` subpath compiles
+that Typst source into the bytes of a document, and it carries no font and
+reads no file either: the WebAssembly module and the faces it typesets with
+are the caller's to hand over. The main entry loads none of it, so a caller
+that wants a drawing or a register loads no compiler.
 
 ## A diagram as an SVG document
 
@@ -129,7 +131,7 @@ portrait pages. A diagram is embedded as the bytes of the SVG document
 `renderSvg` writes, so the PDF and a standalone `.svg` file are the one
 drawing. Nothing is referenced from outside the source: no file, no font
 file, no Typst package, no URL. A compiler therefore needs no filesystem and
-no network, which is what lets `apps/cli` run the compiler with neither.
+no network, which is what lets the `pdf` subpath run one with neither.
 
 The source names the two font families it expects, Liberation Sans and
 Liberation Mono, and carries neither. A compiler is given them, and
@@ -180,6 +182,46 @@ package sets is two levels under it. That margin is deliberate: the limit is
 the compiler's rather than this package's, a Typst release may lower it, and
 two levels buy a version bump without prose that has always rendered starting
 to fail.
+
+## Typst source as a PDF
+
+`compilePdf(source, assets)`, on the `@panoptes/render/pdf` subpath, is the
+compile step: the bytes of a PDF, or a `PdfFailure` saying why there are
+none. It sits on a subpath rather than the main entry because it pulls in 28
+MB of WebAssembly, which a caller drawing an SVG or writing a register has no
+use for.
+
+`assets` is where the bytes come from, since this package holds none: `wasm`
+is the Typst WebAssembly module, and `fonts` are the faces, added to the
+compiler in the order they are listed. Nothing is read from a file and
+nothing from the host's font directories. `apps/cli` reads them beside its
+bundle; a browser can hand over the same bytes, so what it compiles and what
+the CLI writes can be one document.
+
+The compiler is given no access model, so it has no filesystem and no package
+registry. That is the other half of what `renderTypst` promises: the source
+references nothing outside itself, so a compiler that can reach nothing is
+enough to typeset it.
+
+The WebAssembly module starts once per process, and the guard is keyed on the
+identity of the `wasm` array. A caller handing back the array it handed
+before starts nothing further; one reading a fresh copy each time misses the
+guard and reaches an initialisation that returns without looking at the
+bytes. Either way the first module a process starts is the one it keeps, so a
+second cannot replace it.
+
+A refusal is a value rather than a throw, and a tagged one this package owns
+([`CODING.md`](../../CODING.md), Error handling). `PdfFailure.Refused`
+carries the compiler's sentences in the order it reported them, and
+`PdfFailure.NoDocument` is the compiler answering with something that is not
+bytes. Whoever calls words them: `apps/cli` joins the sentences with
+semicolons into the one line a command prints.
+
+Those sentences come out of a throw. The compiler reports a failure by
+throwing a string holding Rust's own debug rendering of its diagnostics, of
+which a reader needs the message and the hints. The byte offsets and empty
+traces beside them are dropped, and a rendering this does not recognize is
+carried as it stands rather than swallowed.
 
 ## The goldens
 

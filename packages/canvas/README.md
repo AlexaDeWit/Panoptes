@@ -251,7 +251,11 @@ for a store's two lines, which are the whole glyph and have no box to sit in,
 and the ring and the halo that cut a badge and a flow name out of whatever
 they are drawn over. `arrowhead` sizes the triangle a flow ends in,
 `badgeRadius` the two circles a badge stacks, and `gridSpacing` the graph
-paper the studio rules its canvas with. The badge radii and the ring are one
+paper the studio rules its canvas with. `panelCover` is the chrome's own
+geometry rather than the diagram's: what the studio's threat panel covers of
+the canvas it floats over, its border box and the inset together, so the panel
+is drawn from the number the canvas keeps that band clear of a selected
+element with ([the studio's canvas](../../apps/studio/src/canvas/README.md)). The badge radii and the ring are one
 decision: the ring is centred on
 the circle, so half of it eats into the disc the count is lettered on, and the
 secondary radius is 9 because a two-digit count at that size, measured with

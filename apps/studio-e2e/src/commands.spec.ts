@@ -2,6 +2,7 @@ import { expect, test } from '@playwright/test';
 import { chordsWaitingOnASurface, registeredChords } from './chords.js';
 import {
   savedByKey,
+  savedFromMenu,
   shortcutShown,
   viewportTransform,
 } from './commands.fixtures.js';
@@ -112,7 +113,9 @@ test('zooming and fitting move the viewport and nothing else', async ({
   await expect(elementNodes(page)).toHaveCount(18);
 });
 
-test('saving and saving elsewhere are one chord each', async ({ page }) => {
+test('saving is one chord, and saving as asks the format the browser cannot', async ({
+  page,
+}) => {
   await page.addInitScript(withoutPickers);
   await openPlaceholder(page);
 
@@ -121,7 +124,9 @@ test('saving and saving elsewhere are one chord each', async ({ page }) => {
   expect(native.name).toBe('threat-model.yaml');
   expect(native.text).toContain('formatVersion');
 
-  const elsewhere = await savedByKey(page, registeredChords['save-as'][0]);
+  await page.keyboard.press(registeredChords['save-as'][0]);
+
+  const elsewhere = await savedFromMenu(page, 'Save as Threat Dragon JSON');
 
   expect(elsewhere.name).toBe('threat-model.json');
   expect(JSON.parse(elsewhere.text)).toMatchObject({ version: '2.6.2' });
@@ -202,7 +207,7 @@ test('a shortcut waits while a name is being typed, and saving and undo do not',
   ).toHaveCount(0);
 });
 
-test('escape leaves a refused draft in the field it is corrected in', async ({
+test('escape from a field closes the panel over the draft rather than clearing the selection', async ({
   page,
 }) => {
   await openPlaceholder(page);
@@ -215,9 +220,15 @@ test('escape leaves a refused draft in the field it is corrected in', async ({
 
   await title.press(registeredChords['clear-selection'][0]);
 
-  await expect(title).toHaveValue('Soft\u00adhyphen');
-  await expect(title).toHaveAttribute('aria-invalid', 'true');
+  await expect(threatPanel(page)).toHaveCount(0);
   await expect(reader).toHaveClass(/selected/u);
+  await expect(reader).toBeFocused();
+
+  await page.keyboard.press('Enter');
+  const held = threatPanel(page).getByRole('textbox', { name: 'Title' });
+
+  await expect(held).toHaveValue('Soft\u00adhyphen');
+  await expect(held).toHaveAttribute('aria-invalid', 'true');
 });
 
 test('every control says which key runs it: beside a menu item, and as a note beside a bare button', async ({

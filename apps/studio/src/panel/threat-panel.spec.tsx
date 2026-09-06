@@ -5,19 +5,37 @@ import { Action } from '../store/actions.js';
 import { initialState } from '../store/state.js';
 import {
   actorElement,
+  firstThreat,
   processElement,
+  sampleElement,
   sampleModel,
 } from '../store/store.fixtures.js';
 import { dispatch, modelStore } from '../store/store.js';
-import { ThreatPanel } from './threat-panel.js';
+import {
+  ThreatPanel,
+  type HeldDraft,
+  type ThreatPanelProps,
+} from './threat-panel.js';
 
 const softHyphen = '­';
 
-const showPanel = (selection?: ElementId): void => {
-  if (selection !== undefined) {
-    dispatch(Action.Select({ elementId: selection }));
-  }
-  render(<ThreatPanel />);
+const noop = (): void => undefined;
+
+const showPanel = (
+  selection: ElementId,
+  overrides: Partial<ThreatPanelProps> = {},
+): void => {
+  dispatch(Action.Select({ elementId: selection }));
+  render(
+    <ThreatPanel
+      drafts={new Map()}
+      focusing={false}
+      onClose={noop}
+      onFocused={noop}
+      subject={{ kind: 'element', element: sampleElement(selection) }}
+      {...overrides}
+    />,
+  );
 };
 
 const addControl = (): HTMLElement =>
@@ -44,10 +62,18 @@ describe('ThreatPanel', () => {
     modelStore.setState(initialState(sampleModel), true);
   });
 
-  it('asks for a selection while there is none, and offers no edit', () => {
-    showPanel();
+  it('says how many are selected where more than one is, and offers no edit', () => {
+    render(
+      <ThreatPanel
+        drafts={new Map()}
+        focusing={false}
+        onClose={noop}
+        onFocused={noop}
+        subject={{ kind: 'several', count: 3 }}
+      />,
+    );
 
-    expect(screen.getByText(/Select an element/u)).toBeDefined();
+    expect(screen.getByText(/^3 elements selected/u)).toBeDefined();
     expect(screen.queryByRole('button', { name: 'Add a threat' })).toBeNull();
   });
 
@@ -136,27 +162,40 @@ describe('ThreatPanel', () => {
     expect(modelStore.getState().present.threats[0].description).toBe('');
   });
 
-  it('drops a refusal the selection moved away from, and lets the threat collapse again', async () => {
+  it('hands a refused draft to the map it was given, keyed by the threat it was typed on', async () => {
     const user = userEvent.setup();
-    showPanel(actorElement);
+    const drafts = new Map<ElementId, HeldDraft>();
+    showPanel(actorElement, { drafts });
     await user.click(screen.getByRole('button', { name: /A reader edits/u }));
+
     await user.click(screen.getByRole('textbox', { name: 'Description' }));
     await user.keyboard(`Pasted${softHyphen}prose`);
     await user.click(screen.getByRole('button', { name: /A reader edits/u }));
+
+    expect(drafts.get(actorElement)).toEqual({
+      threatId: firstThreat,
+      field: 'Description',
+      text: `Pasted${softHyphen}prose`,
+      said: 'Description was not saved. Character 7 is one the model does not accept.',
+    });
+  });
+
+  it('opens on the draft it was given, expanded where it was being corrected', () => {
+    const drafts = new Map<ElementId, HeldDraft>([
+      [
+        actorElement,
+        {
+          threatId: firstThreat,
+          field: 'Description',
+          text: `Pasted${softHyphen}prose`,
+          said: 'Description was not saved. Character 7 is one the model does not accept.',
+        },
+      ],
+    ]);
+    showPanel(actorElement, { drafts });
+
+    expect(screen.getByDisplayValue(`Pasted${softHyphen}prose`)).toBeDefined();
     expect(announcement()).toContain('Description was not saved');
-
-    act(() => {
-      dispatch(Action.Select({ elementId: processElement }));
-    });
-    act(() => {
-      dispatch(Action.Select({ elementId: actorElement }));
-    });
-
-    expect(announcement()).toBe('');
-
-    await user.click(screen.getByRole('button', { name: /A reader edits/u }));
-
-    expect(screen.queryByRole('textbox', { name: 'Description' })).toBeNull();
   });
 
   it('drops a refusal an undo settled, and lets the threat collapse again', async () => {
@@ -201,16 +240,38 @@ describe('ThreatPanel', () => {
     );
   });
 
-  it('follows the selection off the element it was showing', async () => {
+  it('moves focus to its first control when it is asked for, and not before', () => {
+    const focused = vi.fn<() => void>();
+    const props: ThreatPanelProps = {
+      drafts: new Map(),
+      focusing: false,
+      onClose: noop,
+      onFocused: focused,
+      subject: { kind: 'element', element: sampleElement(processElement) },
+    };
+    dispatch(Action.Select({ elementId: processElement }));
+    const { rerender } = render(<ThreatPanel {...props} />);
+    expect(document.activeElement).toBe(document.body);
+
+    rerender(<ThreatPanel {...props} focusing />);
+
+    expect(document.activeElement).toBe(addControl());
+    expect(focused).toHaveBeenCalled();
+  });
+
+  it('closes on Escape, and leaves an open listbox its own', async () => {
     const user = userEvent.setup();
-    showPanel(actorElement);
-    await addThreat(user);
+    const onClose = vi.fn<() => void>();
+    showPanel(actorElement, { onClose });
+    await user.click(screen.getByRole('button', { name: /A reader edits/u }));
 
-    act(() => {
-      dispatch(Action.Select({ elementId: processElement }));
-    });
+    await user.click(screen.getByRole('combobox', { name: 'Severity' }));
+    await user.keyboard('{Escape}');
+    expect(onClose).not.toHaveBeenCalled();
 
-    expect(screen.getByText(/Nothing is recorded/u)).toBeDefined();
-    expect(announcement()).toBe('');
+    await user.click(screen.getByRole('textbox', { name: 'Title' }));
+    await user.keyboard('{Escape}');
+
+    expect(onClose).toHaveBeenCalledTimes(1);
   });
 });

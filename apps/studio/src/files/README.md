@@ -10,9 +10,13 @@ view changing. Every path answers with an outcome; nothing throws.
 
 `NoPicker` is the browser's arm of that union and nobody else's: only a
 component can hold a file input, so a bridge without a picker says "not me"
-and the view opens one. The handle a picker returned is held in the bridge,
-not the store, and only where the crossing it names happened: a read that
-produced a text, and a save-as whose write landed.
+and the view opens one. `asksWhere` is the same fact on the save side, and a
+question rather than an answer: a save-as puts every registered format in the
+platform's picker, so a platform with none is asked in advance and the studio
+puts the question in its own menu instead, handing the save-as the one format
+it settled on. The handle a picker returned is held in the bridge, not the
+store, and only where the crossing it names happened: a read that produced a
+text, and a save-as whose write landed.
 
 `session.ts` is what the studio does with a file, as pure functions the
 component calls and a spec calls directly. A read is the size against
@@ -20,6 +24,14 @@ component calls and a spec calls directly. A read is the size against
 `readAnyFormat`, then one action: the model, or the codec's own failure, which
 the panel renders with the paths it carries. A write is the codec's own write
 for the file's format, then the bridge, then one action.
+
+`formatFiles` is the one table saying how a format appears as a file: the
+words a person reads, the media type a picker files it under, and the
+extensions it is written with. `saveTypes` is that table as a picker takes it,
+the file's own format first so it is the one proposed, and `formatOfName` is
+the way back: a picker answers with the name the person settled on, and its
+extension is what says which codec writes the text. Nothing else reads an
+extension as a format.
 
 Which document a write merges onto is the whole difference between keeping
 what Panoptes does not model and dropping it, so the document a read retained
@@ -38,7 +50,10 @@ crossed, and a close drops it because the file it describes is gone.
 rather than handlers a control closes over: Open, Save, Save as and Close the
 file are registered commands ([the commands](../commands/README.md)), so a
 chord and a menu item run the same four and the report one of them produces is
-the one the view beside them shows. Each reads the store as it runs rather than
+the one the view beside them shows. Save as writes the format the file is
+already in, and the picker is where a person says otherwise: the text is
+written once the picker has answered, because until then which codec writes it
+is the person's to decide. Each reads the store as it runs rather than
 closing over a render, which is what lets the four be built once. The reducer
 is total and cannot refuse an open or a close over work in no file, so the
 session asks first.
@@ -52,6 +67,17 @@ asks the same question, opening the menu on it. Answering either way takes the
 question back, and so does dismissing the menu, and so does the model going
 clean underneath it: a save that lands, or an undo back to the saved model,
 leaves nothing to lose and no question to ask.
+
+`choosing` is that shape a second time, for the format a save-as writes, and
+the studio asks it only where the platform has no picker to ask it in. Save as
+holds the menu open and becomes the registered formats, the file's own in the
+place the item stood, so the person is still on the item they pressed. Firefox
+and Safari are that browser today, so the question is a path in its own
+right, not a fallback. It is a second press on an item rather than a submenu
+because that is one press deep, keeps the keyboard where it already was, and
+adds no second overlay to walk into. Whether the platform asks is read as the
+item is drawn rather than after a save-as has started, so nothing has to close
+the menu and open it again around an answer.
 
 `menu.tsx` mounts the rest: the burger button over the top left of the canvas,
 the file and edit commands, and what file the model lives in and whether it

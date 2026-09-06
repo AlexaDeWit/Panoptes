@@ -37,9 +37,10 @@ Dragon and license it under the same Apache License 2.0. See
 | `packages/wire-threat-dragon` | The Threat Dragon v2 format as a schema and nothing else                                                                                                                                                                                                                                                                         |
 | `packages/formats`            | File-format codecs, and the mappings between a file and the model                                                                                                                                                                                                                                                                |
 | `packages/canvas`             | React canvas components, shared by the UI and headless rendering                                                                                                                                                                                                                                                                 |
-| `packages/render`             | Projections of a model: SVG, markdown, and the Typst source a PDF is compiled from                                                                                                                                                                                                                                               |
+| `packages/render`             | Projections of a model: SVG, markdown, Typst source, and the `pdf` subpath that compiles that source                                                                                                                                                                                                                             |
 | `apps/studio`                 | The drawing UI: its [canvas](apps/studio/src/canvas/README.md), its [threat panel](apps/studio/src/panel/README.md), its [model store](apps/studio/src/store/README.md), its [file bridge](apps/studio/src/files/README.md), its [commands](apps/studio/src/commands/README.md) and its [controls](apps/studio/src/ui/README.md) |
 | `apps/cli`                    | The command-line interface                                                                                                                                                                                                                                                                                                       |
+| `apps/studio-e2e`             | The studio's [browser suite](apps/studio-e2e/README.md), and the round-trip coverage matrix it holds                                                                                                                                                                                                                             |
 
 A wire package declares one file format and depends on zod alone, so no
 change to the internal model can change what a released format version
@@ -199,9 +200,13 @@ A file the executables must carry rides along as an argument to
 time through `import.meta.dirname`. Anything not included, and not inlined
 into the bundle by esbuild, does not exist for a user who has only the
 executable. `apps/cli/dist/assets` is that directory today: the Typst
-WebAssembly module, which the build copies out of node_modules, and five
+WebAssembly module, which the build copies out of the node_modules of
+`@panoptes/render`, the package that declares the compiler, and five
 Liberation faces with their licence, which it copies out of the store path
-`PANOPTES_FONTS_DIR` names. Neither is committed. The module is pinned by the
+`PANOPTES_FONTS_DIR` names. Neither is committed. `apps/cli/src/pdf.ts` reads
+them back at run time and hands the bytes to `@panoptes/render/pdf`, which
+compiles but reads no file, so the studio can compile the same document in a
+browser from bytes of its own. The module is pinned by the
 catalog and the lockfile and the fonts by the nixpkgs revision in
 `flake.lock`, and a build outside the flake shell stops with the missing
 variable named rather than writing an executable that cannot typeset.

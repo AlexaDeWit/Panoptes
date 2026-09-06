@@ -1,30 +1,56 @@
 import type { ElementId, Threat, ThreatId } from '@panoptes/model';
 import { Accordion } from 'radix-ui';
-import { useCallback, useRef, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type KeyboardEvent,
+} from 'react';
 import { useShallow } from 'zustand/react/shallow';
+import { keyboardOwner } from '../commands/binding.js';
 import { Action } from '../store/actions.js';
 import { dispatch, modelStore, useModelStore } from '../store/store.js';
 import { LiveRegion } from '../ui/live-region.js';
-import { ThreatEditor, type EditorFocus } from './threat-editor.js';
+import {
+  ThreatEditor,
+  type EditorFocus,
+  type RefusedField,
+} from './threat-editor.js';
 import styles from './threat-panel.module.css';
 import {
   attachedThreats,
   elementLabel,
   freshThreat,
   nextNumber,
-  panelElement,
   threatAfterDeleting,
   threatCommitter,
+  type PanelSubject,
 } from './threats.js';
 
 type PanelFocus = { readonly kind: EditorFocus; readonly threatId: ThreatId };
 
-type Announced = {
-  readonly about: ElementId | undefined;
-  readonly said: string;
-};
+/**
+ * A refused draft with the threat it was typed on. The overlay keeps one per
+ * element, so a panel closed and opened again on the same element still holds
+ * the text where it was being corrected.
+ */
+export type HeldDraft = RefusedField & { readonly threatId: ThreatId };
 
-type Refusal = { readonly threatId: ThreatId; readonly said: string };
+/**
+ * What the panel shows, the drafts it hands back and forth, and the two
+ * things the overlay above it decides: whether focus is being sent in, and
+ * what closing does. `drafts` is the overlay's own map rather than a copy of
+ * it, because a draft has to outlive the panel, which is unmounted the moment
+ * another element is selected.
+ */
+export type ThreatPanelProps = {
+  readonly subject: PanelSubject;
+  readonly drafts: Map<ElementId, HeldDraft>;
+  readonly focusing: boolean;
+  readonly onFocused: () => void;
+  readonly onClose: () => void;
+};
 
 function focusIn(
   focus: PanelFocus | undefined,
@@ -41,54 +67,83 @@ function focusIn(
  * is bound to the store's selection and to nothing else: the canvas selects,
  * the panel follows, and an edit here leaves as a store action, which is what
  * puts it on the canvas badges and under the same undo as every other edit.
+ * With more than one element selected it says how many and offers no field,
+ * there being no one element to record a threat against.
  *
  * Focus is moved on the two changes that take a control off the screen or put
  * one there: an added threat opens with focus in its title, and a deleted one
  * hands focus to the threat that took its place, or to the add control when
- * it was the last. Both are announced in the panel's live region as well,
- * since a moved focus alone tells a screen reader that something happened but
- * not what it was. What was announced is dropped as soon as the selection
- * moves off the element it was about, so the region never says again what
- * happened on an element the panel has left. An add is announced only once
- * the store holds the threat, the reducer being free to refuse an operation
- * and leave the model where it was.
+ * it was the last. Selection alone never moves focus here, which is what
+ * `focusing` is for: it is set by a person asking for the panel and by
+ * nothing else, and the add control is where they land. Both changes are
+ * announced in the panel's live region as well, since a moved focus alone
+ * tells a screen reader that something happened but not what it was. An add
+ * is announced only once the store holds the threat, the reducer being free
+ * to refuse an operation and leave the model where it was.
+ *
+ * Escape closes the panel, unless a listbox open inside it is holding the
+ * key. The press is claimed, so the studio's own Escape, which clears the
+ * selection, is not run by the same press ([the
+ * commands](../commands/README.md)). It is read on the way in rather than on
+ * the way out, so who owns the press is this one decision over what has
+ * focus, rather than a race with whichever control did or did not answer the
+ * press first.
  *
  * A text field the model refused announces there too, and the threat holding
  * the refused draft stays expanded until the text is fixed or cleared: Radix
  * unmounts a collapsed item's fields, which would take the draft with them.
- * The refusal is dropped as soon as it is no longer held, whether the field
- * reported the draft settled or the selection moved off the threat entirely,
- * so no sentence outlives the draft it was about and no threat is held open
- * with nothing holding it.
+ * The draft is kept in the overlay's map while the element it was typed on
+ * stands, so closing the panel, or selecting elsewhere and coming back, puts
+ * it back in the field it was typed in. What drops it is the text being
+ * settled, by a correction or by an edit landing under it, or the threat it
+ * was about leaving the element.
  */
-export function ThreatPanel() {
-  const element = useModelStore(panelElement);
+export function ThreatPanel({
+  subject,
+  drafts,
+  focusing,
+  onFocused,
+  onClose,
+}: ThreatPanelProps) {
+  const element = subject.kind === 'element' ? subject.element : undefined;
   const threats = useModelStore(useShallow(attachedThreats));
   const number = useModelStore(nextNumber);
-  const [expanded, setExpanded] = useState('');
+  const opened = element === undefined ? undefined : drafts.get(element.id);
+  const [expanded, setExpanded] = useState<string>(opened?.threatId ?? '');
   const [focus, setFocus] = useState<PanelFocus | undefined>(undefined);
-  const [announced, setAnnounced] = useState<Announced>({
-    about: undefined,
-    said: '',
-  });
-  const [refusal, setRefusal] = useState<Refusal | undefined>(undefined);
+  const [announced, setAnnounced] = useState('');
+  const [draft, setDraft] = useState<HeldDraft | undefined>(opened);
   const addControl = useRef<HTMLButtonElement>(null);
-  const selected = element?.id;
-  const held = threats.some((threat) => threat.id === refusal?.threatId)
-    ? refusal?.threatId
+  const held = threats.some((threat) => threat.id === draft?.threatId)
+    ? draft
     : undefined;
-  const said = refusal?.said ?? announced.said;
+  const said = held?.said ?? announced;
   const focused = useCallback(() => {
     setFocus(undefined);
   }, []);
 
-  if (announced.about !== selected && announced.said !== '') {
-    setAnnounced({ about: selected, said: '' });
+  if (draft !== undefined && held === undefined) {
+    setDraft(undefined);
   }
 
-  if (refusal !== undefined && held === undefined) {
-    setRefusal(undefined);
-  }
+  useEffect(() => {
+    if (element === undefined) {
+      return;
+    }
+    if (draft === undefined) {
+      drafts.delete(element.id);
+    } else {
+      drafts.set(element.id, draft);
+    }
+  }, [draft, drafts, element]);
+
+  useEffect(() => {
+    if (!focusing) {
+      return;
+    }
+    addControl.current?.focus();
+    onFocused();
+  }, [focusing, onFocused]);
 
   const add = (): void => {
     if (element === undefined) {
@@ -103,69 +158,74 @@ export function ThreatPanel() {
       return;
     }
     setExpanded(threat.id);
-    setRefusal(undefined);
+    setDraft(undefined);
     setFocus({ kind: 'title', threatId: threat.id });
-    setAnnounced({
-      about: element.id,
-      said: `Threat ${String(threat.number)} added.`,
-    });
+    setAnnounced(`Threat ${String(threat.number)} added.`);
   };
 
   const remove = (threat: Threat): void => {
     const next = threatAfterDeleting(threats, threat.id);
     dispatch(Action.RemoveThreat({ threatId: threat.id }));
-    setRefusal(undefined);
+    setDraft(undefined);
     if (next === undefined) {
       addControl.current?.focus();
     } else {
       setFocus({ kind: 'disclosure', threatId: next });
     }
-    setAnnounced({
-      about: selected,
-      said: `Threat ${String(threat.number)} deleted.`,
-    });
+    setAnnounced(`Threat ${String(threat.number)} deleted.`);
   };
 
   const refused =
     (threat: Threat) =>
-    (message: string | undefined): void => {
-      setRefusal(
-        message === undefined
-          ? undefined
-          : { threatId: threat.id, said: message },
+    (refusal: RefusedField | undefined): void => {
+      setDraft(
+        refusal === undefined ? undefined : { threatId: threat.id, ...refusal },
       );
-      if (message !== undefined) {
-        setAnnounced({ about: selected, said: '' });
+      if (refusal !== undefined) {
+        setAnnounced('');
       }
     };
 
   const expand = (value: string): void => {
-    if (held === undefined || value === held) {
+    if (held === undefined || value === held.threatId) {
       setExpanded(value);
     }
   };
 
+  const closing = (event: KeyboardEvent<HTMLElement>): void => {
+    if (event.key !== 'Escape' || keyboardOwner(event.target) === 'overlay') {
+      return;
+    }
+    event.preventDefault();
+    onClose();
+  };
+
   return (
-    <section aria-label="Threats" className={styles.panel}>
+    <section
+      aria-label="Threats"
+      className={styles.panel}
+      data-testid="threat-panel"
+      onKeyDownCapture={closing}
+    >
       <h2 className={styles.heading}>
         {element === undefined
           ? 'Threats'
           : `Threats on ${elementLabel(element)}`}
       </h2>
-      <LiveRegion
-        className={styles.announcement}
-        label="Panel messages"
-        testId="threat-announcement"
-      >
-        {said !== '' && <p className={styles.message}>{said}</p>}
-      </LiveRegion>
-      {element === undefined ? (
+      {subject.kind === 'several' ? (
         <p className={styles.instruction}>
-          Select an element on the diagram to see the threats recorded against
-          it.
+          {subject.count} elements selected. Select one of them to record a
+          threat against it.
         </p>
       ) : (
         <>
+          <LiveRegion
+            className={styles.announcement}
+            label="Panel messages"
+            testId="threat-announcement"
+          >
+            {said !== '' && <p className={styles.message}>{said}</p>}
+          </LiveRegion>
           <button
             className={styles.add}
             onClick={add}
@@ -189,6 +249,7 @@ export function ThreatPanel() {
               {threats.map((threat) => (
                 <ThreatEditor
                   focus={focusIn(focus, threat)}
+                  held={held?.threatId === threat.id ? held : undefined}
                   key={threat.id}
                   onCommit={threatCommitter(dispatch, threat)}
                   onDelete={() => {

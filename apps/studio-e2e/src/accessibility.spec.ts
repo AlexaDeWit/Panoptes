@@ -1,6 +1,7 @@
 import { AxeBuilder } from '@axe-core/playwright';
 import { expect, type Page, test } from '@playwright/test';
 import { registeredChords } from './chords.js';
+import { savedFromMenu } from './commands.fixtures.js';
 import {
   handleOn,
   menuItem,
@@ -83,6 +84,30 @@ test('the studio carries no violation with the threat panel open on a selected e
   await audit(page, 'showing an open listbox', '[role="listbox"]');
 });
 
+test('the studio carries no violation with the panel open mid-drag', async ({
+  page,
+}) => {
+  await page.goto('/');
+  await expect(page.getByTestId('canvas-container')).toBeVisible();
+
+  const reader = page.getByRole('group', { name: /^Reader, actor/u });
+  await reader.click();
+  await expect(page.getByRole('region', { name: 'Threats' })).toBeVisible();
+
+  const box = await reader.boundingBox();
+  const from = {
+    x: (box?.x ?? 0) + (box?.width ?? 0) / 2,
+    y: (box?.y ?? 0) + (box?.height ?? 0) / 2,
+  };
+  await page.mouse.move(from.x, from.y);
+  await page.mouse.down();
+  await page.mouse.move(from.x - 40, from.y + 30, { steps: 8 });
+
+  await audit(page, 'mid-drag with the threat panel open');
+
+  await page.mouse.up();
+});
+
 // The two notice regions hold nothing at rest, so the audit above sees them
 // empty. This one gives one of them something to say. Nothing is hidden while
 // it does, so the audit stays page-wide rather than being scoped to the
@@ -161,10 +186,12 @@ test('the studio carries no violation with the menu open', async ({ page }) => {
 
   await audit(page, 'showing the open menu');
 
-  await Promise.all([
-    page.waitForEvent('download'),
-    menuItem(page, 'Save as Threat Dragon JSON').click(),
-  ]);
+  await menuItem(page, 'Save as').click();
+  await expect(menuItem(page, 'Save as Panoptes YAML')).toBeVisible();
+
+  await audit(page, 'showing the menu asking which format a save-as writes');
+
+  await savedFromMenu(page, 'Save as Threat Dragon JSON');
   await expect(page.getByTestId('loss-report')).not.toBeEmpty();
 
   await audit(page, 'showing a loss report');

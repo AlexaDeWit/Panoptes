@@ -335,10 +335,9 @@ export const selectNode = async (
 };
 
 /**
- * Selects an element by focusing it and pressing Enter, and waits for the
- * canvas to pan to it. Opening a file leaves the viewport where the model
- * before it put it, so an element of a real diagram can be drawn outside the
- * view, where the pointer cannot reach it and this path can.
+ * Selects an element by focusing it and pressing Enter, then waits for the
+ * canvas to stop moving: React Flow pans a node focused from the keyboard
+ * into view where it is not already drawn there.
  */
 export const selectByKeyboard = async (
   page: Page,

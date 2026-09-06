@@ -7,7 +7,6 @@ import { CommandSurfaceProvider } from '../commands/binding.js';
 import type { CommandSurface } from '../commands/registry.js';
 import { useFileSession } from '../files/file-commands.js';
 import { StudioMenu } from '../files/menu.js';
-import { ThreatPanel } from '../panel/threat-panel.js';
 import styles from './app.module.css';
 
 /**
@@ -25,8 +24,9 @@ export function App() {
 }
 
 /**
- * The canvas and its palette, the menu over the top left of the canvas, and
- * the threat panel beside them.
+ * The canvas and its palette, and the menu over the top left of the canvas.
+ * The threat panel is not mounted here: it overlays the canvas and is drawn
+ * from inside it ([the panel](../panel/README.md)).
  *
  * The surface every command runs against is built here, because this is the
  * one place that holds both the file session and the viewport ([the
@@ -37,9 +37,9 @@ export function App() {
  *
  * Opening, saving and closing live in the menu ([the file
  * bridge](../files/README.md)), drawing in the canvas ([the
- * canvas](../canvas/README.md)) and the threats in the panel ([the
- * panel](../panel/README.md)), so this mounts them rather than growing a
- * concern of any of them.
+ * canvas](../canvas/README.md)) and the threats in the panel it draws over
+ * itself ([the panel](../panel/README.md)), so this mounts them rather than
+ * growing a concern of any of them.
  *
  * The heading names the page and is drawn nowhere: the chrome overlays the
  * canvas, so a title bar would take width from the diagram, and a page with
@@ -65,7 +65,6 @@ function Studio() {
             <DiagramCanvas />
           </div>
         </main>
-        <ThreatPanel />
       </div>
     </CommandSurfaceProvider>
   );

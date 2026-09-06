@@ -101,6 +101,43 @@ describe('DiagramCanvas', () => {
     expect(currentAnnouncement().message).toBe('');
   });
 
+  it('draws the threat panel over itself while an element is selected', () => {
+    render(<DiagramCanvas />);
+    expect(screen.queryByRole('region', { name: 'Threats' })).toBeNull();
+
+    act(() => {
+      dispatch(Action.Select({ elementId: readerElement }));
+    });
+
+    expect(screen.getByRole('region', { name: 'Threats' })).toBeDefined();
+    expect(
+      screen
+        .getByTestId('canvas-container')
+        .contains(screen.getByTestId('threat-panel')),
+    ).toBe(true);
+  });
+
+  it('hands the panel the keyboard on Enter over the element already selected', () => {
+    opened(readerElement);
+    render(<DiagramCanvas />);
+
+    fireEvent.keyDown(reader(), { key: 'Enter' });
+
+    expect(document.activeElement).toBe(
+      screen.getByRole('button', { name: 'Add a threat' }),
+    );
+  });
+
+  it('leaves Enter to React Flow where the press is what selects the element', () => {
+    render(<DiagramCanvas />);
+    reader().focus();
+
+    fireEvent.keyDown(reader(), { key: 'Enter' });
+
+    expect(modelStore.getState().selection).toBe(readerElement);
+    expect(document.activeElement).toBe(reader());
+  });
+
   it('clears a selected flow when the pointer lands on nothing', () => {
     opened(requestFlow);
     render(<DiagramCanvas />);

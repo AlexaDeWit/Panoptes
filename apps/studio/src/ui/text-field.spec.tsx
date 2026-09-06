@@ -1,13 +1,18 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
-import { ProseField, TextField, refusedText } from './text-field.js';
+import {
+  ProseField,
+  TextField,
+  refusedText,
+  type RefusedDraft,
+} from './text-field.js';
 
 const softHyphen = '­';
 
 const commits = () => vi.fn<(text: string) => void>();
 
-const refusals = () => vi.fn<(refusal: string | undefined) => void>();
+const refusals = () => vi.fn<(refused: RefusedDraft | undefined) => void>();
 
 const noop = (): void => undefined;
 
@@ -86,9 +91,10 @@ describe('TextField', () => {
     await user.keyboard(`ab${softHyphen}c{Enter}`);
 
     expect(onCommit).toHaveBeenCalledTimes(0);
-    expect(onRefused).toHaveBeenLastCalledWith(
-      'Title was not saved. Character 3 is one the model does not accept.',
-    );
+    expect(onRefused).toHaveBeenLastCalledWith({
+      said: 'Title was not saved. Character 3 is one the model does not accept.',
+      text: `ab${softHyphen}c`,
+    });
     expect(textbox('Title').getAttribute('aria-invalid')).toBe('true');
     expect(
       screen.getByText('Character 3 is one the model does not accept.'),
@@ -129,9 +135,10 @@ describe('TextField', () => {
 
     await user.click(textbox('Title'));
     await user.keyboard(`ab${softHyphen}c{Enter}`);
-    expect(onRefused).toHaveBeenLastCalledWith(
-      'Title was not saved. Character 3 is one the model does not accept.',
-    );
+    expect(onRefused).toHaveBeenLastCalledWith({
+      said: 'Title was not saved. Character 3 is one the model does not accept.',
+      text: `ab${softHyphen}c`,
+    });
 
     rerender(
       <TextField
@@ -143,6 +150,26 @@ describe('TextField', () => {
     );
 
     expect(onRefused).toHaveBeenLastCalledWith(undefined);
+  });
+
+  it('opens on a held draft, refused as it was when it was held', () => {
+    const onRefused = refusals();
+    render(
+      <TextField
+        held={`ab${softHyphen}c`}
+        label="Title"
+        onCommit={commits()}
+        onRefused={onRefused}
+        value="Committed earlier"
+      />,
+    );
+
+    expect(textbox('Title')).toHaveProperty('value', `ab${softHyphen}c`);
+    expect(textbox('Title').getAttribute('aria-invalid')).toBe('true');
+    expect(onRefused).toHaveBeenLastCalledWith({
+      said: 'Title was not saved. Character 3 is one the model does not accept.',
+      text: `ab${softHyphen}c`,
+    });
   });
 
   it('takes the value an edit landing from elsewhere left behind', () => {

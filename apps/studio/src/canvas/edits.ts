@@ -148,12 +148,43 @@ function counted(total: number, thing: string): string {
   return total === 1 ? `1 ${thing}` : `${String(total)} ${thing}s`;
 }
 
+const drawnSelector = '.react-flow__node, .react-flow__edge';
+
 const focusAttempts = 3;
 
-function focusElement(elementId: ElementId, attempts = focusAttempts): void {
-  const drawn = [
-    ...document.querySelectorAll('.react-flow__node, .react-flow__edge'),
-  ].find((candidate) => candidate.getAttribute('data-id') === elementId);
+/**
+ * The element a drawn node or flow stands for, and nothing where `target` is
+ * neither: React Flow marks what it drew with the element's own id, and
+ * `elements` is the canvas's own map from those to the model's ids. It is how
+ * a key press is read as a press on the element under it.
+ */
+export function drawnElement(
+  target: EventTarget | null,
+  elements: ReadonlyMap<string, ElementId>,
+): ElementId | undefined {
+  if (!(target instanceof Element)) {
+    return undefined;
+  }
+  const drawn = target.closest(drawnSelector)?.getAttribute('data-id');
+  return drawn === undefined || drawn === null
+    ? undefined
+    : elements.get(drawn);
+}
+
+/**
+ * Puts focus on the element as the canvas drew it, which React Flow marks
+ * with the element's own id. It is what an edit does after adding something,
+ * and what the threat panel does when Escape hands the keyboard back to the
+ * element the panel was about. A node not yet drawn is waited a frame for, so
+ * a focus asked for in the same tick as the dispatch that draws it lands.
+ */
+export function focusElement(
+  elementId: ElementId,
+  attempts = focusAttempts,
+): void {
+  const drawn = [...document.querySelectorAll(drawnSelector)].find(
+    (candidate) => candidate.getAttribute('data-id') === elementId,
+  );
   if (drawn instanceof HTMLElement || drawn instanceof SVGElement) {
     drawn.focus();
     return;
