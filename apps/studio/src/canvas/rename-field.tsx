@@ -15,7 +15,15 @@ import {
   type EdgeProps,
   type NodeProps,
 } from '@xyflow/react';
-import { useEffect, useId, useRef, useState, type CSSProperties } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type CSSProperties,
+} from 'react';
+import type { State } from '../store/state.js';
 import { useModelStore } from '../store/store.js';
 import { refusedText, type TextRefusal } from '../ui/text-field.js';
 import { announce } from './announcements.js';
@@ -142,10 +150,17 @@ export function NameField({ elementId, label, name }: NameFieldProps) {
  * store has that name open. The drawing is the canvas package's own and is
  * untouched: the field is the studio's, mounted beside it and placed where
  * the glyph draws the name, so the two cannot sit apart.
+ *
+ * The subscription answers whether this node is the one being renamed rather
+ * than which node is, so a rename re-renders that node alone, and the
+ * selector is held across renders so a node React Flow redraws mid-drag reads
+ * the store no more often than it did before there was a field to mount.
  */
 export function RenamingNodeBody(props: NodeProps<CanvasFlowNode>) {
   const { node } = props.data;
-  const renaming = useModelStore((state) => state.renaming === node.id);
+  const renaming = useModelStore(
+    useCallback((state: State) => state.renaming === node.id, [node.id]),
+  );
 
   return (
     <>
@@ -175,7 +190,9 @@ export function RenamingNodeBody(props: NodeProps<CanvasFlowNode>) {
  */
 export function RenamingEdgeBody(props: EdgeProps<CanvasFlowEdge>) {
   const edge = props.data?.edge;
-  const renaming = useModelStore((state) => state.renaming === edge?.id);
+  const renaming = useModelStore(
+    useCallback((state: State) => state.renaming === edge?.id, [edge?.id]),
+  );
 
   return (
     <>

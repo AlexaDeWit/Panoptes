@@ -13,11 +13,14 @@ import {
   ReactFlow,
   type Connection,
   type EdgeChange,
+  type EdgeMouseHandler,
   type NodeChange,
+  type NodeMouseHandler,
   type ReactFlowInstance,
 } from '@xyflow/react';
 import type { ElementId } from '@panoptes/model';
 import {
+  useCallback,
   useEffect,
   useMemo,
   useRef,
@@ -202,12 +205,29 @@ export function DiagramCanvas() {
     event.stopPropagation();
   };
 
-  const onRename = (id: string): void => {
-    const element = elements.get(id);
-    if (element !== undefined) {
-      beginRenaming(element);
-    }
-  };
+  const onRename = useCallback(
+    (id: string): void => {
+      const element = elements.get(id);
+      if (element !== undefined) {
+        beginRenaming(element);
+      }
+    },
+    [elements],
+  );
+
+  const onNodeDoubleClick = useCallback<NodeMouseHandler<DiagramNode>>(
+    (_, node) => {
+      onRename(node.id);
+    },
+    [onRename],
+  );
+
+  const onEdgeDoubleClick = useCallback<EdgeMouseHandler<CanvasFlowEdge>>(
+    (_, edge) => {
+      onRename(edge.id);
+    },
+    [onRename],
+  );
 
   return (
     <div
@@ -231,17 +251,13 @@ export function DiagramCanvas() {
         nodesConnectable
         nodeTypes={renamingNodeTypes}
         onConnect={onConnect}
-        onEdgeDoubleClick={(_, edge) => {
-          onRename(edge.id);
-        }}
+        onEdgeDoubleClick={onEdgeDoubleClick}
         onEdgesChange={onEdgesChange}
         onInit={(instance) => {
           view.current = instance;
         }}
         onKeyDown={onKeyDown}
-        onNodeDoubleClick={(_, node) => {
-          onRename(node.id);
-        }}
+        onNodeDoubleClick={onNodeDoubleClick}
         onNodesChange={onNodesChange}
         ref={surface}
         selectionKeyCode={null}
