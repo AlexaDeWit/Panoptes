@@ -1,19 +1,7 @@
-/*
- * React Flow's own stylesheet, which styles the canvas container, the
- * viewport, the handles and the controls, none of which the drawing
- * primitives in @saerskriven/canvas draw. It is loaded here, with the app's
- * other global CSS, rather than by the component that mounts the canvas.
- * The canvas module overrides what it has to, from the tokens.
- */
+/* React Flow owns the canvas container, viewport, handles, and controls. */
 @import '@xyflow/react/dist/style.css';
 
-/*
- * The `--pn-*` custom properties every component reads are not declared here.
- * They come from the token module in @saerskriven/canvas, injected once at the
- * app root by `src/theme.tsx`, so one table decides what the chrome and the
- * diagram are coloured with. This file holds what is left: the one global
- * rule, reading those properties like any other module.
- */
+/* DesignTokens injects the `--pn-*` custom properties at the app root. */
 body {
   margin: 0;
   background: var(--pn-colour-surface);
@@ -21,4 +9,28 @@ body {
   font-family: var(--pn-font-family);
   font-size: var(--pn-font-size);
   line-height: var(--pn-line-height);
+}
+
+.about {
+  max-width: 48rem;
+  margin: 0 auto;
+  padding: 0 var(--pn-space-4) var(--pn-space-4);
+}
+
+.about h2 {
+  margin-block: 0 var(--pn-space-3);
+}
+
+.about p {
+  margin-block: var(--pn-space-2);
+}
+
+.about-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--pn-space-4);
+}
+
+.about-links a {
+  color: var(--pn-colour-text);
 }

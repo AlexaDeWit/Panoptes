@@ -3,17 +3,17 @@ import { Action } from '../store/actions.js';
 import { initialState, placeholderModel } from '../store/state.js';
 import { dispatch, modelStore } from '../store/store.js';
 import { nativeSource } from '../store/store.fixtures.js';
-import { DocumentTitle } from './document-title.js';
+import { DocumentTitle, landingTitle } from './document-title.js';
 
 describe('DocumentTitle', () => {
   beforeEach(() => {
     modelStore.setState(initialState(placeholderModel), true);
   });
 
-  it('names the tab for a model that has never been in a file', () => {
+  it('names the landing page before a model changes', () => {
     render(<DocumentTitle />);
 
-    expect(document.title).toBe('Untitled - Saerskriven');
+    expect(document.title).toBe(landingTitle);
   });
 
   it('follows the file the model is saved into', () => {

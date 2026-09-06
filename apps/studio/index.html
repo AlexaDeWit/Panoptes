@@ -2,15 +2,47 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <title>Studio</title>
+    <title>Saerskriven: Open-source threat modelling studio</title>
     <base href="%BASE_URL%" />
 
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="Draw data-flow diagrams, record threats on the diagram, and open or save Threat Dragon JSON and Saerskriven YAML in your browser."
+    />
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
     <link rel="stylesheet" href="/src/styles.css" />
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <main>
+        <h1>Saerskriven</h1>
+        <p>Loading the threat modelling studio.</p>
+        <noscript>
+          <p>Enable JavaScript to use the interactive studio.</p>
+        </noscript>
+      </main>
+    </div>
+    <section aria-labelledby="about-saerskriven" class="about">
+      <h2 id="about-saerskriven">Threat modelling in the diagram</h2>
+      <p>
+        Saerskriven is an open-source threat modelling studio. Draw a system as
+        a data-flow diagram, then record each threat on the element it affects.
+      </p>
+      <p>
+        Open and save Threat Dragon v2 JSON or Saerskriven YAML in your browser.
+        The command-line interface also validates models and renders SVG,
+        Markdown, and PDF.
+      </p>
+      <p class="about-links">
+        <a href="https://github.com/AlexaDeWit/Saerskriven">
+          Source code and documentation
+        </a>
+        <a href="https://github.com/AlexaDeWit/Saerskriven/releases">
+          Command-line downloads
+        </a>
+      </p>
+    </section>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
