@@ -1,5 +1,7 @@
 import { AxeBuilder } from '@axe-core/playwright';
 import { expect, type Page, test } from '@playwright/test';
+import { registeredChords } from './chords.js';
+import { menuItem, openMenu, withoutPickers } from './studio.fixtures.js';
 
 const audit = async (
   page: Page,
@@ -110,6 +112,34 @@ test('the studio carries no violation while it says what an edit did', async ({
   );
 
   await audit(page, 'showing a removed element');
+});
+
+// The menu is the studio's one command surface, and it is not modal: the
+// canvas stays in the accessibility tree behind it, so the audit stays
+// page-wide. The report region beside it holds nothing until a file crossing
+// costs something, which the save below is what gives it.
+test('the studio carries no violation with the menu open', async ({ page }) => {
+  await page.addInitScript(withoutPickers);
+  await page.goto('/');
+  await expect(page.getByTestId('canvas-container')).toBeVisible();
+
+  await openMenu(page);
+
+  await audit(page, 'showing the open menu');
+
+  await Promise.all([
+    page.waitForEvent('download'),
+    menuItem(page, 'Save as Threat Dragon JSON').click(),
+  ]);
+  await expect(page.getByTestId('loss-report')).not.toBeEmpty();
+
+  await audit(page, 'showing a loss report');
+
+  await page.getByRole('button', { name: 'New actor', exact: true }).click();
+  await page.keyboard.press(registeredChords['close-file'][0]);
+  await expect(menuItem(page, 'Discard the changes and close')).toBeVisible();
+
+  await audit(page, 'showing the menu asking before it closes a file');
 });
 
 test('the open connect listbox carries no violation', async ({ page }) => {

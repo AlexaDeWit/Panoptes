@@ -83,6 +83,43 @@ export const openFile = async (page: Page, path: string): Promise<void> => {
   await canvasSettled(page);
 };
 
+/** The button the studio's one menu opens from. */
+export const menuButton = (page: Page): Locator =>
+  page.getByRole('button', { name: /^Menu/u });
+
+/** One command of the open menu, by the words it runs under. */
+export const menuItem = (page: Page, name: string): Locator =>
+  page.getByRole('menuitem', { name, exact: true });
+
+/**
+ * Opens the menu, and does nothing where it is already open. What the menu
+ * says about the file is only in the page while it is open, so a spec that
+ * reads that opens the menu first.
+ */
+export const openMenu = async (page: Page): Promise<void> => {
+  if (await page.getByRole('menu').isVisible()) {
+    return;
+  }
+  await menuButton(page).click();
+  await expect(page.getByRole('menu')).toBeVisible();
+};
+
+/** Puts the menu away, and does nothing where it is already away. */
+export const closeMenu = async (page: Page): Promise<void> => {
+  if ((await page.getByRole('menu').count()) === 0) {
+    return;
+  }
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('menu')).toHaveCount(0);
+};
+
+/** Runs one menu command, which puts the menu away as it runs. */
+export const runFromMenu = async (page: Page, name: string): Promise<void> => {
+  await openMenu(page);
+  await menuItem(page, name).click();
+  await expect(page.getByRole('menu')).toHaveCount(0);
+};
+
 /** A file the studio wrote through the download path. */
 export type SavedFile = {
   readonly name: string;
@@ -91,9 +128,10 @@ export type SavedFile = {
 
 /** Saves through that download path, and reads back what was written. */
 export const savedFile = async (page: Page): Promise<SavedFile> => {
+  await openMenu(page);
   const [download] = await Promise.all([
     page.waitForEvent('download'),
-    page.getByRole('button', { name: 'Save', exact: true }).click(),
+    menuItem(page, 'Save').click(),
   ]);
   return {
     name: download.suggestedFilename(),
@@ -125,14 +163,12 @@ export const editAnnouncement = (page: Page): Locator =>
   page.getByTestId('canvas-announcement');
 
 /**
- * The last control on the tab path before the canvas while nothing is
- * selected, which is where a spec that tabs into the diagram starts. The
- * palette's own controls sit between the studio's buttons and the canvas, and
- * its two connecting controls are disabled, and so no tab stop, until an
- * element is selected. Once one is, {@link connectTarget} is the last stop.
+ * The last control on the tab path before the canvas, which is where a spec
+ * that tabs into the diagram starts. The menu's button is drawn over the
+ * canvas and comes last of the studio's own controls, so it is that stop
+ * whether or not anything is selected.
  */
-export const beforeCanvas = (page: Page): Locator =>
-  page.getByRole('button', { name: 'New trust boundary curve' });
+export const beforeCanvas = (page: Page): Locator => menuButton(page);
 
 /** The listbox a flow's other end is chosen from. */
 export const connectTarget = (page: Page): Locator =>

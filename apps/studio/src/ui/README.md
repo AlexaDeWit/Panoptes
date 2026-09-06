@@ -52,7 +52,9 @@ Three components carry no Radix primitive, because none of them takes an
 edit. `LiveRegion` is the one way anything here announces: a region that
 stays in the page while it has nothing to say and collapses rather than
 hiding while it is empty, because a region inserted and filled in the same
-frame announces nothing. `FailureNotice` renders `StudioFailure` inside one,
+frame announces nothing. One cannot go inside a menu, which owns items and
+groups of them and nothing else, so the two the menu speaks through stand
+beside it ([the file bridge](../files/README.md)). `FailureNotice` renders `StudioFailure` inside one,
 whatever produced it, so one region shows the model refusing an edit, a codec
 refusing a file, and the platform refusing to hand one over. It words every
 variant: nothing reaches a person as a tag, and a codec's paths are kept

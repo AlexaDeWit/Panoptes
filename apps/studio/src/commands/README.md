@@ -24,8 +24,9 @@ not move when the surface arrives, and the entry flips from `pending` to
 `runs` in the issue that builds it. Nothing else about the command changes.
 
 `CommandSurface` is what a command reaches that is not a module-level
-function: the file bridge, whose fallback picker only a component can hold,
-and React Flow's viewport, which lives as long as the canvas is mounted. The
+function: the file session, which holds the fallback picker only a component
+can hold and the question a close asks over unsaved work, and React Flow's
+viewport, which lives as long as the canvas is mounted. The
 store's own dispatches and the canvas edits need no surface, which is why a
 control runs those with nothing mounted above it. The app builds the one
 surface, in `app.tsx`, because that is the single place holding both the file
@@ -99,13 +100,16 @@ something else instead.
 ## What a later slice does
 
 - Flip a `pending` entry to `runs` in the issue that lands its surface. The
-  burger menu (#174) carries close, the toolbox (#175) the tool modes and the
-  connector (#175, #178) the start of a flow, and multi-select (#156) select
-  all.
+  toolbox (#175) carries the tool modes, the connector (#175, #178) the start
+  of a flow, and multi-select (#156) select all.
 - Render a command through `CommandButton`, or `IconCommandButton` where the
   control is a glyph, or read `commandById` for a surface that draws its own
   control. Never hold a label or a chord beside a control: the menu, the
-  toolbox, the panel and the zoom cluster read both from here.
+  toolbox, the panel and the zoom cluster read both from here. The menu is the
+  worked example of the last route
+  ([`../files/menu.tsx`](../files/menu.tsx)): a menu item draws the chord
+  beside the label, where a native menu draws it, and hides it from assistive
+  technology, which reads the binding off `aria-keyshortcuts` instead.
 - Bind a new command by adding an entry, not by adding a listener. The spec
   beside the registry fails a chord that collides with one already bound.
 - The tool commands add an element today, which is what the palette's buttons

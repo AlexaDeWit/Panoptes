@@ -1,16 +1,21 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { elementCount } from '../store/selectors.js';
 import { initialState, placeholderModel } from '../store/state.js';
 import { modelStore } from '../store/store.js';
 import { App } from './app.js';
 
-const elementsShown = (): string | null =>
-  screen.getByTestId('element-count').textContent;
-
-const undoButton = (): HTMLElement =>
-  screen.getByRole('button', { name: 'Undo' });
+const elementsHeld = (): number => elementCount(modelStore.getState());
 
 const paletteButton = (): HTMLElement =>
   screen.getByRole('button', { name: 'New process' });
+
+const undoThroughMenu = async (
+  user: ReturnType<typeof userEvent.setup>,
+): Promise<void> => {
+  await user.click(screen.getByRole('button', { name: /^Menu/u }));
+  await user.click(await screen.findByRole('menuitem', { name: 'Undo' }));
+};
 
 describe('App', () => {
   beforeEach(() => {
@@ -27,19 +32,22 @@ describe('App', () => {
     expect(screen.getByRole('region', { name: 'Threats' })).toBeDefined();
   });
 
-  it('shows an edit the palette dispatched and takes it back through undo', () => {
+  it('names the page for a reader without drawing a title bar over the canvas', () => {
     render(<App />);
-    expect(elementsShown()).toBe('2');
-    fireEvent.click(paletteButton());
-    expect(elementsShown()).toBe('3');
-    fireEvent.click(undoButton());
-    expect(elementsShown()).toBe('2');
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe(
+      'Panoptes',
+    );
   });
 
-  it('offers undo only once there is something to undo', () => {
+  it('shows an edit the palette dispatched and takes it back through the menu', async () => {
+    const user = userEvent.setup();
     render(<App />);
-    expect(undoButton()).toHaveProperty('disabled', true);
-    fireEvent.click(paletteButton());
-    expect(undoButton()).toHaveProperty('disabled', false);
+    expect(elementsHeld()).toBe(2);
+
+    await user.click(paletteButton());
+    expect(elementsHeld()).toBe(3);
+
+    await undoThroughMenu(user);
+    expect(elementsHeld()).toBe(2);
   });
 });

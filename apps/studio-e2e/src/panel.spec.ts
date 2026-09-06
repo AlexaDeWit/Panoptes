@@ -5,6 +5,7 @@ import {
   chooseInPanel,
   nodeNamed,
   openEcluse,
+  runFromMenu,
   selectNode,
   threatPanel,
 } from './studio.fixtures.js';
@@ -89,7 +90,7 @@ test('a threat deleted in the panel leaves the canvas, and undo puts it back', a
   await expect(disclosure(page, /Massive Purge DoS/u)).toHaveCount(0);
   await expect(dredger).toHaveAccessibleName(/4 open threats/u);
 
-  await page.getByRole('button', { name: 'Undo' }).click();
+  await runFromMenu(page, 'Undo');
 
   await expect(disclosure(page, /Massive Purge DoS/u)).toHaveCount(1);
   await expect(dredger).toHaveAccessibleName(/5 open threats/u);
@@ -110,7 +111,7 @@ test('a title edited in the panel is one undo step', async ({ page }) => {
     disclosure(page, /Massive purge denial of service/u),
   ).toBeVisible();
 
-  await page.getByRole('button', { name: 'Undo' }).click();
+  await runFromMenu(page, 'Undo');
 
   await expect(disclosure(page, /Massive Purge DoS/u)).toBeVisible();
 });
@@ -181,13 +182,12 @@ test('every field of a threat is reachable and editable from the keyboard, add a
     /1 open threat, highest severity critical/u,
   );
 
-  const undo = page.getByRole('button', { name: 'Undo' });
-  await undo.click();
+  await runFromMenu(page, 'Undo');
   await expect(mitigation).toHaveValue('');
   await expect(description).toHaveValue(
     'The queue accepts a job nobody enqueued.',
   );
-  await undo.click();
+  await runFromMenu(page, 'Undo');
   await expect(description).toHaveValue('');
 
   await remove.focus();

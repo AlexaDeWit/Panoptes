@@ -1,13 +1,13 @@
 import { expect, test } from '@playwright/test';
 import {
   beforeCanvas,
-  connectTarget,
   dragBy,
   elementNodes,
   nodeNamed,
   openEcluse,
   openPlaceholder,
   placeOf,
+  runFromMenu,
 } from './studio.fixtures.js';
 
 test('a real model is drawn whole: 18 elements and 20 flows', async ({
@@ -55,7 +55,7 @@ test('the selection moves between an element and a flow, either way', async ({
   await proxy.click();
   await expect(proxy).toHaveClass(/selected/u);
 
-  await connectTarget(page).focus();
+  await beforeCanvas(page).focus();
   await page.keyboard.press('Tab');
   await page.keyboard.press('Enter');
   await expect(selectedFlow).toHaveCount(1);
@@ -77,7 +77,7 @@ test('a drag moves the element through the store, and undo puts it back', async 
 
   await expect.poll(() => placeOf(reader)).not.toBe(before);
 
-  await page.getByRole('button', { name: 'Undo' }).click();
+  await runFromMenu(page, 'Undo');
 
   await expect.poll(() => placeOf(reader)).toBe(before);
 });
@@ -103,6 +103,6 @@ test('an element is reachable, selectable and movable by keyboard alone', async 
   await page.keyboard.press('ArrowRight');
   await expect.poll(() => placeOf(reader)).not.toBe(selected);
 
-  await page.getByRole('button', { name: 'Undo' }).click();
+  await runFromMenu(page, 'Undo');
   await expect.poll(() => placeOf(reader)).toBe(selected);
 });

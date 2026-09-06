@@ -8,30 +8,33 @@ import {
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useMemo } from 'react';
+import {
+  CommandSurfaceProvider,
+  unmountedSurface,
+} from '../commands/binding.js';
 import { Action } from '../store/actions.js';
 import { isDirty } from '../store/selectors.js';
-import { initialState } from '../store/state.js';
+import { initialState, placeholderModel } from '../store/state.js';
 import { dispatch, modelStore } from '../store/store.js';
 import {
   mainDiagram,
   newProcess,
   sampleModel,
 } from '../store/store.fixtures.js';
-import {
-  CommandSurfaceProvider,
-  unmountedSurface,
-} from '../commands/binding.js';
 import { SaveOutcome } from './bridge.js';
-import { FileBar } from './file-bar.js';
 import { useFileSession } from './file-commands.js';
+import { nameOf } from './session.js';
 import {
   chosenFile,
   specBridge,
   vendoredFile,
   type SpecBridge,
 } from './files.fixtures.js';
+import { StudioMenu } from './menu.js';
 
 const nativeText = panoptesYamlCodec.write(sampleModel).output;
+
+type User = ReturnType<typeof userEvent.setup>;
 
 const edit = (): void => {
   act(() => {
@@ -44,22 +47,36 @@ const edit = (): void => {
   });
 };
 
-const openControl = (): HTMLElement =>
-  screen.getByRole('button', { name: 'Open a model' });
+const burger = (): HTMLElement =>
+  screen.getByRole('button', { name: /^Menu/u });
 
-const saveControl = (): HTMLElement =>
-  screen.getByRole('button', { name: 'Save' });
+const item = (name: string | RegExp): HTMLElement =>
+  screen.getByRole('menuitem', { name });
 
-const saveAsControl = (): HTMLElement =>
-  screen.getByRole('button', { name: 'Save as Threat Dragon JSON' });
+const openMenu = async (user: User): Promise<void> => {
+  if (screen.queryByRole('menu') === null) {
+    await user.click(burger());
+    await screen.findByRole('menu');
+  }
+};
+
+const choose = async (user: User, name: string | RegExp): Promise<void> => {
+  await openMenu(user);
+  await user.click(item(name));
+};
 
 const state = (): string => screen.getByTestId('file-state').textContent ?? '';
+
+const shown = async (user: User): Promise<string> => {
+  await openMenu(user);
+  return state();
+};
 
 const reportEntries = (): readonly Element[] => [
   ...screen.getByTestId('loss-report').querySelectorAll('li'),
 ];
 
-function Bar({ bridge }: { readonly bridge: SpecBridge }) {
+function Menu({ bridge }: { readonly bridge: SpecBridge }) {
   const session = useFileSession(bridge);
   const surface = useMemo(
     () => ({ ...unmountedSurface, files: session.commands }),
@@ -67,13 +84,13 @@ function Bar({ bridge }: { readonly bridge: SpecBridge }) {
   );
   return (
     <CommandSurfaceProvider surface={surface}>
-      <FileBar session={session} />
+      <StudioMenu session={session} />
     </CommandSurfaceProvider>
   );
 }
 
 const mounted = (bridge: SpecBridge): void => {
-  render(<Bar bridge={bridge} />);
+  render(<Menu bridge={bridge} />);
 };
 
 const asked = (): boolean =>
@@ -106,15 +123,80 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-describe('what the studio says about the file', () => {
-  it('names the file, its format, and whether it holds everything on screen', () => {
+describe('what the menu offers', () => {
+  it('holds the file commands and the edit commands, in two named groups', async () => {
+    const user = userEvent.setup();
     mounted(specBridge());
 
-    expect(state()).toBe('No file, Panoptes YAML, no unsaved changes');
+    await openMenu(user);
+
+    expect(
+      screen.getAllByRole('menuitem').map((entry) => entry.textContent),
+    ).toEqual([
+      'Open a modelCtrl+O',
+      'SaveCtrl+S',
+      'Save as Threat Dragon JSONCtrl+Shift+S',
+      'Close the fileCtrl+Shift+X',
+      'UndoCtrl+Z',
+      'RedoCtrl+Shift+Z or Ctrl+Y',
+    ]);
+    expect(
+      screen.getAllByRole('group').map((group) => group.textContent),
+    ).toContain(
+      'FileOpen a modelCtrl+OSaveCtrl+SSave as Threat Dragon JSONCtrl+Shift+SClose the fileCtrl+Shift+X',
+    );
+  });
+
+  it('keeps the shortcut out of an item name, and names the binding as ARIA asks', async () => {
+    const user = userEvent.setup();
+    mounted(specBridge());
+
+    await openMenu(user);
+
+    expect(item('Save').getAttribute('aria-keyshortcuts')).toBe('Control+S');
+  });
+
+  it('marks unsaved work on the button, in words as well as with the dot', async () => {
+    const user = userEvent.setup();
+    mounted(specBridge());
+
+    expect(burger().getAttribute('aria-label')).toBe('Menu');
 
     edit();
 
-    expect(state()).toBe('No file, Panoptes YAML, unsaved changes');
+    expect(burger().getAttribute('aria-label')).toBe('Menu, unsaved changes');
+
+    expect(await shown(user)).toBe('No file, Panoptes YAML, unsaved changes');
+  });
+
+  it('offers a history move only once there is one to make', async () => {
+    const user = userEvent.setup();
+    mounted(specBridge());
+
+    await openMenu(user);
+
+    expect(item('Undo').getAttribute('data-disabled')).not.toBeNull();
+
+    edit();
+
+    expect(item('Undo').getAttribute('data-disabled')).toBeNull();
+    expect(item('Redo').getAttribute('data-disabled')).not.toBeNull();
+
+    await choose(user, 'Undo');
+    await openMenu(user);
+
+    expect(item('Redo').getAttribute('data-disabled')).toBeNull();
+  });
+});
+
+describe('what the studio says about the file', () => {
+  it('names the file, its format, and whether it holds everything on screen', async () => {
+    const user = userEvent.setup();
+    mounted(specBridge());
+
+    expect(await shown(user)).toBe(
+      'No file, Panoptes YAML, no unsaved changes',
+    );
   });
 
   it('guards the tab while the model has changes in no file, and lets go once they are in one', async () => {
@@ -127,7 +209,7 @@ describe('what the studio says about the file', () => {
 
     expect(asked()).toBe(true);
 
-    await user.click(saveControl());
+    await choose(user, 'Save');
 
     await waitFor(() => {
       expect(asked()).toBe(false);
@@ -140,11 +222,14 @@ describe('opening', () => {
     const user = userEvent.setup();
     mounted(specBridge({ offers: chosenFile('model.yaml', nativeText) }));
 
-    await user.click(openControl());
+    await choose(user, 'Open a model');
 
     await waitFor(() => {
-      expect(state()).toBe('model.yaml, Panoptes YAML, no unsaved changes');
+      expect(nameOf(modelStore.getState().file)).toBe('model.yaml');
     });
+    expect(await shown(user)).toBe(
+      'model.yaml, Panoptes YAML, no unsaved changes',
+    );
   });
 
   it('asks before losing changes that are in no file, and opens nothing when refused', async () => {
@@ -153,14 +238,13 @@ describe('opening', () => {
       'confirm',
       vi.fn(() => false),
     );
-    const bridge = specBridge({ offers: chosenFile('model.yaml', nativeText) });
-    mounted(bridge);
+    mounted(specBridge({ offers: chosenFile('model.yaml', nativeText) }));
     edit();
 
-    await user.click(openControl());
+    await choose(user, 'Open a model');
 
     expect(globalThis.confirm).toHaveBeenCalledTimes(1);
-    expect(state()).toBe('No file, Panoptes YAML, unsaved changes');
+    expect(await shown(user)).toBe('No file, Panoptes YAML, unsaved changes');
   });
 
   it('surfaces what the codec refused, with the paths it carries, rather than stopping', async () => {
@@ -174,7 +258,7 @@ describe('opening', () => {
       }),
     );
 
-    await user.click(openControl());
+    await choose(user, 'Open a model');
 
     await waitFor(() => {
       expect(screen.getByTestId('failure-notice').textContent).toContain(
@@ -187,12 +271,13 @@ describe('opening', () => {
   });
 
   it('opens the file its own input produced', async () => {
-    const bridge = specBridge();
-    mounted(bridge);
+    const user = userEvent.setup();
+    mounted(specBridge());
 
     fireEvent.change(screen.getByTestId('file-input'), {
       target: { files: [chosenFile('model.yaml', nativeText)] },
     });
+    await openMenu(user);
 
     await waitFor(() => {
       expect(state()).toBe('model.yaml, Panoptes YAML, no unsaved changes');
@@ -206,7 +291,7 @@ describe('opening', () => {
     });
     mounted(bridge);
 
-    await user.click(openControl());
+    await choose(user, 'Open a model');
 
     await waitFor(() => {
       expect(reportEntries().length > 0).toBe(true);
@@ -219,7 +304,7 @@ describe('opening', () => {
       'model: the key detail.unknownDetail (not declared by the wire schema)',
     ]);
 
-    await user.click(saveControl());
+    await choose(user, 'Save');
 
     await waitFor(() => {
       expect(bridge.writes).toHaveLength(1);
@@ -232,11 +317,11 @@ describe('opening', () => {
     const user = userEvent.setup();
     mounted(specBridge());
 
-    await user.click(openControl());
+    await choose(user, 'Open a model');
 
-    await waitFor(() => {
-      expect(state()).toBe('No file, Panoptes YAML, no unsaved changes');
-    });
+    expect(await shown(user)).toBe(
+      'No file, Panoptes YAML, no unsaved changes',
+    );
     expect(screen.getByTestId('failure-notice').textContent).toBe('');
     expect(reportEntries()).toEqual([]);
   });
@@ -248,7 +333,7 @@ describe('opening', () => {
         offers: chosenFile('ecluse.json', await withUndeclaredKeys()),
       }),
     );
-    await user.click(openControl());
+    await choose(user, 'Open a model');
     await waitFor(() => {
       expect(reportEntries().length > 0).toBe(true);
     });
@@ -270,7 +355,7 @@ describe('opening', () => {
     const clicks = vi.spyOn(HTMLInputElement.prototype, 'click');
     mounted(specBridge({ picker: false }));
 
-    await user.click(openControl());
+    await choose(user, 'Open a model');
 
     await waitFor(() => {
       expect(clicks).toHaveBeenCalledTimes(1);
@@ -285,7 +370,7 @@ describe('saving', () => {
     mounted(bridge);
     edit();
 
-    await user.click(saveControl());
+    await choose(user, 'Save');
 
     await waitFor(() => {
       expect(isDirty(modelStore.getState())).toBe(false);
@@ -301,7 +386,7 @@ describe('saving', () => {
     const bridge = specBridge();
     mounted(bridge);
 
-    await user.click(saveAsControl());
+    await choose(user, 'Save as Threat Dragon JSON');
 
     await waitFor(() => {
       expect(reportEntries().length > 0).toBe(true);
@@ -321,11 +406,97 @@ describe('saving', () => {
     mounted(specBridge({ save: SaveOutcome.Cancelled() }));
     edit();
 
-    await user.click(saveControl());
+    await choose(user, 'Save');
 
     await waitFor(() => {
       expect(isDirty(modelStore.getState())).toBe(true);
     });
     expect(reportEntries()).toEqual([]);
+  });
+});
+
+describe('closing', () => {
+  it('closes at once while there is nothing to lose', async () => {
+    const user = userEvent.setup();
+    mounted(specBridge({ offers: chosenFile('model.yaml', nativeText) }));
+    await choose(user, 'Open a model');
+    await waitFor(() => {
+      expect(nameOf(modelStore.getState().file)).toBe('model.yaml');
+    });
+
+    await choose(user, 'Close the file');
+
+    expect(modelStore.getState().present).toBe(placeholderModel);
+    expect(await shown(user)).toBe(
+      'No file, Panoptes YAML, no unsaved changes',
+    );
+  });
+
+  it('asks in the menu rather than in a dialog, and puts it away when the file is kept', async () => {
+    const user = userEvent.setup();
+    mounted(specBridge());
+    edit();
+
+    await choose(user, 'Close the file');
+
+    expect(item('Discard the changes and close')).toBeDefined();
+    expect(globalThis.confirm).toHaveBeenCalledTimes(0);
+
+    await user.click(item('Keep the file open'));
+
+    await waitFor(() => {
+      expect(screen.queryByRole('menu')).toBe(null);
+    });
+    expect(isDirty(modelStore.getState())).toBe(true);
+
+    await openMenu(user);
+
+    expect(item('Close the file')).toBeDefined();
+  });
+
+  it('closes on the second step, dropping the changes it warned about', async () => {
+    const user = userEvent.setup();
+    mounted(specBridge());
+    edit();
+
+    await choose(user, 'Close the file');
+    await user.click(item('Discard the changes and close'));
+
+    expect(modelStore.getState().present).toBe(placeholderModel);
+    expect(await shown(user)).toBe(
+      'No file, Panoptes YAML, no unsaved changes',
+    );
+  });
+
+  it('opens the menu on the question when the chord asks with the menu shut', async () => {
+    const user = userEvent.setup();
+    mounted(specBridge());
+    edit();
+
+    await user.keyboard('{Control>}{Shift>}X{/Shift}{/Control}');
+
+    expect(
+      await screen.findByRole('menuitem', {
+        name: 'Discard the changes and close',
+      }),
+    ).toBeDefined();
+    expect(isDirty(modelStore.getState())).toBe(true);
+  });
+
+  it('takes the question back when the menu is dismissed', async () => {
+    const user = userEvent.setup();
+    mounted(specBridge());
+    edit();
+
+    await choose(user, 'Close the file');
+    await user.keyboard('{Escape}');
+
+    await waitFor(() => {
+      expect(screen.queryByRole('menu')).toBe(null);
+    });
+
+    await openMenu(user);
+
+    expect(item('Close the file')).toBeDefined();
   });
 });

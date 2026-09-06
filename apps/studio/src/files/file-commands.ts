@@ -27,34 +27,54 @@ import {
  * The file half of the studio, held once and read by everything that reaches
  * a file: the commands the registry dispatches, the report the last crossing
  * cost, the fallback picker's input, which the view attaches because only a
- * component can hold one, and the file that input produced.
+ * component can hold one, the file that input produced, and whether a close
+ * is waiting to be confirmed.
+ *
+ * `closing` is the unsaved-changes guard as state rather than as a dialog:
+ * the close command sets it, the view asks in its own words, and the answer
+ * comes back through `confirmClose` or `cancelClose`. Holding it here rather
+ * than in the view is what lets the chord ask the same question the menu
+ * item asks.
  */
 export type FileSession = {
   readonly commands: FileCommands;
   readonly report: LossReport | undefined;
+  readonly closing: boolean;
   readonly attachPicker: (input: HTMLInputElement | null) => void;
   readonly dismissReport: () => void;
   readonly receive: (chosen: ChosenFile | undefined) => Promise<void>;
+  readonly confirmClose: () => void;
+  readonly cancelClose: () => void;
 };
 
 /**
- * Opening and saving, as one session the app holds rather than a set of
- * handlers a control closes over. The keyboard and the controls run the same
- * three commands, so a shortcut and a button cannot drift, and the report
- * one of them produces is the one the view beside them shows.
+ * Opening, saving and closing, as one session the app holds rather than a set
+ * of handlers a control closes over. The keyboard and the controls run the
+ * same four commands, so a shortcut and a menu item cannot drift, and the
+ * report one of them produces is the one the view beside them shows.
  *
  * Each command reads the store as it runs rather than closing over a render,
- * which is what lets the three be built once: what a save writes and where
- * is the model and the file at the moment the key was pressed.
+ * which is what lets the four be built once: what a save writes and where is
+ * the model and the file at the moment the key was pressed.
+ *
+ * Closing drops the report with the file, the report describing a crossing of
+ * a boundary the closed file was one side of.
  */
 export function useFileSession(
   bridge: FileBridge = browserFileBridge,
 ): FileSession {
   const [report, setReport] = useState<LossReport | undefined>(undefined);
+  const [closing, setClosing] = useState(false);
   const picker = useRef<HTMLInputElement | null>(null);
 
   const attachPicker = useCallback((input: HTMLInputElement | null): void => {
     picker.current = input;
+  }, []);
+
+  const closeFile = useCallback((): void => {
+    setClosing(false);
+    setReport(undefined);
+    dispatch(Action.Closed());
   }, []);
 
   const applyOpen = useCallback((outcome: OpenOutcome): void => {
@@ -112,8 +132,15 @@ export function useFileSession(
       saveAs: () => {
         void store(true);
       },
+      close: () => {
+        if (isDirty(modelStore.getState())) {
+          setClosing(true);
+          return;
+        }
+        closeFile();
+      },
     };
-  }, [applyOpen, bridge]);
+  }, [applyOpen, bridge, closeFile]);
 
   const receive = useCallback(
     async (chosen: ChosenFile | undefined): Promise<void> => {
@@ -128,9 +155,31 @@ export function useFileSession(
     setReport(undefined);
   }, []);
 
+  const cancelClose = useCallback((): void => {
+    setClosing(false);
+  }, []);
+
   return useMemo(
-    () => ({ commands, report, attachPicker, dismissReport, receive }),
-    [attachPicker, commands, dismissReport, receive, report],
+    () => ({
+      commands,
+      report,
+      closing,
+      attachPicker,
+      dismissReport,
+      receive,
+      confirmClose: closeFile,
+      cancelClose,
+    }),
+    [
+      attachPicker,
+      cancelClose,
+      closeFile,
+      closing,
+      commands,
+      dismissReport,
+      receive,
+      report,
+    ],
   );
 }
 

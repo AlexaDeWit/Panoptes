@@ -10,6 +10,7 @@ import {
   nodeNamed,
   openEcluse,
   openPlaceholder,
+  runFromMenu,
   widthOf,
 } from './studio.fixtures.js';
 
@@ -44,7 +45,7 @@ test('an added element takes focus, is announced, and undo takes it back', async
   await expect(nodeNamed(page, /^New actor, actor/u)).toBeFocused();
   await expect(editAnnouncement(page)).toHaveText('Added New actor, actor.');
 
-  await page.getByRole('button', { name: 'Undo' }).click();
+  await runFromMenu(page, 'Undo');
 
   await expect(nodeNamed(page, /^New actor, actor/u)).toHaveCount(0);
 });
@@ -79,6 +80,8 @@ test('a flow is drawn by keyboard alone, from the selected element', async ({
   await expect(nodeNamed(page, /^Reader, actor/u)).toBeFocused();
   await page.keyboard.press('Enter');
 
+  await page.keyboard.press('Shift+Tab');
+  await expect(beforeCanvas(page)).toBeFocused();
   await page.keyboard.press('Shift+Tab');
   await expect(connectTarget(page)).toBeFocused();
   await page.keyboard.press('Enter');
@@ -132,7 +135,7 @@ test('the delete key removes a selected flow, and undo puts it back', async ({
   await expect(editAnnouncement(page)).toContainText('Removed npm read');
   await expect(canvasSurface(page)).toBeFocused();
 
-  await page.getByRole('button', { name: 'Undo' }).click();
+  await runFromMenu(page, 'Undo');
 
   await expect(flows).toHaveCount(20);
 });
@@ -146,7 +149,7 @@ test('a deletion is one step, so undo puts the element and its flows back', asyn
   await page.keyboard.press('Delete');
   await expect(elementNodes(page)).toHaveCount(17);
 
-  await page.getByRole('button', { name: 'Undo' }).click();
+  await runFromMenu(page, 'Undo');
 
   await expect(elementNodes(page)).toHaveCount(18);
   await expect(nodeNamed(page, /^anonymous packument/u)).toHaveAttribute(
@@ -172,7 +175,7 @@ test('a trust boundary is resized by dragging its corner, in one step', async ({
 
   await expect.poll(() => widthOf(boundary)).not.toBe(before);
 
-  await page.getByRole('button', { name: 'Undo' }).click();
+  await runFromMenu(page, 'Undo');
 
   await expect.poll(() => widthOf(boundary)).toBe(before);
 });

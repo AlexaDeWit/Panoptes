@@ -9,11 +9,15 @@ import { readFileSync } from 'node:fs';
 import { differingPaths, identified } from './differing-paths.js';
 import {
   chooseInPanel,
+  closeMenu,
   connectTarget,
   dragBy,
+  menuButton,
   nodeNamed,
   openFile,
+  openMenu,
   placeOf,
+  runFromMenu,
   savedFile,
   selectByKeyboard,
   threatPanel,
@@ -57,9 +61,12 @@ test('opens Écluse, edits it on both surfaces, and saves a valid, lossless file
   const placed = await placeOf(proxy);
   await dragBy(page, proxy, 60);
   await expect.poll(() => placeOf(proxy)).not.toBe(placed);
+  await openMenu(page);
   await expect(page.getByTestId('file-state')).toHaveText(
     'ecluse.json, Threat Dragon JSON, unsaved changes',
   );
+  await expect(menuButton(page)).toHaveAccessibleName('Menu, unsaved changes');
+  await closeMenu(page);
 
   await page.getByRole('button', { name: 'New store', exact: true }).click();
   await expect(nodeNamed(page, /^New store, store/u)).toHaveCount(1);
@@ -83,7 +90,7 @@ test('opens Écluse, edits it on both surfaces, and saves a valid, lossless file
   );
   await expect(worker.locator('.pn-badge-mark')).toHaveText('C');
 
-  await page.getByRole('button', { name: 'Undo' }).click();
+  await runFromMenu(page, 'Undo');
 
   await expect(
     threatPanel(page).getByRole('combobox', { name: 'Severity' }),
@@ -95,6 +102,7 @@ test('opens Écluse, edits it on both surfaces, and saves a valid, lossless file
 
   const written = await savedFile(page);
 
+  await openMenu(page);
   await expect(page.getByTestId('file-state')).toHaveText(
     'ecluse.json, Threat Dragon JSON, no unsaved changes',
   );

@@ -1,0 +1,165 @@
+/* The chrome overlays the canvas rather than taking width from it, so the
+   menu is positioned over the top left corner of the diagram and stacks above
+   React Flow, whose own stylesheet gives the canvas a stacking context of its
+   own at z-index 0. */
+.menu {
+  position: absolute;
+  top: var(--pn-space-3);
+  left: var(--pn-space-3);
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  max-width: min(30rem, calc(100% - 2 * var(--pn-space-3)));
+}
+
+.burger {
+  position: relative;
+  padding: var(--pn-space-2) var(--pn-space-3);
+  border: 1px solid var(--pn-colour-border);
+  border-radius: var(--pn-radius);
+  background: var(--pn-colour-surface);
+  color: var(--pn-colour-text);
+  font: inherit;
+  line-height: 1;
+}
+
+.burger:focus-visible {
+  outline: var(--pn-focus-ring);
+  outline-offset: var(--pn-focus-ring-offset);
+}
+
+/* The dot marks unsaved work at a glance. It is never the only way to learn
+   of it: the button's accessible name says so, and the open menu says so in
+   words. */
+.dot {
+  position: absolute;
+  top: calc(-1 * var(--pn-space-1));
+  right: calc(-1 * var(--pn-space-1));
+  width: var(--pn-space-2);
+  height: var(--pn-space-2);
+  border-radius: 50%;
+  background: var(--pn-colour-accent);
+}
+
+.panel {
+  min-width: 18rem;
+  max-width: 30rem;
+  padding: var(--pn-space-1);
+  border: 1px solid var(--pn-colour-border);
+  border-radius: var(--pn-radius);
+  background: var(--pn-colour-surface);
+  color: var(--pn-colour-text);
+}
+
+.heading {
+  padding: var(--pn-space-2) var(--pn-space-3) var(--pn-space-1);
+  color: var(--pn-colour-text-muted);
+  font-weight: 600;
+}
+
+.item {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--pn-space-4);
+  padding: var(--pn-space-2) var(--pn-space-3);
+  border-radius: var(--pn-radius);
+  user-select: none;
+}
+
+/* Radix reports the pointer or keyboard cursor through `data-highlighted` and
+   an item it will not run through `data-disabled`, which is where a state is
+   styled from rather than a class the component would have to keep in step. */
+.item[data-highlighted] {
+  background: var(--pn-colour-accent);
+  color: var(--pn-colour-accent-text);
+}
+
+.item[data-disabled] {
+  color: var(--pn-colour-text-muted);
+}
+
+/* Radix puts real DOM focus on the highlighted item, so the app's focus
+   indicator belongs here too, in the colour the item draws its text in: the
+   accent the ring token carries is the background it would be drawn on. */
+.item[data-highlighted]:focus-visible {
+  outline: var(--pn-focus-ring-width) solid var(--pn-colour-accent-text);
+  outline-offset: calc(-1 * var(--pn-focus-ring-offset));
+}
+
+.chord {
+  color: var(--pn-colour-text-muted);
+  white-space: nowrap;
+}
+
+.item[data-highlighted] .chord {
+  color: var(--pn-colour-accent-text);
+}
+
+.rule {
+  height: 1px;
+  margin: var(--pn-space-1) 0;
+  background: var(--pn-colour-border);
+}
+
+.about {
+  padding: var(--pn-space-2) var(--pn-space-3);
+}
+
+/* Whether the model is in a file is said in words, never by a colour or a
+   mark alone. */
+.state {
+  margin: 0;
+  color: var(--pn-colour-text-muted);
+}
+
+/* As with the failure notice, the region collapses while it is empty rather
+   than hiding, so it is in the accessibility tree before the first report
+   lands in it. */
+.report:empty {
+  padding: 0;
+  border: 0;
+}
+
+.report:not(:empty) {
+  margin-top: var(--pn-space-2);
+  padding: var(--pn-space-3);
+  border: 1px solid var(--pn-colour-border);
+  border-radius: var(--pn-radius);
+  background: var(--pn-colour-surface-raised);
+}
+
+.headline {
+  margin: 0;
+  font-weight: 600;
+}
+
+.lines {
+  margin: var(--pn-space-2) 0;
+  padding-left: var(--pn-space-4);
+  color: var(--pn-colour-text-muted);
+  overflow-wrap: anywhere;
+}
+
+.dismiss {
+  padding: var(--pn-space-2) var(--pn-space-3);
+  border: 1px solid var(--pn-colour-border);
+  border-radius: var(--pn-radius);
+  background: var(--pn-colour-surface);
+  color: var(--pn-colour-text);
+  font: inherit;
+}
+
+.dismiss:focus-visible {
+  outline: var(--pn-focus-ring);
+  outline-offset: var(--pn-focus-ring-offset);
+}
+
+/* The fallback picker. It is out of the page rather than merely invisible,
+   so it is neither on the tab path nor in the accessibility tree: the Open
+   command is the one way to it, and every browser opens a file input this
+   way when one is clicked. */
+.input {
+  display: none;
+}

@@ -4,13 +4,10 @@ import { DiagramCanvas } from '../canvas/diagram-canvas.js';
 import { EditPalette } from '../canvas/palette.js';
 import { useViewCommands } from '../canvas/view-commands.js';
 import { CommandSurfaceProvider } from '../commands/binding.js';
-import { CommandButton } from '../commands/command-button.js';
 import type { CommandSurface } from '../commands/registry.js';
 import { useFileSession } from '../files/file-commands.js';
-import { FileBar } from '../files/file-bar.js';
+import { StudioMenu } from '../files/menu.js';
 import { ThreatPanel } from '../panel/threat-panel.js';
-import { canUndo, elementCount } from '../store/selectors.js';
-import { useModelStore } from '../store/store.js';
 import styles from './app.module.css';
 
 /**
@@ -28,9 +25,8 @@ export function App() {
 }
 
 /**
- * The file controls, the canvas and its palette, the threat panel beside
- * them, and what is left of the store's walking skeleton, a control that
- * undoes and a count read through a selector.
+ * The canvas and its palette, the menu over the top left of the canvas, and
+ * the threat panel beside them.
  *
  * The surface every command runs against is built here, because this is the
  * one place that holds both the file session and the viewport ([the
@@ -39,15 +35,17 @@ export function App() {
  * canvas](../canvas/README.md)), so the zoom cluster's fit and the fit an
  * open performs are one answer rather than two that drift.
  *
- * Opening and saving live in the file bar
- * ([the file bridge](../files/README.md)), drawing in the canvas ([the
+ * Opening, saving and closing live in the menu ([the file
+ * bridge](../files/README.md)), drawing in the canvas ([the
  * canvas](../canvas/README.md)) and the threats in the panel ([the
  * panel](../panel/README.md)), so this mounts them rather than growing a
  * concern of any of them.
+ *
+ * The heading names the page and is drawn nowhere: the chrome overlays the
+ * canvas, so a title bar would take width from the diagram, and a page with
+ * no heading at all is what the accessibility audit asks after.
  */
 function Studio() {
-  const elements = useModelStore(elementCount);
-  const undoable = useModelStore(canUndo);
   const session = useFileSession();
   const view = useViewCommands();
 
@@ -61,13 +59,11 @@ function Studio() {
       <div className={styles.shell}>
         <main className={styles.diagram}>
           <h1 className={styles.title}>Panoptes</h1>
-          <FileBar session={session} />
-          <p>
-            Elements: <span data-testid="element-count">{elements}</span>
-          </p>
-          <CommandButton command="undo" disabled={!undoable} />
           <EditPalette />
-          <DiagramCanvas />
+          <div className={styles.stage}>
+            <StudioMenu session={session} />
+            <DiagramCanvas />
+          </div>
         </main>
         <ThreatPanel />
       </div>
