@@ -3,6 +3,7 @@ import {
   badgeAnchor,
   badgeBox,
   badgeExtent,
+  type BadgeExtent,
   type ThreatBadge,
 } from './badges.js';
 import {
@@ -36,6 +37,9 @@ const anchorFractions = [0.5, 0.25, 0.75];
 const standoffSteps = [0, 1, 2];
 
 const normalSides = [1, -1];
+
+// Floating-point noise from a translation must not change a tied candidate.
+const candidateDistanceTolerance = 1e-6;
 
 /**
  * One run of text a glyph draws: what it says, where it hangs, and the two
@@ -227,6 +231,50 @@ export type FlowLabelPlacement = {
 };
 
 /**
+ * Moves a settled flow label with the segment that carries it. The nearest
+ * old segment supplies the fraction, side, and standoff. The matching new
+ * segment adds the text or badge reach in its new direction. A drag can then
+ * change the path without running the diagram-wide collision search.
+ */
+export function movedFlowLabel(
+  label: FlowLabelPlacement,
+  badge: ThreatBadge | undefined,
+  from: readonly [Point, ...Point[]],
+  to: readonly [Point, ...Point[]],
+): FlowLabelPlacement {
+  const oldSegments = segmentsOfPolyline(from);
+  const newSegments = segmentsOfPolyline(to);
+  if (oldSegments.length === 0 || oldSegments.length !== newSegments.length) {
+    return label;
+  }
+  const nameRule = wrappedTextStyles[label.name.textStyle];
+  const nameExtent = textExtent(
+    wrapText(label.name.text, nameRule.fontSize, label.name.width),
+    nameRule.fontSize,
+  );
+  return {
+    name: {
+      ...label.name,
+      at: movedWithNearestSegment(
+        label.name.at,
+        oldSegments,
+        newSegments,
+        (direction) => projectedHalfExtent(nameExtent, direction),
+      ),
+    },
+    badge:
+      label.badge === undefined || badge === undefined
+        ? undefined
+        : movedWithNearestSegment(
+            label.badge,
+            oldSegments,
+            newSegments,
+            (direction) => badgeReach(badge, direction),
+          ),
+  };
+}
+
+/**
  * What placing one flow's label needs of that flow: which flow it is, what
  * its name says, the badge it carries, and the points its line runs through.
  * A flow has at least the one point its label hangs beside, so the type
@@ -305,6 +353,32 @@ export function flowLabelPlacements(
   return placements;
 }
 
+/**
+ * Places moving flow labels against the current geometry while retaining the
+ * settled placements of flows that did not move.
+ */
+export function flowLabelPlacementsDuringMove(
+  flows: readonly FlowGeometry[],
+  nodes: readonly CanvasNode[],
+  settled: ReadonlyMap<ElementId, FlowLabelPlacement>,
+  moving: ReadonlySet<ElementId>,
+): FlowLabelPlacement[] {
+  const ordered = flows.map((flow, index) => ({ flow, index }));
+  ordered.sort((one, other) => byIdAscending(one.flow, other.flow));
+  const placements: FlowLabelPlacement[] = [];
+  let drawn = drawnObstacles(flows, nodes);
+  for (const { flow, index } of ordered) {
+    const retained = moving.has(flow.id) ? undefined : settled.get(flow.id);
+    const chosen =
+      retained === undefined
+        ? closestClearCandidate(flow, drawn)
+        : candidateFromPlacement(flow, retained);
+    placements[index] = chosen.placement;
+    drawn = withLabelPlaced(drawn, chosen);
+  }
+  return placements;
+}
+
 type Candidate = {
   readonly placement: FlowLabelPlacement;
   readonly nameBox: Box | undefined;
@@ -312,8 +386,72 @@ type Candidate = {
   readonly fromMiddle: number;
 };
 
+type CandidateMetrics = {
+  readonly name: TextExtent;
+  readonly badge: BadgeExtent | undefined;
+};
+
+const placementCandidates = new WeakMap<FlowLabelPlacement, Candidate>();
+const flowNameExtents = new Map<string, TextExtent>();
+const flowSegments = new WeakMap<FlowGeometry, Segment[]>();
+const flowNameExtentLimit = 256;
+
+function flowNameExtent(name: string): TextExtent {
+  const cached = flowNameExtents.get(name);
+  if (cached !== undefined) {
+    return cached;
+  }
+  const fontSize = wrappedTextStyles.flowLabel.fontSize;
+  const measured = textExtent(
+    wrapText(name, fontSize, looseLabelWidth),
+    fontSize,
+  );
+  if (flowNameExtents.size >= flowNameExtentLimit) {
+    flowNameExtents.clear();
+  }
+  flowNameExtents.set(name, measured);
+  return measured;
+}
+
+function segmentsForFlow(flow: FlowGeometry): Segment[] {
+  const cached = flowSegments.get(flow);
+  if (cached !== undefined) {
+    return cached;
+  }
+  const segments = segmentsOfPolyline(flow.points);
+  flowSegments.set(flow, segments);
+  return segments;
+}
+
+function candidateFromPlacement(
+  flow: FlowGeometry,
+  placement: FlowLabelPlacement,
+): Candidate {
+  const cached = placementCandidates.get(placement);
+  if (cached !== undefined) {
+    return cached;
+  }
+  const nameExtent = flowNameExtent(flow.name);
+  const candidate = {
+    placement,
+    nameBox: {
+      minX: placement.name.at.x - nameExtent.width / 2,
+      minY: placement.name.at.y - nameExtent.height / 2,
+      maxX: placement.name.at.x + nameExtent.width / 2,
+      maxY: placement.name.at.y + nameExtent.height / 2,
+    },
+    badgeBox:
+      flow.badge === undefined || placement.badge === undefined
+        ? undefined
+        : badgeBox(placement.badge, flow.badge),
+    fromMiddle: 0,
+  };
+  placementCandidates.set(placement, candidate);
+  return candidate;
+}
+
 type Solids = {
-  readonly boxes: readonly Box[];
+  readonly boxes: Box[];
   readonly circles: readonly Circle[];
   readonly lines: readonly Segment[];
 };
@@ -467,13 +605,17 @@ function byIdAscending(one: FlowGeometry, other: FlowGeometry): number {
 }
 
 function cheapestCandidate(flow: FlowGeometry, drawn: Obstacles): Candidate {
-  const segments = segmentsOfPolyline(flow.points);
+  const segments = segmentsForFlow(flow);
   const home = homeSegment(flow.points, segments);
   const middle = alongSegment(home, 0.5);
-  let best = candidateAt(flow, home, 0.5, 0, 1, middle);
-  let cost = collisionsOf(best, drawn);
-  for (const next of candidatesOf(flow, segments, middle)) {
-    const held = collisionsOf(next, drawn);
+  const metrics = candidateMetrics(flow);
+  let best = candidateAt(flow, home, 0.5, 0, 1, middle, metrics);
+  let cost = collisionsOf(best, drawn, Number.POSITIVE_INFINITY);
+  for (const next of candidatesOf(flow, segments, middle, metrics)) {
+    if (cost === 0 && next.fromMiddle >= best.fromMiddle) {
+      continue;
+    }
+    const held = collisionsOf(next, drawn, cost + 1);
     if (held < cost || (held === cost && next.fromMiddle < best.fromMiddle)) {
       best = next;
       cost = held;
@@ -482,20 +624,80 @@ function cheapestCandidate(flow: FlowGeometry, drawn: Obstacles): Candidate {
   return best;
 }
 
-function candidatesOf(
+function closestClearCandidate(
+  flow: FlowGeometry,
+  drawn: Obstacles,
+): Candidate {
+  const segments = segmentsForFlow(flow);
+  const home = homeSegment(flow.points, segments);
+  const middle = alongSegment(home, 0.5);
+  const metrics = candidateMetrics(flow);
+  const initial = candidateAt(flow, home, 0.5, 0, 1, middle, metrics);
+  const candidates = candidatesByDistance([
+    initial,
+    ...candidatesOf(flow, segments, middle, metrics),
+  ]);
+  let best = initial;
+  let cost = Number.POSITIVE_INFINITY;
+  for (const next of candidates) {
+    const held = collisionsOf(next, drawn, cost);
+    if (held < cost) {
+      best = next;
+      cost = held;
+    }
+    if (cost === 0) {
+      return best;
+    }
+  }
+  return best;
+}
+
+function candidateMetrics(flow: FlowGeometry): CandidateMetrics {
+  return {
+    name: flowNameExtent(flow.name),
+    badge: flow.badge === undefined ? undefined : badgeExtent(flow.badge),
+  };
+}
+
+function candidatesByDistance(candidates: readonly Candidate[]): Candidate[] {
+  const ordered: Candidate[] = [];
+  for (const candidate of candidates) {
+    const index = ordered.findIndex(
+      (other) =>
+        candidate.fromMiddle < other.fromMiddle - candidateDistanceTolerance,
+    );
+    if (index === -1) {
+      ordered.push(candidate);
+    } else {
+      ordered.splice(index, 0, candidate);
+    }
+  }
+  return ordered;
+}
+
+function* candidatesOf(
   flow: FlowGeometry,
   segments: readonly Segment[],
   middle: Point,
-): Candidate[] {
-  return segments.flatMap((segment) =>
-    anchorFractions.flatMap((fraction) =>
-      standoffSteps.flatMap((step) =>
-        normalSides.map((side) =>
-          candidateAt(flow, segment, fraction, step, side, middle),
-        ),
-      ),
-    ),
-  );
+  metrics: CandidateMetrics,
+): Generator<Candidate> {
+  for (const segment of segments) {
+    for (const fraction of anchorFractions) {
+      for (const step of standoffSteps) {
+        for (const side of normalSides) {
+          yield candidateAt(
+            flow,
+            segment,
+            fraction,
+            step,
+            side,
+            middle,
+            metrics,
+          );
+        }
+      }
+    }
+  }
 }
 
 function candidateAt(
@@ -505,13 +707,27 @@ function candidateAt(
   step: number,
   side: number,
   middle: Point,
+  metrics: CandidateMetrics,
 ): Candidate {
   const anchor = alongSegment(segment, fraction);
   const normal = scaledBy(labelNormal(segment), side);
   const standoff = flowLabelClearance * (step + 1);
-  const name = nameBeside(flow.name, anchor, normal, standoff, 'flowLabel');
+  const name = nameBeside(
+    flow.name,
+    anchor,
+    normal,
+    standoff,
+    'flowLabel',
+    metrics.name,
+  );
   const nameBox = boxOfPoints(textPlacementCorners(name));
-  const badge = badgeBeside(flow.badge, anchor, negated(normal), standoff);
+  const badge = badgeBeside(
+    flow.badge,
+    anchor,
+    negated(normal),
+    standoff,
+    metrics.badge,
+  );
   return {
     placement: { name, badge: badge?.at },
     nameBox,
@@ -533,7 +749,8 @@ function withLabelPlaced(drawn: Obstacles, candidate: Candidate): Obstacles {
 }
 
 function withBoxes(solids: Solids, boxes: readonly Box[]): Solids {
-  return { ...solids, boxes: [...solids.boxes, ...boxes] };
+  solids.boxes.push(...boxes);
+  return solids;
 }
 
 function badgeBeside(
@@ -541,6 +758,7 @@ function badgeBeside(
   anchor: Point,
   direction: Point,
   standoff: number,
+  extent?: BadgeExtent,
 ): { readonly at: Point; readonly box: Box } | undefined {
   if (badge === undefined) {
     return undefined;
@@ -548,27 +766,50 @@ function badgeBeside(
   const at = offsetBy(
     anchor,
     direction,
-    standoff + badgeReach(badge, direction),
+    standoff + badgeReach(badge, direction, extent),
   );
   return { at, box: badgeBox(at, badge) };
 }
 
-function collisionsOf(candidate: Candidate, drawn: Obstacles): number {
-  return (
-    boxCollisions(candidate.nameBox, drawn.forName) +
-    boxCollisions(candidate.badgeBox, drawn.forBadge)
-  );
+function collisionsOf(
+  candidate: Candidate,
+  drawn: Obstacles,
+  stopAt: number,
+): number {
+  const names = boxCollisions(candidate.nameBox, drawn.forName, stopAt);
+  return names >= stopAt
+    ? names
+    : names + boxCollisions(candidate.badgeBox, drawn.forBadge, stopAt - names);
 }
 
-function boxCollisions(box: Box | undefined, solids: Solids): number {
+function boxCollisions(
+  box: Box | undefined,
+  solids: Solids,
+  stopAt = Number.POSITIVE_INFINITY,
+): number {
   if (box === undefined) {
     return 0;
   }
-  return (
-    solids.boxes.filter((other) => boxesOverlap(box, other)).length +
-    solids.circles.filter((circle) => boxMeetsCircle(box, circle)).length +
-    solids.lines.filter((line) => segmentMeetsBox(line, box)).length
-  );
+  let collisions = 0;
+  for (const other of solids.boxes) {
+    collisions += boxesOverlap(box, other) ? 1 : 0;
+    if (collisions >= stopAt) {
+      return collisions;
+    }
+  }
+  for (const circle of solids.circles) {
+    collisions += boxMeetsCircle(box, circle) ? 1 : 0;
+    if (collisions >= stopAt) {
+      return collisions;
+    }
+  }
+  for (const line of solids.lines) {
+    collisions += segmentMeetsBox(line, box) ? 1 : 0;
+    if (collisions >= stopAt) {
+      return collisions;
+    }
+  }
+  return collisions;
 }
 
 function drawnObstacles(
@@ -584,7 +825,7 @@ function drawnObstacles(
   const circles = outlines.flatMap((outline) => outline.circles);
   const lines = [
     ...outlines.flatMap((outline) => outline.lines),
-    ...flows.flatMap((flow) => segmentsOfPolyline(flow.points)),
+    ...flows.flatMap(segmentsForFlow),
   ];
   return {
     forName: { boxes: [...boxes, ...badges], circles, lines },
@@ -605,7 +846,19 @@ function grownByClearance(box: Box): Box {
   };
 }
 
+const nodeOutlines = new WeakMap<CanvasNode, Solids>();
+
 function nodeOutline(node: CanvasNode): Solids {
+  const cached = nodeOutlines.get(node);
+  if (cached !== undefined) {
+    return cached;
+  }
+  const outline = uncachedNodeOutline(node);
+  nodeOutlines.set(node, outline);
+  return outline;
+}
+
+function uncachedNodeOutline(node: CanvasNode): Solids {
   if (node.kind === 'boundary-box') {
     return { boxes: [], circles: [], lines: segmentsOfBox(nodeBox(node)) };
   }
@@ -634,19 +887,40 @@ function placedCircle(node: CanvasNode): Circle {
   };
 }
 
+const nodeTextBoxes = new WeakMap<CanvasNode, Box[]>();
+const nodeBadgeBoxes = new WeakMap<CanvasNode, Box[]>();
+
 function ownTextBox(node: CanvasNode): Box[] {
+  const cached = nodeTextBoxes.get(node);
+  if (cached !== undefined) {
+    return cached;
+  }
   const box = boxOfPoints(
     textPlacementCorners(nodeTextPlacement(node)).map((corner) =>
       shiftedBy(corner, node.position),
     ),
   );
-  return box === undefined ? [] : [box];
+  const boxes = box === undefined ? [] : [box];
+  nodeTextBoxes.set(node, boxes);
+  return boxes;
 }
 
 function ownBadgeBox(node: CanvasNode): Box[] {
-  return node.badge === undefined
-    ? []
-    : [badgeBox(shiftedBy(badgeAnchor(node.size), node.position), node.badge)];
+  const cached = nodeBadgeBoxes.get(node);
+  if (cached !== undefined) {
+    return cached;
+  }
+  const boxes =
+    node.badge === undefined
+      ? []
+      : [
+          badgeBox(
+            shiftedBy(badgeAnchor(node.size), node.position),
+            node.badge,
+          ),
+        ];
+  nodeBadgeBoxes.set(node, boxes);
+  return boxes;
 }
 
 function nodeBox(node: CanvasNode): Box {
@@ -681,6 +955,69 @@ function alongSegment(segment: Segment, fraction: number): Point {
   return {
     x: segment.from.x + (segment.to.x - segment.from.x) * fraction,
     y: segment.from.y + (segment.to.y - segment.from.y) * fraction,
+  };
+}
+
+function movedWithNearestSegment(
+  point: Point,
+  from: readonly Segment[],
+  to: readonly Segment[],
+  reach: (direction: Point) => number,
+): Point {
+  let nearest = projectedOn(from[0], point);
+  let index = 0;
+  for (let candidate = 1; candidate < from.length; candidate += 1) {
+    const projected = projectedOn(from[candidate], point);
+    if (projected.distance < nearest.distance) {
+      nearest = projected;
+      index = candidate;
+    }
+  }
+  const side = nearest.signedDistance < 0 ? -1 : 1;
+  const oldDirection = scaledBy(labelNormal(from[index]), side);
+  const newDirection = scaledBy(labelNormal(to[index]), side);
+  const standoff = Math.abs(nearest.signedDistance) - reach(oldDirection);
+  const next = to[index];
+  return offsetBy(
+    alongSegment(next, nearest.fraction),
+    newDirection,
+    standoff + reach(newDirection),
+  );
+}
+
+function projectedOn(
+  segment: Segment,
+  point: Point,
+): {
+  readonly distance: number;
+  readonly fraction: number;
+  readonly signedDistance: number;
+} {
+  const run = {
+    x: segment.to.x - segment.from.x,
+    y: segment.to.y - segment.from.y,
+  };
+  const lengthSquared = run.x * run.x + run.y * run.y;
+  const fraction =
+    lengthSquared === 0
+      ? 0
+      : Math.max(
+          0,
+          Math.min(
+            1,
+            ((point.x - segment.from.x) * run.x +
+              (point.y - segment.from.y) * run.y) /
+              lengthSquared,
+          ),
+        );
+  const at = alongSegment(segment, fraction);
+  const normal = labelNormal(segment);
+  const signedDistance =
+    (point.x - at.x) * normal.x + (point.y - at.y) * normal.y;
+  return {
+    distance: Math.hypot(point.x - at.x, point.y - at.y),
+    fraction,
+    signedDistance,
   };
 }
 
@@ -719,12 +1056,11 @@ function nameBeside(
   normal: Point,
   standoff: number,
   textStyle: WrappedTextStyle,
+  measured?: TextExtent,
 ): TextPlacement {
   const fontSize = wrappedTextStyles[textStyle].fontSize;
-  const extent = textExtent(
-    wrapText(name, fontSize, looseLabelWidth),
-    fontSize,
-  );
+  const extent =
+    measured ?? textExtent(wrapText(name, fontSize, looseLabelWidth), fontSize);
   return {
     text: name,
     at: offsetBy(
@@ -745,8 +1081,12 @@ function projectedHalfExtent(extent: TextExtent, normal: Point): number {
   );
 }
 
-function badgeReach(badge: ThreatBadge, direction: Point): number {
-  const extent = badgeExtent(badge);
+function badgeReach(
+  badge: ThreatBadge,
+  direction: Point,
+  measured?: BadgeExtent,
+): number {
+  const extent = measured ?? badgeExtent(badge);
   const across =
     direction.y < 0 ? extent.depth * -direction.y : extent.radius * direction.y;
   return extent.radius * Math.abs(direction.x) + across;

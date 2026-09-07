@@ -18,6 +18,8 @@ import {
 import { cornersOfBox, shiftedBy } from './geometry.js';
 import {
   flowLabelPlacements,
+  flowLabelPlacementsDuringMove,
+  movedFlowLabel,
   nodeTextPlacement,
   settledCurveNames,
   textPlacementCorners,
@@ -184,6 +186,173 @@ export function layoutDiagram(diagram: Diagram, model: Model): CanvasLayout {
 }
 
 /**
+ * Lays out flows against boxes that are moving in the interactive canvas.
+ * A selected flow moves its waypoints and free ends by the group offset.
+ * An interactive frame can retain static labels while it places moving ones.
+ */
+export function layoutDuringMove(
+  layout: CanvasLayout,
+  boxes: ReadonlyMap<ElementId, NodeBox>,
+  moving: ReadonlySet<ElementId>,
+  offset: Point,
+  exactLabels = true,
+  labelBases: ReadonlyMap<string, CanvasEdge> = new Map(),
+): CanvasLayout {
+  const changedNodes = new Set<ElementId>();
+  const nodes = layout.nodes.map((node) => {
+    const box = boxes.get(node.id);
+    if (
+      box === undefined ||
+      (box.position.x === node.position.x &&
+        box.position.y === node.position.y &&
+        box.size.width === node.size.width &&
+        box.size.height === node.size.height)
+    ) {
+      return node;
+    }
+    changedNodes.add(node.id);
+    return { ...node, position: box.position, size: box.size };
+  });
+  const movingFlows = new Set(
+    layout.edges.flatMap((edge) =>
+      (moving.has(edge.id) && (offset.x !== 0 || offset.y !== 0)) ||
+      (edge.sourceElement !== undefined &&
+        changedNodes.has(edge.sourceElement)) ||
+      (edge.targetElement !== undefined && changedNodes.has(edge.targetElement))
+        ? [edge.id]
+        : [],
+    ),
+  );
+  const geometry = layout.edges.map((edge) => {
+    if (!movingFlows.has(edge.id)) {
+      return edge;
+    }
+    const shifted = moving.has(edge.id) ? shiftedFlow(edge, offset) : edge;
+    return reanchoredGeometry(
+      shifted,
+      shifted.sourceElement === undefined
+        ? undefined
+        : boxes.get(shifted.sourceElement),
+      shifted.targetElement === undefined
+        ? undefined
+        : boxes.get(shifted.targetElement),
+    );
+  });
+  const flowGeometryByEdge = geometry.map(flowGeometry);
+  const retainedLabels = new Map(
+    geometry.map((edge, index) => {
+      const settled = layout.edges[index];
+      const base = labelBases.get(edge.id) ?? settled;
+      return [
+        edge.id,
+        edge === base
+          ? base.label
+          : movedFlowLabel(
+              base.label,
+              base.badge,
+              edgePoints(base),
+              edgePoints(edge),
+            ),
+      ];
+    }),
+  );
+  const labelsToPlace = new Set(
+    geometry.flatMap((edge, index) =>
+      movingFlows.has(edge.id) &&
+      !moving.has(edge.id) &&
+      !flowIsTranslation(layout.edges[index], edge)
+        ? [edge.id]
+        : [],
+    ),
+  );
+  const labels = exactLabels
+    ? flowLabelPlacements(flowGeometryByEdge, nodes)
+    : flowLabelPlacementsDuringMove(
+        flowGeometryByEdge,
+        nodes,
+        retainedLabels,
+        labelsToPlace,
+      );
+  const edges = geometry.map((edge, index) => {
+    const settled = layout.edges[index];
+    return edge === settled && sameFlowLabel(labels[index], settled.label)
+      ? settled
+      : { ...edge, label: labels[index] };
+  });
+  return {
+    nodes,
+    edges,
+    unplaced: layout.unplaced,
+    bounds: layout.bounds,
+  };
+}
+
+const layoutCoordinateTolerance = 1e-6;
+
+function sameCoordinate(one: number, other: number): boolean {
+  return Math.abs(one - other) <= layoutCoordinateTolerance;
+}
+
+function flowIsTranslation(
+  from: CanvasEdgeGeometry,
+  to: CanvasEdgeGeometry,
+): boolean {
+  const oldPoints = edgePoints(from);
+  const newPoints = edgePoints(to);
+  const offset = {
+    x: newPoints[0].x - oldPoints[0].x,
+    y: newPoints[0].y - oldPoints[0].y,
+  };
+  return oldPoints.every((point, index) => {
+    const moved = newPoints[index];
+    return (
+      sameCoordinate(moved.x, point.x + offset.x) &&
+      sameCoordinate(moved.y, point.y + offset.y)
+    );
+  });
+}
+
+function sameFlowLabel(
+  one: FlowLabelPlacement,
+  other: FlowLabelPlacement,
+): boolean {
+  return (
+    one.name.text === other.name.text &&
+    sameCoordinate(one.name.at.x, other.name.at.x) &&
+    sameCoordinate(one.name.at.y, other.name.at.y) &&
+    one.name.anchor === other.name.anchor &&
+    one.name.width === other.name.width &&
+    one.name.textStyle === other.name.textStyle &&
+    ((one.badge === undefined && other.badge === undefined) ||
+      (one.badge !== undefined &&
+        other.badge !== undefined &&
+        sameCoordinate(one.badge.x, other.badge.x) &&
+        sameCoordinate(one.badge.y, other.badge.y)))
+  );
+}
+
+/** Whether `to` keeps the label candidate that `from` used on its old path. */
+export function flowLabelFollows(from: CanvasEdge, to: CanvasEdge): boolean {
+  return sameFlowLabel(flowWithFollowedLabel(from, to).label, to.label);
+}
+
+/** The new flow geometry with its prior label candidate moved onto it. */
+export function flowWithFollowedLabel(
+  from: CanvasEdge,
+  to: CanvasEdge,
+): CanvasEdge {
+  return {
+    ...to,
+    label: movedFlowLabel(
+      from.label,
+      from.badge,
+      edgePoints(from),
+      edgePoints(to),
+    ),
+  };
+}
+
+/**
  * One laid-out flow with its two ends resolved again, against boxes a caller
  * holds more recently than the model does. The interactive canvas passes
  * where React Flow has each end's node while a gesture is in flight, so the
@@ -195,18 +364,36 @@ export function layoutDiagram(diagram: Diagram, model: Model): CanvasLayout {
  * node, and a free end is carried by no box at all, the model linking an
  * element to a boundary by nothing but where the two are drawn.
  *
- * Only the two anchors move. The name and the badge keep the placement
- * {@link layoutDiagram} settled over the whole diagram, which is the work
- * this does not repeat: a flow costs a handful of arithmetic here rather than
- * a placement pass over every flow in the diagram. That arithmetic is the
- * layout's own, so a box back where the model has it gives the settled anchor
- * exactly and a drop moves no line.
+ * The label and badge keep their fraction and distance from the segment that
+ * carried them. This avoids the diagram-wide collision search on each frame.
  */
 export function reanchoredFlow(
   edge: CanvasEdge,
   sourceBox: NodeBox | undefined,
   targetBox: NodeBox | undefined,
+  flowOffset: Point = { x: 0, y: 0 },
 ): CanvasEdge {
+  const shifted =
+    flowOffset.x === 0 && flowOffset.y === 0
+      ? edge
+      : shiftedFlow(edge, flowOffset);
+  const anchored = reanchoredGeometry(shifted, sourceBox, targetBox);
+  return {
+    ...anchored,
+    label: movedFlowLabel(
+      shifted.label,
+      shifted.badge,
+      edgePoints(shifted),
+      edgePoints(anchored),
+    ),
+  };
+}
+
+function reanchoredGeometry(
+  edge: CanvasEdgeGeometry,
+  sourceBox: NodeBox | undefined,
+  targetBox: NodeBox | undefined,
+): CanvasEdgeGeometry {
   const source = endpointAt(sourceBox, edge.source, edge.sourceElement);
   const target = endpointAt(targetBox, edge.target, edge.targetElement);
   const sourceAnchor = anchorOf(
@@ -223,6 +410,31 @@ export function reanchoredFlow(
     target: targetAnchor.point,
     sourceSide: sourceAnchor.side ?? edge.sourceSide,
     targetSide: targetAnchor.side ?? edge.targetSide,
+  };
+}
+
+function shiftedFlow(edge: CanvasEdge, offset: Point): CanvasEdge {
+  return {
+    ...edge,
+    source:
+      edge.sourceElement === undefined
+        ? shiftedBy(edge.source, offset)
+        : edge.source,
+    target:
+      edge.targetElement === undefined
+        ? shiftedBy(edge.target, offset)
+        : edge.target,
+    waypoints: edge.waypoints.map((point) => shiftedBy(point, offset)),
+    label: {
+      name: {
+        ...edge.label.name,
+        at: shiftedBy(edge.label.name.at, offset),
+      },
+      badge:
+        edge.label.badge === undefined
+          ? undefined
+          : shiftedBy(edge.label.badge, offset),
+    },
   };
 }
 
@@ -249,13 +461,21 @@ type PlacedFlow = {
   readonly unplaced: readonly UnplacedEndpoint[];
 };
 
+const flowGeometries = new WeakMap<CanvasEdgeGeometry, FlowGeometry>();
+
 function flowGeometry(edge: CanvasEdgeGeometry): FlowGeometry {
-  return {
+  const cached = flowGeometries.get(edge);
+  if (cached !== undefined) {
+    return cached;
+  }
+  const geometry = {
     id: edge.id,
     name: edge.name,
     badge: edge.badge,
     points: edgePoints(edge),
   };
+  flowGeometries.set(edge, geometry);
+  return geometry;
 }
 
 function edgePoints(edge: CanvasEdgeGeometry): readonly [Point, ...Point[]] {

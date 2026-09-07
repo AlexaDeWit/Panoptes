@@ -32,11 +32,12 @@ export type RemovalCascade = {
   readonly threats: number;
 };
 
-/** Places and selects one element, then opens its placeholder name. */
+/** Places and selects one element, then opens its placeholder name when asked. */
 export function placeElement(
   kind: Exclude<ElementTool, 'boundary-curve'>,
   position: Point,
   size: Size,
+  openNameField = true,
 ): boolean {
   const state = modelStore.getState();
   const diagramId = firstDiagramId(state);
@@ -44,7 +45,11 @@ export function placeElement(
     return false;
   }
   const element = freshElement(kind, position, size);
-  return placed(Action.AddElement({ diagramId, element }), element.id);
+  return placed(
+    Action.AddElement({ diagramId, element }),
+    element.id,
+    openNameField,
+  );
 }
 
 /** Places a trust-boundary curve through its committed waypoints. */
@@ -213,12 +218,20 @@ function added(action: Action, elementId: ElementId): void {
   focusElement(elementId);
 }
 
-function placed(action: Action, elementId: ElementId): boolean {
+function placed(
+  action: Action,
+  elementId: ElementId,
+  openNameField = true,
+): boolean {
   if (!changedModel(action)) {
     return false;
   }
   dispatch(Action.Select({ elementIds: [elementId] }));
-  dispatch(Action.Renaming({ elementId }));
+  if (openNameField) {
+    dispatch(Action.Renaming({ elementId }));
+  } else {
+    focusElement(elementId);
+  }
   return true;
 }
 

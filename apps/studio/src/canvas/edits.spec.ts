@@ -98,6 +98,14 @@ describe('placing an element', () => {
     expect(modelStore.getState().past).toHaveLength(1);
   });
 
+  it('does not open a name field where the placed box cannot hold it', () => {
+    placeElement('actor', { x: 10, y: 20 }, { width: 100, height: 5 }, false);
+
+    const state = modelStore.getState();
+    expect(state.selection).toHaveLength(1);
+    expect(state.renaming).toBeUndefined();
+  });
+
   it('places a curve as one edit through the clicked waypoints', () => {
     placeBoundaryCurve([
       { x: 10, y: 20 },

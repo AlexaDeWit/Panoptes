@@ -46,6 +46,16 @@ describe('canvasStylesheet', () => {
     expect(mismatched.map((rule) => rule.className)).toEqual([]);
   });
 
+  it('uses the ten-unit widget label token for element and flow names', () => {
+    expect(wrappedTextStyles.label.fontSize).toBe(10);
+    expect(wrappedTextStyles.flowLabel.fontSize).toBe(
+      wrappedTextStyles.label.fontSize,
+    );
+    expect(wrappedTextStyles.note.fontSize).not.toBe(
+      wrappedTextStyles.label.fontSize,
+    );
+  });
+
   it('gives a flow name a halo, so converging names read in layers', () => {
     const block = canvasStylesheet
       .split(`.${wrappedTextStyles.flowLabel.className} {`)[1]

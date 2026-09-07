@@ -59,12 +59,12 @@ export type TextStyleRule = {
 export const wrappedTextStyles = {
   label: {
     className: canvasClassNames.label,
-    fontSize: canvasType.elementName,
+    fontSize: canvasType.widgetLabel,
   },
   note: { className: canvasClassNames.note, fontSize: canvasType.note },
   flowLabel: {
     className: canvasClassNames.flowLabel,
-    fontSize: canvasType.flowName,
+    fontSize: canvasType.widgetLabel,
   },
 } as const satisfies Record<WrappedTextStyle, TextStyleRule>;
 

@@ -87,12 +87,10 @@ export function boxesOverlap(one: Box, other: Box): boolean {
  * the centre itself where the centre lies inside.
  */
 export function boxMeetsCircle(box: Box, circle: Circle): boolean {
-  const nearest = {
-    x: Math.min(Math.max(circle.centre.x, box.minX), box.maxX),
-    y: Math.min(Math.max(circle.centre.y, box.minY), box.maxY),
-  };
+  const nearestX = Math.min(Math.max(circle.centre.x, box.minX), box.maxX);
+  const nearestY = Math.min(Math.max(circle.centre.y, box.minY), box.maxY);
   return (
-    Math.hypot(nearest.x - circle.centre.x, nearest.y - circle.centre.y) <=
+    Math.hypot(nearestX - circle.centre.x, nearestY - circle.centre.y) <=
     circle.radius
   );
 }
@@ -104,23 +102,24 @@ export function boxMeetsCircle(box: Box, circle: Circle): boolean {
  * as clear. A run of no length is the point it stands at.
  */
 export function segmentMeetsBox(segment: Segment, box: Box): boolean {
-  const span = {
-    minX: Math.min(segment.from.x, segment.to.x),
-    minY: Math.min(segment.from.y, segment.to.y),
-    maxX: Math.max(segment.from.x, segment.to.x),
-    maxY: Math.max(segment.from.y, segment.to.y),
-  };
-  if (!boxesOverlap(span, box)) {
+  if (
+    Math.min(segment.from.x, segment.to.x) > box.maxX ||
+    Math.max(segment.from.x, segment.to.x) < box.minX ||
+    Math.min(segment.from.y, segment.to.y) > box.maxY ||
+    Math.max(segment.from.y, segment.to.y) < box.minY
+  ) {
     return false;
   }
-  const normal = {
-    x: segment.from.y - segment.to.y,
-    y: segment.to.x - segment.from.x,
-  };
-  const reaches = cornersOfBox(box).map(
-    (corner) =>
-      normal.x * (corner.x - segment.from.x) +
-      normal.y * (corner.y - segment.from.y),
+  const normalX = segment.from.y - segment.to.y;
+  const normalY = segment.to.x - segment.from.x;
+  const at = (x: number, y: number): number =>
+    normalX * (x - segment.from.x) + normalY * (y - segment.from.y);
+  const topLeft = at(box.minX, box.minY);
+  const topRight = at(box.maxX, box.minY);
+  const bottomRight = at(box.maxX, box.maxY);
+  const bottomLeft = at(box.minX, box.maxY);
+  return (
+    Math.min(topLeft, topRight, bottomRight, bottomLeft) <= 0 &&
+    Math.max(topLeft, topRight, bottomRight, bottomLeft) >= 0
   );
-  return Math.min(...reaches) <= 0 && Math.max(...reaches) >= 0;
 }

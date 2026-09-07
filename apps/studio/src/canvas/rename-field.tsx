@@ -2,6 +2,7 @@ import {
   CanvasEdgeBody,
   CanvasFreeEndBody,
   CanvasNodeBody,
+  canvasType,
   freeEndNodeKind,
   nodeTextPlacement,
   type CanvasFlowEdge,
@@ -104,6 +105,7 @@ function NameField({ elementId, label, name }: NameFieldProps) {
         aria-invalid={refusal !== undefined}
         aria-label={label}
         className={styles.field}
+        style={{ fontSize: `${String(canvasType.widgetLabel)}px` }}
         onBlur={() => {
           if (!settled.current) {
             commit(false);
@@ -144,7 +146,7 @@ function RenamingNodeBody(props: NodeProps<CanvasFlowNode>) {
 
   return (
     <>
-      <CanvasNodeBody {...props} />
+      <CanvasNodeBody {...props} controlsVisible={!renaming} />
       {renaming && (
         <div
           className={`${styles.overNode} nodrag nopan`}

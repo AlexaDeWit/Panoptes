@@ -24,21 +24,22 @@
 /* The focus indicator is the app's own token, on the element the browser put
    focus on. Selection is drawn separately below, so an element that is both
    focused and selected shows both. */
-.canvas :global(.react-flow__node):focus-visible,
+.canvas :global(.react-flow__node):focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 var(--pn-focus-ring-width) var(--pn-colour-accent);
+}
+
 .canvas :global(.react-flow__edge):focus-visible {
   outline: var(--pn-focus-ring);
   outline-offset: var(--pn-focus-ring-offset);
 }
 
-/* Selection is a dashed frame around the node: a border rather than an
-   outline, so it stacks with the focus ring and survives forced colours,
-   which drop a shadow. Its weight is a step above the one the element's own
-   outline is drawn at, so the frame reads as a frame with no colour told
-   apart, in greyscale and at any zoom. */
+/* The selection frame stays inside the node's requested bounds. */
 .canvas :global(.react-flow__node.selected)::after {
   content: '';
   position: absolute;
-  inset: calc(-1 * var(--pn-space-2));
+  inset: 0;
+  box-sizing: border-box;
   border: var(--pn-cue-selection) dashed var(--pn-colour-text);
   border-radius: var(--pn-radius);
   pointer-events: none;
@@ -124,6 +125,10 @@
   border-color: var(--pn-colour-badge-ground);
 }
 
+.canvas :global(.react-flow__resize-control.handle.bottom.right) {
+  translate: -100% -100%;
+}
+
 /* The handles a flow attaches to are drawn on the element under the pointer
    and on the selected one, so a diagram at rest is not covered in dots.
    Hidden rather than removed: React Flow measures a handle's box to resolve
@@ -134,6 +139,22 @@
    boundary, which no flow ends on, shows none. */
 .canvas :global(.react-flow__handle) {
   visibility: hidden;
+}
+
+.canvas :global(.react-flow__handle-left.connectable) {
+  transform: translate(0, -50%);
+}
+
+.canvas :global(.react-flow__handle-right.connectable) {
+  transform: translate(-100%, -50%);
+}
+
+.canvas :global(.react-flow__handle-top.connectable) {
+  transform: translate(-50%, 0);
+}
+
+.canvas :global(.react-flow__handle-bottom.connectable) {
+  transform: translate(-50%, -100%);
 }
 
 /* Which element a gesture is aimed at: the one under the pointer, and the

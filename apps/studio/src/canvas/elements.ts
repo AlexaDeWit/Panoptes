@@ -1,4 +1,9 @@
-import type { CanvasLayout, CanvasNode } from '@saerskriven/canvas';
+import {
+  boxElementStrokeInsets,
+  type BoxElementKind,
+  type CanvasLayout,
+  type CanvasNode,
+} from '@saerskriven/canvas';
 import {
   generateElementId,
   type Element,
@@ -72,9 +77,7 @@ export function centredPlacement(
 
 /**
  * An element sized between opposite corners. A process takes the shorter
- * side, so the box it gives the circular glyph is square. A zero side is
- * kept drawable at one model unit rather than asking the model for a zero
- * extent it refuses.
+ * side.
  */
 export function draggedPlacement(
   kind: Exclude<ElementTool, 'boundary-curve'>,
@@ -85,16 +88,48 @@ export function draggedPlacement(
   const height = Math.max(Math.abs(to.y - from.y), 1);
   if (kind === 'process') {
     const side = Math.min(width, height);
-    return {
+    return insideStroke(kind, {
       position: {
         x: to.x < from.x ? from.x - side : from.x,
         y: to.y < from.y ? from.y - side : from.y,
       },
       size: { width: side, height: side },
-    };
+    });
   }
-  return {
+  return insideStroke(kind, {
     position: { x: Math.min(from.x, to.x), y: Math.min(from.y, to.y) },
+    size: { width, height },
+  });
+}
+
+function insideStroke(
+  kind: BoxElementKind,
+  outer: { readonly position: Point; readonly size: Size },
+): { readonly position: Point; readonly size: Size } {
+  const nominal = boxElementStrokeInsets(kind);
+  const nominalWidth = nominal.top + nominal.bottom;
+  const available =
+    kind === 'store'
+      ? outer.size.height / 2
+      : Math.min(outer.size.width, outer.size.height) / 2;
+  const strokeWidth = Math.min(nominalWidth, available);
+  const halfStroke = strokeWidth / 2;
+  const inset =
+    kind === 'store'
+      ? { top: halfStroke, right: 0, bottom: halfStroke, left: 0 }
+      : {
+          top: halfStroke,
+          right: halfStroke,
+          bottom: halfStroke,
+          left: halfStroke,
+        };
+  const width = outer.size.width - inset.left - inset.right;
+  const height = outer.size.height - inset.top - inset.bottom;
+  return {
+    position: {
+      x: outer.position.x + (outer.size.width - width) / 2,
+      y: outer.position.y + (outer.size.height - height) / 2,
+    },
     size: { width, height },
   };
 }

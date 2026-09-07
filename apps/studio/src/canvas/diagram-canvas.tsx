@@ -1,6 +1,9 @@
 import {
+  flowLabelFollows,
   gridSpacing,
+  layoutAtReactFlowNodes,
   themedCanvasStylesheet,
+  type CanvasEdge,
   type CanvasFlowEdge,
 } from '@saerskriven/canvas';
 import {
@@ -42,10 +45,12 @@ import { beginRenaming, drawnElement, removeSelected } from './edits.js';
 import { EmptyStateHint } from './empty-state-hint.js';
 import { currentLayout } from './layout.js';
 import {
+  canvasEdgesById,
   diagramGraph,
   elementIds,
   nodesById,
   withMeasurements,
+  withLiveEdges,
   type DiagramNode,
 } from './nodes.js';
 import { renamingEdgeTypes, renamingNodeTypes } from './rename-field.js';
@@ -64,6 +69,7 @@ import { ZoomCluster } from './zoom-cluster.js';
 import styles from './diagram-canvas.module.css';
 
 const deleteKeys = new Set(['Delete', 'Backspace']);
+const exactLabelDelay = 50;
 
 type ScreenPoint = { readonly x: number; readonly y: number };
 
@@ -108,6 +114,9 @@ export function DiagramCanvas() {
   const positions = useMemo(() => nodesById(layout), [layout]);
   const [onScreen, setOnScreen] = useState<DiagramNode[]>(graph.nodes);
   const [folded, setFolded] = useState<DiagramNode[]>(graph.nodes);
+  const [exactEdges, setExactEdges] = useState<CanvasFlowEdge[] | undefined>();
+  const [moving, setMoving] = useState(false);
+  const edgeBases = useRef<ReadonlyMap<string, CanvasEdge>>(new Map());
   const surface = useRef<HTMLDivElement>(null);
   const boxSelecting = useRef(false);
   const boxStart = useRef<ScreenPoint | undefined>(undefined);
@@ -121,7 +130,28 @@ export function DiagramCanvas() {
   if (folded !== graph.nodes) {
     setFolded(graph.nodes);
     setOnScreen(withMeasurements(graph.nodes, onScreen));
+    setExactEdges(undefined);
   }
+
+  useEffect(() => {
+    if (!moving) {
+      return undefined;
+    }
+    const timer = globalThis.setTimeout(() => {
+      const paused = layoutAtReactFlowNodes(
+        layout,
+        onScreen,
+        selection,
+        false,
+        edgeBases.current,
+      );
+      setExactEdges(withLiveEdges(graph.edges, paused));
+      edgeBases.current = canvasEdgesById(paused);
+    }, exactLabelDelay);
+    return () => {
+      globalThis.clearTimeout(timer);
+    };
+  }, [graph.edges, layout, moving, onScreen, selection]);
 
   useEffect(() => {
     if (revealed.current === selected) {
@@ -143,7 +173,40 @@ export function DiagramCanvas() {
   }, [positions, selected]);
 
   const onNodesChange = (changes: NodeChange<DiagramNode>[]): void => {
-    setOnScreen((current) => applyNodeChanges(changes, current));
+    const next = applyNodeChanges(changes, onScreen);
+    setOnScreen(next);
+    const active = changes.some(
+      (change) =>
+        (change.type === 'position' && change.dragging === true) ||
+        (change.type === 'dimensions' && change.resizing === true),
+    );
+    const finished = changes.some(
+      (change) =>
+        (change.type === 'position' && change.dragging === false) ||
+        (change.type === 'dimensions' && change.resizing === false),
+    );
+    if (active || finished) {
+      setMoving(active);
+    }
+    if (active || finished) {
+      const live = layoutAtReactFlowNodes(
+        layout,
+        next,
+        selection,
+        finished,
+        edgeBases.current,
+      );
+      const candidateChanged = live.edges.some((edge) => {
+        const base = edgeBases.current.get(edge.id);
+        return (
+          base === undefined || (base !== edge && !flowLabelFollows(base, edge))
+        );
+      });
+      if (finished || candidateChanged) {
+        setExactEdges(withLiveEdges(graph.edges, live));
+        edgeBases.current = canvasEdgesById(live);
+      }
+    }
     applyChanges(changes, elements, positions);
   };
 
@@ -159,6 +222,7 @@ export function DiagramCanvas() {
   };
 
   const onPointerDownCapture = (event: PointerEvent<HTMLDivElement>): void => {
+    edgeBases.current = canvasEdgesById(layout);
     if (
       mode.active === 'select' &&
       event.button === 0 &&
@@ -298,7 +362,7 @@ export function DiagramCanvas() {
         autoPanOnSelection={false}
         connectionMode={ConnectionMode.Loose}
         deleteKeyCode={null}
-        edges={graph.edges}
+        edges={exactEdges ?? graph.edges}
         edgeTypes={renamingEdgeTypes}
         elementsSelectable={mode.active === 'select'}
         isValidConnection={betweenTwoElements}

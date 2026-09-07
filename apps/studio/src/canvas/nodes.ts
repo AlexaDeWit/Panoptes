@@ -1,8 +1,10 @@
 import {
   freeEndNodes,
+  flowWithFollowedLabel,
   isBoundary,
   toReactFlowEdges,
   toReactFlowNodes,
+  type CanvasEdge,
   type CanvasFlowEdge,
   type CanvasFlowNode,
   type CanvasFreeEndNode,
@@ -86,6 +88,13 @@ export function elementIds(
   ]);
 }
 
+/** Every laid-out flow keyed by its model id. */
+export function canvasEdgesById(
+  layout: CanvasLayout,
+): ReadonlyMap<string, CanvasEdge> {
+  return new Map(layout.edges.map((edge) => [edge.id, edge]));
+}
+
 /**
  * The nodes the model gives, carrying the extents React Flow measured for
  * the ones already on screen. React Flow reads where a flow ends off a
@@ -101,5 +110,45 @@ export function withMeasurements(
   return nodes.map((node) => {
     const extent = measured.get(node.id);
     return extent === undefined ? node : { ...node, measured: extent };
+  });
+}
+
+/** Replaces only the React Flow edges whose transient geometry changed. */
+export function withLiveEdges(
+  edges: readonly CanvasFlowEdge[],
+  layout: CanvasLayout,
+): CanvasFlowEdge[] {
+  const live = canvasEdgesById(layout);
+  const boxes = new Map(
+    layout.nodes.map((node) => [
+      node.id,
+      { position: node.position, size: node.size },
+    ]),
+  );
+  return edges.map((edge) => {
+    const next = live.get(edge.id);
+    const current = edge.data?.edge;
+    if (next === undefined || next === current) {
+      return edge;
+    }
+    const shown =
+      edge.selected && current !== undefined
+        ? flowWithFollowedLabel(current, next)
+        : next;
+    return {
+      ...edge,
+      data: {
+        edge: shown,
+        boxes,
+        sourceBox:
+          shown.sourceElement === undefined
+            ? undefined
+            : boxes.get(shown.sourceElement),
+        targetBox:
+          shown.targetElement === undefined
+            ? undefined
+            : boxes.get(shown.targetElement),
+      },
+    };
   });
 }

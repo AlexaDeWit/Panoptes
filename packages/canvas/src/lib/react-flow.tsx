@@ -1,10 +1,11 @@
-import type { ElementId } from '@saerskriven/model';
+import type { ElementId, Point } from '@saerskriven/model';
 import {
   BaseEdge,
   Handle,
   NodeResizeControl,
   Position,
   useInternalNode,
+  useStore,
   type Edge,
   type EdgeProps,
   type InternalNode,
@@ -13,9 +14,11 @@ import {
 } from '@xyflow/react';
 import type { ReactElement } from 'react';
 import { ElementGlyph, FlowGlyph } from './glyphs.js';
+import { shiftedBy } from './geometry.js';
 import { handleSides, type HandleSide, type NodeBox } from './handles.js';
 import {
   isBoundary,
+  layoutDuringMove,
   reanchoredFlow,
   type CanvasBoundaryNode,
   type CanvasEdge,
@@ -57,10 +60,72 @@ export type CanvasNodeData = { readonly node: CanvasNode };
 export type CanvasFlowNode = Node<CanvasNodeData, CanvasNodeKind>;
 
 /** What a React Flow edge of a Saerskriven diagram carries: the laid-out flow. */
-export type CanvasEdgeData = { readonly edge: CanvasEdge };
+export type CanvasEdgeData = {
+  readonly edge: CanvasEdge;
+  readonly boxes?: ReadonlyMap<ElementId, NodeBox>;
+  readonly sourceBox?: NodeBox;
+  readonly targetBox?: NodeBox;
+};
 
 /** One React Flow edge of a Saerskriven diagram. */
 export type CanvasFlowEdge = Edge<CanvasEdgeData, 'flow'>;
+
+/**
+ * The layout at the positions React Flow holds during a gesture. The first
+ * moving selected node supplies the shared offset for selected flows.
+ */
+export function layoutAtReactFlowNodes(
+  layout: CanvasLayout,
+  nodes: readonly (CanvasFlowNode | CanvasFreeEndNode)[],
+  selection: readonly ElementId[],
+  exactLabels = true,
+  labelBases: ReadonlyMap<string, CanvasEdge> = new Map(),
+): CanvasLayout {
+  const original = new Map<string, CanvasNode>(
+    layout.nodes.map((node) => [node.id, node]),
+  );
+  const selected = new Set(selection);
+  const boxes = new Map<ElementId, NodeBox>();
+  let offset = { x: 0, y: 0 };
+  for (const node of nodes) {
+    const settled = original.get(node.id);
+    if (
+      settled !== undefined &&
+      selected.has(settled.id) &&
+      offset.x === 0 &&
+      offset.y === 0
+    ) {
+      offset = {
+        x: node.position.x - settled.position.x,
+        y: node.position.y - settled.position.y,
+      };
+    }
+  }
+  for (const node of nodes) {
+    const settled = original.get(node.id);
+    if (settled === undefined) {
+      continue;
+    }
+    boxes.set(settled.id, {
+      position:
+        selected.has(settled.id) && (offset.x !== 0 || offset.y !== 0)
+          ? shiftedBy(settled.position, offset)
+          : node.position,
+      size: {
+        width: node.measured?.width ?? node.width ?? settled.size.width,
+        height: node.measured?.height ?? node.height ?? settled.size.height,
+      },
+    });
+  }
+  return layoutDuringMove(
+    layout,
+    boxes,
+    selected,
+    offset,
+    exactLabels,
+    labelBases,
+  );
+}
 
 /** The React Flow node type of the anchor a flow's free end rides on. */
 export const freeEndNodeKind = 'free-end';
@@ -92,15 +157,19 @@ export type CanvasFreeEndNode = Node<CanvasFreeEndData, typeof freeEndNodeKind>;
  * boundary curve carries none: the model has no extent to set on one.
  */
 export function CanvasNodeBody({
+  controlsVisible = true,
   data,
   isConnectable,
   selected,
-}: NodeProps<CanvasFlowNode>): ReactElement {
+}: NodeProps<CanvasFlowNode> & {
+  readonly controlsVisible?: boolean;
+}): ReactElement {
   return (
     <>
       <svg
         width={svgNumber(data.node.size.width)}
         height={svgNumber(data.node.size.height)}
+        style={{ display: 'block' }}
         overflow="visible"
         aria-hidden="true"
       >
@@ -114,10 +183,14 @@ export function CanvasNodeBody({
           type="source"
           position={handlePlacement[side]}
           isConnectable={isConnectable}
+          style={controlsVisible ? undefined : { visibility: 'hidden' }}
         />
       ))}
       {selected && resizableKinds.has(data.node.kind) && (
-        <NodeResizeControl position="bottom-right" />
+        <NodeResizeControl
+          position="bottom-right"
+          style={controlsVisible ? undefined : { visibility: 'hidden' }}
+        />
       )}
     </>
   );
@@ -148,36 +221,46 @@ function BoundaryHitTarget({
 }
 
 /**
- * One flow as a React Flow edge, drawn by {@link reanchoredFlow} from the
- * geometry the layout resolved and the live box of each end's node. That is
- * what lets a line follow an element under the pointer: React Flow applies a
- * drag frame to the node list and the model learns of the move once, at the
- * drop, so in between the node is the only place the element's position is.
- * The box comes off the node React Flow holds rather than the `sourceX`,
- * `sourceY`, `targetX` and `targetY` it measures off the DOM, so nothing here
- * measures anything and the interactive and headless paths stay one.
- *
- * The subscription is per node, so a drag frame re-renders the moved node's
- * own flows and no others.
- *
- * The drawing is hidden from assistive technology, as a node's is, since
- * React Flow's edge wrapper around it carries the accessible name.
+ * One flow from the transient layout a controlled canvas supplies. During a
+ * drag it follows the live endpoint boxes and translates selected flow
+ * geometry by the shared group offset.
  */
 export function CanvasEdgeBody({
   data,
   interactionWidth,
+  selected,
   source,
   target,
 }: EdgeProps<CanvasFlowEdge>): ReactElement | null {
   const sourceNode = useInternalNode(source);
   const targetNode = useInternalNode(target);
+  const groupMovement = useStore((state) => {
+    if (!selected || data?.boxes === undefined) {
+      return '0,0';
+    }
+    for (const [id, settled] of data.boxes) {
+      const node = state.nodeLookup.get(id);
+      if (node?.selected !== true) {
+        continue;
+      }
+      const x = node.internals.positionAbsolute.x - settled.position.x;
+      const y = node.internals.positionAbsolute.y - settled.position.y;
+      if (x !== 0 || y !== 0) {
+        return `${String(x)},${String(y)}`;
+      }
+    }
+    return '0,0';
+  });
   if (data === undefined) {
     return null;
   }
+  const [x = 0, y = 0] = groupMovement.split(',').map(Number);
+  const offset = { x, y };
   const edge = reanchoredFlow(
     data.edge,
-    liveBox(data.edge.sourceElement, sourceNode),
-    liveBox(data.edge.targetElement, targetNode),
+    liveBox(data.sourceBox, sourceNode, offset),
+    liveBox(data.targetBox, targetNode, offset),
+    offset,
   );
   const path = polylinePath([edge.source, ...edge.waypoints, edge.target]);
   return (
@@ -195,10 +278,11 @@ export function CanvasEdgeBody({
 }
 
 function liveBox(
-  element: ElementId | undefined,
+  settled: NodeBox | undefined,
   node: InternalNode | undefined,
+  groupOffset: Point,
 ): NodeBox | undefined {
-  if (element === undefined || node === undefined) {
+  if (settled === undefined || node === undefined) {
     return undefined;
   }
   const { width, height } = node;
@@ -206,7 +290,10 @@ function liveBox(
     return undefined;
   }
   return {
-    position: node.internals.positionAbsolute,
+    position:
+      node.selected && (groupOffset.x !== 0 || groupOffset.y !== 0)
+        ? shiftedBy(settled.position, groupOffset)
+        : node.internals.positionAbsolute,
     size: { width, height },
   };
 }
@@ -281,6 +368,12 @@ export function flowEndNodeId(flow: ElementId, side: FlowEndSide): string {
  * an edge runs matches the drawn line.
  */
 export function toReactFlowEdges(layout: CanvasLayout): CanvasFlowEdge[] {
+  const boxes = new Map<ElementId, NodeBox>(
+    layout.nodes.map((node) => [
+      node.id,
+      { position: node.position, size: node.size },
+    ]),
+  );
   return layout.edges.map((edge) => ({
     id: edge.id,
     type: 'flow',
@@ -288,7 +381,18 @@ export function toReactFlowEdges(layout: CanvasLayout): CanvasFlowEdge[] {
     target: edge.targetElement ?? flowEndNodeId(edge.id, 'target'),
     sourceHandle: edge.sourceSide,
     targetHandle: edge.targetSide,
-    data: { edge },
+    data: {
+      edge,
+      boxes,
+      sourceBox:
+        edge.sourceElement === undefined
+          ? undefined
+          : boxes.get(edge.sourceElement),
+      targetBox:
+        edge.targetElement === undefined
+          ? undefined
+          : boxes.get(edge.targetElement),
+    },
     interactionWidth: interactionWidths.flow,
   }));
 }

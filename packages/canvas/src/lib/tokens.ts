@@ -131,9 +131,8 @@ export const uiType = {
  */
 export const canvasType = {
   family: "'Helvetica Neue', Helvetica, Arial, sans-serif",
-  elementName: 12,
+  widgetLabel: 10,
   note: 12,
-  flowName: 11,
   badgeCount: 11,
   secondaryBadgeCount: 9,
   badgeMark: 9,

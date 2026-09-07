@@ -12,6 +12,7 @@ export type Box = {
 export type Point = { readonly x: number; readonly y: number };
 
 const decimals = 3;
+const coordinateTolerance = 0.01;
 
 const rounded = (point: Point): Point => ({
   x: Number(point.x.toFixed(decimals)),
@@ -36,6 +37,46 @@ export const boxOf = async (node: Locator): Promise<Box> => {
     height: numberIn(style, /height:\s*([\d.]+)px/u),
   };
 };
+
+/** The screen-space box of SVG shape ink, including its stroke. */
+export const inkBoxOf = async (shapes: Locator): Promise<Box> =>
+  shapes.evaluateAll((elements) => {
+    const boxes = elements.map((element) => {
+      if (!(element instanceof SVGGraphicsElement)) {
+        throw new Error('The locator found a non-SVG shape.');
+      }
+      const drawn = element.getBoundingClientRect();
+      const stroke = Number.parseFloat(getComputedStyle(element).strokeWidth);
+      const matrix = element.getScreenCTM();
+      const scaleX = Math.hypot(matrix?.a ?? 1, matrix?.b ?? 0);
+      const scaleY = Math.hypot(matrix?.c ?? 0, matrix?.d ?? 1);
+      const horizontalLine =
+        element instanceof SVGLineElement &&
+        element.x1.baseVal.value !== element.x2.baseVal.value;
+      const verticalLine =
+        element instanceof SVGLineElement &&
+        element.y1.baseVal.value !== element.y2.baseVal.value;
+      const padX =
+        verticalLine || !(element instanceof SVGLineElement)
+          ? (stroke * scaleX) / 2
+          : 0;
+      const padY =
+        horizontalLine || !(element instanceof SVGLineElement)
+          ? (stroke * scaleY) / 2
+          : 0;
+      return {
+        left: drawn.left - padX,
+        top: drawn.top - padY,
+        right: drawn.right + padX,
+        bottom: drawn.bottom + padY,
+      };
+    });
+    const left = Math.min(...boxes.map((box) => box.left));
+    const top = Math.min(...boxes.map((box) => box.top));
+    const right = Math.max(...boxes.map((box) => box.right));
+    const bottom = Math.max(...boxes.map((box) => box.bottom));
+    return { x: left, y: top, width: right - left, height: bottom - top };
+  });
 
 /** Where a flow attached to that box ends: one of the four side midpoints. */
 export const handlesOf = (box: Box): Point[] =>
@@ -72,7 +113,11 @@ const turnsOf = (drawn: string): Point[] =>
 /** Which of a line's turns sit on one of the handles offered. */
 export const endsOn = (drawn: string, handles: readonly Point[]): Point[] =>
   turnsOf(drawn).filter((turn) =>
-    handles.some((handle) => handle.x === turn.x && handle.y === turn.y),
+    handles.some(
+      (handle) =>
+        Math.abs(handle.x - turn.x) <= coordinateTolerance &&
+        Math.abs(handle.y - turn.y) <= coordinateTolerance,
+    ),
   );
 
 /**

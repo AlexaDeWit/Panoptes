@@ -354,36 +354,16 @@ does not. It is not draggable, not selectable, not focusable, and hidden from
 assistive technology: it is a place for an edge to end rather than a thing on
 the diagram.
 
-`CanvasEdgeBody` draws a flow from the geometry the layout resolved, with its
-two ends anchored again to where React Flow has the nodes they attach to.
-That is what lets a line follow an element under the pointer: React Flow
-applies a drag frame to the node list and a canvas that keeps one undo entry
-per gesture tells the store once, at the drop, so between the two the node's
-live position is the only place the element's position is. The re-anchoring
-is `reanchoredFlow`, and the edge reads a live node through React Flow's
-`useInternalNode`, so a frame re-renders the moved node's own flows and no
-others.
+`layoutDuringMove` applies React Flow's local node boxes and the group offset
+to a settled layout. It moves selected flow waypoints and free ends, resolves
+attached endpoints, and places labels for the flows that changed. The
+interactive canvas calls it on each drag frame while retaining static label
+placements. A pause rechecks changed labels from their last candidates. The
+finished drag runs the full label search.
 
-Issue #154 offered two shapes for that and this is the first of them, the
-in-flight line drawn from where the ends are now, rather than the second,
-a whole layout recomputed per frame. Two reasons. A layout settles every flow
-label over the whole diagram, so a frame would cost work proportional to the
-diagram rather than to the one node moving, which is the number issue #181
-puts a floor under. And the anchors are cheap enough to settle exactly:
-`reanchoredFlow` is `layoutDiagram`'s own arithmetic over the node's live box,
-including which of the four handles each end takes, rather than the `sourceX`,
-`sourceY`, `targetX` and `targetY` React Flow measures off the DOM. Nothing is
-measured, the interactive and headless paths stay one, and a node back where
-the model has it gives the settled anchor exactly, so the drop moves no line.
-
-What the first shape gives up is the label and the badge, which keep the
-placement the layout settled over the whole diagram and so stay where they
-were until the drop settles them again. Nothing here reads what kind of
-element a box belongs to, so a flow attached to a trust boundary follows that
-boundary as it follows any other node. A free end is carried by nothing: the
-model links an element to a boundary by where the two are drawn and by
-nothing else, so a boundary dragged around a free end, or around any element,
-moves neither.
+Nothing here reads what kind of element a box belongs to. A flow attached to
+a trust boundary follows it as it follows any other node. A free end is
+carried by no box.
 
 A canvas mounting React Flow also loads React Flow's own stylesheet,
 `@xyflow/react/dist/style.css`, beside `canvasStylesheet`. That is not a

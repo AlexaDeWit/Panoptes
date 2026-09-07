@@ -1,4 +1,8 @@
-import type { CanvasFlowEdge, CanvasLayout } from '@saerskriven/canvas';
+import {
+  canvasType,
+  type CanvasFlowEdge,
+  type CanvasLayout,
+} from '@saerskriven/canvas';
 import type { Point, Size } from '@saerskriven/model';
 import type { ReactFlowInstance } from '@xyflow/react';
 import {
@@ -32,6 +36,8 @@ import {
 const noPoints: readonly Point[] = [];
 
 type BoxTool = Exclude<ElementTool, 'boundary-curve'>;
+
+const nodeNameFieldExtent = canvasType.widgetLabel * 1.2 + 2;
 
 type PlacementView = Pick<
   ReactFlowInstance<DiagramNode, CanvasFlowEdge>,
@@ -375,7 +381,12 @@ export function usePlacement(
     event.preventDefault();
     event.stopPropagation();
     const { geometry } = started;
-    if (placeElement(started.tool, geometry.position, geometry.size)) {
+    const fieldFits =
+      geometry.size.width >= nodeNameFieldExtent &&
+      geometry.size.height >= nodeNameFieldExtent;
+    if (
+      placeElement(started.tool, geometry.position, geometry.size, fieldFits)
+    ) {
       finishPlacement();
     }
   };
