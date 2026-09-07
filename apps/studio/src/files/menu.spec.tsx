@@ -26,6 +26,7 @@ import {
   nativeSource,
   newNote,
   newProcess,
+  processElement,
   sampleModel,
 } from '../store/store.fixtures.js';
 import { SaveOutcome } from './bridge.js';
@@ -153,10 +154,10 @@ describe('what the menu offers', () => {
     await openMenu(user);
 
     const items = screen.getAllByRole('menuitem');
-    expect(items).toHaveLength(11);
+    expect(items).toHaveLength(12);
     expect(
       items.filter((entry) => entry.hasAttribute('aria-keyshortcuts')),
-    ).toHaveLength(8);
+    ).toHaveLength(9);
     expect(
       screen.getAllByRole('group').map((group) => group.textContent),
     ).toContain(
@@ -330,6 +331,7 @@ describe('what the studio says about the file', () => {
     expect(
       item('Rename the selection').getAttribute('data-disabled'),
     ).not.toBeNull();
+    expect(item('Focus threats').getAttribute('data-disabled')).not.toBeNull();
     expect(
       item('Delete the selection').getAttribute('data-disabled'),
     ).not.toBeNull();
@@ -341,9 +343,16 @@ describe('what the studio says about the file', () => {
     expect(
       item('Rename the selection').getAttribute('data-disabled'),
     ).toBeNull();
+    expect(item('Focus threats').getAttribute('data-disabled')).toBeNull();
     expect(
       item('Delete the selection').getAttribute('data-disabled'),
     ).toBeNull();
+
+    act(() => {
+      dispatch(Action.Select({ elementIds: [actorElement, processElement] }));
+    });
+
+    expect(item('Focus threats').getAttribute('data-disabled')).not.toBeNull();
   });
 
   it('offers no rename over a text note, which draws prose rather than a name', async () => {
@@ -360,6 +369,7 @@ describe('what the studio says about the file', () => {
     expect(
       item('Rename the selection').getAttribute('data-disabled'),
     ).not.toBeNull();
+    expect(item('Focus threats').getAttribute('data-disabled')).toBeNull();
     expect(
       item('Delete the selection').getAttribute('data-disabled'),
     ).toBeNull();
@@ -654,7 +664,7 @@ describe('saving', () => {
     await choose(user, 'Save as');
 
     await screen.findByRole('menuitem', { name: 'Save as Saerskriven YAML' });
-    expect(screen.getAllByRole('menuitem')).toHaveLength(12);
+    expect(screen.getAllByRole('menuitem')).toHaveLength(13);
     expect(item('Save as Saerskriven YAML')).toBeDefined();
     expect(item('Save as Threat Dragon JSON')).toBeDefined();
     expect(item('Export')).toBeDefined();

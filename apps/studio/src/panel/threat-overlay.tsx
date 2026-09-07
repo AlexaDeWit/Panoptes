@@ -19,15 +19,13 @@ type Held = {
  * so the diagram has the whole of the canvas and the panel is the one place a
  * threat is added from.
  *
- * The panel never takes focus because it appeared. Enter on the selected
- * element asks for it ([the canvas](../canvas/README.md)), through the
- * channel beside this file, and lands on the panel's first control. Escape
- * inside the panel closes it and puts focus back on the element, which leaves
- * the element selected, so a second Escape is the studio's own and clears the
+ * The panel never takes focus because it appeared. The Focus threats command
+ * asks for it through the channel beside this file and lands on the panel's
+ * first control. Escape inside the panel closes it and puts focus back on the
+ * element, which leaves the element selected. A second Escape clears the
  * selection. What is closed is the element, not the panel: the element stays
  * closed while it is the selection, whatever is then moved, resized or undone
- * on it, and the selection moving is what opens the panel again, as does
- * asking for it with Enter.
+ * on it. The selection moving or the command running opens it again.
  *
  * The drafts the model refused are held here rather than in the panel,
  * because the panel is unmounted by every one of those moves and a draft has

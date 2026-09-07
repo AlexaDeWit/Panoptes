@@ -4,7 +4,6 @@ import { Action } from '../store/actions.js';
 import {
   elementById,
   firstDiagramId,
-  nameEditable,
   renameable,
   selectedElement,
 } from '../store/selectors.js';
@@ -142,7 +141,7 @@ export function renameSelected(): void {
   const state = modelStore.getState();
   const elementId = selectedElement(state);
   if (elementId !== undefined && renameable(state)) {
-    dispatch(Action.InlineEditing({ editor: { kind: 'name', elementId } }));
+    beginEditingText(elementId);
   }
 }
 
@@ -153,15 +152,18 @@ export function selectAll(): void {
   dispatch(Action.Select({ elementIds: selected }));
 }
 
-/**
- * Opens `elementId`'s name in a field, which is what a double-click does. It
- * reads the same rule the control offering the command reads, so a gesture
- * and a menu item agree about what has a name to edit.
- */
-export function beginRenaming(elementId: ElementId): void {
-  if (nameEditable(modelStore.getState(), elementId)) {
-    dispatch(Action.InlineEditing({ editor: { kind: 'name', elementId } }));
+/** Opens the text drawn on one canvas element for editing. */
+export function beginEditingText(elementId: ElementId): boolean {
+  const element = elementById(modelStore.getState(), elementId);
+  if (element === undefined) {
+    return false;
   }
+  dispatch(
+    Action.InlineEditing({
+      editor: { kind: element.kind === 'text' ? 'note' : 'name', elementId },
+    }),
+  );
+  return true;
 }
 
 /**

@@ -16,12 +16,8 @@ export function panelFocusHandler(handler: () => boolean): () => void {
 
 /**
  * Moves focus into the threat panel, opening it again where Escape closed it,
- * and reports whether there was a panel to take it. It is a channel of its
- * own rather than a field of the model store, the way the canvas announces
- * ([the canvas](../canvas/announcements.ts)): where focus is is not the model
- * and must not ride the undo stacks. A caller left with `false` still holds
- * the press, so Enter on an element the panel is not open for does what it
- * did before.
+ * and reports whether there was a panel to take it. The registered command
+ * calls this channel because focus does not belong in the model store.
  */
 export function focusThreatPanel(): boolean {
   return take?.() ?? false;
