@@ -67,6 +67,7 @@ const bodyMarkup = (
   node: CanvasNode,
   selected = false,
   isConnectable = false,
+  controlsVisible = true,
 ): string =>
   renderToStaticMarkup(
     <ReactFlowProvider>
@@ -74,6 +75,7 @@ const bodyMarkup = (
         {...nodeProps(node)}
         selected={selected}
         isConnectable={isConnectable}
+        controlsVisible={controlsVisible}
       />
     </ReactFlowProvider>,
   );
@@ -147,6 +149,11 @@ describe('CanvasNodeBody', () => {
     expect(bodyMarkup(nodeNamed('el-client'), true)).toContain(
       'react-flow__resize-control',
     );
+  });
+
+  it('hides connection and resize controls while a name field is open', () => {
+    const markup = bodyMarkup(nodeNamed('el-client'), true, true, false);
+    expect(markup.match(/visibility:hidden/gu)).toHaveLength(5);
   });
 
   it('offers none while the element is not selected', () => {
@@ -224,6 +231,16 @@ describe('CanvasEdgeBody', () => {
     expect(edgeMarkup(data, nodes, true)).toContain(
       'd="M 200 100 L 280 125 L 280 120"',
     );
+  });
+
+  it('keeps a selected flow still before its group moves', () => {
+    const nodes = toReactFlowNodes(layout).map((node) => ({
+      ...node,
+      selected: node.id === elementId('el-note'),
+    }));
+    const data = toReactFlowEdges(layout)[0].data;
+
+    expect(edgeMarkup(data, nodes, true)).toContain(settled);
   });
 
   it('draws nothing where React Flow hands it an edge with no data', () => {
@@ -344,6 +361,16 @@ describe('layoutAtReactFlowNodes', () => {
       x: nodeNamed('el-api').position.x + offset.x,
       y: nodeNamed('el-api').position.y + offset.y,
     });
+  });
+
+  it('ignores React Flow anchors that name no diagram node', () => {
+    expect(
+      layoutAtReactFlowNodes(
+        layout,
+        [...toReactFlowNodes(layout), ...freeEndNodes(layout)],
+        [],
+      ).edges,
+    ).toHaveLength(layout.edges.length);
   });
 });
 

@@ -172,6 +172,15 @@ describe('DiagramCanvas', () => {
     ]);
   });
 
+  it('settles a keyboard move through the transient edge path', () => {
+    opened([readerElement]);
+    render(<DiagramCanvas />);
+
+    fireEvent.keyDown(reader(), { key: 'ArrowRight' });
+
+    expect(modelStore.getState().past).toHaveLength(1);
+  });
+
   it('clears a selected flow when the pointer lands on nothing', () => {
     opened([requestFlow]);
     render(<DiagramCanvas />);
