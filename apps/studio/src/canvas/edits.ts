@@ -48,7 +48,7 @@ export function placeBoundaryCurve(waypoints: readonly Point[]): boolean {
     return false;
   }
   const element = freshBoundaryCurve(waypoints);
-  return placed(Action.AddElement({ diagramId, element }), element.id);
+  return placed(Action.AddElement({ diagramId, element }), element.id, 'name');
 }
 
 /**
@@ -218,7 +218,7 @@ function added(action: Action, elementId: ElementId): void {
 function placed(
   action: Action,
   elementId: ElementId,
-  editor: 'name' | 'note' | undefined = 'name',
+  editor: 'name' | 'note' | undefined,
 ): boolean {
   if (!changedModel(action)) {
     return false;
