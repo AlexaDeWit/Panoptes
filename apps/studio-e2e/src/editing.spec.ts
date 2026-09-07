@@ -81,10 +81,10 @@ test('each element tool key selects its mode and Enter places it', async ({
     await page.keyboard.press(chord);
     await page.keyboard.press('Enter');
     await expect(nodeNamed(page, named)).toHaveCount(1);
-    await expect(
-      page.getByRole('textbox', { name: /^Name of New/u }),
-    ).toBeFocused();
-    await page.keyboard.press('Enter');
+    const nameField = page.getByRole('textbox', { name: /^Name of New/u });
+    await expect(nameField).toBeFocused();
+    await nameField.press('Enter');
+    await expect(nameField).toHaveCount(0);
   }
   await expect(elementNodes(page)).toHaveCount(7);
 });
