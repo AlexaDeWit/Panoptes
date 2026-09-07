@@ -69,8 +69,7 @@ test('every item is reached, run and left by the keyboard alone', async ({
   await placeByClick(page, 'Actor', /^New actor, actor/u);
   await page.keyboard.press('Enter');
 
-  await menuButton(page).focus();
-  await page.keyboard.press('Enter');
+  await menuButton(page).press('Enter');
   await expect(menuItem(page, 'Open a model')).toBeFocused();
 
   for (const name of ['Save', 'Save as', 'Export', 'Close the file', 'Undo']) {
