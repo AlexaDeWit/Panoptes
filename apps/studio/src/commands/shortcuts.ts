@@ -207,6 +207,23 @@ export function spellShortcuts(
   return shortcuts.map((chord) => spellChord(chord, platform)).join(' or ');
 }
 
+/** The spoken description of shortcut entries and their contexts. */
+export function describeShortcutEntries(
+  entries: readonly {
+    readonly label: string;
+    readonly shortcuts: readonly Chord[];
+    readonly when: string;
+  }[],
+  platform: Platform,
+): string {
+  return entries
+    .map(
+      (entry) =>
+        `${entry.label}: ${spellShortcuts(entry.shortcuts, platform)}. ${entry.when}.`,
+    )
+    .join(' ');
+}
+
 /**
  * The same chords as `aria-keyshortcuts` declares them: modifiers under the
  * names a `KeyboardEvent` gives them, in the order the attribute asks for,

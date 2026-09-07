@@ -9,11 +9,11 @@ import { dispatch, modelStore } from '../store/store.js';
 import {
   bare,
   character,
+  describeShortcutEntries,
   escapeChord,
   firedBy,
   mod,
   modShift,
-  spellShortcuts,
   type Chord,
   type ChordEvent,
   type Platform,
@@ -407,12 +407,10 @@ export function describeCommandShortcuts(
   ids: readonly CommandId[],
   platform: Platform,
 ): string {
-  return ids
-    .map((id) => {
-      const entry = table[id];
-      return `${entry.label}: ${spellShortcuts(entry.shortcuts, platform)}. ${entry.when}.`;
-    })
-    .join(' ');
+  return describeShortcutEntries(
+    ids.map((id) => table[id]),
+    platform,
+  );
 }
 
 /** The SVG command bound to one diagram in a model of one or several. */

@@ -5,12 +5,12 @@ import {
 } from '@saerskriven/canvas';
 import {
   bare,
+  describeShortcutEntries,
   enterChord,
   escapeChord,
   firedBy,
   mod,
   shift,
-  spellShortcuts,
   type Chord,
   type ChordEvent,
   type Platform,
@@ -204,10 +204,8 @@ export function describeContextualShortcuts(
   ids: readonly ContextualShortcutId[],
   platform: Platform,
 ): string {
-  return ids
-    .map((id) => {
-      const entry = table[id];
-      return `${entry.label}: ${spellShortcuts(entry.shortcuts, platform)}. ${entry.when}.`;
-    })
-    .join(' ');
+  return describeShortcutEntries(
+    ids.map((id) => table[id]),
+    platform,
+  );
 }
