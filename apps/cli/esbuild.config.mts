@@ -5,8 +5,12 @@ import {
   mkdirSync,
   readdirSync,
 } from 'node:fs';
-import { createRequire } from 'node:module';
 import { basename, dirname, join } from 'node:path';
+import {
+  fontsVariable,
+  typstFontFiles,
+  typstWasmModule,
+} from '@saerskriven/render/build-assets';
 import { versionDefine } from '../../workspace-version.mts';
 
 // yaml's CommonJS dist calls require() at run time, which in an ESM bundle
@@ -17,28 +21,16 @@ const nodeRequireBanner = [
   'const require = createNodeRequire(import.meta.url);',
 ].join('\n');
 
-const resolve = createRequire(import.meta.url);
-
 // Both dev shells export this, pointing at the truetype directory of nixpkgs'
 // liberation_ttf. The fonts are a toolchain input rather than something the
 // tree carries, so their provenance is the nixpkgs revision flake.lock pins
 // (CODING.md, Dependencies and versions).
-const fontsVariable = 'SAERSKRIVEN_FONTS_DIR';
-
 // Named one at a time rather than copied wholesale: liberation_ttf ships
 // twelve faces, src/pdf.ts loads every .ttf it finds beside the bundle, and a
 // face that arrives there moves the PDF the render golden fixes. Mono is
 // carried in the regular face alone, so strong and emphasised inline code is
 // synthesised by the typesetter rather than drawn: the other three faces are
 // 860 KB, which no register in the document asks for yet.
-const fontFiles: readonly string[] = [
-  'LiberationMono-Regular.ttf',
-  'LiberationSans-Bold.ttf',
-  'LiberationSans-BoldItalic.ttf',
-  'LiberationSans-Italic.ttf',
-  'LiberationSans-Regular.ttf',
-];
-
 // The OFL asks that the licence travel with the fonts. liberation_ttf ships
 // it as share/doc/liberation-fonts-<version>/LICENSE, which no fixed path can
 // name, so it is looked up beside the fonts and copied under the name the
@@ -46,19 +38,6 @@ const fontFiles: readonly string[] = [
 const licenceFile = 'LICENSE';
 
 const licenceName = 'LICENSE.liberation-fonts.txt';
-
-// Resolved from @saerskriven/render, which declares the compiler, rather than
-// from this app, which no longer does (CODING.md, Dependencies and versions;
-// issue #210). The file staged beside the bundle is then the module of the
-// compiler build that render's pdf subpath inlines, which is the pairing
-// initSync needs.
-const fromRender = createRequire(
-  resolve.resolve('@saerskriven/render/package.json'),
-);
-
-const wasmModule = fromRender.resolve(
-  '@myriaddreamin/typst-ts-web-compiler/wasm',
-);
 
 type RuntimeAsset = { readonly from: string; readonly to: string };
 
@@ -115,9 +94,9 @@ const licenceIn = (fonts: string): string => {
 const runtimeAssets = (): readonly RuntimeAsset[] => {
   const fonts = fontsDirectory();
   return [
-    ...fontFiles.map((name) => ({ from: fontIn(fonts, name), to: name })),
+    ...typstFontFiles.map((name) => ({ from: fontIn(fonts, name), to: name })),
     { from: licenceIn(fonts), to: licenceName },
-    { from: wasmModule, to: basename(wasmModule) },
+    { from: typstWasmModule, to: basename(typstWasmModule) },
   ];
 };
 

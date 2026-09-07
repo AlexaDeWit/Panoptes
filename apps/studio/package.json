@@ -2,11 +2,16 @@
   "name": "@saerskriven/studio",
   "version": "0.0.1",
   "private": true,
+  "//": [
+    "build repeats the Vite plugin's inferred inputs because a leaf override replaces them, then adds the three environment inputs below.",
+    "The studio emits external fonts and Pages metadata, so changes to their paths must invalidate the cached build."
+  ],
   "dependencies": {
     "@radix-ui/react-icons": "catalog:",
     "@saerskriven/canvas": "workspace:*",
     "@saerskriven/formats": "workspace:*",
     "@saerskriven/model": "workspace:*",
+    "@saerskriven/render": "workspace:*",
     "@xyflow/react": "catalog:",
     "effect": "catalog:",
     "radix-ui": "catalog:",
@@ -27,6 +32,26 @@
       "layer:app"
     ],
     "targets": {
+      "build": {
+        "inputs": [
+          "production",
+          "^production",
+          {
+            "env": "SAERSKRIVEN_FONTS_DIR"
+          },
+          {
+            "env": "PAGES_BASE_PATH"
+          },
+          {
+            "env": "PAGES_SITE_URL"
+          },
+          {
+            "externalDependencies": [
+              "vite"
+            ]
+          }
+        ]
+      },
       "boundaries": {},
       "lint": {}
     }

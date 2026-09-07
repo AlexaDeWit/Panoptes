@@ -115,15 +115,21 @@
         "default",
         "^production",
         "^{projectRoot}/tsconfig*.json",
+        "{workspaceRoot}/scripts/preview-studio-pages.sh",
         {
           "json": "{workspaceRoot}/tsconfig.json",
           "fields": ["compilerOptions", "extends", "files", "include"]
         },
         {
-          "externalDependencies": ["@playwright/test"]
+          "externalDependencies": ["@playwright/test", "vite"]
         },
         {
           "env": "PLAYWRIGHT_DRIVER_VERSION"
+        },
+        // The Pages export compiles with fonts outside the repository. Their
+        // store path changes when the pinned nixpkgs input changes.
+        {
+          "env": "SAERSKRIVEN_FONTS_DIR"
         }
       ]
     },

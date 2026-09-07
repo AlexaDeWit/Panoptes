@@ -16,6 +16,11 @@
       "import": "./src/pdf.ts",
       "default": "./src/pdf.ts"
     },
+    "./build-assets": {
+      "types": "./src/build-assets.ts",
+      "import": "./src/build-assets.ts",
+      "default": "./src/build-assets.ts"
+    },
     "./package.json": "./package.json"
   },
   "dependencies": {

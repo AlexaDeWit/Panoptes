@@ -1,5 +1,6 @@
 import { saerskrivenYamlCodec } from '@saerskriven/formats';
 import { act, renderHook, waitFor } from '@testing-library/react';
+import { Either } from 'effect';
 import { Action } from '../store/actions.js';
 import { initialState, placeholderModel } from '../store/state.js';
 import { dispatch, modelStore } from '../store/store.js';
@@ -8,13 +9,14 @@ import {
   newProcess,
   sampleModel,
 } from '../store/store.fixtures.js';
+import type { PdfExport } from './export-commands.js';
 import { useFileSession } from './file-commands.js';
 import { chosenFile, specBridge, type SpecBridge } from './files.fixtures.js';
 
 const nativeText = saerskrivenYamlCodec.write(sampleModel).output;
 
-const session = (bridge: SpecBridge) =>
-  renderHook(() => useFileSession(bridge)).result;
+const session = (bridge: SpecBridge, pdf?: PdfExport) =>
+  renderHook(() => useFileSession(bridge, pdf)).result;
 
 const edit = (): void => {
   act(() => {
@@ -41,13 +43,39 @@ afterEach(() => {
 });
 
 describe('useFileSession', () => {
-  it('holds one set of commands, so a control and a key press run the same four', () => {
+  it('holds one command set for controls and key presses', () => {
     const result = session(specBridge());
     const first = result.current.commands;
 
     edit();
 
     expect(result.current.commands).toBe(first);
+  });
+
+  it('routes every registered export through the export session', async () => {
+    const bridge = specBridge();
+    const result = session(bridge, {
+      assets: () =>
+        Promise.resolve(Either.right({ wasm: new Uint8Array(), fonts: [] })),
+      compile: () => Promise.resolve(Either.right(new Uint8Array([37, 80]))),
+    });
+
+    act(() => {
+      result.current.commands.exportDiagram(mainDiagram);
+      result.current.commands.exportRegister();
+      result.current.commands.exportTypst();
+      result.current.commands.exportPdf();
+    });
+
+    await waitFor(() => {
+      expect(bridge.writes).toHaveLength(4);
+    });
+    expect(bridge.writes.map((write) => write.name)).toEqual([
+      'Untitled.svg',
+      'Untitled.md',
+      'Untitled.typ',
+      'Untitled.pdf',
+    ]);
   });
 
   it('reads the model and the file as the command runs, not as it was built', async () => {

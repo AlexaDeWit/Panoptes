@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { mkdtempSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -22,6 +23,8 @@ const saerskriven = join(repositoryRoot, 'threat-modelling/saerskriven.yaml');
 
 const golden = (name: string): string =>
   readFileSync(join(repositoryRoot, 'test-data/render', name), 'utf8');
+
+const pdfDigest = golden('ecluse.snapshot.pdf.sha256').trim();
 
 const options = (given: Partial<RenderOptions>): RenderOptions => ({
   format: 'svg',
@@ -188,6 +191,7 @@ describe('render', () => {
       const pdf = run.bytes();
       expect(pdf.subarray(0, 5).toString('latin1')).toBe('%PDF-');
       expect(pageCount(pdf)).toBe(14);
+      expect(createHash('sha256').update(pdf).digest('hex')).toBe(pdfDigest);
     },
     compileTimeout,
   );

@@ -195,20 +195,28 @@ use for.
 is the Typst WebAssembly module, and `fonts` are the faces, added to the
 compiler in the order they are listed. Nothing is read from a file and
 nothing from the host's font directories. `apps/cli` reads them beside its
-bundle; a browser can hand over the same bytes, so what it compiles and what
-the CLI writes can be one document.
+bundle. `apps/studio` fetches the same build-time assets before it calls this
+subpath.
+
+The Node-only `build-assets` subpath names that compiler module and the five
+font files in compiler order. The CLI uses both. The studio imports the
+module through Vite's asset URL handling and uses the shared font list.
 
 The compiler is given no access model, so it has no filesystem and no package
 registry. That is the other half of what `renderTypst` promises: the source
 references nothing outside itself, so a compiler that can reach nothing is
 enough to typeset it.
 
-The WebAssembly module starts once per process, and the guard is keyed on the
-identity of the `wasm` array. A caller handing back the array it handed
-before starts nothing further; one reading a fresh copy each time misses the
-guard and reaches an initialisation that returns without looking at the
-bytes. Either way the first module a process starts is the one it keeps, so a
-second cannot replace it.
+The compiler's JavaScript loads on the first call to `compilePdf`. A web build
+can keep it in a separate chunk, while the CLI's single-file build inlines it.
+
+The WebAssembly module starts asynchronously once per process. This avoids a
+browser's size bound for synchronous compilation on the main thread. The
+guard records the identity of each `wasm` array, and every call waits on the
+first start. A second module cannot replace it.
+
+Each call frees its compiler after compilation. A long-lived browser can
+export repeatedly without retaining the compiler or its loaded fonts.
 
 A refusal is a value rather than a throw, and a tagged one this package owns
 ([`CODING.md`](../../CODING.md), Error handling). `PdfFailure.Refused`

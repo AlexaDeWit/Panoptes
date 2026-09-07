@@ -24,6 +24,7 @@ import {
   nameOf,
   openedBy,
   proposedName,
+  proposedExportName,
   reportLines,
   saveTarget,
   saveTypes,
@@ -211,6 +212,13 @@ describe('naming', () => {
 
   it('names a file that would otherwise be all extension', () => {
     expect(proposedName('.yaml', 'saerskriven-yaml')).toBe('threat-model.yaml');
+  });
+
+  it('derives an export name from the open file, or from Untitled', () => {
+    expect(proposedExportName(openedForeign, '.svg')).toBe('model.svg');
+    expect(proposedExportName(FileLifecycle.NoFile(), '.pdf')).toBe(
+      'Untitled.pdf',
+    );
   });
 
   it('offers every registered format, the one the file is in first', () => {

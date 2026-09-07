@@ -47,20 +47,22 @@ the writing task in the reader's own manifest
 | `ecluse.model.json`                                 | `packages/model`   | `packages/formats`, `packages/canvas`, `packages/render`, `apps/studio-e2e` |
 | `saerskriven.model.json`                            | `packages/formats` | `packages/canvas`, `packages/render`                                        |
 | `saerskriven/ecluse.yaml`                           | `packages/formats` | `apps/cli`, `apps/studio-e2e`                                               |
-| `render/ecluse.register.snapshot.md`                | `packages/render`  | `apps/cli`                                                                  |
-| `render/ecluse.snapshot.svg`                        | `packages/render`  | `apps/cli`                                                                  |
+| `render/ecluse.register.snapshot.md`                | `packages/render`  | `apps/cli`, `apps/studio-e2e`                                               |
+| `render/ecluse.snapshot.svg`                        | `packages/render`  | `apps/cli`, `apps/studio-e2e`                                               |
 | `render/saerskriven-read-and-render.snapshot.svg`   | `packages/render`  | `apps/cli`                                                                  |
 | `render/saerskriven-agent-and-desktop.snapshot.svg` | `packages/render`  | `apps/cli`                                                                  |
 | `render/saerskriven.register.snapshot.md`           | `packages/render`  | no other suite                                                              |
 | `render/every-glyph.snapshot.svg`                   | `packages/render`  | no other suite                                                              |
-| `render/ecluse.snapshot.typ`                        | `packages/render`  | no other suite                                                              |
+| `render/ecluse.snapshot.typ`                        | `packages/render`  | `apps/studio-e2e`                                                           |
 
 Every other file here is input nothing writes: `ecluse.json`,
 `every-glyph.model.json`, the Threat Dragon corpus with its schema and its
-labels, and the adversarial payloads.
+labels, the adversarial payloads, and
+`render/ecluse.snapshot.pdf.sha256`. The last is the digest both the CLI and
+studio browser suites compare their PDF against.
 
-`apps/studio-e2e` reads its two from the `e2e` target rather than from a
-`test` target, and no edge orders that one. Nothing writes beside it: the
+`apps/studio-e2e` reads these from the `e2e` target rather than from a `test`
+target, and no edge orders that one. Nothing writes beside it: the
 smoke suite runs in a CI job of its own, and `pnpm check` leaves it out.
 
 ## `ecluse.json`

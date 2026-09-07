@@ -18,6 +18,13 @@
     ],
     "targets": {
       "boundaries": {},
+      "e2e": {
+        "outputs": [
+          "{projectRoot}/test-output/playwright/output",
+          "{projectRoot}/test-output/playwright/report",
+          "{projectRoot}/test-output/pages-site"
+        ]
+      },
       "lint": {}
     }
   }

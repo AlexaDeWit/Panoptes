@@ -1,10 +1,10 @@
 # The studio's commands
 
 One home per command. Every command the studio offers is named once, in
-`registry.ts`, with the words a person reads, the chord that presses it, and
-the dispatch it runs. A control does not hold a handler and a key press does
-not hold a second copy of one: both go through the registry, so what a button
-does and what its shortcut does cannot drift apart.
+`registry.ts`, with the words a person reads, any assigned chord, and the
+dispatch it runs. A control does not hold a handler and a key press does not
+hold a second copy of one. Both go through the registry, so a button and its
+shortcut cannot drift apart.
 
 ## What a command is
 
@@ -13,7 +13,7 @@ that key rather than a search. Each entry carries:
 
 - **the label**, which is what a menu, a toolbox tooltip or a bare
   `CommandButton` says;
-- **the shortcuts**, one or more chords, in the order they are offered;
+- **the shortcuts**, zero or more chords, in the order they are offered;
 - **`inTextFields`**, whether the chord still fires while a person is typing;
 - **the dispatch**, either a `run` against the `CommandSurface` or `pending`
   naming the issue that will give the command one.
@@ -39,8 +39,9 @@ canvas](../canvas/README.md)).
 `shortcuts.ts` holds the chord. A chord is a set of modifiers and one key
 from a closed list, so a binding names a key the studio decided on rather
 than any string a keyboard can produce, and two commands reaching for one
-chord is a comparison over a known alphabet. The registry's spec is what
-holds that every command has a shortcut and no two share one.
+chord is a comparison over a known alphabet. The registry's spec holds that
+no two commands share one. The four export commands have none, as issue #190
+permits.
 
 `Mod` is the platform's command modifier: Command on Apple hardware, Control
 everywhere else. The platform is read once at load, from the user agent data

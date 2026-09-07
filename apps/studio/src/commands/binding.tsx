@@ -17,7 +17,16 @@ const nothing = (): void => undefined;
  * nothing rather than failing.
  */
 export const unmountedSurface: CommandSurface = {
-  files: { open: nothing, save: nothing, saveAs: nothing, close: nothing },
+  files: {
+    open: nothing,
+    save: nothing,
+    saveAs: nothing,
+    exportDiagram: nothing,
+    exportRegister: nothing,
+    exportTypst: nothing,
+    exportPdf: nothing,
+    close: nothing,
+  },
   view: { zoomIn: nothing, zoomOut: nothing, fitToView: nothing },
 };
 

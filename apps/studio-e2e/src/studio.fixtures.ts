@@ -79,9 +79,13 @@ export const withoutPickers = (): void => {
  * it was read and drawn. The format is the file's own: the studio reads the
  * content rather than the name.
  */
-export const openFile = async (page: Page, path: string): Promise<void> => {
+export const openFile = async (
+  page: Page,
+  path: string,
+  entry = '/',
+): Promise<void> => {
   await page.addInitScript(withoutPickers);
-  await page.goto('/');
+  await page.goto(entry);
   await expect(canvasContainer(page)).toBeVisible();
   await page.getByTestId('file-input').setInputFiles(vendored(path));
   await expect(page.getByTestId('failure-notice')).toBeEmpty();
@@ -141,6 +145,31 @@ export const savedFile = async (page: Page): Promise<SavedFile> => {
   return {
     name: download.suggestedFilename(),
     text: readFileSync(await download.path(), 'utf8'),
+  };
+};
+
+/** An export downloaded from the menu, as its name and bytes. */
+export type ExportedFile = {
+  readonly name: string;
+  readonly bytes: Buffer;
+};
+
+/** Opens the Export menu, chooses one item and reads its download. */
+export const exportedFile = async (
+  page: Page,
+  item: string,
+): Promise<ExportedFile> => {
+  await openMenu(page);
+  await menuItem(page, 'Export').hover();
+  const chosen = menuItem(page, item);
+  await expect(chosen).toBeVisible();
+  const [download] = await Promise.all([
+    page.waitForEvent('download'),
+    chosen.click(),
+  ]);
+  return {
+    name: download.suggestedFilename(),
+    bytes: readFileSync(await download.path()),
   };
 };
 

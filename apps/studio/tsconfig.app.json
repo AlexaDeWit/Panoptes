@@ -39,6 +39,9 @@
     },
     {
       "path": "../../packages/canvas/tsconfig.lib.json"
+    },
+    {
+      "path": "../../packages/render/tsconfig.lib.json"
     }
   ]
 }

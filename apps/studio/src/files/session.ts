@@ -122,8 +122,24 @@ export function formatOfName(name: string): FormatName | undefined {
  * all, falls back to a name rather than proposing a file with no stem.
  */
 export function proposedName(name: string, format: FormatName): string {
+  return withExtension(name, formatFiles[format].extensions[0], unnamedModel);
+}
+
+/** The proposed export name, derived from the open file or `Untitled`. */
+export function proposedExportName(
+  file: FileLifecycle,
+  extension: string,
+): string {
+  return withExtension(nameOf(file), extension, untitledModel);
+}
+
+function withExtension(
+  name: string,
+  extension: string,
+  fallback: string,
+): string {
   const stem = name.replace(/\.[^./\\]*$/u, '').trim();
-  return `${stem === '' ? unnamedModel : stem}${formatFiles[format].extensions[0]}`;
+  return `${stem === '' ? fallback : stem}${extension}`;
 }
 
 /** Where a save writes, and the document it merges the model onto. */

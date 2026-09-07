@@ -1,7 +1,6 @@
 /// <reference types="vitest" />
 // Leaf configs pass options here so the shared build owns deviations.
-import { defineConfig } from 'vite';
-import type { Plugin } from 'vite';
+import { defineConfig, type Plugin, type PluginOption } from 'vite';
 import react from '@vitejs/plugin-react';
 import { cacheDir, sharedTest } from './vitest.shared.mts';
 
@@ -48,26 +47,40 @@ export const reactLib = (projectRoot: string) =>
   });
 
 type ReactAppOptions = {
+  readonly base?: string;
+  readonly cacheDirectory?: string;
+  readonly outDirectory?: string;
   readonly port?: number;
+  readonly plugins?: PluginOption[];
   readonly setupFiles?: string[];
   readonly siteUrl?: string;
 };
 
 export const reactApp = (
   projectRoot: string,
-  { port = 4200, setupFiles = [], siteUrl }: ReactAppOptions = {},
+  {
+    base,
+    cacheDirectory,
+    outDirectory = './dist',
+    port = 4200,
+    plugins = [],
+    setupFiles = [],
+    siteUrl,
+  }: ReactAppOptions = {},
 ) =>
   defineConfig({
+    base,
     root: projectRoot,
-    cacheDir: cacheDir(projectRoot),
+    cacheDir: cacheDirectory ?? cacheDir(projectRoot),
     plugins: [
       react(),
+      ...plugins,
       ...(siteUrl === undefined ? [] : [searchIndexFiles(siteUrl)]),
     ],
     server: { port, host: 'localhost' },
     preview: { port, host: 'localhost' },
     build: {
-      outDir: './dist',
+      outDir: outDirectory,
       emptyOutDir: true,
       reportCompressedSize: true,
       commonjsOptions: { transformMixedEsModules: true },

@@ -78,30 +78,13 @@ export type SaveFileType = {
  */
 export type SaveText = (name: string) => string;
 
+/** Text or binary content the studio can place outside its open file. */
+export type FileContent = string | Uint8Array;
+
 /**
- * How the studio reaches files: a record of functions the app is handed
- * rather than a platform it calls, so the browser implementation, a spec's
- * recording one, and the typed IPC an Electron shell will offer (issue #43)
- * are the same interface to every view.
- *
- * `open` puts a picker on screen and answers with the text. `received` is
- * that same answer for a file the caller's own file input produced, which is
- * how a browser with no picker of its own opens one, and it also forgets
- * whatever `open` retained, so a later save does not write over the file the
- * person moved away from. `save` writes back to the file the model came from
- * where the bridge still holds it and offers a download otherwise. `saveAs`
- * places a new file: it offers `types` as the formats it may be named in,
- * asks for the text once it has a name, since the name is what settles the
- * format, and writes it there. `asksWhere` is whether it can put that
- * question to a person at all: a bridge that cannot is handed one format and
- * the name to write it under, the studio having asked in its own words, and
- * downloads. `release` forgets the file the bridge holds without opening
- * another, which is what closing one is: the studio stops naming a file, so
- * nothing may be written back to the one it named.
- *
- * Every path answers with an outcome rather than throwing, and the bound a
- * read may spend is passed in rather than known here, so one number
- * (`readLimits.maxTextBytes`) governs the studio and the codecs alike.
+ * The injected file interface. An export places content without retaining
+ * the chosen handle as the model's open file. Binary content stays a
+ * `Uint8Array`, which a later Electron IPC bridge can clone.
  */
 export type FileBridge = {
   open(maxBytes: number): Promise<OpenOutcome>;
@@ -111,6 +94,11 @@ export type FileBridge = {
     name: string,
     types: readonly SaveFileType[],
     text: SaveText,
+  ): Promise<SaveOutcome>;
+  exportFile(
+    name: string,
+    type: SaveFileType,
+    content: FileContent,
   ): Promise<SaveOutcome>;
   asksWhere(): boolean;
   release(): void;

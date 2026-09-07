@@ -4,7 +4,9 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { useCommandSurface } from '../commands/binding.js';
 import {
   commandById,
+  diagramExportCommand,
   runCommand,
+  type Command,
   type CommandId,
 } from '../commands/registry.js';
 import {
@@ -73,14 +75,38 @@ type MenuCommandProps = {
 };
 
 function MenuCommand({ command, children, disabled }: MenuCommandProps) {
+  return (
+    <RegisteredMenuCommand disabled={disabled} entry={commandById(command)}>
+      {children}
+    </RegisteredMenuCommand>
+  );
+}
+
+type RegisteredMenuCommandProps = {
+  readonly entry: Command;
+  readonly children?: ReactNode;
+  readonly disabled?: boolean;
+};
+
+function RegisteredMenuCommand({
+  entry,
+  children,
+  disabled,
+}: RegisteredMenuCommandProps) {
   const surface = useCommandSurface();
-  const entry = commandById(command);
+  const hasShortcut = entry.shortcuts.length > 0;
 
   return (
     <MenuItem
-      chord={spellShortcuts(entry.shortcuts, hostPlatform)}
+      chord={
+        hasShortcut ? spellShortcuts(entry.shortcuts, hostPlatform) : undefined
+      }
       disabled={disabled}
-      keyShortcuts={keyShortcutsAttribute(entry.shortcuts, hostPlatform)}
+      keyShortcuts={
+        hasShortcut
+          ? keyShortcutsAttribute(entry.shortcuts, hostPlatform)
+          : undefined
+      }
       onChoose={() => {
         runCommand(entry, surface);
       }}
@@ -108,7 +134,7 @@ function SourceLink() {
 /** The session the items run their commands through. */
 export type StudioMenuProps = { readonly session: FileSession };
 
-/** The file, edit and project menu over the canvas. */
+/** The non-modal file, edit and project menu, with reports beside its trigger. */
 export function StudioMenu({ session }: StudioMenuProps) {
   const file = useModelStore((state) => state.file);
   const failure = useModelStore((state) => state.lastFailure);
@@ -134,6 +160,8 @@ export function StudioMenu({ session }: StudioMenuProps) {
     commands,
     confirmClose,
     dismissReport,
+    dismissExportNotice,
+    exportNotice,
     receive,
     report,
   } = session;
@@ -212,6 +240,7 @@ export function StudioMenu({ session }: StudioMenuProps) {
                     Save as {formatFiles[option].label}
                   </MenuItem>
                 ))}
+            <ExportMenu />
             <MenuItem
               chord={
                 asking
@@ -278,7 +307,7 @@ export function StudioMenu({ session }: StudioMenuProps) {
       <FailureNotice failure={failure} />
       <LiveRegion
         className={styles.report}
-        label="Loss report"
+        label="File reports"
         testId="loss-report"
       >
         {report !== undefined && (
@@ -300,8 +329,57 @@ export function StudioMenu({ session }: StudioMenuProps) {
             </button>
           </>
         )}
+        {exportNotice !== undefined && (
+          <div data-testid="export-report">
+            <p className={styles.headline}>{exportNotice.headline}</p>
+            {exportNotice.details.length > 0 && (
+              <ul className={styles.lines}>
+                {exportNotice.details.map((line, index) => (
+                  <li key={`${String(index)} ${line}`}>{line}</li>
+                ))}
+              </ul>
+            )}
+            <button
+              className={styles.dismiss}
+              onClick={dismissExportNotice}
+              type="button"
+            >
+              Dismiss the export report
+            </button>
+          </div>
+        )}
       </LiveRegion>
     </div>
+  );
+}
+
+function ExportMenu() {
+  const diagrams = useModelStore((state) => state.present.diagrams);
+  const several = diagrams.length > 1;
+
+  return (
+    <DropdownMenu.Sub>
+      <DropdownMenu.SubTrigger className={styles.item}>
+        <span>Export</span>
+        <span aria-hidden="true" className={styles.chord}>
+          ›
+        </span>
+      </DropdownMenu.SubTrigger>
+      <DropdownMenu.SubContent className={styles.panel} sideOffset={6}>
+        {diagrams.length === 0 && (
+          <MenuCommand command="export-diagram" disabled />
+        )}
+        {diagrams.map((diagram) => (
+          <RegisteredMenuCommand
+            entry={diagramExportCommand(diagram, several)}
+            key={diagram.id}
+          />
+        ))}
+        <MenuCommand command="export-register" />
+        <MenuCommand command="export-typst" />
+        <MenuCommand command="export-pdf" />
+      </DropdownMenu.SubContent>
+    </DropdownMenu.Sub>
   );
 }
 
