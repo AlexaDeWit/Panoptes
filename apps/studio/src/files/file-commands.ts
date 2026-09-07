@@ -38,6 +38,7 @@ import {
 } from './session.js';
 
 type PlannedSave = {
+  readonly file: State['file'];
   readonly target: SaveTarget;
   readonly written: WriteResult;
 };
@@ -60,7 +61,7 @@ export type FileSession = {
   readonly cancelChoice: () => void;
 };
 
-/** A stable file session whose commands read the store when they run. */
+/** A stable file session that ignores save results after the file association changes. */
 export function useFileSession(
   bridge: FileBridge = browserFileBridge,
   pdf: PdfExport = browserPdfExport,
@@ -101,6 +102,9 @@ export function useFileSession(
 
   const land = useCallback(
     (outcome: SaveOutcome, planned: PlannedSave): void => {
+      if (planned.file !== modelStore.getState().file) {
+        return;
+      }
       const action = savedBy(outcome, planned.target.source);
       if (action !== undefined) {
         if (Action.$is('FileRefused')(action)) {
@@ -271,7 +275,11 @@ export function useFileSession(
 
 function planSave(state: State, format: FormatName): PlannedSave {
   const target = saveTarget(state.file, format);
-  return { target, written: writeThrough(state.present, target.source) };
+  return {
+    file: state.file,
+    target,
+    written: writeThrough(state.present, target.source),
+  };
 }
 
 function mayDiscard(dirty: boolean): boolean {

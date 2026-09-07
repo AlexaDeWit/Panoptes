@@ -27,6 +27,7 @@ declare global {
 }
 
 let held: FileSystemFileHandle | undefined;
+let revision = 0;
 
 const dismissed = (cause: unknown): boolean =>
   cause instanceof DOMException && cause.name === 'AbortError';
@@ -44,6 +45,7 @@ async function open(maxBytes: number): Promise<OpenOutcome> {
     }
     const outcome = await readWithin(await handle.getFile(), maxBytes);
     held = OpenOutcome.$is('Chosen')(outcome) ? handle : undefined;
+    revision += 1;
     return outcome;
   } catch (cause) {
     return dismissed(cause)
@@ -53,18 +55,25 @@ async function open(maxBytes: number): Promise<OpenOutcome> {
 }
 
 function received(file: ChosenFile, maxBytes: number): Promise<OpenOutcome> {
-  held = undefined;
+  release();
   return readWithin(file, maxBytes);
 }
 
 function release(): void {
   held = undefined;
+  revision += 1;
 }
 
-function save(name: string, text: string): Promise<SaveOutcome> {
-  return held === undefined
-    ? Promise.resolve(download(name, text, 'text/plain;charset=utf-8'))
-    : writeTo(held, held.name, text);
+async function save(name: string, text: string): Promise<SaveOutcome> {
+  const started = revision;
+  const outcome =
+    held === undefined
+      ? download(name, text, 'text/plain;charset=utf-8')
+      : await writeTo(held, held.name, text);
+  if (started === revision && SaveOutcome.$is('Written')(outcome)) {
+    revision += 1;
+  }
+  return outcome;
 }
 
 async function saveAs(
@@ -72,16 +81,18 @@ async function saveAs(
   types: readonly SaveFileType[],
   text: SaveText,
 ): Promise<SaveOutcome> {
+  const started = revision;
   const picker = window.showSaveFilePicker;
   if (picker === undefined) {
-    held = undefined;
+    release();
     return download(name, text(name), 'text/plain;charset=utf-8');
   }
   try {
     const handle = await picker({ suggestedName: name, types });
     const outcome = await writeTo(handle, handle.name, text(handle.name));
-    if (SaveOutcome.$is('Written')(outcome)) {
+    if (started === revision && SaveOutcome.$is('Written')(outcome)) {
       held = handle;
+      revision += 1;
     }
     return outcome;
   } catch (cause) {
@@ -158,7 +169,10 @@ function mediaTypeOf(type: SaveFileType): string {
   return Object.keys(type.accept)[0] ?? 'application/octet-stream';
 }
 
-/** Handles are dropped by release, fallback opens or save-as, and bounded picker read failures. */
+/**
+ * Handles are dropped by release, fallback opens or save-as, and bounded picker read failures.
+ * Save completions cannot replace a newer association.
+ */
 export const browserFileBridge: FileBridge = {
   open,
   received,

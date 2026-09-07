@@ -5,7 +5,7 @@ import {
   type FileContent,
   type SaveFileType,
 } from './bridge.js';
-import { chosenFile } from './files.fixtures.js';
+import { chosenFile, handleFor } from './files.fixtures.js';
 
 const types: readonly SaveFileType[] = [
   {
@@ -22,19 +22,6 @@ const inTheFormatOf = (name: string): string =>
   name.endsWith('.json') ? '{}' : 'a: 1';
 
 const downloads: string[] = [];
-
-const handleFor = (name: string, text: string, written: FileContent[]) => ({
-  name,
-  getFile: () => Promise.resolve(chosenFile(name, text)),
-  createWritable: () =>
-    Promise.resolve({
-      write: (chunk: FileContent) => {
-        written.push(chunk);
-        return Promise.resolve();
-      },
-      close: () => Promise.resolve(),
-    }),
-});
 
 const dismissal = (): DOMException =>
   new DOMException('The user dismissed the picker.', 'AbortError');

@@ -25,6 +25,9 @@ association and releases the handle. The next Save downloads native YAML,
 leaving both the previous file and any rejected file untouched. Unsaved
 changes stay guarded. Dismissing a picker keeps the file association.
 
+A save already in progress can still write its target. After the association
+changes, its completion cannot rename or mark the current model saved.
+
 `session.ts` is what the studio does with a file, as pure functions the
 component calls and a spec calls directly. A read is the size against
 `readLimits.maxTextBytes` first, since that bound keeps the parse finite, then

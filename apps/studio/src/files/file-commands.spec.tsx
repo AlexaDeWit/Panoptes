@@ -15,9 +15,15 @@ import {
   sampleModel,
 } from '../store/store.fixtures.js';
 import type { PdfExport } from './export-commands.js';
-import { SaveOutcome, type ChosenFile } from './bridge.js';
+import {
+  SaveOutcome,
+  type ChosenFile,
+  type FileBridge,
+  type FileContent,
+} from './bridge.js';
+import { browserFileBridge } from './browser-bridge.js';
 import { useFileSession } from './file-commands.js';
-import { chosenFile, specBridge, type SpecBridge } from './files.fixtures.js';
+import { chosenFile, handleFor, specBridge } from './files.fixtures.js';
 
 const nativeText = saerskrivenYamlCodec.write(sampleModel).output;
 
@@ -30,7 +36,7 @@ const failedFiles: readonly ChosenFile[] = [
   chosenFile('notes.txt', 'not a model'),
 ];
 
-const session = (bridge: SpecBridge, pdf?: PdfExport) =>
+const session = (bridge: FileBridge, pdf?: PdfExport) =>
   renderHook(() => useFileSession(bridge, pdf)).result;
 
 const edit = (): void => {
@@ -58,6 +64,186 @@ afterEach(() => {
 });
 
 describe('useFileSession', () => {
+  describe.each(['save', 'saveAs'] as const)('an overlapping %s', (command) => {
+    it.each([
+      'picker refusal',
+      'codec refusal',
+      'successful open',
+      'cancelled open',
+      'close',
+      'newer save',
+      'newer save-as',
+      'stale write refusal',
+      'save finishes first',
+    ] as const)('keeps the association consistent after %s', async (change) => {
+      browserFileBridge.release();
+      const writes: Record<string, FileContent[]> = {
+        'original.yaml': [],
+        'elsewhere.yaml': [],
+        'replacement.yaml': [],
+      };
+      let finish: (() => void) | undefined;
+      const pending = new Promise<void>((resolve) => {
+        finish = resolve;
+      });
+      const close = vi.fn<() => Promise<void>>().mockResolvedValue(undefined);
+      close.mockImplementationOnce(() =>
+        pending.then(() =>
+          change === 'stale write refusal'
+            ? Promise.reject(new Error('NotAllowedError'))
+            : undefined,
+        ),
+      );
+      const original = handleFor(
+        'original.yaml',
+        nativeText,
+        writes['original.yaml'],
+        command === 'save' ? close : undefined,
+      );
+      const elsewhere = handleFor(
+        'elsewhere.yaml',
+        nativeText,
+        writes['elsewhere.yaml'],
+        command === 'saveAs' ? close : undefined,
+      );
+      const replacement = handleFor(
+        'replacement.yaml',
+        nativeText,
+        writes['replacement.yaml'],
+      );
+      const picker = vi
+        .fn<() => Promise<ReturnType<typeof handleFor>[]>>()
+        .mockResolvedValueOnce([original])
+        .mockResolvedValue([replacement]);
+      vi.stubGlobal('showOpenFilePicker', picker);
+      vi.stubGlobal('showSaveFilePicker', () => Promise.resolve(elsewhere));
+      vi.stubGlobal(
+        'URL',
+        class extends URL {
+          static override createObjectURL(): string {
+            return 'blob:model';
+          }
+          static override revokeObjectURL(): void {}
+        },
+      );
+      const downloads: string[] = [];
+      vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(
+        function (this: HTMLAnchorElement) {
+          downloads.push(this.download);
+        },
+      );
+      const result = session(browserFileBridge);
+      await act(() => {
+        result.current.commands.open();
+        return Promise.resolve();
+      });
+      edit();
+      act(() => {
+        result.current.commands[command]();
+      });
+      await waitFor(() => {
+        expect(close).toHaveBeenCalledTimes(1);
+      });
+
+      if (change === 'save finishes first') {
+        await act(async () => {
+          finish?.();
+          await pending;
+        });
+      }
+      await act(async () => {
+        switch (change) {
+          case 'codec refusal': {
+            await result.current.receive(
+              chosenFile('notes.txt', 'not a model'),
+            );
+            break;
+          }
+          case 'close': {
+            result.current.confirmClose();
+            break;
+          }
+          case 'newer save': {
+            result.current.commands.save();
+            break;
+          }
+          case 'newer save-as': {
+            vi.stubGlobal('showSaveFilePicker', () =>
+              Promise.resolve(replacement),
+            );
+            result.current.commands.saveAs();
+            break;
+          }
+          case 'picker refusal':
+          case 'save finishes first': {
+            picker.mockRejectedValueOnce(new Error('NotAllowedError'));
+            result.current.commands.open();
+            break;
+          }
+          case 'cancelled open': {
+            picker.mockRejectedValueOnce(
+              new DOMException('Dismissed', 'AbortError'),
+            );
+            result.current.commands.open();
+            break;
+          }
+          case 'successful open':
+          case 'stale write refusal': {
+            result.current.commands.open();
+          }
+        }
+      });
+      const later = modelStore.getState();
+      await act(async () => {
+        finish?.();
+        await pending;
+      });
+
+      expect(modelStore.getState().present).toBe(later.present);
+      expect(modelStore.getState().saved).toBe(
+        change === 'cancelled open' ? later.present : later.saved,
+      );
+      expect(modelStore.getState().lastFailure).toBe(later.lastFailure);
+      const destination =
+        change === 'cancelled open'
+          ? command === 'save'
+            ? 'original.yaml'
+            : 'elsewhere.yaml'
+          : change === 'successful open' ||
+              change === 'stale write refusal' ||
+              change === 'newer save-as'
+            ? 'replacement.yaml'
+            : change === 'newer save'
+              ? 'original.yaml'
+              : 'threat-model.yaml';
+      expect(modelStore.getState().file).toMatchObject(
+        destination === 'threat-model.yaml'
+          ? FileLifecycle.NoFile()
+          : { _tag: 'Opened', name: destination },
+      );
+      const counts = Object.fromEntries(
+        Object.entries(writes).map(([name, values]) => [name, values.length]),
+      );
+      await act(() => {
+        result.current.commands.save();
+        return Promise.resolve();
+      });
+
+      expect(downloads).toEqual(
+        destination === 'threat-model.yaml' ? [destination] : [],
+      );
+      for (const [name, values] of Object.entries(writes)) {
+        expect(values).toHaveLength(
+          counts[name] + (name === destination ? 1 : 0),
+        );
+      }
+      expect(modelStore.getState().file).toMatchObject({
+        _tag: 'Opened',
+        name: destination,
+      });
+    });
+  });
+
   it('holds one command set for controls and key presses', () => {
     const result = session(specBridge());
     const first = result.current.commands;
