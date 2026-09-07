@@ -1,0 +1,154 @@
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="1200"
+  height="630"
+  viewBox="0 0 1200 630"
+  role="img"
+  aria-labelledby="title description"
+>
+  <title id="title">Saerskriven social card</title>
+  <desc id="description">
+    Saerskriven, an open-source threat modelling studio. Draw the system.
+    Record the threats. A small data-flow diagram appears on graph paper.
+  </desc>
+
+  <defs>
+    <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
+      <path d="M20 0H0V20" fill="none" stroke="#E0D8C4" stroke-width="1" />
+    </pattern>
+    <marker
+      id="arrow"
+      viewBox="0 0 10 10"
+      refX="9"
+      refY="5"
+      markerWidth="7"
+      markerHeight="7"
+      orient="auto-start-reverse"
+    >
+      <path d="M0 0L10 5L0 10Z" fill="#38342E" />
+    </marker>
+    <filter id="lift" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="0" dy="10" stdDeviation="15" flood-color="#38342E" flood-opacity="0.12" />
+    </filter>
+  </defs>
+
+  <rect width="1200" height="630" fill="#F0EDE5" />
+  <rect
+    x="24"
+    y="24"
+    width="1152"
+    height="582"
+    rx="28"
+    fill="#F9F6F0"
+    stroke="#847C70"
+    stroke-width="2"
+  />
+
+  <g font-family="system-ui, -apple-system, 'Segoe UI', sans-serif">
+    <svg x="76" y="72" width="72" height="72" viewBox="0 0 64 64">
+      <rect width="64" height="64" rx="13" fill="#F9F6F0" stroke="#847C70" stroke-width="1.5" />
+      <path
+        d="M50 13H25C16 13 11 18 11 24C11 31 17 34 29 36L35 29C25 27 21 26 21 23C21 21 24 20 28 20H50ZM29 35C39 37 43 38 43 42C43 45 40 46 36 46H14V53H39C48 53 53 48 53 41C53 34 47 31 36 29Z"
+        fill="#38342E"
+      />
+      <path d="M28 35L37 29" stroke="#F9F6F0" stroke-width="3" stroke-linecap="square" />
+    </svg>
+
+    <text x="170" y="125" fill="#38342E" font-size="49" font-weight="720" letter-spacing="-1.5">
+      Saerskriven
+    </text>
+    <text x="78" y="196" fill="#4A635D" font-size="18" font-weight="700" letter-spacing="2.4">
+      OPEN-SOURCE THREAT MODELLING STUDIO
+    </text>
+
+    <text x="76" y="292" fill="#38342E" font-size="62" font-weight="740" letter-spacing="-2.4">
+      Draw the system.
+    </text>
+    <text x="76" y="367" fill="#38342E" font-size="62" font-weight="740" letter-spacing="-2.4">
+      Record the threats.
+    </text>
+
+    <text x="78" y="438" fill="#6B655C" font-size="24">
+      Threats live on the diagram, not beside it.
+    </text>
+
+    <g transform="translate(76 506)" font-size="17" font-weight="650">
+      <rect width="150" height="44" rx="22" fill="#E7E9E1" />
+      <text x="75" y="29" fill="#38342E" text-anchor="middle">Browser studio</text>
+
+      <rect x="164" width="130" height="44" rx="22" fill="#EAE5DA" />
+      <text x="229" y="29" fill="#38342E" text-anchor="middle">Typed core</text>
+
+      <rect x="308" width="136" height="44" rx="22" fill="#E7E9E1" />
+      <text x="376" y="29" fill="#38342E" text-anchor="middle">CLI exports</text>
+    </g>
+  </g>
+
+  <g filter="url(#lift)">
+    <rect x="704" y="70" width="420" height="490" rx="18" fill="#FAF8F2" stroke="#847C70" stroke-width="2" />
+    <rect x="718" y="84" width="392" height="462" rx="10" fill="#F9F6F0" />
+    <rect x="718" y="84" width="392" height="462" rx="10" fill="url(#grid)" />
+
+    <g transform="translate(788 101)">
+      <rect width="252" height="44" rx="6" fill="#FAF8F2" stroke="#847C70" stroke-width="1.5" />
+      <rect x="7" y="7" width="30" height="30" rx="4" fill="#4A635D" />
+      <path d="M16 14L29 24L23 25L27 32L23 34L19 27L15 31Z" fill="#F9F6F0" />
+      <rect x="53" y="15" width="18" height="14" fill="none" stroke="#38342E" stroke-width="2" />
+      <circle cx="94" cy="22" r="8" fill="none" stroke="#38342E" stroke-width="2" />
+      <path d="M119 16H137M119 22H137M119 28H137" stroke="#38342E" stroke-width="2" />
+      <path d="M157 16H175V29H157Z" fill="none" stroke="#38342E" stroke-width="2" />
+      <path d="M195 29C200 13 205 13 210 29C215 13 220 13 225 29" fill="none" stroke="#38342E" stroke-width="2" />
+    </g>
+
+    <rect
+      x="746"
+      y="178"
+      width="340"
+      height="320"
+      rx="3"
+      fill="none"
+      stroke="#6B655C"
+      stroke-width="2"
+      stroke-dasharray="8 6"
+    />
+    <text x="762" y="202" fill="#6B655C" font-family="Arial, sans-serif" font-size="13">
+      Trust boundary
+    </text>
+
+    <rect x="770" y="252" width="96" height="58" fill="#EAE5DA" stroke="#38342E" stroke-width="2" />
+    <text x="818" y="286" fill="#38342E" font-family="Arial, sans-serif" font-size="15" text-anchor="middle">
+      Maintainer
+    </text>
+
+    <circle cx="957" cy="281" r="48" fill="#E7E9E1" stroke="#38342E" stroke-width="2" />
+    <text x="957" y="286" fill="#38342E" font-family="Arial, sans-serif" font-size="15" text-anchor="middle">
+      Studio
+    </text>
+
+    <path d="M866 281H901" fill="none" stroke="#38342E" stroke-width="2" marker-end="url(#arrow)" />
+    <text x="884" y="263" fill="#6B655C" font-family="Arial, sans-serif" font-size="12" text-anchor="middle">
+      models
+    </text>
+
+    <path d="M957 329V374" fill="none" stroke="#38342E" stroke-width="2" marker-end="url(#arrow)" />
+    <text x="975" y="356" fill="#6B655C" font-family="Arial, sans-serif" font-size="12">
+      exports
+    </text>
+
+    <g transform="translate(897 392)">
+      <path d="M0 0H120M0 18H120" stroke="#38342E" stroke-width="3" />
+      <text x="60" y="48" fill="#38342E" font-family="Arial, sans-serif" font-size="15" text-anchor="middle">
+        Model file
+      </text>
+    </g>
+
+    <g transform="translate(850 258)">
+      <circle r="14" fill="#C14339" stroke="#FAF8F2" stroke-width="3" />
+      <text y="5" fill="#FAF8F2" font-family="Arial, sans-serif" font-size="14" font-weight="700" text-anchor="middle">1</text>
+    </g>
+    <g transform="translate(1017 320)">
+      <circle r="14" fill="#46788A" stroke="#FAF8F2" stroke-width="3" />
+      <text y="5" fill="#FAF8F2" font-family="Arial, sans-serif" font-size="14" font-weight="700" text-anchor="middle">2</text>
+    </g>
+  </g>
+</svg>
