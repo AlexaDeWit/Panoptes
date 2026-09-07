@@ -333,10 +333,23 @@ function sameFlowLabel(
 
 /** Whether `to` keeps the label candidate that `from` used on its old path. */
 export function flowLabelFollows(from: CanvasEdge, to: CanvasEdge): boolean {
-  return sameFlowLabel(
-    movedFlowLabel(from.label, from.badge, edgePoints(from), edgePoints(to)),
-    to.label,
-  );
+  return sameFlowLabel(flowWithFollowedLabel(from, to).label, to.label);
+}
+
+/** The new flow geometry with its prior label candidate moved onto it. */
+export function flowWithFollowedLabel(
+  from: CanvasEdge,
+  to: CanvasEdge,
+): CanvasEdge {
+  return {
+    ...to,
+    label: movedFlowLabel(
+      from.label,
+      from.badge,
+      edgePoints(from),
+      edgePoints(to),
+    ),
+  };
 }
 
 /**

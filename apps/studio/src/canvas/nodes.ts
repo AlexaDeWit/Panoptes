@@ -1,5 +1,6 @@
 import {
   freeEndNodes,
+  flowWithFollowedLabel,
   isBoundary,
   toReactFlowEdges,
   toReactFlowNodes,
@@ -126,22 +127,28 @@ export function withLiveEdges(
   );
   return edges.map((edge) => {
     const next = live.get(edge.id);
-    return next === undefined || next === edge.data?.edge
-      ? edge
-      : {
-          ...edge,
-          data: {
-            edge: next,
-            boxes,
-            sourceBox:
-              next.sourceElement === undefined
-                ? undefined
-                : boxes.get(next.sourceElement),
-            targetBox:
-              next.targetElement === undefined
-                ? undefined
-                : boxes.get(next.targetElement),
-          },
-        };
+    const current = edge.data?.edge;
+    if (next === undefined || next === current) {
+      return edge;
+    }
+    const shown =
+      edge.selected && current !== undefined
+        ? flowWithFollowedLabel(current, next)
+        : next;
+    return {
+      ...edge,
+      data: {
+        edge: shown,
+        boxes,
+        sourceBox:
+          shown.sourceElement === undefined
+            ? undefined
+            : boxes.get(shown.sourceElement),
+        targetBox:
+          shown.targetElement === undefined
+            ? undefined
+            : boxes.get(shown.targetElement),
+      },
+    };
   });
 }

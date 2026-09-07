@@ -125,4 +125,41 @@ describe('withLiveEdges', () => {
     expect(live[0].data?.edge).toBe(changed.edges[0]);
     expect(live[1]).toBe(graph.edges[1]);
   });
+
+  it('keeps a selected flow label on its prior candidate', () => {
+    const graph = diagramGraph(layout, [requestFlow]);
+    const index = layout.edges.findIndex((edge) => edge.id === requestFlow);
+    const settled = layout.edges[index];
+    const offset = { x: 10, y: 15 };
+    const changedEdge = {
+      ...settled,
+      source: {
+        x: settled.source.x + offset.x,
+        y: settled.source.y + offset.y,
+      },
+      target: {
+        x: settled.target.x + offset.x,
+        y: settled.target.y + offset.y,
+      },
+      waypoints: settled.waypoints.map((point) => ({
+        x: point.x + offset.x,
+        y: point.y + offset.y,
+      })),
+    };
+    const changed = {
+      ...layout,
+      edges: layout.edges.map((edge, edgeIndex) =>
+        edgeIndex === index ? changedEdge : edge,
+      ),
+    };
+
+    const live = withLiveEdges(graph.edges, changed)[index].data?.edge;
+
+    expect(live?.label.name.at.x).toBeCloseTo(
+      settled.label.name.at.x + offset.x,
+    );
+    expect(live?.label.name.at.y).toBeCloseTo(
+      settled.label.name.at.y + offset.y,
+    );
+  });
 });
