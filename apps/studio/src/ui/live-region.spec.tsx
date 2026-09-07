@@ -12,12 +12,12 @@ describe('LiveRegion', () => {
   it('announces politely, under the name its caller gave it', () => {
     render(
       <LiveRegion label="Threat changes" testId="changes">
-        <p>Threat 3 added.</p>
+        <p data-testid="message">A message</p>
       </LiveRegion>,
     );
     const region = screen.getByRole('region', { name: 'Threat changes' });
 
     expect(region.getAttribute('aria-live')).toBe('polite');
-    expect(region.textContent).toBe('Threat 3 added.');
+    expect(region.contains(screen.getByTestId('message'))).toBe(true);
   });
 });

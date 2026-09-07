@@ -157,9 +157,7 @@ test('a threat added in the panel reaches the canvas as a badge, and its severit
   await expect(
     threatPanel(page).getByRole('textbox', { name: 'Title' }),
   ).toBeFocused();
-  await expect(page.getByTestId('threat-announcement')).toContainText(
-    'Threat 103 added.',
-  );
+  await expect(page.getByTestId('threat-announcement')).toContainText('103');
   await expect(
     nodeNamed(
       page,
@@ -211,9 +209,7 @@ test('a threat deleted in the panel leaves the canvas, and undo puts it back', a
     .getByRole('button', { name: 'Delete threat 21' })
     .click();
 
-  await expect(page.getByTestId('threat-announcement')).toContainText(
-    'Threat 21 deleted.',
-  );
+  await expect(page.getByTestId('threat-announcement')).toContainText('21');
   await expect(disclosure(page, /Massive Purge DoS/u)).toHaveCount(0);
   await expect(dredger).toHaveAccessibleName(/4 open threats/u);
 

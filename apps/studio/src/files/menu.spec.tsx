@@ -99,12 +99,7 @@ const mounted = (bridge: SpecBridge): void => {
 const asked = (): boolean =>
   !globalThis.dispatchEvent(new Event('beforeunload', { cancelable: true }));
 
-/**
- * Écluse, carrying two keys the Threat Dragon wire schema does not declare:
- * one at the root and one under `detail`. Written as text rather than
- * through a parse and a re-stringify, so the file reaches the codec as a
- * file would.
- */
+/** Returns Écluse with undeclared keys at the root and under `detail`. */
 const withUndeclaredKeys = async (): Promise<string> =>
   (await vendoredFile('test-data/ecluse.json').text())
     .replace(
@@ -133,24 +128,11 @@ describe('what the menu offers', () => {
 
     await openMenu(user);
 
+    const items = screen.getAllByRole('menuitem');
+    expect(items).toHaveLength(9);
     expect(
-      screen.getAllByRole('menuitem').map((entry) => entry.textContent),
-    ).toEqual([
-      'Open a modelCtrl+O',
-      'SaveCtrl+S',
-      'Save asCtrl+Shift+S',
-      'Close the fileCtrl+Shift+X',
-      'UndoCtrl+Z',
-      'RedoCtrl+Shift+Z or Ctrl+Y',
-      'Rename the selectionF2',
-      'Delete the selectionDelete or Backspace',
-      'View source on GitHub',
-    ]);
-    expect(
-      screen.getAllByRole('group').map((group) => group.textContent),
-    ).toContain(
-      'FileOpen a modelCtrl+OSaveCtrl+SSave asCtrl+Shift+SClose the fileCtrl+Shift+X',
-    );
+      items.filter((entry) => entry.hasAttribute('aria-keyshortcuts')),
+    ).toHaveLength(8);
   });
 
   it('links to the source in a new tab with a popout icon', async () => {
@@ -189,9 +171,7 @@ describe('what the menu offers', () => {
 
     expect(burger().getAttribute('aria-label')).toBe('Menu, unsaved changes');
 
-    expect(await shown(user)).toBe(
-      'Untitled, Saerskriven YAML, unsaved changes',
-    );
+    expect(await shown(user)).toContain('Saerskriven YAML');
   });
 
   it('offers a history move only once there is one to make', async () => {
@@ -274,9 +254,8 @@ describe('what the studio says about the file', () => {
     const user = userEvent.setup();
     mounted(specBridge());
 
-    expect(await shown(user)).toBe(
-      'Untitled, Saerskriven YAML, no unsaved changes',
-    );
+    expect(await shown(user)).toContain('Saerskriven YAML');
+    expect(burger().getAttribute('aria-label')).toBe('Menu');
   });
 
   it('guards the tab while the model has changes in no file, and lets go once they are in one', async () => {
@@ -307,9 +286,7 @@ describe('opening', () => {
     await waitFor(() => {
       expect(nameOf(modelStore.getState().file)).toBe('model.yaml');
     });
-    expect(await shown(user)).toBe(
-      'model.yaml, Saerskriven YAML, no unsaved changes',
-    );
+    expect(await shown(user)).toContain('model.yaml');
   });
 
   it('asks before losing changes that are in no file, and opens nothing when refused', async () => {
@@ -324,9 +301,8 @@ describe('opening', () => {
     await choose(user, 'Open a model');
 
     expect(globalThis.confirm).toHaveBeenCalledTimes(1);
-    expect(await shown(user)).toBe(
-      'Untitled, Saerskriven YAML, unsaved changes',
-    );
+    expect(modelStore.getState().file._tag).toBe('NoFile');
+    expect(isDirty(modelStore.getState())).toBe(true);
   });
 
   it('surfaces what the codec refused, with the paths it carries, rather than stopping', async () => {
@@ -362,7 +338,7 @@ describe('opening', () => {
     await openMenu(user);
 
     await waitFor(() => {
-      expect(state()).toBe('model.yaml, Saerskriven YAML, no unsaved changes');
+      expect(state()).toContain('model.yaml');
     });
   });
 
@@ -378,9 +354,6 @@ describe('opening', () => {
     await waitFor(() => {
       expect(reportEntries().length > 0).toBe(true);
     });
-    expect(screen.getByTestId('loss-report').textContent).toContain(
-      'Opening the file dropped',
-    );
     expect(reportEntries().map((entry) => entry.textContent)).toEqual([
       'model: the key unknownRoot (not declared by the wire schema)',
       'model: the key detail.unknownDetail (not declared by the wire schema)',
@@ -401,9 +374,8 @@ describe('opening', () => {
 
     await choose(user, 'Open a model');
 
-    expect(await shown(user)).toBe(
-      'Untitled, Saerskriven YAML, no unsaved changes',
-    );
+    expect(modelStore.getState().file._tag).toBe('NoFile');
+    expect(isDirty(modelStore.getState())).toBe(false);
     expect(screen.getByTestId('failure-notice').textContent).toBe('');
     expect(reportEntries()).toEqual([]);
   });
@@ -426,7 +398,7 @@ describe('opening', () => {
 
     await waitFor(() => {
       expect(screen.getByTestId('failure-notice').textContent).toContain(
-        'No format claimed notes.txt.',
+        'notes.txt',
       );
     });
     expect(reportEntries().length > 0).toBe(true);
@@ -475,9 +447,8 @@ describe('saving', () => {
     });
     expect(bridge.writes[0].name).toBe('threat-model.yaml');
     expect(bridge.writes[0].elsewhere).toBe(true);
-    expect(await shown(user)).toBe(
-      'threat-model.yaml, Saerskriven YAML, no unsaved changes',
-    );
+    expect(await shown(user)).toContain('threat-model.yaml');
+    expect(isDirty(modelStore.getState())).toBe(false);
   });
 
   it('asks the format in the menu where the platform has no picker, and takes the question back', async () => {
@@ -488,20 +459,10 @@ describe('saving', () => {
     await choose(user, 'Save as');
 
     await screen.findByRole('menuitem', { name: 'Save as Saerskriven YAML' });
-    expect(
-      screen.getAllByRole('menuitem').map((entry) => entry.textContent),
-    ).toEqual([
-      'Open a modelCtrl+O',
-      'SaveCtrl+S',
-      'Save as Saerskriven YAML',
-      'Save as Threat Dragon JSON',
-      'Close the fileCtrl+Shift+X',
-      'UndoCtrl+Z',
-      'RedoCtrl+Shift+Z or Ctrl+Y',
-      'Rename the selectionF2',
-      'Delete the selectionDelete or Backspace',
-      'View source on GitHub',
-    ]);
+    expect(screen.getAllByRole('menuitem')).toHaveLength(10);
+    expect(item('Save as Saerskriven YAML')).toBeDefined();
+    expect(item('Save as Threat Dragon JSON')).toBeDefined();
+    expect(item('View source on GitHub')).toBeDefined();
     expect(bridge.writes).toEqual([]);
 
     await user.keyboard('{Escape}');
@@ -561,9 +522,8 @@ describe('closing', () => {
     await choose(user, 'Close the file');
 
     expect(modelStore.getState().present).toBe(placeholderModel);
-    expect(await shown(user)).toBe(
-      'Untitled, Saerskriven YAML, no unsaved changes',
-    );
+    expect(modelStore.getState().file._tag).toBe('NoFile');
+    expect(isDirty(modelStore.getState())).toBe(false);
   });
 
   it('asks in the menu rather than in a dialog, and puts it away when the file is kept', async () => {
@@ -599,9 +559,8 @@ describe('closing', () => {
     await user.click(item('Discard the changes and close'));
 
     expect(modelStore.getState().present).toBe(placeholderModel);
-    expect(await shown(user)).toBe(
-      'Untitled, Saerskriven YAML, no unsaved changes',
-    );
+    expect(modelStore.getState().file._tag).toBe('NoFile');
+    expect(isDirty(modelStore.getState())).toBe(false);
   });
 
   it('opens the menu on the question when the chord asks with the menu shut', async () => {

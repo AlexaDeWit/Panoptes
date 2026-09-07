@@ -40,6 +40,10 @@ suggestions.
   agent on the shared orchestration host runs the floor in
   [`.agents/orchestration.md`, Verification mode](.agents/orchestration.md#verification-mode)
   and lets the draft PR's CI run carry the rest.
+- **Test contracts.** Assert observable behaviour and stable domain data. Do
+  not assert full UI prose, punctuation, or document-title copy. Assert exact
+  text only when the text is a documented interface, such as serialized
+  output, CLI output, or an accessible name.
 - **One fact, one home.** Decision records only on the maintainer's explicit
   request ([CONTRIBUTING, Decision records](CONTRIBUTING.md#decision-records)).
 

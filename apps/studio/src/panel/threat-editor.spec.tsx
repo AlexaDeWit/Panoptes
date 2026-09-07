@@ -159,15 +159,15 @@ describe(
 
     it('reports a refused draft, and keeps reporting it while a clean field commits beside it', async () => {
       const onRefusal = vi.fn<(refused: RefusedField | undefined) => void>();
-      const refusedDescription = {
-        field: 'Description',
-        text: `Pasted${softHyphen}prose`,
-        said: 'Description was not saved. Character 7 is one the model does not accept.',
-      };
       showEditor({ onRefusal });
 
       await typeInto('Description', `Pasted${softHyphen}prose`);
-      expect(onRefusal).toHaveBeenLastCalledWith(refusedDescription);
+      const refusedDescription = onRefusal.mock.lastCall?.[0];
+      expect(refusedDescription).toMatchObject({
+        field: 'Description',
+        text: `Pasted${softHyphen}prose`,
+      });
+      expect(refusedDescription?.said).toContain('7');
 
       await typeInto('Mitigation', 'Check the token.');
 
@@ -179,7 +179,7 @@ describe(
         held: {
           field: 'Description',
           text: `Pasted${softHyphen}prose`,
-          said: 'Description was not saved. Character 7 is one the model does not accept.',
+          said: 'A refusal',
         },
       });
 
