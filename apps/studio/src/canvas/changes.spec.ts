@@ -1,4 +1,9 @@
-import { flowEndNodeId, layoutDiagram } from '@saerskriven/canvas';
+import {
+  flowEndNodeId,
+  layoutAtReactFlowNodes,
+  layoutDiagram,
+  toReactFlowNodes,
+} from '@saerskriven/canvas';
 import type { ElementId, Flow } from '@saerskriven/model';
 import { Action } from '../store/actions.js';
 import {
@@ -14,6 +19,7 @@ import {
   applyChanges,
   applyConnection,
   betweenTwoElements,
+  gestureSelection,
   moveActions,
   selectionActions,
   type DiagramChange,
@@ -166,6 +172,57 @@ describe('moveActions', () => {
         offset: { x: 40, y: 25 },
       }),
     ]);
+  });
+});
+
+describe('gestureSelection', () => {
+  const selection = [readerElement, studioElement, requestFlow];
+
+  it('keeps the full selection for a group move', () => {
+    expect(
+      gestureSelection(
+        [moving(readerElement, { x: 40, y: 25 }, true)],
+        nodes,
+        selection,
+      ),
+    ).toBe(selection);
+  });
+
+  it('keeps only the resized node during a multi-selection resize', () => {
+    expect(
+      gestureSelection(
+        [sizing(readerElement, { width: 120, height: 80 }, true)],
+        nodes,
+        selection,
+      ),
+    ).toEqual([readerElement]);
+  });
+
+  it('keeps flows on untouched nodes fixed during a multi-selection resize', () => {
+    const group = [readerElement, studioElement, requestFlow];
+    const changes = [sizing(readerElement, { width: 120, height: 80 }, true)];
+    const onScreen = toReactFlowNodes(layout).map((node) =>
+      node.id === readerElement
+        ? {
+            ...node,
+            position: { x: node.position.x, y: node.position.y - 20 },
+            height: 80,
+          }
+        : node,
+    );
+
+    const transient = layoutAtReactFlowNodes(
+      layout,
+      onScreen,
+      gestureSelection(changes, nodes, group),
+    );
+
+    expect(
+      transient.nodes.find((node) => node.id === studioElement)?.position,
+    ).toEqual(nodes.get(studioElement)?.position);
+    expect(
+      transient.edges.find((edge) => edge.id === requestFlow)?.target,
+    ).toEqual(layout.edges.find((edge) => edge.id === requestFlow)?.target);
   });
 });
 

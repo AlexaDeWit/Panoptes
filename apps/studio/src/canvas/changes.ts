@@ -121,6 +121,27 @@ export function moveActions(
 }
 
 /**
+ * The elements whose geometry moves during the reported gesture. A resize
+ * changes one node even when the store holds a multi-selection.
+ */
+export function gestureSelection(
+  changes: readonly DiagramChange[],
+  nodes: ReadonlyMap<string, CanvasNode>,
+  selection: readonly ElementId[],
+): readonly ElementId[] {
+  const resized = new Set(
+    changes.flatMap((change) => {
+      if (change.type !== 'dimensions' || change.resizing === undefined) {
+        return [];
+      }
+      const node = nodes.get(change.id);
+      return node === undefined ? [] : [node.id];
+    }),
+  );
+  return resized.size === 0 ? selection : [...resized];
+}
+
+/**
  * Whether a connection React Flow is drawing runs between two different
  * elements. It is React Flow's own test while the gesture is in flight, so a
  * drag that would end where it started is refused as it is drawn rather than
