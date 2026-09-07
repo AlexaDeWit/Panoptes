@@ -26,6 +26,14 @@ export function describeFailure(failure: StudioFailure): FailureDescription {
       headline: 'Saerskriven could not reach the file.',
       details: [reason],
     }),
+    StoredRecoveryRejected: ({ reason }) => ({
+      headline: 'Saerskriven rejected the stored recovery snapshot.',
+      details: [reason],
+    }),
+    RecoveryUnavailable: ({ reason }) => ({
+      headline: 'Local recovery is unavailable.',
+      details: [reason],
+    }),
   });
 }
 

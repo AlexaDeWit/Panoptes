@@ -3,6 +3,7 @@ import {
   type FormatName,
   type WriteResult,
 } from '@saerskriven/formats';
+import { Either } from 'effect';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import type { FileCommands } from '../commands/registry.js';
 import { Action } from '../store/actions.js';
@@ -80,8 +81,9 @@ export function useFileSession(
   const closeFile = useCallback((): void => {
     setClosing(false);
     setReport(undefined);
-    bridge.release();
-    dispatch(Action.Closed());
+    if (Either.isRight(dispatch(Action.Closed()))) {
+      bridge.release();
+    }
   }, [bridge]);
 
   const applyOpen = useCallback((result: FileResult<OpenOutcome>): void => {

@@ -14,7 +14,13 @@ import {
   keyShortcutsAttribute,
   spellShortcuts,
 } from '../commands/shortcuts.js';
-import { canRedo, canUndo, isDirty, renameable } from '../store/selectors.js';
+import {
+  canRedo,
+  canUndo,
+  isDirty,
+  needsCloseGuard,
+  renameable,
+} from '../store/selectors.js';
 import { useModelStore } from '../store/store.js';
 import { FailureNotice } from '../ui/failure-notice.js';
 import { LiveRegion } from '../ui/live-region.js';
@@ -152,6 +158,7 @@ export function StudioMenu({
   const file = useModelStore((state) => state.file);
   const failure = useModelStore((state) => state.lastFailure);
   const dirty = useModelStore(isDirty);
+  const guarded = useModelStore(needsCloseGuard);
   const undoable = useModelStore(canUndo);
   const redoable = useModelStore(canRedo);
   const nothing = useModelStore((state) => state.selection.length === 0);
@@ -159,7 +166,7 @@ export function StudioMenu({
   const [open, setOpen] = useState(false);
   const selectedColourMode = colourMode ?? 'system';
 
-  useCloseGuard(dirty);
+  useCloseGuard(guarded);
   useAsking(session.closing, dirty, setOpen, session.cancelClose);
   useChoosing(session.choosing, setOpen);
 
@@ -460,9 +467,9 @@ function useChoosing(choosing: boolean, show: (open: boolean) => void): void {
   }, [choosing, show]);
 }
 
-function useCloseGuard(dirty: boolean): void {
+function useCloseGuard(guarded: boolean): void {
   useEffect(() => {
-    if (!dirty) {
+    if (!guarded) {
       return undefined;
     }
     const guard = (event: BeforeUnloadEvent): void => {
@@ -472,5 +479,5 @@ function useCloseGuard(dirty: boolean): void {
     return () => {
       globalThis.removeEventListener('beforeunload', guard);
     };
-  }, [dirty]);
+  }, [guarded]);
 }

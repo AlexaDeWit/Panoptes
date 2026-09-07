@@ -1,10 +1,9 @@
 # The studio's model store
 
-One store holds the whole studio: the model on screen, the undo and redo
-stacks, the selection, the file lifecycle, and the last refusal. Outside a
-spec's reset, `dispatch(action)` is the only way any of it moves, and it
-applies one pure `reduce(state, action)`. Views read through selectors and
-nothing else.
+One store holds the whole studio: the model, history, transient view state,
+file lifecycle, last refusal, and recovery status. Outside a spec reset,
+`dispatch(action)` is the only way the state moves. It applies one pure
+`reduce(state, action)`. Views read through selectors.
 
 Zustand hosts it because it is the programming model React Flow 12 is built
 on, so the canvas and the studio subscribe the same way and a component
@@ -47,12 +46,9 @@ and no immutable snapshot to push onto a stack.
   fails and no view handles an error. A successful edit pushes the old present
   onto `past` and clears `future`.
 - `store.ts` creates the vanilla store, `dispatch` applies the reducer to it,
-  and `useModelStore(selector)` is the React half. The store opens on the
-  placeholder model, or on the one `development-model.ts` reads off the page
-  under Vite's development flag, which is how the browser suite puts a real
-  model on the canvas while opening a file is still issue #37's. Vite settles
-  that flag at build time, so a production build carries neither the read nor
-  a model to read.
+  writes recoverable changes, and then publishes the state.
+  `useModelStore(selector)` is the React half. The store opens from recovery,
+  the development model, or the placeholder, in that order.
 - `selectors.ts` derives what views show. Unsaved work is `present !== saved`
   by identity, so undoing back to the saved point clears it with no
   bookkeeping. `windowTitle` is what the browser tab is named: the model's
@@ -84,7 +80,32 @@ moves the model, never the file. The type is derived from the formats
 package's detected-read union, so a document cannot be filed under the wrong
 format and nothing has to assert which codec owns which.
 
-## What a later slice does
+## Recovery
+
+`recovery-storage.ts` owns loading, replacing, and clearing one snapshot. The
+browser adapter uses `saerskriven:studio:recovery` in `localStorage`.
+Version 1 stores `present`, dirty status, and the file lifecycle. The file
+lifecycle includes the name, format, and retained wire document.
+
+`dispatch` writes each changed recoverable field before it publishes the new
+state. The reducer performs no storage work. The snapshot excludes the undo
+and redo stacks, selection, rename state, and the last failure. A restored
+session starts with those fields empty.
+
+Startup bounds and parses the stored text before its schema validates the
+version, model, file data, and retained source. Missing data opens the
+placeholder without a report. Rejected data opens the placeholder and records
+`StoredRecoveryRejected`.
+
+A successful write marks the current state as recoverable. A failed write
+records `RecoveryUnavailable` and leaves that mark false. The page guard uses
+that mark with dirty status. A later recoverable change retries the write.
+Close clears the snapshot. A failed clear keeps the session open for retry.
+
+The snapshot never holds a browser file handle. A restored file keeps its name,
+format, and retained source. Its next Save uses a new bridge with no handle.
+
+## Rules for changes
 
 - A reducer arm changes the model only by calling a `@saerskriven/model`
   operation and folding its `Either`. Never assign into `state.present` or

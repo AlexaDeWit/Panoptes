@@ -37,7 +37,7 @@ describe('ErrorBoundary', () => {
     expect(screen.getByRole('region').textContent).toContain(failure);
   });
 
-  it('offers the reload that starts again from the file on disk', async () => {
+  it('offers the reload that can restore local recovery', async () => {
     const user = userEvent.setup();
     const reload = vi.fn<() => void>();
     render(

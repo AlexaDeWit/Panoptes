@@ -389,21 +389,45 @@ describe('what the studio says about the file', () => {
     expect(burger().getAttribute('aria-label')).toBe('Menu');
   });
 
-  it('guards the tab while the model has changes in no file, and lets go once they are in one', async () => {
-    const user = userEvent.setup();
+  it('guards the tab only after the latest recovery write fails', () => {
     mounted(specBridge());
 
     expect(asked()).toBe(false);
 
     edit();
 
-    expect(asked()).toBe(true);
+    expect(asked()).toBe(false);
 
-    await choose(user, 'Save');
-
-    await waitFor(() => {
-      expect(asked()).toBe(false);
+    const setItem = vi
+      .spyOn(Storage.prototype, 'setItem')
+      .mockImplementationOnce(() => {
+        throw new DOMException('Quota reached', 'QuotaExceededError');
+      });
+    act(() => {
+      dispatch(
+        Action.RenameElement({
+          elementId: actorElement,
+          name: 'Changed once',
+        }),
+      );
     });
+
+    expect(asked()).toBe(true);
+    expect(screen.getByTestId('failure-notice').textContent).toContain(
+      'Local recovery is unavailable.',
+    );
+
+    setItem.mockRestore();
+    act(() => {
+      dispatch(
+        Action.RenameElement({
+          elementId: actorElement,
+          name: 'Changed again',
+        }),
+      );
+    });
+
+    expect(asked()).toBe(false);
   });
 });
 
@@ -706,6 +730,34 @@ describe('closing', () => {
     expect(modelStore.getState().present).toBe(placeholderModel);
     expect(modelStore.getState().file._tag).toBe('NoFile');
     expect(isDirty(modelStore.getState())).toBe(false);
+  });
+
+  it('keeps the session and handle until recovery clears', async () => {
+    const user = userEvent.setup();
+    const bridge = specBridge();
+    mounted(bridge);
+    edit();
+    await choose(user, 'Close the file');
+    const removeItem = vi
+      .spyOn(Storage.prototype, 'removeItem')
+      .mockImplementationOnce(() => {
+        throw new Error('Clear failed.');
+      });
+
+    await user.click(item('Discard the changes and close'));
+
+    expect(isDirty(modelStore.getState())).toBe(true);
+    expect(bridge.releases.count).toBe(0);
+    expect(screen.getByTestId('failure-notice').textContent).toContain(
+      'Local recovery is unavailable.',
+    );
+
+    removeItem.mockRestore();
+    await choose(user, 'Close the file');
+    await user.click(item('Discard the changes and close'));
+
+    expect(modelStore.getState().present).toBe(placeholderModel);
+    expect(bridge.releases.count).toBe(1);
   });
 
   it('opens the menu on the question when the chord asks with the menu shut', async () => {

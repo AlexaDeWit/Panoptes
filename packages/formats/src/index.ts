@@ -4,7 +4,12 @@ export * from './lib/divergence.js';
 export * from './lib/saerskriven-yaml-read.js';
 export * from './lib/saerskriven-yaml-write.js';
 export * from './lib/saerskriven-yaml.js';
-export { readLimits, type ReadLimit } from './lib/read-limits.js';
+export {
+  parseWithinLimits,
+  readLimits,
+  withinTextLimit,
+  type ReadLimit,
+} from './lib/read-limits.js';
 export * from './lib/threat-dragon-read.js';
 export * from './lib/threat-dragon-write.js';
 export * from './lib/threat-dragon.js';

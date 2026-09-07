@@ -14,6 +14,11 @@ export function isDirty(state: State): boolean {
   return state.present !== state.saved;
 }
 
+/** The dirty session lacks a confirmed recovery write. */
+export function needsCloseGuard(state: State): boolean {
+  return isDirty(state) && !state.recoveryCurrent;
+}
+
 /** There is a model to go back to. */
 export function canUndo(state: State): boolean {
   return state.past.length > 0;
