@@ -36,6 +36,10 @@ the main browser project is testing. It writes to the e2e project's
 `test-output/pages-site` directory, which the e2e target declares as its own
 output.
 
+`apps/studio/social-card-source.html` is the editable source for the social
+card. The studio build renders it through the pinned Chromium, and the Pages
+spec checks the published image and its text alternative.
+
 `src/` holds the Playwright specs and the fixtures they share. `tests/` holds
 this project's own unit specs: the chords the browser suite presses, held
 against the studio's command registry, and the diff walk the round-trip spec

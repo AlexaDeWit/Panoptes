@@ -3,6 +3,7 @@ import {
   initialColourModeScript,
   initialPageStylesheet,
 } from './initial-page.mjs';
+import { socialCardAsset, socialImage } from './social-card.mjs';
 import { typstAssets } from './typst-assets.mjs';
 
 const siteUrl =
@@ -39,9 +40,10 @@ const initialPageStyles = () => ({
 export const studioConfig = (options: StudioConfigOptions = {}) =>
   reactApp(import.meta.dirname, {
     base,
-    plugins: [initialPageStyles(), typstAssets()],
+    plugins: [initialPageStyles(), typstAssets(), socialCardAsset()],
     setupFiles: ['./src/test-setup.ts'],
     siteUrl,
+    socialImage,
     ...options,
   });
 
