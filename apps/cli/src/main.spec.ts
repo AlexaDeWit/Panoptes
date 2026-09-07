@@ -69,7 +69,7 @@ const compiled: Runner = {
   leading: [],
   absence: existsSync(executablePath)
     ? undefined
-    : `nothing is at ${executablePath}, which scripts/package-cli.sh writes`,
+    : `nothing is at ${executablePath}, which pnpm nx compile @saerskriven/cli writes`,
 };
 
 const runners: readonly Runner[] = [bundle, compiled];

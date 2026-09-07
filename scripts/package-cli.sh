@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Compile the CLI bundle into the standalone executables a release attaches.
 #
-#   scripts/package-cli.sh          the host target alone (what CI runs per PR)
-#   scripts/package-cli.sh --all    every target a release carries
+#   pnpm nx compile @saerskriven/cli        the host target
+#   pnpm nx compile @saerskriven/cli --configuration=all  every release target
 #
 # Input is apps/cli/dist/main.js, which `nx build @saerskriven/cli` writes, and
 # apps/cli/dist/assets beside it, which the same build fills with the Typst
@@ -32,7 +32,6 @@ cd -- "${repo_root}"
 readonly bundle='apps/cli/dist/main.js'
 readonly assets='apps/cli/dist/assets'
 readonly out_dir='dist/cli'
-readonly repeat_dir='dist/cli-repeat'
 
 # No update check, and no interactive prompt to hang a run.
 export DENO_NO_UPDATE_CHECK=1
@@ -78,6 +77,7 @@ fi
 # deno compiles, and the PDF the checks below render.
 scratch="$(mktemp -d)"
 readonly scratch
+readonly repeat_dir="${scratch}/cli-repeat"
 trap 'rm -rf -- "${scratch}"' EXIT
 
 # Deno writes its own caches into DENO_DIR and the flake's pinned runtimes sit

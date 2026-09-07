@@ -52,15 +52,10 @@ golden is the SVG document composed around them. The two app suites name the
 path.
 
 This file is its own golden, so `packages/formats` writes it back where it
-differs under `-u` or where it has gone missing. `apps/cli` and `apps/studio`
-read the bytes themselves and depend on `@saerskriven/formats` through
-`workspace:*`, so `^test` orders the write ahead of both reads. The render
-and canvas rows above reach the model through `test-data/saerskriven.model.json`
-instead, which the same suite writes and which their manifests name the task
-for, the layer matrix allowing them no dependency on it
-([`CODING.md`](../CODING.md), Build targets;
-[`test-data/README.md`](../test-data/README.md) carries the same account for
-the files under it).
+differs during an explicit snapshot update. Normal tests read the committed
+bytes. The render and canvas suites read the derived model through
+`test-data/saerskriven.model.json`, so the layer matrix needs no dependency on
+the formats package.
 
 `packages/formats` also writes this model out as
 `test-data/saerskriven.model.json`, because the render and canvas suites gate on
@@ -82,17 +77,17 @@ writer's canonical form therefore reds the suite rather than passing. Edit the
 file, then regenerate it in the same commit:
 
 ```sh
-pnpm nx test @saerskriven/formats -- -u    # canonical form, and the model JSON
-pnpm nx test @saerskriven/render -- -u     # the register
-pnpm nx test @saerskriven/canvas -- -u     # one SVG per diagram
+pnpm snapshots:update @saerskriven/formats  # YAML and model JSON
+pnpm snapshots:update @saerskriven/render   # register and SVG
+pnpm snapshots:update @saerskriven/canvas   # canvas SVG
 ```
 
 Read every diff before committing. Each of those files is an output by
 definition, so a change to one is a change to what the format, the register,
 or the canvas writes.
 
-`nx.json` names this directory in `sharedGlobals`, so editing the model
-invalidates the cached result of every task that reads it. `.oxfmtrc.json`
+Each test target that reads this directory names it in a fixture input, so an
+edit invalidates its cached result. `.oxfmtrc.json`
 leaves the YAML here alone, for the same reason it leaves the payloads under
 `test-data/` alone: a formatter must not rewrite a file that is compared byte
 for byte.

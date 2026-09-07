@@ -34,8 +34,8 @@
       "lint": {},
       "test": {
         "inputs": [
-          "default",
-          "^default",
+          "...",
+          "testFixtures",
           "{workspaceRoot}/docs/saerskriven-yaml.md"
         ]
       }

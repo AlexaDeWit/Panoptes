@@ -19,6 +19,10 @@
     "targets": {
       "boundaries": {},
       "e2e": {
+        "inputs": [
+          "...",
+          "studioE2eFixtures"
+        ],
         "outputs": [
           "{projectRoot}/test-output/playwright/output",
           "{projectRoot}/test-output/playwright/report",

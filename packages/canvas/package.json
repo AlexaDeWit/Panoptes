@@ -28,9 +28,6 @@
     "@types/react-dom": "catalog:",
     "react-dom": "catalog:"
   },
-  "//": [
-    "test deviates from the root dependsOn (CODING.md, Build targets) to name @saerskriven/formats' suite: canvas.fixtures.ts reads test-data/saerskriven.model.json at module load and that suite is what writes it. The layer matrix forbids a package dependency on formats, so ^test cannot reach it, and a dependsOn entry naming the task orders the two with no import. The root's own entries are repeated because a leaf dependsOn replaces the default rather than adding to it."
-  ],
   "nx": {
     "tags": [
       "layer:canvas"
@@ -39,15 +36,12 @@
       "boundaries": {},
       "lint": {},
       "test": {
-        "dependsOn": [
-          "^build",
-          "^test",
-          {
-            "projects": [
-              "@saerskriven/formats"
-            ],
-            "target": "test"
-          }
+        "inputs": [
+          "...",
+          "viteGlobals",
+          "{workspaceRoot}/test-data/ecluse.model.json",
+          "{workspaceRoot}/test-data/every-glyph.model.json",
+          "{workspaceRoot}/test-data/saerskriven.model.json"
         ]
       }
     }

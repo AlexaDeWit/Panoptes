@@ -50,11 +50,12 @@ Edit here when the process changes, in the same PR as the change.
 - The host is shared by every agent the lead runs, so local verification is
   a floor and the draft PR's CI run is the test evidence. Before the first
   push an implementer runs the lint and the typecheck of the projects it
-  touched, the formatter, and the one spec file that pins its change, once,
-  with `--skip-nx-cache`; proving a test bites by breaking it happens at that
-  scope. Nothing heavier runs locally: no `pnpm check`, no `run-many` across
-  the workspace, and no Playwright unless the slice is a browser spec, and
-  then that spec alone.
+  touched, the formatter, and the one spec file that pins its change, once.
+  Nx hashes the source, configuration, toolchain and environment inputs. A
+  changed input runs and an unchanged task replays. Proving a test bites by
+  breaking it happens at that scope. Nothing heavier runs locally. Do not run
+  `pnpm check` or a workspace-wide `run-many`. Run Playwright only for a
+  browser slice, and run that spec alone.
 - The implementer pushes the draft at once. The lead starts the CI watch at
   the PR-open report and dispatches the fresh review beside it, so CI and
   the review run in parallel rather than in series. A review reads the CI

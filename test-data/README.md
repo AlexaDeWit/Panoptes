@@ -24,23 +24,15 @@ are where it was made once: oxfmt does not format SVG, so they need no fourth
 pattern. Whoever adds a payload in a further format runs `pnpm fix` over it
 and checks the bytes before deciding it needs none either.
 
-`nx.json` names this directory in `sharedGlobals`, so editing a file below
-invalidates the cached result of every task that reads it. Without that a
-suite reading these files reports the green it cached before the edit.
+Each test target names the files it reads, directly or through a named fixture
+input. Fixture changes do not invalidate lint or build targets.
 
 ## Who writes each file, and who reads it
 
-Ten of the files below are output: one suite writes each as a vitest file
-snapshot, and seven of the ten are read by a suite other than the one that
-writes them. A file snapshot is written where the file is absent, under the
-non-CI default, and rewritten where it differs under `-u`; CI writes in
-neither case and reds on an absent file instead. So such a reader can run
-while the writer is in one of the two states that do write, and what keeps it
-out of that window is a task edge in the project graph: either
-the `^test` `nx.json` puts on every `test` target, or, where the layer matrix
-allows no package dependency from the reader to the writer, an entry naming
-the writing task in the reader's own manifest
-([`CODING.md`](../CODING.md), Build targets).
+Ten files below are maintained as Vitest file snapshots. Seven are also read
+by another suite. Cached Nx tests run with `CI=true`, so they compare these
+files without writing them. `pnpm snapshots:update <project>` runs
+Vitest outside Nx when a producer must update its files.
 
 | File                                                | Written by         | Read by                                                                     |
 | --------------------------------------------------- | ------------------ | --------------------------------------------------------------------------- |
@@ -108,8 +100,8 @@ file rather than as a test that still passes.
 
 `packages/formats` compares the write against it on every run, as a vitest
 file snapshot, so it cannot fall behind the codec. Regenerate it with
-`pnpm nx test @saerskriven/formats -- -u`, and read the diff: the file is the
-format's output by definition, so a change to it is a change to the format.
+`pnpm snapshots:update @saerskriven/formats`, and read the diff. The
+file is the format's output by definition.
 
 The committed bytes are read back as well, and have to parse to the model
 they were written from, so the file gates more than its own regeneration.
@@ -130,9 +122,8 @@ and reds where the two differ. `packages/formats` compares the whole read of
 `ecluse.json` against it, and compares again what a write of that read reads
 back.
 
-Regenerate it with `pnpm nx test @saerskriven/model -- -u`, in the same commit as
-the change that moved it, and read the diff: it is what the model core holds
-of a real threat model.
+Regenerate it with `pnpm snapshots:update @saerskriven/model` in the
+same commit as the source change. Read the diff.
 
 `packages/render` reads it too, as the input its markdown register is
 rendered from, so this file is where a projection meets the model core
@@ -157,8 +148,8 @@ because nobody wrote the model twice: `packages/formats` reads the YAML and
 is its only producer. Which path a native fixture's model goes to is a field
 on its `nativeFixtures` entry, and Écluse's entry names none.
 
-Regenerate it with `pnpm nx test @saerskriven/formats -- -u`, in the same commit
-as the edit to the YAML that moved it.
+Regenerate it with `pnpm snapshots:update @saerskriven/formats` in
+the same commit as the YAML edit.
 
 ## `render/ecluse.register.snapshot.md`
 
@@ -172,10 +163,8 @@ it on every test run with `toMatchFileSnapshot`, and it is the only place the
 register's whole shape, escaping and prose handling included, is held against
 a production-scale model.
 
-Regenerate it with `pnpm nx test @saerskriven/render -- -u`, in the same commit
-as the change that moved it, and read the diff: the file is the register's
-output by definition, so a change to it is a change to what every consumer of
-the register sees.
+Regenerate it with `pnpm snapshots:update @saerskriven/render` in
+the same commit as the source change. Read the diff.
 
 ## `render/saerskriven.register.snapshot.md`
 
@@ -185,7 +174,7 @@ carries a custom methodology, a CIA category, two threats attached to no
 element, and a mitigation written as a markdown list, none of which the
 Écluse model has.
 
-Regenerate it the same way, with `pnpm nx test @saerskriven/render -- -u`.
+Regenerate it with `pnpm snapshots:update @saerskriven/render`.
 
 ## `every-glyph.model.json`
 
@@ -214,8 +203,8 @@ value out of the model, or to the drawing embedded inside it, arrives as a
 diff here. `ecluse.snapshot.svg` below is inside it verbatim, so the two move
 together and a diff on one without the other is a bug.
 
-Regenerate it with `pnpm nx test @saerskriven/render -- -u`, in the same commit
-as the change that moved it. Nothing formats it: oxfmt does not know Typst,
+Regenerate it with `pnpm snapshots:update @saerskriven/render` in
+the same commit as the source change. `oxfmt` does not know Typst,
 which is the decision this file's format needed under the rule above.
 
 ## `render/*.snapshot.svg`
@@ -236,8 +225,8 @@ drawn at all.
 All are committed for the reason the registers above are, and gated the same
 way: `packages/render` compares them on every test run with
 `toMatchFileSnapshot` and reds where a file and the drawing differ.
-Regenerate them with `pnpm nx test @saerskriven/render -- -u`, in the same commit
-as the change that moved them.
+Regenerate them with `pnpm snapshots:update @saerskriven/render` in
+the same commit as the source change.
 
 ## `threat-dragon/`
 

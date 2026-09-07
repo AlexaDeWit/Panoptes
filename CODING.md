@@ -135,25 +135,20 @@ configuration. A leaf project opts in with a config file or an
 executor-only marker, and deviations need a stated reason.
 
 Nx replays a cached task result when the hash of its declared inputs is
-unchanged, and the default inputs are the project's own files plus
-`sharedGlobals`. A task that reads a file outside its project root does
-not see that file change, so an edited fixture can report green from the
-run before the edit. Every such path is named in `sharedGlobals` or in the
-target's `inputs` (`test-data/` is the case in the tree). The same holds
-for what a task produces and consumes: files a task writes are restored
-from cache only when listed in its `outputs`, and a task that needs another
-project's output reaches it through the project graph, a `workspace:*`
-dependency or `dependsOn`, never a relative path the graph cannot see.
-`test` carries `^test` for that reason: several suites write a file under
-`test-data/` as a vitest file snapshot that another suite reads, and the
-write is ordered ahead of the read along the `workspace:*` edges the two
-projects already have. Where the layer matrix allows no such edge, the
-reading project's own `test` names the writing task instead,
-`{ "projects": ["@saerskriven/formats"], "target": "test" }`, which is a task
-edge and no import: `packages/canvas` and `packages/render` read the model
-`packages/formats` writes and may not depend on it. Who writes and who reads
-each file is in [`test-data/README.md`](test-data/README.md). CI restores no
-cache, so a hole shows only in local runs.
+unchanged. The default inputs are the project's own files and the Node
+version. A task that reads a root file adds it through a target-specific
+named input. Tests add the shared Vitest configuration. Each consumer adds
+the committed fixtures it reads. Builds add only the configuration they run.
+
+Cached tests only read committed snapshots. `pnpm snapshots:update <project>`
+runs Vitest directly for one producer when snapshots must change. Normal test
+targets do not run another project's tests.
+
+Files a task produces are restored only when listed in its `outputs`. A task
+that consumes another task's output declares both `dependsOn` and a
+`dependentTasksOutputFiles` input. The CLI's `compile` and `test-compiled`
+targets are the case in this tree: the first stores `dist/cli`, and the second
+hashes that executable before it runs it.
 
 A target that empties its output directory owns that directory alone. The
 studio's vite build empties `dist/` on every run and nothing orders it
