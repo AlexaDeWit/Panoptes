@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { darkPalette, lightPalette } from '@saerskriven/canvas';
 import {
@@ -13,6 +13,7 @@ const source = readFileSync(
 );
 const page = new DOMParser().parseFromString(source, 'text/html');
 const root = page.querySelector('#root');
+const publicDirectory = join(import.meta.dirname, '../../public');
 
 describe('the initial page', () => {
   it('keeps search metadata without exposing temporary page copy', () => {
@@ -46,5 +47,19 @@ describe('the initial page', () => {
     expect(initialPageStylesheet).toContain(
       '@media (prefers-reduced-motion: reduce)',
     );
+  });
+
+  it('links the selected SVG favicon', () => {
+    const favicon = page.querySelector('link[rel="icon"]');
+    expect(favicon?.getAttribute('type')).toBe('image/svg+xml');
+    expect(favicon?.getAttribute('href')).toBe('/favicon.svg');
+
+    const icon = new DOMParser().parseFromString(
+      readFileSync(join(publicDirectory, 'favicon.svg'), 'utf8'),
+      'image/svg+xml',
+    );
+    expect(icon.querySelector('parsererror')).toBeNull();
+    expect(icon.documentElement.getAttribute('viewBox')).toBe('0 0 64 64');
+    expect(existsSync(join(publicDirectory, 'favicon.ico'))).toBe(false);
   });
 });

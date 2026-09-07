@@ -1,0 +1,20 @@
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  viewBox="0 0 64 64"
+  role="img"
+  aria-labelledby="title description"
+>
+  <title id="title">Saerskriven</title>
+  <desc id="description">A charcoal S with a narrow diagonal break.</desc>
+  <rect width="64" height="64" rx="13" fill="#f9f6f0" />
+  <path
+    d="M50 13H25C16 13 11 18 11 24C11 31 17 34 29 36L35 29C25 27 21 26 21 23C21 21 24 20 28 20H50ZM29 35C39 37 43 38 43 42C43 45 40 46 36 46H14V53H39C48 53 53 48 53 41C53 34 47 31 36 29Z"
+    fill="#38342e"
+  />
+  <path
+    d="M28 35L37 29"
+    stroke="#f9f6f0"
+    stroke-width="3"
+    stroke-linecap="square"
+  />
+</svg>
