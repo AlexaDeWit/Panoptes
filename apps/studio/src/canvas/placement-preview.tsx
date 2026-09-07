@@ -1,16 +1,18 @@
-import { BoxElementGlyph, smoothPath, svgNumber } from '@saerskriven/canvas';
+import {
+  ElementGlyph,
+  smoothPath,
+  svgNumber,
+  type CanvasNode,
+} from '@saerskriven/canvas';
 import type { Point, Size } from '@saerskriven/model';
 import { ViewportPortal } from '@xyflow/react';
-import type { ElementTool } from './elements.js';
 import styles from './placement.module.css';
-
-type BoxTool = Exclude<ElementTool, 'boundary-curve'>;
 
 /** The element geometry shown before a placement reaches the model. */
 export type PlacementDraft =
   | {
       readonly kind: 'box';
-      readonly tool: BoxTool;
+      readonly node: CanvasNode;
       readonly position: Point;
       readonly size: Size;
     }
@@ -42,7 +44,7 @@ export function PlacementPreview({
           }}
           width={svgNumber(preview.size.width)}
         >
-          <BoxElementGlyph kind={preview.tool} size={preview.size} />
+          <ElementGlyph node={{ ...preview.node, position: { x: 0, y: 0 } }} />
         </svg>
       </ViewportPortal>
     );

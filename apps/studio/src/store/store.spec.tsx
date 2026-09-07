@@ -98,7 +98,7 @@ describe('session recovery', () => {
       expect(state.past).toEqual([]);
       expect(state.future).toEqual([]);
       expect(state.selection).toEqual([]);
-      expect(state.renaming).toBeUndefined();
+      expect(state.inlineEditor).toBeUndefined();
       expect(state.lastFailure).toBeUndefined();
       expect(state.recoveryCurrent).toBe(true);
     },

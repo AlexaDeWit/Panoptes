@@ -54,6 +54,9 @@ const operationFailures: ByTag<OperationFailure> = {
   NotResizable: OperationFailure.NotResizable({
     elementId: elementId('element-curve'),
   }),
+  NotTextElement: OperationFailure.NotTextElement({
+    elementId: elementId('element-process'),
+  }),
   EmptyName: OperationFailure.EmptyName({
     elementId: elementId('element-unnamed'),
   }),

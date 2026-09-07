@@ -55,6 +55,12 @@ export type StudioFailure = Data.TaggedEnum<{
  */
 export const StudioFailure = Data.taggedEnum<StudioFailure>();
 
+/** The field open over one canvas element. */
+export type InlineEditor = {
+  readonly kind: 'name' | 'note';
+  readonly elementId: ElementId;
+};
+
 /** The model, history, transient view state, file, and recovery status. */
 export type State = {
   readonly present: Model;
@@ -62,7 +68,7 @@ export type State = {
   readonly future: readonly Model[];
   readonly saved: Model;
   readonly selection: readonly ElementId[];
-  readonly renaming: ElementId | undefined;
+  readonly inlineEditor: InlineEditor | undefined;
   readonly file: FileLifecycle;
   readonly lastFailure: StudioFailure | undefined;
   readonly recoveryCurrent: boolean;
@@ -149,7 +155,7 @@ export function initialState(model: Model): State {
     future: [],
     saved: model,
     selection: [],
-    renaming: undefined,
+    inlineEditor: undefined,
     file: FileLifecycle.NoFile(),
     lastFailure: undefined,
     recoveryCurrent: false,

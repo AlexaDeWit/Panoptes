@@ -1,4 +1,4 @@
-import type { ElementId, Model, Point, Size } from '@saerskriven/model';
+import type { Element, ElementId, Model, Point } from '@saerskriven/model';
 import { Action } from '../store/actions.js';
 import {
   elementById,
@@ -10,13 +10,7 @@ import {
 import type { State } from '../store/state.js';
 import { dispatch, modelStore } from '../store/store.js';
 import { announce } from './announcements.js';
-import {
-  flowEnds,
-  freshBoundaryCurve,
-  freshElement,
-  freshFlow,
-  type ElementTool,
-} from './elements.js';
+import { flowEnds, freshBoundaryCurve, freshFlow } from './elements.js';
 import { currentLayout } from './layout.js';
 import { accessibleNames } from './names.js';
 import { elementIds } from './nodes.js';
@@ -32,23 +26,17 @@ export type RemovalCascade = {
   readonly threats: number;
 };
 
-/** Places and selects one element, then opens its placeholder name when asked. */
-export function placeElement(
-  kind: Exclude<ElementTool, 'boundary-curve'>,
-  position: Point,
-  size: Size,
-  openNameField = true,
-): boolean {
+/** Places and selects one element, then opens its inline editor when asked. */
+export function placeElement(element: Element, openNameField = true): boolean {
   const state = modelStore.getState();
   const diagramId = firstDiagramId(state);
   if (diagramId === undefined) {
     return false;
   }
-  const element = freshElement(kind, position, size);
   return placed(
     Action.AddElement({ diagramId, element }),
     element.id,
-    openNameField,
+    element.kind === 'text' ? 'note' : openNameField ? 'name' : undefined,
   );
 }
 
@@ -153,7 +141,7 @@ export function renameSelected(): void {
   const state = modelStore.getState();
   const elementId = selectedElement(state);
   if (elementId !== undefined && renameable(state)) {
-    dispatch(Action.Renaming({ elementId }));
+    dispatch(Action.InlineEditing({ editor: { kind: 'name', elementId } }));
   }
 }
 
@@ -171,7 +159,7 @@ export function selectAll(): void {
  */
 export function beginRenaming(elementId: ElementId): void {
   if (nameEditable(modelStore.getState(), elementId)) {
-    dispatch(Action.Renaming({ elementId }));
+    dispatch(Action.InlineEditing({ editor: { kind: 'name', elementId } }));
   }
 }
 
@@ -181,8 +169,8 @@ export function beginRenaming(elementId: ElementId): void {
  * person left focus in the field and would otherwise be dropped onto the
  * page.
  */
-export function endRenaming(elementId: ElementId): void {
-  dispatch(Action.Renaming({ elementId: undefined }));
+export function endInlineEditing(elementId: ElementId): void {
+  dispatch(Action.InlineEditing({ editor: undefined }));
   focusElement(elementId);
 }
 
@@ -191,8 +179,8 @@ export function endRenaming(elementId: ElementId): void {
  * settles on when it is left, the person having already put focus on
  * something else: sending it back would undo the click that landed there.
  */
-export function stopRenaming(): void {
-  dispatch(Action.Renaming({ elementId: undefined }));
+export function stopInlineEditing(): void {
+  dispatch(Action.InlineEditing({ editor: undefined }));
 }
 
 /**
@@ -210,6 +198,15 @@ export function commitRename(elementId: ElementId, name: string): void {
   dispatch(Action.RenameElement({ elementId, name }));
 }
 
+/** Changes the prose drawn by one canvas note. */
+export function commitNote(elementId: ElementId, text: string): void {
+  const element = elementById(modelStore.getState(), elementId);
+  if (element?.kind !== 'text' || element.text === text) {
+    return;
+  }
+  dispatch(Action.EditNote({ elementId, text }));
+}
+
 function added(action: Action, elementId: ElementId): void {
   if (!changedModel(action)) {
     return;
@@ -221,14 +218,14 @@ function added(action: Action, elementId: ElementId): void {
 function placed(
   action: Action,
   elementId: ElementId,
-  openNameField = true,
+  editor: 'name' | 'note' | undefined = 'name',
 ): boolean {
   if (!changedModel(action)) {
     return false;
   }
   dispatch(Action.Select({ elementIds: [elementId] }));
-  if (openNameField) {
-    dispatch(Action.Renaming({ elementId }));
+  if (editor !== undefined) {
+    dispatch(Action.InlineEditing({ editor: { kind: editor, elementId } }));
   } else {
     focusElement(elementId);
   }

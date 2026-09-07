@@ -378,7 +378,10 @@ describe('what the studio says about the file', () => {
 
     await choose(user, 'Rename the selection');
 
-    expect(modelStore.getState().renaming).toBe(actorElement);
+    expect(modelStore.getState().inlineEditor).toEqual({
+      kind: 'name',
+      elementId: actorElement,
+    });
   });
 
   it('names the file, its format, and whether it holds everything on screen', async () => {

@@ -25,6 +25,7 @@ import {
   removeSelected,
   selectAll,
 } from './edits.js';
+import { freshElement } from './elements.js';
 
 const opened = (selection: readonly ElementId[] = []): void => {
   modelStore.setState({ ...initialState(canvasModel), selection }, true);
@@ -83,27 +84,37 @@ describe('placing an element', () => {
   });
 
   it('adds the element, selects it and opens its name without repeating it', () => {
-    placeElement('actor', { x: 10, y: 20 }, { width: 100, height: 50 });
+    placeElement(
+      freshElement('actor', { x: 10, y: 20 }, { width: 100, height: 50 }),
+    );
 
     const state = modelStore.getState();
     expect(state.present.diagrams[0].elements).toHaveLength(7);
     expect(state.selection).toHaveLength(1);
-    expect(state.renaming).toBe(state.selection.at(0));
+    expect(state.inlineEditor).toEqual({
+      kind: 'name',
+      elementId: state.selection.at(0),
+    });
     expect(said()).toBe('');
   });
 
   it('costs one step of the undo stack, the selection beside it costing none', () => {
-    placeElement('process', { x: 10, y: 20 }, { width: 80, height: 80 });
+    placeElement(
+      freshElement('process', { x: 10, y: 20 }, { width: 80, height: 80 }),
+    );
 
     expect(modelStore.getState().past).toHaveLength(1);
   });
 
   it('does not open a name field where the placed box cannot hold it', () => {
-    placeElement('actor', { x: 10, y: 20 }, { width: 100, height: 5 }, false);
+    placeElement(
+      freshElement('actor', { x: 10, y: 20 }, { width: 100, height: 5 }),
+      false,
+    );
 
     const state = modelStore.getState();
     expect(state.selection).toHaveLength(1);
-    expect(state.renaming).toBeUndefined();
+    expect(state.inlineEditor).toBeUndefined();
   });
 
   it('places a curve as one edit through the clicked waypoints', () => {
@@ -138,7 +149,9 @@ describe('placing an element', () => {
   it('adds nothing while the model holds no diagram to add to', () => {
     emptied();
 
-    placeElement('actor', { x: 10, y: 20 }, { width: 100, height: 50 });
+    placeElement(
+      freshElement('actor', { x: 10, y: 20 }, { width: 100, height: 50 }),
+    );
 
     expect(modelStore.getState().past).toHaveLength(0);
     expect(said()).toBe('');

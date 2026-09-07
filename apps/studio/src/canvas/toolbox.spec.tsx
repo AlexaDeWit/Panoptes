@@ -36,6 +36,7 @@ describe('Toolbox', () => {
       'Store',
       'Trust boundary',
       'Trust boundary curve',
+      'Note',
       'Hand',
     ]) {
       const control = screen.getByRole('button', { name });

@@ -207,7 +207,10 @@ describe('DiagramCanvas', () => {
     fireEvent.click(reader(), { detail: 1 });
     fireEvent.click(reader(), { detail: 2 });
 
-    expect(modelStore.getState().renaming).toBe(readerElement);
+    expect(modelStore.getState().inlineEditor).toEqual({
+      kind: 'name',
+      elementId: readerElement,
+    });
   });
 
   it('leaves a click on a canvas control out of the rename gesture', () => {
@@ -218,6 +221,6 @@ describe('DiagramCanvas', () => {
       detail: 2,
     });
 
-    expect(modelStore.getState().renaming).toBeUndefined();
+    expect(modelStore.getState().inlineEditor).toBeUndefined();
   });
 });
