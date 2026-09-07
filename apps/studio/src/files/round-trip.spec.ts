@@ -42,11 +42,6 @@ const gated: readonly Gated[] = [
   { path: 'threat-modelling/saerskriven.yaml', format: 'saerskriven-yaml' },
 ];
 
-/**
- * The JSON Schema Threat Dragon validates a v2 model against before it opens
- * one, run through the validator Threat Dragon itself runs, so what the
- * studio writes is gated by the tool that has to read it.
- */
 const validate = new Ajv({ allowUnionTypes: true }).compile(
   JSON.parse(
     readFileSync(
@@ -59,12 +54,6 @@ const validate = new Ajv({ allowUnionTypes: true }).compile(
   ),
 );
 
-/**
- * A written file as it is compared against the one it was read from. JSON
- * carries no meaning in its key order, so a Threat Dragon file is compared
- * as the document it parses to; the native format writes one file per model
- * and is compared as the bytes it is.
- */
 const asDocument = (format: FormatName, text: string): unknown =>
   format === 'threat-dragon' ? JSON.parse(text) : text;
 

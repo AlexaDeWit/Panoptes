@@ -136,7 +136,9 @@ export function useFileSession(
       }
       const result = await bridge.open(readLimits.maxTextBytes);
       if (OpenOutcome.$is('NoPicker')(result.outcome)) {
-        picker.current?.click();
+        if (result.settle(true)) {
+          picker.current?.click();
+        }
         return;
       }
       applyOpen(result);

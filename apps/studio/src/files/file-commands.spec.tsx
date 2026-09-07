@@ -641,6 +641,48 @@ describe('useFileSession', () => {
     });
   });
 
+  it('suppresses a stale fallback click after Close', async () => {
+    const clicks = vi.spyOn(HTMLInputElement.prototype, 'click');
+    const result = session(specBridge({ picker: false }));
+    result.current.attachPicker(document.createElement('input'));
+
+    await act(() => {
+      result.current.commands.open();
+      result.current.commands.close();
+      return Promise.resolve();
+    });
+
+    expect(clicks).not.toHaveBeenCalled();
+    expect(modelStore.getState().present).toBe(placeholderModel);
+  });
+
+  it('keeps an older read active when the Save As format menu is cancelled', async () => {
+    const pending = deferred<string>();
+    const result = session(browserFileBridge);
+    const reading = result.current.receive({
+      ...chosenFile('replacement.yaml', nativeText),
+      text: () => pending.promise,
+    });
+    act(() => {
+      result.current.commands.saveAs();
+    });
+    expect(result.current.choosing).toBe(true);
+
+    act(() => {
+      result.current.cancelChoice();
+    });
+    await act(async () => {
+      pending.resolve(nativeText);
+      await reading;
+    });
+
+    expect(result.current.choosing).toBe(false);
+    expect(modelStore.getState().file).toMatchObject({
+      _tag: 'Opened',
+      name: 'replacement.yaml',
+    });
+  });
+
   describe.each(['picker', 'input'] as const)('a failed %s open', (path) => {
     it.each(failedFiles)(
       'releases the file but keeps the work when $name fails',

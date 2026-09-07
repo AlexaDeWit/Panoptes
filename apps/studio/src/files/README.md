@@ -17,7 +17,10 @@ puts the question in its own menu instead, handing the save-as the one format
 it settled on. The bridge holds the native handle only after the session
 accepts the outcome of the current operation.
 
-Each open, fallback selection, save, or save-as starts one operation identity.
+Each bridge open, fallback read, save, or save-as starts one operation identity.
+Without a save picker, Save As opens the format menu without bridge I/O.
+Selecting a format calls `chooseFormat` and starts the operation. Cancelling
+the format menu leaves an older read active.
 The latest request owns settlement, regardless of completion order. The
 bridge returns an outcome and a settlement function without changing its
 held handle. The session validates the read and settles the handle before
