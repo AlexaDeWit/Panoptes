@@ -74,10 +74,6 @@ beforeEach(() => {
     },
   );
   modelStore.setState(initialState(sampleModel), true);
-  vi.stubGlobal(
-    'confirm',
-    vi.fn(() => true),
-  );
 });
 
 afterEach(() => {
@@ -832,11 +828,7 @@ describe('useFileSession', () => {
     expect(modelStore.getState().present).toBe(placeholderModel);
   });
 
-  it('leaves the model alone when the person refuses to lose work in no file', async () => {
-    vi.stubGlobal(
-      'confirm',
-      vi.fn(() => false),
-    );
+  it('holds an open until the question over unsaved work is answered', async () => {
     const result = session(
       specBridge({ offers: chosenFile('model.yaml', nativeText) }),
     );
@@ -847,9 +839,20 @@ describe('useFileSession', () => {
       result.current.commands.open();
     });
 
-    await waitFor(() => {
-      expect(globalThis.confirm).toHaveBeenCalledTimes(1);
-    });
+    expect(result.current.opening).toBe(true);
     expect(modelStore.getState().present).toBe(before);
+
+    await act(async () => {
+      result.current.confirmOpen();
+      await Promise.resolve();
+    });
+
+    await waitFor(() => {
+      expect(modelStore.getState().file).toMatchObject({
+        _tag: 'Opened',
+        name: 'model.yaml',
+      });
+    });
+    expect(result.current.opening).toBe(false);
   });
 });

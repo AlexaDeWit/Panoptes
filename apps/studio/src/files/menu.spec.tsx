@@ -138,10 +138,6 @@ const withUndeclaredKeys = async (): Promise<string> =>
 
 beforeEach(() => {
   modelStore.setState(initialState(sampleModel), true);
-  vi.stubGlobal(
-    'confirm',
-    vi.fn(() => true),
-  );
 });
 
 afterEach(() => {
@@ -447,20 +443,61 @@ describe('opening', () => {
     expect(await shown(user)).toContain('model.yaml');
   });
 
-  it('asks before losing changes that are in no file, and opens nothing when refused', async () => {
+  it('asks in the menu before losing changes that are in no file', async () => {
     const user = userEvent.setup();
-    vi.stubGlobal(
-      'confirm',
-      vi.fn(() => false),
-    );
     mounted(specBridge({ offers: chosenFile('model.yaml', nativeText) }));
     edit();
 
     await choose(user, 'Open a model');
 
-    expect(globalThis.confirm).toHaveBeenCalledTimes(1);
+    expect(item('Discard the changes and open')).toBeDefined();
     expect(modelStore.getState().file._tag).toBe('NoFile');
     expect(isDirty(modelStore.getState())).toBe(true);
+
+    await user.click(item('Keep the file open'));
+
+    await openMenu(user);
+    expect(item('Open a model')).toBeDefined();
+  });
+
+  it('opens on the second step, dropping the changes it warned about', async () => {
+    const user = userEvent.setup();
+    mounted(specBridge({ offers: chosenFile('model.yaml', nativeText) }));
+    edit();
+
+    await choose(user, 'Open a model');
+    await user.click(item('Discard the changes and open'));
+
+    await waitFor(() => {
+      expect(nameOf(modelStore.getState().file)).toBe('model.yaml');
+    });
+    expect(isDirty(modelStore.getState())).toBe(false);
+  });
+
+  it('opens the menu on the open question when the chord asks', async () => {
+    const user = userEvent.setup();
+    mounted(specBridge());
+    edit();
+
+    await user.keyboard('{Control>}O{/Control}');
+
+    expect(
+      await screen.findByRole('menuitem', {
+        name: 'Discard the changes and open',
+      }),
+    ).toBeDefined();
+  });
+
+  it('takes the open question back when the menu is dismissed', async () => {
+    const user = userEvent.setup();
+    mounted(specBridge());
+    edit();
+
+    await choose(user, 'Open a model');
+    await user.keyboard('{Escape}');
+
+    await openMenu(user);
+    expect(item('Open a model')).toBeDefined();
   });
 
   it('surfaces what the codec refused, with the paths it carries, rather than stopping', async () => {
@@ -707,7 +744,6 @@ describe('closing', () => {
     await choose(user, 'Close the file');
 
     expect(item('Discard the changes and close')).toBeDefined();
-    expect(globalThis.confirm).toHaveBeenCalledTimes(0);
 
     await user.click(item('Keep the file open'));
 

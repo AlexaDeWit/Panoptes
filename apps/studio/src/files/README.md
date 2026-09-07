@@ -104,15 +104,14 @@ closing over a render, which is what lets the commands be built once. The reduce
 is total and cannot refuse an open or a close over work in no file, so the
 session asks first.
 
-Closing asks in the studio's own words rather than in a dialog, no modal
-dialog being one of this milestone's rules. The session holds the question as
-state, `closing`, and the menu draws it as a second press on the same item:
-Close the file becomes Discard the changes and close, with Keep the file open
-beside it. The state is the session's rather than the menu's so that the chord
-asks the same question, opening the menu on it. Answering either way takes the
-question back, and so does dismissing the menu, and so does the model going
-clean underneath it: a save that lands, or an undo back to the saved model,
-leaves nothing to lose and no question to ask.
+Opening another file and closing ask in the studio's own words rather than in
+a dialog. The session holds each question as state, `opening` and `closing`.
+The menu draws each as a second press on the same item: Open a model becomes
+Discard the changes and open, and Close the file becomes Discard the changes
+and close. Each question puts Keep the file open beside it. The state is the
+session's rather than the menu's so each chord opens the menu on its question.
+Answering either way takes the question back. Dismissing the menu does too.
+When the model becomes clean underneath a question, the session cancels it.
 
 `choosing` is that shape a second time, for the format a save-as writes, and
 the studio asks it only where the platform has no picker to ask it in. Save as
@@ -141,7 +140,6 @@ The report of the last crossing, an export report, and the failure notice sit
 below the button and over the canvas. The crossing report and export report
 share one live region. An export reports every endpoint its projection could
 not place after it writes the file. A PDF compile refusal reports the
-compiler's sentences and writes nothing. The open path still asks through the
-browser's own confirmation, which is the last modal dialog left.
+compiler's sentences and writes nothing.
 
 The File menu also exposes Appearance with System, Light, and Dark choices. The selected choice is shown in words and persists in `localStorage` under `saerskrivenColourMode`. Invalid or unavailable stored data selects System.

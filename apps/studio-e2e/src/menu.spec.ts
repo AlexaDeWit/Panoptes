@@ -13,6 +13,7 @@ import {
   openPlaceholder,
   placeByClick,
   runFromMenu,
+  vendored,
   withoutPickers,
 } from './studio.fixtures.js';
 
@@ -175,6 +176,62 @@ test('closing asks in the menu before it drops work that is in no file', async (
   await expect(nodeNamed(page, /^Actor, actor/u)).toHaveCount(1);
   await openMenu(page);
   await expect(menuButton(page)).not.toHaveAccessibleName(/unsaved changes/u);
+});
+
+test('opening asks from its chord and discards on the second step', async ({
+  page,
+}) => {
+  await openFile(page, 'test-data/saerskriven/ecluse.yaml');
+  const added = await placeByClick(page, 'Actor', /^New actor, actor/u);
+  await page.keyboard.press('Enter');
+  await expect(elementNodes(page)).toHaveCount(19);
+  await focusSettled(added);
+
+  await page.keyboard.press(registeredChords.open[0]);
+  const discard = menuItem(page, 'Discard the changes and open');
+  await expect(discard).toBeFocused();
+
+  const chooser = page.waitForEvent('filechooser');
+  await discard.click();
+  await (await chooser).setFiles(vendored('test-data/ecluse.json'));
+
+  await canvasSettled(page);
+  await expect(elementNodes(page)).toHaveCount(18);
+  await openMenu(page);
+  await expect(page.getByTestId('file-state')).toContainText('ecluse.json');
+});
+
+test('opening keeps the file when asked', async ({ page }) => {
+  await openFile(page, 'test-data/saerskriven/ecluse.yaml');
+  await placeByClick(page, 'Actor', /^New actor, actor/u);
+  await page.keyboard.press('Enter');
+  await expect(elementNodes(page)).toHaveCount(19);
+
+  await openMenu(page);
+  await menuItem(page, 'Open a model').click();
+  await menuItem(page, 'Keep the file open').click();
+
+  await expect(page.getByRole('menu')).toHaveCount(0);
+  await expect(elementNodes(page)).toHaveCount(19);
+  await openMenu(page);
+  await expect(menuItem(page, 'Open a model')).toBeVisible();
+});
+
+test('Escape cancels the open question', async ({ page }) => {
+  await openFile(page, 'test-data/saerskriven/ecluse.yaml');
+  await placeByClick(page, 'Actor', /^New actor, actor/u);
+  await page.keyboard.press('Enter');
+  await expect(elementNodes(page)).toHaveCount(19);
+
+  await openMenu(page);
+  await menuItem(page, 'Open a model').click();
+  await expect(menuItem(page, 'Discard the changes and open')).toBeVisible();
+  await page.keyboard.press('Escape');
+
+  await expect(page.getByRole('menu')).toHaveCount(0);
+  await expect(elementNodes(page)).toHaveCount(19);
+  await openMenu(page);
+  await expect(menuItem(page, 'Open a model')).toBeVisible();
 });
 
 test('closing a file that holds everything on screen takes no second press', async ({

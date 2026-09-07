@@ -5,10 +5,9 @@ import { initialPageStylesheet } from '../initial-page.mjs';
 
 const repositoryRoot = join(import.meta.dirname, '../../..');
 
-const trees = [
-  join(repositoryRoot, 'apps/studio/src'),
-  join(repositoryRoot, 'packages/canvas/src'),
-];
+const studioTree = join(repositoryRoot, 'apps/studio/src');
+
+const trees = [studioTree, join(repositoryRoot, 'packages/canvas/src')];
 
 const tokenModule = join(repositoryRoot, 'packages/canvas/src/lib/tokens.ts');
 
@@ -34,6 +33,11 @@ const sources = trees
     text: readFileSync(path, 'utf8'),
   }));
 
+const studioSources = filesUnder(studioTree).map((path) => ({
+  path: relative(repositoryRoot, path),
+  text: readFileSync(path, 'utf8'),
+}));
+
 const literalColour =
   /#[0-9a-fA-F]{3,8}\b|\b(rgba?|hsla?|hwb|lab|lch|oklab|oklch|color)\(/u;
 
@@ -58,6 +62,17 @@ describe('the studio and the canvas, coloured from one table', () => {
     expect(walked).toContain('apps/studio/src/styles.css');
     expect(walked).toContain('packages/canvas/src/lib/stylesheet.ts');
     expect(walked.filter((path) => beside.test(path))).toEqual([]);
+  });
+});
+
+describe('the studio browser interfaces', () => {
+  it('uses no browser dialog global', () => {
+    const browserDialogGlobal = /\b(?:alert|confirm|prompt)\b/u;
+    const carrying = studioSources.filter((source) =>
+      browserDialogGlobal.test(source.text),
+    );
+
+    expect(carrying.map((source) => source.path)).toEqual([]);
   });
 });
 
