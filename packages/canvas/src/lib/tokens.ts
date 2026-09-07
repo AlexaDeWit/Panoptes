@@ -64,24 +64,24 @@ export type Palette = {
  * the grid line, a warm taupe at a graph-paper weight over the canvas ground.
  */
 export const lightPalette = {
-  surfaceApp: '#FDFBF7',
-  surfaceCanvas: '#F4EFE6',
-  surfacePanel: '#FAF8F5',
-  surfaceActor: '#EAEFF6',
-  surfaceProcess: '#EFF3E8',
-  textPrimary: '#3E3A35',
-  textSecondary: '#706B62',
-  border: '#96865E',
-  gridLine: '#D2C8B3',
-  actionPrimary: '#4A5D23',
-  actionHover: '#3B4A1C',
-  actionText: '#FDFBF7',
-  badgeGround: '#FDFBF7',
-  toneCritical: '#BA2D0B',
-  toneHigh: '#A45611',
-  toneMedium: '#3A6EA5',
-  toneLow: '#4A5D23',
-  toneNeutral: '#757069',
+  surfaceApp: '#F0EDE5',
+  surfaceCanvas: '#F9F6F0',
+  surfacePanel: '#FAF8F2',
+  surfaceActor: '#EAE5DA',
+  surfaceProcess: '#E7E9E1',
+  textPrimary: '#38342E',
+  textSecondary: '#6B655C',
+  border: '#847C70',
+  gridLine: '#E0D8C4',
+  actionPrimary: '#4A635D',
+  actionHover: '#3C504B',
+  actionText: '#F9F6F0',
+  badgeGround: '#FAF8F2',
+  toneCritical: '#C14339',
+  toneHigh: '#A85E1D',
+  toneMedium: '#46788A',
+  toneLow: '#4B6B50',
+  toneNeutral: '#756E63',
 } as const satisfies Palette;
 
 /**
@@ -91,24 +91,24 @@ export const lightPalette = {
  * system's dark preference. The headless render stays on the light table.
  */
 export const darkPalette = {
-  surfaceApp: '#24211D',
-  surfaceCanvas: '#1A1815',
-  surfacePanel: '#2C2823',
-  surfaceActor: '#202932',
-  surfaceProcess: '#292E1F',
-  textPrimary: '#E6E1D8',
-  textSecondary: '#9A948B',
-  border: '#847753',
-  gridLine: '#38342D',
-  actionPrimary: '#769438',
-  actionHover: '#8DB143',
-  actionText: '#1A1815',
-  badgeGround: '#1A1815',
-  toneCritical: '#ED461D',
-  toneHigh: '#C86914',
-  toneMedium: '#4B86C3',
-  toneLow: '#769438',
-  toneNeutral: '#898275',
+  surfaceApp: '#282522',
+  surfaceCanvas: '#1F1C19',
+  surfacePanel: '#2E2A26',
+  surfaceActor: '#38332E',
+  surfaceProcess: '#302F2B',
+  textPrimary: '#EAE5DB',
+  textSecondary: '#A39B8F',
+  border: '#8A8175',
+  gridLine: '#36312C',
+  actionPrimary: '#6B8A82',
+  actionHover: '#83A39A',
+  actionText: '#1F1C19',
+  badgeGround: '#1F1C19',
+  toneCritical: '#DE6258',
+  toneHigh: '#E89A4F',
+  toneMedium: '#5F95A8',
+  toneLow: '#6B8A82',
+  toneNeutral: '#9A9185',
 } as const satisfies Palette;
 
 /**
@@ -324,6 +324,16 @@ ${colourBlock(lightPalette, '  ')}
   :root {
 ${colourBlock(darkPalette, '    ')}
   }
+}
+
+:root[data-pn-colour-mode='light'] {
+  color-scheme: light;
+${colourBlock(lightPalette, '  ')}
+}
+
+:root[data-pn-colour-mode='dark'] {
+  color-scheme: dark;
+${colourBlock(darkPalette, '  ')}
 }
 `;
 

@@ -93,6 +93,11 @@
   white-space: nowrap;
 }
 
+.radioMark {
+  width: 1rem;
+  color: inherit;
+}
+
 .item[data-highlighted] .chord {
   color: var(--pn-colour-accent-text);
 }

@@ -111,3 +111,5 @@ share one live region. An export reports every endpoint its projection could
 not place after it writes the file. A PDF compile refusal reports the
 compiler's sentences and writes nothing. The open path still asks through the
 browser's own confirmation, which is the last modal dialog left.
+
+The File menu also exposes Appearance with System, Light, and Dark choices. The selected choice is shown in words and persists in `localStorage` under `saerskrivenColourMode`. Invalid or unavailable stored data selects System.

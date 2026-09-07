@@ -127,3 +127,5 @@ it away from the control, and the text goes with it. A field can be opened on
 a draft reported that way rather than on the value it is given, which is how
 the threat panel puts a refused draft back in the field it was typed in after
 the panel itself has been unmounted ([the panel](../panel/README.md)).
+
+The Appearance choice in the File menu selects System, Light, or Dark. System uses the browser media preference. An explicit choice sets `data-pn-colour-mode` on the document root and persists through reload. Components read tokens only, so the mode does not add palette values to component styles.
