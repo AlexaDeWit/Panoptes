@@ -12,9 +12,10 @@ import {
   studioElement,
 } from './canvas.fixtures.js';
 import {
-  addPaletteElement,
   connectElements,
   describeRemoval,
+  placeBoundaryCurve,
+  placeElement,
   removalCascade,
   removeSelected,
 } from './edits.js';
@@ -70,30 +71,60 @@ describe('describeRemoval', () => {
   });
 });
 
-describe('addPaletteElement', () => {
+describe('placing an element', () => {
   beforeEach(() => {
     opened();
   });
 
-  it('adds the element, selects it, and says so', () => {
-    addPaletteElement('actor');
+  it('adds the element, selects it, opens its name and says so', () => {
+    placeElement('actor', { x: 10, y: 20 }, { width: 100, height: 50 });
 
     const state = modelStore.getState();
     expect(state.present.diagrams[0].elements).toHaveLength(7);
     expect(state.selection).toBeDefined();
+    expect(state.renaming).toBe(state.selection);
     expect(said()).toContain('New actor');
   });
 
   it('costs one step of the undo stack, the selection beside it costing none', () => {
-    addPaletteElement('process');
+    placeElement('process', { x: 10, y: 20 }, { width: 80, height: 80 });
 
     expect(modelStore.getState().past).toHaveLength(1);
+  });
+
+  it('places a curve as one edit through the clicked waypoints', () => {
+    placeBoundaryCurve([
+      { x: 10, y: 20 },
+      { x: 80, y: 60 },
+      { x: 120, y: 20 },
+    ]);
+
+    expect(modelStore.getState().past).toHaveLength(1);
+    expect(
+      modelStore.getState().present.diagrams[0].elements.at(-1),
+    ).toMatchObject({
+      kind: 'trust-boundary',
+      shape: {
+        kind: 'curve',
+        waypoints: [
+          { x: 10, y: 20 },
+          { x: 80, y: 60 },
+          { x: 120, y: 20 },
+        ],
+      },
+    });
+  });
+
+  it('refuses an unfinished curve without an undo step', () => {
+    expect(placeBoundaryCurve([{ x: 10, y: 20 }])).toBe(false);
+
+    expect(modelStore.getState().past).toHaveLength(0);
   });
 
   it('adds nothing while the model holds no diagram to add to', () => {
     emptied();
 
-    addPaletteElement('actor');
+    placeElement('actor', { x: 10, y: 20 }, { width: 100, height: 50 });
 
     expect(modelStore.getState().past).toHaveLength(0);
     expect(said()).toBe('');

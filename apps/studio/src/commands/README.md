@@ -92,8 +92,8 @@ wherever a person is. Three rules decide whether a press is the studio's:
   still saves, and no control leaves them dead under a person's hands.
   Escape is not among them, and it is the threat panel that takes it from
   inside a field: the panel claims the press, closes and hands focus back to
-  the element, and the second Escape, pressed on the element, is this
-  registry's and clears the selection ([the panel](../panel/README.md)). A
+  the element. The second Escape runs Select and clears the selection ([the
+  panel](../panel/README.md)). A
   refused draft outlives both, the panel holding it per element, so neither
   press is the one that destroys what was typed.
 
@@ -103,9 +103,9 @@ something else instead.
 
 ## What a later slice does
 
-- Flip a `pending` entry to `runs` in the issue that lands its surface. The
-  toolbox (#175) carries the tool modes, and multi-select (#156) select all.
-  Starting a flow (#178) already runs: the chord opens the target chooser on
+- Flip a `pending` entry to `runs` in the issue that lands its surface.
+  Multi-select (#156) owns select all. Starting a flow (#178) already runs:
+  the chord opens the target chooser on
   the selected element, which is the canvas's own channel rather than a member
   of `CommandSurface`, since a flow in progress is neither the file session nor
   the viewport ([the canvas](../canvas/README.md)).
@@ -119,7 +119,7 @@ something else instead.
   technology, which reads the binding off `aria-keyshortcuts` instead.
 - Bind a new command by adding an entry, not by adding a listener. The spec
   beside the registry fails a chord that collides with one already bound.
-- The tool commands add an element today, which is what the palette's buttons
-  do, so the shortcut each button shows is true of the button. When the
-  toolbox lands (#175) they select a mode instead, and the palette goes with
-  the change.
+- The tool commands select a mode. The toolbox reads those same entries for
+  its icons, accessible names and tooltips. Space is Hand's momentary chord:
+  the binding restores the prior tool on keyup, which a click has no keyup to
+  answer.

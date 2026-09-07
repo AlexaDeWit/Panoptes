@@ -1,5 +1,6 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { resetTools } from '../canvas/tools.js';
 import { elementCount } from '../store/selectors.js';
 import { initialState, placeholderModel } from '../store/state.js';
 import { modelStore } from '../store/store.js';
@@ -8,8 +9,8 @@ import { App } from './app.js';
 
 const elementsHeld = (): number => elementCount(modelStore.getState());
 
-const paletteButton = (): HTMLElement =>
-  screen.getByRole('button', { name: 'New process' });
+const processTool = (): HTMLElement =>
+  screen.getByRole('button', { name: 'Process' });
 
 const undoThroughMenu = async (
   user: ReturnType<typeof userEvent.setup>,
@@ -23,6 +24,7 @@ describe(
   () => {
     beforeEach(() => {
       modelStore.setState(initialState(placeholderModel), true);
+      resetTools();
     });
 
     it('renders the canvas', () => {
@@ -42,12 +44,35 @@ describe(
       ).not.toBe('');
     });
 
-    it('shows an edit the palette dispatched and takes it back through the menu', async () => {
+    it('shows an edit placed with the toolbox and takes it back through the menu', async () => {
       const user = userEvent.setup();
       render(<App />);
       expect(elementsHeld()).toBe(3);
 
-      await user.click(paletteButton());
+      await user.click(processTool());
+      const canvas = screen.getByTestId('rf__wrapper');
+      fireEvent.pointerDown(canvas, {
+        button: 0,
+        clientX: 100,
+        clientY: 100,
+        isPrimary: true,
+        pointerId: 1,
+      });
+      fireEvent.pointerUp(canvas, {
+        button: 0,
+        clientX: 100,
+        clientY: 100,
+        isPrimary: false,
+        pointerId: 2,
+      });
+      expect(elementsHeld()).toBe(3);
+      fireEvent.pointerUp(canvas, {
+        button: 0,
+        clientX: 100,
+        clientY: 100,
+        isPrimary: true,
+        pointerId: 1,
+      });
       expect(elementsHeld()).toBe(4);
 
       await undoThroughMenu(user);

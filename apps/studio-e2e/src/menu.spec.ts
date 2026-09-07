@@ -10,6 +10,7 @@ import {
   openFile,
   openMenu,
   openPlaceholder,
+  placeByClick,
   runFromMenu,
   withoutPickers,
 } from './studio.fixtures.js';
@@ -63,8 +64,8 @@ test('every item is reached, run and left by the keyboard alone', async ({
 }) => {
   await openPlaceholder(page);
   const added = nodeNamed(page, /^New actor, actor/u);
-  await page.getByRole('button', { name: 'New actor', exact: true }).click();
-  await expect(added).toHaveCount(1);
+  await placeByClick(page, 'Actor', /^New actor, actor/u);
+  await page.keyboard.press('Enter');
 
   await menuButton(page).focus();
   await page.keyboard.press('Enter');
@@ -110,7 +111,7 @@ test('the button marks unsaved work, and the menu says so in words', async ({
 
   await expect(menuButton(page)).toHaveAccessibleName('Menu');
 
-  await page.getByRole('button', { name: 'New actor', exact: true }).click();
+  await placeByClick(page, 'Actor', /^New actor, actor/u);
 
   await expect(menuButton(page)).toHaveAccessibleName('Menu, unsaved changes');
   await openMenu(page);
@@ -124,7 +125,8 @@ test('closing asks in the menu before it drops work that is in no file', async (
 }) => {
   await openFile(page, 'test-data/saerskriven/ecluse.yaml');
   await expect(elementNodes(page)).toHaveCount(18);
-  await page.getByRole('button', { name: 'New actor', exact: true }).click();
+  await placeByClick(page, 'Actor', /^New actor, actor/u);
+  await page.keyboard.press('Enter');
   await expect(elementNodes(page)).toHaveCount(19);
 
   await menuButton(page).focus();

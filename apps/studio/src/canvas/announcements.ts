@@ -20,7 +20,7 @@ const listeners = new Set<() => void>();
 /**
  * Says `message` in the canvas's live region. It is a channel of its own
  * rather than a field of the model store: an announcement is not the model,
- * it must not ride the undo stacks, and the palette and the canvas are
+ * it must not ride the undo stacks, and the toolbox and the canvas are
  * siblings that both speak into one region. It reaches the region the way
  * `dispatch` reaches the store, so an edit command has one way to say what
  * it did wherever it was invoked from.

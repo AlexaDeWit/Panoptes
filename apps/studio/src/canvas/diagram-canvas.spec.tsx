@@ -6,10 +6,12 @@ import { initialState } from '../store/state.js';
 import { dispatch, modelStore } from '../store/store.js';
 import { canvasModel, readerElement, requestFlow } from './canvas.fixtures.js';
 import { DiagramCanvas } from './diagram-canvas.js';
+import { resetTools } from './tools.js';
 
 const opened = (selection?: ElementId): void => {
   modelStore.setState({ ...initialState(canvasModel), selection }, true);
   resetAnnouncements();
+  resetTools();
 };
 
 const elementCount = (): number =>

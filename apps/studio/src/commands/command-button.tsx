@@ -1,5 +1,5 @@
 import { Tooltip } from 'radix-ui';
-import { useId, type ReactNode } from 'react';
+import { useId, type MouseEventHandler, type ReactNode } from 'react';
 import { useCommandSurface } from './binding.js';
 import {
   commandById,
@@ -40,6 +40,8 @@ export type IconCommandButtonProps = {
   readonly command: CommandId;
   readonly className?: string;
   readonly disabled?: boolean;
+  readonly pressed?: boolean;
+  readonly onDoubleClick?: MouseEventHandler<HTMLButtonElement>;
   readonly children: ReactNode;
 };
 
@@ -96,6 +98,8 @@ export function IconCommandButton({
   command,
   className,
   disabled,
+  pressed,
+  onDoubleClick,
   children,
 }: IconCommandButtonProps) {
   const { entry, spelled, keyShortcuts, press } = usePressed(command);
@@ -106,9 +110,11 @@ export function IconCommandButton({
         <Tooltip.Trigger
           aria-keyshortcuts={keyShortcuts}
           aria-label={entry.label}
+          aria-pressed={pressed}
           className={className}
           disabled={disabled}
           onClick={press}
+          onDoubleClick={onDoubleClick}
           type="button"
         >
           {children}

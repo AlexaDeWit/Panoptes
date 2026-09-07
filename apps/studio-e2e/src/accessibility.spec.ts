@@ -8,6 +8,8 @@ import {
   nodeNamed,
   openMenu,
   openPlaceholder,
+  placeByClick,
+  selectNode,
   withoutPickers,
 } from './studio.fixtures.js';
 
@@ -147,23 +149,28 @@ test('the studio carries no violation with an element selected and its handles s
   await audit(page, 'showing a selected element and its handles');
 });
 
-// The palette is on the page at rest, so the audit above covers its controls
+// The toolbox is on the page at rest, so the audit above covers its controls
 // as it covers the rest. What it cannot see there is either notice region
-// with something in it, or a listbox that is disabled until an element is
-// selected, which is what the two tests below reach.
+// with something in it, or the flow chooser, which is mounted on demand.
 test('the studio carries no violation while it says what an edit did', async ({
   page,
 }) => {
   await page.goto('/');
   await expect(page.getByTestId('canvas-container')).toBeVisible();
 
-  await page.getByRole('button', { name: 'New actor' }).click();
-  await expect(page.getByTestId('canvas-announcement')).not.toBeEmpty();
+  await placeByClick(page, 'Actor', /^New actor, actor/u);
+  await expect(page.getByTestId('canvas-announcement')).toContainText(
+    'New actor',
+  );
   const addedAnnouncement =
     (await page.getByTestId('canvas-announcement').textContent()) ?? '';
 
   await audit(page, 'showing an added element');
 
+  const name = page.getByRole('textbox', { name: 'Name of New actor' });
+  await expect(name).toBeFocused();
+  await name.press('Enter');
+  await expect(name).toHaveCount(0);
   await page.keyboard.press('Delete');
   await expect
     .poll(() => page.getByTestId('canvas-announcement').textContent())
@@ -195,7 +202,11 @@ test('the studio carries no violation with the menu open', async ({ page }) => {
 
   await audit(page, 'showing a loss report');
 
-  await page.getByRole('button', { name: 'New actor', exact: true }).click();
+  await placeByClick(page, 'Actor', /^New actor, actor/u);
+  const name = page.getByRole('textbox', { name: 'Name of New actor' });
+  await expect(name).toBeFocused();
+  await name.press('Enter');
+  await expect(name).toHaveCount(0);
   await page.keyboard.press(registeredChords['close-file'][0]);
   await expect(menuItem(page, 'Discard the changes and close')).toBeVisible();
 
@@ -219,8 +230,8 @@ test('the open connect listbox carries no violation', async ({ page }) => {
   await page.goto('/');
   await expect(page.getByTestId('canvas-container')).toBeVisible();
 
-  await page.getByRole('button', { name: 'New actor' }).click();
-  await page.getByRole('combobox', { name: 'Flow to' }).press('Enter');
+  await selectNode(page, /^Actor, actor/u);
+  await page.keyboard.press(registeredChords['start-flow'][0]);
   await expect(page.getByRole('listbox')).toBeVisible();
 
   await audit(page, 'showing the open connect listbox', '[role="listbox"]');
@@ -236,9 +247,8 @@ test('the studio carries no violation with an element selected, or with a flow s
 
   await audit(page, 'showing a selected element');
 
-  await page.getByRole('combobox', { name: 'Flow to' }).press('Enter');
+  await page.keyboard.press(registeredChords['start-flow'][0]);
   await page.getByRole('option', { name: 'Store' }).press('Enter');
-  await page.getByRole('button', { name: 'Connect' }).click();
   await expect(
     page.getByRole('group', {
       name: /^New flow, flow, from Actor to Store/u,

@@ -6,17 +6,17 @@ import {
 import { expect, test } from '@playwright/test';
 import { Either } from 'effect';
 import { readFileSync } from 'node:fs';
+import { registeredChords } from './chords.js';
 import { differingPaths, identified } from './differing-paths.js';
 import {
   chooseInPanel,
   closeMenu,
-  connectTarget,
   dragBy,
   menuButton,
-  nodeNamed,
   openFile,
   openMenu,
   placeOf,
+  placeByClick,
   runFromMenu,
   savedFile,
   selectByKeyboard,
@@ -69,12 +69,10 @@ test('opens Écluse, edits it on both surfaces, and saves a valid, lossless file
   await expect(menuButton(page)).toHaveAccessibleName('Menu, unsaved changes');
   await closeMenu(page);
 
-  await page.getByRole('button', { name: 'New store', exact: true }).click();
-  await expect(nodeNamed(page, /^New store, store/u)).toHaveCount(1);
-
-  await connectTarget(page).click();
+  await placeByClick(page, 'Store', /^New store, store/u);
+  await page.keyboard.press('Enter');
+  await page.keyboard.press(registeredChords['start-flow'][0]);
   await page.getByRole('option', { name: 'Écluse proxy', exact: true }).click();
-  await page.getByRole('button', { name: 'Connect' }).click();
   await expect(page.locator('.react-flow__edge')).toHaveCount(21);
 
   const worker = await selectByKeyboard(page, /^Mirror worker, process/u);

@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, type ReactNode } from 'react';
+import { holdHandTool, releaseHandTool } from '../canvas/tools.js';
 import {
   commandFor,
   runCommand,
@@ -40,6 +41,16 @@ const overlaySelector =
 
 const typingSelector =
   'input, textarea, [contenteditable]:not([contenteditable="false"]), [role="combobox"]';
+
+const nativeActivationSelector = 'button, a[href]';
+
+/** Whether Enter or Space should activate the focused native control. */
+export function nativeActivationTarget(target: EventTarget | null): boolean {
+  return (
+    target instanceof Element &&
+    target.closest(nativeActivationSelector) !== null
+  );
+}
 
 /**
  * Which of {@link keyboardOwners} holds the keyboard while `target` has it.
@@ -92,16 +103,32 @@ export function commandForKey(
 export function useCommandKeys(surface: CommandSurface): void {
   useEffect(() => {
     const pressed = (event: KeyboardEvent): void => {
+      if (event.key === ' ' && nativeActivationTarget(event.target)) {
+        return;
+      }
       const command = commandForKey(event, hostPlatform);
       if (command === undefined) {
         return;
       }
       event.preventDefault();
-      runCommand(command, surface);
+      if (command.id === 'hand-tool' && event.key === ' ') {
+        holdHandTool();
+      } else {
+        runCommand(command, surface);
+      }
+    };
+    const released = (event: KeyboardEvent): void => {
+      if (event.key === ' ') {
+        releaseHandTool();
+      }
     };
     document.addEventListener('keydown', pressed);
+    document.addEventListener('keyup', released);
+    window.addEventListener('blur', releaseHandTool);
     return () => {
       document.removeEventListener('keydown', pressed);
+      document.removeEventListener('keyup', released);
+      window.removeEventListener('blur', releaseHandTool);
     };
   }, [surface]);
 }

@@ -1,10 +1,6 @@
 import { startFlow } from '../canvas/connecting.js';
-import {
-  addPaletteElement,
-  removeSelected,
-  renameSelected,
-} from '../canvas/edits.js';
-import type { PaletteKind } from '../canvas/elements.js';
+import { removeSelected, renameSelected } from '../canvas/edits.js';
+import { selectTool, type Tool } from '../canvas/tools.js';
 import { Action } from '../store/actions.js';
 import { dispatch } from '../store/store.js';
 import {
@@ -86,9 +82,9 @@ const pending = (issue: number): CommandDispatch => ({
   issue,
 });
 
-const adds = (kind: PaletteKind): CommandDispatch =>
+const activates = (tool: Tool): CommandDispatch =>
   runs(() => {
-    addPaletteElement(kind);
+    selectTool(tool);
   });
 
 const table = {
@@ -171,15 +167,6 @@ const table = {
     inTextFields: false,
     dispatch: pending(156),
   },
-  'clear-selection': {
-    id: 'clear-selection',
-    label: 'Clear the selection',
-    shortcuts: [bare('Escape')],
-    inTextFields: false,
-    dispatch: runs(() => {
-      dispatch(Action.Select({ elementId: undefined }));
-    }),
-  },
   'fit-to-view': {
     id: 'fit-to-view',
     label: 'Fit to view',
@@ -219,51 +206,51 @@ const table = {
   'select-tool': {
     id: 'select-tool',
     label: 'Select',
-    shortcuts: [bare('v')],
+    shortcuts: [bare('v'), bare('Escape'), bare('1')],
     inTextFields: false,
-    dispatch: pending(175),
+    dispatch: activates('select'),
   },
   'hand-tool': {
     id: 'hand-tool',
     label: 'Hand',
-    shortcuts: [bare('h')],
+    shortcuts: [bare('h'), bare(' ')],
     inTextFields: false,
-    dispatch: pending(175),
+    dispatch: activates('hand'),
   },
   'actor-tool': {
     id: 'actor-tool',
     label: 'Actor',
-    shortcuts: [bare('a')],
+    shortcuts: [bare('a'), bare('2')],
     inTextFields: false,
-    dispatch: adds('actor'),
+    dispatch: activates('actor'),
   },
   'process-tool': {
     id: 'process-tool',
     label: 'Process',
-    shortcuts: [bare('p')],
+    shortcuts: [bare('p'), bare('3')],
     inTextFields: false,
-    dispatch: adds('process'),
+    dispatch: activates('process'),
   },
   'store-tool': {
     id: 'store-tool',
     label: 'Store',
-    shortcuts: [bare('s')],
+    shortcuts: [bare('s'), bare('4')],
     inTextFields: false,
-    dispatch: adds('store'),
+    dispatch: activates('store'),
   },
   'boundary-box-tool': {
     id: 'boundary-box-tool',
     label: 'Trust boundary',
-    shortcuts: [bare('b')],
+    shortcuts: [bare('b'), bare('5')],
     inTextFields: false,
-    dispatch: adds('boundary-box'),
+    dispatch: activates('boundary-box'),
   },
   'boundary-curve-tool': {
     id: 'boundary-curve-tool',
     label: 'Trust boundary curve',
-    shortcuts: [bare('c')],
+    shortcuts: [bare('c'), bare('6')],
     inTextFields: false,
-    dispatch: adds('boundary-curve'),
+    dispatch: activates('boundary-curve'),
   },
 } as const satisfies Record<string, CommandEntry>;
 
@@ -282,18 +269,18 @@ export function commandById(id: CommandId): Command {
 }
 
 /**
- * Which tool command each kind the palette adds belongs to, so a control that
- * adds an element shows the shortcut that adds the same one. It lives here
- * rather than beside the palette because the canvas knows nothing of
- * commands and the registry is what pairs the two.
+ * Which command each toolbox mode belongs to, so the buttons and their keys
+ * select one mode through one dispatch.
  */
-export const paletteCommands = {
+export const toolCommands = {
+  select: 'select-tool',
   actor: 'actor-tool',
   process: 'process-tool',
   store: 'store-tool',
   'boundary-box': 'boundary-box-tool',
   'boundary-curve': 'boundary-curve-tool',
-} as const satisfies Record<PaletteKind, CommandId>;
+  hand: 'hand-tool',
+} as const satisfies Record<Tool, CommandId>;
 
 /**
  * The command `event` presses, and nothing at all where it presses none. The

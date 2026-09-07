@@ -1,7 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { registeredChords } from './chords.js';
 import {
-  connectTarget,
   dragOnto,
   dragTo,
   editAnnouncement,
@@ -12,7 +11,7 @@ import {
   openEcluse,
   openMenu,
   openPlaceholder,
-  beforeCanvas,
+  placeByClick,
   runFromMenu,
   selectByKeyboard,
   selectNode,
@@ -79,7 +78,8 @@ test('a drag released over empty canvas draws nothing and costs no undo step', a
   page,
 }) => {
   await openPlaceholder(page);
-  await page.getByRole('button', { name: 'New actor', exact: true }).click();
+  await placeByClick(page, 'Actor', /^New actor, actor/u);
+  await page.keyboard.press('Enter');
   await expect(nodeNamed(page, /^New actor, actor/u)).toHaveCount(1);
 
   await nodeNamed(page, actor).hover();
@@ -122,37 +122,9 @@ test('escape cancels a flow the chord started and leaves the selection', async (
 
   await page.keyboard.press(registeredChords['start-flow'][0]);
   await expect(page.getByRole('listbox')).toBeVisible();
-  await page.keyboard.press(registeredChords['clear-selection'][0]);
+  await page.keyboard.press(registeredChords['select-tool'][1]);
 
   await expect(page.getByRole('listbox')).toHaveCount(0);
   await expect(page.locator(flows)).toHaveCount(20);
   await expect(selected).toHaveClass(/selected/u);
-});
-
-test('a flow is drawn by keyboard alone, from the selected element', async ({
-  page,
-}) => {
-  await openPlaceholder(page);
-
-  await beforeCanvas(page).focus();
-  await page.keyboard.press('Tab');
-  await expect(nodeNamed(page, /^Records, flow/u)).toBeFocused();
-  await page.keyboard.press('Tab');
-  await expect(nodeNamed(page, actor)).toBeFocused();
-  await page.keyboard.press('Enter');
-
-  await page.keyboard.press('Shift+Tab');
-  await expect(nodeNamed(page, /^Records, flow/u)).toBeFocused();
-  await page.keyboard.press('Shift+Tab');
-  await expect(beforeCanvas(page)).toBeFocused();
-  await page.keyboard.press('Shift+Tab');
-  await expect(connectTarget(page)).toBeFocused();
-  await page.keyboard.press('Enter');
-  await page.getByRole('option', { name: 'Store' }).press('Enter');
-  await page.keyboard.press('Tab');
-  await page.getByRole('button', { name: 'Connect' }).press('Enter');
-
-  await expect(page.locator(flows)).toHaveCount(2);
-  await expect(editAnnouncement(page)).toContainText('Actor');
-  await expect(editAnnouncement(page)).toContainText('Store');
 });

@@ -1,10 +1,12 @@
 import { render, renderHook, screen } from '@testing-library/react';
+import { currentTool, resetTools, selectTool } from '../canvas/tools.js';
 import { initialState, placeholderModel } from '../store/state.js';
 import { modelStore } from '../store/store.js';
 import {
   CommandSurfaceProvider,
   commandForKey,
   keyboardOwner,
+  nativeActivationTarget,
   useCommandKeys,
   useCommandSurface,
 } from './binding.js';
@@ -71,6 +73,18 @@ describe('keyboardOwner', () => {
   });
 });
 
+describe('nativeActivationTarget', () => {
+  it('finds a button or link and leaves other page content alone', () => {
+    const holder = markup(
+      '<button><span>Tool</span></button><a href="/model">Model</a><div>Canvas</div>',
+    );
+
+    expect(nativeActivationTarget(holder.querySelector('span'))).toBe(true);
+    expect(nativeActivationTarget(holder.querySelector('a'))).toBe(true);
+    expect(nativeActivationTarget(holder.querySelector('div'))).toBe(false);
+  });
+});
+
 describe('commandForKey', () => {
   it('finds the command a press on the page runs', () => {
     const holder = markup('<div></div>');
@@ -117,7 +131,7 @@ describe('commandForKey', () => {
       commandForKey(press(field, { key: 'Escape' }), 'other'),
     ).toBeUndefined();
     expect(commandForKey(press(holder, { key: 'Escape' }), 'other')?.id).toBe(
-      'clear-selection',
+      'select-tool',
     );
   });
 
@@ -154,6 +168,7 @@ describe('commandForKey', () => {
 describe('useCommandKeys', () => {
   beforeEach(() => {
     modelStore.setState(initialState(placeholderModel), true);
+    resetTools();
   });
 
   it('runs the command a press names, and claims the press from the browser', () => {
@@ -190,6 +205,35 @@ describe('useCommandKeys', () => {
     press(document.body, { key: 's', ctrlKey: true });
 
     expect(recording.asked).toEqual([]);
+  });
+
+  it('holds Hand for Space and restores the prior tool on release', () => {
+    const recording = recordingSurface();
+    selectTool('actor');
+    renderHook(() => {
+      useCommandKeys(recording.surface);
+    });
+
+    press(document.body, { key: ' ' });
+    expect(currentTool().active).toBe('hand');
+
+    document.body.dispatchEvent(
+      new KeyboardEvent('keyup', { bubbles: true, key: ' ' }),
+    );
+    expect(currentTool().active).toBe('actor');
+  });
+
+  it('leaves Space to a focused native button', () => {
+    const recording = recordingSurface();
+    renderHook(() => {
+      useCommandKeys(recording.surface);
+    });
+    const holder = markup('<button type="button">Actor</button>');
+
+    const event = press(holder.firstElementChild ?? holder, { key: ' ' });
+
+    expect(event.defaultPrevented).toBe(false);
+    expect(currentTool().active).toBe('select');
   });
 });
 

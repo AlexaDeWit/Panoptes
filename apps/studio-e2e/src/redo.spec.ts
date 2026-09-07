@@ -2,6 +2,7 @@ import { expect, test } from '@playwright/test';
 import {
   nodeNamed,
   openEcluse,
+  placeByClick,
   runFromMenu,
   selectNode,
   threatPanel,
@@ -15,8 +16,8 @@ test('redo puts back an edit undone on the canvas and one undone in the panel', 
   await openEcluse(page);
 
   const added = nodeNamed(page, /^New actor, actor/u);
-  await page.getByRole('button', { name: 'New actor', exact: true }).click();
-  await expect(added).toHaveCount(1);
+  await placeByClick(page, 'Actor', /^New actor, actor/u);
+  await page.keyboard.press('Enter');
 
   await runFromMenu(page, 'Undo');
   await expect(added).toHaveCount(0);

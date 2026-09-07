@@ -3,6 +3,7 @@ import {
   elementNodes,
   nodeNamed,
   openPlaceholder,
+  placeByClick,
   savedFile,
   withoutPickers,
 } from './studio.fixtures.js';
@@ -87,7 +88,7 @@ test('the empty state says what to do next, and the line goes at the first edit'
 
   await expect(hint(page)).not.toBeEmpty();
 
-  await page.getByRole('button', { name: 'New actor', exact: true }).click();
+  await placeByClick(page, 'Actor', /^New actor, actor/u);
 
   await expect(hint(page)).toHaveCount(0);
 });

@@ -7,10 +7,7 @@ import { currentLayout, selectedElement } from './layout.js';
 
 /**
  * Whether the target chooser is open, and the element a flow already started
- * runs from. The two are apart because the chooser opens either way: opened
- * by hand it names a target for the Connect control to draw between, and
- * opened by the start-flow command it is a flow in progress, which the choice
- * itself commits.
+ * runs from.
  */
 export type Connecting = {
   readonly open: boolean;
@@ -45,7 +42,7 @@ export function startFlow(): void {
 }
 
 /**
- * Opens or closes the chooser at the control's own asking. Closing ends a
+ * Opens or closes the chooser at the control's own asking. Closing ends the
  * flow the command started, which is what Escape and a click outside the
  * chooser both come to.
  */
@@ -54,12 +51,12 @@ export function chooserOpened(open: boolean): void {
 }
 
 /**
- * Draws the flow a chosen target commits, and answers whether it drew one. A
- * choice made while no flow is in progress belongs to the Connect control,
- * which is the palette's own two-step route, so this leaves it there.
+ * Draws the flow a chosen target commits, and answers whether it drew one.
  */
-export function commitFlowTarget(target: ElementId): boolean {
-  const { from } = current;
+export function commitFlowTarget(
+  target: ElementId,
+  from: ElementId | undefined = current.from,
+): boolean {
   if (from === undefined) {
     return false;
   }

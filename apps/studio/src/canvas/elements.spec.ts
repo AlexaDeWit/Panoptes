@@ -10,34 +10,74 @@ import {
   studioElement,
 } from './canvas.fixtures.js';
 import {
+  centredPlacement,
+  defaultSize,
+  draggedPlacement,
+  elementTools,
   flowEnds,
-  freePosition,
+  freshBoundaryCurve,
   freshElement,
   freshFlow,
-  paletteKinds,
-  paletteNames,
+  placeholderNames,
+  pointerPlacement,
 } from './elements.js';
-import { emptyLayout } from './layout.js';
-
 const layout = layoutDiagram(canvasModel.diagrams[0], canvasModel);
 
 const mainDiagram = diagramId('diagram-main');
 
-describe('freePosition', () => {
-  it('places an element below everything the diagram draws', () => {
-    const position = freePosition(layout);
+describe('placement geometry', () => {
+  it.each(elementTools)('centres a default-sized %s on a click', (kind) => {
+    const placed = centredPlacement(kind, { x: 100, y: 80 });
+    const size = defaultSize(kind);
 
-    expect(position.x).toBe(layout.bounds.x);
-    expect(position.y).toBeGreaterThan(layout.bounds.y + layout.bounds.height);
+    expect(placed).toEqual({
+      position: { x: 100 - size.width / 2, y: 80 - size.height / 2 },
+      size,
+    });
   });
 
-  it('places an element on an empty diagram at all', () => {
-    expect(freePosition(emptyLayout)).toEqual({ x: 0, y: 40 });
+  it('draws an element between either ordering of its corners', () => {
+    expect(
+      draggedPlacement('actor', { x: 180, y: 90 }, { x: 20, y: 30 }),
+    ).toEqual({
+      position: { x: 20, y: 30 },
+      size: { width: 160, height: 60 },
+    });
+  });
+
+  it('takes the shorter side for a process', () => {
+    expect(
+      draggedPlacement('process', { x: 100, y: 100 }, { x: 20, y: 40 }),
+    ).toEqual({
+      position: { x: 40, y: 40 },
+      size: { width: 60, height: 60 },
+    });
+  });
+
+  it('keeps a one-dimensional drag drawable', () => {
+    expect(
+      draggedPlacement('store', { x: 0, y: 0 }, { x: 50, y: 0 }).size,
+    ).toEqual({ width: 50, height: 1 });
+  });
+
+  it('treats movement below four screen pixels as a click', () => {
+    expect(
+      pointerPlacement('actor', { x: 100, y: 80 }, { x: 102, y: 82 }, 3.9),
+    ).toEqual(centredPlacement('actor', { x: 100, y: 80 }));
+  });
+
+  it('treats movement at four screen pixels as a drag', () => {
+    expect(
+      pointerPlacement('actor', { x: 100, y: 80 }, { x: 104, y: 84 }, 4),
+    ).toEqual({
+      position: { x: 100, y: 80 },
+      size: { width: 4, height: 4 },
+    });
   });
 });
 
 describe('freshElement', () => {
-  it.each(paletteKinds)('builds a %s the model accepts', (kind) => {
+  it.each(elementTools)('builds a %s the model accepts', (kind) => {
     const added = addElement(
       canvasModel,
       mainDiagram,
@@ -47,8 +87,10 @@ describe('freshElement', () => {
     expect(Either.isRight(added)).toBe(true);
   });
 
-  it('names the element what the button that added it says', () => {
-    expect(freshElement('actor', { x: 0, y: 0 }).name).toBe(paletteNames.actor);
+  it('gives a placed element its placeholder name', () => {
+    expect(freshElement('actor', { x: 0, y: 0 }).name).toBe(
+      placeholderNames.actor,
+    );
   });
 
   it('gives every element an id of its own', () => {
@@ -64,6 +106,24 @@ describe('freshElement', () => {
     expect(boundary).toMatchObject({
       kind: 'trust-boundary',
       shape: { kind: 'curve' },
+    });
+  });
+
+  it('draws a committed boundary curve through exactly its clicked waypoints', () => {
+    const boundary = freshBoundaryCurve([
+      { x: 10, y: 20 },
+      { x: 30, y: 40 },
+    ]);
+
+    expect(boundary).toMatchObject({
+      kind: 'trust-boundary',
+      shape: {
+        kind: 'curve',
+        waypoints: [
+          { x: 10, y: 20 },
+          { x: 30, y: 40 },
+        ],
+      },
     });
   });
 });
