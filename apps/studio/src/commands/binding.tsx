@@ -42,6 +42,16 @@ const overlaySelector =
 const typingSelector =
   'input, textarea, [contenteditable]:not([contenteditable="false"]), [role="combobox"]';
 
+const nativeActivationSelector = 'button, a[href]';
+
+/** Whether Enter or Space should activate the focused native control. */
+export function nativeActivationTarget(target: EventTarget | null): boolean {
+  return (
+    target instanceof Element &&
+    target.closest(nativeActivationSelector) !== null
+  );
+}
+
 /**
  * Which of {@link keyboardOwners} holds the keyboard while `target` has it.
  * A listbox trigger stands in the page whether it is open or not and says
@@ -93,6 +103,9 @@ export function commandForKey(
 export function useCommandKeys(surface: CommandSurface): void {
   useEffect(() => {
     const pressed = (event: KeyboardEvent): void => {
+      if (event.key === ' ' && nativeActivationTarget(event.target)) {
+        return;
+      }
       const command = commandForKey(event, hostPlatform);
       if (command === undefined) {
         return;

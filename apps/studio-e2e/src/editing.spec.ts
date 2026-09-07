@@ -4,6 +4,7 @@ import { viewportTransform } from './commands.fixtures.js';
 import {
   beforeCanvas,
   canvasContainer,
+  canvasSettled,
   canvasSurface,
   dragBy,
   dragOnto,
@@ -19,7 +20,9 @@ import {
   runFromMenu,
   selectNode,
   toolButton,
+  vendored,
   widthOf,
+  withoutPickers,
 } from './studio.fixtures.js';
 
 const boxTools = [
@@ -64,6 +67,9 @@ test('each element tool key selects its mode and Enter places it', async ({
     await page.keyboard.press(chord);
     await page.keyboard.press('Enter');
     await expect(nodeNamed(page, named)).toHaveCount(1);
+    await expect(
+      page.getByRole('textbox', { name: /^Name of New/u }),
+    ).toBeFocused();
     await page.keyboard.press('Enter');
   }
   await expect(elementNodes(page)).toHaveCount(7);
@@ -84,6 +90,26 @@ test('Select clears a selected element when the pointer lands on empty canvas', 
     'data-active-tool',
     'select',
   );
+});
+
+test('Enter and Space activate a focused toolbox button', async ({ page }) => {
+  await openPlaceholder(page);
+
+  await toolButton(page, 'Actor').click();
+  await toolButton(page, 'Store').focus();
+  await page.keyboard.press('Enter');
+  await expect(canvasContainer(page)).toHaveAttribute(
+    'data-active-tool',
+    'store',
+  );
+
+  await toolButton(page, 'Actor').focus();
+  await page.keyboard.press('Space');
+  await expect(canvasContainer(page)).toHaveAttribute(
+    'data-active-tool',
+    'actor',
+  );
+  await expect(elementNodes(page)).toHaveCount(2);
 });
 
 test('the boundary curve tool adds waypoints and double click finishes it', async ({
@@ -240,6 +266,15 @@ test('Escape discards a boundary curve without an undo step', async ({
 
   await toolButton(page, 'Trust boundary curve').click();
   await page.mouse.click(at.x, at.y);
+  await page.keyboard.press('Enter');
+  await expect(page.getByTestId('curve-draft').locator('circle')).toHaveCount(
+    1,
+  );
+  await page.keyboard.down('Space');
+  await page.keyboard.up('Space');
+  await expect(page.getByTestId('curve-draft').locator('circle')).toHaveCount(
+    1,
+  );
   await page.keyboard.press(registeredChords['select-tool'][1]);
 
   await expect(
@@ -247,6 +282,25 @@ test('Escape discards a boundary curve without an undo step', async ({
   ).toHaveCount(0);
   await openMenu(page);
   await expect(menuItem(page, 'Undo')).toHaveAttribute('aria-disabled', 'true');
+});
+
+test('opening another model clears a boundary curve draft', async ({
+  page,
+}) => {
+  await page.addInitScript(withoutPickers);
+  await openPlaceholder(page);
+  const at = await emptyCanvasPoint(page);
+
+  await toolButton(page, 'Trust boundary curve').click();
+  await page.mouse.click(at.x, at.y);
+  await expect(page.getByTestId('curve-draft')).toBeVisible();
+
+  await page
+    .getByTestId('file-input')
+    .setInputFiles(vendored('test-data/saerskriven/ecluse.yaml'));
+  await canvasSettled(page);
+
+  await expect(page.getByTestId('curve-draft')).toHaveCount(0);
 });
 
 test('Hand pans from anywhere and Space restores the previous tool', async ({
@@ -275,6 +329,7 @@ test('Hand pans from anywhere and Space restores the previous tool', async ({
     'hand',
   );
   await toolButton(page, 'Actor').click();
+  await canvasSurface(page).focus();
   await page.keyboard.down(registeredChords['hand-tool'][1]);
   await expect(canvasContainer(page)).toHaveAttribute(
     'data-active-tool',

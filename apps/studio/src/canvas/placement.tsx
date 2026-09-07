@@ -1,16 +1,21 @@
-import { smoothPath, type CanvasFlowEdge } from '@saerskriven/canvas';
+import {
+  smoothPath,
+  type CanvasFlowEdge,
+  type CanvasLayout,
+} from '@saerskriven/canvas';
 import type { Point } from '@saerskriven/model';
 import { ViewportPortal, type ReactFlowInstance } from '@xyflow/react';
 import {
   useCallback,
   useEffect,
+  useEffectEvent,
   useRef,
   useState,
   type MouseEvent,
   type PointerEvent,
   type RefObject,
 } from 'react';
-import { keyboardOwner } from '../commands/binding.js';
+import { keyboardOwner, nativeActivationTarget } from '../commands/binding.js';
 import { placeBoundaryCurve, placeElement } from './edits.js';
 import {
   centredPlacement,
@@ -20,6 +25,7 @@ import {
 } from './elements.js';
 import type { DiagramNode } from './nodes.js';
 import {
+  currentTool,
   finishPlacement,
   isElementTool,
   useTool,
@@ -40,6 +46,7 @@ type PlacementGesture = {
 
 type CurveDraft = {
   readonly revision: number;
+  readonly layout: CanvasLayout;
   readonly waypoints: readonly Point[];
   readonly pointer: Point | undefined;
 };
@@ -59,26 +66,29 @@ export type PlacementControls = {
 export function usePlacement(
   surface: RefObject<HTMLDivElement | null>,
   view: RefObject<ReactFlowInstance<DiagramNode, CanvasFlowEdge> | null>,
+  layout: CanvasLayout,
 ): PlacementControls {
   const mode = useTool();
   const [curveDraft, setCurveDraft] = useState<CurveDraft>({
     revision: mode.revision,
+    layout,
     waypoints: [],
     pointer: undefined,
   });
-  const curve =
-    curveDraft.revision === mode.revision ? curveDraft.waypoints : noPoints;
-  const curvePointer =
-    curveDraft.revision === mode.revision ? curveDraft.pointer : undefined;
+  const currentDraft =
+    curveDraft.revision === mode.revision && curveDraft.layout === layout;
+  const curve = currentDraft ? curveDraft.waypoints : noPoints;
+  const curvePointer = currentDraft ? curveDraft.pointer : undefined;
   const gesture = useRef<PlacementGesture | undefined>(undefined);
 
   const clearCurve = useCallback((): void => {
     setCurveDraft({
       revision: mode.revision,
+      layout,
       waypoints: [],
       pointer: undefined,
     });
-  }, [mode.revision]);
+  }, [layout, mode.revision]);
 
   const commitCurve = useCallback(
     (waypoints: readonly Point[]): void => {
@@ -105,15 +115,14 @@ export function usePlacement(
     [clearCurve],
   );
 
-  useEffect(() => {
-    const active = mode.active;
-    if (!isElementTool(active)) {
-      return undefined;
-    }
-    const pressed = (event: globalThis.KeyboardEvent): void => {
+  const enterPressed = useEffectEvent(
+    (event: globalThis.KeyboardEvent): void => {
+      const active = currentTool().active;
       if (
+        !isElementTool(active) ||
         event.defaultPrevented ||
         event.key !== 'Enter' ||
+        nativeActivationTarget(event.target) ||
         keyboardOwner(event.target) !== 'page'
       ) {
         return;
@@ -124,9 +133,14 @@ export function usePlacement(
         return;
       }
       event.preventDefault();
-      if (active === 'boundary-curve' && curve.length >= 2) {
-        commitCurve(curve);
-        return;
+      if (active === 'boundary-curve') {
+        if (curve.length >= 2) {
+          commitCurve(curve);
+          return;
+        }
+        if (curve.length === 1) {
+          return;
+        }
       }
       placeDefault(
         active,
@@ -135,12 +149,15 @@ export function usePlacement(
           y: extent.top + extent.height / 2,
         }),
       );
-    };
-    document.addEventListener('keydown', pressed);
+    },
+  );
+
+  useEffect(() => {
+    document.addEventListener('keydown', enterPressed);
     return () => {
-      document.removeEventListener('keydown', pressed);
+      document.removeEventListener('keydown', enterPressed);
     };
-  }, [commitCurve, curve, mode.active, placeDefault, surface, view]);
+  }, []);
 
   const screenToFlow = (x: number, y: number): Point | undefined =>
     view.current?.screenToFlowPosition({ x, y });
@@ -165,8 +182,11 @@ export function usePlacement(
     if (point !== undefined) {
       setCurveDraft((current) => ({
         revision: mode.revision,
+        layout,
         waypoints: [
-          ...(current.revision === mode.revision ? current.waypoints : []),
+          ...(current.revision === mode.revision && current.layout === layout
+            ? current.waypoints
+            : []),
           point,
         ],
         pointer: undefined,
@@ -212,8 +232,11 @@ export function usePlacement(
     const point = screenToFlow(event.clientX, event.clientY);
     setCurveDraft((current) => ({
       revision: mode.revision,
+      layout,
       waypoints:
-        current.revision === mode.revision ? current.waypoints : noPoints,
+        current.revision === mode.revision && current.layout === layout
+          ? current.waypoints
+          : noPoints,
       pointer: point,
     }));
   };

@@ -47,6 +47,7 @@ import {
 import { renamingEdgeTypes, renamingNodeTypes } from './rename-field.js';
 import { PlacementPreview, usePlacement } from './placement.js';
 import { Toolbox } from './toolbox.js';
+import { currentTool } from './tools.js';
 import { FitOnOpen } from './view-commands.js';
 import {
   clearOfPanel,
@@ -76,7 +77,7 @@ export function DiagramCanvas() {
     null,
   );
   const revealed = useRef<ElementId | undefined>(undefined);
-  const placement = usePlacement(surface, view);
+  const placement = usePlacement(surface, view, layout);
   const { mode } = placement;
 
   if (folded !== graph.nodes) {
@@ -129,9 +130,10 @@ export function DiagramCanvas() {
 
   const onKeyDownCapture = (event: KeyboardEvent<HTMLDivElement>): void => {
     if (
-      mode.active !== 'select' ||
+      currentTool().active !== 'select' ||
       event.key !== 'Enter' ||
-      selection === undefined
+      selection === undefined ||
+      keyboardOwner(event.target) !== 'page'
     ) {
       return;
     }

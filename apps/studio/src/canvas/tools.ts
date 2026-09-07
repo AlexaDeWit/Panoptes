@@ -53,7 +53,7 @@ export function holdHandTool(): void {
     return;
   }
   beforeHeldHand = current;
-  moveTo({ active: 'hand', locked: false });
+  moveTo({ active: 'hand', locked: false }, current.revision);
 }
 
 /** Restores the tool that was active before Space was held. */
@@ -63,7 +63,10 @@ export function releaseHandTool(): void {
   }
   const restored = beforeHeldHand;
   beforeHeldHand = undefined;
-  moveTo({ active: restored.active, locked: restored.locked });
+  moveTo(
+    { active: restored.active, locked: restored.locked },
+    restored.revision,
+  );
 }
 
 /** Whether `tool` places an element. */
@@ -87,11 +90,14 @@ export function useTool(): ToolState {
   return useSyncExternalStore(subscribe, currentTool, currentTool);
 }
 
-function moveTo(next: Omit<ToolState, 'revision'>): void {
+function moveTo(
+  next: Omit<ToolState, 'revision'>,
+  revision = current.revision + 1,
+): void {
   if (next.active === current.active && next.locked === current.locked) {
     return;
   }
-  current = { ...next, revision: current.revision + 1 };
+  current = { ...next, revision };
   for (const listener of listeners) {
     listener();
   }

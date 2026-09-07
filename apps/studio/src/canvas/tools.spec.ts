@@ -38,6 +38,7 @@ describe('the toolbox mode', () => {
 
   it('holds Hand only until Space is released', () => {
     lockTool('boundary-box');
+    const revision = currentTool().revision;
 
     holdHandTool();
     expect(currentTool()).toMatchObject({ active: 'hand', locked: false });
@@ -46,6 +47,7 @@ describe('the toolbox mode', () => {
     expect(currentTool()).toMatchObject({
       active: 'boundary-box',
       locked: true,
+      revision,
     });
   });
 

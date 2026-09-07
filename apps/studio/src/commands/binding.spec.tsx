@@ -6,6 +6,7 @@ import {
   CommandSurfaceProvider,
   commandForKey,
   keyboardOwner,
+  nativeActivationTarget,
   useCommandKeys,
   useCommandSurface,
 } from './binding.js';
@@ -69,6 +70,18 @@ describe('keyboardOwner', () => {
     );
 
     expect(keyboardOwner(holder.firstElementChild)).toBe('typing');
+  });
+});
+
+describe('nativeActivationTarget', () => {
+  it('finds a button or link and leaves other page content alone', () => {
+    const holder = markup(
+      '<button><span>Tool</span></button><a href="/model">Model</a><div>Canvas</div>',
+    );
+
+    expect(nativeActivationTarget(holder.querySelector('span'))).toBe(true);
+    expect(nativeActivationTarget(holder.querySelector('a'))).toBe(true);
+    expect(nativeActivationTarget(holder.querySelector('div'))).toBe(false);
   });
 });
 
@@ -208,6 +221,19 @@ describe('useCommandKeys', () => {
       new KeyboardEvent('keyup', { bubbles: true, key: ' ' }),
     );
     expect(currentTool().active).toBe('actor');
+  });
+
+  it('leaves Space to a focused native button', () => {
+    const recording = recordingSurface();
+    renderHook(() => {
+      useCommandKeys(recording.surface);
+    });
+    const holder = markup('<button type="button">Actor</button>');
+
+    const event = press(holder.firstElementChild ?? holder, { key: ' ' });
+
+    expect(event.defaultPrevented).toBe(false);
+    expect(currentTool().active).toBe('select');
   });
 });
 
