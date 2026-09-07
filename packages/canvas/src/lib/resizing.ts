@@ -60,6 +60,27 @@ export function resizeBoxByKey(
     : changed;
 }
 
+/** Keeps the untouched axis of a side resize at its model value. */
+export function resizeBoxOnControlAxes(
+  box: NodeBox,
+  control: ResizeControlPosition,
+  resized: NodeBox,
+): NodeBox {
+  if (control === 'left' || control === 'right') {
+    return {
+      position: { x: resized.position.x, y: box.position.y },
+      size: { width: resized.size.width, height: box.size.height },
+    };
+  }
+  if (control === 'top' || control === 'bottom') {
+    return {
+      position: { x: box.position.x, y: resized.position.y },
+      size: { width: box.size.width, height: resized.size.height },
+    };
+  }
+  return resized;
+}
+
 function resizeOnHorizontalAxis(
   box: NodeBox,
   control: ResizeControlPosition,

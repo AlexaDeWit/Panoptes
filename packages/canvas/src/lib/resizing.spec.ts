@@ -1,6 +1,7 @@
 import {
   minimumNodeExtent,
   resizeBoxByKey,
+  resizeBoxOnControlAxes,
   type ResizeControlPosition,
 } from './resizing.js';
 
@@ -82,5 +83,30 @@ describe('resizeBoxByKey', () => {
   it('ignores a key outside the control axis', () => {
     expect(resizeBoxByKey(box, 'top', 'ArrowLeft')).toBeUndefined();
     expect(resizeBoxByKey(box, 'left', 'Enter')).toBeUndefined();
+  });
+});
+
+describe('resizeBoxOnControlAxes', () => {
+  const measured = {
+    position: { x: 90, y: 190 },
+    size: { width: 140, height: 80 },
+  };
+
+  it('keeps the vertical values of a horizontal side resize', () => {
+    expect(resizeBoxOnControlAxes(box, 'left', measured)).toEqual({
+      position: { x: 90, y: 200 },
+      size: { width: 140, height: 60 },
+    });
+  });
+
+  it('keeps the horizontal values of a vertical side resize', () => {
+    expect(resizeBoxOnControlAxes(box, 'top', measured)).toEqual({
+      position: { x: 100, y: 190 },
+      size: { width: 120, height: 80 },
+    });
+  });
+
+  it('keeps both axes of a corner resize', () => {
+    expect(resizeBoxOnControlAxes(box, 'top-left', measured)).toBe(measured);
   });
 });

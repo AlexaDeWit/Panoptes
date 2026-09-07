@@ -33,6 +33,7 @@ import {
   keyboardResizeStep,
   minimumNodeExtent,
   resizeBoxByKey,
+  resizeBoxOnControlAxes,
   resizeControlPositions,
   shiftedKeyboardResizeStep,
   type ResizeControlPosition,
@@ -191,15 +192,15 @@ export function CanvasNodeBody({
   data,
   height,
   isConnectable,
+  onResize,
   onResizeEnd,
-  onResizeStart,
   resizing = false,
   selected,
   width,
 }: NodeProps<CanvasFlowNode> & {
   readonly controlsVisible?: boolean;
+  readonly onResize?: () => void;
   readonly onResizeEnd?: (box: NodeBox) => void;
-  readonly onResizeStart?: () => void;
   readonly resizing?: boolean;
 }): ReactElement {
   const shownSize = resizing
@@ -238,8 +239,8 @@ export function CanvasNodeBody({
       {selected && resizableKinds.has(data.node.kind) ? (
         <ResizeControls
           node={data.node}
+          onResize={onResize}
           onResizeEnd={onResizeEnd}
-          onResizeStart={onResizeStart}
           visible={controlsVisible}
         />
       ) : null}
@@ -249,13 +250,13 @@ export function CanvasNodeBody({
 
 function ResizeControls({
   node,
+  onResize,
   onResizeEnd,
-  onResizeStart,
   visible,
 }: {
   readonly node: CanvasNode;
+  readonly onResize: (() => void) | undefined;
   readonly onResizeEnd: ((box: NodeBox) => void) | undefined;
-  readonly onResizeStart: (() => void) | undefined;
   readonly visible: boolean;
 }): ReactElement {
   const name = node.name.trim() || node.kind.replace('-', ' ');
@@ -287,13 +288,19 @@ function ResizeControls({
           key={position}
           minHeight={minimumNodeExtent}
           minWidth={minimumNodeExtent}
+          onResize={onResize}
           onResizeEnd={(_, resized) => {
-            settle({
-              position: { x: resized.x, y: resized.y },
-              size: { width: resized.width, height: resized.height },
-            });
+            settle(
+              resizeBoxOnControlAxes(
+                { position: node.position, size: node.size },
+                position,
+                {
+                  position: { x: resized.x, y: resized.y },
+                  size: { width: resized.width, height: resized.height },
+                },
+              ),
+            );
           }}
-          onResizeStart={onResizeStart}
           position={position}
           resizeDirection={
             position === 'left' || position === 'right'

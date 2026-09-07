@@ -21,6 +21,7 @@ import {
   useEffect,
   useId,
   useRef,
+  useState,
   type ChangeEvent,
   type CSSProperties,
   type KeyboardEvent,
@@ -195,7 +196,7 @@ function EditingNodeBody(props: NodeProps<CanvasFlowNode>) {
       <CanvasNodeBody
         {...props}
         controlsVisible={!editing}
-        onResizeStart={() => {
+        onResize={() => {
           setResizing(true);
         }}
         onResizeEnd={(box) => {

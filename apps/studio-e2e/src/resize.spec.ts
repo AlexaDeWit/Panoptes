@@ -111,6 +111,25 @@ for (const [side, offset, changed] of shrinkingCases) {
   });
 }
 
+test('a no-op resize at the minimum leaves later geometry settled', async ({
+  page,
+}) => {
+  await openPlaceholder(page);
+  const node = await selectNode(page, actor);
+  const right = sideControl(node, 'right');
+
+  await dragBy(page, right, { x: -400, y: 0 });
+  await expect.poll(async () => (await boxOf(node)).width).toBe(10);
+  await pressOn(page, right);
+  await page.mouse.up();
+
+  await runFromMenu(page, 'Undo');
+  await expect.poll(async () => (await boxOf(node)).width).toBeGreaterThan(10);
+  expect(Number(await node.locator('svg').first().getAttribute('width'))).toBe(
+    (await boxOf(node)).width,
+  );
+});
+
 test('a corner resizes both axes in one undo step', async ({ page }) => {
   await openPlaceholder(page);
   const node = await selectNode(page, actor);
