@@ -212,6 +212,9 @@ importers:
       '@vitest/ui':
         specifier: 'catalog:'
         version: 4.1.11(vitest@4.1.11)
+      effect:
+        specifier: 'catalog:'
+        version: 3.22.1
       esbuild:
         specifier: 'catalog:'
         version: 0.28.2
@@ -251,6 +254,9 @@ importers:
       yaml:
         specifier: 'catalog:'
         version: 2.9.0
+      zod:
+        specifier: 'catalog:'
+        version: 4.5.2
 
   apps/cli:
     dependencies:

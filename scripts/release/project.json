@@ -1,0 +1,70 @@
+{
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "name": "release-tools",
+  "projectType": "application",
+  "sourceRoot": "scripts/release",
+  "targets": {
+    "lint": {
+      "options": {
+        "command": "oxlint scripts/release"
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "cache": true,
+      "inputs": [
+        "default",
+        "sharedGlobals",
+        {
+          "externalDependencies": ["effect", "zod"]
+        }
+      ],
+      "options": {
+        "commands": [
+          {
+            "command": "node --test scripts/release/release.test.mts",
+            "forwardAllArgs": false
+          }
+        ]
+      }
+    },
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "cache": true,
+      "inputs": [
+        "default",
+        "{workspaceRoot}/tsconfig.base.json",
+        {
+          "externalDependencies": ["effect", "typescript", "zod"]
+        }
+      ],
+      "options": {
+        "command": "tsc --noEmit --project scripts/release/tsconfig.json"
+      }
+    },
+    "prepare": {
+      "executor": "nx:run-commands",
+      "cache": false,
+      "options": {
+        "commands": [
+          {
+            "command": "scripts/release/release.mts prepare",
+            "forwardAllArgs": false
+          }
+        ]
+      }
+    },
+    "tag": {
+      "executor": "nx:run-commands",
+      "cache": false,
+      "options": {
+        "commands": [
+          {
+            "command": "scripts/release/release.mts tag",
+            "forwardAllArgs": false
+          }
+        ]
+      }
+    }
+  }
+}

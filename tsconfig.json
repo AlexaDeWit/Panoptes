@@ -29,6 +29,9 @@
     },
     {
       "path": "./apps/studio-e2e"
+    },
+    {
+      "path": "./scripts/release"
     }
   ],
   "compilerOptions": {}

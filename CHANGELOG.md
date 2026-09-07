@@ -17,7 +17,7 @@
 - Threat Dragon v2 write codec and its round-trip gate ([#92](https://github.com/AlexaDeWit/Panoptes/pull/92))
 - the Threat Dragon wire schema as its own package, with its id bound ([#95](https://github.com/AlexaDeWit/Panoptes/pull/95), [#91](https://github.com/AlexaDeWit/Panoptes/issues/91))
 - Panoptes' own threat model as the second fixture ([#108](https://github.com/AlexaDeWit/Panoptes/pull/108), [#52](https://github.com/AlexaDeWit/Panoptes/issues/52))
-- ⚠️  rename project to Saerskriven ([#227](https://github.com/AlexaDeWit/Panoptes/pull/227))
+- ⚠️ rename project to Saerskriven ([#227](https://github.com/AlexaDeWit/Panoptes/pull/227))
 - **canvas:** shared SVG primitives and React Flow wrappers ([#100](https://github.com/AlexaDeWit/Panoptes/pull/100))
 - **canvas:** place flow labels where nothing else is drawn ([#115](https://github.com/AlexaDeWit/Panoptes/pull/115))
 - **canvas:** one token module, and a stylesheet generated from it ([#188](https://github.com/AlexaDeWit/Panoptes/pull/188))
@@ -83,16 +83,16 @@
 - **studio:** ask before opening over changes ([#265](https://github.com/AlexaDeWit/Panoptes/pull/265))
 - **test:** constrain Vitest project discovery ([#235](https://github.com/AlexaDeWit/Panoptes/pull/235))
 
-### ⚠️  Breaking Changes
+### ⚠️ Breaking Changes
 
-- rename project to Saerskriven  ([#227](https://github.com/AlexaDeWit/Panoptes/pull/227))
+- rename project to Saerskriven ([#227](https://github.com/AlexaDeWit/Panoptes/pull/227))
   The CLI, package scope, format name, environment variables, release files, and owned paths now use Saerskriven.
   Assisted-by: Codex (OpenAI)
   Signed-off-by: Alexandra DeWit <alexa.dewit@gmail.com>
-  * test(render): align renamed register golden
-  Regenerate the Markdown table padding for the longer project name.
-  Assisted-by: Codex (OpenAI)
-  Signed-off-by: Alexandra DeWit <alexa.dewit@gmail.com>
+  - test(render): align renamed register golden
+    Regenerate the Markdown table padding for the longer project name.
+    Assisted-by: Codex (OpenAI)
+    Signed-off-by: Alexandra DeWit <alexa.dewit@gmail.com>
 
 ### ❤️ Thank You
 
