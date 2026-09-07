@@ -4,19 +4,12 @@ import styles from './live-region.module.css';
 
 /** What a {@link LiveRegion} is called, what it says, and how it looks. */
 export type LiveRegionProps = {
-  readonly label: string;
+  readonly label?: string;
   readonly testId: string;
   readonly className?: string;
   readonly children?: ReactNode;
 };
 
-/**
- * A region that announces what arrives in it. It stays in the page while it
- * has nothing to say, so a screen reader is already observing it when the
- * first message comes: a region inserted and filled in the same frame
- * announces nothing. `className` is the caller's look for it, applied over
- * the collapse the empty region does on its own.
- */
 export function LiveRegion({
   label,
   testId,
@@ -26,6 +19,7 @@ export function LiveRegion({
   return (
     <section
       aria-label={label}
+      aria-atomic={label === undefined ? 'true' : undefined}
       aria-live="polite"
       className={
         className === undefined
@@ -33,6 +27,7 @@ export function LiveRegion({
           : `${styles.region} ${className}`
       }
       data-testid={testId}
+      role={label === undefined ? 'status' : undefined}
     >
       {children}
     </section>

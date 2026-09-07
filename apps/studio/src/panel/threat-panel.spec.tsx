@@ -1,6 +1,10 @@
 import type { ElementId } from '@saerskriven/model';
 import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import {
+  currentAnnouncement,
+  resetAnnouncements,
+} from '../canvas/announcements.js';
 import { Action } from '../store/actions.js';
 import { initialState } from '../store/state.js';
 import {
@@ -42,8 +46,7 @@ const showPanel = (
 const addControl = (): HTMLElement =>
   screen.getByRole('button', { name: 'Add a threat' });
 
-const announcement = (): string =>
-  screen.getByTestId('threat-announcement').textContent ?? '';
+const announcement = (): string => currentAnnouncement().message;
 
 const titleField = (): HTMLElement =>
   screen.getByRole('textbox', { name: 'Title' });
@@ -63,6 +66,7 @@ describe(
   () => {
     beforeEach(() => {
       modelStore.setState(initialState(sampleModel), true);
+      resetAnnouncements();
     });
 
     it('says how many are selected where more than one is, and offers no edit', () => {
@@ -98,7 +102,7 @@ describe(
       expect(addControl()).toBeDefined();
     });
 
-    it('adds a threat to the selected element, focused on its title and announced', async () => {
+    it('adds a threat to the selected element, focused on its title without a duplicate message', async () => {
       const user = userEvent.setup();
       showPanel(processElement);
 
@@ -106,7 +110,7 @@ describe(
 
       expect(threatsInStore()).toBe(2);
       expect(document.activeElement).toBe(titleField());
-      expect(announcement()).toContain('2');
+      expect(announcement()).toBe('');
     });
 
     it('deletes a threat, moving focus to the one that takes its place', async () => {
@@ -165,6 +169,16 @@ describe(
       expect(screen.getByText(/^Character 7/u)).toBeDefined();
       expect(announcement().trim()).not.toBe('');
       expect(modelStore.getState().present.threats[0].description).toBe('');
+
+      await user.click(screen.getByRole('textbox', { name: 'Description' }));
+      await user.keyboard('x');
+
+      expect(announcement()).toBe('');
+      expect(
+        screen
+          .getByRole('textbox', { name: 'Description' })
+          .getAttribute('aria-invalid'),
+      ).toBe('true');
     });
 
     it('hands a refused draft to the map it was given, keyed by the threat it was typed on', async () => {
@@ -185,7 +199,7 @@ describe(
       expect(drafts.get(actorElement)?.said.trim()).not.toBe('');
     });
 
-    it('opens on the draft it was given, expanded where it was being corrected', () => {
+    it('opens on the draft it was given without repeating its past refusal', () => {
       const drafts = new Map<ElementId, HeldDraft>([
         [
           actorElement,
@@ -202,7 +216,7 @@ describe(
       expect(
         screen.getByDisplayValue(`Pasted${softHyphen}prose`),
       ).toBeDefined();
-      expect(announcement()).toContain('7');
+      expect(announcement()).toBe('');
     });
 
     it('drops a refusal an undo settled, and lets the threat collapse again', async () => {

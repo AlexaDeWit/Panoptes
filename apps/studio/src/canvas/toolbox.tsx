@@ -59,11 +59,7 @@ export function Toolbox() {
         ))}
       </section>
       <FlowTargetChooser />
-      <LiveRegion
-        className={styles.announcement}
-        label="Canvas messages"
-        testId="canvas-announcement"
-      >
+      <LiveRegion className={styles.announcement} testId="canvas-announcement">
         {announcement.message !== '' && (
           <p className={styles.message} key={announcement.sequence}>
             {announcement.message}

@@ -184,15 +184,17 @@ the region below, which speaks only for edits that landed.
   again when it settles, and the settled report is the only one folded into an
   action, as with a drag.
 
-The toolbox holds the region that says what an edit did, the studio's own
-`LiveRegion` ([the controls](../ui/README.md)), always in the page and named
-so a screen reader's landmark list says which region it reached.
-It is fed through a channel of its own rather than through the model store: an
-announcement is not the model and must not ride the undo stacks, and the
-toolbox and the canvas are siblings that both speak into the one region. What
-it says is keyed by a count, so the same words twice over are announced twice:
-a live region speaks when its content changes, and two adds of one kind say
-the same sentence.
+The toolbox holds the studio's unnamed status host ([the
+controls](../ui/README.md)). It reports an edit only when the next focus does
+not expose the result. Canvas and threat deletion, refused text, and completed
+Undo or Redo commands use it. Placement, connection, renaming, threat adds,
+field edits, and keyboard moves rely on their focused control or React Flow's
+message instead.
+
+The status is outside the model store because it does not belong in the undo
+stacks. The next action that changes canvas or panel state clears its message.
+The empty host stays mounted, and a sequence key makes repeated words arrive
+as separate messages.
 
 The canvas pans to the selected element where the whole of it is not in view,
 which is what makes an element placed at an edge worth selecting and naming.

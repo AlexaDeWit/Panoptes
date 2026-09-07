@@ -51,6 +51,7 @@ export type ThreatEditorProps = {
   readonly threat: Threat;
   readonly focus: EditorFocus | undefined;
   readonly held: RefusedField | undefined;
+  readonly onChange: () => void;
   readonly onCommit: (patch: Partial<Threat>) => void;
   readonly onRefusal: (refused: RefusedField | undefined) => void;
   readonly onDelete: () => void;
@@ -61,22 +62,12 @@ export type ThreatEditorProps = {
  * One threat of the list, collapsed to its number and title and expanded to
  * every field of it. Each field commits on its own: the whole threat is
  * replaced either way, and one commit is one undo step.
- *
- * Radix unmounts a collapsed item's fields, so an edit is committed before it
- * can be collapsed: reaching the control that collapses the item, by pointer
- * or by Tab, takes focus out of the field first, which is the commit. A
- * commit the model refuses is the exception, and every text field's refusal
- * is reported through `onRefusal`, with the text and the field it was typed
- * in, so the panel can say so, keep the item open while a refused draft
- * stands, and hand the draft back through `held` the next time this threat is
- * drawn. Which field is holding one is kept here rather than in the panel, so
- * a second field committing cleanly does not report the first field's draft
- * away.
  */
 export function ThreatEditor({
   threat,
   focus,
   held,
+  onChange,
   onCommit,
   onRefusal,
   onDelete,
@@ -123,6 +114,7 @@ export function ThreatEditor({
         <TextField
           held={draftIn(held, 'Title')}
           label="Title"
+          onChange={onChange}
           onCommit={(title) => {
             onCommit({ title });
           }}
@@ -151,6 +143,7 @@ export function ThreatEditor({
         <ProseField
           held={draftIn(held, 'Description')}
           label="Description"
+          onChange={onChange}
           onCommit={(description) => {
             onCommit({ description });
           }}
@@ -160,6 +153,7 @@ export function ThreatEditor({
         <ProseField
           held={draftIn(held, 'Mitigation')}
           label="Mitigation"
+          onChange={onChange}
           onCommit={(mitigation) => {
             onCommit({ mitigation });
           }}

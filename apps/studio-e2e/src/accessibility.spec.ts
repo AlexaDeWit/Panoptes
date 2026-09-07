@@ -160,11 +160,7 @@ test('the studio carries no violation while it says what an edit did', async ({
   await expect(page.getByTestId('canvas-container')).toBeVisible();
 
   await placeByClick(page, 'Actor', /^New actor, actor/u);
-  await expect(page.getByTestId('canvas-announcement')).toContainText(
-    'New actor',
-  );
-  const addedAnnouncement =
-    (await page.getByTestId('canvas-announcement').textContent()) ?? '';
+  await expect(page.getByTestId('canvas-announcement')).toBeEmpty();
 
   await audit(page, 'showing an added element');
 
@@ -173,9 +169,7 @@ test('the studio carries no violation while it says what an edit did', async ({
   await name.press('Enter');
   await expect(name).toHaveCount(0);
   await page.keyboard.press('Delete');
-  await expect
-    .poll(() => page.getByTestId('canvas-announcement').textContent())
-    .not.toBe(addedAnnouncement);
+  await expect(page.getByTestId('canvas-announcement')).not.toBeEmpty();
 
   await audit(page, 'showing a removed element');
 });

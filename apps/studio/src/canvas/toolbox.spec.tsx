@@ -1,9 +1,10 @@
 import { act, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { Action } from '../store/actions.js';
 import { initialState } from '../store/state.js';
 import type { State } from '../store/state.js';
-import { modelStore } from '../store/store.js';
-import { resetAnnouncements } from './announcements.js';
+import { dispatch, modelStore } from '../store/store.js';
+import { announce, resetAnnouncements } from './announcements.js';
 import { resetConnecting, startFlow } from './connecting.js';
 import { canvasModel, readerElement } from './canvas.fixtures.js';
 import { currentTool, resetTools } from './tools.js';
@@ -82,7 +83,24 @@ describe('Toolbox', () => {
   it('keeps the canvas message region mounted while it has nothing to say', () => {
     render(<Toolbox />);
 
-    expect(screen.getByTestId('canvas-announcement').textContent).toBe('');
+    const status = screen.getByRole('status');
+    expect(status.textContent).toBe('');
+    expect(status.getAttribute('aria-label')).toBeNull();
+    expect(status.getAttribute('aria-atomic')).toBe('true');
+  });
+
+  it('clears a message when the next canvas action changes state', () => {
+    render(<Toolbox />);
+    act(() => {
+      announce('An edit completed.');
+    });
+    expect(screen.getByRole('status').textContent).toContain('completed');
+
+    act(() => {
+      dispatch(Action.Select({ elementIds: [readerElement] }));
+    });
+
+    expect(screen.getByRole('status').textContent).toBe('');
   });
 
   it('opens the connector command chooser without adding a flow tool', () => {

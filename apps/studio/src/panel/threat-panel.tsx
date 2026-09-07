@@ -8,10 +8,10 @@ import {
   type KeyboardEvent,
 } from 'react';
 import { useShallow } from 'zustand/react/shallow';
+import { announce, resetAnnouncements } from '../canvas/announcements.js';
 import { keyboardOwner } from '../commands/binding.js';
 import { Action } from '../store/actions.js';
 import { dispatch, modelStore, useModelStore } from '../store/store.js';
-import { LiveRegion } from '../ui/live-region.js';
 import {
   ThreatEditor,
   type EditorFocus,
@@ -70,17 +70,6 @@ function focusIn(
  * With more than one element selected it says how many and offers no field,
  * there being no one element to record a threat against.
  *
- * Focus is moved on the two changes that take a control off the screen or put
- * one there: an added threat opens with focus in its title, and a deleted one
- * hands focus to the threat that took its place, or to the add control when
- * it was the last. Selection alone never moves focus here, which is what
- * `focusing` is for: it is set by a person asking for the panel and by
- * nothing else, and the add control is where they land. Both changes are
- * announced in the panel's live region as well, since a moved focus alone
- * tells a screen reader that something happened but not what it was. An add
- * is announced only once the store holds the threat, the reducer being free
- * to refuse an operation and leave the model where it was.
- *
  * Escape closes the panel, unless a listbox open inside it is holding the
  * key. The press is claimed, so the studio's own Escape, which clears the
  * selection, is not run by the same press ([the
@@ -88,15 +77,6 @@ function focusIn(
  * the way out, so who owns the press is this one decision over what has
  * focus, rather than a race with whichever control did or did not answer the
  * press first.
- *
- * A text field the model refused announces there too, and the threat holding
- * the refused draft stays expanded until the text is fixed or cleared: Radix
- * unmounts a collapsed item's fields, which would take the draft with them.
- * The draft is kept in the overlay's map while the element it was typed on
- * stands, so closing the panel, or selecting elsewhere and coming back, puts
- * it back in the field it was typed in. What drops it is the text being
- * settled, by a correction or by an edit landing under it, or the threat it
- * was about leaving the element.
  */
 export function ThreatPanel({
   subject,
@@ -111,13 +91,11 @@ export function ThreatPanel({
   const opened = element === undefined ? undefined : drafts.get(element.id);
   const [expanded, setExpanded] = useState<string>(opened?.threatId ?? '');
   const [focus, setFocus] = useState<PanelFocus | undefined>(undefined);
-  const [announced, setAnnounced] = useState('');
   const [draft, setDraft] = useState<HeldDraft | undefined>(opened);
   const addControl = useRef<HTMLButtonElement>(null);
   const held = threats.some((threat) => threat.id === draft?.threatId)
     ? draft
     : undefined;
-  const said = held?.said ?? announced;
   const focused = useCallback(() => {
     setFocus(undefined);
   }, []);
@@ -160,7 +138,6 @@ export function ThreatPanel({
     setExpanded(threat.id);
     setDraft(undefined);
     setFocus({ kind: 'title', threatId: threat.id });
-    setAnnounced(`Threat ${String(threat.number)} added.`);
   };
 
   const remove = (threat: Threat): void => {
@@ -172,12 +149,17 @@ export function ThreatPanel({
     } else {
       setFocus({ kind: 'disclosure', threatId: next });
     }
-    setAnnounced(`Threat ${String(threat.number)} deleted.`);
+    announce(`Threat ${String(threat.number)} deleted.`);
   };
 
   const refused =
     (threat: Threat) =>
     (refusal: RefusedField | undefined): void => {
+      const alreadyHeld =
+        refusal !== undefined &&
+        draft?.threatId === threat.id &&
+        draft.field === refusal.field &&
+        draft.text === refusal.text;
       const next =
         refusal === undefined ? undefined : { threatId: threat.id, ...refusal };
       setDraft(next);
@@ -188,13 +170,16 @@ export function ThreatPanel({
           drafts.set(element.id, next);
         }
       }
-      if (refusal !== undefined) {
-        setAnnounced('');
+      if (refusal !== undefined && !alreadyHeld) {
+        announce(refusal.said);
       }
     };
 
   const expand = (value: string): void => {
     if (held === undefined || value === held.threatId) {
+      if (value !== expanded) {
+        resetAnnouncements();
+      }
       setExpanded(value);
     }
   };
@@ -226,13 +211,6 @@ export function ThreatPanel({
         </p>
       ) : (
         <>
-          <LiveRegion
-            className={styles.announcement}
-            label="Panel messages"
-            testId="threat-announcement"
-          >
-            {said !== '' && <p className={styles.message}>{said}</p>}
-          </LiveRegion>
           <button
             className={styles.add}
             onClick={add}
@@ -258,6 +236,7 @@ export function ThreatPanel({
                   focus={focusIn(focus, threat)}
                   held={held?.threatId === threat.id ? held : undefined}
                   key={threat.id}
+                  onChange={resetAnnouncements}
                   onCommit={threatCommitter(dispatch, threat)}
                   onDelete={() => {
                     remove(threat);

@@ -71,21 +71,22 @@ where the accent is the background it would be drawn on.
 ## What is here that is not a control
 
 Three components carry no Radix primitive, because none of them takes an
-edit. `LiveRegion` is the one way anything here announces: a region that
-stays in the page while it has nothing to say and collapses rather than
-hiding while it is empty, because a region inserted and filled in the same
-frame announces nothing. One cannot go inside a menu, which owns items and
-groups of them and nothing else, so the two the menu speaks through stand
-beside it ([the file bridge](../files/README.md)). `FailureNotice` renders
+edit. `LiveRegion` is the one way anything here announces. An unnamed use is
+an atomic polite status. Its empty host stays mounted before and after each
+message, so assistive technology observes later content changes. A transient
+edit status clears on the next action that changes canvas or panel state, not
+on a timer. Repeated words use a new sequence key and announce again.
+
+A named use holds durable feedback. It cannot go inside a menu, which owns
+items and groups only, so the menu's regions stand beside it ([the file
+bridge](../files/README.md)). `FailureNotice` renders
 `StudioFailure` inside one, whatever produced it, so one region shows the
 model refusing an edit, a codec refusing a file, and the platform refusing to
 hand one over. It words every variant: nothing reaches a person as a tag, and
 a codec's paths are kept because they say which line of a file was refused
-rather than that the file was. The threat panel announces an added or deleted
-threat through the same component ([the panel](../panel/README.md)), and the
-canvas toolbox says what an edit did through it as well ([the
-canvas](../canvas/README.md)). Each names its own region, so a landmark list
-says which one a reader reached. `ErrorBoundary` is the last stop for a throw
+rather than that the file was. `FailureNotice`, inline field errors, and the
+loss report keep their existing lifetime until state resolves or the person
+dismisses them. `ErrorBoundary` is the last stop for a throw
 from anywhere below it, and is a class because React offers no other way to
 catch one; it holds the only component state in this directory for that
 reason. It needs no live region, because it replaces the tree it was

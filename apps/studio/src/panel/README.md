@@ -36,10 +36,8 @@ is an element here because it carries threats.
 For several selected elements, the panel states the count and offers no field.
 There is no single element to record a threat against.
 
-The panel holds no copy of model state. What it does hold is its own view
-state: which threat is expanded, which control focus is being sent to, what
-the live region last said, and the draft a field is holding that the model
-refused.
+The panel holds no copy of model state. It holds which threat is expanded,
+where focus is being sent, and the draft a field is holding after a refusal.
 
 ## The keyboard, and closing
 
@@ -106,19 +104,18 @@ threat held open by nothing survives.
 
 Adding is one `AddThreat`, attached to the selected element and carrying the
 number the model issues next. Deleting is one `RemoveThreat`. Both are
-ordinary dispatches, so undo takes either back. An add is announced and moves
-focus only once the store holds the threat: the reducer is total and records
-a refusal rather than failing, so the panel asks it what it did rather than
-assuming.
+ordinary dispatches, so undo takes either back.
 
 ## Focus, and saying what happened
 
-An added threat opens expanded with focus in its title. A deleted one hands
-focus to the threat that took its place, to the one before it where it was
-last, and to the add control where it was the only one. Both changes are
-announced in the panel's own polite live region ([the controls](../ui/README.md)),
-because a moved focus tells a screen reader that something happened and not
-what it was.
+An added threat opens expanded with focus in its title. The focused field
+reports the new threat, so the studio adds no status message. A deleted threat
+hands focus to the next threat, the previous threat, or the add control. That
+focus does not report the deletion, so the shared polite status does.
+
+A refusal also uses the shared status while its inline error remains beside
+the field. The next action that changes canvas or panel state clears the
+status. It does not clear the inline error or its draft.
 
 Radix unmounts a collapsed item's fields, so a commit always comes first:
 reaching the control that collapses an item, by pointer or by Tab, takes

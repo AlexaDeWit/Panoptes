@@ -1,9 +1,10 @@
 import type { Diagram, DiagramId } from '@saerskriven/model';
+import { announce } from '../canvas/announcements.js';
 import { startFlow } from '../canvas/connecting.js';
 import { removeSelected, renameSelected, selectAll } from '../canvas/edits.js';
 import { selectTool, type Tool } from '../canvas/tools.js';
 import { Action } from '../store/actions.js';
-import { dispatch } from '../store/store.js';
+import { dispatch, modelStore } from '../store/store.js';
 import {
   firedBy,
   type Chord,
@@ -87,6 +88,15 @@ const activates = (tool: Tool): CommandDispatch =>
     selectTool(tool);
   });
 
+const history = (action: Action, message: string): CommandDispatch =>
+  runs(() => {
+    const before = modelStore.getState().present;
+    dispatch(action);
+    if (modelStore.getState().present !== before) {
+      announce(message);
+    }
+  });
+
 const table = {
   open: {
     id: 'open',
@@ -165,18 +175,14 @@ const table = {
     label: 'Undo',
     shortcuts: [mod('z')],
     inTextFields: true,
-    dispatch: runs(() => {
-      dispatch(Action.Undo());
-    }),
+    dispatch: history(Action.Undo(), 'Undo completed.'),
   },
   redo: {
     id: 'redo',
     label: 'Redo',
     shortcuts: [modShift('z'), mod('y')],
     inTextFields: true,
-    dispatch: runs(() => {
-      dispatch(Action.Redo());
-    }),
+    dispatch: history(Action.Redo(), 'Redo completed.'),
   },
   delete: {
     id: 'delete',

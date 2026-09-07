@@ -1,5 +1,15 @@
 import { initialState, placeholderModel } from '../store/state.js';
-import { modelStore } from '../store/store.js';
+import {
+  mainDiagram,
+  newProcess,
+  sampleModel,
+} from '../store/store.fixtures.js';
+import { Action } from '../store/actions.js';
+import { dispatch, modelStore } from '../store/store.js';
+import {
+  currentAnnouncement,
+  resetAnnouncements,
+} from '../canvas/announcements.js';
 import { currentTool, resetTools, tools } from '../canvas/tools.js';
 import { recordingSurface } from './commands.fixtures.js';
 import {
@@ -118,6 +128,7 @@ describe('commandFor', () => {
 describe('runCommand', () => {
   beforeEach(() => {
     modelStore.setState(initialState(placeholderModel), true);
+    resetAnnouncements();
     resetTools();
   });
 
@@ -183,5 +194,27 @@ describe('runCommand', () => {
     );
     expect(modelStore.getState().past).toEqual([]);
     expect(recording.asked).toEqual([]);
+  });
+
+  it('announces only completed history moves', () => {
+    const recording = recordingSurface();
+    modelStore.setState(initialState(sampleModel), true);
+    dispatch(
+      Action.AddElement({
+        diagramId: mainDiagram,
+        element: newProcess('history-process', 'History process'),
+      }),
+    );
+    resetAnnouncements();
+
+    runCommand(commandById('undo'), recording.surface);
+    expect(currentAnnouncement().message).toContain('Undo');
+
+    runCommand(commandById('redo'), recording.surface);
+    expect(currentAnnouncement().message).toContain('Redo');
+
+    resetAnnouncements();
+    runCommand(commandById('redo'), recording.surface);
+    expect(currentAnnouncement().message).toBe('');
   });
 });
