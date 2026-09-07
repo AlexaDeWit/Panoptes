@@ -283,7 +283,10 @@ export function StudioMenu({
           </DropdownMenu.Group>
           <DropdownMenu.Separator className={styles.rule} />
           <DropdownMenu.Sub>
-            <DropdownMenu.SubTrigger className={styles.item}>
+            <DropdownMenu.SubTrigger
+              aria-label={`Appearance ${selectedColourMode}`}
+              className={styles.item}
+            >
               <span>Appearance</span>
               <span aria-hidden="true" className={styles.chord}>
                 {selectedColourMode[0].toUpperCase() +

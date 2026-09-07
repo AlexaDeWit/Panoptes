@@ -327,10 +327,12 @@ ${colourBlock(darkPalette, '    ')}
 }
 
 :root[data-pn-colour-mode='light'] {
+  color-scheme: light;
 ${colourBlock(lightPalette, '  ')}
 }
 
 :root[data-pn-colour-mode='dark'] {
+  color-scheme: dark;
 ${colourBlock(darkPalette, '  ')}
 }
 `;

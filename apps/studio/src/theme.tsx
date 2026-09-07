@@ -20,6 +20,20 @@ const readStorage = (): Storage | undefined => {
   }
 };
 
+const applyColourMode = (mode: ColourMode): void => {
+  if (typeof document === 'undefined') {
+    return;
+  }
+  const root = document.documentElement;
+  if (mode === 'system') {
+    delete root.dataset.pnColourMode;
+  } else {
+    root.dataset.pnColourMode = mode;
+  }
+};
+
+applyColourMode(currentMode());
+
 /**
  * The design tokens, as the custom properties every CSS module in the studio
  * reads. They are injected here rather than written in `styles.css` because
@@ -36,12 +50,7 @@ export function DesignTokens() {
   const [mode] = useColourMode();
 
   useEffect(() => {
-    const root = document.documentElement;
-    if (mode === 'system') {
-      delete root.dataset.pnColourMode;
-    } else {
-      root.dataset.pnColourMode = mode;
-    }
+    applyColourMode(mode);
   }, [mode]);
 
   return <style data-mode={mode}>{tokenStylesheet}</style>;
