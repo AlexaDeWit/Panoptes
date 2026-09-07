@@ -154,10 +154,10 @@ describe('what the menu offers', () => {
     await openMenu(user);
 
     const items = screen.getAllByRole('menuitem');
-    expect(items).toHaveLength(11);
+    expect(items).toHaveLength(12);
     expect(
       items.filter((entry) => entry.hasAttribute('aria-keyshortcuts')),
-    ).toHaveLength(8);
+    ).toHaveLength(9);
     expect(
       screen.getAllByRole('group').map((group) => group.textContent),
     ).toContain(
@@ -664,7 +664,7 @@ describe('saving', () => {
     await choose(user, 'Save as');
 
     await screen.findByRole('menuitem', { name: 'Save as Saerskriven YAML' });
-    expect(screen.getAllByRole('menuitem')).toHaveLength(12);
+    expect(screen.getAllByRole('menuitem')).toHaveLength(13);
     expect(item('Save as Saerskriven YAML')).toBeDefined();
     expect(item('Save as Threat Dragon JSON')).toBeDefined();
     expect(item('Export')).toBeDefined();

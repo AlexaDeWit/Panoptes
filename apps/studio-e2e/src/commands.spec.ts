@@ -200,7 +200,7 @@ test('escape from a field closes the panel over the draft rather than clearing t
   await expect(actor).toHaveClass(/selected/u);
   await expect(actor).toBeFocused();
 
-  await page.keyboard.press('Enter');
+  await page.keyboard.press(registeredChords['focus-threats'][0]);
   const held = threatPanel(page).getByRole('textbox', { name: 'Title' });
 
   await expect(held).toHaveValue('Soft\u00adhyphen');
