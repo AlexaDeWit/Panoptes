@@ -5,6 +5,7 @@ import {
   firstDiagramId,
   nameEditable,
   renameable,
+  selectedElement,
 } from '../store/selectors.js';
 import type { State } from '../store/state.js';
 import { dispatch, modelStore } from '../store/store.js';
@@ -71,51 +72,55 @@ export function connectElements(source: ElementId, target: ElementId): void {
   added(Action.AddElement({ diagramId, element: flow }), flow.id);
 }
 
-/**
- * Removes the selected element, saying what went with it. Reports whether the
- * model moved, so the caller knows whether a key press did anything and where
- * focus has to go next. The cascade is the model's own: the reducer applies
- * it, the canvas draws the result because it derives from the store, and this
- * counts it beforehand only to be able to say it.
- */
+/** Removes the selection and announces its combined cascade once. */
 export function removeSelected(): boolean {
   const state = modelStore.getState();
-  const elementId = state.selection;
-  if (elementId === undefined) {
+  const elementIds = state.selection;
+  if (elementIds.length === 0) {
     return false;
   }
-  const name = spokenName(state, elementId);
-  const cascade = removalCascade(state.present, elementId);
-  if (!changedModel(Action.RemoveElement({ elementId }))) {
+  const one = elementIds.at(0);
+  const name =
+    elementIds.length === 1 && one !== undefined
+      ? spokenName(state, one)
+      : counted(elementIds.length, 'element');
+  const cascade = removalCascade(state.present, elementIds);
+  const action =
+    elementIds.length === 1 && one !== undefined
+      ? Action.RemoveElement({ elementId: one })
+      : Action.RemoveElements({ elementIds });
+  if (!changedModel(action)) {
     return false;
   }
   announce(describeRemoval(name, cascade));
   return true;
 }
 
-/**
- * How many flows lose an end and how many threats lose a link when the
- * element named is removed. Flows are counted across the model because a
- * flow's ends name elements of its own diagram, so no flow elsewhere can
- * hold this one.
- */
+/** Counts affected flows and removed threat links before a removal. */
 export function removalCascade(
   model: Model,
-  elementId: ElementId,
+  removedIds: ElementId | readonly ElementId[],
 ): RemovalCascade {
+  const removed = new Set(
+    Array.isArray(removedIds) ? removedIds : [removedIds],
+  );
   const flows = model.diagrams
     .flatMap((diagram) => diagram.elements)
     .filter(
       (element) =>
         element.kind === 'flow' &&
+        !removed.has(element.id) &&
         [element.source, element.target].some(
           (endpoint) =>
-            endpoint.kind === 'attached' && endpoint.element === elementId,
+            endpoint.kind === 'attached' && removed.has(endpoint.element),
         ),
     ).length;
-  const threats = model.threats.filter((threat) =>
-    threat.elements.includes(elementId),
-  ).length;
+  const threats = model.threats.reduce(
+    (count, threat) =>
+      count +
+      threat.elements.filter((elementId) => removed.has(elementId)).length,
+    0,
+  );
   return { flows, threats };
 }
 
@@ -140,10 +145,20 @@ export function describeRemoval(name: string, cascade: RemovalCascade): string {
  */
 export function renameSelected(): void {
   const state = modelStore.getState();
-  const elementId = state.selection;
+  const elementId = selectedElement(state);
   if (elementId !== undefined && renameable(state)) {
     dispatch(Action.Renaming({ elementId }));
   }
+}
+
+/** Selects every element in the diagram on screen. */
+export function selectAll(): void {
+  const elementIds =
+    modelStore
+      .getState()
+      .present.diagrams.at(0)
+      ?.elements.map((element) => element.id) ?? [];
+  dispatch(Action.Select({ elementIds }));
 }
 
 /**
@@ -196,7 +211,7 @@ function added(action: Action, elementId: ElementId): void {
   if (!changedModel(action)) {
     return;
   }
-  dispatch(Action.Select({ elementId }));
+  dispatch(Action.Select({ elementIds: [elementId] }));
   announce(`Added ${spokenName(modelStore.getState(), elementId)}.`);
   focusElement(elementId);
 }
@@ -205,7 +220,7 @@ function placed(action: Action, elementId: ElementId): boolean {
   if (!changedModel(action)) {
     return false;
   }
-  dispatch(Action.Select({ elementId }));
+  dispatch(Action.Select({ elementIds: [elementId] }));
   dispatch(Action.Renaming({ elementId }));
   announce(`Added ${spokenName(modelStore.getState(), elementId)}.`);
   return true;

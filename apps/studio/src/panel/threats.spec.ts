@@ -38,34 +38,43 @@ const recorder = () => vi.fn<(action: Action) => void>();
 
 describe('panelSubject', () => {
   it('is the element the canvas selected', () => {
-    const subject = panelSubject(selecting(actorElement));
+    const subject = panelSubject(selecting([actorElement]));
     expect(subject?.kind === 'element' && subject.element.name).toBe('Reader');
   });
 
   it('is nothing while nothing is selected, which is where no panel is drawn', () => {
-    expect(panelSubject(selecting(undefined))).toBeUndefined();
+    expect(panelSubject(selecting([]))).toBeUndefined();
   });
 
   it('is nothing where the selection names no element of the model', () => {
-    expect(panelSubject(selecting(elementId('element-gone')))).toBeUndefined();
+    expect(
+      panelSubject(selecting([elementId('element-gone')])),
+    ).toBeUndefined();
+  });
+
+  it('counts a selection with several elements', () => {
+    expect(panelSubject(selecting([actorElement, processElement]))).toEqual({
+      kind: 'several',
+      count: 2,
+    });
   });
 });
 
 describe('attachedThreats', () => {
   it('lists the threats naming the selected element', () => {
-    expect(attachedThreats(selecting(actorElement))).toEqual([sampleThreat]);
+    expect(attachedThreats(selecting([actorElement]))).toEqual([sampleThreat]);
   });
 
   it('lists none for an element no threat names', () => {
-    expect(attachedThreats(selecting(processElement))).toEqual([]);
+    expect(attachedThreats(selecting([processElement]))).toEqual([]);
   });
 
   it('lists none while nothing is selected', () => {
-    expect(attachedThreats(selecting(undefined))).toEqual([]);
+    expect(attachedThreats(selecting([]))).toEqual([]);
   });
 
   it('lists a threat whatever its status, where the badge counts the open ones', () => {
-    const state = { ...initialState(mitigated), selection: actorElement };
+    const state = { ...initialState(mitigated), selection: [actorElement] };
 
     expect(attachedThreats(state)).toHaveLength(1);
   });

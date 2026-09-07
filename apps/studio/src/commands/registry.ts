@@ -1,6 +1,6 @@
 import type { Diagram, DiagramId } from '@saerskriven/model';
 import { startFlow } from '../canvas/connecting.js';
-import { removeSelected, renameSelected } from '../canvas/edits.js';
+import { removeSelected, renameSelected, selectAll } from '../canvas/edits.js';
 import { selectTool, type Tool } from '../canvas/tools.js';
 import { Action } from '../store/actions.js';
 import { dispatch } from '../store/store.js';
@@ -80,11 +80,6 @@ const bare = (key: ChordKey): Chord => ({ modifiers: [], key });
 const runs = (run: (surface: CommandSurface) => void): CommandDispatch => ({
   kind: 'runs',
   run,
-});
-
-const pending = (issue: number): CommandDispatch => ({
-  kind: 'pending',
-  issue,
 });
 
 const activates = (tool: Tool): CommandDispatch =>
@@ -206,7 +201,9 @@ const table = {
     label: 'Select all',
     shortcuts: [mod('a')],
     inTextFields: false,
-    dispatch: pending(156),
+    dispatch: runs(() => {
+      selectAll();
+    }),
   },
   'fit-to-view': {
     id: 'fit-to-view',

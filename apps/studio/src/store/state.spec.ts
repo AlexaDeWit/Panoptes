@@ -39,7 +39,7 @@ describe('initialState', () => {
     expect(state.saved).toBe(placeholderModel);
     expect(state.past).toEqual([]);
     expect(state.future).toEqual([]);
-    expect(state.selection).toBeUndefined();
+    expect(state.selection).toEqual([]);
     expect(state.lastFailure).toBeUndefined();
     expect(state.file).toEqual(FileLifecycle.NoFile());
   });

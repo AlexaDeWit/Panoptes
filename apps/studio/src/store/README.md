@@ -32,11 +32,11 @@ and no immutable snapshot to push onto a stack.
   to hang clear of both. Its title is `Untitled`, which is what a model that
   has never been in a file is called, so the tab, the file controls and a
   saved file all read one string rather than a word a view supplied.
-- `actions.ts` is the `Action` union, an Effect `Data.taggedEnum`. Ten tags
-  carry a `@saerskriven/model` operation and its arguments; the rest are undo,
-  redo, selection, which element has its name open in a field on the canvas,
-  the three ends of the file lifecycle, and the two ways the
-  file path refuses. `Saved` names a file as `Opened` does, because a first
+- `actions.ts` is the `Action` union, an Effect `Data.taggedEnum`. Model edits
+  carry one operation and its arguments. `MoveElements` and `RemoveElements`
+  fold the matching operation over one ID array before history records the
+  result. The other tags cover history, selection, renaming, files and
+  failures. `Saved` names a file as `Opened` does, because a first
   save is a save-as, and folding both into `file` keeps "this model lives in
   this file" one fact. `Closed` is the third: the studio goes back to the
   state it booted in, placeholder model and all, so nothing of the file that
@@ -64,10 +64,8 @@ and no immutable snapshot to push onto a stack.
   ([the canvas](../canvas/README.md)).
 
 Selection, the name a field is open on, and the file lifecycle stay out of the
-undo stacks, so an undo moves the model and leaves the user where they were. A
-removal clears a selection that names the element it removed, and the open
-name field with it, so `selection` dangles only where a
-dispatch selected an id the model never held. `renaming` is view state of the
+undo stacks. `selection` is a unique, ordered array of element IDs. A removal
+drops every removed ID from it and closes a matching name field. `renaming` is view state of the
 canvas the way the panel's expanded threat is the panel's, and it is in the
 store rather than in a component because a command reaches it from the
 keyboard with nothing of the canvas mounted above it
@@ -112,5 +110,5 @@ format and nothing has to assert which codec owns which.
   zustand's `useShallow` at the call site, or the component re-renders on every
   dispatch.
 - A high-frequency gesture reaches the store once, at its end. React Flow keeps
-  its own positions during a drag and reports the result on drag stop, which is
-  one `MoveElement`.
+  positions during a drag. A drop dispatches one `MoveElement` or one
+  `MoveElements` for the full selection.

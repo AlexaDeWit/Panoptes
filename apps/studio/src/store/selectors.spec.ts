@@ -8,14 +8,18 @@ import {
   firstDiagramId,
   isDirty,
   modelAsOpened,
+  selectedElement,
+  selectedElements,
   showingPlaceholder,
   windowTitle,
 } from './selectors.js';
 import { initialState, placeholderModel } from './state.js';
 import {
+  actorElement,
   mainDiagram,
   nativeSource,
   newProcess,
+  processElement,
   sampleModel,
 } from './store.fixtures.js';
 
@@ -80,6 +84,18 @@ describe('selectors', () => {
   it('names no diagram in a model that holds none', () => {
     expect(firstDiagramId(start)).toBe(mainDiagram);
     expect(firstDiagramId(initialState(emptyModel))).toBeUndefined();
+  });
+
+  it('reads one selected element and keeps the full selection', () => {
+    const one = reduce(start, Action.Select({ elementIds: [actorElement] }));
+    const several = reduce(
+      one,
+      Action.Select({ elementIds: [actorElement, processElement] }),
+    );
+
+    expect(selectedElement(one)).toBe(actorElement);
+    expect(selectedElements(several)).toEqual([actorElement, processElement]);
+    expect(selectedElement(several)).toBeUndefined();
   });
 });
 

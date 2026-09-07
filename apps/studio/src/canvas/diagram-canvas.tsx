@@ -9,6 +9,7 @@ import {
   BackgroundVariant,
   ConnectionMode,
   ReactFlow,
+  SelectionMode,
   type Connection,
   type EdgeChange,
   type EdgeMouseHandler,
@@ -28,6 +29,7 @@ import {
 import { focusThreatPanel } from '../panel/panel-focus.js';
 import { ThreatOverlay } from '../panel/threat-overlay.js';
 import { keyboardOwner } from '../commands/binding.js';
+import { selectedElement, selectedElements } from '../store/selectors.js';
 import { useModelStore } from '../store/store.js';
 import {
   applyChanges,
@@ -36,7 +38,7 @@ import {
 } from './changes.js';
 import { beginRenaming, drawnElement, removeSelected } from './edits.js';
 import { EmptyStateHint } from './empty-state-hint.js';
-import { currentLayout, selectedElement } from './layout.js';
+import { currentLayout } from './layout.js';
 import {
   diagramGraph,
   elementIds,
@@ -63,7 +65,8 @@ const deleteKeys = new Set(['Delete', 'Backspace']);
 /** The controlled diagram canvas and its floating editing controls. */
 export function DiagramCanvas() {
   const layout = useModelStore(currentLayout);
-  const selection = useModelStore(selectedElement);
+  const selection = useModelStore(selectedElements);
+  const selected = useModelStore(selectedElement);
   const graph = useMemo(
     () => diagramGraph(layout, selection),
     [layout, selection],
@@ -86,11 +89,11 @@ export function DiagramCanvas() {
   }
 
   useEffect(() => {
-    if (revealed.current === selection) {
+    if (revealed.current === selected) {
       return;
     }
-    revealed.current = selection;
-    const node = selection === undefined ? undefined : positions.get(selection);
+    revealed.current = selected;
+    const node = selected === undefined ? undefined : positions.get(selected);
     const extent = surface.current?.getBoundingClientRect();
     const instance = view.current;
     if (node === undefined || extent === undefined || instance === null) {
@@ -102,7 +105,7 @@ export function DiagramCanvas() {
     }
     const centre = revealCentre(node, viewport.zoom);
     void instance.setCenter(centre.x, centre.y, { zoom: viewport.zoom });
-  }, [positions, selection]);
+  }, [positions, selected]);
 
   const onNodesChange = (changes: NodeChange<DiagramNode>[]): void => {
     setOnScreen((current) => applyNodeChanges(changes, current));
@@ -132,13 +135,14 @@ export function DiagramCanvas() {
     if (
       currentTool().active !== 'select' ||
       event.key !== 'Enter' ||
-      selection === undefined ||
+      event.shiftKey ||
+      selected === undefined ||
       keyboardOwner(event.target) !== 'page'
     ) {
       return;
     }
     if (
-      drawnElement(event.target, elements) !== selection ||
+      drawnElement(event.target, elements) !== selected ||
       !focusThreatPanel()
     ) {
       return;
@@ -219,7 +223,7 @@ export function DiagramCanvas() {
         isValidConnection={betweenTwoElements}
         maxZoom={zoomLimits.maximum}
         minZoom={zoomLimits.minimum}
-        multiSelectionKeyCode={null}
+        multiSelectionKeyCode="Shift"
         nodes={onScreen}
         nodesConnectable={mode.active === 'select'}
         nodesDraggable={mode.active === 'select'}
@@ -233,9 +237,11 @@ export function DiagramCanvas() {
         onKeyDown={onKeyDown}
         onNodesChange={onNodesChange}
         panActivationKeyCode={null}
-        panOnDrag={mode.active === 'select' || mode.active === 'hand'}
+        panOnDrag={mode.active === 'hand'}
         ref={surface}
         selectionKeyCode={null}
+        selectionMode={SelectionMode.Full}
+        selectionOnDrag={mode.active === 'select'}
         tabIndex={-1}
         zoomOnDoubleClick={false}
       >

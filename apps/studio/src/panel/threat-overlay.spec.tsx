@@ -24,7 +24,7 @@ const description = (): HTMLElement =>
 
 const select = (elementId = actorElement): void => {
   act(() => {
-    dispatch(Action.Select({ elementId }));
+    dispatch(Action.Select({ elementIds: [elementId] }));
   });
 };
 
@@ -58,7 +58,7 @@ describe('ThreatOverlay', () => {
     select();
 
     act(() => {
-      dispatch(Action.Select({ elementId: undefined }));
+      dispatch(Action.Select({ elementIds: [] }));
     });
 
     expect(panel()).toBeNull();
@@ -84,7 +84,7 @@ describe('ThreatOverlay', () => {
 
     await user.keyboard('{Escape}');
     expect(panel()).toBeNull();
-    expect(modelStore.getState().selection).toBe(actorElement);
+    expect(modelStore.getState().selection).toEqual([actorElement]);
 
     act(() => {
       expect(focusThreatPanel()).toBe(true);

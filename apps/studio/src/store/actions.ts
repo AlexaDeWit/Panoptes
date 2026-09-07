@@ -16,37 +16,16 @@ import type {
 import { Data } from 'effect';
 import type { RetainedSource } from './state.js';
 
-/**
- * Everything that can change the studio's state. Ten tags carry a model
- * operation and nothing else, each holding exactly the arguments that
- * operation takes, so the reducer applies one and folds its answer. The
- * remaining nine are the studio's own: the two history moves, selection,
- * which element has its name open in a field, the three ends of the file
- * lifecycle, and the two ways the file path
- * refuses. `Opened` and `Saved` both name a file, because a first save is a
- * save-as and settles which file the model lives in, and both carry the
- * source a later save merges onto. `Closed` is the other end: the studio
- * goes back to the state it booted in, so nothing of the file that was open
- * is left behind for the next save to merge onto.
- *
- * `ReadFailed` and `FileRefused` are how a failure outside the model
- * reaches the state: the reducer records it, so the view that asked for the
- * file has nothing to handle and one value carries every refusal.
- *
- * `Opened` carries what the read dropped as well, which the reducer does not
- * keep: it describes the file that was read rather than the model, and the
- * view that asked for the file is what shows it. It rides here so that one
- * value describes the open, rather than the view reading the codec twice.
- *
- * The union is bounded and the reducer is exhaustive over it, so a tag added
- * here without an arm beside it is a compile error rather than a silent
- * no-op. A new mutation is a new tag, never a store method that edits the
- * state on its own.
- */
+/** Every state change the reducer accepts. */
 export type Action = Data.TaggedEnum<{
   AddElement: { readonly diagramId: DiagramId; readonly element: Element };
   RemoveElement: { readonly elementId: ElementId };
+  RemoveElements: { readonly elementIds: readonly ElementId[] };
   MoveElement: { readonly elementId: ElementId; readonly offset: Point };
+  MoveElements: {
+    readonly elementIds: readonly ElementId[];
+    readonly offset: Point;
+  };
   ResizeElement: { readonly elementId: ElementId; readonly size: Size };
   RenameElement: { readonly elementId: ElementId; readonly name: string };
   AddThreat: { readonly threat: Threat };
@@ -56,7 +35,7 @@ export type Action = Data.TaggedEnum<{
   DetachThreat: { readonly threatId: ThreatId; readonly elementId: ElementId };
   Undo: {};
   Redo: {};
-  Select: { readonly elementId: ElementId | undefined };
+  Select: { readonly elementIds: readonly ElementId[] };
   Renaming: { readonly elementId: ElementId | undefined };
   Opened: {
     readonly model: Model;

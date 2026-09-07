@@ -35,7 +35,7 @@ export function selectTool(tool: Tool): void {
   beforeHeldHand = undefined;
   moveTo({ active: tool, locked: false });
   if (tool === 'select') {
-    dispatch(Action.Select({ elementId: undefined }));
+    dispatch(Action.Select({ elementIds: [] }));
   }
 }
 

@@ -49,7 +49,7 @@ describe('the model store', () => {
     render(<ElementCount />);
     expect(painted).toEqual([3]);
     act(() => {
-      dispatch(Action.Select({ elementId: actorElement }));
+      dispatch(Action.Select({ elementIds: [actorElement] }));
     });
     expect(painted).toEqual([3]);
     act(() => {

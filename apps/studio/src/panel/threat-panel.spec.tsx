@@ -26,7 +26,7 @@ const showPanel = (
   selection: ElementId,
   overrides: Partial<ThreatPanelProps> = {},
 ): void => {
-  dispatch(Action.Select({ elementId: selection }));
+  dispatch(Action.Select({ elementIds: [selection] }));
   render(
     <ThreatPanel
       drafts={new Map()}
@@ -256,7 +256,7 @@ describe(
         onFocused: focused,
         subject: { kind: 'element', element: sampleElement(processElement) },
       };
-      dispatch(Action.Select({ elementId: processElement }));
+      dispatch(Action.Select({ elementIds: [processElement] }));
       const { rerender } = render(<ThreatPanel {...props} />);
       expect(document.activeElement).toBe(document.body);
 

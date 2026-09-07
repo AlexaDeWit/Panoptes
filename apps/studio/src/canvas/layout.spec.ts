@@ -3,7 +3,7 @@ import { Action } from '../store/actions.js';
 import { reduce } from '../store/reducer.js';
 import { initialState } from '../store/state.js';
 import { canvasModel, readerElement } from './canvas.fixtures.js';
-import { currentLayout, emptyLayout, selectedElement } from './layout.js';
+import { currentLayout, emptyLayout } from './layout.js';
 
 const start = initialState(canvasModel);
 
@@ -33,16 +33,5 @@ describe('currentLayout', () => {
 
   it('draws nothing for a model that holds no diagram', () => {
     expect(currentLayout(initialState(emptyModel))).toBe(emptyLayout);
-  });
-});
-
-describe('selectedElement', () => {
-  it('reads the selection the store holds', () => {
-    expect(selectedElement(start)).toBeUndefined();
-    expect(
-      selectedElement(
-        reduce(start, Action.Select({ elementId: readerElement })),
-      ),
-    ).toBe(readerElement);
   });
 });

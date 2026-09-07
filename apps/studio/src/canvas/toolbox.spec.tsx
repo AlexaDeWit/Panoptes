@@ -9,7 +9,8 @@ import { canvasModel, readerElement } from './canvas.fixtures.js';
 import { currentTool, resetTools } from './tools.js';
 import { Toolbox } from './toolbox.js';
 
-const opened = (selection?: State['selection']): void => {
+const opened = (selected?: State['selection'][number]): void => {
+  const selection = selected === undefined ? [] : [selected];
   modelStore.setState({ ...initialState(canvasModel), selection }, true);
   resetAnnouncements();
   resetConnecting();

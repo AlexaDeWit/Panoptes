@@ -8,7 +8,7 @@ import { canvasModel, readerElement, requestFlow } from './canvas.fixtures.js';
 import { DiagramCanvas } from './diagram-canvas.js';
 import { resetTools } from './tools.js';
 
-const opened = (selection?: ElementId): void => {
+const opened = (selection: readonly ElementId[] = []): void => {
   modelStore.setState({ ...initialState(canvasModel), selection }, true);
   resetAnnouncements();
   resetTools();
@@ -48,7 +48,7 @@ describe('DiagramCanvas', () => {
   });
 
   it('draws the selection the store holds', () => {
-    opened(readerElement);
+    opened([readerElement]);
     render(<DiagramCanvas />);
 
     expect(reader().classList.contains('selected')).toBe(true);
@@ -59,7 +59,7 @@ describe('DiagramCanvas', () => {
 
     fireEvent.click(reader());
 
-    expect(modelStore.getState().selection).toBe(readerElement);
+    expect(modelStore.getState().selection).toEqual([readerElement]);
     expect(reader().classList.contains('selected')).toBe(true);
   });
 
@@ -67,14 +67,14 @@ describe('DiagramCanvas', () => {
     render(<DiagramCanvas />);
 
     act(() => {
-      dispatch(Action.Select({ elementId: readerElement }));
+      dispatch(Action.Select({ elementIds: [readerElement] }));
     });
 
     expect(reader().classList.contains('selected')).toBe(true);
   });
 
   it('removes the selected element on the delete key, and says what went with it', () => {
-    opened(readerElement);
+    opened([readerElement]);
     render(<DiagramCanvas />);
 
     fireEvent.keyDown(reader(), { key: 'Delete' });
@@ -85,7 +85,7 @@ describe('DiagramCanvas', () => {
   });
 
   it('removes the selected flow on the backspace key', () => {
-    opened(requestFlow);
+    opened([requestFlow]);
     render(<DiagramCanvas />);
 
     fireEvent.keyDown(screen.getByTestId('rf__wrapper'), { key: 'Backspace' });
@@ -107,7 +107,7 @@ describe('DiagramCanvas', () => {
     expect(screen.queryByRole('region', { name: 'Threats' })).toBeNull();
 
     act(() => {
-      dispatch(Action.Select({ elementId: readerElement }));
+      dispatch(Action.Select({ elementIds: [readerElement] }));
     });
 
     expect(screen.getByRole('region', { name: 'Threats' })).toBeDefined();
@@ -119,7 +119,7 @@ describe('DiagramCanvas', () => {
   });
 
   it('hands the panel the keyboard on Enter over the element already selected', () => {
-    opened(readerElement);
+    opened([readerElement]);
     render(<DiagramCanvas />);
 
     fireEvent.keyDown(reader(), { key: 'Enter' });
@@ -135,19 +135,28 @@ describe('DiagramCanvas', () => {
 
     fireEvent.keyDown(reader(), { key: 'Enter' });
 
-    expect(modelStore.getState().selection).toBe(readerElement);
+    expect(modelStore.getState().selection).toEqual([readerElement]);
     expect(document.activeElement).toBe(reader());
   });
 
   it('clears a selected flow when the pointer lands on nothing', () => {
-    opened(requestFlow);
+    opened([requestFlow]);
     render(<DiagramCanvas />);
     const pane = document.querySelector('.react-flow__pane');
     expect(pane).not.toBeNull();
 
-    fireEvent.click(pane ?? document.body);
+    fireEvent.pointerDown(pane ?? document.body, {
+      button: 0,
+      isPrimary: true,
+      pointerId: 1,
+    });
+    fireEvent.pointerUp(pane ?? document.body, {
+      button: 0,
+      isPrimary: true,
+      pointerId: 1,
+    });
 
-    expect(modelStore.getState().selection).toBeUndefined();
+    expect(modelStore.getState().selection).toEqual([]);
   });
 
   it('opens the name of a node in a field on the second click of a pair', () => {

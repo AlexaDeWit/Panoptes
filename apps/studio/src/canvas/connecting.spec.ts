@@ -18,7 +18,13 @@ import {
 } from './connecting.js';
 
 const opened = (selection?: ElementId): void => {
-  modelStore.setState({ ...initialState(canvasModel), selection }, true);
+  modelStore.setState(
+    {
+      ...initialState(canvasModel),
+      selection: selection === undefined ? [] : [selection],
+    },
+    true,
+  );
   resetConnecting();
 };
 

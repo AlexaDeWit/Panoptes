@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { chordsWaitingOnASurface, registeredChords } from './chords.js';
+import { registeredChords } from './chords.js';
 import {
   savedByKey,
   savedFromMenu,
@@ -133,26 +133,17 @@ test('opening is one chord, through the picker the browser offers', async ({
   await expect(elementNodes(page)).toHaveCount(18);
 });
 
-test('a command still waiting on its surface claims its chord and changes nothing', async ({
+test('select all reaches the whole diagram from the keyboard', async ({
   page,
 }) => {
   await openPlaceholder(page);
-  const actor = await selectNode(page, /^Actor, actor/u);
-  const settled = await viewportTransform(page);
 
-  for (const chord of chordsWaitingOnASurface) {
-    await page.keyboard.press(chord);
-  }
+  await page.keyboard.press(registeredChords['select-all'][0]);
 
   await expect(elementNodes(page)).toHaveCount(2);
-  await expect(actor).toHaveClass(/selected/u);
-  await openMenu(page);
-  await expect(page.getByTestId('file-state')).toContainText(
-    'Saerskriven YAML',
-  );
-  await expect(menuButton(page)).not.toHaveAccessibleName(/unsaved changes/u);
-  await closeMenu(page);
-  expect(await viewportTransform(page)).toBe(settled);
+  await expect(page.locator('.react-flow__node.selected')).toHaveCount(2);
+  await expect(page.locator('.react-flow__edge.selected')).toHaveCount(1);
+  await expect(threatPanel(page)).toContainText('3 elements selected');
 });
 
 test('a shortcut waits while a name is being typed, and saving and undo do not', async ({

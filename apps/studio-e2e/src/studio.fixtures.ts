@@ -293,6 +293,32 @@ export const dragOnto = async (
   await dragTo(page, from, await centreOf(onto));
 };
 
+/** Draws one selection box around every node in `targets`. */
+export const boxSelect = async (
+  page: Page,
+  targets: readonly [Locator, ...Locator[]],
+): Promise<void> => {
+  const boxes = await Promise.all(
+    targets.map((target) => target.boundingBox()),
+  );
+  expect(boxes.every((box) => box !== null)).toBe(true);
+  const drawn = boxes.filter((box): box is Box => box !== null);
+  const margin = 16;
+  const from = {
+    x: Math.min(...drawn.map((box) => box.x)) - margin,
+    y: Math.min(...drawn.map((box) => box.y)) - margin,
+  };
+  const to = {
+    x: Math.max(...drawn.map((box) => box.x + box.width)) + margin,
+    y: Math.max(...drawn.map((box) => box.y + box.height)) + margin,
+  };
+  await page.mouse.move(from.x, from.y);
+  await page.mouse.down();
+  await page.mouse.move(to.x, to.y, { steps: 12 });
+  await expect(page.locator('.react-flow__selection')).toBeVisible();
+  await page.mouse.up();
+};
+
 const clearBy = 48;
 
 const steps = 8;

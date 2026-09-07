@@ -47,8 +47,15 @@ const applied: ActionsByTag<ModelActionTag> = {
     element: newProcess('process-added', 'Added'),
   }),
   RemoveElement: Action.RemoveElement({ elementId: processElement }),
+  RemoveElements: Action.RemoveElements({
+    elementIds: [actorElement, processElement],
+  }),
   MoveElement: Action.MoveElement({
     elementId: processElement,
+    offset: { x: 10, y: -5 },
+  }),
+  MoveElements: Action.MoveElements({
+    elementIds: [actorElement, processElement],
     offset: { x: 10, y: -5 },
   }),
   ResizeElement: Action.ResizeElement({
@@ -84,8 +91,15 @@ const refused: ActionsByTag<ModelActionTag> = {
   RemoveElement: Action.RemoveElement({
     elementId: elementId('element-missing'),
   }),
+  RemoveElements: Action.RemoveElements({
+    elementIds: [processElement, elementId('element-missing')],
+  }),
   MoveElement: Action.MoveElement({
     elementId: elementId('element-missing'),
+    offset: { x: 1, y: 1 },
+  }),
+  MoveElements: Action.MoveElements({
+    elementIds: [processElement, elementId('element-missing')],
     offset: { x: 1, y: 1 },
   }),
   ResizeElement: Action.ResizeElement({
@@ -123,7 +137,7 @@ const withHistory: State = {
 const studioActions: ActionsByTag<StudioActionTag> = {
   Undo: Action.Undo(),
   Redo: Action.Redo(),
-  Select: Action.Select({ elementId: actorElement }),
+  Select: Action.Select({ elementIds: [actorElement] }),
   Renaming: Action.Renaming({ elementId: actorElement }),
   Opened: Action.Opened({
     model: emptyModel,
@@ -213,26 +227,40 @@ describe('history', () => {
 
 describe('selection', () => {
   it('follows what a view selects', () => {
-    const selected = reduce(start, Action.Select({ elementId: actorElement }));
-    expect(selected.selection).toBe(actorElement);
+    const selected = reduce(
+      start,
+      Action.Select({ elementIds: [actorElement] }),
+    );
+    expect(selected.selection).toEqual([actorElement]);
     expect(
-      reduce(selected, Action.Select({ elementId: undefined })).selection,
-    ).toBeUndefined();
+      reduce(selected, Action.Select({ elementIds: [] })).selection,
+    ).toEqual([]);
   });
 
   it('clears when the element it names is removed', () => {
     const selected = reduce(
       start,
-      Action.Select({ elementId: processElement }),
+      Action.Select({ elementIds: [processElement] }),
     );
-    expect(reduce(selected, applied.RemoveElement).selection).toBeUndefined();
+    expect(reduce(selected, applied.RemoveElement).selection).toEqual([]);
   });
 
   it('stays on an element another removal does not touch', () => {
-    const selected = reduce(start, Action.Select({ elementId: actorElement }));
-    expect(reduce(selected, applied.RemoveElement).selection).toBe(
-      actorElement,
+    const selected = reduce(
+      start,
+      Action.Select({ elementIds: [actorElement] }),
     );
+    expect(reduce(selected, applied.RemoveElement).selection).toEqual([
+      actorElement,
+    ]);
+  });
+
+  it('clears every removed member of a multi-selection', () => {
+    const selected = reduce(
+      start,
+      Action.Select({ elementIds: [actorElement, processElement] }),
+    );
+    expect(reduce(selected, applied.RemoveElements).selection).toEqual([]);
   });
 });
 
@@ -334,7 +362,7 @@ describe('the file lifecycle', () => {
   it('closes back to the state the studio booted in, keeping nothing of the file', () => {
     const working = reduce(
       withHistory,
-      Action.Select({ elementId: actorElement }),
+      Action.Select({ elementIds: [actorElement] }),
     );
     expect(working.past).toHaveLength(1);
     expect(working.future).toHaveLength(1);
@@ -346,7 +374,7 @@ describe('the file lifecycle', () => {
     expect(closed.saved).toBe(placeholderModel);
     expect(closed.past).toEqual([]);
     expect(closed.future).toEqual([]);
-    expect(closed.selection).toBeUndefined();
+    expect(closed.selection).toEqual([]);
   });
 });
 
