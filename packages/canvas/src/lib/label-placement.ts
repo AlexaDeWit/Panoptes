@@ -371,7 +371,7 @@ export function flowLabelPlacementsDuringMove(
     const retained = moving.has(flow.id) ? undefined : settled.get(flow.id);
     const chosen =
       retained === undefined
-        ? cheapestCandidate(flow, drawn)
+        ? closestClearCandidate(flow, drawn)
         : candidateFromPlacement(flow, retained);
     placements[index] = chosen.placement;
     drawn = withLabelPlaced(drawn, chosen);
@@ -608,10 +608,30 @@ function cheapestCandidate(flow: FlowGeometry, drawn: Obstacles): Candidate {
   const segments = segmentsForFlow(flow);
   const home = homeSegment(flow.points, segments);
   const middle = alongSegment(home, 0.5);
-  const metrics = {
-    name: flowNameExtent(flow.name),
-    badge: flow.badge === undefined ? undefined : badgeExtent(flow.badge),
-  };
+  const metrics = candidateMetrics(flow);
+  let best = candidateAt(flow, home, 0.5, 0, 1, middle, metrics);
+  let cost = collisionsOf(best, drawn, Number.POSITIVE_INFINITY);
+  for (const next of candidatesOf(flow, segments, middle, metrics)) {
+    if (cost === 0 && next.fromMiddle >= best.fromMiddle) {
+      continue;
+    }
+    const held = collisionsOf(next, drawn, cost + 1);
+    if (held < cost || (held === cost && next.fromMiddle < best.fromMiddle)) {
+      best = next;
+      cost = held;
+    }
+  }
+  return best;
+}
+
+function closestClearCandidate(
+  flow: FlowGeometry,
+  drawn: Obstacles,
+): Candidate {
+  const segments = segmentsForFlow(flow);
+  const home = homeSegment(flow.points, segments);
+  const middle = alongSegment(home, 0.5);
+  const metrics = candidateMetrics(flow);
   const initial = candidateAt(flow, home, 0.5, 0, 1, middle, metrics);
   const candidates = candidatesByDistance([
     initial,
@@ -630,6 +650,13 @@ function cheapestCandidate(flow: FlowGeometry, drawn: Obstacles): Candidate {
     }
   }
   return best;
+}
+
+function candidateMetrics(flow: FlowGeometry): CandidateMetrics {
+  return {
+    name: flowNameExtent(flow.name),
+    badge: flow.badge === undefined ? undefined : badgeExtent(flow.badge),
+  };
 }
 
 function candidatesByDistance(candidates: readonly Candidate[]): Candidate[] {

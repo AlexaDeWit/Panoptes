@@ -138,7 +138,13 @@ export function DiagramCanvas() {
       return undefined;
     }
     const timer = globalThis.setTimeout(() => {
-      const paused = layoutAtReactFlowNodes(layout, onScreen, selection);
+      const paused = layoutAtReactFlowNodes(
+        layout,
+        onScreen,
+        selection,
+        false,
+        edgeBases.current,
+      );
       setExactEdges(withLiveEdges(graph.edges, paused));
       edgeBases.current = canvasEdgesById(paused);
     }, exactLabelDelay);

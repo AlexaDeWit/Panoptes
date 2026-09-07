@@ -167,3 +167,21 @@ test('a quick release keeps the last live label placement', async ({
 
   expect(await label.boundingBox()).toEqual(live);
 });
+
+test('a one-endpoint move settles its attached label before release', async ({
+  page,
+}) => {
+  await openEcluse(page);
+  const store = nodeNamed(page, /^S3 \(OSV Datasets\), store/u);
+  const label = nodeNamed(page, /^Push osv\.db \(SQLite\), flow/u).locator(
+    '.pn-flow-label',
+  );
+
+  const at = await pressOn(page, store);
+  await page.mouse.move(at.x + 20, at.y);
+  const live = await label.boundingBox();
+  expect(live).not.toBeNull();
+  await page.mouse.up();
+
+  expect(await label.boundingBox()).toEqual(live);
+});

@@ -358,7 +358,8 @@ the diagram.
 to a settled layout. It moves selected flow waypoints and free ends, resolves
 attached endpoints, and places labels for the flows that changed. The
 interactive canvas calls it on each drag frame while retaining static label
-placements. A paused or finished drag runs the full label search.
+placements. A pause rechecks changed labels from their last candidates. The
+finished drag runs the full label search.
 
 Nothing here reads what kind of element a box belongs to. A flow attached to
 a trust boundary follows it as it follows any other node. A free end is

@@ -258,7 +258,9 @@ export function layoutDuringMove(
   );
   const labelsToPlace = new Set(
     geometry.flatMap((edge, index) =>
-      movingFlows.has(edge.id) && !flowIsTranslation(layout.edges[index], edge)
+      movingFlows.has(edge.id) &&
+      !moving.has(edge.id) &&
+      !flowIsTranslation(layout.edges[index], edge)
         ? [edge.id]
         : [],
     ),
