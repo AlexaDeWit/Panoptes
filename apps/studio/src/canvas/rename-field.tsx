@@ -21,6 +21,7 @@ import {
   useEffect,
   useId,
   useRef,
+  useState,
   type ChangeEvent,
   type CSSProperties,
   type KeyboardEvent,
@@ -38,6 +39,7 @@ import {
   commitNote,
   commitRename,
   endInlineEditing,
+  resizeNode,
   stopInlineEditing,
 } from './edits.js';
 import { edgeLabel, nodeLabel } from './names.js';
@@ -175,6 +177,7 @@ function InlineField({
 
 function EditingNodeBody(props: NodeProps<CanvasFlowNode>) {
   const { node } = props.data;
+  const [resizing, setResizing] = useState(false);
   const editor = useModelStore(
     useCallback(
       (state: State) =>
@@ -190,7 +193,18 @@ function EditingNodeBody(props: NodeProps<CanvasFlowNode>) {
 
   return (
     <>
-      <CanvasNodeBody {...props} controlsVisible={!editing} />
+      <CanvasNodeBody
+        {...props}
+        controlsVisible={!editing}
+        onResize={() => {
+          setResizing(true);
+        }}
+        onResizeEnd={(box) => {
+          setResizing(false);
+          resizeNode(node, box);
+        }}
+        resizing={resizing}
+      />
       {editingName && (
         <div
           className={`${styles.overNode} nodrag nopan`}

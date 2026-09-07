@@ -68,6 +68,8 @@ const bodyMarkup = (
   selected = false,
   isConnectable = false,
   controlsVisible = true,
+  size?: { readonly width: number; readonly height: number },
+  resizing = false,
 ): string =>
   renderToStaticMarkup(
     <ReactFlowProvider>
@@ -76,6 +78,9 @@ const bodyMarkup = (
         selected={selected}
         isConnectable={isConnectable}
         controlsVisible={controlsVisible}
+        width={size?.width}
+        height={size?.height}
+        resizing={resizing}
       />
     </ReactFlowProvider>,
   );
@@ -129,6 +134,21 @@ describe('CanvasNodeBody', () => {
     expect(bodyMarkup(nodeNamed('el-client'))).toContain('<rect');
   });
 
+  it('draws the glyph at the transient extent React Flow reports', () => {
+    const markup = bodyMarkup(
+      nodeNamed('el-client'),
+      false,
+      false,
+      true,
+      { width: 200, height: 90 },
+      true,
+    );
+    expect(markup).toContain('<svg width="200" height="90"');
+    expect(markup).toContain(
+      '<rect class="pn-shape pn-actor" width="200" height="90"',
+    );
+  });
+
   it('carries a handle at each side, named for that side', () => {
     const markup = bodyMarkup(nodeNamed('el-client'));
     for (const side of handleSides) {
@@ -145,15 +165,21 @@ describe('CanvasNodeBody', () => {
     );
   });
 
-  it('offers a resize control on a selected element the model can resize', () => {
-    expect(bodyMarkup(nodeNamed('el-client'), true)).toContain(
-      'react-flow__resize-control',
-    );
+  it('offers four side controls and four corner controls on a selected resizable element', () => {
+    const node = nodeNamed('el-client');
+    const markup = bodyMarkup(node, true);
+    expect(markup.match(/react-flow__resize-control/gu)).toHaveLength(8);
+    for (const position of ['top', 'right', 'bottom', 'left']) {
+      expect(markup).toContain(`Resize ${node.name} from ${position}`);
+    }
+    expect(markup).toContain('aria-keyshortcuts="ArrowUp ArrowDown"');
+    expect(markup.match(/class="[^"]*\bline\b/gu)).toHaveLength(4);
+    expect(markup.match(/class="[^"]*\bhandle\b/gu)).toHaveLength(4);
   });
 
   it('hides connection and resize controls while a name field is open', () => {
     const markup = bodyMarkup(nodeNamed('el-client'), true, true, false);
-    expect(markup.match(/visibility:hidden/gu)).toHaveLength(5);
+    expect(markup.match(/visibility:hidden/gu)).toHaveLength(12);
   });
 
   it('offers none while the element is not selected', () => {

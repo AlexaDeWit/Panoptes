@@ -4,6 +4,7 @@ import {
   Handle,
   NodeResizeControl,
   Position,
+  ResizeControlVariant,
   useInternalNode,
   useStore,
   type Edge,
@@ -12,7 +13,7 @@ import {
   type Node,
   type NodeProps,
 } from '@xyflow/react';
-import type { ReactElement } from 'react';
+import type { KeyboardEvent, ReactElement } from 'react';
 import { ElementGlyph, FlowGlyph } from './glyphs.js';
 import { shiftedBy } from './geometry.js';
 import { handleSides, type HandleSide, type NodeBox } from './handles.js';
@@ -28,6 +29,15 @@ import {
 } from './layout.js';
 import { svgNumber } from './numbers.js';
 import { polylinePath, smoothPath } from './paths.js';
+import {
+  keyboardResizeStep,
+  minimumNodeExtent,
+  resizeBoxByKey,
+  resizeBoxOnControlAxes,
+  resizeControlPositions,
+  shiftedKeyboardResizeStep,
+  type ResizeControlPosition,
+} from './resizing.js';
 import { interactionWidths } from './tokens.js';
 
 const anchorExtent = 1;
@@ -52,6 +62,30 @@ const handlePlacement = {
   bottom: Position.Bottom,
   left: Position.Left,
 } as const satisfies Record<HandleSide, Position>;
+
+const resizeControlLabels = {
+  top: 'top',
+  right: 'right',
+  bottom: 'bottom',
+  left: 'left',
+  'top-left': 'top left corner',
+  'top-right': 'top right corner',
+  'bottom-right': 'bottom right corner',
+  'bottom-left': 'bottom left corner',
+} as const satisfies Record<ResizeControlPosition, string>;
+
+const resizeControlKeys = {
+  top: 'ArrowUp ArrowDown',
+  right: 'ArrowLeft ArrowRight',
+  bottom: 'ArrowUp ArrowDown',
+  left: 'ArrowLeft ArrowRight',
+  'top-left': 'ArrowUp ArrowRight ArrowDown ArrowLeft',
+  'top-right': 'ArrowUp ArrowRight ArrowDown ArrowLeft',
+  'bottom-right': 'ArrowUp ArrowRight ArrowDown ArrowLeft',
+  'bottom-left': 'ArrowUp ArrowRight ArrowDown ArrowLeft',
+} as const satisfies Record<ResizeControlPosition, string>;
+
+const sideControls = new Set<ResizeControlPosition>(handleSides);
 
 /** What a React Flow node of a Saerskriven diagram carries: the laid-out node. */
 export type CanvasNodeData = { readonly node: CanvasNode };
@@ -150,31 +184,47 @@ export type CanvasFreeEndNode = Node<CanvasFreeEndData, typeof freeEndNodeKind>;
  * the node's accessible name says what the glyph shows, and the canvas
  * mounting it settles that name.
  *
- * A selected element the model can resize carries one control, at its bottom
- * right corner. It is the corner alone because a control on the top or the
- * left moves the element as well as sizing it, which is two model operations
- * for one gesture where the studio's store has one action per edit. A
- * boundary curve carries none: the model has no extent to set on one.
+ * A selected resizable element carries four side controls and four corner
+ * controls. A boundary curve carries none because the model has no extent.
  */
 export function CanvasNodeBody({
   controlsVisible = true,
   data,
+  height,
   isConnectable,
+  onResize,
+  onResizeEnd,
+  resizing = false,
   selected,
+  width,
 }: NodeProps<CanvasFlowNode> & {
   readonly controlsVisible?: boolean;
+  readonly onResize?: () => void;
+  readonly onResizeEnd?: (box: NodeBox) => void;
+  readonly resizing?: boolean;
 }): ReactElement {
+  const shownSize = resizing
+    ? {
+        width: width ?? data.node.size.width,
+        height: height ?? data.node.size.height,
+      }
+    : data.node.size;
+  const shownNode =
+    shownSize.width === data.node.size.width &&
+    shownSize.height === data.node.size.height
+      ? data.node
+      : { ...data.node, size: shownSize };
   return (
     <>
       <svg
-        width={svgNumber(data.node.size.width)}
-        height={svgNumber(data.node.size.height)}
+        width={svgNumber(shownSize.width)}
+        height={svgNumber(shownSize.height)}
         style={{ display: 'block' }}
         overflow="visible"
         aria-hidden="true"
       >
-        {isBoundary(data.node) ? <BoundaryHitTarget node={data.node} /> : null}
-        <ElementGlyph node={data.node} />
+        {isBoundary(shownNode) ? <BoundaryHitTarget node={shownNode} /> : null}
+        <ElementGlyph node={shownNode} />
       </svg>
       {handleSides.map((side) => (
         <Handle
@@ -186,12 +236,96 @@ export function CanvasNodeBody({
           style={controlsVisible ? undefined : { visibility: 'hidden' }}
         />
       ))}
-      {selected && resizableKinds.has(data.node.kind) && (
-        <NodeResizeControl
-          position="bottom-right"
-          style={controlsVisible ? undefined : { visibility: 'hidden' }}
+      {selected && resizableKinds.has(data.node.kind) ? (
+        <ResizeControls
+          node={data.node}
+          onResize={onResize}
+          onResizeEnd={onResizeEnd}
+          visible={controlsVisible}
         />
-      )}
+      ) : null}
+    </>
+  );
+}
+
+function ResizeControls({
+  node,
+  onResize,
+  onResizeEnd,
+  visible,
+}: {
+  readonly node: CanvasNode;
+  readonly onResize: (() => void) | undefined;
+  readonly onResizeEnd: ((box: NodeBox) => void) | undefined;
+  readonly visible: boolean;
+}): ReactElement {
+  const name = node.name.trim() || node.kind.replace('-', ' ');
+  const settle = (box: NodeBox): void => {
+    onResizeEnd?.(box);
+  };
+  const keyDown = (
+    control: ResizeControlPosition,
+    event: KeyboardEvent<HTMLButtonElement>,
+  ): void => {
+    const resized = resizeBoxByKey(
+      { position: node.position, size: node.size },
+      control,
+      event.key,
+      event.shiftKey ? shiftedKeyboardResizeStep : keyboardResizeStep,
+    );
+    if (resized === undefined || onResizeEnd === undefined) {
+      return;
+    }
+    event.preventDefault();
+    event.stopPropagation();
+    settle(resized);
+  };
+
+  return (
+    <>
+      {resizeControlPositions.map((position) => (
+        <NodeResizeControl
+          key={position}
+          minHeight={minimumNodeExtent}
+          minWidth={minimumNodeExtent}
+          onResize={onResize}
+          onResizeEnd={(_, resized) => {
+            settle(
+              resizeBoxOnControlAxes(
+                { position: node.position, size: node.size },
+                position,
+                {
+                  position: { x: resized.x, y: resized.y },
+                  size: { width: resized.width, height: resized.height },
+                },
+              ),
+            );
+          }}
+          position={position}
+          resizeDirection={
+            position === 'left' || position === 'right'
+              ? 'horizontal'
+              : position === 'top' || position === 'bottom'
+                ? 'vertical'
+                : undefined
+          }
+          style={visible ? undefined : { visibility: 'hidden' }}
+          variant={
+            sideControls.has(position)
+              ? ResizeControlVariant.Line
+              : ResizeControlVariant.Handle
+          }
+        >
+          <button
+            aria-keyshortcuts={resizeControlKeys[position]}
+            aria-label={`Resize ${name} from ${resizeControlLabels[position]}`}
+            onKeyDown={(event) => {
+              keyDown(position, event);
+            }}
+            type="button"
+          />
+        </NodeResizeControl>
+      ))}
     </>
   );
 }

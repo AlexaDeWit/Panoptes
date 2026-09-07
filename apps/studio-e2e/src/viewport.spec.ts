@@ -1,5 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
-import { viewportTransform } from './commands.fixtures.js';
+import { viewportTransform, viewportZoom } from './commands.fixtures.js';
 import {
   nodeNamed,
   openEcluse,
@@ -58,9 +58,6 @@ const clearOfTheCluster = async (page: Page, name: RegExp): Promise<void> => {
   ).toBeGreaterThan(0);
 };
 
-const zoomOf = async (page: Page): Promise<number> =>
-  Number(/scale\(([\d.]+)\)/u.exec(await viewportTransform(page))?.[1]);
-
 test('a real model opens fitted, so the elements at its far corners are drawn inside the canvas', async ({
   page,
 }) => {
@@ -76,7 +73,7 @@ test('the placeholder opens fitted as well', async ({ page }) => {
 
   await drawnInside(page, placeholderCorner);
   expect(
-    await zoomOf(page),
+    await viewportZoom(page),
     'the placeholder is drawn larger than life, which only a fit does',
   ).toBeGreaterThan(1);
 });

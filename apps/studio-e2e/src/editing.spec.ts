@@ -7,7 +7,6 @@ import {
   canvasContainer,
   canvasSettled,
   canvasSurface,
-  dragBy,
   dragOnto,
   editAnnouncement,
   elementNodes,
@@ -22,7 +21,6 @@ import {
   selectNode,
   toolButton,
   vendored,
-  widthOf,
   withoutPickers,
 } from './studio.fixtures.js';
 
@@ -300,7 +298,9 @@ for (const [tool, named, shape, shapeCount, square] of previewedBoxTools) {
     const committed = await inkBoxOf(node.locator(shape));
     const field = await node.getByRole('textbox').boundingBox();
     await expect(node.locator('.react-flow__handle').first()).toBeHidden();
-    await expect(node.locator('.react-flow__resize-control')).toBeHidden();
+    await expect(
+      node.locator('.react-flow__resize-control:visible'),
+    ).toHaveCount(0);
     expect(committed.x).toBeCloseTo(drawn.x);
     expect(committed.y).toBeCloseTo(drawn.y);
     expect(committed.width).toBeCloseTo(drawn.width);
@@ -583,28 +583,4 @@ test('a deletion is one step, so undo puts the element and its flows back', asyn
     'aria-label',
     /to Public npm registry/u,
   );
-});
-
-test('a trust boundary is resized by dragging its corner, in one step', async ({
-  page,
-}) => {
-  await openPlaceholder(page);
-
-  const boundary = await placeByClick(
-    page,
-    'Trust boundary',
-    /^New trust boundary, trust boundary/u,
-  );
-  await page.keyboard.press('Enter');
-  const corner = boundary.locator('.react-flow__resize-control.handle');
-  await expect(corner).toBeInViewport();
-  const before = await widthOf(boundary);
-
-  await dragBy(page, corner, 40);
-
-  await expect.poll(() => widthOf(boundary)).not.toBe(before);
-
-  await runFromMenu(page, 'Undo');
-
-  await expect.poll(() => widthOf(boundary)).toBe(before);
 });

@@ -144,7 +144,7 @@ test('the tool the toolbox has active says it over the whole canvas', async ({
   await expect(node).toHaveCSS('cursor', 'default');
 });
 
-test('only the selected element carries the control that resizes it, and the pointer names the direction', async ({
+test('only the selected element carries side and corner resize controls with directional pointers', async ({
   page,
 }) => {
   await openPlaceholder(page);
@@ -154,7 +154,67 @@ test('only the selected element carries the control that resizes it, and the poi
 
   await selectNode(page, actor);
 
-  await expect(resizeControlOn(node)).toHaveCount(1);
-  await expect(page.locator('.react-flow__resize-control')).toHaveCount(1);
-  await expect(resizeControlOn(node)).toHaveCSS('cursor', 'nwse-resize');
+  await expect(resizeControlOn(node)).toHaveCount(8);
+  await expect(page.locator('.react-flow__resize-control')).toHaveCount(8);
+  await expect(
+    resizeControlOn(node).filter({
+      has: page.getByRole('button', {
+        name: 'Resize Actor from top',
+        exact: true,
+      }),
+    }),
+  ).toHaveCSS('cursor', 'ns-resize');
+  await expect(
+    resizeControlOn(node).filter({
+      has: page.getByRole('button', {
+        name: 'Resize Actor from right',
+        exact: true,
+      }),
+    }),
+  ).toHaveCSS('cursor', 'ew-resize');
+  await expect(
+    resizeControlOn(node).filter({
+      has: page.getByRole('button', {
+        name: 'Resize Actor from top left corner',
+        exact: true,
+      }),
+    }),
+  ).toHaveCSS('cursor', 'nwse-resize');
+  await expect(
+    resizeControlOn(node).filter({
+      has: page.getByRole('button', {
+        name: 'Resize Actor from top right corner',
+        exact: true,
+      }),
+    }),
+  ).toHaveCSS('cursor', 'nesw-resize');
+});
+
+test('resize controls show pointer and keyboard focus', async ({ page }) => {
+  await openPlaceholder(page);
+  const node = await selectNode(page, actor);
+  const top = node.getByRole('button', {
+    name: 'Resize Actor from top',
+    exact: true,
+  });
+  const corner = node.getByRole('button', {
+    name: 'Resize Actor from bottom right corner',
+    exact: true,
+  });
+
+  await node.focus();
+  await page.keyboard.press('Tab');
+  await expect(top).toBeFocused();
+  await expect(top).toHaveCSS('outline-style', 'solid');
+
+  const handle = corner.locator('..');
+  const before = await handle.evaluate(
+    (element) => getComputedStyle(element).backgroundColor,
+  );
+  await corner.hover();
+  await expect
+    .poll(() =>
+      handle.evaluate((element) => getComputedStyle(element).backgroundColor),
+    )
+    .not.toBe(before);
 });

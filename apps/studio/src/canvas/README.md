@@ -31,21 +31,10 @@ The canvas is the studio's window: it fills the viewport. The menu, toolbox,
 threat panel and zoom cluster float inside it instead of taking space from the
 diagram.
 
-The ground is graph paper: React Flow's own `Background` component ruled at
-the grid spacing the canvas package's token module decides, so the lines scale
-with the viewport and a zoom reads as one rather than as a grid that stayed
-still. Its colour is handed over as `--xy-background-pattern-color` in the CSS
-module beside `diagram-canvas.tsx`, which is where the studio's own
-`--pn-colour-grid` reaches React Flow's pattern. The two colours a connection
-handle is drawn in arrive the same way, as `--xy-handle-background-color` and
-`--xy-handle-border-color`: React Flow reads each of its colours from a
-property on the container before falling back to a `-default` it declares on
-`.react-flow` itself, so the name without that suffix is the one a value set
-above it reaches. The grid and the handles are what the studio colours in
-React Flow's own parts here. The resize control at a selected element's corner
-still wears React Flow's colour until #180 recolours it. What those colours are and why is the token
-module's
-([the visual system](../../../../packages/canvas/README.md#the-visual-system)).
+React Flow draws the graph-paper ground at the grid spacing from the canvas
+package. The studio supplies its grid and connection-handle colours through
+React Flow's custom properties. Its CSS draws resize controls with the same
+token table ([the visual system](../../../../packages/canvas/README.md#the-visual-system)).
 
 The diagram's own colours arrive by the same route. What `diagram-canvas.tsx`
 injects is `themedCanvasStylesheet`, the canvas sheet written in those same
@@ -181,11 +170,13 @@ the region below, which speaks only for edits that landed.
 - **Edit a note.** Note placement opens a multiline field over the new note
   and selects its placeholder text. Leaving the field or pressing Control or
   Command with Enter commits one `EditNote`. Escape keeps the placeholder.
-- **Resize.** A selected element the model can resize carries one control, at
-  its bottom right corner, and the gesture reaches the store once, at its end,
-  as one `ResizeElement`. React Flow reports an extent on every frame and
-  again when it settles, and the settled report is the only one folded into an
-  action, as with a drag.
+- **Resize.** A selected resizable element carries a line control on each side
+  and a handle at each corner. A side changes one axis. A corner changes both.
+  The opposite side stays fixed, including when the top or left control moves
+  the element. React Flow reports the settled position and size in model
+  coordinates. The studio dispatches that pair once as one `ResizeElement`,
+  so pan, zoom and drag frames add no model edits. Width and height stop at ten
+  model units.
 
 The toolbox holds the studio's unnamed status host ([the
 controls](../ui/README.md)). It reports an edit only when the next focus does
@@ -266,11 +257,10 @@ Select rests on the plain arrow over the pane and nodes. A flow keeps its link
 pointer, and a connection handle keeps its crosshair. Place uses a crosshair
 over the canvas. Hand uses `grab`, then `grabbing` during its pan.
 
-The control that resizes the selected element is a square where the handle a
-flow is drawn from is a circle, and the two sit at the same corner, so shape
-rather than colour tells them apart. Its cursor names the direction it sizes
-in, and it is on the selected element alone, React Flow mounting it from
-`selected` (the Resize bullet above).
+Four lines resize a selected element from its sides. Four square handles
+resize it from its corners. A side line takes the pointer away from the round
+connection handle at the midpoint. Each control uses a directional cursor and
+shows hover and keyboard focus ([Resize](#editing)).
 
 What counts as in view is what the threat panel is not over. The panel opens
 on the same selection this pans for ([the panel](../panel/README.md)), so an
@@ -335,9 +325,8 @@ use an arrow key. An arrow moves one selection five model units. Shift moves it
 twenty. Each press is one undoable singular or group action. Shift+Enter adds
 or removes the focused element. React Flow announces moves in its live region.
 
-Every edit has a keyboard path of its own, and every one of them is a
-registered command with its chord shown beside it ([the
-commands](../commands/README.md)). Placing is selecting a tool by its button,
+Every edit has a keyboard path. Page commands have their chords in the command
+registry ([the commands](../commands/README.md)). Placing is selecting a tool by its button,
 letter or number and then clicking, dragging or pressing Enter. Note follows
 that path and puts focus in its multiline editor. Connecting is
 selecting an element on the canvas and then pressing the
@@ -350,16 +339,12 @@ Renaming is F2 on the selection, and the field it opens keeps every key a
 person types, Escape and Backspace among them: a chord fires inside a control
 that takes characters only where the registry exempts it ([the
 commands](../commands/README.md)).
+Resizing starts on one of the named side or corner controls inside a selected
+element. An arrow key moves the matching edge five model units. Shift moves it
+twenty. Each press is one undo step, and the opposite edge stays fixed.
 
 ## What is not attempted here
 
-- Resizing is pointer-only. React Flow's resize control is a drag on a corner
-  and carries no key binding, and a keyboard path would be a size control of
-  its own, which belongs with the toolbar. The corner is the only control
-  offered, on every element the model resizes: a control on the top or the
-  left moves the element as well as sizing it, which is two operations for one
-  gesture where the store has one action per edit. A boundary curve carries
-  none, the model giving it no extent to set.
 - A flow alone selects but does not move. A group move translates its
   waypoints and free ends. Its attached ends follow their elements.
 - Nothing pans to a flow that was just connected, and nothing pans a selected

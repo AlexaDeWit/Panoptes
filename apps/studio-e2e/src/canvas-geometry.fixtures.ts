@@ -121,11 +121,11 @@ export const endsOn = (drawn: string, handles: readonly Point[]): Point[] =>
   );
 
 /**
- * Presses the pointer on the centre of a node and answers where it landed,
+ * Presses the pointer on the centre of a target and answers where it landed,
  * leaving the button down so the caller can move and read before the drop.
  */
-export const pressOn = async (page: Page, node: Locator): Promise<Point> => {
-  const surface = await node.boundingBox();
+export const pressOn = async (page: Page, target: Locator): Promise<Point> => {
+  const surface = await target.boundingBox();
   expect(surface).not.toBeNull();
   const at = {
     x: (surface?.x ?? 0) + (surface?.width ?? 0) / 2,

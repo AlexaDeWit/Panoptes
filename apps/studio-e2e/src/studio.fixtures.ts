@@ -272,16 +272,17 @@ export const centreOf = async (target: Locator): Promise<Point> => {
   };
 };
 
-/** Drags whatever is at the centre of `target` by `by` pixels each way. */
+/** Drags from the centre of `target` by the given screen-pixel offset. */
 export const dragBy = async (
   page: Page,
   target: Locator,
-  by: number,
+  by: number | Point,
 ): Promise<void> => {
-  const from = await centreOf(target);
-  await page.mouse.move(from.x, from.y);
+  const start = await centreOf(target);
+  const offset = typeof by === 'number' ? { x: by, y: by } : by;
+  await page.mouse.move(start.x, start.y);
   await page.mouse.down();
-  await page.mouse.move(from.x + by, from.y + by, { steps: 8 });
+  await page.mouse.move(start.x + offset.x, start.y + offset.y, { steps: 8 });
   await page.mouse.up();
 };
 

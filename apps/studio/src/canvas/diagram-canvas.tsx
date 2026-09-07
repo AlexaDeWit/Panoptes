@@ -40,6 +40,7 @@ import {
   applyChanges,
   applyConnection,
   betweenTwoElements,
+  gestureSelection,
 } from './changes.js';
 import { beginRenaming, drawnElement, removeSelected } from './edits.js';
 import { currentLayout } from './layout.js';
@@ -119,6 +120,7 @@ export function DiagramCanvas() {
   const [exactEdges, setExactEdges] = useState<CanvasFlowEdge[] | undefined>();
   const [moving, setMoving] = useState(false);
   const edgeBases = useRef<ReadonlyMap<string, CanvasEdge>>(new Map());
+  const movingElements = useRef<readonly ElementId[]>(selection);
   const surface = useRef<HTMLDivElement>(null);
   const boxSelecting = useRef(false);
   const boxStart = useRef<ScreenPoint | undefined>(undefined);
@@ -143,7 +145,7 @@ export function DiagramCanvas() {
       const paused = layoutAtReactFlowNodes(
         layout,
         onScreen,
-        selection,
+        movingElements.current,
         false,
         edgeBases.current,
       );
@@ -153,7 +155,7 @@ export function DiagramCanvas() {
     return () => {
       globalThis.clearTimeout(timer);
     };
-  }, [graph.edges, layout, moving, onScreen, selection]);
+  }, [graph.edges, layout, moving, onScreen]);
 
   useEffect(() => {
     if (revealed.current === selected) {
@@ -188,13 +190,14 @@ export function DiagramCanvas() {
         (change.type === 'dimensions' && change.resizing === false),
     );
     if (active || finished) {
+      movingElements.current = gestureSelection(changes, positions, selection);
       setMoving(active);
     }
     if (active || finished) {
       const live = layoutAtReactFlowNodes(
         layout,
         next,
-        selection,
+        movingElements.current,
         finished,
         edgeBases.current,
       );

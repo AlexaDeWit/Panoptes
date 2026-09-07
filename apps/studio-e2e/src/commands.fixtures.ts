@@ -14,6 +14,10 @@ import { readFileSync } from 'node:fs';
 export const viewportTransform = async (page: Page): Promise<string> =>
   (await page.locator('.react-flow__viewport').getAttribute('style')) ?? '';
 
+/** The scale React Flow applies to model coordinates. */
+export const viewportZoom = async (page: Page): Promise<number> =>
+  Number(/scale\(([\d.]+)\)/u.exec(await viewportTransform(page))?.[1]);
+
 /** The file a chord asked the browser to download, and what it holds. */
 export type SavedByKey = {
   readonly name: string;

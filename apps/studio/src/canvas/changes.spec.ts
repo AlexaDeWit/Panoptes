@@ -1,4 +1,9 @@
-import { flowEndNodeId, layoutDiagram } from '@saerskriven/canvas';
+import {
+  flowEndNodeId,
+  layoutAtReactFlowNodes,
+  layoutDiagram,
+  toReactFlowNodes,
+} from '@saerskriven/canvas';
 import type { ElementId, Flow } from '@saerskriven/model';
 import { Action } from '../store/actions.js';
 import {
@@ -14,8 +19,8 @@ import {
   applyChanges,
   applyConnection,
   betweenTwoElements,
+  gestureSelection,
   moveActions,
-  resizeActions,
   selectionActions,
   type DiagramChange,
 } from './changes.js';
@@ -36,7 +41,7 @@ const selecting = (id: string, selected: boolean): DiagramChange => ({
 const moving = (
   id: string,
   position: { x: number; y: number },
-  dragging: boolean,
+  dragging: boolean | undefined,
 ): DiagramChange => ({ id, type: 'position', position, dragging });
 
 const sizing = (
@@ -127,6 +132,19 @@ describe('moveActions', () => {
     ).toEqual([]);
   });
 
+  it('leaves the position change of an active resize to its control', () => {
+    expect(
+      moveActions(
+        [
+          sizing(readerElement, { width: 110, height: 60 }, true),
+          moving(readerElement, { x: 10, y: 0 }, undefined),
+        ],
+        nodes,
+        [readerElement],
+      ),
+    ).toEqual([]);
+  });
+
   it('asks for nothing where the element ended up where it started', () => {
     expect(
       moveActions([moving(readerElement, { x: 0, y: 0 }, false)], nodes, [
@@ -157,52 +175,54 @@ describe('moveActions', () => {
   });
 });
 
-describe('resizeActions', () => {
-  it('resizes an element to the extent a settled gesture reported', () => {
+describe('gestureSelection', () => {
+  const selection = [readerElement, studioElement, requestFlow];
+
+  it('keeps the full selection for a group move', () => {
     expect(
-      resizeActions(
-        [sizing(readerElement, { width: 200, height: 90 }, false)],
+      gestureSelection(
+        [moving(readerElement, { x: 40, y: 25 }, true)],
         nodes,
+        selection,
       ),
-    ).toEqual([
-      Action.ResizeElement({
-        elementId: readerElement,
-        size: { width: 200, height: 90 },
-      }),
-    ]);
+    ).toBe(selection);
   });
 
-  it('leaves a gesture still in flight to the canvas', () => {
+  it('keeps only the resized node during a multi-selection resize', () => {
     expect(
-      resizeActions(
-        [sizing(readerElement, { width: 200, height: 90 }, true)],
+      gestureSelection(
+        [sizing(readerElement, { width: 120, height: 80 }, true)],
         nodes,
+        selection,
       ),
-    ).toEqual([]);
+    ).toEqual([readerElement]);
   });
 
-  it('asks for nothing where React Flow reported a measurement of its own', () => {
-    expect(
-      resizeActions(
-        [sizing(readerElement, { width: 200, height: 90 }, undefined)],
-        nodes,
-      ),
-    ).toEqual([]);
-  });
+  it('keeps flows on untouched nodes fixed during a multi-selection resize', () => {
+    const group = [readerElement, studioElement, requestFlow];
+    const changes = [sizing(readerElement, { width: 120, height: 80 }, true)];
+    const onScreen = toReactFlowNodes(layout).map((node) =>
+      node.id === readerElement
+        ? {
+            ...node,
+            position: { x: node.position.x, y: node.position.y - 20 },
+            height: 80,
+          }
+        : node,
+    );
 
-  it('asks for nothing where the extent ended up where it started', () => {
-    expect(
-      resizeActions(
-        [sizing(readerElement, { width: 120, height: 60 }, false)],
-        nodes,
-      ),
-    ).toEqual([]);
-  });
+    const transient = layoutAtReactFlowNodes(
+      layout,
+      onScreen,
+      gestureSelection(changes, nodes, group),
+    );
 
-  it('resizes nothing for an id that names no drawn node', () => {
     expect(
-      resizeActions([sizing(anchor, { width: 20, height: 20 }, false)], nodes),
-    ).toEqual([]);
+      transient.nodes.find((node) => node.id === studioElement)?.position,
+    ).toEqual(nodes.get(studioElement)?.position);
+    expect(
+      transient.edges.find((edge) => edge.id === requestFlow)?.target,
+    ).toEqual(layout.edges.find((edge) => edge.id === requestFlow)?.target);
   });
 });
 
@@ -324,24 +344,5 @@ describe('applyChanges', () => {
           (element) => element.id === readerElement,
         ),
     ).toMatchObject({ position: { x: 40, y: 25 } });
-  });
-
-  it('resizes an element the model holds, so undo has something to take back', () => {
-    opened();
-
-    applyChanges(
-      [sizing(readerElement, { width: 200, height: 90 }, false)],
-      elements,
-      nodes,
-    );
-
-    expect(modelStore.getState().past).toHaveLength(1);
-    expect(
-      modelStore
-        .getState()
-        .present.diagrams[0].elements.find(
-          (element) => element.id === readerElement,
-        ),
-    ).toMatchObject({ size: { width: 200, height: 90 } });
   });
 });

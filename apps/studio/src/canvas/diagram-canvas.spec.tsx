@@ -11,6 +11,7 @@ import {
   studioElement,
 } from './canvas.fixtures.js';
 import { DiagramCanvas } from './diagram-canvas.js';
+import { currentLayout } from './layout.js';
 import { resetTools } from './tools.js';
 
 const opened = (selection: readonly ElementId[] = []): void => {
@@ -24,6 +25,19 @@ const elementCount = (): number =>
 
 const reader = (): HTMLElement =>
   screen.getByRole('group', { name: /^Reader, actor/u });
+
+const readerBox = () => {
+  const node = currentLayout(modelStore.getState()).nodes.find(
+    (candidate) => candidate.id === readerElement,
+  );
+  expect(node).toBeDefined();
+  return node === undefined
+    ? undefined
+    : { position: node.position, size: node.size };
+};
+
+const resizeControl = (from: string): HTMLElement =>
+  screen.getByRole('button', { name: `Resize Reader from ${from}` });
 
 describe('DiagramCanvas', () => {
   beforeEach(() => {
@@ -179,6 +193,57 @@ describe('DiagramCanvas', () => {
     fireEvent.keyDown(reader(), { key: 'ArrowRight' });
 
     expect(modelStore.getState().past).toHaveLength(1);
+  });
+
+  it.each([
+    [
+      'top',
+      'ArrowUp',
+      { position: { x: 0, y: -5 }, size: { width: 120, height: 65 } },
+    ],
+    [
+      'right',
+      'ArrowRight',
+      { position: { x: 0, y: 0 }, size: { width: 125, height: 60 } },
+    ],
+    [
+      'bottom',
+      'ArrowDown',
+      { position: { x: 0, y: 0 }, size: { width: 120, height: 65 } },
+    ],
+    [
+      'left',
+      'ArrowLeft',
+      { position: { x: -5, y: 0 }, size: { width: 125, height: 60 } },
+    ],
+  ] as const)(
+    'resizes from the %s by keyboard with the opposite side fixed',
+    (from, key, expected) => {
+      opened([readerElement]);
+      render(<DiagramCanvas />);
+
+      fireEvent.keyDown(resizeControl(from), { key });
+
+      expect(readerBox()).toEqual(expected);
+      expect(modelStore.getState().past).toHaveLength(1);
+    },
+  );
+
+  it('shrinks in the reverse direction and undo restores the full box', () => {
+    opened([readerElement]);
+    render(<DiagramCanvas />);
+    const before = readerBox();
+
+    fireEvent.keyDown(resizeControl('top'), { key: 'ArrowDown' });
+
+    expect(readerBox()).toEqual({
+      position: { x: 0, y: 5 },
+      size: { width: 120, height: 55 },
+    });
+    act(() => {
+      dispatch(Action.Undo());
+    });
+    expect(readerBox()).toEqual(before);
   });
 
   it('clears a selected flow when the pointer lands on nothing', () => {

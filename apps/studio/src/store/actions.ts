@@ -26,7 +26,11 @@ export type Action = Data.TaggedEnum<{
     readonly elementIds: readonly ElementId[];
     readonly offset: Point;
   };
-  ResizeElement: { readonly elementId: ElementId; readonly size: Size };
+  ResizeElement: {
+    readonly elementId: ElementId;
+    readonly offset: Point;
+    readonly size: Size;
+  };
   RenameElement: { readonly elementId: ElementId; readonly name: string };
   EditNote: { readonly elementId: ElementId; readonly text: string };
   AddThreat: { readonly threat: Threat };
