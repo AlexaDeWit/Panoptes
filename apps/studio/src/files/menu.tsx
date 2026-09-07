@@ -94,12 +94,19 @@ function RegisteredMenuCommand({
   disabled,
 }: RegisteredMenuCommandProps) {
   const surface = useCommandSurface();
+  const hasShortcut = entry.shortcuts.length > 0;
 
   return (
     <MenuItem
-      chord={spellShortcuts(entry.shortcuts, hostPlatform)}
+      chord={
+        hasShortcut ? spellShortcuts(entry.shortcuts, hostPlatform) : undefined
+      }
       disabled={disabled}
-      keyShortcuts={keyShortcutsAttribute(entry.shortcuts, hostPlatform)}
+      keyShortcuts={
+        hasShortcut
+          ? keyShortcutsAttribute(entry.shortcuts, hostPlatform)
+          : undefined
+      }
       onChoose={() => {
         runCommand(entry, surface);
       }}
@@ -359,6 +366,9 @@ function ExportMenu() {
         </span>
       </DropdownMenu.SubTrigger>
       <DropdownMenu.SubContent className={styles.panel} sideOffset={6}>
+        {diagrams.length === 0 && (
+          <MenuCommand command="export-diagram" disabled />
+        )}
         {diagrams.map((diagram) => (
           <RegisteredMenuCommand
             entry={diagramExportCommand(diagram, several)}

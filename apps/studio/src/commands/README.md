@@ -1,10 +1,10 @@
 # The studio's commands
 
 One home per command. Every command the studio offers is named once, in
-`registry.ts`, with the words a person reads, the chord that presses it, and
-the dispatch it runs. A control does not hold a handler and a key press does
-not hold a second copy of one: both go through the registry, so what a button
-does and what its shortcut does cannot drift apart.
+`registry.ts`, with the words a person reads, any assigned chord, and the
+dispatch it runs. A control does not hold a handler and a key press does not
+hold a second copy of one. Both go through the registry, so a button and its
+shortcut cannot drift apart.
 
 ## What a command is
 

@@ -43,7 +43,7 @@ afterEach(() => {
 });
 
 describe('useFileSession', () => {
-  it('holds one set of commands, so a control and a key press run the same four', () => {
+  it('holds one command set for controls and key presses', () => {
     const result = session(specBridge());
     const first = result.current.commands;
 

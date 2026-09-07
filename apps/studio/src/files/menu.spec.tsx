@@ -1,4 +1,5 @@
 import { saerskrivenYamlCodec } from '@saerskriven/formats';
+import { emptyModel } from '@saerskriven/model';
 import { diagramId } from '@saerskriven/model/fixtures';
 import { PdfFailure } from '@saerskriven/render/pdf';
 import {
@@ -231,6 +232,16 @@ describe('what the menu offers', () => {
     expect(item('Diagram as SVG: Other diagram')).toBeDefined();
   });
 
+  it('disables the SVG export when the model holds no diagram', async () => {
+    const user = userEvent.setup();
+    modelStore.setState(initialState(emptyModel), true);
+    mounted(specBridge());
+
+    await openExportMenu(user);
+
+    expect(item('Diagram as SVG').getAttribute('data-disabled')).not.toBeNull();
+  });
+
   it('announces a PDF compile refusal and writes no file', async () => {
     const user = userEvent.setup();
     const bridge = specBridge();
@@ -272,6 +283,13 @@ describe('what the menu offers', () => {
     await openMenu(user);
 
     expect(item('Save').getAttribute('aria-keyshortcuts')).toBe('Control+S');
+
+    await user.hover(item('Export'));
+    expect(
+      (
+        await screen.findByRole('menuitem', { name: 'Register as Markdown' })
+      ).getAttribute('aria-keyshortcuts'),
+    ).toBeNull();
   });
 
   it('marks unsaved work on the button, in words as well as with the dot', async () => {

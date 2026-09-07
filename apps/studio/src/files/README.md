@@ -64,15 +64,14 @@ the model, and each stands until a save starts, an open lands, or the file is
 closed: an open that was refused leaves the report alone, nothing having
 crossed, and a close drops it because the file it describes is gone.
 
-`file-commands.ts` holds the four commands as one session the app owns
-rather than handlers a control closes over: Open, Save, Save as and Close the
-file are registered commands ([the commands](../commands/README.md)), so a
-chord and a menu item run the same four and the report one of them produces is
-the one the view beside them shows. Save as writes the format the file is
+`file-commands.ts` holds one session the app owns rather than handlers a
+control closes over. Its file and export actions are registered commands
+([the commands](../commands/README.md)). A chord and a menu item therefore run
+the same dispatch where a chord exists. Save as writes the format the file is
 already in, and the picker is where a person says otherwise: the text is
 written once the picker has answered, because until then which codec writes it
 is the person's to decide. Each reads the store as it runs rather than
-closing over a render, which is what lets the four be built once. The reducer
+closing over a render, which is what lets the commands be built once. The reducer
 is total and cannot refuse an open or a close over work in no file, so the
 session asks first.
 

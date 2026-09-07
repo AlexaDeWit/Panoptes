@@ -15,7 +15,7 @@ import {
   withoutPickers,
 } from './studio.fixtures.js';
 
-test('the menu holds the file and edit commands, plus the project link', async ({
+test('the menu shows assigned shortcuts and the project link', async ({
   page,
 }) => {
   await openPlaceholder(page);
