@@ -100,7 +100,7 @@ placeholder without a report. Rejected data opens the placeholder and records
 A successful write marks the current state as recoverable. A failed write
 records `RecoveryUnavailable` and leaves that mark false. The page guard uses
 that mark with dirty status. A later recoverable change retries the write.
-Close clears the snapshot.
+Close clears the snapshot. A failed clear keeps the session open for retry.
 
 The snapshot never holds a browser file handle. A restored file keeps its name,
 format, and retained source. Its next Save uses a new bridge with no handle.

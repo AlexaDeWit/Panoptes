@@ -732,6 +732,34 @@ describe('closing', () => {
     expect(isDirty(modelStore.getState())).toBe(false);
   });
 
+  it('keeps the session and handle until recovery clears', async () => {
+    const user = userEvent.setup();
+    const bridge = specBridge();
+    mounted(bridge);
+    edit();
+    await choose(user, 'Close the file');
+    const removeItem = vi
+      .spyOn(Storage.prototype, 'removeItem')
+      .mockImplementationOnce(() => {
+        throw new Error('Clear failed.');
+      });
+
+    await user.click(item('Discard the changes and close'));
+
+    expect(isDirty(modelStore.getState())).toBe(true);
+    expect(bridge.releases.count).toBe(0);
+    expect(screen.getByTestId('failure-notice').textContent).toContain(
+      'Local recovery is unavailable.',
+    );
+
+    removeItem.mockRestore();
+    await choose(user, 'Close the file');
+    await user.click(item('Discard the changes and close'));
+
+    expect(modelStore.getState().present).toBe(placeholderModel);
+    expect(bridge.releases.count).toBe(1);
+  });
+
   it('opens the menu on the question when the chord asks with the menu shut', async () => {
     const user = userEvent.setup();
     mounted(specBridge());

@@ -199,4 +199,35 @@ describe('session recovery', () => {
     expect(clears).toBe(1);
     expect(runtime.modelStore.getState().recoveryCurrent).toBe(false);
   });
+
+  it('keeps the session available until a failed clear succeeds', () => {
+    let clears = 0;
+    const file = FileLifecycle.Opened({
+      name: 'model.json',
+      source: foreignSource,
+    });
+    const storage: RecoveryStorage = {
+      ...loaded(recoverySnapshot(sampleModel, true, file)),
+      clear: () => {
+        clears += 1;
+        return clears === 1
+          ? Either.left(
+              RecoveryStorageFailure.Unavailable({ reason: 'Clear failed.' }),
+            )
+          : Either.right(undefined);
+      },
+    };
+    const runtime = createModelStore(storage);
+
+    expect(runtime.dispatch(Action.Closed())._tag).toBe('Left');
+    const retained = runtime.modelStore.getState();
+    expect(retained.present).toEqual(sampleModel);
+    expect(retained.file).toEqual(file);
+    expect(isDirty(retained)).toBe(true);
+    expect(retained.lastFailure?._tag).toBe('RecoveryUnavailable');
+
+    expect(runtime.dispatch(Action.Closed())).toEqual(Either.right(undefined));
+    expect(runtime.modelStore.getState().present).toBe(placeholderModel);
+    expect(runtime.modelStore.getState().file).toEqual(FileLifecycle.NoFile());
+  });
 });

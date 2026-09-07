@@ -22,7 +22,9 @@ import {
 /** A store and its persistence-aware dispatcher. */
 export type ModelStoreRuntime = {
   readonly modelStore: StoreApi<State>;
-  readonly dispatch: (action: Action) => void;
+  readonly dispatch: (
+    action: Action,
+  ) => Either.Either<void, RecoveryStorageFailure>;
 };
 
 /** Creates a store that restores and replaces one recovery snapshot. */
@@ -39,7 +41,7 @@ export function createModelStore(
       const reduced = reduce(before, action);
       if (!recoverableChanged(before, reduced)) {
         modelStore.setState(reduced, true);
-        return;
+        return Either.right(undefined);
       }
 
       const stored =
@@ -52,22 +54,29 @@ export function createModelStore(
                 reduced.file,
               ),
             );
-      const next = stored.pipe(
-        Either.match({
-          onLeft: (failure) => ({
-            ...reduced,
-            recoveryCurrent: false,
+      if (Either.isLeft(stored)) {
+        const retained = action._tag === 'Closed' ? before : reduced;
+        modelStore.setState(
+          {
+            ...retained,
+            recoveryCurrent:
+              action._tag === 'Closed' ? before.recoveryCurrent : false,
             lastFailure: StudioFailure.RecoveryUnavailable({
-              reason: failure.reason,
+              reason: stored.left.reason,
             }),
-          }),
-          onRight: () => ({
-            ...reduced,
-            recoveryCurrent: action._tag !== 'Closed',
-          }),
-        }),
+          },
+          true,
+        );
+        return stored;
+      }
+      modelStore.setState(
+        {
+          ...reduced,
+          recoveryCurrent: action._tag !== 'Closed',
+        },
+        true,
       );
-      modelStore.setState(next, true);
+      return Either.right(undefined);
     },
   };
 }
@@ -80,7 +89,7 @@ const runtime = createModelStore(
 /** The studio's one vanilla model store. */
 export const modelStore = runtime.modelStore;
 
-/** Reduces an action and settles recovery storage before it returns. */
+/** Reduces an action and returns the recovery storage outcome. */
 export const dispatch = runtime.dispatch;
 
 /** Subscribes a component to one store selector. */
