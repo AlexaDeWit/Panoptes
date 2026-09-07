@@ -61,8 +61,8 @@ labels, the adversarial payloads, and
 `render/ecluse.snapshot.pdf.sha256`. The last is the digest both the CLI and
 studio browser suites compare their PDF against.
 
-`apps/studio-e2e` reads its two from the `e2e` target rather than from a
-`test` target, and no edge orders that one. Nothing writes beside it: the
+`apps/studio-e2e` reads these from the `e2e` target rather than from a `test`
+target, and no edge orders that one. Nothing writes beside it: the
 smoke suite runs in a CI job of its own, and `pnpm check` leaves it out.
 
 ## `ecluse.json`

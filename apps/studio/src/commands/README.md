@@ -13,7 +13,7 @@ that key rather than a search. Each entry carries:
 
 - **the label**, which is what a menu, a toolbox tooltip or a bare
   `CommandButton` says;
-- **the shortcuts**, one or more chords, in the order they are offered;
+- **the shortcuts**, zero or more chords, in the order they are offered;
 - **`inTextFields`**, whether the chord still fires while a person is typing;
 - **the dispatch**, either a `run` against the `CommandSurface` or `pending`
   naming the issue that will give the command one.
@@ -39,8 +39,9 @@ canvas](../canvas/README.md)).
 `shortcuts.ts` holds the chord. A chord is a set of modifiers and one key
 from a closed list, so a binding names a key the studio decided on rather
 than any string a keyboard can produce, and two commands reaching for one
-chord is a comparison over a known alphabet. The registry's spec is what
-holds that every command has a shortcut and no two share one.
+chord is a comparison over a known alphabet. The registry's spec holds that
+no two commands share one. The four export commands have none, as issue #190
+permits.
 
 `Mod` is the platform's command modifier: Command on Apple hardware, Control
 everywhere else. The platform is read once at load, from the user agent data

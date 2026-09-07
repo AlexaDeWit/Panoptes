@@ -215,6 +215,9 @@ browser's size bound for synchronous compilation on the main thread. The
 guard records the identity of each `wasm` array, and every call waits on the
 first start. A second module cannot replace it.
 
+Each call frees its compiler after compilation. A long-lived browser can
+export repeatedly without retaining the compiler or its loaded fonts.
+
 A refusal is a value rather than a throw, and a tagged one this package owns
 ([`CODING.md`](../../CODING.md), Error handling). `PdfFailure.Refused`
 carries the compiler's sentences in the order it reported them, and

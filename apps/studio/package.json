@@ -3,8 +3,8 @@
   "version": "0.0.1",
   "private": true,
   "//": [
-    "build repeats the Vite plugin's inferred inputs because a leaf override replaces them, then adds SAERSKRIVEN_FONTS_DIR.",
-    "The studio emits those external font bytes, so a nixpkgs update that moves them must invalidate the cached build."
+    "build repeats the Vite plugin's inferred inputs because a leaf override replaces them, then adds the three environment inputs below.",
+    "The studio emits external fonts and Pages metadata, so changes to their paths must invalidate the cached build."
   ],
   "dependencies": {
     "@radix-ui/react-icons": "catalog:",
@@ -38,6 +38,12 @@
           "^production",
           {
             "env": "SAERSKRIVEN_FONTS_DIR"
+          },
+          {
+            "env": "PAGES_BASE_PATH"
+          },
+          {
+            "env": "PAGES_SITE_URL"
           },
           {
             "externalDependencies": [

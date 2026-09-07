@@ -25,6 +25,10 @@ and after the project carrying the rest of the suite, because the reading is
 comparable only where no other browser shares the host. The constraints and
 their reasons sit beside that project in `playwright.config.ts`.
 
+The `pages` project builds and previews the studio below `/Saerskriven/`.
+Its PDF export catches missing hashed chunks, WASM files, fonts, or base-path
+prefixes before the frame-time project runs.
+
 `src/` holds the Playwright specs and the fixtures they share. `tests/` holds
 this project's own unit specs: the chords the browser suite presses, held
 against the studio's command registry, and the diff walk the round-trip spec

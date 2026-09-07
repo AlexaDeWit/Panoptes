@@ -13,7 +13,6 @@ import { browserFileBridge } from './browser-bridge.js';
 import {
   browserPdfExport,
   useExportCommands,
-  type ExportCommands,
   type ExportNotice,
   type PdfExport,
 } from './export-commands.js';
@@ -50,7 +49,6 @@ export type FileSession = {
   readonly closing: boolean;
   readonly choosing: boolean;
   readonly asksFormat: boolean;
-  readonly exports: ExportCommands;
   readonly exportNotice: ExportNotice | undefined;
   readonly attachPicker: (input: HTMLInputElement | null) => void;
   readonly dismissReport: () => void;
@@ -72,6 +70,7 @@ export function useFileSession(
   const [choosing, setChoosing] = useState(false);
   const picker = useRef<HTMLInputElement | null>(null);
   const exporter = useExportCommands(bridge, pdf);
+  const exportCommands = exporter.commands;
 
   const attachPicker = useCallback((input: HTMLInputElement | null): void => {
     picker.current = input;
@@ -184,6 +183,18 @@ export function useFileSession(
         }
         setChoosing(true);
       },
+      exportDiagram: (diagramId) => {
+        exportCommands.diagram(diagramId);
+      },
+      exportRegister: () => {
+        exportCommands.register();
+      },
+      exportTypst: () => {
+        exportCommands.typst();
+      },
+      exportPdf: () => {
+        exportCommands.pdf();
+      },
       close: () => {
         if (isDirty(modelStore.getState())) {
           setClosing(true);
@@ -192,7 +203,7 @@ export function useFileSession(
         closeFile();
       },
     };
-  }, [applyOpen, bridge, closeFile, land]);
+  }, [applyOpen, bridge, closeFile, exportCommands, land]);
 
   const receive = useCallback(
     async (chosen: ChosenFile | undefined): Promise<void> => {
@@ -222,7 +233,6 @@ export function useFileSession(
       closing,
       choosing,
       asksFormat: !bridge.asksWhere(),
-      exports: exporter.commands,
       exportNotice: exporter.notice,
       attachPicker,
       dismissReport,

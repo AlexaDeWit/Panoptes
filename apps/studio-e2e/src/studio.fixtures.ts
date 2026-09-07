@@ -79,9 +79,13 @@ export const withoutPickers = (): void => {
  * it was read and drawn. The format is the file's own: the studio reads the
  * content rather than the name.
  */
-export const openFile = async (page: Page, path: string): Promise<void> => {
+export const openFile = async (
+  page: Page,
+  path: string,
+  entry = '/',
+): Promise<void> => {
   await page.addInitScript(withoutPickers);
-  await page.goto('/');
+  await page.goto(entry);
   await expect(canvasContainer(page)).toBeVisible();
   await page.getByTestId('file-input').setInputFiles(vendored(path));
   await expect(page.getByTestId('failure-notice')).toBeEmpty();

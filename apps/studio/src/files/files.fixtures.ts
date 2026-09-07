@@ -38,7 +38,7 @@ export function vendoredFile(path: string): ChosenFile {
 export type Recorded = {
   readonly name: string;
   readonly text: string;
-  readonly blob?: Blob;
+  readonly bytes?: Uint8Array;
   readonly elsewhere: boolean;
 };
 
@@ -99,7 +99,7 @@ export function specBridge(options: SpecBridgeOptions = {}): SpecBridge {
       writes.push({
         name: outcome.name,
         text: typeof content === 'string' ? content : '',
-        blob: content instanceof Blob ? content : undefined,
+        bytes: typeof content === 'string' ? undefined : content,
         elsewhere,
       });
     }

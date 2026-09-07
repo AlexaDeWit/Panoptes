@@ -47,6 +47,7 @@ export const reactLib = (projectRoot: string) =>
   });
 
 type ReactAppOptions = {
+  readonly base?: string;
   readonly port?: number;
   readonly plugins?: PluginOption[];
   readonly setupFiles?: string[];
@@ -55,9 +56,16 @@ type ReactAppOptions = {
 
 export const reactApp = (
   projectRoot: string,
-  { port = 4200, plugins = [], setupFiles = [], siteUrl }: ReactAppOptions = {},
+  {
+    base,
+    port = 4200,
+    plugins = [],
+    setupFiles = [],
+    siteUrl,
+  }: ReactAppOptions = {},
 ) =>
   defineConfig({
+    base,
     root: projectRoot,
     cacheDir: cacheDir(projectRoot),
     plugins: [

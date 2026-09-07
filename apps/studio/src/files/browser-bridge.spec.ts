@@ -316,13 +316,28 @@ describe('exporting', () => {
 
   it('downloads binary content under the proposed name without a picker', async () => {
     const bridge = await freshBridge();
-    const pdf = new Blob([new Uint8Array([37, 80, 68, 70])], {
-      type: 'application/pdf',
-    });
+    const pdf = new Uint8Array([37, 80, 68, 70]);
 
     expect(await bridge.exportFile('Untitled.pdf', types[0], pdf)).toEqual(
       SaveOutcome.Written({ name: 'Untitled.pdf' }),
     );
     expect(downloads).toEqual(['Untitled.pdf']);
+  });
+
+  it('reports a refused export picker and treats its dismissal as no write', async () => {
+    vi.stubGlobal('showSaveFilePicker', () =>
+      Promise.reject(new Error('NotAllowedError')),
+    );
+    const bridge = await freshBridge();
+
+    expect(await bridge.exportFile('model.svg', types[0], '<svg/>')).toEqual(
+      SaveOutcome.Refused({ reason: 'NotAllowedError' }),
+    );
+
+    vi.stubGlobal('showSaveFilePicker', () => Promise.reject(dismissal()));
+
+    expect(await bridge.exportFile('model.svg', types[0], '<svg/>')).toEqual(
+      SaveOutcome.Cancelled(),
+    );
   });
 });

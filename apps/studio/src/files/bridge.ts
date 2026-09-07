@@ -79,11 +79,12 @@ export type SaveFileType = {
 export type SaveText = (name: string) => string;
 
 /** Text or binary content the studio can place outside its open file. */
-export type FileContent = string | Blob;
+export type FileContent = string | Uint8Array;
 
 /**
  * The injected file interface. An export places content without retaining
- * the chosen handle as the model's open file.
+ * the chosen handle as the model's open file. Binary content stays a
+ * `Uint8Array`, which a later Electron IPC bridge can clone.
  */
 export type FileBridge = {
   open(maxBytes: number): Promise<OpenOutcome>;

@@ -101,9 +101,9 @@ function Menu({
   const session = useFileSession(bridge, pdf);
   useEffect(() => {
     if (exportPdf === true) {
-      session.exports.pdf();
+      session.commands.exportPdf();
     }
-  }, [exportPdf, session.exports]);
+  }, [exportPdf, session.commands]);
   const surface = useMemo(
     () => ({ ...unmountedSurface, files: session.commands }),
     [session.commands],
@@ -232,6 +232,7 @@ describe('what the menu offers', () => {
   });
 
   it('announces a PDF compile refusal and writes no file', async () => {
+    const user = userEvent.setup();
     const bridge = specBridge();
     mounted(
       bridge,
@@ -257,6 +258,11 @@ describe('what the menu offers', () => {
       'unknown function: nope',
     );
     expect(bridge.writes).toEqual([]);
+
+    await user.click(
+      screen.getByRole('button', { name: 'Dismiss the export report' }),
+    );
+    expect(screen.queryByTestId('export-report')).toBeNull();
   });
 
   it('keeps the shortcut out of an item name, and names the binding as ARIA asks', async () => {
@@ -580,6 +586,19 @@ describe('saving', () => {
     await openMenu(user);
 
     expect(item('Save as')).toBeDefined();
+  });
+
+  it('writes the current format from the fallback menu', async () => {
+    const user = userEvent.setup();
+    const bridge = specBridge({ picker: false });
+    mounted(bridge);
+
+    await choose(user, 'Save as');
+    await user.click(item('Save as Saerskriven YAML'));
+
+    await waitFor(() => {
+      expect(bridge.writes[0]?.name).toBe('threat-model.yaml');
+    });
   });
 
   it('reports what the format it was asked for could not hold, and puts the report away again', async () => {

@@ -64,7 +64,7 @@ const exportFiles = {
 
 /** The export commands offered by the File menu. */
 export type ExportCommands = {
-  diagram(diagramId: DiagramId): void;
+  diagram(diagramId?: DiagramId): void;
   register(): void;
   typst(): void;
   pdf(): void;
@@ -103,7 +103,7 @@ export function useExportCommands(
     async (
       sourceFile: FileLifecycle,
       file: ExportFile,
-      content: string | Blob,
+      content: string | Uint8Array,
       unplaced: readonly UnplacedFlow[] = [],
     ): Promise<void> => {
       const outcome = await bridge.exportFile(
@@ -120,9 +120,14 @@ export function useExportCommands(
     () => ({
       diagram: (diagramId) => {
         const state = modelStore.getState();
-        const diagram = state.present.diagrams.find(
-          (candidate) => candidate.id === diagramId,
-        );
+        const diagram =
+          diagramId === undefined
+            ? state.present.diagrams.length === 1
+              ? state.present.diagrams[0]
+              : undefined
+            : state.present.diagrams.find(
+                (candidate) => candidate.id === diagramId,
+              );
         if (diagram === undefined) {
           return;
         }
@@ -170,9 +175,7 @@ export function useExportCommands(
           await place(
             state.file,
             exportFiles.pdf,
-            new Blob([new Uint8Array(compiled.right)], {
-              type: 'application/pdf',
-            }),
+            new Uint8Array(compiled.right),
             projection.unplaced,
           );
         };

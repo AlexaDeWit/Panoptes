@@ -4,7 +4,9 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { useCommandSurface } from '../commands/binding.js';
 import {
   commandById,
+  diagramExportCommand,
   runCommand,
+  type Command,
   type CommandId,
 } from '../commands/registry.js';
 import {
@@ -73,8 +75,25 @@ type MenuCommandProps = {
 };
 
 function MenuCommand({ command, children, disabled }: MenuCommandProps) {
+  return (
+    <RegisteredMenuCommand disabled={disabled} entry={commandById(command)}>
+      {children}
+    </RegisteredMenuCommand>
+  );
+}
+
+type RegisteredMenuCommandProps = {
+  readonly entry: Command;
+  readonly children?: ReactNode;
+  readonly disabled?: boolean;
+};
+
+function RegisteredMenuCommand({
+  entry,
+  children,
+  disabled,
+}: RegisteredMenuCommandProps) {
   const surface = useCommandSurface();
-  const entry = commandById(command);
 
   return (
     <MenuItem
@@ -136,7 +155,6 @@ export function StudioMenu({ session }: StudioMenuProps) {
     dismissReport,
     dismissExportNotice,
     exportNotice,
-    exports,
     receive,
     report,
   } = session;
@@ -215,7 +233,7 @@ export function StudioMenu({ session }: StudioMenuProps) {
                     Save as {formatFiles[option].label}
                   </MenuItem>
                 ))}
-            <ExportMenu commands={exports} />
+            <ExportMenu />
             <MenuItem
               chord={
                 asking
@@ -328,11 +346,7 @@ export function StudioMenu({ session }: StudioMenuProps) {
   );
 }
 
-function ExportMenu({
-  commands,
-}: {
-  readonly commands: FileSession['exports'];
-}) {
+function ExportMenu() {
   const diagrams = useModelStore((state) => state.present.diagrams);
   const several = diagrams.length > 1;
 
@@ -345,42 +359,15 @@ function ExportMenu({
         </span>
       </DropdownMenu.SubTrigger>
       <DropdownMenu.SubContent className={styles.panel} sideOffset={6}>
-        {diagrams.length === 0 && (
-          <MenuItem disabled onChoose={() => undefined}>
-            Diagram as SVG
-          </MenuItem>
-        )}
         {diagrams.map((diagram) => (
-          <MenuItem
+          <RegisteredMenuCommand
+            entry={diagramExportCommand(diagram, several)}
             key={diagram.id}
-            onChoose={() => {
-              commands.diagram(diagram.id);
-            }}
-          >
-            {several ? `Diagram as SVG: ${diagram.title}` : 'Diagram as SVG'}
-          </MenuItem>
+          />
         ))}
-        <MenuItem
-          onChoose={() => {
-            commands.register();
-          }}
-        >
-          Register as Markdown
-        </MenuItem>
-        <MenuItem
-          onChoose={() => {
-            commands.typst();
-          }}
-        >
-          Model as Typst
-        </MenuItem>
-        <MenuItem
-          onChoose={() => {
-            commands.pdf();
-          }}
-        >
-          Model as PDF
-        </MenuItem>
+        <MenuCommand command="export-register" />
+        <MenuCommand command="export-typst" />
+        <MenuCommand command="export-pdf" />
       </DropdownMenu.SubContent>
     </DropdownMenu.Sub>
   );

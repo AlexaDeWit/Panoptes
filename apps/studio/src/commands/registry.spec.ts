@@ -6,6 +6,7 @@ import {
   commandById,
   commandFor,
   commands,
+  diagramExportCommand,
   runCommand,
   toolCommands,
   type CommandId,
@@ -18,10 +19,17 @@ const chordsOn = (platform: (typeof platforms)[number]): string[] =>
   );
 
 describe('the command registry', () => {
-  it('gives every command a shortcut', () => {
+  it('leaves shortcuts off only the exports issue 190 added without one', () => {
     expect(
-      commands.filter((command) => command.shortcuts.length === 0),
-    ).toEqual([]);
+      commands
+        .filter((command) => command.shortcuts.length === 0)
+        .map((command) => command.id),
+    ).toEqual([
+      'export-diagram',
+      'export-register',
+      'export-typst',
+      'export-pdf',
+    ]);
   });
 
   it('gives no two commands the same chord, on either platform', () => {
@@ -119,6 +127,10 @@ describe('runCommand', () => {
       'open',
       'save',
       'save-as',
+      'export-diagram',
+      'export-register',
+      'export-typst',
+      'export-pdf',
       'zoom-in',
       'fit-to-view',
     ];
@@ -131,9 +143,23 @@ describe('runCommand', () => {
       'open',
       'save',
       'saveAs',
+      'exportDiagram',
+      'exportRegister',
+      'exportTypst',
+      'exportPdf',
       'zoomIn',
       'fitToView',
     ]);
+  });
+
+  it('binds a diagram export to the diagram named by the menu item', () => {
+    const recording = recordingSurface();
+    const command = diagramExportCommand(placeholderModel.diagrams[0], true);
+
+    runCommand(command, recording.surface);
+
+    expect(command.label).toBe('Diagram as SVG: Untitled diagram');
+    expect(recording.asked).toEqual(['exportDiagram']);
   });
 
   it('selects an element mode without editing the store', () => {

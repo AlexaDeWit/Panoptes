@@ -1,6 +1,9 @@
 import { defineConfig, devices } from '@playwright/test';
 
 const frameTimeFloor = /drag-frame-time\.spec\.ts$/u;
+const pagesExport = /pages-export\.spec\.ts$/u;
+const pagesBasePath = '/Saerskriven';
+const pagesPort = 4300;
 
 // Browsers come from the flake (PLAYWRIGHT_BROWSERS_PATH points into the nix
 // store), never from playwright's downloader. What the suite covers, why each
@@ -21,17 +24,36 @@ export default defineConfig({
     baseURL: 'http://localhost:4200',
     trace: 'on-first-retry',
   },
-  webServer: {
-    command: 'pnpm exec nx run @saerskriven/studio:serve',
-    url: 'http://localhost:4200',
-    reuseExistingServer: !process.env['CI'],
-    timeout: 120_000,
-  },
+  webServer: [
+    {
+      command: 'pnpm exec nx run @saerskriven/studio:serve',
+      url: 'http://localhost:4200',
+      reuseExistingServer: !process.env['CI'],
+      timeout: 120_000,
+    },
+    {
+      command: `pnpm exec nx run @saerskriven/studio:preview -- --port=${String(pagesPort)}`,
+      env: { PAGES_BASE_PATH: pagesBasePath },
+      url: `http://localhost:${String(pagesPort)}${pagesBasePath}/`,
+      reuseExistingServer: false,
+      timeout: 120_000,
+    },
+  ],
   projects: [
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
-      testIgnore: frameTimeFloor,
+      testIgnore: [frameTimeFloor, pagesExport],
+    },
+    {
+      name: 'pages',
+      use: {
+        ...devices['Desktop Chrome'],
+        baseURL: `http://localhost:${String(pagesPort)}${pagesBasePath}/`,
+      },
+      testMatch: pagesExport,
+      dependencies: ['chromium'],
+      workers: 1,
     },
     // The floor reads what the machine gives the page, so it is comparable
     // only where no other browser shares the host: copies of this spec run at
@@ -49,7 +71,7 @@ export default defineConfig({
       name: 'frame-time',
       use: { ...devices['Desktop Chrome'] },
       testMatch: frameTimeFloor,
-      dependencies: ['chromium'],
+      dependencies: ['pages'],
       workers: 1,
       fullyParallel: false,
       retries: 1,

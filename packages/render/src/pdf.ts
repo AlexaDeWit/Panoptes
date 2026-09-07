@@ -42,16 +42,20 @@ export async function compilePdf(
 ): Promise<Either.Either<Uint8Array, PdfFailure>> {
   try {
     const compiler = await compilerWith(assets);
-    compiler.add_source(mainFile, source);
-    const artifact: unknown = compiler.compile(
-      mainFile,
-      null,
-      'pdf',
-      noDiagnostics,
-    );
-    return artifact instanceof Uint8Array
-      ? Either.right(artifact)
-      : Either.left(PdfFailure.NoDocument());
+    try {
+      compiler.add_source(mainFile, source);
+      const artifact: unknown = compiler.compile(
+        mainFile,
+        null,
+        'pdf',
+        noDiagnostics,
+      );
+      return artifact instanceof Uint8Array
+        ? Either.right(artifact)
+        : Either.left(PdfFailure.NoDocument());
+    } finally {
+      compiler.free();
+    }
   } catch (error) {
     return Either.left(PdfFailure.Refused({ sentences: refusalOf(error) }));
   }

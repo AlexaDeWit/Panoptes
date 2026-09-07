@@ -1,5 +1,5 @@
 import type { Model } from '@saerskriven/model';
-import { parsedFixture } from '@saerskriven/model/fixtures';
+import { diagramId, parsedFixture } from '@saerskriven/model/fixtures';
 import { renderRegister, renderSvg, renderTypst } from '@saerskriven/render';
 import { PdfFailure, type PdfAssets } from '@saerskriven/render/pdf';
 import { act, renderHook, waitFor } from '@testing-library/react';
@@ -11,7 +11,9 @@ import {
   mainDiagram,
   sampleModel,
 } from '../store/store.fixtures.js';
+import { SaveOutcome } from './bridge.js';
 import { useExportCommands, type PdfExport } from './export-commands.js';
+import { PdfAssetFailure } from './pdf-assets.js';
 import { specBridge, type SpecBridge } from './files.fixtures.js';
 
 const assets: PdfAssets = { wasm: new Uint8Array(), fonts: [] };
@@ -110,9 +112,7 @@ describe('the studio exports', () => {
       assets,
     );
     expect(bridge.writes[0]).toMatchObject({ name: 'model.pdf', text: '' });
-    await expect(bridge.writes[0].blob?.arrayBuffer()).resolves.toEqual(
-      bytes.buffer,
-    );
+    expect(bridge.writes[0].bytes).toEqual(bytes);
   });
 
   it('reports every unplaced endpoint after it still writes the export', async () => {
@@ -158,6 +158,128 @@ describe('the studio exports', () => {
         details: ['unknown function: nope'],
       });
     });
+    expect(bridge.writes).toEqual([]);
+  });
+
+  it('reports unavailable assets before it asks the compiler', async () => {
+    const bridge = specBridge();
+    const compile = vi.fn<PdfExport['compile']>();
+    const result = session(bridge, {
+      assets: () =>
+        Promise.resolve(
+          Either.left(PdfAssetFailure.Unavailable({ reason: 'offline' })),
+        ),
+      compile,
+    });
+
+    act(() => {
+      result.current.commands.pdf();
+    });
+
+    await waitFor(() => {
+      expect(result.current.notice).toEqual({
+        headline: 'Saerskriven could not load the PDF compiler.',
+        details: ['offline'],
+      });
+    });
+    expect(compile).not.toHaveBeenCalled();
+    expect(bridge.writes).toEqual([]);
+  });
+
+  it('reports an absent PDF document and writes nothing', async () => {
+    const bridge = specBridge();
+    const result = session(
+      bridge,
+      pdfExport(Promise.resolve(Either.left(PdfFailure.NoDocument()))),
+    );
+
+    act(() => {
+      result.current.commands.pdf();
+    });
+
+    await waitFor(() => {
+      expect(result.current.notice?.headline).toBe(
+        'The Typst compiler produced no PDF.',
+      );
+    });
+    expect(bridge.writes).toEqual([]);
+  });
+
+  it('reports a refused write and lets the report be dismissed', async () => {
+    const bridge = specBridge({
+      save: SaveOutcome.Refused({ reason: 'NotAllowedError' }),
+    });
+    const result = session(bridge);
+
+    act(() => {
+      result.current.commands.register();
+    });
+
+    await waitFor(() => {
+      expect(result.current.notice?.headline).toBe(
+        'Saerskriven could not write the export.',
+      );
+    });
+    act(() => {
+      result.current.dismissNotice();
+    });
+    expect(result.current.notice).toBeUndefined();
+  });
+
+  it('says nothing when the export picker is cancelled', async () => {
+    const bridge = specBridge();
+    vi.spyOn(bridge, 'exportFile')
+      .mockResolvedValueOnce(SaveOutcome.Refused({ reason: 'NotAllowedError' }))
+      .mockResolvedValueOnce(SaveOutcome.Cancelled());
+    const result = session(bridge);
+
+    act(() => {
+      result.current.commands.register();
+    });
+    await waitFor(() => {
+      expect(result.current.notice).toBeDefined();
+    });
+
+    act(() => {
+      result.current.commands.register();
+    });
+    await waitFor(() => {
+      expect(result.current.notice).toBeUndefined();
+    });
+  });
+
+  it('uses the only diagram when the registry supplies no id', async () => {
+    const bridge = specBridge();
+    const result = session(bridge);
+
+    act(() => {
+      result.current.commands.diagram();
+    });
+
+    await waitFor(() => {
+      expect(bridge.writes[0]?.name).toBe('model.svg');
+    });
+  });
+
+  it('writes nothing when no diagram or id chooses one', () => {
+    modelStore.setState(
+      openedState({
+        ...sampleModel,
+        diagrams: [
+          sampleModel.diagrams[0],
+          { id: diagramId('other'), title: 'Other', elements: [] },
+        ],
+      }),
+      true,
+    );
+    const bridge = specBridge();
+    const result = session(bridge);
+
+    act(() => {
+      result.current.commands.diagram();
+      result.current.commands.diagram(diagramId('missing'));
+    });
+
     expect(bridge.writes).toEqual([]);
   });
 

@@ -121,7 +121,9 @@ async function writeTo(
 ): Promise<SaveOutcome> {
   try {
     const stream = await handle.createWritable();
-    await stream.write(content);
+    await stream.write(
+      typeof content === 'string' ? content : new Uint8Array(content),
+    );
     await stream.close();
     return SaveOutcome.Written({ name });
   } catch (cause) {
@@ -135,9 +137,10 @@ function download(
   mediaType: string,
 ): SaveOutcome {
   const url = URL.createObjectURL(
-    content instanceof Blob
-      ? content
-      : new Blob([content], { type: mediaType }),
+    new Blob(
+      [typeof content === 'string' ? content : new Uint8Array(content)],
+      { type: mediaType },
+    ),
   );
   const anchor = document.createElement('a');
   anchor.href = url;

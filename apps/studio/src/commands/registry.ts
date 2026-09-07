@@ -1,3 +1,4 @@
+import type { Diagram, DiagramId } from '@saerskriven/model';
 import { startFlow } from '../canvas/connecting.js';
 import { removeSelected, renameSelected } from '../canvas/edits.js';
 import { selectTool, type Tool } from '../canvas/tools.js';
@@ -12,7 +13,7 @@ import {
 } from './shortcuts.js';
 
 /**
- * Opening, saving and closing, which reach the file bridge and the session
+ * Opening, saving, exporting and closing, which reach the file session
  * around it rather than the store alone. `close` asks rather than closes
  * where the model has changes in no file: the reducer is total and cannot
  * refuse, so the guard sits with the session that holds the answer.
@@ -21,6 +22,10 @@ export type FileCommands = {
   open(): void;
   save(): void;
   saveAs(): void;
+  exportDiagram(diagramId?: DiagramId): void;
+  exportRegister(): void;
+  exportTypst(): void;
+  exportPdf(): void;
   close(): void;
 };
 
@@ -113,6 +118,42 @@ const table = {
     inTextFields: true,
     dispatch: runs((surface) => {
       surface.files.saveAs();
+    }),
+  },
+  'export-diagram': {
+    id: 'export-diagram',
+    label: 'Diagram as SVG',
+    shortcuts: [],
+    inTextFields: false,
+    dispatch: runs((surface) => {
+      surface.files.exportDiagram();
+    }),
+  },
+  'export-register': {
+    id: 'export-register',
+    label: 'Register as Markdown',
+    shortcuts: [],
+    inTextFields: false,
+    dispatch: runs((surface) => {
+      surface.files.exportRegister();
+    }),
+  },
+  'export-typst': {
+    id: 'export-typst',
+    label: 'Model as Typst',
+    shortcuts: [],
+    inTextFields: false,
+    dispatch: runs((surface) => {
+      surface.files.exportTypst();
+    }),
+  },
+  'export-pdf': {
+    id: 'export-pdf',
+    label: 'Model as PDF',
+    shortcuts: [],
+    inTextFields: false,
+    dispatch: runs((surface) => {
+      surface.files.exportPdf();
     }),
   },
   'close-file': {
@@ -266,6 +307,21 @@ export const commands: readonly Command[] = Object.values(table);
 /** The command `id` names. */
 export function commandById(id: CommandId): Command {
   return table[id];
+}
+
+/** The SVG command bound to one diagram in a model of one or several. */
+export function diagramExportCommand(
+  diagram: Diagram,
+  several: boolean,
+): Command {
+  const command = commandById('export-diagram');
+  return {
+    ...command,
+    label: several ? `${command.label}: ${diagram.title}` : command.label,
+    dispatch: runs((surface) => {
+      surface.files.exportDiagram(diagram.id);
+    }),
+  };
 }
 
 /**
