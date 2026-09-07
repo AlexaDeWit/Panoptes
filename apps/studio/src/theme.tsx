@@ -1,4 +1,3 @@
-import { tokenStylesheet } from '@saerskriven/canvas';
 import { useEffect, useSyncExternalStore } from 'react';
 import {
   readColourMode,
@@ -34,26 +33,15 @@ const applyColourMode = (mode: ColourMode): void => {
 
 applyColourMode(currentMode());
 
-/**
- * The design tokens, as the custom properties every CSS module in the studio
- * reads. They are injected here rather than written in `styles.css` because
- * the values are the canvas package's: the chrome and the diagram inside it
- * are coloured from one table, and a stylesheet here would be a copy of it
- * that nothing keeps in step.
- *
- * The sheet carries the light table and the dark one, the second under
- * `prefers-color-scheme: dark`, so the whole of the mode switch is these
- * properties resolving to other values and no component below asks which
- * mode it is in.
- */
-export function DesignTokens() {
+/** Applies the selected colour mode to the document root. */
+export function Theme() {
   const [mode] = useColourMode();
 
   useEffect(() => {
     applyColourMode(mode);
   }, [mode]);
 
-  return <style data-mode={mode}>{tokenStylesheet}</style>;
+  return null;
 }
 
 export function useColourMode(): readonly [

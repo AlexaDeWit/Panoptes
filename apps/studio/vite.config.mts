@@ -1,4 +1,8 @@
 import { reactApp } from '../../vite.shared.mts';
+import {
+  initialColourModeScript,
+  initialPageStylesheet,
+} from './initial-page.mjs';
 import { typstAssets } from './typst-assets.mjs';
 
 const siteUrl =
@@ -14,10 +18,28 @@ type StudioConfigOptions = {
   readonly outDirectory?: string;
 };
 
+const initialPageStyles = () => ({
+  name: 'initial-page-styles',
+  transformIndexHtml: () => [
+    {
+      tag: 'script',
+      attrs: { 'data-initial-colour-mode': '' },
+      children: initialColourModeScript,
+      injectTo: 'head-prepend' as const,
+    },
+    {
+      tag: 'style',
+      attrs: { 'data-studio-theme': '' },
+      children: initialPageStylesheet,
+      injectTo: 'head-prepend' as const,
+    },
+  ],
+});
+
 export const studioConfig = (options: StudioConfigOptions = {}) =>
   reactApp(import.meta.dirname, {
     base,
-    plugins: [typstAssets()],
+    plugins: [initialPageStyles(), typstAssets()],
     setupFiles: ['./src/test-setup.ts'],
     siteUrl,
     ...options,

@@ -11,6 +11,11 @@
       "import": "./src/index.ts",
       "default": "./src/index.ts"
     },
+    "./tokens": {
+      "types": "./src/lib/tokens.ts",
+      "import": "./src/lib/tokens.ts",
+      "default": "./src/lib/tokens.ts"
+    },
     "./package.json": "./package.json"
   },
   "dependencies": {

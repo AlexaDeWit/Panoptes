@@ -1,4 +1,5 @@
 import { AxeBuilder } from '@axe-core/playwright';
+import { darkPalette, lightPalette, rgbColour } from '@saerskriven/canvas';
 import { expect, test, type Page } from '@playwright/test';
 import { openMenu, openPlaceholder } from './studio.fixtures.js';
 
@@ -18,6 +19,32 @@ const audit = async (page: Page): Promise<void> => {
   const { violations } = await new AxeBuilder({ page }).analyze();
   expect(violations.map(({ id }) => id)).toEqual([]);
 };
+
+for (const [mode, palette, systemMode] of [
+  ['light', lightPalette, 'dark'],
+  ['dark', darkPalette, 'light'],
+] as const) {
+  test(`starts the loading page in the saved ${mode} mode`, async ({
+    page,
+  }) => {
+    await page.emulateMedia({ colorScheme: systemMode });
+    await page.addInitScript((storedMode) => {
+      localStorage.setItem('saerskrivenColourMode', storedMode);
+    }, mode);
+    await page.route('**/src/main.tsx', (route) => route.abort());
+
+    await page.goto('/');
+
+    await expect(page.locator('html')).toHaveAttribute(
+      'data-pn-colour-mode',
+      mode,
+    );
+    await expect(page.locator('.initial-page[role="status"]')).toHaveCSS(
+      'background-color',
+      rgbColour(palette.surfaceCanvas),
+    );
+  });
+}
 
 test('selects each appearance mode and persists explicit choices', async ({
   page,
