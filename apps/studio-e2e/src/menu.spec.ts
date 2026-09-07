@@ -14,7 +14,7 @@ import {
   withoutPickers,
 } from './studio.fixtures.js';
 
-test('the menu holds the file and edit commands, each showing its shortcut', async ({
+test('the menu holds the file and edit commands, plus the project link', async ({
   page,
 }) => {
   await openPlaceholder(page);
@@ -30,7 +30,16 @@ test('the menu holds the file and edit commands, each showing its shortcut', asy
     'RedoCtrl+Shift+Z or Ctrl+Y',
     'Rename the selectionF2',
     'Delete the selectionDelete or Backspace',
+    'View source on GitHub',
   ]);
+
+  const source = menuItem(page, 'View source on GitHub');
+  await expect(source).toHaveAttribute(
+    'href',
+    'https://github.com/AlexaDeWit/Saerskriven',
+  );
+  await expect(source).toHaveAttribute('target', '_blank');
+  await expect(source.locator('svg')).toHaveAttribute('aria-hidden', 'true');
 });
 
 test('save as asks the format in the menu where the browser has no picker of its own', async ({
@@ -52,6 +61,7 @@ test('save as asks the format in the menu where the browser has no picker of its
     'RedoCtrl+Shift+Z or Ctrl+Y',
     'Rename the selectionF2',
     'Delete the selectionDelete or Backspace',
+    'View source on GitHub',
   ]);
 
   const written = await savedFromMenu(page, 'Save as Saerskriven YAML');

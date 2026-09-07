@@ -80,8 +80,8 @@ item is drawn rather than after a save-as has started, so nothing has to close
 the menu and open it again around an answer.
 
 `menu.tsx` mounts the rest: the burger button over the top left of the canvas,
-the file and edit commands, and what file the model lives in and whether it
-holds everything on screen. A model that lives in no file is said by the name
+the file and edit commands, a link to the project's source, and the file state.
+A model that lives in no file is said by the name
 it carries as its own title, `Untitled` ([the store](../store/README.md)),
 and the browser tab reads the name through the same `nameOf`, rather than by
 a second way of saying there is no file. It holds the fallback picker's input, which only a
