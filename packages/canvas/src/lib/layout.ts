@@ -497,12 +497,20 @@ function nodesOf(
   element: Element,
   badges: ReadonlyMap<ElementId, ThreatBadge>,
 ): CanvasNode[] {
-  const badge = badges.get(element.id);
+  const node = canvasNodeOf(element, badges.get(element.id));
+  return node === undefined ? [] : [node];
+}
+
+/** Converts one model element into the node the canvas draws. */
+export function canvasNodeOf(
+  element: Element,
+  badge?: ThreatBadge,
+): CanvasNode | undefined {
   if (element.kind === 'flow') {
-    return [];
+    return undefined;
   }
   if (element.kind === 'trust-boundary') {
-    return [boundaryNode(element, badge)];
+    return boundaryNode(element, badge);
   }
   const base = {
     id: element.id,
@@ -513,9 +521,9 @@ function nodesOf(
     badge,
   };
   if (element.kind === 'text') {
-    return [{ ...base, kind: 'text', text: element.text }];
+    return { ...base, kind: 'text', text: element.text };
   }
-  return [{ ...base, kind: element.kind }];
+  return { ...base, kind: element.kind };
 }
 
 function boundaryNode(

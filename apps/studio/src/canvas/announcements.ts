@@ -16,7 +16,7 @@ modelStore.subscribe((state, previous) => {
   if (
     state.present !== previous.present ||
     state.selection !== previous.selection ||
-    state.renaming !== previous.renaming
+    state.inlineEditor !== previous.inlineEditor
   ) {
     clear();
   }

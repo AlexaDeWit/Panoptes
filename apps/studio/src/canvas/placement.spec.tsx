@@ -212,7 +212,13 @@ describe('box placement gestures', () => {
         rendered.result.current.pointerCancel(pointer(screen(to)));
       });
       rendered.unmount();
-      return preview;
+      return preview === undefined
+        ? undefined
+        : {
+            kind: preview.node.kind,
+            position: preview.position,
+            size: preview.size,
+          };
     };
 
     expect(previewAt({ pan: { x: 0, y: 0 }, zoom: 1 })).toEqual(

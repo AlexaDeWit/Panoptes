@@ -89,6 +89,10 @@ the model, and each stands until a save starts, an open lands, or the file is
 closed: an open that was refused leaves the report alone, nothing having
 crossed, and a close drops it because the file it describes is gone.
 
+Recovery stores that file name, format, and retained document with the current
+model. It stores no native handle. After a reload, Save follows the browser
+bridge's no-handle path and still merges through the retained document.
+
 `file-commands.ts` holds one session the app owns rather than handlers a
 control closes over. Its file and export actions are registered commands
 ([the commands](../commands/README.md)). A chord and a menu item therefore run
@@ -128,7 +132,10 @@ model has several.
 The other items export the register as markdown, or the whole model as Typst
 or PDF. Every proposed name replaces the open file's extension, or starts
 with `Untitled` when no file is open. The menu also holds the fallback
-picker's input and the guard on closing the tab.
+picker's input and the guard on closing the tab. The guard stands only while
+the model is dirty and the latest recovery write is unconfirmed. Open and
+Close still ask before they replace or clear a dirty recovered session. Close
+releases the native handle only after the recovery snapshot clears.
 
 The report of the last crossing, an export report, and the failure notice sit
 below the button and over the canvas. The crossing report and export report

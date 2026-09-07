@@ -1,9 +1,10 @@
 import {
+  canvasNodeOf,
   canvasType,
   type CanvasFlowEdge,
   type CanvasLayout,
 } from '@saerskriven/canvas';
-import type { Point, Size } from '@saerskriven/model';
+import type { Element, Point, Size } from '@saerskriven/model';
 import type { ReactFlowInstance } from '@xyflow/react';
 import {
   useCallback,
@@ -20,7 +21,9 @@ import { placeBoundaryCurve, placeElement } from './edits.js';
 import {
   centredPlacement,
   defaultCurveWaypoints,
+  freshElement,
   pointerPlacement,
+  withPlacement,
   type ElementTool,
 } from './elements.js';
 import type { DiagramNode } from './nodes.js';
@@ -72,6 +75,7 @@ type PlacementGesture = {
   readonly screen: Point;
   readonly flow: Point;
   readonly geometry: PlacementGeometry;
+  readonly element: Element;
 };
 
 type PlacementGeometry = {
@@ -179,7 +183,7 @@ export function usePlacement(
       const placed =
         tool === 'boundary-curve'
           ? placeBoundaryCurve(defaultCurveWaypoints(centre))
-          : placeElement(tool, geometry.position, geometry.size);
+          : placeElement(freshElement(tool, geometry.position, geometry.size));
       if (placed) {
         clearCurve();
         finishPlacement();
@@ -296,6 +300,7 @@ export function usePlacement(
       screen: { x: event.clientX, y: event.clientY },
       flow,
       geometry: centredPlacement(mode.active, flow),
+      element: freshElement(mode.active, flow),
     };
     gesture.current = started;
     setBoxGesture(started);
@@ -385,7 +390,10 @@ export function usePlacement(
       geometry.size.width >= nodeNameFieldExtent &&
       geometry.size.height >= nodeNameFieldExtent;
     if (
-      placeElement(started.tool, geometry.position, geometry.size, fieldFits)
+      placeElement(
+        withPlacement(started.element, geometry.position, geometry.size),
+        fieldFits,
+      )
     ) {
       finishPlacement();
     }
@@ -393,16 +401,28 @@ export function usePlacement(
 
   const curvePreview =
     curvePointer === undefined ? curve : [...curve, curvePointer];
+  const draftNode =
+    currentBoxDraft === undefined
+      ? undefined
+      : canvasNodeOf(
+          withPlacement(
+            currentBoxDraft.element,
+            currentBoxDraft.geometry.position,
+            currentBoxDraft.geometry.size,
+          ),
+        );
   const preview: PlacementDraft | undefined =
     currentBoxDraft === undefined
       ? curvePreview.length === 0
         ? undefined
         : { kind: 'curve', points: curvePreview }
-      : {
-          kind: 'box',
-          tool: currentBoxDraft.tool,
-          ...currentBoxDraft.geometry,
-        };
+      : draftNode === undefined
+        ? undefined
+        : {
+            kind: 'box',
+            node: draftNode,
+            ...currentBoxDraft.geometry,
+          };
 
   return {
     mode,
@@ -426,6 +446,7 @@ function isBoxTool(tool: string): tool is BoxTool {
     tool === 'actor' ||
     tool === 'process' ||
     tool === 'store' ||
+    tool === 'note' ||
     tool === 'boundary-box'
   );
 }

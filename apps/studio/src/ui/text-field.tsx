@@ -5,24 +5,29 @@ import styles from './text-field.module.css';
 
 type Draft = { readonly shown: string; readonly text: string };
 
-function useDraft(
+/** State and validation shared by the studio's controlled text editors. */
+export function useTextDraft(
   label: string,
   value: string,
   held: string | undefined,
   onCommit: (text: string) => void,
   onRefused: (refused: RefusedDraft | undefined) => void,
+  refuse: (
+    label: string,
+    text: string,
+  ) => TextRefusal | undefined = refusedText,
 ): {
   readonly text: string;
   readonly refusal: TextRefusal | undefined;
   readonly change: (text: string) => void;
-  readonly commit: () => void;
+  readonly commit: () => boolean;
 } {
   const [draft, setDraft] = useState<Draft>({
     shown: value,
     text: held ?? value,
   });
   const [refusal, setRefusal] = useState<TextRefusal | undefined>(() =>
-    held === undefined ? undefined : refusedText(label, held),
+    held === undefined ? undefined : refuse(label, held),
   );
   const reported = useRef<TextRefusal | undefined>(undefined);
 
@@ -49,11 +54,13 @@ function useDraft(
       setDraft({ shown: value, text });
     },
     commit: () => {
-      const refused = refusedText(label, draft.text);
+      const refused = refuse(label, draft.text);
       setRefusal(refused);
       if (refused === undefined) {
         onCommit(draft.text);
+        return true;
       }
+      return false;
     },
   };
 }
@@ -126,7 +133,7 @@ export function TextField({
 }: TextFieldProps) {
   const fieldId = useId();
   const refusalId = useId();
-  const { text, refusal, change, commit } = useDraft(
+  const { text, refusal, change, commit } = useTextDraft(
     label,
     value,
     held,
@@ -184,7 +191,7 @@ export function ProseField({
 }: TextFieldProps) {
   const fieldId = useId();
   const refusalId = useId();
-  const { text, refusal, change, commit } = useDraft(
+  const { text, refusal, change, commit } = useTextDraft(
     label,
     value,
     held,

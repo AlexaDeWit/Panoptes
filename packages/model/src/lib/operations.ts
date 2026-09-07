@@ -42,6 +42,12 @@ export type RenameElementFailure = Extract<
   { _tag: 'UnknownElement' | 'EmptyName' | 'RefusedCharacter' }
 >;
 
+/** The failures {@link editNote} can produce. */
+export type EditNoteFailure = Extract<
+  OperationFailure,
+  { _tag: 'UnknownElement' | 'NotTextElement' | 'RefusedCharacter' }
+>;
+
 /**
  * Returns a new model with `element` appended to the diagram named by
  * `diagramId`. Any element kind adds this way, flows and trust boundaries
@@ -193,10 +199,8 @@ export function resizeElement(
  * empty, and when the name carries a character the model's text rule
  * refuses, which is the rule the parse boundary screens a foreign file by:
  * the failure carries where the first such character sits, from
- * {@link firstRefusedCharacter}. This is the one operation that screens a
- * caller's string, because renaming in place is where text typed after the
- * parse reaches the model. Empty is {@link isEmptyName}, so a name of spaces
- * is refused with the empty string. The input model is never mutated.
+ * {@link firstRefusedCharacter}. Empty is {@link isEmptyName}, so a name of
+ * spaces is refused with the empty string. The input model is never mutated.
  */
 export function renameElement(
   model: Model,
@@ -210,13 +214,49 @@ export function renameElement(
   if (isEmptyName(name)) {
     return Either.left(OperationFailure.EmptyName({ elementId }));
   }
-  const at = firstRefusedCharacter(name);
-  if (at !== undefined) {
-    return Either.left(OperationFailure.RefusedCharacter({ elementId, at }));
+  const refusal = refusedCharacter(elementId, name);
+  if (refusal !== undefined) {
+    return Either.left(refusal);
   }
   return Either.right(
     withElement(model, located.diagramIndex, { ...located.element, name }),
   );
+}
+
+/**
+ * Returns a new model with the text of one canvas note changed. An empty note
+ * is valid. The operation fails for an unknown element, another element kind,
+ * or a character the model refuses.
+ */
+export function editNote(
+  model: Model,
+  elementId: ElementId,
+  text: string,
+): Either.Either<Model, EditNoteFailure> {
+  const located = locateElement(model, elementId);
+  if (!located) {
+    return Either.left(OperationFailure.UnknownElement({ elementId }));
+  }
+  if (located.element.kind !== 'text') {
+    return Either.left(OperationFailure.NotTextElement({ elementId }));
+  }
+  const refusal = refusedCharacter(elementId, text);
+  if (refusal !== undefined) {
+    return Either.left(refusal);
+  }
+  return Either.right(
+    withElement(model, located.diagramIndex, { ...located.element, text }),
+  );
+}
+
+function refusedCharacter(
+  elementId: ElementId,
+  text: string,
+): Extract<OperationFailure, { _tag: 'RefusedCharacter' }> | undefined {
+  const at = firstRefusedCharacter(text);
+  return at === undefined
+    ? undefined
+    : OperationFailure.RefusedCharacter({ elementId, at });
 }
 
 type LocatedElement = {

@@ -3,6 +3,7 @@ import {
   addThreat,
   attachThreat,
   detachThreat,
+  editNote,
   moveElement,
   removeElement,
   removeThreat,
@@ -43,6 +44,8 @@ export function reduce(state: State, action: Action): State {
       edited(state, resizeElement(state.present, elementId, size)),
     RenameElement: ({ elementId, name }) =>
       edited(state, renameElement(state.present, elementId, name)),
+    EditNote: ({ elementId, text }) =>
+      edited(state, editNote(state.present, elementId, text)),
     AddThreat: ({ threat }) => edited(state, addThreat(state.present, threat)),
     RemoveThreat: ({ threatId }) =>
       edited(state, removeThreat(state.present, threatId)),
@@ -58,7 +61,7 @@ export function reduce(state: State, action: Action): State {
       ...state,
       selection: [...new Set(elementIds)],
     }),
-    Renaming: ({ elementId }) => ({ ...state, renaming: elementId }),
+    InlineEditing: ({ editor }) => ({ ...state, inlineEditor: editor }),
     Opened: ({ model, name, source }) => ({
       ...initialState(model),
       file: FileLifecycle.Opened({ name, source }),
@@ -111,7 +114,10 @@ function removedElement(state: State, elementId: ElementId): State {
   return {
     ...next,
     selection: next.selection.filter((selected) => selected !== elementId),
-    renaming: next.renaming === elementId ? undefined : next.renaming,
+    inlineEditor:
+      next.inlineEditor?.elementId === elementId
+        ? undefined
+        : next.inlineEditor,
   };
 }
 
@@ -131,10 +137,11 @@ function removedElements(
   return {
     ...next,
     selection: next.selection.filter((selected) => !removed.has(selected)),
-    renaming:
-      next.renaming !== undefined && removed.has(next.renaming)
+    inlineEditor:
+      next.inlineEditor !== undefined &&
+      removed.has(next.inlineEditor.elementId)
         ? undefined
-        : next.renaming,
+        : next.inlineEditor,
   };
 }
 

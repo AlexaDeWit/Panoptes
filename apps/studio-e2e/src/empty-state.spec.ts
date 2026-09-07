@@ -1,9 +1,8 @@
-import { expect, test, type Locator, type Page } from '@playwright/test';
+import { expect, test, type Locator } from '@playwright/test';
 import {
   elementNodes,
   nodeNamed,
   openPlaceholder,
-  placeByClick,
   savedFile,
   withoutPickers,
 } from './studio.fixtures.js';
@@ -22,8 +21,6 @@ const drawnNames = [
   { of: /^Store, store/u, className: 'pn-label', says: 'Store' },
   { of: /^Records, flow/u, className: 'pn-flow-label', says: 'Records' },
 ] as const;
-
-const hint = (page: Page): Locator => page.getByTestId('empty-state-hint');
 
 const boxOf = async (locator: Locator, called: string): Promise<DrawnBox> => {
   const measured = await locator.boundingBox();
@@ -57,7 +54,6 @@ test('the chrome floating over the canvas covers no part of the diagram', async 
 }) => {
   await openPlaceholder(page);
   const floating = [
-    { locator: hint(page), called: 'the hint' },
     {
       locator: page.getByRole('region', { name: 'Zoom and fit' }),
       called: 'the zoom cluster',
@@ -79,18 +75,6 @@ test('the chrome floating over the canvas covers no part of the diagram', async 
       ).toBe(false);
     }
   }
-});
-
-test('the empty state says what to do next, and the line goes at the first edit', async ({
-  page,
-}) => {
-  await openPlaceholder(page);
-
-  await expect(hint(page)).not.toBeEmpty();
-
-  await placeByClick(page, 'Actor', /^New actor, actor/u);
-
-  await expect(hint(page)).toHaveCount(0);
 });
 
 test('the tab follows the file after the first save', async ({ page }) => {

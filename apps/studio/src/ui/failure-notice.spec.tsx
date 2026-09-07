@@ -54,6 +54,9 @@ const operationFailures: ByTag<OperationFailure> = {
   NotResizable: OperationFailure.NotResizable({
     elementId: elementId('element-curve'),
   }),
+  NotTextElement: OperationFailure.NotTextElement({
+    elementId: elementId('element-process'),
+  }),
   EmptyName: OperationFailure.EmptyName({
     elementId: elementId('element-unnamed'),
   }),
@@ -72,6 +75,12 @@ const studioFailures: ByTag<StudioFailure> = {
     failure: readFailures.InvalidWireDocument,
   }),
   File: StudioFailure.File({ reason: 'The folder is read only.' }),
+  StoredRecoveryRejected: StudioFailure.StoredRecoveryRejected({
+    reason: 'The stored snapshot is malformed or unsupported.',
+  }),
+  RecoveryUnavailable: StudioFailure.RecoveryUnavailable({
+    reason: 'The browser refused storage.',
+  }),
 };
 
 describe('describeFailure', () => {
@@ -116,6 +125,15 @@ describe('describeFailure', () => {
 
     expect(described.headline).toContain('notes.txt');
     expect(described.details[0]).toContain('threat-dragon, saerskriven-yaml');
+  });
+
+  it('distinguishes rejected recovery data from unavailable storage', () => {
+    expect(
+      describeFailure(studioFailures.StoredRecoveryRejected).headline,
+    ).toContain('rejected');
+    expect(describeFailure(studioFailures.RecoveryUnavailable).headline).toBe(
+      'Local recovery is unavailable.',
+    );
   });
 
   it('renders a path into the document a codec refused', () => {

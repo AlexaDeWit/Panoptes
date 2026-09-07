@@ -5,9 +5,9 @@ elements, diagrams, threats, mitigations, assumptions, and model metadata.
 `parseModel` is the parse boundary and the only exported way a `Model` value
 comes into existence, `emptyModel` being the one the package parses for you,
 where a model that has not been drawn starts. Operations are pure functions
-returning new models: graph edits (add, remove, move, resize, rename) and
-threat register edits (add, remove, replace, attach, detach). A threat number is
-issued once and never moves: the model carries the highest number it has ever
+returning new models: graph edits (add, remove, move, resize, rename, edit Note
+text) and threat register edits (add, remove, replace, attach, detach). A threat
+number is issued once and never moves: the model carries the highest number it has ever
 issued, so a removed threat leaves a permanent gap and `nextThreatNumber`
 never hands its number back. Coverage queries read a model without changing
 it: elements no threat references, open threats by severity, and the threat
@@ -49,13 +49,11 @@ rather than reaching a diagram. `firstRefusedCharacter` gives the index of
 the first character a string carries that the rule refuses, so an editor can
 point at it rather than at the field alone.
 
-`parseModel` is the whole of that gate for a foreign file, and `renameElement`
-is the one operation that screens a string of its own, an editor renaming in
-place being where text typed after the parse reaches the model. The other edit
-operations take a caller's strings as given, a model assembled in memory being
-the caller's to assemble, so a boundary that renders a model escapes or
-replaces what its own output format forbids rather than resting on this
-rule.
+`parseModel` is the whole of that gate for a foreign file. `renameElement` and
+`editNote` screen the strings that an editor commits after parsing. The other
+edit operations take a caller's strings as given, a model assembled in memory
+being the caller's to assemble. A boundary that renders a model escapes or
+replaces what its output format forbids instead of resting on this rule.
 
 The suite carries a representability gate over the whole model vocabulary.
 `ecluseFixture` transcribes Écluse's real Threat Dragon model, one diagram of

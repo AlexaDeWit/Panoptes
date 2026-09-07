@@ -16,6 +16,7 @@ import {
   foreignSource,
   mainDiagram,
   nativeSource,
+  newNote,
   newProcess,
   processElement,
   sampleModel,
@@ -23,12 +24,21 @@ import {
 } from './store.fixtures.js';
 
 const start = initialState(sampleModel);
+const noteElement = elementId('note-editable');
+const noteModel = {
+  ...sampleModel,
+  diagrams: sampleModel.diagrams.map((diagram) => ({
+    ...diagram,
+    elements: [...diagram.elements, newNote(noteElement, 'Draft note')],
+  })),
+};
+const noteStart = initialState(noteModel);
 
 type StudioActionTag =
   | 'Undo'
   | 'Redo'
   | 'Select'
-  | 'Renaming'
+  | 'InlineEditing'
   | 'Opened'
   | 'Saved'
   | 'Closed'
@@ -65,6 +75,10 @@ const applied: ActionsByTag<ModelActionTag> = {
   RenameElement: Action.RenameElement({
     elementId: processElement,
     name: 'Renamed',
+  }),
+  EditNote: Action.EditNote({
+    elementId: noteElement,
+    text: 'Edited note',
   }),
   AddThreat: Action.AddThreat({
     threat: { ...sampleThreat, id: threatId('threat-added'), number: 2 },
@@ -110,6 +124,10 @@ const refused: ActionsByTag<ModelActionTag> = {
     elementId: processElement,
     name: '',
   }),
+  EditNote: Action.EditNote({
+    elementId: processElement,
+    text: 'Not a note',
+  }),
   AddThreat: Action.AddThreat({
     threat: { ...sampleThreat, id: threatId('threat-reused'), number: 1 },
   }),
@@ -138,7 +156,9 @@ const studioActions: ActionsByTag<StudioActionTag> = {
   Undo: Action.Undo(),
   Redo: Action.Redo(),
   Select: Action.Select({ elementIds: [actorElement] }),
-  Renaming: Action.Renaming({ elementId: actorElement }),
+  InlineEditing: Action.InlineEditing({
+    editor: { kind: 'name', elementId: actorElement },
+  }),
   Opened: Action.Opened({
     model: emptyModel,
     name: 'model.json',
@@ -158,12 +178,18 @@ const studioActions: ActionsByTag<StudioActionTag> = {
 };
 
 const purityCases: readonly (readonly [State, Action])[] = [
-  ...Object.values(applied).map((action) => [start, action] as const),
+  ...Object.values(applied).map(
+    (action) => [stateFor(action), action] as const,
+  ),
   ...Object.values(refused).map((action) => [start, action] as const),
   ...Object.values(studioActions).map(
     (action) => [withHistory, action] as const,
   ),
 ];
+
+function stateFor(action: Action): State {
+  return Action.$is('EditNote')(action) ? noteStart : start;
+}
 
 describe('purity', () => {
   for (const [state, action] of purityCases) {
@@ -178,22 +204,24 @@ describe('purity', () => {
 describe('a model operation', () => {
   for (const action of Object.values(applied)) {
     it(`pushes the model ${action._tag} replaced onto the past`, () => {
-      const next = reduce(start, action);
-      expect(next.present).not.toBe(start.present);
+      const before = stateFor(action);
+      const next = reduce(before, action);
+      expect(next.present).not.toBe(before.present);
       expect(next.past).toHaveLength(1);
-      expect(next.past.at(0)).toBe(start.present);
+      expect(next.past.at(0)).toBe(before.present);
       expect(next.future).toEqual([]);
       expect(next.lastFailure).toBeUndefined();
     });
 
     it(`round-trips ${action._tag} through undo and redo`, () => {
-      const edited = reduce(start, action);
+      const before = stateFor(action);
+      const edited = reduce(before, action);
       const undone = reduce(edited, Action.Undo());
-      expect(undone.present).toBe(start.present);
+      expect(undone.present).toBe(before.present);
       expect(undone.past).toEqual([]);
       const redone = reduce(undone, Action.Redo());
       expect(redone.present).toBe(edited.present);
-      expect(reduce(redone, Action.Undo()).present).toBe(start.present);
+      expect(reduce(redone, Action.Undo()).present).toBe(before.present);
     });
   }
 });
@@ -267,13 +295,14 @@ describe('selection', () => {
   });
 });
 
-describe('the name a field is open on', () => {
-  const opened = reduce(start, Action.Renaming({ elementId: processElement }));
+describe('the inline editor', () => {
+  const editor = { kind: 'name', elementId: processElement } as const;
+  const opened = reduce(start, Action.InlineEditing({ editor }));
 
   it('follows what the canvas opens and closes', () => {
-    expect(opened.renaming).toBe(processElement);
+    expect(opened.inlineEditor).toEqual(editor);
     expect(
-      reduce(opened, Action.Renaming({ elementId: undefined })).renaming,
+      reduce(opened, Action.InlineEditing({ editor: undefined })).inlineEditor,
     ).toBeUndefined();
   });
 
@@ -281,11 +310,11 @@ describe('the name a field is open on', () => {
     expect(opened.past).toEqual([]);
     expect(opened.present).toBe(start.present);
     const edited = reduce(opened, applied.RenameElement);
-    expect(reduce(edited, Action.Undo()).renaming).toBe(processElement);
+    expect(reduce(edited, Action.Undo()).inlineEditor).toEqual(editor);
   });
 
   it('closes when the element it names is removed', () => {
-    expect(reduce(opened, applied.RemoveElement).renaming).toBeUndefined();
+    expect(reduce(opened, applied.RemoveElement).inlineEditor).toBeUndefined();
   });
 });
 

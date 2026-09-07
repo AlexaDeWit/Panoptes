@@ -20,17 +20,16 @@ mode outside the model store, and `placement.tsx` binds that mode to pointer
 and Enter gestures. `edits.ts` is the command side of the same boundary, one
 function per edit a control asks for. `connecting.ts` holds the
 flow a chord started until a target is chosen or the chooser closes,
-`rename-field.tsx` is
-the field an element's name is edited in and the node and edge bodies that
-mount it, `announcements.ts` carries what an edit did to the region that says it,
+`rename-field.tsx` holds the inline name and Note editors and the node and edge
+bodies that mount them. `announcements.ts` carries what an edit did to the region that says it,
 and `viewport.ts` is the arithmetic of the view,
 whether a node is drawn inside the canvas and the viewport that fits a diagram
 into it, `view-commands.tsx` applies that to React Flow, and `toolbox.tsx` and
 `zoom-cluster.tsx` are the controls.
 
-The canvas is the studio's window: it fills the viewport, and the menu,
-toolbox, threat panel, empty-state hint and zoom cluster float inside it rather
-than taking a row or column away from the diagram.
+The canvas is the studio's window: it fills the viewport. The menu, toolbox,
+threat panel and zoom cluster float inside it instead of taking space from the
+diagram.
 
 The ground is graph paper: React Flow's own `Background` component ruled at
 the grid spacing the canvas package's token module decides, so the lines scale
@@ -90,12 +89,13 @@ the region below, which speaks only for edits that landed.
   with H or held with Space, pans with a hand cursor.
   Dragging any selected node moves the full selection.
 
-- **Place.** Select, Actor, Process, Store, Boundary box, Boundary curve and
-  Hand are icon buttons in the floating toolbox, each showing every shortcut
-  its registered command owns ([the commands](../commands/README.md)). A click
-  with an element tool places its default size centred under the pointer.
-  Pointer-down shows that geometry through the element's shared outline
-  primitive. A drag updates it between opposite corners. A process takes the
+- **Place.** Select, Actor, Process, Store, Boundary box, Boundary curve, Note
+  and Hand are icon buttons in the floating toolbox. Each button shows every
+  shortcut its registered command owns ([the commands](../commands/README.md)).
+  A click with an element tool places its default size under the pointer.
+  Pointer-down draws that geometry through the shared element glyph. A Note
+  uses the same box geometry and draws no outline. A drag updates the box
+  between opposite corners. A process takes the
   shorter axis and anchors the resulting square in the drag direction.
   Drag geometry reserves the outline's half-stroke on each exposed side.
   The rendered ink and the selection frame stay inside the pointer rectangle.
@@ -104,9 +104,9 @@ the region below, which speaks only for edits that landed.
   fit. Pointer-up commits one edit.
   Pointer cancellation, Escape, a tool change or a model replacement drops
   the preview without an edit. Enter places the default at the viewport centre.
-  A placed element arrives with a placeholder name and is selected. Its name
-  opens in the in-place field when that field fits. A smaller element takes
-  focus without the field. Its one `AddElement` is one undo step. The tool
+  A placed shape arrives with a placeholder name and is selected. Its name
+  opens in the in-place field when that field fits. A Note opens its prose
+  field at every size. Its one `AddElement` is one undo step. The tool
   then returns to Select, unless a double click on its icon locked it for
   repeated placement. Escape returns to Select and unlocks it.
 - **Boundary curve.** Each click commits one waypoint and the transformed
@@ -178,6 +178,9 @@ the region below, which speaks only for edits that landed.
   all: it stays in the field to be corrected, with the character named under
   it and the same sentence said in the region below, the way the panel refuses
   a threat's field. Because a double-click renames, it no longer zooms.
+- **Edit a note.** Note placement opens a multiline field over the new note
+  and selects its placeholder text. Leaving the field or pressing Control or
+  Command with Enter commits one `EditNote`. Escape keeps the placeholder.
 - **Resize.** A selected element the model can resize carries one control, at
   its bottom right corner, and the gesture reaches the store once, at its end,
   as one `ResizeElement`. React Flow reports an extent on every frame and
@@ -306,15 +309,13 @@ The controls are `zoom-cluster.tsx`, three icons floating over the bottom
 right of the canvas, each one registered command showing its chord in a
 tooltip ([the commands](../commands/README.md)).
 
-`empty-state-hint.tsx` is the other piece of chrome floating over the canvas:
-one line across the top saying what to do next, while the studio is still on
-the model it opens with and nothing has happened to that model. The store
-answers whether it is ([the selectors](../store/selectors.ts)), so the line
-holds no flag of its own and goes at the first edit and at the first file. It
-is drawn here rather than in the canvas package, which draws the model and
-nothing beside it. It sits in the room the fit leaves clear, so it covers no
-part of the diagram, and it does not wrap, a second line being one that would
-reach into that diagram.
+The placeholder is only its small diagram. No instruction line appears over
+it during startup.
+
+Scrolling over the canvas pans in both directions. A trackpad pinch keeps its
+zoom gesture. Touch drag pans while Select is active, without starting a
+selection box or clearing the selection. A mouse drag still draws the Select
+box, while Hand or held Space makes a mouse drag pan from anywhere.
 
 ## Accessibility
 
@@ -337,7 +338,8 @@ or removes the focused element. React Flow announces moves in its live region.
 Every edit has a keyboard path of its own, and every one of them is a
 registered command with its chord shown beside it ([the
 commands](../commands/README.md)). Placing is selecting a tool by its button,
-letter or number and then clicking, dragging or pressing Enter. Connecting is
+letter or number and then clicking, dragging or pressing Enter. Note follows
+that path and puts focus in its multiline editor. Connecting is
 selecting an element on the canvas and then pressing the
 start-flow chord, which opens the chooser on it and draws the flow the choice
 commits, which is why the source is the selection rather than a mode to enter
@@ -367,9 +369,6 @@ commands](../commands/README.md)).
   an element there and attaching the flow to it is quick-create, which the
   epic holds for its second wave and names an alias of the toolbox rather than
   a command of its own.
-- A text note is not renamed on the canvas. What it draws is its prose rather
-  than its name, so a field over it would edit nothing a person can see, and
-  there is no control for that prose and no toolbox button that adds one.
 - A rename the model refuses keeps its field open until the name is corrected
   or Escape is pressed, wherever the selection goes meanwhile. The draft is
   the field's alone, as a refused threat field is the panel's, and dropping it
@@ -378,13 +377,11 @@ commands](../commands/README.md)).
   the refused draft goes with the field it was in.
 - A flow's full drawn bounds must sit inside a selection box. An unplaced flow
   has no drawn bounds, so Select All and box selection leave it out.
-- A selection box stays inside the current viewport. Pan with Hand before
-  drawing a box around elements outside it.
-- Panning remains a pointer drag. Hand makes that drag own the whole canvas,
-  selected by H or held temporarily with Space. Reaching an element does not
-  need a keyboard pan, since focusing an element pans it into view.
-  Zooming and fitting have both a chord and a control of their own ([the
-  commands](../commands/README.md)).
+- A selection box stays inside the current viewport. Pan before drawing a box
+  around elements outside it.
+- Reaching an element does not need a keyboard pan, since focusing an element
+  pans it into view. Zooming and fitting have both a chord and a control of
+  their own ([the commands](../commands/README.md)).
 - Tab order is React Flow's DOM order, every flow before every element, so a
   keyboard user reaches the flows first. Choosing another order means
   ordering the DOM, which is the same decision as how a diagram is

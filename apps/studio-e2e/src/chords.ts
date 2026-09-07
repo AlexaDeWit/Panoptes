@@ -33,4 +33,5 @@ export const registeredChords = {
   'store-tool': ['s', '4'],
   'boundary-box-tool': ['b', '5'],
   'boundary-curve-tool': ['c', '6'],
+  'note-tool': ['n', '7'],
 } as const;

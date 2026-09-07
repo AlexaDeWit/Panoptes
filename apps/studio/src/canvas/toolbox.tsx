@@ -27,6 +27,7 @@ const glyphs: Record<Tool, ReactNode> = {
   actor: diagramGlyph(<rect x="2.5" y="4" width="11" height="8" />),
   process: diagramGlyph(<circle cx="8" cy="8" r="5.5" />),
   store: diagramGlyph(<path d="M2.5 4h11M2.5 12h11" />),
+  note: diagramGlyph(<path d="M3 2.5h10v11H3zM5 5h6M5 7.5h6M5 10h4" />),
   'boundary-box': diagramGlyph(<rect x="2.5" y="3" width="11" height="10" />),
   'boundary-curve': diagramGlyph(<path d="M2 11C4 3 8 3 9 8s3 5 5-2" />),
   hand: <HandIcon aria-hidden="true" className={styles.icon} />,

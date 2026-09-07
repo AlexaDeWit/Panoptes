@@ -14,7 +14,7 @@ import type {
   ThreatId,
 } from '@saerskriven/model';
 import { Data } from 'effect';
-import type { RetainedSource } from './state.js';
+import type { InlineEditor, RetainedSource } from './state.js';
 
 /** Every state change the reducer accepts. */
 export type Action = Data.TaggedEnum<{
@@ -28,6 +28,7 @@ export type Action = Data.TaggedEnum<{
   };
   ResizeElement: { readonly elementId: ElementId; readonly size: Size };
   RenameElement: { readonly elementId: ElementId; readonly name: string };
+  EditNote: { readonly elementId: ElementId; readonly text: string };
   AddThreat: { readonly threat: Threat };
   RemoveThreat: { readonly threatId: ThreatId };
   ReplaceThreat: { readonly threat: Threat };
@@ -36,7 +37,7 @@ export type Action = Data.TaggedEnum<{
   Undo: {};
   Redo: {};
   Select: { readonly elementIds: readonly ElementId[] };
-  Renaming: { readonly elementId: ElementId | undefined };
+  InlineEditing: { readonly editor: InlineEditor | undefined };
   Opened: {
     readonly model: Model;
     readonly name: string;

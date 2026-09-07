@@ -42,7 +42,6 @@ import {
   betweenTwoElements,
 } from './changes.js';
 import { beginRenaming, drawnElement, removeSelected } from './edits.js';
-import { EmptyStateHint } from './empty-state-hint.js';
 import { currentLayout } from './layout.js';
 import {
   canvasEdgesById,
@@ -53,7 +52,7 @@ import {
   withLiveEdges,
   type DiagramNode,
 } from './nodes.js';
-import { renamingEdgeTypes, renamingNodeTypes } from './rename-field.js';
+import { editingEdgeTypes, editingNodeTypes } from './rename-field.js';
 import { PlacementPreview } from './placement-preview.js';
 import { usePlacement } from './placement.js';
 import { Toolbox } from './toolbox.js';
@@ -70,6 +69,9 @@ import styles from './diagram-canvas.module.css';
 
 const deleteKeys = new Set(['Delete', 'Backspace']);
 const exactLabelDelay = 50;
+// React Flow applies button lists only to mouse input. An empty list keeps
+// touch panning while a left mouse drag remains box selection.
+const touchPanOnly: number[] = [];
 
 type ScreenPoint = { readonly x: number; readonly y: number };
 
@@ -225,6 +227,7 @@ export function DiagramCanvas() {
     edgeBases.current = canvasEdgesById(layout);
     if (
       mode.active === 'select' &&
+      event.pointerType !== 'touch' &&
       event.button === 0 &&
       event.target instanceof Element &&
       event.target.matches('.react-flow__pane')
@@ -363,7 +366,7 @@ export function DiagramCanvas() {
         connectionMode={ConnectionMode.Loose}
         deleteKeyCode={null}
         edges={exactEdges ?? graph.edges}
-        edgeTypes={renamingEdgeTypes}
+        edgeTypes={editingEdgeTypes}
         elementsSelectable={mode.active === 'select'}
         isValidConnection={betweenTwoElements}
         maxZoom={zoomLimits.maximum}
@@ -372,7 +375,7 @@ export function DiagramCanvas() {
         nodes={onScreen}
         nodesConnectable={mode.active === 'select'}
         nodesDraggable={mode.active === 'select'}
-        nodeTypes={renamingNodeTypes}
+        nodeTypes={editingNodeTypes}
         onConnect={onConnect}
         onEdgeDoubleClick={onEdgeDoubleClick}
         onEdgesChange={onEdgesChange}
@@ -388,20 +391,27 @@ export function DiagramCanvas() {
           boxSelecting.current = true;
         }}
         panActivationKeyCode={null}
-        panOnDrag={mode.active === 'hand'}
+        panOnDrag={
+          mode.active === 'hand'
+            ? true
+            : mode.active === 'select'
+              ? touchPanOnly
+              : false
+        }
+        panOnScroll
         ref={surface}
         selectionKeyCode={null}
         selectionMode={SelectionMode.Full}
         selectionOnDrag={mode.active === 'select'}
         tabIndex={-1}
         zoomOnDoubleClick={false}
+        zoomOnScroll={false}
         zIndexMode="manual"
       >
         <Background gap={gridSpacing} variant={BackgroundVariant.Lines} />
         <PlacementPreview preview={placement.preview} />
         <FitOnOpen />
       </ReactFlow>
-      <EmptyStateHint />
       <Toolbox />
       <ZoomCluster />
       <ThreatOverlay />

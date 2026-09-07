@@ -14,6 +14,11 @@ export function isDirty(state: State): boolean {
   return state.present !== state.saved;
 }
 
+/** The dirty session lacks a confirmed recovery write. */
+export function needsCloseGuard(state: State): boolean {
+  return isDirty(state) && !state.recoveryCurrent;
+}
+
 /** There is a model to go back to. */
 export function canUndo(state: State): boolean {
   return state.past.length > 0;
@@ -99,10 +104,7 @@ export function modelAsOpened(state: State): Model | undefined {
 
 /**
  * Whether the studio is still on the model it opens with and nothing has
- * happened to it: no edit, no undo, no redo, and no file. Both halves are
- * needed, because a save leaves the model where it is and only the file
- * moves. It is what the canvas hangs its hint on, so the hint goes at the
- * first edit and comes back when the model is closed back to this one.
+ * happened to it. The document title uses this state for its landing title.
  */
 export function showingPlaceholder(state: State): boolean {
   return (

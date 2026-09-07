@@ -1,10 +1,9 @@
 # The studio's model store
 
-One store holds the whole studio: the model on screen, the undo and redo
-stacks, the selection, the file lifecycle, and the last refusal. Outside a
-spec's reset, `dispatch(action)` is the only way any of it moves, and it
-applies one pure `reduce(state, action)`. Views read through selectors and
-nothing else.
+One store holds the whole studio: the model, history, transient view state,
+file lifecycle, last refusal, and recovery status. Outside a spec reset,
+`dispatch(action)` is the only way the state moves. It applies one pure
+`reduce(state, action)`. Views read through selectors.
 
 Zustand hosts it because it is the programming model React Flow 12 is built
 on, so the canvas and the studio subscribe the same way and a component
@@ -35,7 +34,7 @@ and no immutable snapshot to push onto a stack.
 - `actions.ts` is the `Action` union, an Effect `Data.taggedEnum`. Model edits
   carry one operation and its arguments. `MoveElements` and `RemoveElements`
   fold the matching operation over one ID array before history records the
-  result. The other tags cover history, selection, renaming, files and
+  result. The other tags cover history, selection, inline editing, files and
   failures. `Saved` names a file as `Opened` does, because a first
   save is a save-as, and folding both into `file` keeps "this model lives in
   this file" one fact. `Closed` is the third: the studio goes back to the
@@ -47,28 +46,21 @@ and no immutable snapshot to push onto a stack.
   fails and no view handles an error. A successful edit pushes the old present
   onto `past` and clears `future`.
 - `store.ts` creates the vanilla store, `dispatch` applies the reducer to it,
-  and `useModelStore(selector)` is the React half. The store opens on the
-  placeholder model, or on the one `development-model.ts` reads off the page
-  under Vite's development flag, which is how the browser suite puts a real
-  model on the canvas while opening a file is still issue #37's. Vite settles
-  that flag at build time, so a production build carries neither the read nor
-  a model to read.
+  writes recoverable changes, and then publishes the state.
+  `useModelStore(selector)` is the React half. The store opens from recovery,
+  the development model, or the placeholder, in that order.
 - `selectors.ts` derives what views show. Unsaved work is `present !== saved`
   by identity, so undoing back to the saved point clears it with no
   bookkeeping. `windowTitle` is what the browser tab is named: the model's
   name as the file session's `nameOf` gives it, ahead of the product name, so
   the tab and the menu cannot disagree on what the model is called.
-  `showingPlaceholder` is whether the studio is still on the model it opened
-  with and nothing has happened to it, which is what the canvas hangs its
-  hint on
-  ([the canvas](../canvas/README.md)).
+  `showingPlaceholder` identifies that opening state for the document title.
 
-Selection, the name a field is open on, and the file lifecycle stay out of the
-undo stacks. `selection` is a unique, ordered array of element IDs. A removal
-drops every removed ID from it and closes a matching name field. `renaming` is view state of the
-canvas the way the panel's expanded threat is the panel's, and it is in the
-store rather than in a component because a command reaches it from the
-keyboard with nothing of the canvas mounted above it
+Selection, the inline editor, and the file lifecycle stay out of the undo
+stacks. `selection` is a unique, ordered array of element IDs. A removal drops
+every removed ID from it and closes a matching editor. `inlineEditor` names
+the element and whether the field edits its name or its Note text. It is in
+the store because a command reaches it from the keyboard
 ([the canvas](../canvas/README.md)). Being total, the reducer cannot
 refuse `Opened` or `Closed` over unsaved work, so the guards on those, and the
 one on closing the tab, belong in the view ([the file
@@ -84,7 +76,32 @@ moves the model, never the file. The type is derived from the formats
 package's detected-read union, so a document cannot be filed under the wrong
 format and nothing has to assert which codec owns which.
 
-## What a later slice does
+## Recovery
+
+`recovery-storage.ts` owns loading, replacing, and clearing one snapshot. The
+browser adapter uses `saerskriven:studio:recovery` in `localStorage`.
+Version 1 stores `present`, dirty status, and the file lifecycle. The file
+lifecycle includes the name, format, and retained wire document.
+
+`dispatch` writes each changed recoverable field before it publishes the new
+state. The reducer performs no storage work. The snapshot excludes the undo
+and redo stacks, selection, rename state, and the last failure. A restored
+session starts with those fields empty.
+
+Startup bounds and parses the stored text before its schema validates the
+version, model, file data, and retained source. Missing data opens the
+placeholder without a report. Rejected data opens the placeholder and records
+`StoredRecoveryRejected`.
+
+A successful write marks the current state as recoverable. A failed write
+records `RecoveryUnavailable` and leaves that mark false. The page guard uses
+that mark with dirty status. A later recoverable change retries the write.
+Close clears the snapshot. A failed clear keeps the session open for retry.
+
+The snapshot never holds a browser file handle. A restored file keeps its name,
+format, and retained source. Its next Save uses a new bridge with no handle.
+
+## Rules for changes
 
 - A reducer arm changes the model only by calling a `@saerskriven/model`
   operation and folding its `Either`. Never assign into `state.present` or
