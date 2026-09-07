@@ -263,7 +263,7 @@ export const widthOf = async (node: Locator): Promise<string> => {
   return /width:\s*[^;]*/u.exec(style)?.[0] ?? style;
 };
 
-const centreOf = async (target: Locator): Promise<Point> => {
+export const centreOf = async (target: Locator): Promise<Point> => {
   const box = await target.boundingBox();
   expect(box).not.toBeNull();
   return {

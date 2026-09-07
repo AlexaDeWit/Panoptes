@@ -1,5 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
-import { lineOf, type Point } from './canvas-geometry.fixtures.js';
+import { halfwayAlong, lineOf } from './canvas-geometry.fixtures.js';
 import { registeredChords } from './chords.js';
 import { nodeNamed, openPlaceholder, selectNode } from './studio.fixtures.js';
 
@@ -36,15 +36,6 @@ const outlineOf = async (node: Locator): Promise<number> =>
 
 const weightOf = async (line: Locator): Promise<number> =>
   lengthOf(await line.evaluate((path) => getComputedStyle(path).strokeWidth));
-
-const halfwayAlong = (line: Locator): Promise<Point> =>
-  line.evaluate<Point, SVGPathElement>((path) => {
-    const along = path.getPointAtLength(path.getTotalLength() / 2);
-    const point = new DOMPoint(along.x, along.y).matrixTransform(
-      path.getScreenCTM() ?? new DOMMatrix(),
-    );
-    return { x: point.x, y: point.y };
-  });
 
 const drawFlow = async (page: Page): Promise<Locator> => {
   await selectNode(page, actor);

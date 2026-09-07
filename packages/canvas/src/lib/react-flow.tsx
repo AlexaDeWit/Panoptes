@@ -1,5 +1,6 @@
 import type { ElementId } from '@saerskriven/model';
 import {
+  BaseEdge,
   Handle,
   NodeResizeControl,
   Position,
@@ -14,15 +15,25 @@ import type { ReactElement } from 'react';
 import { ElementGlyph, FlowGlyph } from './glyphs.js';
 import { handleSides, type HandleSide, type NodeBox } from './handles.js';
 import {
+  isBoundary,
   reanchoredFlow,
+  type CanvasBoundaryNode,
   type CanvasEdge,
   type CanvasLayout,
   type CanvasNode,
   type CanvasNodeKind,
 } from './layout.js';
 import { svgNumber } from './numbers.js';
+import { polylinePath, smoothPath } from './paths.js';
+import { interactionWidths } from './tokens.js';
 
 const anchorExtent = 1;
+
+const boundaryZIndex = -1;
+
+const nodeZIndex = 0;
+
+const boundaryHitTargetClass = 'pn-boundary-hit-target';
 
 const resizableKinds = new Set<CanvasNodeKind>([
   'actor',
@@ -68,9 +79,11 @@ export type CanvasFreeEndNode = Node<CanvasFreeEndData, typeof freeEndNodeKind>;
  * width and height, and a handle at each side midpoint. Every handle is of
  * type `source`, so the canvas that mounts these passes
  * `connectionMode={ConnectionMode.Loose}` for a flow to be able to end on
- * one. The wrapper adds nothing of its own to the drawing, and the drawing
- * is hidden from assistive technology: the node's accessible name says what
- * the glyph shows, and the canvas mounting it settles that name.
+ * one. Each handle takes the node's resolved connectability, so a trust
+ * boundary handle cannot start a connection. The wrapper adds nothing of
+ * its own to the drawing. The drawing is hidden from assistive technology:
+ * the node's accessible name says what the glyph shows, and the canvas
+ * mounting it settles that name.
  *
  * A selected element the model can resize carries one control, at its bottom
  * right corner. It is the corner alone because a control on the top or the
@@ -80,6 +93,7 @@ export type CanvasFreeEndNode = Node<CanvasFreeEndData, typeof freeEndNodeKind>;
  */
 export function CanvasNodeBody({
   data,
+  isConnectable,
   selected,
 }: NodeProps<CanvasFlowNode>): ReactElement {
   return (
@@ -90,6 +104,7 @@ export function CanvasNodeBody({
         overflow="visible"
         aria-hidden="true"
       >
+        {isBoundary(data.node) ? <BoundaryHitTarget node={data.node} /> : null}
         <ElementGlyph node={data.node} />
       </svg>
       {handleSides.map((side) => (
@@ -98,12 +113,37 @@ export function CanvasNodeBody({
           id={side}
           type="source"
           position={handlePlacement[side]}
+          isConnectable={isConnectable}
         />
       ))}
       {selected && resizableKinds.has(data.node.kind) && (
         <NodeResizeControl position="bottom-right" />
       )}
     </>
+  );
+}
+
+function BoundaryHitTarget({
+  node,
+}: {
+  readonly node: CanvasBoundaryNode;
+}): ReactElement {
+  const interaction = {
+    'aria-hidden': true,
+    className: boundaryHitTargetClass,
+    fill: 'none',
+    pointerEvents: 'stroke',
+    stroke: 'transparent',
+    strokeWidth: svgNumber(interactionWidths.boundary),
+  } as const;
+  return node.kind === 'boundary-box' ? (
+    <rect
+      {...interaction}
+      width={svgNumber(node.size.width)}
+      height={svgNumber(node.size.height)}
+    />
+  ) : (
+    <path {...interaction} d={smoothPath(node.waypoints)} />
   );
 }
 
@@ -125,6 +165,7 @@ export function CanvasNodeBody({
  */
 export function CanvasEdgeBody({
   data,
+  interactionWidth,
   source,
   target,
 }: EdgeProps<CanvasFlowEdge>): ReactElement | null {
@@ -133,16 +174,23 @@ export function CanvasEdgeBody({
   if (data === undefined) {
     return null;
   }
+  const edge = reanchoredFlow(
+    data.edge,
+    liveBox(data.edge.sourceElement, sourceNode),
+    liveBox(data.edge.targetElement, targetNode),
+  );
+  const path = polylinePath([edge.source, ...edge.waypoints, edge.target]);
   return (
-    <g aria-hidden="true">
-      <FlowGlyph
-        edge={reanchoredFlow(
-          data.edge,
-          liveBox(data.edge.sourceElement, sourceNode),
-          liveBox(data.edge.targetElement, targetNode),
-        )}
+    <>
+      <BaseEdge
+        path={path}
+        interactionWidth={interactionWidth ?? interactionWidths.flow}
+        strokeOpacity={0}
       />
-    </g>
+      <g aria-hidden="true">
+        <FlowGlyph edge={edge} />
+      </g>
+    </>
   );
 }
 
@@ -197,17 +245,23 @@ export const canvasEdgeTypes = { flow: CanvasEdgeBody } as const;
  * rides as a node too, sized to the box its waypoints span, so it drags and
  * selects as one thing. Flows are left out: they come over as edges through
  * {@link toReactFlowEdges}, and an end of one that belongs to no element
- * rides on an anchor of its own from {@link freeEndNodes}.
+ * rides on an anchor of its own from {@link freeEndNodes}. A boundary has a
+ * lower z-index and leaves pointer events to its explicit hit targets.
  */
 export function toReactFlowNodes(layout: CanvasLayout): CanvasFlowNode[] {
-  return layout.nodes.map((node) => ({
-    id: node.id,
-    type: node.kind,
-    position: node.position,
-    width: node.size.width,
-    height: node.size.height,
-    data: { node },
-  }));
+  return layout.nodes.map((node) => {
+    const boundary = isBoundary(node);
+    return {
+      id: node.id,
+      type: node.kind,
+      position: node.position,
+      width: node.size.width,
+      height: node.size.height,
+      data: { node },
+      style: boundary ? { pointerEvents: 'none' } : undefined,
+      zIndex: boundary ? boundaryZIndex : nodeZIndex,
+    };
+  });
 }
 
 /**
@@ -235,6 +289,7 @@ export function toReactFlowEdges(layout: CanvasLayout): CanvasFlowEdge[] {
     sourceHandle: edge.sourceSide,
     targetHandle: edge.targetSide,
     data: { edge },
+    interactionWidth: interactionWidths.flow,
   }));
 }
 

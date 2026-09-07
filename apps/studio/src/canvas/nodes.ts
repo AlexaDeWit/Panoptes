@@ -1,5 +1,6 @@
 import {
   freeEndNodes,
+  isBoundary,
   toReactFlowEdges,
   toReactFlowNodes,
   type CanvasFlowEdge,
@@ -44,12 +45,16 @@ export function diagramGraph(
   const selected = new Set<string>(selection);
   return {
     nodes: [
-      ...toReactFlowNodes(layout).map((node) => ({
-        ...node,
-        selected: selected.has(node.id),
-        connectable: ends.has(node.id),
-        ariaLabel: names.get(node.id),
-      })),
+      ...toReactFlowNodes(layout).map((node) => {
+        const isSelected = selected.has(node.id);
+        return {
+          ...node,
+          selected: isSelected,
+          connectable: ends.has(node.id),
+          ariaLabel: names.get(node.id),
+          zIndex: isSelected && !isBoundary(node.data.node) ? 1 : node.zIndex,
+        };
+      }),
       ...freeEndNodes(layout),
     ],
     edges: toReactFlowEdges(layout).map((edge) => ({

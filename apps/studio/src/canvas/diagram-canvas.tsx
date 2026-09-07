@@ -331,6 +331,7 @@ export function DiagramCanvas() {
         selectionOnDrag={mode.active === 'select'}
         tabIndex={-1}
         zoomOnDoubleClick={false}
+        zIndexMode="manual"
       >
         <Background gap={gridSpacing} variant={BackgroundVariant.Lines} />
         <PlacementPreview preview={placement.preview} />

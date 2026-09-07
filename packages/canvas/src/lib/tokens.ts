@@ -180,6 +180,12 @@ export const cueWidths = {
   flowSelection: 4,
 } as const;
 
+/** The invisible stroke widths that make thin diagram lines easier to grab. */
+export const interactionWidths = {
+  boundary: 20,
+  flow: 20,
+} as const;
+
 /**
  * The triangle that marks where a flow ends, in user units: how far its base
  * sits back from the tip, and how far each wing reaches from the line. It is

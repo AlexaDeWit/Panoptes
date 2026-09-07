@@ -246,12 +246,18 @@ reaching the CSS module beside `diagram-canvas.tsx` as `--pn-cue-*`
 properties, so a cue is measured against the weight the drawing itself was
 laid down at rather than against a literal in a stylesheet.
 
-The canvas package draws its own edge body rather than React Flow's, and
-React Flow's is what carries the wider invisible path a built-in edge is hit
-tested on. So a flow here is hit tested on the line as drawn, which is what
-makes widening that line under the pointer both the cue and the band. What
-that band should be is issue 191's, along with the boundary hit testing named
-below.
+The canvas package draws each flow and adds React Flow's invisible interaction
+path at the `interactionWidths.flow` width. The same edge wrapper holds the
+name, so a click on the line, its wider interaction path or the name selects
+the flow.
+
+React Flow uses manual z-index values here. A boundary is at -1, a regular
+node at 0 and a selected regular node at 1. Selection therefore keeps a
+regular node visible without raising a boundary above enclosed items. The
+boundary's interior passes pointer events through. Its name, resize control
+and an invisible `interactionWidths.boundary` stroke around its outline
+remain selectable and draggable. Its disabled connection handles cannot take
+an outline drag.
 
 Select rests on the plain arrow over the pane and nodes. A flow keeps its link
 pointer, and a connection handle keeps its crosshair. Place uses a crosshair
@@ -274,20 +280,6 @@ declares it on the document root as `--pn-panel-cover` for the panel's own
 stylesheet to size its box from ([the visual
 system](../../../../packages/canvas/README.md#the-visual-system)), so a panel
 drawn wider than the pan expects is not a state the two can reach.
-
-## The panel over it
-
-The threat panel is mounted here, inside the canvas container, which is what
-makes it an overlay on the diagram rather than a column taken off it ([the
-panel](../panel/README.md)). Two gestures cross the boundary between the two.
-Enter on the element the store has selected hands the panel the keyboard,
-which the canvas reads in the capture phase: React Flow answers Enter on a
-node itself, and by the time the press has bubbled the selection it reports
-has already moved, so a press read on the way up could not tell selecting an
-element from asking for the panel of one already selected. A press the panel
-does not take is left to React Flow. The other way, Escape in the panel puts
-focus back on the element, through `focusElement`, which is the same route an
-added element takes to focus.
 
 ## The view
 
@@ -384,8 +376,6 @@ commands](../commands/README.md)).
   on a selection moving would drop what was typed. Beginning a rename on
   another element is where it does go: that field is the one that opens, and
   the refused draft goes with the field it was in.
-- Nothing pans to a flow that was just connected: a flow has no box, so
-  whether it is in view is not the question a node's is.
 - A flow's full drawn bounds must sit inside a selection box. An unplaced flow
   has no drawn bounds, so Select All and box selection leave it out.
 - A selection box stays inside the current viewport. Pan with Hand before
@@ -399,16 +389,6 @@ commands](../commands/README.md)).
   keyboard user reaches the flows first. Choosing another order means
   ordering the DOM, which is the same decision as how a diagram is
   traversed, and that belongs with the toolbar rather than here.
-- A flow that runs under a trust boundary cannot be selected with the
-  pointer: React Flow paints every node above every edge, and a boundary is
-  a node whose box takes the clicks over everything it encloses. It stays
-  that way. Letting the clicks through means hit testing a boundary on its
-  outline alone, which trades this limit for a worse one, a boundary
-  draggable only by the two pixels of its dashed stroke. The keyboard
-  reaches the flow, selects it, deletes it and connects from it, so nothing
-  about a flow is out of reach by keyboard. The pointer alone is limited, and
-  it shows no hover cue there either, the boundary being what the pointer is
-  over.
 - React Flow's container carries `role="application"`, which turns off a
   screen reader's browse mode inside the canvas: Tab reaches every element
   but the reader's own navigation keys do not. React Flow writes the role

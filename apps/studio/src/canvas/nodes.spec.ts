@@ -31,10 +31,17 @@ describe('diagramGraph', () => {
     const { nodes } = diagramGraph(layout, [readerElement]);
     const reader = nodes.find((node) => node.id === readerElement);
     expect(reader?.selected).toBe(true);
+    expect(reader?.zIndex).toBe(1);
     expect(reader?.ariaLabel).toBe(names.get(readerElement));
     expect(nodes.find((node) => node.id === studioElement)?.selected).toBe(
       false,
     );
+  });
+
+  it('keeps a selected boundary below unselected nodes', () => {
+    const { nodes } = diagramGraph(layout, [boundaryElement]);
+    expect(nodes.find((node) => node.id === boundaryElement)?.zIndex).toBe(-1);
+    expect(nodes.find((node) => node.id === readerElement)?.zIndex).toBe(0);
   });
 
   it('marks a node a flow can end on connectable, and no other', () => {

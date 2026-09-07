@@ -25,6 +25,7 @@ describe('the package barrel', () => {
       'uiType',
       'canvasType',
       'strokeWidths',
+      'interactionWidths',
       'arrowhead',
       'badgeRadius',
       'gridSpacing',

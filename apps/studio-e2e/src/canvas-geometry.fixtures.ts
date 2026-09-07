@@ -50,6 +50,16 @@ export const handlesOf = (box: Box): Point[] =>
 export const lineOf = (page: Page, name: RegExp): Locator =>
   page.getByRole('group', { name }).locator('path.pn-flow');
 
+/** The screen point halfway along a drawn flow. */
+export const halfwayAlong = (line: Locator): Promise<Point> =>
+  line.evaluate<Point, SVGPathElement>((path) => {
+    const along = path.getPointAtLength(path.getTotalLength() / 2);
+    const point = new DOMPoint(along.x, along.y).matrixTransform(
+      path.getScreenCTM() ?? new DOMMatrix(),
+    );
+    return { x: point.x, y: point.y };
+  });
+
 /** The path a line is drawn along, as the `d` attribute carries it. */
 export const drawnBy = async (line: Locator): Promise<string> =>
   (await line.getAttribute('d')) ?? '';

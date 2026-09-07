@@ -262,7 +262,14 @@ function edgePoints(edge: CanvasEdgeGeometry): readonly [Point, ...Point[]] {
   return [edge.source, ...edge.waypoints, edge.target];
 }
 
-function isBoundary(node: CanvasNode): boolean {
+/** A laid-out trust boundary. */
+export type CanvasBoundaryNode = Extract<
+  CanvasNode,
+  { readonly kind: 'boundary-box' | 'boundary-curve' }
+>;
+
+/** Whether a laid-out node is a trust boundary. */
+export function isBoundary(node: CanvasNode): node is CanvasBoundaryNode {
   return node.kind === 'boundary-box' || node.kind === 'boundary-curve';
 }
 
