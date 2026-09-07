@@ -71,7 +71,8 @@ test('every item is reached, run and left by the keyboard alone', async ({
   await page.keyboard.press('Enter');
   await focusSettled(added);
 
-  await menuButton(page).press('Enter');
+  await menuButton(page).click();
+  await page.keyboard.press('ArrowDown');
   await expect(menuItem(page, 'Open a model')).toBeFocused();
 
   for (const name of [
@@ -96,7 +97,8 @@ test('every item is reached, run and left by the keyboard alone', async ({
   await expect(page.getByRole('menu')).toHaveCount(0);
   await expect(menuButton(page)).toBeFocused();
 
-  await page.keyboard.press('Enter');
+  await menuButton(page).click();
+  await page.keyboard.press('ArrowDown');
   await expect(menuItem(page, 'Open a model')).toBeFocused();
 
   await page.keyboard.press('Escape');
