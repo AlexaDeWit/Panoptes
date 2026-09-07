@@ -49,11 +49,8 @@ export type Action = Data.TaggedEnum<{
     readonly name: string;
     readonly failure: ReadFailure | DetectionFailure;
   };
-  FileRefused: { readonly reason: string };
+  FileRefused: { readonly operation: 'open' | 'save'; readonly reason: string };
 }>;
 
-/**
- * Constructors for {@link Action}, one per tag, plus Effect's `$is` and
- * `$match` helpers.
- */
+/** Constructors and matching helpers for store actions. */
 export const Action = Data.taggedEnum<Action>();

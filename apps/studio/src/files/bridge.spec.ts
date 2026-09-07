@@ -1,5 +1,6 @@
 import {
   OpenOutcome,
+  fileOwnership,
   readWithin,
   reasonOf,
   type ChosenFile,
@@ -10,6 +11,31 @@ const unreadable = (size: number): ChosenFile => ({
   name: 'gone.json',
   size,
   text: () => Promise.reject(new Error('The file was moved.')),
+});
+
+describe('fileOwnership', () => {
+  it.each([true, false])(
+    'ignores stale settlement with retain=%s',
+    (retain) => {
+      const ownership = fileOwnership<string>();
+      const older = ownership.begin();
+      const newer = ownership.begin();
+      const accepted = newer('read', 'replacement.yaml');
+      expect(ownership.current()).toBeUndefined();
+      expect(accepted.settle(true)).toBe(true);
+      expect(older('read', 'original.yaml').settle(retain)).toBe(false);
+      expect(accepted.settle(false)).toBe(false);
+      expect(ownership.current()).toBe('replacement.yaml');
+    },
+  );
+
+  it('invalidates a pending result when the file closes', () => {
+    const ownership = fileOwnership<string>();
+    const pending = ownership.begin();
+    ownership.release();
+    expect(pending('read', 'original.yaml').settle(true)).toBe(false);
+    expect(ownership.current()).toBeUndefined();
+  });
 });
 
 describe('readWithin', () => {

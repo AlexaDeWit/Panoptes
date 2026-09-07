@@ -149,7 +149,7 @@ describe('openedBy', () => {
 
   it('reports a file the platform would not hand over', () => {
     expect(openedBy(openOutcomes.Unreadable)).toEqual(
-      Action.FileRefused({ reason: 'The file was moved.' }),
+      Action.FileRefused({ operation: 'open', reason: 'The file was moved.' }),
     );
   });
 
@@ -172,7 +172,10 @@ describe('savedBy', () => {
 
   it('reports a write the platform refused', () => {
     expect(savedBy(saveOutcomes.Refused, nativeSource)).toEqual(
-      Action.FileRefused({ reason: 'The folder is read only.' }),
+      Action.FileRefused({
+        operation: 'save',
+        reason: 'The folder is read only.',
+      }),
     );
   });
 });

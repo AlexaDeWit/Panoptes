@@ -21,6 +21,7 @@ import {
   SaveOutcome,
   type ChosenFile,
   type FileBridge,
+  type FileResult,
 } from './bridge.js';
 import {
   formatOf,
@@ -60,7 +61,7 @@ export type FileSession = {
   readonly cancelChoice: () => void;
 };
 
-/** A stable file session whose commands read the store when they run. */
+/** Settles handle ownership before synchronously dispatching the matching store action. */
 export function useFileSession(
   bridge: FileBridge = browserFileBridge,
   pdf: PdfExport = browserPdfExport,
@@ -83,24 +84,25 @@ export function useFileSession(
     dispatch(Action.Closed());
   }, [bridge]);
 
-  const applyOpen = useCallback((outcome: OpenOutcome): void => {
-    const action = openedBy(outcome);
-    if (action === undefined) {
+  const applyOpen = useCallback((result: FileResult<OpenOutcome>): void => {
+    const action = openedBy(result.outcome);
+    if (action === undefined || !result.settle(Action.$is('Opened')(action))) {
       return;
     }
+    dispatch(action);
     if (Action.$is('Opened')(action)) {
       setReport(openReport(action.divergences));
     }
-    dispatch(action);
   }, []);
 
   const land = useCallback(
-    (outcome: SaveOutcome, planned: PlannedSave): void => {
-      const action = savedBy(outcome, planned.target.source);
-      if (action !== undefined) {
-        dispatch(action);
+    (result: FileResult<SaveOutcome>, planned: PlannedSave): void => {
+      const action = savedBy(result.outcome, planned.target.source);
+      if (action === undefined || !result.settle(true)) {
+        return;
       }
-      if (SaveOutcome.$is('Written')(outcome)) {
+      dispatch(action);
+      if (SaveOutcome.$is('Written')(result.outcome)) {
         setReport(saveReport(planned.written.divergences));
       }
     },
@@ -132,12 +134,14 @@ export function useFileSession(
       if (!mayDiscard(isDirty(modelStore.getState()))) {
         return;
       }
-      const outcome = await bridge.open(readLimits.maxTextBytes);
-      if (OpenOutcome.$is('NoPicker')(outcome)) {
-        picker.current?.click();
+      const result = await bridge.open(readLimits.maxTextBytes);
+      if (OpenOutcome.$is('NoPicker')(result.outcome)) {
+        if (result.settle(true)) {
+          picker.current?.click();
+        }
         return;
       }
-      applyOpen(outcome);
+      applyOpen(result);
     };
 
     const store = async (): Promise<void> => {
@@ -263,7 +267,10 @@ export function useFileSession(
 
 function planSave(state: State, format: FormatName): PlannedSave {
   const target = saveTarget(state.file, format);
-  return { target, written: writeThrough(state.present, target.source) };
+  return {
+    target,
+    written: writeThrough(state.present, target.source),
+  };
 }
 
 function mayDiscard(dirty: boolean): boolean {

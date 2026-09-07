@@ -23,16 +23,7 @@ import {
   type State,
 } from './state.js';
 
-/**
- * The one place the studio's state changes. Every arm is total: an operation
- * the model refuses leaves the present, the past and the future as they
- * were and records why, so no dispatch can fail and no caller has a failure
- * to handle.
- *
- * Effect's `$match` takes one arm per member of {@link Action} and the type
- * of the cases object names every tag, so a tag added to the union without
- * an arm beside it is a compile error.
- */
+/** Refused model operations preserve the model and history, and record the failure. */
 export function reduce(state: State, action: Action): State {
   return Action.$match(action, {
     AddElement: ({ diagramId, element }) =>
@@ -81,10 +72,12 @@ export function reduce(state: State, action: Action): State {
     Closed: () => initialState(placeholderModel),
     ReadFailed: ({ name, failure }) => ({
       ...state,
+      file: FileLifecycle.NoFile(),
       lastFailure: StudioFailure.Read({ name, failure }),
     }),
-    FileRefused: ({ reason }) => ({
+    FileRefused: ({ operation, reason }) => ({
       ...state,
+      file: operation === 'open' ? FileLifecycle.NoFile() : state.file,
       lastFailure: StudioFailure.File({ reason }),
     }),
   });

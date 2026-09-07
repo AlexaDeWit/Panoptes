@@ -5,7 +5,7 @@ import {
   type FileContent,
   type SaveFileType,
 } from './bridge.js';
-import { chosenFile } from './files.fixtures.js';
+import { chosenFile, deferred, handleFor, settled } from './files.fixtures.js';
 
 const types: readonly SaveFileType[] = [
   {
@@ -22,19 +22,6 @@ const inTheFormatOf = (name: string): string =>
   name.endsWith('.json') ? '{}' : 'a: 1';
 
 const downloads: string[] = [];
-
-const handleFor = (name: string, text: string, written: FileContent[]) => ({
-  name,
-  getFile: () => Promise.resolve(chosenFile(name, text)),
-  createWritable: () =>
-    Promise.resolve({
-      write: (chunk: FileContent) => {
-        written.push(chunk);
-        return Promise.resolve();
-      },
-      close: () => Promise.resolve(),
-    }),
-});
 
 const dismissal = (): DOMException =>
   new DOMException('The user dismissed the picker.', 'AbortError');
@@ -61,10 +48,61 @@ afterEach(() => {
 });
 
 describe('opening', () => {
+  it.each(['open', 'save'] as const)(
+    'does not release a newer open when an older %s fails',
+    async (older) => {
+      const failure = deferred<void>();
+      const success = deferred<string>();
+      const written: FileContent[] = [];
+      const picker = vi
+        .fn<() => Promise<ReturnType<typeof handleFor>[]>>()
+        .mockResolvedValueOnce([
+          handleFor('original.yaml', 'a: 1', [], () => failure.promise),
+        ]);
+      vi.stubGlobal('showOpenFilePicker', picker);
+      const bridge = await freshBridge();
+      await settled(bridge.open(1024));
+      if (older === 'open') {
+        picker.mockResolvedValueOnce([
+          {
+            ...handleFor('failed.yaml', '', []),
+            getFile: () =>
+              Promise.resolve({
+                ...chosenFile('failed.yaml', ''),
+                text: () => failure.promise.then(() => ''),
+              }),
+          },
+        ]);
+      }
+      const failed = (
+        older === 'open'
+          ? bridge.open(1024)
+          : bridge.save('original.yaml', 'b: 2')
+      ).then((result) => result.settle(false));
+      picker.mockResolvedValueOnce([
+        {
+          ...handleFor('replacement.yaml', 'a: 1', written),
+          getFile: () =>
+            Promise.resolve({
+              ...chosenFile('replacement.yaml', 'a: 1'),
+              text: () => success.promise,
+            }),
+        },
+      ]);
+      const opened = bridge.open(1024).then((result) => result.settle(true));
+      failure.reject(new Error('NotAllowedError'));
+      success.resolve('a: 1');
+      expect(await Promise.all([failed, opened])).toEqual([false, true]);
+      await settled(bridge.save('replacement.yaml', 'b: 2'));
+      expect(written).toEqual(['b: 2']);
+      expect(downloads).toEqual([]);
+    },
+  );
+
   it('asks the caller for its own picker where the browser has none', async () => {
     const bridge = await freshBridge();
 
-    expect(await bridge.open(1024)).toEqual(OpenOutcome.NoPicker());
+    expect(await settled(bridge.open(1024))).toEqual(OpenOutcome.NoPicker());
   });
 
   it('reads the file the picker handed over', async () => {
@@ -73,7 +111,7 @@ describe('opening', () => {
     );
     const bridge = await freshBridge();
 
-    expect(await bridge.open(1024)).toEqual(
+    expect(await settled(bridge.open(1024))).toEqual(
       OpenOutcome.Chosen({ name: 'model.yaml', text: 'a: 1' }),
     );
   });
@@ -82,7 +120,7 @@ describe('opening', () => {
     vi.stubGlobal('showOpenFilePicker', () => Promise.reject(dismissal()));
     const bridge = await freshBridge();
 
-    expect(await bridge.open(1024)).toEqual(OpenOutcome.Cancelled());
+    expect(await settled(bridge.open(1024))).toEqual(OpenOutcome.Cancelled());
   });
 
   it('reports what the picker refused with', async () => {
@@ -91,7 +129,7 @@ describe('opening', () => {
     );
     const bridge = await freshBridge();
 
-    expect(await bridge.open(1024)).toEqual(
+    expect(await settled(bridge.open(1024))).toEqual(
       OpenOutcome.Unreadable({ reason: 'NotAllowedError' }),
     );
   });
@@ -100,7 +138,7 @@ describe('opening', () => {
     vi.stubGlobal('showOpenFilePicker', () => Promise.resolve([]));
     const bridge = await freshBridge();
 
-    expect(await bridge.open(1024)).toEqual(OpenOutcome.Cancelled());
+    expect(await settled(bridge.open(1024))).toEqual(OpenOutcome.Cancelled());
   });
 });
 
@@ -111,9 +149,9 @@ describe('saving', () => {
       Promise.resolve([handleFor('model.yaml', 'a: 1', written)]),
     );
     const bridge = await freshBridge();
-    await bridge.open(1024);
+    await settled(bridge.open(1024));
 
-    expect(await bridge.save('proposed.yaml', 'b: 2')).toEqual(
+    expect(await settled(bridge.save('proposed.yaml', 'b: 2'))).toEqual(
       SaveOutcome.Written({ name: 'model.yaml' }),
     );
     expect(written).toEqual(['b: 2']);
@@ -130,9 +168,9 @@ describe('saving', () => {
       ]),
     );
     const bridge = await freshBridge();
-    await bridge.open(1024);
+    await settled(bridge.open(1024));
 
-    expect(await bridge.save('model.yaml', 'b: 2')).toEqual(
+    expect(await settled(bridge.save('model.yaml', 'b: 2'))).toEqual(
       SaveOutcome.Refused({ reason: 'NotAllowedError' }),
     );
   });
@@ -144,8 +182,8 @@ describe('saving', () => {
     );
     const bridge = await freshBridge();
 
-    expect((await bridge.open(10))._tag).toBe('TooLarge');
-    expect(await bridge.save('threat-model.yaml', 'a: 1')).toEqual(
+    expect((await settled(bridge.open(10)))._tag).toBe('TooLarge');
+    expect(await settled(bridge.save('threat-model.yaml', 'a: 1'))).toEqual(
       SaveOutcome.Written({ name: 'threat-model.yaml' }),
     );
     expect(written).toEqual([]);
@@ -155,7 +193,7 @@ describe('saving', () => {
   it('offers a download where no file was opened through a picker', async () => {
     const bridge = await freshBridge();
 
-    expect(await bridge.save('threat-model.yaml', 'a: 1')).toEqual(
+    expect(await settled(bridge.save('threat-model.yaml', 'a: 1'))).toEqual(
       SaveOutcome.Written({ name: 'threat-model.yaml' }),
     );
     expect(downloads).toEqual(['threat-model.yaml']);
@@ -168,10 +206,10 @@ describe('saving', () => {
     );
     const bridge = await freshBridge();
 
-    expect(await bridge.saveAs('proposed.yaml', types, inTheFormatOf)).toEqual(
-      SaveOutcome.Written({ name: 'chosen.yaml' }),
-    );
-    await bridge.save('proposed.yaml', 'second');
+    expect(
+      await settled(bridge.saveAs('proposed.yaml', types, inTheFormatOf)),
+    ).toEqual(SaveOutcome.Written({ name: 'chosen.yaml' }));
+    await settled(bridge.save('proposed.yaml', 'second'));
 
     expect(written).toEqual(['a: 1', 'second']);
   });
@@ -185,9 +223,9 @@ describe('saving', () => {
     });
     const bridge = await freshBridge();
 
-    expect(await bridge.saveAs('proposed.yaml', types, inTheFormatOf)).toEqual(
-      SaveOutcome.Written({ name: 'chosen.json' }),
-    );
+    expect(
+      await settled(bridge.saveAs('proposed.yaml', types, inTheFormatOf)),
+    ).toEqual(SaveOutcome.Written({ name: 'chosen.json' }));
 
     expect(asked).toEqual([{ suggestedName: 'proposed.yaml', types }]);
     expect(written).toEqual(['{}']);
@@ -205,12 +243,12 @@ describe('saving', () => {
       }),
     );
     const bridge = await freshBridge();
-    await bridge.open(1024);
+    await settled(bridge.open(1024));
 
-    expect(await bridge.saveAs('elsewhere.json', types, inTheFormatOf)).toEqual(
-      SaveOutcome.Refused({ reason: 'NotAllowedError' }),
-    );
-    await bridge.save('model.json', 'second');
+    expect(
+      await settled(bridge.saveAs('elsewhere.json', types, inTheFormatOf)),
+    ).toEqual(SaveOutcome.Refused({ reason: 'NotAllowedError' }));
+    await settled(bridge.save('model.json', 'second'));
 
     expect(written).toEqual(['second']);
     expect(downloads).toEqual([]);
@@ -223,12 +261,12 @@ describe('saving', () => {
     );
     vi.stubGlobal('showSaveFilePicker', () => Promise.reject(dismissal()));
     const bridge = await freshBridge();
-    await bridge.open(1024);
+    await settled(bridge.open(1024));
 
-    expect(await bridge.saveAs('model.yaml', types, inTheFormatOf)).toEqual(
-      SaveOutcome.Cancelled(),
-    );
-    await bridge.save('model.json', 'second');
+    expect(
+      await settled(bridge.saveAs('model.yaml', types, inTheFormatOf)),
+    ).toEqual(SaveOutcome.Cancelled());
+    await settled(bridge.save('model.json', 'second'));
 
     expect(written).toEqual(['second']);
     expect(downloads).toEqual([]);
@@ -240,13 +278,13 @@ describe('saving', () => {
       Promise.resolve([handleFor('model.json', '{}', written)]),
     );
     const bridge = await freshBridge();
-    await bridge.open(1024);
+    await settled(bridge.open(1024));
 
     expect(bridge.asksWhere()).toBe(false);
-    expect(await bridge.saveAs('model.yaml', types, inTheFormatOf)).toEqual(
-      SaveOutcome.Written({ name: 'model.yaml' }),
-    );
-    await bridge.save('model.yaml', 'a: 1');
+    expect(
+      await settled(bridge.saveAs('model.yaml', types, inTheFormatOf)),
+    ).toEqual(SaveOutcome.Written({ name: 'model.yaml' }));
+    await settled(bridge.save('model.yaml', 'a: 1'));
 
     expect(written).toEqual([]);
     expect(downloads).toEqual(['model.yaml', 'model.yaml']);
@@ -267,10 +305,10 @@ describe('saving', () => {
       Promise.resolve([handleFor('model.json', '{}', written)]),
     );
     const bridge = await freshBridge();
-    await bridge.open(1024);
+    await settled(bridge.open(1024));
 
-    await bridge.received(chosenFile('other.yaml', 'a: 1'), 1024);
-    await bridge.save('other.yaml', 'a: 1');
+    await settled(bridge.received(chosenFile('other.yaml', 'a: 1'), 1024));
+    await settled(bridge.save('other.yaml', 'a: 1'));
 
     expect(written).toEqual([]);
     expect(downloads).toEqual(['other.yaml']);
@@ -282,14 +320,45 @@ describe('saving', () => {
       Promise.resolve([handleFor('model.json', '{}', written)]),
     );
     const bridge = await freshBridge();
-    await bridge.open(1024);
+    await settled(bridge.open(1024));
 
     bridge.release();
-    await bridge.save('threat-model.yaml', 'a: 1');
+    await settled(bridge.save('threat-model.yaml', 'a: 1'));
 
     expect(written).toEqual([]);
     expect(downloads).toEqual(['threat-model.yaml']);
   });
+
+  it.each(['picker', 'input'] as const)(
+    'downloads after the session releases a refused %s open',
+    async (path) => {
+      const original: FileContent[] = [];
+      const rejected: FileContent[] = [];
+      const picker = vi
+        .fn<() => Promise<ReturnType<typeof handleFor>[]>>()
+        .mockResolvedValueOnce([handleFor('model.yaml', 'a: 1', original)])
+        .mockResolvedValueOnce([
+          handleFor('notes.txt', 'not a model', rejected),
+        ]);
+      vi.stubGlobal('showOpenFilePicker', picker);
+      const bridge = await freshBridge();
+      await settled(bridge.open(1024));
+
+      const result =
+        path === 'picker'
+          ? await bridge.open(1024)
+          : await bridge.received(chosenFile('notes.txt', 'not a model'), 1024);
+      expect(result.outcome._tag).toBe('Chosen');
+
+      expect(result.settle(false)).toBe(true);
+      expect(await settled(bridge.save('threat-model.yaml', 'b: 2'))).toEqual(
+        SaveOutcome.Written({ name: 'threat-model.yaml' }),
+      );
+      expect(original).toEqual([]);
+      expect(rejected).toEqual([]);
+      expect(downloads).toEqual(['threat-model.yaml']);
+    },
+  );
 });
 
 describe('exporting', () => {
@@ -303,12 +372,12 @@ describe('exporting', () => {
       Promise.resolve(handleFor('model.svg', '', exported)),
     );
     const bridge = await freshBridge();
-    await bridge.open(1024);
+    await settled(bridge.open(1024));
 
     expect(await bridge.exportFile('model.svg', types[0], '<svg/>')).toEqual(
       SaveOutcome.Written({ name: 'model.svg' }),
     );
-    await bridge.save('model.yaml', 'second');
+    await settled(bridge.save('model.yaml', 'second'));
 
     expect(exported).toEqual(['<svg/>']);
     expect(opened).toEqual(['second']);

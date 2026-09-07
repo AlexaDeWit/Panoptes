@@ -18,7 +18,12 @@ import {
   placeholderModel,
 } from '../store/state.js';
 import { dispatch, modelStore } from '../store/store.js';
-import { specBridge, vendoredFile, type SpecBridge } from './files.fixtures.js';
+import {
+  settled,
+  specBridge,
+  vendoredFile,
+  type SpecBridge,
+} from './files.fixtures.js';
 import {
   formatOf,
   openedBy,
@@ -37,11 +42,6 @@ const gated: readonly Gated[] = [
   { path: 'threat-modelling/saerskriven.yaml', format: 'saerskriven-yaml' },
 ];
 
-/**
- * The JSON Schema Threat Dragon validates a v2 model against before it opens
- * one, run through the validator Threat Dragon itself runs, so what the
- * studio writes is gated by the tool that has to read it.
- */
 const validate = new Ajv({ allowUnionTypes: true }).compile(
   JSON.parse(
     readFileSync(
@@ -54,12 +54,6 @@ const validate = new Ajv({ allowUnionTypes: true }).compile(
   ),
 );
 
-/**
- * A written file as it is compared against the one it was read from. JSON
- * carries no meaning in its key order, so a Threat Dragon file is compared
- * as the document it parses to; the native format writes one file per model
- * and is compared as the bytes it is.
- */
 const asDocument = (format: FormatName, text: string): unknown =>
   format === 'threat-dragon' ? JSON.parse(text) : text;
 
@@ -71,7 +65,7 @@ const applied = (action: Action | undefined): void => {
 };
 
 const opened = async (bridge: SpecBridge): Promise<void> => {
-  applied(openedBy(await bridge.open(readLimits.maxTextBytes)));
+  applied(openedBy(await settled(bridge.open(readLimits.maxTextBytes))));
 };
 
 const saved = async (bridge: SpecBridge): Promise<readonly Divergence[]> => {
@@ -79,7 +73,10 @@ const saved = async (bridge: SpecBridge): Promise<readonly Divergence[]> => {
   const target = saveTarget(state.file, formatOf(state.file));
   const written = writeThrough(state.present, target.source);
   applied(
-    savedBy(await bridge.save(target.name, written.output), target.source),
+    savedBy(
+      await settled(bridge.save(target.name, written.output)),
+      target.source,
+    ),
   );
   return written.divergences;
 };
