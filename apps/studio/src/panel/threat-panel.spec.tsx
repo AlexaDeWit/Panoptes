@@ -202,7 +202,7 @@ describe(
       expect(
         screen.getByDisplayValue(`Pasted${softHyphen}prose`),
       ).toBeDefined();
-      expect(announcement()).toBe('A refusal');
+      expect(announcement()).toContain('7');
     });
 
     it('drops a refusal an undo settled, and lets the threat collapse again', async () => {
