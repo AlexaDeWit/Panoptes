@@ -1,5 +1,6 @@
 import type { ElementId } from '@saerskriven/model';
 import {
+  BaseEdge,
   Handle,
   NodeResizeControl,
   Position,
@@ -14,15 +15,23 @@ import type { ReactElement } from 'react';
 import { ElementGlyph, FlowGlyph } from './glyphs.js';
 import { handleSides, type HandleSide, type NodeBox } from './handles.js';
 import {
+  isBoundary,
   reanchoredFlow,
+  type CanvasBoundaryNode,
   type CanvasEdge,
   type CanvasLayout,
   type CanvasNode,
   type CanvasNodeKind,
 } from './layout.js';
 import { svgNumber } from './numbers.js';
+import { polylinePath, smoothPath } from './paths.js';
+import { interactionWidths } from './tokens.js';
 
 const anchorExtent = 1;
+
+const boundaryZIndex = -1;
+
+const boundaryHitTargetClass = 'pn-boundary-hit-target';
 
 const resizableKinds = new Set<CanvasNodeKind>([
   'actor',
@@ -90,6 +99,7 @@ export function CanvasNodeBody({
         overflow="visible"
         aria-hidden="true"
       >
+        {isBoundary(data.node) ? <BoundaryHitTarget node={data.node} /> : null}
         <ElementGlyph node={data.node} />
       </svg>
       {handleSides.map((side) => (
@@ -104,6 +114,30 @@ export function CanvasNodeBody({
         <NodeResizeControl position="bottom-right" />
       )}
     </>
+  );
+}
+
+function BoundaryHitTarget({
+  node,
+}: {
+  readonly node: CanvasBoundaryNode;
+}): ReactElement {
+  const interaction = {
+    'aria-hidden': true,
+    className: boundaryHitTargetClass,
+    fill: 'none',
+    pointerEvents: 'stroke',
+    stroke: 'transparent',
+    strokeWidth: svgNumber(interactionWidths.boundary),
+  } as const;
+  return node.kind === 'boundary-box' ? (
+    <rect
+      {...interaction}
+      width={svgNumber(node.size.width)}
+      height={svgNumber(node.size.height)}
+    />
+  ) : (
+    <path {...interaction} d={smoothPath(node.waypoints)} />
   );
 }
 
@@ -125,6 +159,7 @@ export function CanvasNodeBody({
  */
 export function CanvasEdgeBody({
   data,
+  interactionWidth,
   source,
   target,
 }: EdgeProps<CanvasFlowEdge>): ReactElement | null {
@@ -133,16 +168,23 @@ export function CanvasEdgeBody({
   if (data === undefined) {
     return null;
   }
+  const edge = reanchoredFlow(
+    data.edge,
+    liveBox(data.edge.sourceElement, sourceNode),
+    liveBox(data.edge.targetElement, targetNode),
+  );
+  const path = polylinePath([edge.source, ...edge.waypoints, edge.target]);
   return (
-    <g aria-hidden="true">
-      <FlowGlyph
-        edge={reanchoredFlow(
-          data.edge,
-          liveBox(data.edge.sourceElement, sourceNode),
-          liveBox(data.edge.targetElement, targetNode),
-        )}
+    <>
+      <BaseEdge
+        path={path}
+        interactionWidth={interactionWidth ?? interactionWidths.flow}
+        strokeOpacity={0}
       />
-    </g>
+      <g aria-hidden="true">
+        <FlowGlyph edge={edge} />
+      </g>
+    </>
   );
 }
 
@@ -197,17 +239,23 @@ export const canvasEdgeTypes = { flow: CanvasEdgeBody } as const;
  * rides as a node too, sized to the box its waypoints span, so it drags and
  * selects as one thing. Flows are left out: they come over as edges through
  * {@link toReactFlowEdges}, and an end of one that belongs to no element
- * rides on an anchor of its own from {@link freeEndNodes}.
+ * rides on an anchor of its own from {@link freeEndNodes}. A boundary has a
+ * lower z-index and leaves pointer events to its explicit hit targets.
  */
 export function toReactFlowNodes(layout: CanvasLayout): CanvasFlowNode[] {
-  return layout.nodes.map((node) => ({
-    id: node.id,
-    type: node.kind,
-    position: node.position,
-    width: node.size.width,
-    height: node.size.height,
-    data: { node },
-  }));
+  return layout.nodes.map((node) => {
+    const boundary = isBoundary(node);
+    return {
+      id: node.id,
+      type: node.kind,
+      position: node.position,
+      width: node.size.width,
+      height: node.size.height,
+      data: { node },
+      style: boundary ? { pointerEvents: 'none' } : undefined,
+      zIndex: boundary ? boundaryZIndex : undefined,
+    };
+  });
 }
 
 /**
@@ -235,6 +283,7 @@ export function toReactFlowEdges(layout: CanvasLayout): CanvasFlowEdge[] {
     sourceHandle: edge.sourceSide,
     targetHandle: edge.targetSide,
     data: { edge },
+    interactionWidth: interactionWidths.flow,
   }));
 }
 

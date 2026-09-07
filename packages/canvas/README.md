@@ -245,36 +245,15 @@ a ceiling as well as a floor, because it is the one role that is worse for
 being darker.
 
 The module carries the sizes the drawing is built from as well as its colours.
-`strokeWidths` is every stroke a diagram lays down: one weight for an
-element's outline, a trust boundary's dashes and a flow's line, a heavier one
-for a store's two lines, which are the whole glyph and have no box to sit in,
-and the ring and the halo that cut a badge and a flow name out of whatever
-they are drawn over. `arrowhead` sizes the triangle a flow ends in,
-`badgeRadius` the two circles a badge stacks, and `gridSpacing` the graph
-paper the studio rules its canvas with. `panelCover` is the chrome's own
-geometry rather than the diagram's: what the studio's threat panel covers of
-the canvas it floats over, its border box and the inset together, so the panel
-is drawn from the number the canvas keeps that band clear of a selected
-element with ([the studio's canvas](../../apps/studio/src/canvas/README.md)). The badge radii and the ring are one
-decision: the ring is centred on
-the circle, so half of it eats into the disc the count is lettered on, and the
-secondary radius is 9 because a two-digit count at that size, measured with
-the wrap's own ratio, reaches 6.69 units from the centre where a 3-unit ring
-would leave 6.5.
-they are drawn over. `cueWidths` is the same measure for the marks the studio
-lays over a diagram rather than in it: the frame around a selected element,
-and the two weights a flow's line takes under the pointer and once selected.
-Each is a step above the outline weight, which is what makes a selection
-legible with no colour read off it, and none is more than one step past the
-heaviest weight the drawing itself lays down, so a cue stays inside the hand
-the diagram is drawn by. The headless render lays none of them down.
-`arrowhead` sizes the triangle a flow ends in, `badgeRadius` the two circles a
-badge stacks, and `gridSpacing` the graph paper the studio rules its canvas
-with. The badge radii and the ring are one decision: the ring is centred on
-the circle, so half of it eats into the disc the count is lettered on, and the
-secondary radius is 9 because a two-digit count at that size, measured with
-the wrap's own ratio, reaches 6.69 units from the centre where a 3-unit ring
-would leave 6.5.
+`strokeWidths` holds each visible stroke. `cueWidths` holds the selection and
+hover marks that the studio adds. `interactionWidths` holds the invisible hit
+strokes around flows and trust boundaries. The headless render draws neither
+the cues nor the hit strokes.
+
+`arrowhead` sizes the triangle at a flow's target. `badgeRadius` sizes the two
+circles in a badge. `gridSpacing` sets the studio's graph paper. `panelCover`
+sets the width that the threat panel and canvas reserve for the panel
+([the studio's canvas](../../apps/studio/src/canvas/README.md)).
 
 `canvasStylesheet` resolves the light tokens to values, because the standalone
 SVG has no document around it to hold a `:root` and neither has the PDF that

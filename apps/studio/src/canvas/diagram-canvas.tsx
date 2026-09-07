@@ -300,6 +300,7 @@ export function DiagramCanvas() {
         deleteKeyCode={null}
         edges={graph.edges}
         edgeTypes={renamingEdgeTypes}
+        elevateNodesOnSelect={false}
         elementsSelectable={mode.active === 'select'}
         isValidConnection={betweenTwoElements}
         maxZoom={zoomLimits.maximum}

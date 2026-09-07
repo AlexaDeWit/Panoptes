@@ -1,6 +1,8 @@
 import { expect, test } from '@playwright/test';
+import { halfwayAlong, lineOf } from './canvas-geometry.fixtures.js';
 import {
   beforeCanvas,
+  canvasSettled,
   dragBy,
   elementNodes,
   nodeNamed,
@@ -62,6 +64,66 @@ test('the selection moves between an element and a flow, either way', async ({
   await proxy.click();
   await expect(proxy).toHaveClass(/selected/u);
   await expect(selectedFlow).toHaveCount(0);
+});
+
+test('a flow under a selected trust boundary takes a line or label click', async ({
+  page,
+}) => {
+  await openEcluse(page);
+  const boundary = nodeNamed(page, /^Operator trust zone/u);
+  const flowName = /^npm read \/ publish/u;
+  const flow = nodeNamed(page, flowName);
+
+  await boundary.locator('.pn-label').click();
+  await expect(boundary).toHaveClass(/selected/u);
+  await canvasSettled(page);
+
+  const onLine = await halfwayAlong(lineOf(page, flowName));
+  await page.mouse.click(onLine.x, onLine.y);
+  await expect(flow).toHaveClass(/selected/u);
+  await expect(boundary).not.toHaveClass(/selected/u);
+
+  await boundary.locator('.pn-label').click();
+  await canvasSettled(page);
+  await flow.locator('.pn-flow-label').click();
+  await expect(flow).toHaveClass(/selected/u);
+  await expect(boundary).not.toHaveClass(/selected/u);
+});
+
+test('a trust boundary selects and drags from its outline', async ({
+  page,
+}) => {
+  await openEcluse(page);
+  const boundary = nodeNamed(page, /^Operator trust zone/u);
+  const outlinePoint = async () => {
+    const box = await boundary.boundingBox();
+    expect(box).not.toBeNull();
+    return {
+      x: (box?.x ?? 0) + (box?.width ?? 0) / 4,
+      y: (box?.y ?? 0) + 4,
+    };
+  };
+  const onOutline = await outlinePoint();
+
+  await page.mouse.click(onOutline.x, onOutline.y);
+  await expect(boundary).toHaveClass(/selected/u);
+  await canvasSettled(page);
+
+  const dragFrom = await outlinePoint();
+  const target = await page.evaluate(
+    ({ x, y }) => document.elementFromPoint(x, y)?.getAttribute('class') ?? '',
+    dragFrom,
+  );
+  expect(target).toContain('pn-boundary-hit-target');
+  const before = await placeOf(boundary);
+
+  await page.mouse.move(dragFrom.x, dragFrom.y);
+  await page.mouse.down();
+  await page.mouse.move(dragFrom.x + 30, dragFrom.y + 30, { steps: 8 });
+  await expect(boundary).toHaveClass(/dragging/u);
+  await page.mouse.up();
+
+  await expect.poll(() => placeOf(boundary)).not.toBe(before);
 });
 
 test('a drag moves the element through the store, and undo puts it back', async ({

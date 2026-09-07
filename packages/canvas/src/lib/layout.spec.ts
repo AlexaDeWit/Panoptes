@@ -169,11 +169,29 @@ describe('layoutDiagram', () => {
     );
   });
 
-  it('puts the boundaries ahead of what they enclose', () => {
-    expect(layout.nodes.slice(0, 2).map((node) => node.id)).toEqual([
-      elementId('el-zone'),
-      elementId('el-edge-zone'),
-    ]);
+  it('puts boundaries first even when the model lists them last', () => {
+    const diagram = everyGlyphModel.diagrams[0];
+    const reordered: Model = {
+      ...everyGlyphModel,
+      diagrams: [
+        {
+          ...diagram,
+          elements: [
+            ...diagram.elements.filter(
+              (element) => element.kind !== 'trust-boundary',
+            ),
+            ...diagram.elements.filter(
+              (element) => element.kind === 'trust-boundary',
+            ),
+          ],
+        },
+      ],
+    };
+    expect(
+      layoutOf(reordered)
+        .nodes.slice(0, 2)
+        .map((node) => node.id),
+    ).toEqual([elementId('el-zone'), elementId('el-edge-zone')]);
   });
 
   it('carries the badge of each element the threats name', () => {

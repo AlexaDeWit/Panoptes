@@ -139,6 +139,17 @@ describe('CanvasNodeBody', () => {
       'react-flow__resize-control',
     );
   });
+
+  it('gives each boundary outline a wider invisible pointer target', () => {
+    for (const node of [nodeNamed('el-zone'), curveNode]) {
+      expect(node).toBeDefined();
+      const markup = node === undefined ? '' : bodyMarkup(node);
+      expect(markup).toContain(
+        'class="pn-boundary-hit-target" fill="none" ' +
+          'pointer-events="stroke" stroke="transparent" stroke-width="20"',
+      );
+    }
+  });
 });
 
 describe('CanvasEdgeBody', () => {
@@ -148,6 +159,12 @@ describe('CanvasEdgeBody', () => {
     expect(
       edgeMarkup({ edge: layout.edges[0] }, nodesWith('el-client', 0)),
     ).toContain(settled);
+  });
+
+  it("adds React Flow's wider interaction path around the flow", () => {
+    const markup = edgeMarkup({ edge: layout.edges[0] });
+    expect(markup).toContain('react-flow__edge-interaction');
+    expect(markup).toContain('stroke-width="20"');
   });
 
   it('anchors an end on the node React Flow has, not the model position', () => {
@@ -178,7 +195,25 @@ describe('toReactFlowNodes', () => {
       width: node.size.width,
       height: node.size.height,
       data: { node },
+      style: undefined,
+      zIndex: undefined,
     });
+  });
+
+  it('puts trust boundaries below every other React Flow item', () => {
+    expect(toReactFlowNodes(layout)).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: elementId('el-zone'),
+          style: { pointerEvents: 'none' },
+          zIndex: -1,
+        }),
+        expect.objectContaining({
+          id: elementId('el-client'),
+          zIndex: undefined,
+        }),
+      ]),
+    );
   });
 
   it('carries one React Flow node per laid-out node, flows excluded', () => {
@@ -211,6 +246,7 @@ describe('toReactFlowEdges', () => {
       source: elementId('el-client'),
       target: elementId('el-api'),
       data: { edge: layout.edges[0] },
+      interactionWidth: 20,
     });
   });
 
