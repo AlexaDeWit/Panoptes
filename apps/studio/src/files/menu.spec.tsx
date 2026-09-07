@@ -127,7 +127,7 @@ afterEach(() => {
 });
 
 describe('what the menu offers', () => {
-  it('holds the file commands and the edit commands, in two named groups', async () => {
+  it('holds the file commands, edit commands and project link', async () => {
     const user = userEvent.setup();
     mounted(specBridge());
 
@@ -144,11 +144,29 @@ describe('what the menu offers', () => {
       'RedoCtrl+Shift+Z or Ctrl+Y',
       'Rename the selectionF2',
       'Delete the selectionDelete or Backspace',
+      'View source on GitHub',
     ]);
     expect(
       screen.getAllByRole('group').map((group) => group.textContent),
     ).toContain(
       'FileOpen a modelCtrl+OSaveCtrl+SSave asCtrl+Shift+SClose the fileCtrl+Shift+X',
+    );
+  });
+
+  it('links to the source in a new tab with a popout icon', async () => {
+    const user = userEvent.setup();
+    mounted(specBridge());
+
+    await openMenu(user);
+
+    const source = item('View source on GitHub');
+    expect(source.getAttribute('href')).toBe(
+      'https://github.com/AlexaDeWit/Saerskriven',
+    );
+    expect(source.getAttribute('target')).toBe('_blank');
+    expect(source.getAttribute('rel')).toBe('noopener noreferrer');
+    expect(source.querySelector('svg')?.getAttribute('aria-hidden')).toBe(
+      'true',
     );
   });
 
@@ -482,6 +500,7 @@ describe('saving', () => {
       'RedoCtrl+Shift+Z or Ctrl+Y',
       'Rename the selectionF2',
       'Delete the selectionDelete or Backspace',
+      'View source on GitHub',
     ]);
     expect(bridge.writes).toEqual([]);
 

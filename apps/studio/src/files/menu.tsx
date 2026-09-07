@@ -89,60 +89,31 @@ function MenuCommand({ command, children, disabled }: MenuCommandProps) {
   );
 }
 
+function SourceLink() {
+  return (
+    <DropdownMenu.Item asChild className={styles.item}>
+      <a
+        href="https://github.com/AlexaDeWit/Saerskriven"
+        rel="noopener noreferrer"
+        target="_blank"
+      >
+        <span>View source on GitHub</span>
+        <svg
+          aria-hidden="true"
+          className={styles.externalLink}
+          viewBox="0 0 16 16"
+        >
+          <path d="M9.5 2.5h4v4M13.5 2.5l-6 6M12.5 9v3.5a1 1 0 0 1-1 1h-8a1 1 0 0 1-1-1v-8a1 1 0 0 1 1-1H7" />
+        </svg>
+      </a>
+    </DropdownMenu.Item>
+  );
+}
+
 /** The session the items run their commands through. */
 export type StudioMenuProps = { readonly session: FileSession };
 
-/**
- * The studio's one menu, over the top left of the canvas: the file commands,
- * the edit commands, the file the model lives in and what the last crossing
- * of the file boundary cost.
- *
- * Every item is a registered command ([the
- * commands](../commands/README.md)), so an item and its chord run one
- * dispatch and the chord each item shows is read from the registry rather
- * than written here. The chord is drawn beside the label and hidden from
- * assistive technology, which reads the binding off `aria-keyshortcuts`
- * instead: inside the name, Save would read "Save Ctrl+S".
- *
- * The menu is not modal, so the canvas stays live behind it and a press
- * outside it lands where it was aimed. Choosing an item puts the menu away,
- * which is also what uncovers the report a save leaves under the button.
- *
- * The Edit group holds the history moves and the commands that act on what
- * the canvas has selected, each disabled while there is nothing for it to do,
- * as Undo is disabled on an empty stack: a person reaching a command by
- * keyboard alone is told it has nothing to work on rather than pressing it
- * for no result. Rename reads more than whether something is selected, a text
- * note having prose rather than a name to edit ([the
- * selectors](../store/selectors.ts)).
- *
- * The loss report and the failure notice are the menu's chrome rather than
- * its items, drawn under the button and over the canvas. Both are the shared
- * live region ([the controls](../ui/README.md)), and neither can go inside
- * the menu: a menu owns items and groups of them, and an audit reads a live
- * region there as a menu that has lost its shape. Standing outside it is also
- * what lets each announce as it arrives rather than only once the menu is
- * opened, which is what a save through a chord needs. The report says what one
- * file crossing cost and stands until it is dismissed, a save starts, an open
- * lands, or the file is closed.
- *
- * Closing asks before it drops work that is in no file, and asks in the menu
- * rather than in a dialog: the item itself becomes the question, with the
- * answer that keeps the file beside it. It is the one item that holds the
- * menu open, and it holds it where it stood, so a person who reached it by
- * keyboard is still on it and the second press is the answer. The chord asks
- * the same question with the menu shut, which is what opens the menu.
- *
- * Save as asks the same way, and only where it has to. A platform with a
- * picker of its own offers every format in it, so the item is one command and
- * the question is the picker's. A platform with none cannot, so the item
- * holds the menu open and becomes the formats in the place it stood, the
- * file's own first: the same shape closing asks in, one press deep and with
- * no second overlay to walk into.
- *
- * The fallback picker's input is outside the menu as well, and hidden: only a
- * component can hold a file input, and the Open command is the one way to it.
- */
+/** The file, edit and project menu over the canvas. */
 export function StudioMenu({ session }: StudioMenuProps) {
   const file = useModelStore((state) => state.file);
   const failure = useModelStore((state) => state.lastFailure);
@@ -281,6 +252,13 @@ export function StudioMenu({ session }: StudioMenuProps) {
             <MenuCommand command="redo" disabled={!redoable} />
             <MenuCommand command="rename" disabled={!renamable} />
             <MenuCommand command="delete" disabled={nothing} />
+          </DropdownMenu.Group>
+          <DropdownMenu.Separator className={styles.rule} />
+          <DropdownMenu.Group>
+            <DropdownMenu.Label className={styles.heading}>
+              Project
+            </DropdownMenu.Label>
+            <SourceLink />
           </DropdownMenu.Group>
           <DropdownMenu.Separator className={styles.rule} />
           <DropdownMenu.Group className={styles.about}>
