@@ -1,4 +1,4 @@
-import { act, render, screen } from '@testing-library/react';
+import { act, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { initialState } from '../store/state.js';
 import type { State } from '../store/state.js';
@@ -73,9 +73,9 @@ describe('Toolbox', () => {
       screen.getByRole('button', { name: 'Actor' }).focus();
     });
 
-    expect((await screen.findByRole('tooltip')).textContent).toBe(
-      'Actor A or 2',
-    );
+    const tooltip = await screen.findByRole('tooltip');
+    expect(tooltip.textContent).toContain('Actor');
+    expect(within(tooltip).getByText('A or 2')).toBeDefined();
   });
 
   it('keeps the canvas message region mounted while it has nothing to say', () => {
