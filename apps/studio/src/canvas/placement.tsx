@@ -40,6 +40,9 @@ type BoxTool = Exclude<ElementTool, 'boundary-curve'>;
 type PlacementGesture = {
   readonly pointerId: number;
   readonly tool: BoxTool;
+  readonly revision: number;
+  readonly transition: number;
+  readonly layout: CanvasLayout;
   readonly screen: Point;
   readonly flow: Point;
 };
@@ -75,6 +78,16 @@ export function usePlacement(
     waypoints: [],
     pointer: undefined,
   });
+
+  if (curveDraft.layout !== layout) {
+    setCurveDraft({
+      revision: mode.revision,
+      layout,
+      waypoints: [],
+      pointer: undefined,
+    });
+  }
+
   const currentDraft =
     curveDraft.revision === mode.revision && curveDraft.layout === layout;
   const curve = currentDraft ? curveDraft.waypoints : noPoints;
@@ -168,6 +181,7 @@ export function usePlacement(
     }
     if (
       !(event.target instanceof Element) ||
+      nativeActivationTarget(event.target) ||
       event.target.closest('.react-flow') === null
     ) {
       return false;
@@ -213,6 +227,9 @@ export function usePlacement(
     gesture.current = {
       pointerId: event.pointerId,
       tool: mode.active,
+      revision: mode.revision,
+      transition: mode.transition,
+      layout,
       screen: { x: event.clientX, y: event.clientY },
       flow,
     };
@@ -243,7 +260,16 @@ export function usePlacement(
 
   const pointerUp = (event: PointerEvent<HTMLDivElement>): void => {
     const started = gesture.current;
-    if (started === undefined || started.pointerId !== event.pointerId) {
+    const current = currentTool();
+    if (
+      started === undefined ||
+      started.pointerId !== event.pointerId ||
+      started.tool !== current.active ||
+      started.revision !== current.revision ||
+      started.transition !== current.transition ||
+      started.layout !== layout
+    ) {
+      gesture.current = undefined;
       return;
     }
     gesture.current = undefined;

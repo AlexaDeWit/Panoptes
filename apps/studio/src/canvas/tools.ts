@@ -9,14 +9,20 @@ export const tools = ['select', ...elementTools, 'hand'] as const;
 /** One mode the toolbox offers. */
 export type Tool = (typeof tools)[number];
 
-/** The active tool, its lock, and the revision that keys an in-progress draft. */
+/** The active tool, its lock, its draft revision and transition count. */
 export type ToolState = {
   readonly active: Tool;
   readonly locked: boolean;
   readonly revision: number;
+  readonly transition: number;
 };
 
-const atRest: ToolState = { active: 'select', locked: false, revision: 0 };
+const atRest: ToolState = {
+  active: 'select',
+  locked: false,
+  revision: 0,
+  transition: 0,
+};
 
 let current = atRest;
 
@@ -91,13 +97,13 @@ export function useTool(): ToolState {
 }
 
 function moveTo(
-  next: Omit<ToolState, 'revision'>,
+  next: Pick<ToolState, 'active' | 'locked'>,
   revision = current.revision + 1,
 ): void {
   if (next.active === current.active && next.locked === current.locked) {
     return;
   }
-  current = { ...next, revision };
+  current = { ...next, revision, transition: current.transition + 1 };
   for (const listener of listeners) {
     listener();
   }

@@ -112,6 +112,45 @@ test('Enter and Space activate a focused toolbox button', async ({ page }) => {
   await expect(elementNodes(page)).toHaveCount(2);
 });
 
+test('changing tools cancels a box drag before pointer release', async ({
+  page,
+}) => {
+  await openPlaceholder(page);
+  const at = await emptyCanvasPoint(page);
+
+  await toolButton(page, 'Actor').click();
+  await page.mouse.move(at.x, at.y);
+  await page.mouse.down();
+  await page.keyboard.press(registeredChords['select-tool'][1]);
+  await page.mouse.up();
+
+  await expect(nodeNamed(page, /^New actor, actor/u)).toHaveCount(0);
+  await openMenu(page);
+  await expect(menuItem(page, 'Undo')).toHaveAttribute('aria-disabled', 'true');
+});
+
+test('the attribution link remains a link in boundary curve mode', async ({
+  page,
+}) => {
+  await openPlaceholder(page);
+  await toolButton(page, 'Trust boundary curve').click();
+
+  const prevented = await page
+    .getByRole('link', { name: 'React Flow attribution' })
+    .evaluate((link) => {
+      const event = new MouseEvent('click', {
+        bubbles: true,
+        cancelable: true,
+        detail: 1,
+      });
+      link.dispatchEvent(event);
+      return event.defaultPrevented;
+    });
+
+  expect(prevented).toBe(false);
+  await expect(page.getByTestId('curve-draft')).toHaveCount(0);
+});
+
 test('the boundary curve tool adds waypoints and double click finishes it', async ({
   page,
 }) => {
@@ -299,6 +338,27 @@ test('opening another model clears a boundary curve draft', async ({
     .getByTestId('file-input')
     .setInputFiles(vendored('test-data/saerskriven/ecluse.yaml'));
   await canvasSettled(page);
+
+  await expect(page.getByTestId('curve-draft')).toHaveCount(0);
+});
+
+test('a boundary curve draft stays discarded across undo and redo', async ({
+  page,
+}) => {
+  await openPlaceholder(page);
+  await placeByClick(page, 'Actor', /^New actor, actor/u);
+  await expect(
+    page.getByRole('textbox', { name: 'Name of New actor' }),
+  ).toBeFocused();
+  await page.keyboard.press('Enter');
+  const at = await emptyCanvasPoint(page);
+  await toolButton(page, 'Trust boundary curve').click();
+  await page.mouse.click(at.x, at.y);
+  await expect(page.getByTestId('curve-draft')).toBeVisible();
+
+  await runFromMenu(page, 'Undo');
+  await expect(page.getByTestId('curve-draft')).toHaveCount(0);
+  await runFromMenu(page, 'Redo');
 
   await expect(page.getByTestId('curve-draft')).toHaveCount(0);
 });
