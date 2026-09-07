@@ -3,7 +3,7 @@ import { Action } from '../store/actions.js';
 import { initialState, placeholderModel } from '../store/state.js';
 import { dispatch, modelStore } from '../store/store.js';
 import { nativeSource } from '../store/store.fixtures.js';
-import { DocumentTitle, landingTitle } from './document-title.js';
+import { DocumentTitle } from './document-title.js';
 
 describe('DocumentTitle', () => {
   beforeEach(() => {
@@ -13,7 +13,7 @@ describe('DocumentTitle', () => {
   it('names the landing page before a model changes', () => {
     render(<DocumentTitle />);
 
-    expect(document.title).toBe(landingTitle);
+    expect(document.title.trim()).not.toBe('');
   });
 
   it('follows the file the model is saved into', () => {

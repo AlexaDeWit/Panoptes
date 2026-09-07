@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { showingPlaceholder, windowTitle } from '../store/selectors.js';
 import { useModelStore } from '../store/store.js';
 
-export const landingTitle = 'Saerskriven: Open-source threat modelling studio';
+const landingTitle = 'Saerskriven: Open-source threat modelling studio';
 
 /** Names the tab after the landing page or the model on screen. */
 export function DocumentTitle() {
