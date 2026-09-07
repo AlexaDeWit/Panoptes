@@ -213,6 +213,12 @@ test('the studio carries no violation with the menu open', async ({ page }) => {
   await expect(menuItem(page, 'Discard the changes and close')).toBeVisible();
 
   await audit(page, 'showing the menu asking before it closes a file');
+
+  await page.keyboard.press('Escape');
+  await page.keyboard.press(registeredChords.open[0]);
+  await expect(menuItem(page, 'Discard the changes and open')).toBeVisible();
+
+  await audit(page, 'showing the menu asking before it opens a file');
 });
 
 test('the studio carries no violation with a name open in a field', async ({

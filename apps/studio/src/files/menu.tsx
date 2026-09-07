@@ -127,6 +127,53 @@ function RegisteredMenuCommand({
   );
 }
 
+type UnsavedChangesCommandProps = {
+  readonly asking: boolean;
+  readonly cancel: () => void;
+  readonly command: CommandId;
+  readonly dirty: boolean;
+  readonly proceed: () => void;
+  readonly question: string;
+};
+
+function UnsavedChangesCommand({
+  asking,
+  cancel,
+  command,
+  dirty,
+  proceed,
+  question,
+}: UnsavedChangesCommandProps) {
+  const entry = commandById(command);
+  const surface = useCommandSurface();
+
+  return (
+    <>
+      <MenuItem
+        chord={
+          asking ? undefined : spellShortcuts(entry.shortcuts, hostPlatform)
+        }
+        keepOpen={dirty && !asking}
+        keyShortcuts={
+          asking
+            ? undefined
+            : keyShortcutsAttribute(entry.shortcuts, hostPlatform)
+        }
+        onChoose={
+          asking
+            ? proceed
+            : () => {
+                runCommand(entry, surface);
+              }
+        }
+      >
+        {asking ? question : entry.label}
+      </MenuItem>
+      {asking && <MenuItem onChoose={cancel}>Keep the file open</MenuItem>}
+    </>
+  );
+}
+
 function SourceLink() {
   return (
     <DropdownMenu.Item asChild className={styles.item}>
@@ -167,28 +214,32 @@ export function StudioMenu({
   const selectedColourMode = colourMode ?? 'system';
 
   useCloseGuard(guarded);
+  useAsking(session.opening, dirty, setOpen, session.cancelOpen);
   useAsking(session.closing, dirty, setOpen, session.cancelClose);
   useChoosing(session.choosing, setOpen);
 
   const {
     asksFormat,
     attachPicker,
+    cancelOpen,
     cancelChoice,
     cancelClose,
     chooseFormat,
     choosing,
     closing,
     commands,
+    confirmOpen,
     confirmClose,
     dismissReport,
     dismissExportNotice,
     exportNotice,
+    opening,
     receive,
     report,
   } = session;
-  const closeCommand = commandById('close-file');
   const saveAsCommand = commandById('save-as');
-  const asking = closing && dirty;
+  const askingOpen = opening && dirty;
+  const askingClose = closing && dirty;
   const format = formatOf(file);
 
   return (
@@ -198,6 +249,7 @@ export function StudioMenu({
         onOpenChange={(next) => {
           setOpen(next);
           if (!next) {
+            cancelOpen();
             cancelClose();
             cancelChoice();
           }
@@ -220,7 +272,14 @@ export function StudioMenu({
             <DropdownMenu.Label className={styles.heading}>
               File
             </DropdownMenu.Label>
-            <MenuCommand command="open" />
+            <UnsavedChangesCommand
+              asking={askingOpen}
+              cancel={cancelOpen}
+              command="open"
+              dirty={dirty}
+              proceed={confirmOpen}
+              question="Discard the changes and open"
+            />
             <MenuCommand command="save" />
             <MenuItem
               chord={
@@ -262,31 +321,14 @@ export function StudioMenu({
                   </MenuItem>
                 ))}
             <ExportMenu />
-            <MenuItem
-              chord={
-                asking
-                  ? undefined
-                  : spellShortcuts(closeCommand.shortcuts, hostPlatform)
-              }
-              keepOpen={dirty && !asking}
-              keyShortcuts={
-                asking
-                  ? undefined
-                  : keyShortcutsAttribute(closeCommand.shortcuts, hostPlatform)
-              }
-              onChoose={
-                asking
-                  ? confirmClose
-                  : () => {
-                      commands.close();
-                    }
-              }
-            >
-              {asking ? 'Discard the changes and close' : closeCommand.label}
-            </MenuItem>
-            {asking && (
-              <MenuItem onChoose={cancelClose}>Keep the file open</MenuItem>
-            )}
+            <UnsavedChangesCommand
+              asking={askingClose}
+              cancel={cancelClose}
+              command="close-file"
+              dirty={dirty}
+              proceed={confirmClose}
+              question="Discard the changes and close"
+            />
           </DropdownMenu.Group>
           <DropdownMenu.Separator className={styles.rule} />
           <DropdownMenu.Sub>

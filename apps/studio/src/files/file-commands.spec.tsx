@@ -74,10 +74,6 @@ beforeEach(() => {
     },
   );
   modelStore.setState(initialState(sampleModel), true);
-  vi.stubGlobal(
-    'confirm',
-    vi.fn(() => true),
-  );
 });
 
 afterEach(() => {
@@ -139,6 +135,9 @@ describe('useFileSession', () => {
               });
             } else {
               result.current.commands[older]();
+              if (older === 'open') {
+                result.current.confirmOpen();
+              }
             }
           });
           picker.mockResolvedValueOnce([
@@ -159,6 +158,7 @@ describe('useFileSession', () => {
               });
             } else {
               result.current.commands.open();
+              result.current.confirmOpen();
             }
           });
           await waitFor(() => {
@@ -323,6 +323,10 @@ describe('useFileSession', () => {
             break;
           }
           case 'picker refusal':
+            picker.mockRejectedValueOnce(new Error('NotAllowedError'));
+            result.current.commands.open();
+            result.current.confirmOpen();
+            break;
           case 'save finishes first': {
             picker.mockRejectedValueOnce(new Error('NotAllowedError'));
             result.current.commands.open();
@@ -333,11 +337,13 @@ describe('useFileSession', () => {
               new DOMException('Dismissed', 'AbortError'),
             );
             result.current.commands.open();
+            result.current.confirmOpen();
             break;
           }
           case 'successful open':
           case 'stale write refusal': {
             result.current.commands.open();
+            result.current.confirmOpen();
           }
         }
       });
@@ -698,6 +704,7 @@ describe('useFileSession', () => {
         await act(async () => {
           if (path === 'picker') {
             result.current.commands.open();
+            result.current.confirmOpen();
           } else {
             await result.current.receive(file);
           }
@@ -832,11 +839,7 @@ describe('useFileSession', () => {
     expect(modelStore.getState().present).toBe(placeholderModel);
   });
 
-  it('leaves the model alone when the person refuses to lose work in no file', async () => {
-    vi.stubGlobal(
-      'confirm',
-      vi.fn(() => false),
-    );
+  it('holds an open until the question over unsaved work is answered', async () => {
     const result = session(
       specBridge({ offers: chosenFile('model.yaml', nativeText) }),
     );
@@ -847,9 +850,20 @@ describe('useFileSession', () => {
       result.current.commands.open();
     });
 
-    await waitFor(() => {
-      expect(globalThis.confirm).toHaveBeenCalledTimes(1);
-    });
+    expect(result.current.opening).toBe(true);
     expect(modelStore.getState().present).toBe(before);
+
+    await act(async () => {
+      result.current.confirmOpen();
+      await Promise.resolve();
+    });
+
+    await waitFor(() => {
+      expect(modelStore.getState().file).toMatchObject({
+        _tag: 'Opened',
+        name: 'model.yaml',
+      });
+    });
+    expect(result.current.opening).toBe(false);
   });
 });

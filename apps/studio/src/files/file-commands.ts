@@ -48,6 +48,7 @@ type PlannedSave = {
 export type FileSession = {
   readonly commands: FileCommands;
   readonly report: LossReport | undefined;
+  readonly opening: boolean;
   readonly closing: boolean;
   readonly choosing: boolean;
   readonly asksFormat: boolean;
@@ -56,6 +57,8 @@ export type FileSession = {
   readonly dismissReport: () => void;
   readonly dismissExportNotice: () => void;
   readonly receive: (chosen: ChosenFile | undefined) => Promise<void>;
+  readonly confirmOpen: () => void;
+  readonly cancelOpen: () => void;
   readonly confirmClose: () => void;
   readonly cancelClose: () => void;
   readonly chooseFormat: (format: FormatName) => void;
@@ -68,6 +71,7 @@ export function useFileSession(
   pdf: PdfExport = browserPdfExport,
 ): FileSession {
   const [report, setReport] = useState<LossReport | undefined>(undefined);
+  const [opening, setOpening] = useState(false);
   const [closing, setClosing] = useState(false);
   const [choosing, setChoosing] = useState(false);
   const picker = useRef<HTMLInputElement | null>(null);
@@ -96,6 +100,18 @@ export function useFileSession(
       setReport(openReport(action.divergences));
     }
   }, []);
+
+  const openFile = useCallback(async (): Promise<void> => {
+    setOpening(false);
+    const result = await bridge.open(readLimits.maxTextBytes);
+    if (OpenOutcome.$is('NoPicker')(result.outcome)) {
+      if (result.settle(true)) {
+        picker.current?.click();
+      }
+      return;
+    }
+    applyOpen(result);
+  }, [applyOpen, bridge]);
 
   const land = useCallback(
     (result: FileResult<SaveOutcome>, planned: PlannedSave): void => {
@@ -132,20 +148,6 @@ export function useFileSession(
   );
 
   const commands = useMemo<FileCommands>(() => {
-    const pick = async (): Promise<void> => {
-      if (!mayDiscard(isDirty(modelStore.getState()))) {
-        return;
-      }
-      const result = await bridge.open(readLimits.maxTextBytes);
-      if (OpenOutcome.$is('NoPicker')(result.outcome)) {
-        if (result.settle(true)) {
-          picker.current?.click();
-        }
-        return;
-      }
-      applyOpen(result);
-    };
-
     const store = async (): Promise<void> => {
       setReport(undefined);
       const state = modelStore.getState();
@@ -177,7 +179,11 @@ export function useFileSession(
 
     return {
       open: () => {
-        void pick();
+        if (isDirty(modelStore.getState())) {
+          setOpening(true);
+          return;
+        }
+        void openFile();
       },
       save: () => {
         void store();
@@ -209,7 +215,7 @@ export function useFileSession(
         closeFile();
       },
     };
-  }, [applyOpen, bridge, closeFile, exportCommands, land]);
+  }, [bridge, closeFile, exportCommands, land, openFile]);
 
   const receive = useCallback(
     async (chosen: ChosenFile | undefined): Promise<void> => {
@@ -224,6 +230,10 @@ export function useFileSession(
     setReport(undefined);
   }, []);
 
+  const cancelOpen = useCallback((): void => {
+    setOpening(false);
+  }, []);
+
   const cancelClose = useCallback((): void => {
     setClosing(false);
   }, []);
@@ -236,6 +246,7 @@ export function useFileSession(
     () => ({
       commands,
       report,
+      opening,
       closing,
       choosing,
       asksFormat: !bridge.asksWhere(),
@@ -244,6 +255,10 @@ export function useFileSession(
       dismissReport,
       dismissExportNotice: exporter.dismissNotice,
       receive,
+      confirmOpen: () => {
+        void openFile();
+      },
+      cancelOpen,
       confirmClose: closeFile,
       cancelClose,
       chooseFormat,
@@ -254,6 +269,7 @@ export function useFileSession(
       bridge,
       cancelChoice,
       cancelClose,
+      cancelOpen,
       chooseFormat,
       choosing,
       closeFile,
@@ -261,6 +277,8 @@ export function useFileSession(
       commands,
       dismissReport,
       exporter,
+      opening,
+      openFile,
       receive,
       report,
     ],
@@ -273,13 +291,4 @@ function planSave(state: State, format: FormatName): PlannedSave {
     target,
     written: writeThrough(state.present, target.source),
   };
-}
-
-function mayDiscard(dirty: boolean): boolean {
-  return (
-    !dirty ||
-    globalThis.confirm(
-      'The model has changes that are not in a file. Open another file and lose them?',
-    )
-  );
 }
