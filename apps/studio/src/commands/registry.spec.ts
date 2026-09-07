@@ -109,6 +109,7 @@ describe('commandFor', () => {
     ['4', 'store-tool'],
     ['5', 'boundary-box-tool'],
     ['6', 'boundary-curve-tool'],
+    ['7', 'note-tool'],
   ] as const)('maps number %s to %s', (key, command) => {
     expect(
       commandFor(

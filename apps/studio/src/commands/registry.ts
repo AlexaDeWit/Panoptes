@@ -282,6 +282,13 @@ const table = {
     inTextFields: false,
     dispatch: activates('store'),
   },
+  'note-tool': {
+    id: 'note-tool',
+    label: 'Note',
+    shortcuts: [bare('n'), bare('7')],
+    inTextFields: false,
+    dispatch: activates('note'),
+  },
   'boundary-box-tool': {
     id: 'boundary-box-tool',
     label: 'Trust boundary',
@@ -336,6 +343,7 @@ export const toolCommands = {
   actor: 'actor-tool',
   process: 'process-tool',
   store: 'store-tool',
+  note: 'note-tool',
   'boundary-box': 'boundary-box-tool',
   'boundary-curve': 'boundary-curve-tool',
   hand: 'hand-tool',

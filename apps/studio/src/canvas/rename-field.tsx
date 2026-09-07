@@ -21,23 +21,35 @@ import {
   useEffect,
   useId,
   useRef,
-  useState,
+  type ChangeEvent,
   type CSSProperties,
+  type KeyboardEvent,
 } from 'react';
 import type { State } from '../store/state.js';
 import { useModelStore } from '../store/store.js';
-import { refusedText, type TextRefusal } from '../ui/text-field.js';
+import {
+  refusedText,
+  useTextDraft,
+  type RefusedDraft,
+  type TextRefusal,
+} from '../ui/text-field.js';
 import { announce, resetAnnouncements } from './announcements.js';
-import { commitRename, endRenaming, stopRenaming } from './edits.js';
+import {
+  commitNote,
+  commitRename,
+  endInlineEditing,
+  stopInlineEditing,
+} from './edits.js';
 import { edgeLabel, nodeLabel } from './names.js';
 import styles from './rename-field.module.css';
 
-type Draft = { readonly shown: string; readonly text: string };
-
-type NameFieldProps = {
+type InlineFieldProps = {
   readonly elementId: ElementId;
   readonly label: string;
-  readonly name: string;
+  readonly value: string;
+  readonly multiline?: boolean;
+  readonly onCommit: (elementId: ElementId, text: string) => void;
+  readonly refuse?: (label: string, text: string) => TextRefusal | undefined;
 };
 
 const emptyRefusal = 'A name cannot be empty.';
@@ -60,102 +72,147 @@ function placedAt(placement: TextPlacement): CSSProperties {
   };
 }
 
-function NameField({ elementId, label, name }: NameFieldProps) {
+function InlineField({
+  elementId,
+  label,
+  value,
+  multiline = false,
+  onCommit,
+  refuse = refusedText,
+}: InlineFieldProps) {
   const refusalId = useId();
-  const field = useRef<HTMLInputElement>(null);
+  const inputField = useRef<HTMLInputElement>(null);
+  const noteField = useRef<HTMLTextAreaElement>(null);
   const settled = useRef(false);
-  const [draft, setDraft] = useState<Draft>({ shown: name, text: name });
-  const [refusal, setRefusal] = useState<TextRefusal | undefined>(undefined);
-
-  if (draft.shown !== name) {
-    setDraft({ shown: name, text: name });
-    setRefusal(undefined);
-  }
+  const reportRefusal = useCallback((refused: RefusedDraft | undefined) => {
+    if (refused !== undefined) {
+      announce(refused.said);
+    }
+  }, []);
+  const draft = useTextDraft(
+    label,
+    value,
+    undefined,
+    (text) => {
+      onCommit(elementId, text);
+    },
+    reportRefusal,
+    refuse,
+  );
 
   useEffect(() => {
-    field.current?.focus();
-    field.current?.select();
-  }, []);
+    const field = multiline ? noteField.current : inputField.current;
+    field?.focus();
+    field?.select();
+  }, [multiline]);
 
   const cancel = (): void => {
     settled.current = true;
-    endRenaming(elementId);
+    endInlineEditing(elementId);
   };
 
   const commit = (handBack: boolean): void => {
-    const refused = refusedName(label, draft.text);
-    setRefusal(refused);
-    if (refused !== undefined) {
-      announce(refused.said);
+    if (!draft.commit()) {
       return;
     }
-    commitRename(elementId, draft.text);
     settled.current = true;
     if (handBack) {
-      endRenaming(elementId);
+      endInlineEditing(elementId);
     } else {
-      stopRenaming();
+      stopInlineEditing();
     }
+  };
+
+  const keyDown = (
+    event: KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>,
+  ): void => {
+    if (
+      event.key === 'Enter' &&
+      (!multiline || event.ctrlKey || event.metaKey)
+    ) {
+      event.preventDefault();
+      commit(true);
+    }
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      cancel();
+    }
+  };
+  const shared = {
+    'aria-describedby': draft.refusal === undefined ? undefined : refusalId,
+    'aria-invalid': draft.refusal !== undefined,
+    'aria-label': label,
+    className: `${styles.field}${multiline ? ` ${styles.note}` : ''}`,
+    style: { fontSize: `${String(canvasType.widgetLabel)}px` },
+    onBlur: () => {
+      if (!settled.current) {
+        commit(false);
+      }
+    },
+    onChange: (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+      resetAnnouncements();
+      draft.change(event.target.value);
+    },
+    onKeyDown: keyDown,
+    value: draft.text,
   };
 
   return (
     <>
-      <input
-        aria-describedby={refusal === undefined ? undefined : refusalId}
-        aria-invalid={refusal !== undefined}
-        aria-label={label}
-        className={styles.field}
-        style={{ fontSize: `${String(canvasType.widgetLabel)}px` }}
-        onBlur={() => {
-          if (!settled.current) {
-            commit(false);
-          }
-        }}
-        onChange={(event) => {
-          resetAnnouncements();
-          setDraft({ shown: name, text: event.target.value });
-        }}
-        onKeyDown={(event) => {
-          if (event.key === 'Enter') {
-            event.preventDefault();
-            commit(true);
-          }
-          if (event.key === 'Escape') {
-            event.preventDefault();
-            cancel();
-          }
-        }}
-        ref={field}
-        type="text"
-        value={draft.text}
-      />
-      {refusal !== undefined && (
+      {multiline ? (
+        <textarea {...shared} ref={noteField} />
+      ) : (
+        <input {...shared} ref={inputField} type="text" />
+      )}
+      {draft.refusal !== undefined && (
         <p className={styles.refusal} id={refusalId}>
-          {refusal.shown}
+          {draft.refusal.shown}
         </p>
       )}
     </>
   );
 }
 
-function RenamingNodeBody(props: NodeProps<CanvasFlowNode>) {
+function EditingNodeBody(props: NodeProps<CanvasFlowNode>) {
   const { node } = props.data;
-  const renaming = useModelStore(
-    useCallback((state: State) => state.renaming === node.id, [node.id]),
+  const editor = useModelStore(
+    useCallback(
+      (state: State) =>
+        state.inlineEditor?.elementId === node.id
+          ? state.inlineEditor
+          : undefined,
+      [node.id],
+    ),
   );
+  const editingName = editor?.kind === 'name' && node.kind !== 'text';
+  const editingNote = editor?.kind === 'note' && node.kind === 'text';
+  const editing = editingName || editingNote;
 
   return (
     <>
-      <CanvasNodeBody {...props} controlsVisible={!renaming} />
-      {renaming && (
+      <CanvasNodeBody {...props} controlsVisible={!editing} />
+      {editingName && (
         <div
           className={`${styles.overNode} nodrag nopan`}
           style={placedAt(nodeTextPlacement(node))}
         >
-          <NameField
+          <InlineField
             elementId={node.id}
             label={`Name of ${nodeLabel(node)}`}
-            name={node.name}
+            onCommit={commitRename}
+            refuse={refusedName}
+            value={node.name}
+          />
+        </div>
+      )}
+      {editingNote && (
+        <div className={`${styles.overNote} nodrag nopan`}>
+          <InlineField
+            elementId={node.id}
+            label="Note text"
+            multiline
+            onCommit={commitNote}
+            value={node.text}
           />
         </div>
       )}
@@ -163,25 +220,32 @@ function RenamingNodeBody(props: NodeProps<CanvasFlowNode>) {
   );
 }
 
-function RenamingEdgeBody(props: EdgeProps<CanvasFlowEdge>) {
+function EditingEdgeBody(props: EdgeProps<CanvasFlowEdge>) {
   const edge = props.data?.edge;
-  const renaming = useModelStore(
-    useCallback((state: State) => state.renaming === edge?.id, [edge?.id]),
+  const editing = useModelStore(
+    useCallback(
+      (state: State) =>
+        state.inlineEditor?.kind === 'name' &&
+        state.inlineEditor.elementId === edge?.id,
+      [edge?.id],
+    ),
   );
 
   return (
     <>
       <CanvasEdgeBody {...props} />
-      {renaming && edge !== undefined && (
+      {editing && edge !== undefined && (
         <EdgeLabelRenderer>
           <div
             className={`${styles.overFlow} nodrag nopan`}
             style={placedAt(edge.label.name)}
           >
-            <NameField
+            <InlineField
               elementId={edge.id}
               label={`Name of ${edgeLabel(edge)}`}
-              name={edge.name}
+              onCommit={commitRename}
+              refuse={refusedName}
+              value={edge.name}
             />
           </div>
         </EdgeLabelRenderer>
@@ -191,37 +255,21 @@ function RenamingEdgeBody(props: EdgeProps<CanvasFlowEdge>) {
 }
 
 /**
- * The node types the studio mounts: the canvas package's drawing of every
- * element kind, wrapped so it can carry a field over the name while the store
- * has that name open, and the anchor a flow's free end rides on, which draws
- * nothing and is renamed by nothing. The drawing itself is untouched; the
- * field is the studio's, placed where the glyph draws the name so the two
- * cannot sit apart.
- *
- * Each node subscribes to whether it is the one being renamed rather than to
- * which node is, so a rename re-renders that node alone, and its selector is
- * held across renders so a node React Flow redraws mid-drag reads the store no
- * more often than it did before there was a field to mount.
- *
- * What the field then does is [the canvas](README.md): Enter commits and
- * Escape leaves the model's name, both handing focus back to the element,
- * while leaving the field commits and leaves focus where the person put it.
+ * The canvas node types, with an inline name or Note editor when requested.
+ * Each node subscribes only to its own editor state.
  */
-export const renamingNodeTypes = {
-  actor: RenamingNodeBody,
-  process: RenamingNodeBody,
-  store: RenamingNodeBody,
-  text: RenamingNodeBody,
-  'boundary-box': RenamingNodeBody,
-  'boundary-curve': RenamingNodeBody,
+export const editingNodeTypes = {
+  actor: EditingNodeBody,
+  process: EditingNodeBody,
+  store: EditingNodeBody,
+  text: EditingNodeBody,
+  'boundary-box': EditingNodeBody,
+  'boundary-curve': EditingNodeBody,
   [freeEndNodeKind]: CanvasFreeEndBody,
-} as const satisfies Record<CanvasNodeKind, typeof RenamingNodeBody> &
+} as const satisfies Record<CanvasNodeKind, typeof EditingNodeBody> &
   Record<typeof freeEndNodeKind, typeof CanvasFreeEndBody>;
 
 /**
- * The edge type the studio mounts, which is a flow carrying the same field
- * over its label, at the placement the layout settled over the whole diagram
- * rather than at a midpoint of its own. It rides in React Flow's edge label
- * layer, an edge itself being drawn in an SVG that no field can sit in.
+ * The flow edge type, with its name editor in React Flow's label layer.
  */
-export const renamingEdgeTypes = { flow: RenamingEdgeBody } as const;
+export const editingEdgeTypes = { flow: EditingEdgeBody } as const;

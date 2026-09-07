@@ -1,21 +1,24 @@
 import type { ElementId } from '@saerskriven/model';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { currentAnnouncement, resetAnnouncements } from './announcements.js';
-import { canvasModel, readerElement } from './canvas.fixtures.js';
-import { DiagramCanvas } from './diagram-canvas.js';
+import { elementById } from '../store/selectors.js';
 import { initialState } from '../store/state.js';
 import { modelStore } from '../store/store.js';
-import { elementById } from '../store/selectors.js';
+import { currentAnnouncement, resetAnnouncements } from './announcements.js';
+import { canvasModel, noteElement, readerElement } from './canvas.fixtures.js';
+import { DiagramCanvas } from './diagram-canvas.js';
 
 const softHyphen = '­';
 
-const renaming = (elementId: ElementId): void => {
+const editing = (
+  elementId: ElementId,
+  kind: 'name' | 'note' = 'name',
+): void => {
   modelStore.setState(
     {
       ...initialState(canvasModel),
       selection: [elementId],
-      renaming: elementId,
+      inlineEditor: { kind, elementId },
     },
     true,
   );
@@ -28,19 +31,24 @@ const field = (name: string): HTMLElement =>
 const nameOf = (elementId: ElementId): string | undefined =>
   elementById(modelStore.getState(), elementId)?.name;
 
+const textOf = (elementId: ElementId): string | undefined => {
+  const element = elementById(modelStore.getState(), elementId);
+  return element?.kind === 'text' ? element.text : undefined;
+};
+
 const state = () => modelStore.getState();
 
-describe('the rename field', () => {
-  it('is labelled with what it renames', () => {
-    renaming(readerElement);
+describe('the inline editor', () => {
+  it('labels a name field with what it renames', () => {
+    editing(readerElement);
     render(<DiagramCanvas />);
 
     expect(field('Name of Reader')).toHaveProperty('value', 'Reader');
   });
 
-  it('commits on Enter as one undo step', async () => {
+  it('commits a name on Enter as one undo step', async () => {
     const user = userEvent.setup();
-    renaming(readerElement);
+    editing(readerElement);
     render(<DiagramCanvas />);
 
     await user.clear(field('Name of Reader'));
@@ -48,12 +56,12 @@ describe('the rename field', () => {
 
     expect(nameOf(readerElement)).toBe('Auditor');
     expect(state().past).toHaveLength(1);
-    expect(state().renaming).toBeUndefined();
+    expect(state().inlineEditor).toBeUndefined();
   });
 
-  it('commits when it is left, leaving focus where it went', async () => {
+  it('commits a name when it is left', async () => {
     const user = userEvent.setup();
-    renaming(readerElement);
+    editing(readerElement);
     render(<DiagramCanvas />);
 
     await user.clear(field('Name of Reader'));
@@ -68,7 +76,7 @@ describe('the rename field', () => {
 
   it('leaves the name alone on Escape', async () => {
     const user = userEvent.setup();
-    renaming(readerElement);
+    editing(readerElement);
     render(<DiagramCanvas />);
 
     await user.clear(field('Name of Reader'));
@@ -76,59 +84,67 @@ describe('the rename field', () => {
 
     expect(nameOf(readerElement)).toBe('Reader');
     expect(state().past).toEqual([]);
-    expect(state().renaming).toBeUndefined();
+    expect(state().inlineEditor).toBeUndefined();
   });
 
   it('dispatches nothing for a name the model already holds', async () => {
     const user = userEvent.setup();
-    renaming(readerElement);
+    editing(readerElement);
     render(<DiagramCanvas />);
 
     await user.type(field('Name of Reader'), '{Enter}');
 
     expect(state().present).toBe(canvasModel);
     expect(state().past).toEqual([]);
-    expect(state().renaming).toBeUndefined();
+    expect(state().inlineEditor).toBeUndefined();
   });
 
-  it('keeps a refused character on screen and says which one stopped it', async () => {
+  it('keeps a refused character on screen and announces its position', async () => {
     const user = userEvent.setup();
-    renaming(readerElement);
+    editing(readerElement);
     render(<DiagramCanvas />);
 
     await user.clear(field('Name of Reader'));
     await user.type(field('Name of Reader'), `Soft${softHyphen}hyphen{Enter}`);
 
     expect(nameOf(readerElement)).toBe('Reader');
-    expect(state().renaming).toBe(readerElement);
+    expect(state().inlineEditor).toEqual({
+      kind: 'name',
+      elementId: readerElement,
+    });
     expect(field('Name of Reader')).toHaveProperty('value', 'Soft­hyphen');
     expect(currentAnnouncement().message).toContain('Reader');
     expect(currentAnnouncement().message).toContain('5');
   });
 
-  it('refuses a name of whitespace, which draws as no name at all', async () => {
+  it.each(['   ', ''])('refuses an empty name', async (name) => {
     const user = userEvent.setup();
-    renaming(readerElement);
+    editing(readerElement);
     render(<DiagramCanvas />);
 
     await user.clear(field('Name of Reader'));
-    await user.type(field('Name of Reader'), '   {Enter}');
+    await user.type(field('Name of Reader'), `${name}{Enter}`);
 
     expect(nameOf(readerElement)).toBe('Reader');
-    expect(state().renaming).toBe(readerElement);
+    expect(state().inlineEditor).toEqual({
+      kind: 'name',
+      elementId: readerElement,
+    });
     expect(currentAnnouncement().message.trim()).not.toBe('');
   });
 
-  it('refuses an empty name the same way', async () => {
+  it('commits multiline note text on blur as one undo step', async () => {
     const user = userEvent.setup();
-    renaming(readerElement);
+    editing(noteElement, 'note');
     render(<DiagramCanvas />);
+    const note = field('Note text');
 
-    await user.clear(field('Name of Reader'));
-    await user.type(field('Name of Reader'), '{Enter}');
+    await user.clear(note);
+    await user.type(note, 'First line{Enter}Second line');
+    await user.tab();
 
-    expect(nameOf(readerElement)).toBe('Reader');
-    expect(state().renaming).toBe(readerElement);
-    expect(currentAnnouncement().message.trim()).not.toBe('');
+    expect(textOf(noteElement)).toBe('First line\nSecond line');
+    expect(state().past).toHaveLength(1);
+    expect(state().inlineEditor).toBeUndefined();
   });
 });

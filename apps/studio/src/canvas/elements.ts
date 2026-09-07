@@ -12,13 +12,14 @@ import {
   type Size,
 } from '@saerskriven/model';
 
-/** The five element shapes that the toolbox places. */
+/** The element tools in the toolbox. */
 export const elementTools = [
   'actor',
   'process',
   'store',
   'boundary-box',
   'boundary-curve',
+  'note',
 ] as const;
 
 /** One kind of element the toolbox places. */
@@ -29,6 +30,7 @@ export const placeholderNames = {
   actor: 'New actor',
   process: 'New process',
   store: 'New store',
+  note: 'Note',
   'boundary-box': 'New trust boundary',
   'boundary-curve': 'New trust boundary curve',
 } as const satisfies Record<ElementTool, string>;
@@ -48,6 +50,7 @@ const nominalSizes = {
   actor: { width: 120, height: 60 },
   process: { width: 120, height: 60 },
   store: { width: 120, height: 60 },
+  note: { width: 200, height: 80 },
   'boundary-box': { width: 240, height: 160 },
   'boundary-curve': { width: 240, height: 80 },
 } as const satisfies Record<ElementTool, Size>;
@@ -86,6 +89,12 @@ export function draggedPlacement(
 ): { readonly position: Point; readonly size: Size } {
   const width = Math.max(Math.abs(to.x - from.x), 1);
   const height = Math.max(Math.abs(to.y - from.y), 1);
+  if (kind === 'note') {
+    return {
+      position: { x: Math.min(from.x, to.x), y: Math.min(from.y, to.y) },
+      size: { width, height },
+    };
+  }
   if (kind === 'process') {
     const side = Math.min(width, height);
     return insideStroke(kind, {
@@ -179,7 +188,27 @@ export function freshElement(
       shape: { kind: 'curve', waypoints: arch(position, size) },
     };
   }
+  if (kind === 'note') {
+    return { ...named, kind: 'text', text: 'New note', position, size };
+  }
   return { ...named, kind, position, size };
+}
+
+/** Moves and sizes a box placement without changing its content or id. */
+export function withPlacement(
+  element: Element,
+  position: Point,
+  size: Size,
+): Element {
+  if (element.kind === 'flow') {
+    return element;
+  }
+  if (element.kind === 'trust-boundary') {
+    return element.shape.kind === 'box'
+      ? { ...element, shape: { ...element.shape, position, size } }
+      : element;
+  }
+  return { ...element, position, size };
 }
 
 /** A boundary curve through the waypoints a person committed. */

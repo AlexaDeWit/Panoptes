@@ -5,6 +5,7 @@ import { validModelFixture } from './fixtures.js';
 import { OperationFailure } from './operation-failures.js';
 import {
   addElement,
+  editNote,
   moveElement,
   removeElement,
   renameElement,
@@ -73,8 +74,22 @@ const flowInput = {
   waypoints: [],
 };
 
+const noteInput = {
+  kind: 'text',
+  id: 'element-note',
+  name: 'Note',
+  description: '',
+  outOfScope: false,
+  reasonOutOfScope: '',
+  text: 'Draft note',
+  position: { x: 600, y: 440 },
+  size: { width: 200, height: 80 },
+};
+
 const cache = elementSchema.parse(storeInput);
 const writeFlow = elementSchema.parse(flowInput);
+const note = elementSchema.parse(noteInput);
+const withNote = modelOf(addElement(base, mainDiagram, note));
 
 describe('addElement', () => {
   it('adds a node to the named diagram', () => {
@@ -424,15 +439,53 @@ describe('renameElement', () => {
   });
 });
 
+describe('editNote', () => {
+  it('changes multiline note text, including an empty note', () => {
+    const edited = modelOf(
+      editNote(withNote, elementId('element-note'), 'First\nSecond'),
+    );
+    const cleared = modelOf(editNote(edited, elementId('element-note'), ''));
+    const element = elementIn(cleared, 'element-note');
+
+    expect(element.kind === 'text' ? element.text : undefined).toBe('');
+  });
+
+  it('refuses an element that is not a note', () => {
+    expect(
+      errorOf(editNote(base, elementId('element-api'), 'Not a note')),
+    ).toEqual(
+      OperationFailure.NotTextElement({
+        elementId: elementId('element-api'),
+      }),
+    );
+  });
+
+  it('refuses a character the parse boundary refuses', () => {
+    expect(
+      errorOf(
+        editNote(withNote, elementId('element-note'), 'Soft\u00adhyphen'),
+      ),
+    ).toEqual(
+      OperationFailure.RefusedCharacter({
+        elementId: elementId('element-note'),
+        at: 4,
+      }),
+    );
+  });
+});
+
 describe('operation purity', () => {
   it('leaves the input model untouched', () => {
     const pristine = structuredClone(base);
+    const notePristine = structuredClone(withNote);
     addElement(base, mainDiagram, cache);
     removeElement(base, elementId('element-customer'));
     moveElement(base, elementId('element-api'), { x: 1, y: 1 });
     resizeElement(base, elementId('element-api'), { width: 5, height: 5 });
     renameElement(base, elementId('element-api'), 'Renamed');
+    editNote(withNote, elementId('element-note'), 'Edited');
     expect(base).toEqual(pristine);
+    expect(withNote).toEqual(notePristine);
   });
 });
 
@@ -455,6 +508,7 @@ describe('operation outputs re-parse through parseModel', () => {
       'renameElement',
       renameElement(base, elementId('element-api'), 'Orders API'),
     ],
+    ['editNote', editNote(withNote, elementId('element-note'), 'Edited')],
   ];
 
   for (const [operation, result] of outputs) {

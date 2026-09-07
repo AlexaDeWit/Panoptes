@@ -34,7 +34,7 @@ and no immutable snapshot to push onto a stack.
 - `actions.ts` is the `Action` union, an Effect `Data.taggedEnum`. Model edits
   carry one operation and its arguments. `MoveElements` and `RemoveElements`
   fold the matching operation over one ID array before history records the
-  result. The other tags cover history, selection, renaming, files and
+  result. The other tags cover history, selection, inline editing, files and
   failures. `Saved` names a file as `Opened` does, because a first
   save is a save-as, and folding both into `file` keeps "this model lives in
   this file" one fact. `Closed` is the third: the studio goes back to the
@@ -54,17 +54,13 @@ and no immutable snapshot to push onto a stack.
   bookkeeping. `windowTitle` is what the browser tab is named: the model's
   name as the file session's `nameOf` gives it, ahead of the product name, so
   the tab and the menu cannot disagree on what the model is called.
-  `showingPlaceholder` is whether the studio is still on the model it opened
-  with and nothing has happened to it, which is what the canvas hangs its
-  hint on
-  ([the canvas](../canvas/README.md)).
+  `showingPlaceholder` identifies that opening state for the document title.
 
-Selection, the name a field is open on, and the file lifecycle stay out of the
-undo stacks. `selection` is a unique, ordered array of element IDs. A removal
-drops every removed ID from it and closes a matching name field. `renaming` is view state of the
-canvas the way the panel's expanded threat is the panel's, and it is in the
-store rather than in a component because a command reaches it from the
-keyboard with nothing of the canvas mounted above it
+Selection, the inline editor, and the file lifecycle stay out of the undo
+stacks. `selection` is a unique, ordered array of element IDs. A removal drops
+every removed ID from it and closes a matching editor. `inlineEditor` names
+the element and whether the field edits its name or its Note text. It is in
+the store because a command reaches it from the keyboard
 ([the canvas](../canvas/README.md)). Being total, the reducer cannot
 refuse `Opened` or `Closed` over unsaved work, so the guards on those, and the
 one on closing the tab, belong in the view ([the file
