@@ -1,10 +1,9 @@
 /* React Flow owns the canvas container, viewport, handles, and controls. */
 @import '@xyflow/react/dist/style.css';
 
-/* DesignTokens injects the `--pn-*` custom properties at the app root. */
 body {
   margin: 0;
-  background: var(--pn-colour-surface);
+  background: var(--pn-colour-canvas);
   color: var(--pn-colour-text);
   font-family: var(--pn-font-family);
   font-size: var(--pn-font-size);
@@ -17,28 +16,4 @@ body,
 #root {
   width: 100%;
   height: 100%;
-}
-
-.about {
-  max-width: 48rem;
-  margin: 0 auto;
-  padding: 0 var(--pn-space-4) var(--pn-space-4);
-}
-
-.about h2 {
-  margin-block: 0 var(--pn-space-3);
-}
-
-.about p {
-  margin-block: var(--pn-space-2);
-}
-
-.about-links {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--pn-space-4);
-}
-
-.about-links a {
-  color: var(--pn-colour-text);
 }

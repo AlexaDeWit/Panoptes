@@ -259,8 +259,8 @@ sets the width that the threat panel and canvas reserve for the panel
 SVG has no document around it to hold a `:root` and neither has the PDF that
 embeds those bytes. `tokenStylesheet` is the other projection of the same
 table, a `:root` block of the `--pn-*` custom properties the studio's CSS
-modules read, which the studio injects once at its own root
-(`apps/studio/src/theme.tsx`), followed by a
+modules read. The studio imports it through `@saerskriven/canvas/tokens` and
+writes it into the initial document head, followed by a
 `@media (prefers-color-scheme: dark)` block overriding every one of them from
 the dark table. Both blocks come out of one function over a palette, so a
 property cannot reach one table and miss the other, and a role added to

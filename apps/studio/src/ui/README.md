@@ -12,11 +12,13 @@ stylesheet.
 
 The values are the canvas package's
 ([the visual system](../../../../packages/canvas/README.md#the-visual-system)),
-projected as custom properties and injected once at the app root by
-[`../theme.tsx`](../theme.tsx), so the chrome and the diagram inside it are
-coloured from one table. A colour written into a stylesheet here instead is a
-failing spec, `../theme.spec.tsx`, which walks the production files of this app
-and of the canvas package for one.
+projected as custom properties into the document head by
+[`../../initial-page.mts`](../../initial-page.mts). The browser receives that
+sheet before the app script, so the loading indicator and the diagram use the
+same canvas ground. [`../theme.tsx`](../theme.tsx) applies an explicit mode to
+the document root. A colour written into another stylesheet is a failing
+spec, `../theme.spec.tsx`, which walks the production files of this app and of
+the canvas package for one.
 
 Every colour token is declared twice, the second time under
 `prefers-color-scheme: dark` from the dark table. That is the whole of dark

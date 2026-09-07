@@ -1,8 +1,7 @@
 import { themedCanvasStylesheet } from '@saerskriven/canvas';
-import { render } from '@testing-library/react';
 import { readdirSync, readFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
-import { DesignTokens } from './theme.js';
+import { initialPageStylesheet } from '../initial-page.mjs';
 
 const repositoryRoot = join(import.meta.dirname, '../../..');
 
@@ -38,11 +37,6 @@ const sources = trees
 const literalColour =
   /#[0-9a-fA-F]{3,8}\b|\b(rgba?|hsla?|hwb|lab|lch|oklab|oklch|color)\(/u;
 
-const stylesheet = (): string => {
-  const { container } = render(<DesignTokens />);
-  return container.querySelector('style')?.textContent ?? '';
-};
-
 const referenced = (text: string): string[] =>
   (text.match(/var\(--pn-[\w-]+/gu) ?? []).map((token) => token.slice(4));
 
@@ -72,9 +66,9 @@ const darkScheme = '@media (prefers-color-scheme: dark)';
 const colourDeclarations = (block: string): Set<string> =>
   new Set(block.match(/--pn-colour-[\w-]+(?=:)/gu) ?? []);
 
-describe('DesignTokens', () => {
+describe('the document theme', () => {
   it('declares every custom property the studio reads, the injected canvas sheet among them', () => {
-    const declared = stylesheet();
+    const declared = initialPageStylesheet;
     const missing = [...readProperties].filter(
       (property) => !declared.includes(`${property}:`),
     );
@@ -82,13 +76,13 @@ describe('DesignTokens', () => {
   });
 
   it('declares them on the document root, so any module reads them', () => {
-    expect(stylesheet().startsWith(':root {')).toBe(true);
+    expect(initialPageStylesheet.startsWith(':root {')).toBe(true);
   });
 
   it('overrides them under the system dark preference, which is the whole of the mode switch', () => {
-    expect(stylesheet()).toContain(darkScheme);
+    expect(initialPageStylesheet).toContain(darkScheme);
 
-    const [root, dark] = stylesheet().split(darkScheme);
+    const [root, dark] = initialPageStylesheet.split(darkScheme);
     expect(colourDeclarations(dark)).toEqual(colourDeclarations(root));
   });
 });
