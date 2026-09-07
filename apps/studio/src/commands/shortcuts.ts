@@ -20,6 +20,7 @@ export const chordKeys = [
   'o',
   'p',
   's',
+  't',
   'v',
   'x',
   'y',

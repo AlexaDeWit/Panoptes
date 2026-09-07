@@ -11,6 +11,7 @@ import {
   resetAnnouncements,
 } from '../canvas/announcements.js';
 import { currentTool, resetTools, tools } from '../canvas/tools.js';
+import { panelFocusHandler } from '../panel/panel-focus.js';
 import { recordingSurface } from './commands.fixtures.js';
 import {
   commandById,
@@ -124,6 +125,21 @@ describe('commandFor', () => {
       )?.id,
     ).toBe(command);
   });
+
+  it('maps T to the threat panel', () => {
+    expect(
+      commandFor(
+        {
+          key: 't',
+          ctrlKey: false,
+          metaKey: false,
+          shiftKey: false,
+          altKey: false,
+        },
+        'other',
+      )?.id,
+    ).toBe('focus-threats');
+  });
 });
 
 describe('runCommand', () => {
@@ -195,6 +211,19 @@ describe('runCommand', () => {
     );
     expect(modelStore.getState().past).toEqual([]);
     expect(recording.asked).toEqual([]);
+  });
+
+  it('asks the mounted threat panel to take focus', () => {
+    let asked = false;
+    const release = panelFocusHandler(() => {
+      asked = true;
+      return true;
+    });
+
+    runCommand(commandById('focus-threats'), recordingSurface().surface);
+
+    expect(asked).toBe(true);
+    release();
   });
 
   it('announces only completed history moves', () => {

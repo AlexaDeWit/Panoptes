@@ -21,6 +21,7 @@ export const registeredChords = {
   redo: ['ControlOrMeta+Shift+z', 'ControlOrMeta+y'],
   delete: ['Delete', 'Backspace'],
   rename: ['F2'],
+  'focus-threats': ['t'],
   'select-all': ['ControlOrMeta+a'],
   'fit-to-view': ['ControlOrMeta+0'],
   'zoom-in': ['ControlOrMeta+='],

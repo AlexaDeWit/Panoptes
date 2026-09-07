@@ -148,14 +148,14 @@ the region below, which speaks only for edits that landed.
   other, and a threat that named it keeps its record and loses the link. The
   announcement counts the full cascade before the dispatch and reports it
   once. Focus lands on the canvas after the focused element goes.
-- **Rename.** Double-clicking an element or a flow, or pressing F2 with one
-  selected, opens a field over the name where the diagram draws it: over the
+- **Edit canvas text.** Double-clicking an element or flow, or pressing Enter
+  with one selected, opens a field where the diagram draws its text: over the
   glyph for an element and over the label for a flow, at the placement the
-  layout settled, so nothing has to be looked for. Enter commits and Escape
-  leaves the name as the model holds it, and focus goes back to the element
-  on both. Leaving the field for another control commits as well and leaves
-  focus where the click put it. The field is labelled "Name of" what it
-  renames, so a screen reader hears which element it is in.
+  layout settled, so nothing has to be looked for. F2 is an alias for names.
+  Enter commits a name and Escape leaves it as the model holds it. Focus goes
+  back to the element on both. Leaving the field for another control commits
+  as well and leaves focus where the click put it. The field is labelled
+  "Name of" what it renames, so a screen reader hears which element it is in.
   A commit is one `RenameElement` and so one undo step, and a name the model
   already holds dispatches nothing, on the panel's own commit rule ([the
   panel](../panel/README.md)). A placed element starts with "New
@@ -166,10 +166,10 @@ the region below, which speaks only for edits that landed.
   store](../store/README.md)). A name the model refuses is not committed at
   all: it stays in the field to be corrected, with the character named under
   it and the same sentence said in the region below, the way the panel refuses
-  a threat's field. Because a double-click renames, it no longer zooms.
-- **Edit a note.** Note placement opens a multiline field over the new note
-  and selects its placeholder text. Leaving the field or pressing Control or
-  Command with Enter commits one `EditNote`. Escape keeps the placeholder.
+  a threat's field. A Note uses the same gesture to open its multiline prose
+  field. Enter adds a line. Leaving the field or pressing Control or Command
+  with Enter commits one `EditNote`. Escape leaves its prior prose. Because a
+  double-click edits text, it no longer zooms.
 - **Resize.** A selected resizable element carries a line control on each side
   and a handle at each corner. A side changes one axis. A corner changes both.
   The opposite side stays fixed, including when the top or left control moves
@@ -216,15 +216,10 @@ drawn wider than the pan expects is not a state the two can reach.
 
 The threat panel is mounted here, inside the canvas container, which is what
 makes it an overlay on the diagram rather than a column taken off it ([the
-panel](../panel/README.md)). Two gestures cross the boundary between the two.
-Enter on the element the store has selected hands the panel the keyboard,
-which the canvas reads in the capture phase: React Flow answers Enter on a
-node itself, and by the time the press has bubbled the selection it reports
-has already moved, so a press read on the way up could not tell selecting an
-element from asking for the panel of one already selected. A press the panel
-does not take is left to React Flow. The other way, Escape in the panel puts
-focus back on the element, through `focusElement`, which is the same route an
-added element takes to focus.
+panel](../panel/README.md)). T runs the Focus threats command and lands on
+"Add a threat" for the one selected element. The command opens a panel that
+Escape closed. Escape in the panel puts focus back on the element through
+`focusElement`, which is the same route an added element takes to focus.
 
 ## What a gesture will do, said before it is made
 
@@ -320,10 +315,11 @@ and the weights above. Both are an outline or a border rather than a shadow,
 so forced-colours mode keeps them. Severity is legible without colour on the
 canvas itself: a badge carries its count over a letter for the severity.
 
-Moving by keyboard is React Flow's path: tab to an element, press Enter, then
-use an arrow key. An arrow moves one selection five model units. Shift moves it
-twenty. Each press is one undoable singular or group action. Shift+Enter adds
-or removes the focused element. React Flow announces moves in its live region.
+Moving by keyboard starts on React Flow's path: tab to an element and press
+Enter to select it. A second Enter edits its text. An arrow moves one selection
+five model units. Shift moves it twenty. Each press is one undoable singular or
+group action. Shift+Enter adds or removes the focused element. React Flow
+announces moves in its live region.
 
 Every edit has a keyboard path. Page commands have their chords in the command
 registry ([the commands](../commands/README.md)). Placing is selecting a tool by its button,
@@ -335,9 +331,10 @@ commits, which is why the source is the selection rather than a mode to enter
 and leave. Deleting is the Delete or Backspace key, from anywhere in the
 studio. The connector listbox exists only while that command is in progress,
 so the toolbox adds no dead stop to the tab path.
-Renaming is F2 on the selection, and the field it opens keeps every key a
-person types, Escape and Backspace among them: a chord fires inside a control
-that takes characters only where the registry exempts it ([the
+Editing text is Enter on one selected element. F2 remains the name-editing
+alias. T focuses the threat panel. A field keeps every key a person types,
+Escape and Backspace among them: a chord fires inside a control that takes
+characters only where the registry exempts it ([the
 commands](../commands/README.md)).
 Resizing starts on one of the named side or corner controls inside a selected
 element. An arrow key moves the matching edge five model units. Shift moves it

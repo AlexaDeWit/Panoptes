@@ -1,4 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
+import { registeredChords } from './chords.js';
 import {
   beforeCanvas,
   canvasSettled,
@@ -67,7 +68,7 @@ test('the panel opens on the element selected and goes when the selection does',
   await expect(threatPanel(page)).toHaveCount(0);
 });
 
-test('Enter hands the panel the keyboard, and the two Escapes give it back and clear the selection', async ({
+test('T hands the panel the keyboard, and the two Escapes give it back and clear the selection', async ({
   page,
 }) => {
   await openPlaceholder(page);
@@ -75,7 +76,7 @@ test('Enter hands the panel the keyboard, and the two Escapes give it back and c
   const add = threatPanel(page).getByRole('button', { name: 'Add a threat' });
   await expect(actor).toBeFocused();
 
-  await page.keyboard.press('Enter');
+  await page.keyboard.press(registeredChords['focus-threats'][0]);
   await expect(add).toBeFocused();
 
   await page.keyboard.press('Escape');

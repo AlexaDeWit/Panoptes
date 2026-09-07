@@ -30,7 +30,6 @@ import {
   type MouseEvent,
   type PointerEvent,
 } from 'react';
-import { focusThreatPanel } from '../panel/panel-focus.js';
 import { ThreatOverlay } from '../panel/threat-overlay.js';
 import { Action } from '../store/actions.js';
 import { keyboardOwner } from '../commands/binding.js';
@@ -42,7 +41,7 @@ import {
   betweenTwoElements,
   gestureSelection,
 } from './changes.js';
-import { beginRenaming, drawnElement, removeSelected } from './edits.js';
+import { beginEditingText, drawnElement, removeSelected } from './edits.js';
 import { currentLayout } from './layout.js';
 import {
   canvasEdgesById,
@@ -70,9 +69,13 @@ import styles from './diagram-canvas.module.css';
 
 const deleteKeys = new Set(['Delete', 'Backspace']);
 const exactLabelDelay = 50;
-// React Flow applies button lists only to mouse input. An empty list keeps
-// touch panning while a left mouse drag remains box selection.
-const touchPanOnly: number[] = [];
+const mouseButtonsForTouchPanOnly: number[] = [];
+const canvasA11y = {
+  'node.a11yDescription.keyboardDisabled':
+    'Press Enter or Space to select this item. If it is selected, press Enter to edit its text. Press Shift and Enter to change a group selection. Use arrow keys to move a selection. Holding Space also uses Hand. Press T to focus threats, Delete to remove the selection, or Escape to cancel.',
+  'edge.a11yDescription.default':
+    'Press Enter or Space to select this flow. If it is selected, press Enter to edit its name. Press Shift and Enter to change a group selection. Holding Space also uses Hand. Press T to focus threats, Delete to remove the selection, or Escape to cancel.',
+};
 
 type ScreenPoint = { readonly x: number; readonly y: number };
 
@@ -286,26 +289,24 @@ export function DiagramCanvas() {
       dispatch(Action.Select({ elementIds: nextSelection }));
     } else if (selection.length > 1) {
       dispatch(Action.Select({ elementIds: [element] }));
-    } else if (element !== selected || !focusThreatPanel()) {
+    } else if (element !== selected || !beginEditingText(element)) {
       return;
     }
     event.preventDefault();
     event.stopPropagation();
   };
 
-  const onRename = useCallback(
+  const onEditText = useCallback(
     (id: string): void => {
       const element = elements.get(id);
       if (element !== undefined) {
-        beginRenaming(element);
+        beginEditingText(element);
       }
     },
     [elements],
   );
 
-  // Selection can pan a node between two clicks. Retain the first click's
-  // element so the second click still renames it.
-  const clickedFirst = useRef<ElementId | undefined>(undefined);
+  const firstClickBeforeSelectionPan = useRef<ElementId | undefined>(undefined);
 
   const onCanvasClickCapture = (event: MouseEvent<HTMLDivElement>): void => {
     if (
@@ -318,14 +319,14 @@ export function DiagramCanvas() {
       return;
     }
     if (event.detail > 1) {
-      const element = clickedFirst.current;
+      const element = firstClickBeforeSelectionPan.current;
       if (element !== undefined) {
-        beginRenaming(element);
+        beginEditingText(element);
       }
       return;
     }
     const element = drawnElement(event.target, elements);
-    clickedFirst.current = element;
+    firstClickBeforeSelectionPan.current = element;
     if (!event.shiftKey && selection.length > 1 && element !== undefined) {
       dispatch(Action.Select({ elementIds: [element] }));
     }
@@ -333,9 +334,9 @@ export function DiagramCanvas() {
 
   const onEdgeDoubleClick = useCallback<EdgeMouseHandler<CanvasFlowEdge>>(
     (_, edge) => {
-      onRename(edge.id);
+      onEditText(edge.id);
     },
-    [onRename],
+    [onEditText],
   );
 
   return (
@@ -364,6 +365,7 @@ export function DiagramCanvas() {
       <style>{themedCanvasStylesheet}</style>
       <ReactFlow
         aria-label="Diagram"
+        ariaLabelConfig={canvasA11y}
         attributionPosition="bottom-left"
         autoPanOnSelection={false}
         connectionMode={ConnectionMode.Loose}
@@ -398,7 +400,7 @@ export function DiagramCanvas() {
           mode.active === 'hand'
             ? true
             : mode.active === 'select'
-              ? touchPanOnly
+              ? mouseButtonsForTouchPanOnly
               : false
         }
         panOnScroll

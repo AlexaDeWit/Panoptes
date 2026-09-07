@@ -6,6 +6,7 @@ import { initialState } from '../store/state.js';
 import { dispatch, modelStore } from '../store/store.js';
 import {
   canvasModel,
+  noteElement,
   readerElement,
   requestFlow,
   studioElement,
@@ -25,6 +26,9 @@ const elementCount = (): number =>
 
 const reader = (): HTMLElement =>
   screen.getByRole('group', { name: /^Reader, actor/u });
+
+const note = (): HTMLElement =>
+  screen.getByRole('group', { name: /^Note, text/u });
 
 const readerBox = () => {
   const node = currentLayout(modelStore.getState()).nodes.find(
@@ -137,14 +141,33 @@ describe('DiagramCanvas', () => {
     ).toBe(true);
   });
 
-  it('hands the panel the keyboard on Enter over the element already selected', () => {
+  it('opens the selected element name on Enter', () => {
     opened([readerElement]);
     render(<DiagramCanvas />);
 
     fireEvent.keyDown(reader(), { key: 'Enter' });
 
-    expect(document.activeElement).toBe(
-      screen.getByRole('button', { name: 'Add a threat' }),
+    expect(modelStore.getState().inlineEditor).toEqual({
+      kind: 'name',
+      elementId: readerElement,
+    });
+    expect(screen.getByRole('textbox', { name: 'Name of Reader' })).toBe(
+      document.activeElement,
+    );
+  });
+
+  it('opens the selected Note prose on Enter', () => {
+    opened([noteElement]);
+    render(<DiagramCanvas />);
+
+    fireEvent.keyDown(note(), { key: 'Enter' });
+
+    expect(modelStore.getState().inlineEditor).toEqual({
+      kind: 'note',
+      elementId: noteElement,
+    });
+    expect(screen.getByRole('textbox', { name: 'Note text' })).toBe(
+      document.activeElement,
     );
   });
 
@@ -276,6 +299,40 @@ describe('DiagramCanvas', () => {
       kind: 'name',
       elementId: readerElement,
     });
+  });
+
+  it('opens a Note prose field on the second click of a pair', () => {
+    render(<DiagramCanvas />);
+
+    fireEvent.click(note(), { detail: 1 });
+    fireEvent.click(note(), { detail: 2 });
+
+    expect(modelStore.getState().inlineEditor).toEqual({
+      kind: 'note',
+      elementId: noteElement,
+    });
+  });
+
+  it('describes the canvas keys React Flow exposes with each item', () => {
+    render(<DiagramCanvas />);
+
+    const nodeDescription = document.querySelector(
+      '[id^="react-flow__node-desc"]',
+    );
+    const flowDescription = document.querySelector(
+      '[id^="react-flow__edge-desc"]',
+    );
+
+    expect(nodeDescription?.textContent).toContain(
+      'press Enter to edit its text',
+    );
+    expect(nodeDescription?.textContent).toContain(
+      'Holding Space also uses Hand',
+    );
+    expect(nodeDescription?.textContent).toContain('Press T to focus threats');
+    expect(flowDescription?.textContent).toContain(
+      'press Enter to edit its name',
+    );
   });
 
   it('leaves a click on a canvas control out of the rename gesture', () => {

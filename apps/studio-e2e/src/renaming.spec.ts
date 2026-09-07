@@ -1,6 +1,7 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { registeredChords } from './chords.js';
 import {
+  canvasSurface,
   dragOnto,
   menuButton,
   nodeNamed,
@@ -52,9 +53,9 @@ test('a store is renamed from the keyboard, on the selection', async ({
   page,
 }) => {
   await openPlaceholder(page);
-  await selectNode(page, /^Store, store/u);
+  await selectByKeyboard(page, /^Store, store/u);
 
-  await page.keyboard.press(registeredChords.rename[0]);
+  await page.keyboard.press('Enter');
   await rename(page, 'Store').fill('Ledger');
   await rename(page, 'Store').press('Enter');
 
@@ -127,7 +128,7 @@ test('a flow of a real model is renamed from the keyboard', async ({
   await openEcluse(page);
   await selectByKeyboard(page, /^poll jobs, flow/u);
 
-  await page.keyboard.press(registeredChords.rename[0]);
+  await page.keyboard.press('Enter');
   await rename(page, 'poll jobs').fill('Polling');
   await rename(page, 'poll jobs').press('Enter');
 
@@ -138,4 +139,34 @@ test('a flow of a real model is renamed from the keyboard', async ({
   await runFromMenu(page, 'Undo');
 
   await expect(nodeNamed(page, /^poll jobs, flow/u)).toHaveCount(1);
+});
+
+test('Enter reopens a selected Note for prose editing', async ({ page }) => {
+  await openPlaceholder(page);
+  await canvasSurface(page).focus();
+  await page.keyboard.press(registeredChords['note-tool'][0]);
+  await page.keyboard.press('Enter');
+
+  const editor = page.getByRole('textbox', { name: 'Note text' });
+  await editor.fill('Review the trust boundary.');
+  await editor.press('ControlOrMeta+Enter');
+  await expect(nodeNamed(page, /^Note, text/u)).toBeFocused();
+
+  await page.keyboard.press('Enter');
+
+  await expect(editor).toBeFocused();
+  await expect(editor).toHaveValue('Review the trust boundary.');
+});
+
+test('T focuses threats and Enter adds one', async ({ page }) => {
+  await openPlaceholder(page);
+  await selectByKeyboard(page, /^Actor, actor/u);
+
+  await page.keyboard.press(registeredChords['focus-threats'][0]);
+  const add = page.getByRole('button', { name: 'Add a threat' });
+  await expect(add).toBeFocused();
+
+  await page.keyboard.press('Enter');
+
+  await expect(page.getByRole('textbox', { name: 'Title' })).toBeFocused();
 });

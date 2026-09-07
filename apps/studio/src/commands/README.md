@@ -37,6 +37,10 @@ canvas](../canvas/README.md)).
 A completed Undo or Redo command writes its name to the shared edit status.
 The command says nothing when its history stack is empty.
 
+Focus threats is a page command on T. It uses the panel's focus channel to
+open the selected element's panel when needed and focus "Add a threat". Text
+fields and open overlays keep T for their own input.
+
 ## Chords, and how a platform writes them
 
 `shortcuts.ts` holds the chord. A chord is a set of modifiers and one key

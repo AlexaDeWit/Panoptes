@@ -41,13 +41,11 @@ where focus is being sent, and the draft a field is holding after a refusal.
 
 ## The keyboard, and closing
 
-Selection alone never moves focus here. A person asks for the panel, with
-Enter on the element the canvas has selected, and lands on its first control.
-The canvas reads that press and offers it through `panel-focus.ts`, a channel
-of its own rather than a field of the store, the way the canvas announces an
-edit: where focus is is not the model and must not ride the undo stacks. A
-press the panel does not answer stays the canvas's, so Enter on an element
-that is not the selected one still selects it.
+Selection alone never moves focus here. T runs the registered Focus threats
+command and lands on "Add a threat" for the one selected element. The command
+uses `panel-focus.ts`, a channel of its own rather than a field of the store.
+Focus does not belong in the model or its undo stacks. Enter on the focused
+control adds a threat and moves focus to its title.
 
 Escape inside the panel closes it and puts focus back on the element, which
 stays selected, so a second Escape is the studio's own and clears the
@@ -55,9 +53,8 @@ selection ([the commands](../commands/README.md)). The panel claims that first
 press, which is what keeps one Escape from doing both. A listbox open inside
 the panel is handling Escape itself, so the press is left to it. What is
 closed is the element rather than the panel: it stays closed for as long as it
-is the selection, whatever is then moved, resized or undone on it, and the
-selection moving is what opens the panel again, as does asking for it with
-Enter.
+is the selection, whatever is then moved, resized or undone on it. Moving the
+selection or running Focus threats opens it again.
 
 Closing takes nothing with it. A refused draft is held per element in the
 overlay, which outlives the panel, so a draft survives the panel closing, the

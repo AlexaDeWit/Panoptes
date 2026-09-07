@@ -26,6 +26,7 @@ import {
   nativeSource,
   newNote,
   newProcess,
+  processElement,
   sampleModel,
 } from '../store/store.fixtures.js';
 import { SaveOutcome } from './bridge.js';
@@ -330,6 +331,7 @@ describe('what the studio says about the file', () => {
     expect(
       item('Rename the selection').getAttribute('data-disabled'),
     ).not.toBeNull();
+    expect(item('Focus threats').getAttribute('data-disabled')).not.toBeNull();
     expect(
       item('Delete the selection').getAttribute('data-disabled'),
     ).not.toBeNull();
@@ -341,9 +343,16 @@ describe('what the studio says about the file', () => {
     expect(
       item('Rename the selection').getAttribute('data-disabled'),
     ).toBeNull();
+    expect(item('Focus threats').getAttribute('data-disabled')).toBeNull();
     expect(
       item('Delete the selection').getAttribute('data-disabled'),
     ).toBeNull();
+
+    act(() => {
+      dispatch(Action.Select({ elementIds: [actorElement, processElement] }));
+    });
+
+    expect(item('Focus threats').getAttribute('data-disabled')).not.toBeNull();
   });
 
   it('offers no rename over a text note, which draws prose rather than a name', async () => {
@@ -360,6 +369,7 @@ describe('what the studio says about the file', () => {
     expect(
       item('Rename the selection').getAttribute('data-disabled'),
     ).not.toBeNull();
+    expect(item('Focus threats').getAttribute('data-disabled')).toBeNull();
     expect(
       item('Delete the selection').getAttribute('data-disabled'),
     ).toBeNull();

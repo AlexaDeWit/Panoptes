@@ -3,6 +3,7 @@ import { announce } from '../canvas/announcements.js';
 import { startFlow } from '../canvas/connecting.js';
 import { removeSelected, renameSelected, selectAll } from '../canvas/edits.js';
 import { selectTool, type Tool } from '../canvas/tools.js';
+import { focusThreatPanel } from '../panel/panel-focus.js';
 import { Action } from '../store/actions.js';
 import { dispatch, modelStore } from '../store/store.js';
 import {
@@ -200,6 +201,15 @@ const table = {
     inTextFields: false,
     dispatch: runs(() => {
       renameSelected();
+    }),
+  },
+  'focus-threats': {
+    id: 'focus-threats',
+    label: 'Focus threats',
+    shortcuts: [bare('t')],
+    inTextFields: false,
+    dispatch: runs(() => {
+      focusThreatPanel();
     }),
   },
   'select-all': {

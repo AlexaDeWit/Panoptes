@@ -20,6 +20,7 @@ import {
   isDirty,
   needsCloseGuard,
   renameable,
+  selectedElement,
 } from '../store/selectors.js';
 import { useModelStore } from '../store/store.js';
 import { FailureNotice } from '../ui/failure-notice.js';
@@ -210,6 +211,7 @@ export function StudioMenu({
   const redoable = useModelStore(canRedo);
   const nothing = useModelStore((state) => state.selection.length === 0);
   const renamable = useModelStore(renameable);
+  const selected = useModelStore(selectedElement);
   const [open, setOpen] = useState(false);
   const selectedColourMode = colourMode ?? 'system';
 
@@ -375,6 +377,10 @@ export function StudioMenu({
             <MenuCommand command="undo" disabled={!undoable} />
             <MenuCommand command="redo" disabled={!redoable} />
             <MenuCommand command="rename" disabled={!renamable} />
+            <MenuCommand
+              command="focus-threats"
+              disabled={selected === undefined}
+            />
             <MenuCommand command="delete" disabled={nothing} />
           </DropdownMenu.Group>
           <DropdownMenu.Separator className={styles.rule} />
