@@ -48,13 +48,31 @@
           },
           {
             "externalDependencies": [
-              "vite"
+              "vite",
+              "@vitejs/plugin-react"
             ]
-          }
+          },
+          "viteGlobals"
         ]
       },
       "boundaries": {},
-      "lint": {}
+      "lint": {},
+      "test": {
+        "inputs": [
+          "...",
+          "viteGlobals",
+          "studioTestFixtures",
+          {
+            "env": "SAERSKRIVEN_FONTS_DIR"
+          },
+          {
+            "env": "PAGES_BASE_PATH"
+          },
+          {
+            "env": "PAGES_SITE_URL"
+          }
+        ]
+      }
     }
   }
 }

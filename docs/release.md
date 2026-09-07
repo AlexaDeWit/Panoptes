@@ -343,9 +343,9 @@ done
 ```
 
 Paste the five into `denortHashes`, then run
-`nix develop --command scripts/package-cli.sh --all` and confirm it compiles
-offline. A new target needs an entry there before the script will build it:
-the script checks and refuses, rather than fetching.
+`nix develop --command pnpm nx compile @saerskriven/cli --configuration=all`
+and confirm it compiles offline. A new target needs an entry there before the
+script will build it. The script refuses a missing pin.
 
 **Verifying locally needs Linux.** A network namespace is a Linux facility, so
 `scripts/package-cli.sh` refuses to run on macOS or Windows, saying so, rather
@@ -363,8 +363,7 @@ Anyone can run this:
 ```sh
 git switch --detach "v<version>"
 nix develop --command pnpm install --frozen-lockfile
-nix develop --command pnpm nx build @saerskriven/cli
-nix develop --command scripts/package-cli.sh
+nix develop --command pnpm nx compile @saerskriven/cli
 ```
 
 The default shell is enough: `flake.nix` puts `denortEnv` and `shellEnv` in
@@ -399,9 +398,9 @@ again.
 - **The tag names a version the manifests do not carry.** The version check in
   `build-test` fails, which fails the gate, so the publish job never runs. Cut
   a new version.
-- **A target stops cross-compiling.** `scripts/package-cli.sh --all` reproduces
-  it on a Linux machine inside `nix develop`, and CI catches the host target on
-  every pull request before a tag exists.
+- **A target stops cross-compiling.** Run
+  `pnpm nx compile @saerskriven/cli --configuration=all` on Linux inside
+  `nix develop`. CI checks the host target on every pull request.
 - **A dependency lost its provenance attestation, or moved to another source
   repository.** The `provenance` job fails and with it the gate, so nothing is
   published. Read what the check printed: either the move is one this project

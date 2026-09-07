@@ -182,28 +182,21 @@ deployment.
 
 ### Packaging the CLI
 
-`nx build @saerskriven/cli` bundles the CLI into one ESM file with every
-workspace package and every dependency inlined, which is why that project's
-build deviates from the root esbuild defaults (the reasons sit in
-[`apps/cli/package.json`](apps/cli/package.json)). The bundle carries the
-version stamped in from the root manifest, the one number `nx release` writes
-across the workspace.
+`pnpm nx compile @saerskriven/cli` builds and bundles the CLI, then compiles the
+standalone host executable. The bundle inlines every workspace package and
+dependency and carries the version from the root manifest.
 
-[`scripts/package-cli.sh`](scripts/package-cli.sh) turns that bundle into
-standalone executables with `deno compile`, cross-compiling every target from
-any one of them, and runs the host executable three times: once for the
-version it reports, once to validate a vendored model file, and once to render
-that file to a PDF. CI runs the script for the
-host target on every pull request, and over the whole matrix when the ref is a
-`v*` tag, which is how a release is built: one workflow, not a second pipeline
-beside it. Deno is a packaging tool only: it never resolves the workspace, and
-node stays the development and test runtime.
+The `compile` target runs [`scripts/package-cli.sh`](scripts/package-cli.sh),
+which uses `deno compile` and can cross-compile every release target. It runs
+the host executable three times: once for its version, once to validate a
+vendored model, and once to render that model to PDF. CI runs the host target
+on every pull request, and the whole matrix when the ref is a
+`v*` tag. Deno is a packaging tool only. Node stays the development and test
+runtime.
 
-The pull request run then puts the CLI's whole scenario table through that
-executable, with `SAERSKRIVEN_COMPILED_RUNNER=required` so a missing executable
-fails the suite rather than dropping a runner in silence. `dist/cli` is
-gitignored and therefore no nx input, so that run skips the nx cache, and so
-should a local one after a recompile.
+The `test-compiled` target puts the CLI's scenario table through that
+executable. It requires the compiled runner and hashes the `compile` output.
+Nx stores and restores `dist/cli` even though git ignores the directory.
 
 Around 33 MB of every executable is a runtime deno embeds, which the nixpkgs
 deno pin does not cover. The flake pins it by hash, the compile runs with no

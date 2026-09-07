@@ -8,19 +8,44 @@
       "!{projectRoot}/tsconfig.spec.json",
       "!{projectRoot}/src/test-setup.[jt]s"
     ],
-    // Files every task reads from outside its own project root. Nx follows no
-    // import from a config file, so a root config a leaf composes is named
-    // here or an edit to it replays a stale cache entry (CODING.md, Build
-    // targets). The root manifest is named by its version field alone: the
-    // number the build stamps into the CLI, which nx release writes.
+    // Every JavaScript-backed task reads the pinned Node runtime and locale.
     "sharedGlobals": [
-      "{workspaceRoot}/test-data/**/*",
-      "{workspaceRoot}/threat-modelling/**/*",
-      "{workspaceRoot}/vite.shared.mts",
+      { "runtime": "node --version" },
+      { "env": "LANG" },
+      { "env": "LC_ALL" }
+    ],
+    // Root configuration imported by Vitest configurations.
+    "testConfiguration": [
       "{workspaceRoot}/vitest.shared.mts",
       "{workspaceRoot}/workspace-version.mts",
       { "json": "{workspaceRoot}/package.json", "fields": ["version"] }
-    ]
+    ],
+    "testFixtures": [
+      "{workspaceRoot}/test-data/**/*",
+      "{workspaceRoot}/threat-modelling/**/*"
+    ],
+    "cliTestFixtures": [
+      "{workspaceRoot}/test-data/ecluse.json",
+      "{workspaceRoot}/test-data/saerskriven/ecluse.yaml",
+      "{workspaceRoot}/test-data/adversarial/deep-nesting.json",
+      "{workspaceRoot}/test-data/adversarial/typst-injection.yaml",
+      "{workspaceRoot}/test-data/absent.json",
+      "{workspaceRoot}/test-data/render/**/*",
+      "{workspaceRoot}/threat-modelling/saerskriven.yaml"
+    ],
+    "studioTestFixtures": [
+      "{workspaceRoot}/test-data/ecluse.json",
+      "{workspaceRoot}/test-data/threat-dragon/schema/threat-dragon-v2.schema.json",
+      "{workspaceRoot}/threat-modelling/saerskriven.yaml"
+    ],
+    "studioE2eFixtures": [
+      "{workspaceRoot}/test-data/ecluse.json",
+      "{workspaceRoot}/test-data/ecluse.model.json",
+      "{workspaceRoot}/test-data/saerskriven/ecluse.yaml",
+      "{workspaceRoot}/test-data/render/**/*"
+    ],
+    // Root configuration imported by the studio's Vite configuration.
+    "viteGlobals": ["testConfiguration", "{workspaceRoot}/vite.shared.mts"]
   },
   "plugins": [
     {
@@ -38,17 +63,22 @@
       }
     },
     {
+      // CI runs the same non-atomized test target as contributors. No
+      // ciTargetName means the plugin exposes no second target family with a
+      // different cache contract.
       "plugin": "@nx/vitest",
       "options": {
         "testTargetName": "test",
-        "ciTargetName": "test-ci",
         "testMode": "watch"
       }
     },
     {
+      // The Playwright plugin defaults this name when the option is absent.
+      // An empty name disables the unused atomized targets.
       "plugin": "@nx/playwright/plugin",
       "options": {
-        "targetName": "e2e"
+        "targetName": "e2e",
+        "ciTargetName": ""
       }
     },
     {
@@ -67,14 +97,21 @@
   ],
   "analytics": false,
   "targetDefaults": {
-    // ^test because a suite writes a file under test-data that another
-    // suite reads, so a run-many could read one mid-write (CODING.md, Build
-    // targets; test-data/README.md holds the writer and readers of each).
-    // It reaches only a pair with a workspace:* edge between the two, so a
-    // reader the layer matrix keeps off its writer names the writing task
-    // in its own manifest instead.
     "test": {
-      "dependsOn": ["^build", "^test"]
+      "inputs": ["...", "testConfiguration"],
+      "options": {
+        "...": true,
+        "env": {
+          "CI": "true"
+        }
+      }
+    },
+    "typecheck": {
+      "inputs": [
+        "...",
+        "sharedGlobals",
+        { "externalDependencies": ["typescript"] }
+      ]
     },
     "lint": {
       "executor": "nx:run-commands",
@@ -83,6 +120,7 @@
         "default",
         "^production",
         "{workspaceRoot}/.oxlintrc.json",
+        "{workspaceRoot}/tsconfig.base.json",
         {
           "externalDependencies": ["oxlint", "oxlint-tsgolint"]
         }
@@ -116,15 +154,36 @@
         "^production",
         "^{projectRoot}/tsconfig*.json",
         "{workspaceRoot}/scripts/preview-studio-pages.sh",
+        "{workspaceRoot}/tsconfig.base.json",
+        "viteGlobals",
         {
           "json": "{workspaceRoot}/tsconfig.json",
           "fields": ["compilerOptions", "extends", "files", "include"]
         },
         {
-          "externalDependencies": ["@playwright/test", "vite"]
+          "externalDependencies": [
+            "@playwright/test",
+            "vite",
+            "@vitejs/plugin-react"
+          ]
         },
         {
           "env": "PLAYWRIGHT_DRIVER_VERSION"
+        },
+        {
+          "env": "PLAYWRIGHT_BROWSERS_PATH"
+        },
+        {
+          "env": "CI"
+        },
+        {
+          "env": "PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS"
+        },
+        {
+          "env": "PAGES_BASE_PATH"
+        },
+        {
+          "env": "PAGES_SITE_URL"
         },
         // The Pages export compiles with fonts outside the repository. Their
         // store path changes when the pinned nixpkgs input changes.
@@ -147,6 +206,8 @@
           "json": "{workspaceRoot}/tsconfig.json",
           "fields": ["extends", "files", "include"]
         },
+        "{workspaceRoot}/workspace-version.mts",
+        { "json": "{workspaceRoot}/package.json", "fields": ["version"] },
         // The CLI's bundle carries fonts the flake provides rather than files
         // in its project root, so the variable naming their store path is an
         // input: without it a nixpkgs bump that moves the fonts would replay

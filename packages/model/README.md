@@ -70,11 +70,10 @@ named assertion or the type-check. The source file is vendored at
 `ecluseFixture` against
 [`test-data/ecluse.model.json`](../../test-data/ecluse.model.json) as a file
 snapshot, which is where `packages/formats` compares its own read of the same
-threat model against this one. Regenerate it with `pnpm nx test
-@saerskriven/model -- -u` in the commit that moved it.
+threat model against this one. Regenerate it with
+`pnpm snapshots:update @saerskriven/model` in the commit that moved it.
 [`test-data/README.md`](../../test-data/README.md) says when the snapshot is
-written, and [`CODING.md`](../../CODING.md) states the ordering that keeps a
-reader out of that write.
+written. Cached tests only read its committed bytes.
 
 `@saerskriven/model/fixtures` is the one home for the fixture helpers every
 suite in the workspace shares: `elementId`, `diagramId` and `threatId`, which

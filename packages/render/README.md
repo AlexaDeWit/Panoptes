@@ -259,16 +259,12 @@ on a file rather than as a test that still passes:
 Each list is one list in the spec, the registers and the documents alike, so
 a further model or diagram joins every check over them by being added there.
 The suite compares all seven on every run as vitest file snapshots and reds
-where a file and the output differ. A deleted golden is a hole in that gate
-rather than a failure: vitest writes a missing snapshot back and passes, and
-only a CI run, where writing is refused, reports it. Regenerate them with
-`pnpm nx test @saerskriven/render -- -u` in the commit that moved them, and read
-the diff.
+where a file and the output differ. Cached tests run with snapshot writes
+disabled, so a missing golden fails. Regenerate them with
+`pnpm snapshots:update @saerskriven/render` in the commit that moved
+them, and read the diff.
 
-Four of them are `apps/cli`'s fixtures as well, and the Saerskriven model three
-of them are drawn from is itself written by `@saerskriven/formats`, so this
-suite runs after that one and ahead of the CLI's.
-[`test-data/README.md`](../../test-data/README.md) names every such pair and
-[`CODING.md`](../../CODING.md) the ordering that holds them apart.
+Four are also fixtures for `apps/cli`. Three use the Saerskriven model that
+`@saerskriven/formats` maintains under `test-data`.
 
 Unit tests: `pnpm nx test @saerskriven/render`.
