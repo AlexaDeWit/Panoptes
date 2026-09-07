@@ -101,7 +101,7 @@ plugins, and `@nx/esbuild` as the executor a build target selects. Third,
 what the root configs import by name: `@nx/eslint-plugin` and
 `@typescript-eslint/parser` in `eslint.config.mjs`, `vite` and
 `@vitejs/plugin-react` in `vite.shared.mts`, `vitest` in `vitest.shared.mts`
-and `vitest.config.ts`. Fourth, a tool's
+and `vitest.config.mts`. Fourth, a tool's
 optional peers, held beside the tool that declares them so their versions are
 this workspace's to pin rather than that tool's: `@swc-node/register` and
 `@swc/core` for `nx`, `@swc/helpers` for `@swc/core`, `oxlint-tsgolint` for
