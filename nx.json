@@ -29,6 +29,7 @@
       "{workspaceRoot}/test-data/saerskriven/ecluse.yaml",
       "{workspaceRoot}/test-data/adversarial/deep-nesting.json",
       "{workspaceRoot}/test-data/adversarial/typst-injection.yaml",
+      "{workspaceRoot}/test-data/absent.json",
       "{workspaceRoot}/test-data/render/**/*",
       "{workspaceRoot}/threat-modelling/saerskriven.yaml"
     ],

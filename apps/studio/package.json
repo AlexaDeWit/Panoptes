@@ -61,7 +61,16 @@
         "inputs": [
           "...",
           "viteGlobals",
-          "studioTestFixtures"
+          "studioTestFixtures",
+          {
+            "env": "SAERSKRIVEN_FONTS_DIR"
+          },
+          {
+            "env": "PAGES_BASE_PATH"
+          },
+          {
+            "env": "PAGES_SITE_URL"
+          }
         ]
       }
     }
