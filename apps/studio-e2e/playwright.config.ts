@@ -32,8 +32,12 @@ export default defineConfig({
       timeout: 120_000,
     },
     {
-      command: `pnpm exec nx run @saerskriven/studio:preview -- --port=${String(pagesPort)}`,
-      env: { PAGES_BASE_PATH: pagesBasePath },
+      command: 'bash scripts/preview-studio-pages.sh',
+      cwd: '../..',
+      env: {
+        PAGES_BASE_PATH: pagesBasePath,
+        PAGES_PREVIEW_PORT: String(pagesPort),
+      },
       url: `http://localhost:${String(pagesPort)}${pagesBasePath}/`,
       reuseExistingServer: false,
       timeout: 120_000,
