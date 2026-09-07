@@ -1,0 +1,177 @@
+import type { Model } from '@saerskriven/model';
+import { parsedFixture } from '@saerskriven/model/fixtures';
+import { renderRegister, renderSvg, renderTypst } from '@saerskriven/render';
+import { PdfFailure, type PdfAssets } from '@saerskriven/render/pdf';
+import { act, renderHook, waitFor } from '@testing-library/react';
+import { Either } from 'effect';
+import { initialState, FileLifecycle } from '../store/state.js';
+import { modelStore } from '../store/store.js';
+import {
+  foreignSource,
+  mainDiagram,
+  sampleModel,
+} from '../store/store.fixtures.js';
+import { useExportCommands, type PdfExport } from './export-commands.js';
+import { specBridge, type SpecBridge } from './files.fixtures.js';
+
+const assets: PdfAssets = { wasm: new Uint8Array(), fonts: [] };
+
+const pdfExport = (answer: ReturnType<PdfExport['compile']>): PdfExport => ({
+  assets: () => Promise.resolve(Either.right(assets)),
+  compile: () => answer,
+});
+
+const session = (
+  bridge: SpecBridge,
+  pdf = pdfExport(Promise.resolve(Either.right(new Uint8Array()))),
+) => renderHook(() => useExportCommands(bridge, pdf)).result;
+
+const openedState = (model: Model = sampleModel) => ({
+  ...initialState(model),
+  file: FileLifecycle.Opened({ name: 'model.json', source: foreignSource }),
+});
+
+const flow = (id: string, target: string): Record<string, unknown> => ({
+  kind: 'flow',
+  id,
+  name: id,
+  description: '',
+  outOfScope: false,
+  reasonOutOfScope: '',
+  source: { kind: 'attached', element: sampleModel.diagrams[0].elements[0].id },
+  target: { kind: 'attached', element: target },
+  waypoints: [],
+});
+
+const unplacedModel = parsedFixture({
+  ...sampleModel,
+  diagrams: [
+    {
+      ...sampleModel.diagrams[0],
+      elements: [
+        ...sampleModel.diagrams[0].elements,
+        flow('flow-1', sampleModel.diagrams[0].elements[1].id),
+        flow('flow-2', 'flow-1'),
+      ],
+    },
+  ],
+});
+
+beforeEach(() => {
+  modelStore.setState(openedState(), true);
+});
+
+describe('the studio exports', () => {
+  it('writes every text projection directly from render under the file name', async () => {
+    const bridge = specBridge();
+    const result = session(bridge);
+
+    act(() => {
+      result.current.commands.diagram(mainDiagram);
+      result.current.commands.register();
+      result.current.commands.typst();
+    });
+
+    await waitFor(() => {
+      expect(bridge.writes).toHaveLength(3);
+    });
+    expect(bridge.writes.map((write) => write.name)).toEqual([
+      'model.svg',
+      'model.md',
+      'model.typ',
+    ]);
+    expect(bridge.writes.map((write) => write.text)).toEqual([
+      renderSvg(sampleModel.diagrams[0], sampleModel).svg,
+      renderRegister(sampleModel),
+      renderTypst(sampleModel).typst,
+    ]);
+  });
+
+  it('compiles the render projection and writes the PDF as binary content', async () => {
+    const bridge = specBridge();
+    const bytes = new Uint8Array([37, 80, 68, 70, 45]);
+    const compile = vi.fn<PdfExport['compile']>(() =>
+      Promise.resolve(Either.right(bytes)),
+    );
+    const result = session(bridge, {
+      assets: () => Promise.resolve(Either.right(assets)),
+      compile,
+    });
+
+    act(() => {
+      result.current.commands.pdf();
+    });
+
+    await waitFor(() => {
+      expect(bridge.writes).toHaveLength(1);
+    });
+    expect(compile).toHaveBeenCalledWith(
+      renderTypst(sampleModel).typst,
+      assets,
+    );
+    expect(bridge.writes[0]).toMatchObject({ name: 'model.pdf', text: '' });
+    await expect(bridge.writes[0].blob?.arrayBuffer()).resolves.toEqual(
+      bytes.buffer,
+    );
+  });
+
+  it('reports every unplaced endpoint after it still writes the export', async () => {
+    modelStore.setState(openedState(unplacedModel), true);
+    const bridge = specBridge();
+    const result = session(bridge);
+
+    act(() => {
+      result.current.commands.diagram(mainDiagram);
+    });
+
+    await waitFor(() => {
+      expect(result.current.notice).toBeDefined();
+    });
+    expect(bridge.writes).toHaveLength(1);
+    expect(result.current.notice).toEqual({
+      headline:
+        'warning: a flow endpoint names an element the canvas draws as no box, so its flow is not in the drawing.',
+      details: ['flow "flow-2" target names "flow-1"'],
+    });
+  });
+
+  it('reports a compiler refusal and writes nothing', async () => {
+    const bridge = specBridge();
+    const result = session(
+      bridge,
+      pdfExport(
+        Promise.resolve(
+          Either.left(
+            PdfFailure.Refused({ sentences: ['unknown function: nope'] }),
+          ),
+        ),
+      ),
+    );
+
+    act(() => {
+      result.current.commands.pdf();
+    });
+
+    await waitFor(() => {
+      expect(result.current.notice).toEqual({
+        headline: 'Saerskriven could not compile the PDF.',
+        details: ['unknown function: nope'],
+      });
+    });
+    expect(bridge.writes).toEqual([]);
+  });
+
+  it('uses Untitled when the model has no open file', async () => {
+    modelStore.setState(initialState(sampleModel), true);
+    const bridge = specBridge();
+    const result = session(bridge);
+
+    act(() => {
+      result.current.commands.register();
+    });
+
+    await waitFor(() => {
+      expect(bridge.writes[0]?.name).toBe('Untitled.md');
+    });
+  });
+});

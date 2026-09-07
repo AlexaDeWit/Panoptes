@@ -1,4 +1,4 @@
-# Opening and saving
+# Opening, saving and exporting
 
 The studio reaches files through `FileBridge`, a record of functions the app
 is handed rather than a platform it calls. `browser-bridge.ts` is the browser
@@ -24,6 +24,24 @@ component calls and a spec calls directly. A read is the size against
 `readAnyFormat`, then one action: the model, or the codec's own failure, which
 the panel renders with the paths it carries. A write is the codec's own write
 for the file's format, then the bridge, then one action.
+
+`export-commands.ts` projects the current model through `@saerskriven/render`.
+It writes a diagram as SVG, the register as markdown, and the whole model as
+Typst. The PDF path compiles that Typst source through the render package's
+`pdf` subpath. An export uses the bridge's picker or download path but never
+replaces the file handle that Save writes back to.
+
+`pdf-assets.ts` fetches the WebAssembly module and the five Liberation faces
+that the Vite build emits. Vite's `?url` import owns the module. The face list
+and compiler order come from the same render-owned build module as the CLI.
+The loader caches the bytes after the first successful read and returns a
+typed failure when an asset is not available.
+
+The render subpath loads the compiler JavaScript on the first PDF export.
+Vite keeps that code in a separate hashed chunk.
+
+The WebAssembly module and fonts load only after the PDF item runs. Other
+exports load none of those runtime assets.
 
 `formatFiles` is the one table saying how a format appears as a file: the
 words a person reads, the media type a picker files it under, and the
@@ -80,19 +98,17 @@ item is drawn rather than after a save-as has started, so nothing has to close
 the menu and open it again around an answer.
 
 `menu.tsx` mounts the rest: the burger button over the top left of the canvas,
-the file and edit commands, a link to the project's source, and the file state.
-A model that lives in no file is said by the name
-it carries as its own title, `Untitled` ([the store](../store/README.md)),
-and the browser tab reads the name through the same `nameOf`, rather than by
-a second way of saying there is no file. It holds the fallback picker's input, which only a
-component can, and the guard on closing the tab, armed by the same unsaved
-state the asking reads.
+the file and edit commands, the Export submenu, the project link, and the
+state of the open file. The submenu has one SVG item per diagram when the
+model has several.
+The other items export the register as markdown, or the whole model as Typst
+or PDF. Every proposed name replaces the open file's extension, or starts
+with `Untitled` when no file is open. The menu also holds the fallback
+picker's input and the guard on closing the tab.
 
-The report of the last crossing and the failure notice are the menu's chrome
-rather than its items, drawn under the button and over the canvas. Both are the
-studio's shared live region ([the controls](../ui/README.md)), and neither can
-go inside the menu: a menu owns items and groups of them, and the axe run reads
-a live region there as a menu that has lost its shape. Standing outside it is
-also what lets each announce as it arrives rather than only once the menu is
-opened, which is what a save through a chord needs. The open path still asks
-through the browser's own confirmation, which is the last modal dialog left.
+The report of the last crossing, an export report, and the failure notice sit
+below the button and over the canvas. The crossing report and export report
+share one live region. An export reports every endpoint its projection could
+not place after it writes the file. A PDF compile refusal reports the
+compiler's sentences and writes nothing. The open path still asks through the
+browser's own confirmation, which is the last modal dialog left.

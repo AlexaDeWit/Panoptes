@@ -192,6 +192,13 @@ test('the studio carries no violation with the menu open', async ({ page }) => {
 
   await audit(page, 'showing the open menu');
 
+  await menuItem(page, 'Export').press('ArrowRight');
+  await expect(menuItem(page, 'Diagram as SVG')).toBeVisible();
+
+  await audit(page, 'showing the open Export menu');
+
+  await page.keyboard.press('ArrowLeft');
+
   await menuItem(page, 'Save as').click();
   await expect(menuItem(page, 'Save as Saerskriven YAML')).toBeVisible();
 

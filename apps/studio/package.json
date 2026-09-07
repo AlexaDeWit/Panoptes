@@ -2,11 +2,16 @@
   "name": "@saerskriven/studio",
   "version": "0.0.1",
   "private": true,
+  "//": [
+    "build repeats the Vite plugin's inferred inputs because a leaf override replaces them, then adds SAERSKRIVEN_FONTS_DIR.",
+    "The studio emits those external font bytes, so a nixpkgs update that moves them must invalidate the cached build."
+  ],
   "dependencies": {
     "@radix-ui/react-icons": "catalog:",
     "@saerskriven/canvas": "workspace:*",
     "@saerskriven/formats": "workspace:*",
     "@saerskriven/model": "workspace:*",
+    "@saerskriven/render": "workspace:*",
     "@xyflow/react": "catalog:",
     "effect": "catalog:",
     "radix-ui": "catalog:",
@@ -27,6 +32,20 @@
       "layer:app"
     ],
     "targets": {
+      "build": {
+        "inputs": [
+          "production",
+          "^production",
+          {
+            "env": "SAERSKRIVEN_FONTS_DIR"
+          },
+          {
+            "externalDependencies": [
+              "vite"
+            ]
+          }
+        ]
+      },
       "boundaries": {},
       "lint": {}
     }

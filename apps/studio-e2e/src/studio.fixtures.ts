@@ -144,6 +144,31 @@ export const savedFile = async (page: Page): Promise<SavedFile> => {
   };
 };
 
+/** An export downloaded from the menu, as its name and bytes. */
+export type ExportedFile = {
+  readonly name: string;
+  readonly bytes: Buffer;
+};
+
+/** Opens the Export menu, chooses one item and reads its download. */
+export const exportedFile = async (
+  page: Page,
+  item: string,
+): Promise<ExportedFile> => {
+  await openMenu(page);
+  await menuItem(page, 'Export').hover();
+  const chosen = menuItem(page, item);
+  await expect(chosen).toBeVisible();
+  const [download] = await Promise.all([
+    page.waitForEvent('download'),
+    chosen.click(),
+  ]);
+  return {
+    name: download.suggestedFilename(),
+    bytes: readFileSync(await download.path()),
+  };
+};
+
 /**
  * Every element drawn as a box. The anchor a free flow end rides on is hidden
  * from assistive technology, so it is no group and is not among these.

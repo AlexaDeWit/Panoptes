@@ -4,7 +4,7 @@ import {
   renderRegister,
   renderSvg,
   renderTypst,
-  type SvgDocument,
+  renderUnplacedWarning,
 } from '@saerskriven/render';
 import { Either } from 'effect';
 import { z } from 'zod';
@@ -18,8 +18,6 @@ import {
   type CommandOutput,
 } from './outcome.js';
 import { compilePdf, typstAssets } from './pdf.js';
-
-type UnplacedFlow = SvgDocument['unplaced'][number];
 
 /**
  * What `render` needs, and the one gate on the option bag the parser hands
@@ -43,19 +41,7 @@ const wholeModelFormats = {
   pdf: 'writes every diagram and the register',
 } satisfies Record<WholeModelFormat, string>;
 
-/**
- * `saerskriven render <file> --format svg|md|pdf --out <path>`: a projection of
- * the model the file holds, written to that path, or to standard output
- * where the path is `-`. `md` writes the whole threat register and `pdf`
- * writes every diagram followed by that register, so neither takes
- * `--diagram`. `svg` draws one diagram, which `--diagram` names by id or by
- * title, and which a model holding exactly one diagram does not have to name.
- *
- * Only the PDF is asynchronous, because the Typst compiler is a WebAssembly
- * module that is built before it compiles anything. `assets` is where that
- * compiler and its fonts are read from, which for a running CLI is always
- * where the build put them.
- */
+/** Runs the CLI render command, with PDF assets beside the built bundle. */
 export function render(
   file: string,
   options: RenderOptions,
@@ -111,7 +97,7 @@ async function compiled(
   const source = renderTypst(model);
   return Either.match(await compilePdf(source.typst, assets), {
     onLeft: (reason) => usageError(lines(`error: ${reason}`)),
-    onRight: (pdf) => written(out, pdf, unplacedWarning(source.unplaced)),
+    onRight: (pdf) => written(out, pdf, renderUnplacedWarning(source.unplaced)),
   });
 }
 
@@ -124,7 +110,11 @@ function drawing(model: Model, options: RenderOptions): CommandOutcome {
 
 function drawn(diagram: Diagram, model: Model, out: string): CommandOutcome {
   const drawnDiagram = renderSvg(diagram, model);
-  return written(out, drawnDiagram.svg, unplacedWarning(drawnDiagram.unplaced));
+  return written(
+    out,
+    drawnDiagram.svg,
+    renderUnplacedWarning(drawnDiagram.unplaced),
+  );
 }
 
 function written(
@@ -138,18 +128,6 @@ function written(
         onLeft: (reason) => usageError(lines(`error: ${reason}`)),
         onRight: () => succeeded('', warning),
       });
-}
-
-function unplacedWarning(unplaced: readonly UnplacedFlow[]): string {
-  return unplaced.length > 0
-    ? lines(
-        'warning: a flow endpoint names an element the canvas draws as no box, so its flow is not in the drawing.',
-        ...unplaced.map(
-          (endpoint) =>
-            `  flow ${quoted(endpoint.flow)} ${endpoint.side} names ${quoted(endpoint.element)}`,
-        ),
-      )
-    : '';
 }
 
 function chosenDiagram(

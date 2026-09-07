@@ -22,10 +22,11 @@ test('the menu holds the file and edit commands, plus the project link', async (
 
   await openMenu(page);
 
-  await expect(page.getByRole('menuitem')).toHaveCount(9);
+  await expect(page.getByRole('menuitem')).toHaveCount(10);
   await expect(
     page.locator('[role="menuitem"][aria-keyshortcuts]'),
   ).toHaveCount(8);
+  await expect(menuItem(page, 'Export')).toBeVisible();
   const source = menuItem(page, 'View source on GitHub');
   await expect(source).toHaveAttribute(
     'href',
@@ -44,9 +45,10 @@ test('save as asks the format in the menu where the browser has no picker of its
   await openMenu(page);
   await menuItem(page, 'Save as').click();
 
-  await expect(page.getByRole('menuitem')).toHaveCount(10);
+  await expect(page.getByRole('menuitem')).toHaveCount(11);
   await expect(menuItem(page, 'Save as Saerskriven YAML')).toBeVisible();
   await expect(menuItem(page, 'Save as Threat Dragon JSON')).toBeVisible();
+  await expect(menuItem(page, 'Export')).toBeVisible();
   await expect(menuItem(page, 'View source on GitHub')).toBeVisible();
 
   const written = await savedFromMenu(page, 'Save as Saerskriven YAML');
@@ -71,7 +73,7 @@ test('every item is reached, run and left by the keyboard alone', async ({
   await page.keyboard.press('Enter');
   await expect(menuItem(page, 'Open a model')).toBeFocused();
 
-  for (const name of ['Save', 'Save as', 'Close the file', 'Undo']) {
+  for (const name of ['Save', 'Save as', 'Export', 'Close the file', 'Undo']) {
     await page.keyboard.press('ArrowDown');
     await expect(menuItem(page, name)).toBeFocused();
   }

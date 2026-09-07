@@ -1,4 +1,6 @@
 import { saerskrivenYamlCodec } from '@saerskriven/formats';
+import { diagramId } from '@saerskriven/model/fixtures';
+import { PdfFailure } from '@saerskriven/render/pdf';
 import {
   act,
   fireEvent,
@@ -7,7 +9,8 @@ import {
   waitFor,
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { useMemo } from 'react';
+import { Either } from 'effect';
+import { useEffect, useMemo } from 'react';
 import {
   CommandSurfaceProvider,
   unmountedSurface,
@@ -25,6 +28,7 @@ import {
   sampleModel,
 } from '../store/store.fixtures.js';
 import { SaveOutcome } from './bridge.js';
+import type { PdfExport } from './export-commands.js';
 import { useFileSession } from './file-commands.js';
 import { nameOf } from './session.js';
 import {
@@ -68,6 +72,12 @@ const choose = async (user: User, name: string | RegExp): Promise<void> => {
   await user.click(item(name));
 };
 
+const openExportMenu = async (user: User): Promise<void> => {
+  await openMenu(user);
+  await user.hover(item('Export'));
+  await screen.findByRole('menuitem', { name: 'Diagram as SVG' });
+};
+
 const state = (): string => screen.getByTestId('file-state').textContent ?? '';
 
 const shown = async (user: User): Promise<string> => {
@@ -79,8 +89,21 @@ const reportEntries = (): readonly Element[] => [
   ...screen.getByTestId('loss-report').querySelectorAll('li'),
 ];
 
-function Menu({ bridge }: { readonly bridge: SpecBridge }) {
-  const session = useFileSession(bridge);
+function Menu({
+  bridge,
+  exportPdf,
+  pdf,
+}: {
+  readonly bridge: SpecBridge;
+  readonly exportPdf?: boolean;
+  readonly pdf?: PdfExport;
+}) {
+  const session = useFileSession(bridge, pdf);
+  useEffect(() => {
+    if (exportPdf === true) {
+      session.exports.pdf();
+    }
+  }, [exportPdf, session.exports]);
   const surface = useMemo(
     () => ({ ...unmountedSurface, files: session.commands }),
     [session.commands],
@@ -92,8 +115,12 @@ function Menu({ bridge }: { readonly bridge: SpecBridge }) {
   );
 }
 
-const mounted = (bridge: SpecBridge): void => {
-  render(<Menu bridge={bridge} />);
+const mounted = (
+  bridge: SpecBridge,
+  pdf?: PdfExport,
+  exportPdf?: boolean,
+): void => {
+  render(<Menu bridge={bridge} exportPdf={exportPdf} pdf={pdf} />);
 };
 
 const asked = (): boolean =>
@@ -129,10 +156,15 @@ describe('what the menu offers', () => {
     await openMenu(user);
 
     const items = screen.getAllByRole('menuitem');
-    expect(items).toHaveLength(9);
+    expect(items).toHaveLength(10);
     expect(
       items.filter((entry) => entry.hasAttribute('aria-keyshortcuts')),
     ).toHaveLength(8);
+    expect(
+      screen.getAllByRole('group').map((group) => group.textContent),
+    ).toContain(
+      'FileOpen a modelCtrl+OSaveCtrl+SSave asCtrl+Shift+SExport›Close the fileCtrl+Shift+X',
+    );
   });
 
   it('links to the source in a new tab with a popout icon', async () => {
@@ -150,6 +182,81 @@ describe('what the menu offers', () => {
     expect(source.querySelector('svg')?.getAttribute('aria-hidden')).toBe(
       'true',
     );
+  });
+
+  it('opens every projection from one Export item', async () => {
+    const user = userEvent.setup();
+    mounted(specBridge());
+
+    await openExportMenu(user);
+
+    expect(
+      screen.getAllByRole('menuitem').map((entry) => entry.textContent),
+    ).toContain('Diagram as SVG');
+    for (const name of [
+      'Register as Markdown',
+      'Model as Typst',
+      'Model as PDF',
+    ]) {
+      expect(item(name)).toBeDefined();
+    }
+  });
+
+  it('names each SVG entry from its diagram when the model has several', async () => {
+    const user = userEvent.setup();
+    modelStore.setState(
+      initialState({
+        ...sampleModel,
+        diagrams: [
+          sampleModel.diagrams[0],
+          {
+            id: diagramId('diagram-other'),
+            title: 'Other diagram',
+            elements: [],
+          },
+        ],
+      }),
+      true,
+    );
+    mounted(specBridge());
+
+    await openMenu(user);
+    await user.hover(item('Export'));
+
+    expect(
+      await screen.findByRole('menuitem', {
+        name: 'Diagram as SVG: Main',
+      }),
+    ).toBeDefined();
+    expect(item('Diagram as SVG: Other diagram')).toBeDefined();
+  });
+
+  it('announces a PDF compile refusal and writes no file', async () => {
+    const bridge = specBridge();
+    mounted(
+      bridge,
+      {
+        assets: () =>
+          Promise.resolve(Either.right({ wasm: new Uint8Array(), fonts: [] })),
+        compile: () =>
+          Promise.resolve(
+            Either.left(
+              PdfFailure.Refused({ sentences: ['unknown function: nope'] }),
+            ),
+          ),
+      },
+      true,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId('export-report').textContent).toContain(
+        'Saerskriven could not compile the PDF.',
+      );
+    });
+    expect(screen.getByTestId('export-report').textContent).toContain(
+      'unknown function: nope',
+    );
+    expect(bridge.writes).toEqual([]);
   });
 
   it('keeps the shortcut out of an item name, and names the binding as ARIA asks', async () => {
@@ -459,9 +566,10 @@ describe('saving', () => {
     await choose(user, 'Save as');
 
     await screen.findByRole('menuitem', { name: 'Save as Saerskriven YAML' });
-    expect(screen.getAllByRole('menuitem')).toHaveLength(10);
+    expect(screen.getAllByRole('menuitem')).toHaveLength(11);
     expect(item('Save as Saerskriven YAML')).toBeDefined();
     expect(item('Save as Threat Dragon JSON')).toBeDefined();
+    expect(item('Export')).toBeDefined();
     expect(item('View source on GitHub')).toBeDefined();
     expect(bridge.writes).toEqual([]);
 

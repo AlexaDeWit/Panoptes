@@ -2,6 +2,7 @@ import {
   OpenOutcome,
   SaveOutcome,
   type FileBridge,
+  type FileContent,
   type SaveFileType,
 } from './bridge.js';
 import { chosenFile } from './files.fixtures.js';
@@ -22,12 +23,12 @@ const inTheFormatOf = (name: string): string =>
 
 const downloads: string[] = [];
 
-const handleFor = (name: string, text: string, written: string[]) => ({
+const handleFor = (name: string, text: string, written: FileContent[]) => ({
   name,
   getFile: () => Promise.resolve(chosenFile(name, text)),
   createWritable: () =>
     Promise.resolve({
-      write: (chunk: string) => {
+      write: (chunk: FileContent) => {
         written.push(chunk);
         return Promise.resolve();
       },
@@ -288,5 +289,40 @@ describe('saving', () => {
 
     expect(written).toEqual([]);
     expect(downloads).toEqual(['threat-model.yaml']);
+  });
+});
+
+describe('exporting', () => {
+  it('writes text through the picker without replacing the open file', async () => {
+    const opened: FileContent[] = [];
+    const exported: FileContent[] = [];
+    vi.stubGlobal('showOpenFilePicker', () =>
+      Promise.resolve([handleFor('model.yaml', 'a: 1', opened)]),
+    );
+    vi.stubGlobal('showSaveFilePicker', () =>
+      Promise.resolve(handleFor('model.svg', '', exported)),
+    );
+    const bridge = await freshBridge();
+    await bridge.open(1024);
+
+    expect(await bridge.exportFile('model.svg', types[0], '<svg/>')).toEqual(
+      SaveOutcome.Written({ name: 'model.svg' }),
+    );
+    await bridge.save('model.yaml', 'second');
+
+    expect(exported).toEqual(['<svg/>']);
+    expect(opened).toEqual(['second']);
+  });
+
+  it('downloads binary content under the proposed name without a picker', async () => {
+    const bridge = await freshBridge();
+    const pdf = new Blob([new Uint8Array([37, 80, 68, 70])], {
+      type: 'application/pdf',
+    });
+
+    expect(await bridge.exportFile('Untitled.pdf', types[0], pdf)).toEqual(
+      SaveOutcome.Written({ name: 'Untitled.pdf' }),
+    );
+    expect(downloads).toEqual(['Untitled.pdf']);
   });
 });

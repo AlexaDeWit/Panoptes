@@ -108,7 +108,7 @@ function SourceLink() {
 /** The session the items run their commands through. */
 export type StudioMenuProps = { readonly session: FileSession };
 
-/** The file, edit and project menu over the canvas. */
+/** The non-modal file, edit and project menu, with reports beside its trigger. */
 export function StudioMenu({ session }: StudioMenuProps) {
   const file = useModelStore((state) => state.file);
   const failure = useModelStore((state) => state.lastFailure);
@@ -134,6 +134,9 @@ export function StudioMenu({ session }: StudioMenuProps) {
     commands,
     confirmClose,
     dismissReport,
+    dismissExportNotice,
+    exportNotice,
+    exports,
     receive,
     report,
   } = session;
@@ -212,6 +215,7 @@ export function StudioMenu({ session }: StudioMenuProps) {
                     Save as {formatFiles[option].label}
                   </MenuItem>
                 ))}
+            <ExportMenu commands={exports} />
             <MenuItem
               chord={
                 asking
@@ -278,7 +282,7 @@ export function StudioMenu({ session }: StudioMenuProps) {
       <FailureNotice failure={failure} />
       <LiveRegion
         className={styles.report}
-        label="Loss report"
+        label="File reports"
         testId="loss-report"
       >
         {report !== undefined && (
@@ -300,8 +304,85 @@ export function StudioMenu({ session }: StudioMenuProps) {
             </button>
           </>
         )}
+        {exportNotice !== undefined && (
+          <div data-testid="export-report">
+            <p className={styles.headline}>{exportNotice.headline}</p>
+            {exportNotice.details.length > 0 && (
+              <ul className={styles.lines}>
+                {exportNotice.details.map((line, index) => (
+                  <li key={`${String(index)} ${line}`}>{line}</li>
+                ))}
+              </ul>
+            )}
+            <button
+              className={styles.dismiss}
+              onClick={dismissExportNotice}
+              type="button"
+            >
+              Dismiss the export report
+            </button>
+          </div>
+        )}
       </LiveRegion>
     </div>
+  );
+}
+
+function ExportMenu({
+  commands,
+}: {
+  readonly commands: FileSession['exports'];
+}) {
+  const diagrams = useModelStore((state) => state.present.diagrams);
+  const several = diagrams.length > 1;
+
+  return (
+    <DropdownMenu.Sub>
+      <DropdownMenu.SubTrigger className={styles.item}>
+        <span>Export</span>
+        <span aria-hidden="true" className={styles.chord}>
+          ›
+        </span>
+      </DropdownMenu.SubTrigger>
+      <DropdownMenu.SubContent className={styles.panel} sideOffset={6}>
+        {diagrams.length === 0 && (
+          <MenuItem disabled onChoose={() => undefined}>
+            Diagram as SVG
+          </MenuItem>
+        )}
+        {diagrams.map((diagram) => (
+          <MenuItem
+            key={diagram.id}
+            onChoose={() => {
+              commands.diagram(diagram.id);
+            }}
+          >
+            {several ? `Diagram as SVG: ${diagram.title}` : 'Diagram as SVG'}
+          </MenuItem>
+        ))}
+        <MenuItem
+          onChoose={() => {
+            commands.register();
+          }}
+        >
+          Register as Markdown
+        </MenuItem>
+        <MenuItem
+          onChoose={() => {
+            commands.typst();
+          }}
+        >
+          Model as Typst
+        </MenuItem>
+        <MenuItem
+          onChoose={() => {
+            commands.pdf();
+          }}
+        >
+          Model as PDF
+        </MenuItem>
+      </DropdownMenu.SubContent>
+    </DropdownMenu.Sub>
   );
 }
 

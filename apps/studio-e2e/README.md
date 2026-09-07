@@ -9,9 +9,9 @@ behaviour lands here when nothing short of a browser can show it:
   gate that reads a rendered tree, over the page at rest, in the dark scheme,
   with the threat panel open, with the menu open and asking before it closes a
   file, with a listbox open, and with either notice region saying something.
-- **The file bridge**, whose file input and download are the browser's own, so
-  a file crossing into the studio and back out again is a claim no unit test
-  makes.
+- **The file bridge**, whose file input and downloads are the browser's own.
+  The suite opens a model and compares every exported projection with the
+  CLI's output.
 - **The menu**, the studio's one command surface, where focus moving
   through the items, Escape putting it away and the canvas staying live
   behind it need a real focus model.

@@ -11,6 +11,13 @@ import type { State } from '../store/state.js';
 import { dispatch, modelStore } from '../store/store.js';
 import { browserFileBridge } from './browser-bridge.js';
 import {
+  browserPdfExport,
+  useExportCommands,
+  type ExportCommands,
+  type ExportNotice,
+  type PdfExport,
+} from './export-commands.js';
+import {
   OpenOutcome,
   SaveOutcome,
   type ChosenFile,
@@ -36,32 +43,18 @@ type PlannedSave = {
   readonly written: WriteResult;
 };
 
-/**
- * The file half of the studio, held once and read by everything that reaches
- * a file: the commands the registry dispatches, the report the last crossing
- * cost, the fallback picker's input, which the view attaches because only a
- * component can hold one, the file that input produced, and whether a close
- * is waiting to be confirmed.
- *
- * `closing` is the unsaved-changes guard as state rather than as a dialog:
- * the close command sets it, the view asks in its own words, and the answer
- * comes back through `confirmClose` or `cancelClose`. `choosing` is the
- * same shape for the format a save-as writes, which the studio asks only
- * where the platform has no picker to ask it in, `asksFormat` being where
- * that stands: it is what a control reads to know that Save as puts a
- * question rather than opening a picker. The answer comes back through
- * `chooseFormat`, or the question is taken back through `cancelChoice`.
- * Holding all of it here rather than in the view is what lets a chord ask
- * the question a menu item asks.
- */
+/** File commands, export commands, notices, and menu questions. */
 export type FileSession = {
   readonly commands: FileCommands;
   readonly report: LossReport | undefined;
   readonly closing: boolean;
   readonly choosing: boolean;
   readonly asksFormat: boolean;
+  readonly exports: ExportCommands;
+  readonly exportNotice: ExportNotice | undefined;
   readonly attachPicker: (input: HTMLInputElement | null) => void;
   readonly dismissReport: () => void;
+  readonly dismissExportNotice: () => void;
   readonly receive: (chosen: ChosenFile | undefined) => Promise<void>;
   readonly confirmClose: () => void;
   readonly cancelClose: () => void;
@@ -69,36 +62,16 @@ export type FileSession = {
   readonly cancelChoice: () => void;
 };
 
-/**
- * Opening, saving and closing, as one session the app holds rather than a set
- * of handlers a control closes over. The keyboard and the controls run the
- * same four commands, so a shortcut and a menu item cannot drift, and the
- * report one of them produces is the one the view beside them shows.
- *
- * Each command reads the store as it runs rather than closing over a render,
- * which is what lets the four be built once: what a save writes and where is
- * the model and the file at the moment the key was pressed.
- *
- * Closing drops the report with the file, the report describing a crossing of
- * a boundary the closed file was one side of, and tells the bridge to let the
- * file go: the studio names no file after a close, so nothing may be written
- * back to the one it named.
- *
- * A save-as offers every format in the platform's own picker and writes
- * through the codec the name that comes back belongs to, and a name in no
- * registered format is written in the one the file is already in, which is
- * the format the picker proposed. Where the platform has no picker to ask
- * in, the format becomes a question the view asks in its own words, the way
- * closing asks about unsaved work, and the answer is the one format the
- * save-as then writes.
- */
+/** A stable file session whose commands read the store when they run. */
 export function useFileSession(
   bridge: FileBridge = browserFileBridge,
+  pdf: PdfExport = browserPdfExport,
 ): FileSession {
   const [report, setReport] = useState<LossReport | undefined>(undefined);
   const [closing, setClosing] = useState(false);
   const [choosing, setChoosing] = useState(false);
   const picker = useRef<HTMLInputElement | null>(null);
+  const exporter = useExportCommands(bridge, pdf);
 
   const attachPicker = useCallback((input: HTMLInputElement | null): void => {
     picker.current = input;
@@ -249,8 +222,11 @@ export function useFileSession(
       closing,
       choosing,
       asksFormat: !bridge.asksWhere(),
+      exports: exporter.commands,
+      exportNotice: exporter.notice,
       attachPicker,
       dismissReport,
+      dismissExportNotice: exporter.dismissNotice,
       receive,
       confirmClose: closeFile,
       cancelClose,
@@ -268,6 +244,7 @@ export function useFileSession(
       closing,
       commands,
       dismissReport,
+      exporter,
       receive,
       report,
     ],

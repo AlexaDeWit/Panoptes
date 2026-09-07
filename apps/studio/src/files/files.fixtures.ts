@@ -5,6 +5,7 @@ import {
   SaveOutcome,
   readWithin,
   type ChosenFile,
+  type FileContent,
   type FileBridge,
   type SaveFileType,
 } from './bridge.js';
@@ -37,6 +38,7 @@ export function vendoredFile(path: string): ChosenFile {
 export type Recorded = {
   readonly name: string;
   readonly text: string;
+  readonly blob?: Blob;
   readonly elsewhere: boolean;
 };
 
@@ -89,12 +91,17 @@ export function specBridge(options: SpecBridgeOptions = {}): SpecBridge {
 
   const answer = (
     name: string,
-    text: string,
+    content: FileContent,
     elsewhere: boolean,
   ): Promise<SaveOutcome> => {
     const outcome = options.save ?? SaveOutcome.Written({ name });
     if (SaveOutcome.$is('Written')(outcome)) {
-      writes.push({ name: outcome.name, text, elsewhere });
+      writes.push({
+        name: outcome.name,
+        text: typeof content === 'string' ? content : '',
+        blob: content instanceof Blob ? content : undefined,
+        elsewhere,
+      });
     }
     return Promise.resolve(outcome);
   };
@@ -111,6 +118,12 @@ export function specBridge(options: SpecBridgeOptions = {}): SpecBridge {
       const chosen =
         options.picker === false ? name : (options.chooses ?? name);
       return answer(chosen, text(chosen), true);
+    },
+    exportFile: (name, type, content) => {
+      offered.push([type]);
+      const chosen =
+        options.picker === false ? name : (options.chooses ?? name);
+      return answer(chosen, content, true);
     },
     asksWhere: () => options.picker !== false,
     release: () => {
