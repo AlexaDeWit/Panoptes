@@ -277,14 +277,8 @@ export const dragBy = async (
   page: Page,
   target: Locator,
   by: number | Point,
-  from: Point = { x: 0.5, y: 0.5 },
 ): Promise<void> => {
-  const box = await target.boundingBox();
-  expect(box).not.toBeNull();
-  const start = {
-    x: (box?.x ?? 0) + (box?.width ?? 0) * from.x,
-    y: (box?.y ?? 0) + (box?.height ?? 0) * from.y,
-  };
+  const start = await centreOf(target);
   const offset = typeof by === 'number' ? { x: by, y: by } : by;
   await page.mouse.move(start.x, start.y);
   await page.mouse.down();

@@ -189,24 +189,35 @@ export type CanvasFreeEndNode = Node<CanvasFreeEndData, typeof freeEndNodeKind>;
 export function CanvasNodeBody({
   controlsVisible = true,
   data,
+  height,
   isConnectable,
   onResizeEnd,
   selected,
+  width,
 }: NodeProps<CanvasFlowNode> & {
   readonly controlsVisible?: boolean;
   readonly onResizeEnd?: (box: NodeBox) => void;
 }): ReactElement {
+  const shownSize = {
+    width: width ?? data.node.size.width,
+    height: height ?? data.node.size.height,
+  };
+  const shownNode =
+    shownSize.width === data.node.size.width &&
+    shownSize.height === data.node.size.height
+      ? data.node
+      : { ...data.node, size: shownSize };
   return (
     <>
       <svg
-        width={svgNumber(data.node.size.width)}
-        height={svgNumber(data.node.size.height)}
+        width={svgNumber(shownSize.width)}
+        height={svgNumber(shownSize.height)}
         style={{ display: 'block' }}
         overflow="visible"
         aria-hidden="true"
       >
-        {isBoundary(data.node) ? <BoundaryHitTarget node={data.node} /> : null}
-        <ElementGlyph node={data.node} />
+        {isBoundary(shownNode) ? <BoundaryHitTarget node={shownNode} /> : null}
+        <ElementGlyph node={shownNode} />
       </svg>
       {handleSides.map((side) => (
         <Handle

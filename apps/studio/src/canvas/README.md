@@ -31,21 +31,10 @@ The canvas is the studio's window: it fills the viewport. The menu, toolbox,
 threat panel and zoom cluster float inside it instead of taking space from the
 diagram.
 
-The ground is graph paper: React Flow's own `Background` component ruled at
-the grid spacing the canvas package's token module decides, so the lines scale
-with the viewport and a zoom reads as one rather than as a grid that stayed
-still. Its colour is handed over as `--xy-background-pattern-color` in the CSS
-module beside `diagram-canvas.tsx`, which is where the studio's own
-`--pn-colour-grid` reaches React Flow's pattern. The two colours a connection
-handle is drawn in arrive the same way, as `--xy-handle-background-color` and
-`--xy-handle-border-color`: React Flow reads each of its colours from a
-property on the container before falling back to a `-default` it declares on
-`.react-flow` itself, so the name without that suffix is the one a value set
-above it reaches. The grid and the handles are what the studio colours in
-React Flow's own parts here. The resize control at a selected element's corner
-still wears React Flow's colour until #180 recolours it. What those colours are and why is the token
-module's
-([the visual system](../../../../packages/canvas/README.md#the-visual-system)).
+React Flow draws the graph-paper ground at the grid spacing from the canvas
+package. The studio supplies its grid and connection-handle colours through
+React Flow's custom properties. Its CSS draws resize controls with the same
+token table ([the visual system](../../../../packages/canvas/README.md#the-visual-system)).
 
 The diagram's own colours arrive by the same route. What `diagram-canvas.tsx`
 injects is `themedCanvasStylesheet`, the canvas sheet written in those same
@@ -268,11 +257,10 @@ Select rests on the plain arrow over the pane and nodes. A flow keeps its link
 pointer, and a connection handle keeps its crosshair. Place uses a crosshair
 over the canvas. Hand uses `grab`, then `grabbing` during its pan.
 
-The control that resizes the selected element is a square where the handle a
-flow is drawn from is a circle, and the two sit at the same corner, so shape
-rather than colour tells them apart. Its cursor names the direction it sizes
-in, and it is on the selected element alone, React Flow mounting it from
-`selected` (the Resize bullet above).
+Four lines resize a selected element from its sides. Four square handles
+resize it from its corners. A side line takes the pointer away from the round
+connection handle at the midpoint. Each control uses a directional cursor and
+shows hover and keyboard focus ([Resize](#editing)).
 
 What counts as in view is what the threat panel is not over. The panel opens
 on the same selection this pans for ([the panel](../panel/README.md)), so an

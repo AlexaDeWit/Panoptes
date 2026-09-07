@@ -68,6 +68,7 @@ const bodyMarkup = (
   selected = false,
   isConnectable = false,
   controlsVisible = true,
+  size?: { readonly width: number; readonly height: number },
 ): string =>
   renderToStaticMarkup(
     <ReactFlowProvider>
@@ -76,6 +77,8 @@ const bodyMarkup = (
         selected={selected}
         isConnectable={isConnectable}
         controlsVisible={controlsVisible}
+        width={size?.width}
+        height={size?.height}
       />
     </ReactFlowProvider>,
   );
@@ -127,6 +130,17 @@ describe('CanvasNodeBody', () => {
 
   it('draws the shared glyph and nothing of its own', () => {
     expect(bodyMarkup(nodeNamed('el-client'))).toContain('<rect');
+  });
+
+  it('draws the glyph at the transient extent React Flow reports', () => {
+    const markup = bodyMarkup(nodeNamed('el-client'), false, false, true, {
+      width: 200,
+      height: 90,
+    });
+    expect(markup).toContain('<svg width="200" height="90"');
+    expect(markup).toContain(
+      '<rect class="pn-shape pn-actor" width="200" height="90"',
+    );
   });
 
   it('carries a handle at each side, named for that side', () => {

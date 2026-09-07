@@ -298,7 +298,9 @@ for (const [tool, named, shape, shapeCount, square] of previewedBoxTools) {
     const committed = await inkBoxOf(node.locator(shape));
     const field = await node.getByRole('textbox').boundingBox();
     await expect(node.locator('.react-flow__handle').first()).toBeHidden();
-    await expect(node.locator('.react-flow__resize-control')).toBeHidden();
+    await expect(
+      node.locator('.react-flow__resize-control:visible'),
+    ).toHaveCount(0);
     expect(committed.x).toBeCloseTo(drawn.x);
     expect(committed.y).toBeCloseTo(drawn.y);
     expect(committed.width).toBeCloseTo(drawn.width);

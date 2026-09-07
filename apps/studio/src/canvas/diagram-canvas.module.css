@@ -124,6 +124,7 @@
 
 .canvas :global(.react-flow__resize-control.line) {
   border-color: var(--pn-colour-text);
+  pointer-events: none;
   z-index: 1;
 }
 
@@ -137,6 +138,35 @@
   height: 9px;
 }
 
+.canvas :global(.react-flow__resize-control.line.top),
+.canvas :global(.react-flow__resize-control.line.left) {
+  transform: translate(0, 0);
+}
+
+.canvas :global(.react-flow__resize-control.line.right) {
+  transform: translate(-100%, 0);
+}
+
+.canvas :global(.react-flow__resize-control.line.bottom) {
+  transform: translate(0, -100%);
+}
+
+.canvas :global(.react-flow__resize-control.handle.top.left) {
+  translate: 0 0;
+}
+
+.canvas :global(.react-flow__resize-control.handle.top.right) {
+  translate: -100% 0;
+}
+
+.canvas :global(.react-flow__resize-control.handle.bottom.right) {
+  translate: -100% -100%;
+}
+
+.canvas :global(.react-flow__resize-control.handle.bottom.left) {
+  translate: 0 -100%;
+}
+
 .canvas :global(.react-flow__resize-control > button) {
   position: absolute;
   inset: 0;
@@ -146,6 +176,26 @@
   border: 0;
   background: transparent;
   cursor: inherit;
+}
+
+.canvas :global(.react-flow__resize-control.line > button) {
+  inset: auto;
+  width: 16px;
+  height: 16px;
+  pointer-events: auto;
+  transform: translate(-50%, -50%);
+}
+
+.canvas :global(.react-flow__resize-control.line.top > button),
+.canvas :global(.react-flow__resize-control.line.bottom > button) {
+  top: 50%;
+  left: 25%;
+}
+
+.canvas :global(.react-flow__resize-control.line.left > button),
+.canvas :global(.react-flow__resize-control.line.right > button) {
+  top: 25%;
+  left: 50%;
 }
 
 .canvas :global(.react-flow__resize-control:hover) {
