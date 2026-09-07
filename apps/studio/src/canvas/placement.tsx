@@ -51,11 +51,17 @@ type PlacementPointerEvent = Pick<
   | 'target'
 >;
 
+type PlacementCancellationEvent = Pick<
+  PointerEvent<HTMLDivElement>,
+  'pointerId'
+>;
+
 type PlacementGesture = {
   readonly pointerId: number;
   readonly tool: BoxTool;
   readonly revision: number;
   readonly transition: number;
+  readonly contextRevision: number;
   readonly layout: CanvasLayout;
   readonly screen: Point;
   readonly flow: Point;
@@ -74,6 +80,13 @@ type CurveDraft = {
   readonly pointer: Point | undefined;
 };
 
+type BoxDraft = {
+  readonly contextRevision: number;
+  readonly transition: number;
+  readonly layout: CanvasLayout;
+  readonly gesture: PlacementGesture | undefined;
+};
+
 /** The active mode and event handlers for placement gestures. */
 export type PlacementControls = {
   readonly mode: ToolState;
@@ -82,7 +95,7 @@ export type PlacementControls = {
   readonly pointerDown: (event: PlacementPointerEvent) => void;
   readonly pointerMove: (event: PlacementPointerEvent) => void;
   readonly pointerUp: (event: PlacementPointerEvent) => void;
-  readonly pointerCancel: () => void;
+  readonly pointerCancel: (event: PlacementCancellationEvent) => void;
 };
 
 /** Connects toolbox modes to pointer and Enter placement gestures. */
@@ -113,14 +126,27 @@ export function usePlacement(
   const curve = currentDraft ? curveDraft.waypoints : noPoints;
   const curvePointer = currentDraft ? curveDraft.pointer : undefined;
   const gesture = useRef<PlacementGesture | undefined>(undefined);
-  const [boxDraft, setBoxDraft] = useState<PlacementGesture | undefined>();
+  const [boxDraft, setBoxDraft] = useState<BoxDraft>({
+    contextRevision: 0,
+    transition: mode.transition,
+    layout,
+    gesture: undefined,
+  });
+  if (boxDraft.transition !== mode.transition || boxDraft.layout !== layout) {
+    setBoxDraft({
+      contextRevision: boxDraft.contextRevision + 1,
+      transition: mode.transition,
+      layout,
+      gesture: undefined,
+    });
+  }
   const currentBoxDraft =
-    boxDraft?.tool === mode.active &&
-    boxDraft.revision === mode.revision &&
-    boxDraft.transition === mode.transition &&
-    boxDraft.layout === layout
-      ? boxDraft
+    boxDraft.transition === mode.transition && boxDraft.layout === layout
+      ? boxDraft.gesture
       : undefined;
+  const setBoxGesture = (next: PlacementGesture | undefined): void => {
+    setBoxDraft((current) => ({ ...current, gesture: next }));
+  };
 
   const clearCurve = useCallback((): void => {
     setCurveDraft({
@@ -241,6 +267,8 @@ export function usePlacement(
     if (
       event.button !== 0 ||
       !event.isPrimary ||
+      (gesture.current !== undefined &&
+        gesture.current.contextRevision === boxDraft.contextRevision) ||
       !isBoxTool(mode.active) ||
       !(event.target instanceof Element) ||
       event.target.closest('input, textarea, button, a') !== null ||
@@ -257,13 +285,14 @@ export function usePlacement(
       tool: mode.active,
       revision: mode.revision,
       transition: mode.transition,
+      contextRevision: boxDraft.contextRevision,
       layout,
       screen: { x: event.clientX, y: event.clientY },
       flow,
       geometry: centredPlacement(mode.active, flow),
     };
     gesture.current = started;
-    setBoxDraft(started);
+    setBoxGesture(started);
     event.currentTarget.setPointerCapture?.(event.pointerId);
     event.preventDefault();
     event.stopPropagation();
@@ -277,10 +306,11 @@ export function usePlacement(
         started.tool !== current.active ||
         started.revision !== current.revision ||
         started.transition !== current.transition ||
+        started.contextRevision !== boxDraft.contextRevision ||
         started.layout !== layout
       ) {
         gesture.current = undefined;
-        setBoxDraft(undefined);
+        setBoxGesture(undefined);
         return;
       }
       const point = screenToFlow(event.clientX, event.clientY);
@@ -300,7 +330,7 @@ export function usePlacement(
         ),
       };
       gesture.current = moved;
-      setBoxDraft(moved);
+      setBoxGesture(moved);
       event.preventDefault();
       event.stopPropagation();
       return;
@@ -330,13 +360,14 @@ export function usePlacement(
       return;
     }
     gesture.current = undefined;
-    setBoxDraft(undefined);
+    setBoxGesture(undefined);
     event.currentTarget.releasePointerCapture?.(event.pointerId);
     const current = currentTool();
     if (
       started.tool !== current.active ||
       started.revision !== current.revision ||
       started.transition !== current.transition ||
+      started.contextRevision !== boxDraft.contextRevision ||
       started.layout !== layout
     ) {
       return;
@@ -369,9 +400,12 @@ export function usePlacement(
     pointerDown,
     pointerMove,
     pointerUp,
-    pointerCancel: () => {
+    pointerCancel: (event) => {
+      if (gesture.current?.pointerId !== event.pointerId) {
+        return;
+      }
       gesture.current = undefined;
-      setBoxDraft(undefined);
+      setBoxGesture(undefined);
     },
   };
 }

@@ -118,7 +118,7 @@ describe('box placement gestures', () => {
     act(() => {
       result.current.pointerDown(pointer({ x: 100, y: 80 }));
       result.current.pointerMove(pointer({ x: 180, y: 140 }));
-      result.current.pointerCancel();
+      result.current.pointerCancel(pointer({ x: 180, y: 140 }));
       result.current.pointerUp(pointer({ x: 180, y: 140 }));
     });
 
@@ -158,6 +158,7 @@ describe('box placement gestures', () => {
     });
     modelStore.setState(initialState(placeholderModel), true);
     rerender({ current: currentLayout(modelStore.getState()) });
+    rerender({ current: firstLayout });
 
     expect(result.current.preview).toBeUndefined();
     act(() => {
@@ -166,6 +167,31 @@ describe('box placement gestures', () => {
     expect(elementCount()).toBe(3);
     expect(modelStore.getState().past).toHaveLength(0);
     expect(before).toBe(6);
+  });
+
+  it('keeps one pointer in control until that pointer cancels', () => {
+    const { result } = renderPlacement();
+
+    act(() => {
+      result.current.pointerDown(pointer({ x: 100, y: 80 }, 1));
+      result.current.pointerDown(pointer({ x: 300, y: 280 }, 2));
+      result.current.pointerMove(pointer({ x: 180, y: 140 }, 1));
+    });
+    expect(boxPreview(result.current)).toMatchObject({
+      position: { x: 100, y: 80 },
+      size: { width: 80, height: 60 },
+    });
+
+    act(() => {
+      result.current.pointerCancel(pointer({ x: 300, y: 280 }, 2));
+    });
+    expect(result.current.preview).toBeDefined();
+
+    act(() => {
+      result.current.pointerCancel(pointer({ x: 180, y: 140 }, 1));
+    });
+    expect(result.current.preview).toBeUndefined();
+    expect(modelStore.getState().past).toHaveLength(0);
   });
 
   it('gives the same model geometry through pan and zoom', () => {
@@ -183,7 +209,7 @@ describe('box placement gestures', () => {
       });
       const preview = boxPreview(rendered.result.current);
       act(() => {
-        rendered.result.current.pointerCancel();
+        rendered.result.current.pointerCancel(pointer(screen(to)));
       });
       rendered.unmount();
       return preview;
