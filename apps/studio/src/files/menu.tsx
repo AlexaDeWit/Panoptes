@@ -1,3 +1,4 @@
+import { ExternalLinkIcon } from '@radix-ui/react-icons';
 import { DropdownMenu } from 'radix-ui';
 import { useEffect, useState, type ReactNode } from 'react';
 import { useCommandSurface } from '../commands/binding.js';
@@ -98,13 +99,7 @@ function SourceLink() {
         target="_blank"
       >
         <span>View source on GitHub</span>
-        <svg
-          aria-hidden="true"
-          className={styles.externalLink}
-          viewBox="0 0 16 16"
-        >
-          <path d="M9.5 2.5h4v4M13.5 2.5l-6 6M12.5 9v3.5a1 1 0 0 1-1 1h-8a1 1 0 0 1-1-1v-8a1 1 0 0 1 1-1H7" />
-        </svg>
+        <ExternalLinkIcon aria-hidden="true" className={styles.externalLink} />
       </a>
     </DropdownMenu.Item>
   );
