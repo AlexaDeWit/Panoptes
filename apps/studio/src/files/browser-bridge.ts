@@ -54,9 +54,13 @@ async function open(maxBytes: number): Promise<OpenOutcome> {
   }
 }
 
-function received(file: ChosenFile, maxBytes: number): Promise<OpenOutcome> {
+async function received(
+  file: ChosenFile,
+  maxBytes: number,
+): Promise<OpenOutcome> {
+  const outcome = await readWithin(file, maxBytes);
   release();
-  return readWithin(file, maxBytes);
+  return outcome;
 }
 
 function release(): void {
@@ -170,7 +174,7 @@ function mediaTypeOf(type: SaveFileType): string {
 }
 
 /**
- * Handles are dropped by release, fallback opens or save-as, and bounded picker read failures.
+ * Handles are dropped by release, completed fallback reads, fallback save-as, and bounded picker read failures.
  * Save completions cannot replace a newer association.
  */
 export const browserFileBridge: FileBridge = {

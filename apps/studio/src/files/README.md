@@ -27,6 +27,7 @@ changes stay guarded. Dismissing a picker keeps the file association.
 
 A save already in progress can still write its target. After the association
 changes, its completion cannot rename or mark the current model saved.
+A fallback read releases the handle when it completes, including a failed read.
 
 `session.ts` is what the studio does with a file, as pure functions the
 component calls and a spec calls directly. A read is the size against

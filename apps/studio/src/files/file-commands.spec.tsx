@@ -26,6 +26,7 @@ import { useFileSession } from './file-commands.js';
 import { chosenFile, handleFor, specBridge } from './files.fixtures.js';
 
 const nativeText = saerskrivenYamlCodec.write(sampleModel).output;
+const downloads: string[] = [];
 
 const failedFiles: readonly ChosenFile[] = [
   { ...chosenFile('large.yaml', ''), size: readLimits.maxTextBytes + 1 },
@@ -51,6 +52,22 @@ const edit = (): void => {
 };
 
 beforeEach(() => {
+  browserFileBridge.release();
+  downloads.length = 0;
+  vi.stubGlobal(
+    'URL',
+    class extends URL {
+      static override createObjectURL(): string {
+        return 'blob:model';
+      }
+      static override revokeObjectURL(): void {}
+    },
+  );
+  vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(
+    function (this: HTMLAnchorElement) {
+      downloads.push(this.download);
+    },
+  );
   modelStore.setState(initialState(sampleModel), true);
   vi.stubGlobal(
     'confirm',
@@ -76,7 +93,6 @@ describe('useFileSession', () => {
       'stale write refusal',
       'save finishes first',
     ] as const)('keeps the association consistent after %s', async (change) => {
-      browserFileBridge.release();
       const writes: Record<string, FileContent[]> = {
         'original.yaml': [],
         'elsewhere.yaml': [],
@@ -117,21 +133,6 @@ describe('useFileSession', () => {
         .mockResolvedValue([replacement]);
       vi.stubGlobal('showOpenFilePicker', picker);
       vi.stubGlobal('showSaveFilePicker', () => Promise.resolve(elsewhere));
-      vi.stubGlobal(
-        'URL',
-        class extends URL {
-          static override createObjectURL(): string {
-            return 'blob:model';
-          }
-          static override revokeObjectURL(): void {}
-        },
-      );
-      const downloads: string[] = [];
-      vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(
-        function (this: HTMLAnchorElement) {
-          downloads.push(this.download);
-        },
-      );
       const result = session(browserFileBridge);
       await act(() => {
         result.current.commands.open();
@@ -243,6 +244,101 @@ describe('useFileSession', () => {
       });
     });
   });
+
+  describe.each(['read first', 'save first'] as const)(
+    'a fallback selection and Save As complete %s',
+    (order) => {
+      it.each(['chosen', 'unreadable', 'refused', 'cancelled'] as const)(
+        'keeps the next Save target consistent when the selection is %s',
+        async (outcome) => {
+          const original: FileContent[] = [];
+          const elsewhere: FileContent[] = [];
+          let finishRead: (() => void) | undefined;
+          const readPending = new Promise<void>((resolve) => {
+            finishRead = resolve;
+          });
+          let finishSave: (() => void) | undefined;
+          const savePending = new Promise<void>((resolve) => {
+            finishSave = resolve;
+          });
+          const close = vi.fn<() => Promise<void>>(() => savePending);
+          vi.stubGlobal('showOpenFilePicker', () =>
+            Promise.resolve([handleFor('original.yaml', nativeText, original)]),
+          );
+          vi.stubGlobal('showSaveFilePicker', () =>
+            Promise.resolve(
+              handleFor('elsewhere.yaml', nativeText, elsewhere, close),
+            ),
+          );
+          const result = session(browserFileBridge);
+          await act(() => {
+            result.current.commands.open();
+            return Promise.resolve();
+          });
+          edit();
+          const file = {
+            ...chosenFile('replacement.yaml', nativeText),
+            text: () =>
+              readPending.then(() =>
+                outcome === 'unreadable'
+                  ? Promise.reject(new Error('NotAllowedError'))
+                  : outcome === 'refused'
+                    ? 'not a model'
+                    : nativeText,
+              ),
+          };
+          const reading = result.current.receive(
+            outcome === 'cancelled' ? undefined : file,
+          );
+          act(() => {
+            result.current.commands.saveAs();
+          });
+          await waitFor(() => {
+            expect(close).toHaveBeenCalledTimes(1);
+          });
+
+          for (const readFirst of order === 'read first'
+            ? [true, false]
+            : [false, true]) {
+            await act(async () => {
+              if (readFirst) {
+                finishRead?.();
+                await reading;
+              } else {
+                finishSave?.();
+                await savePending;
+              }
+            });
+          }
+
+          const name =
+            outcome === 'chosen'
+              ? 'replacement.yaml'
+              : outcome === 'cancelled'
+                ? 'elsewhere.yaml'
+                : 'threat-model.yaml';
+          expect(modelStore.getState().file).toMatchObject(
+            name === 'threat-model.yaml'
+              ? FileLifecycle.NoFile()
+              : { _tag: 'Opened', name },
+          );
+          expect(elsewhere).toHaveLength(1);
+          await act(() => {
+            result.current.commands.save();
+            return Promise.resolve();
+          });
+
+          expect(downloads).toEqual(outcome === 'cancelled' ? [] : [name]);
+          expect(original).toEqual([]);
+          expect(elsewhere).toHaveLength(outcome === 'cancelled' ? 2 : 1);
+          expect(modelStore.getState().file).toMatchObject({
+            _tag: 'Opened',
+            name,
+          });
+        },
+      );
+    },
+  );
 
   it('holds one command set for controls and key presses', () => {
     const result = session(specBridge());
