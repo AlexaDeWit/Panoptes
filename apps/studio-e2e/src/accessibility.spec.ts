@@ -167,7 +167,10 @@ test('the studio carries no violation while it says what an edit did', async ({
 
   await audit(page, 'showing an added element');
 
-  await page.keyboard.press('Enter');
+  const name = page.getByRole('textbox', { name: 'Name of New actor' });
+  await expect(name).toBeFocused();
+  await name.press('Enter');
+  await expect(name).toHaveCount(0);
   await page.keyboard.press('Delete');
   await expect
     .poll(() => page.getByTestId('canvas-announcement').textContent())
@@ -200,7 +203,10 @@ test('the studio carries no violation with the menu open', async ({ page }) => {
   await audit(page, 'showing a loss report');
 
   await placeByClick(page, 'Actor', /^New actor, actor/u);
-  await page.keyboard.press('Enter');
+  const name = page.getByRole('textbox', { name: 'Name of New actor' });
+  await expect(name).toBeFocused();
+  await name.press('Enter');
+  await expect(name).toHaveCount(0);
   await page.keyboard.press(registeredChords['close-file'][0]);
   await expect(menuItem(page, 'Discard the changes and close')).toBeVisible();
 
