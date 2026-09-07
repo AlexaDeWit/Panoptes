@@ -1,6 +1,6 @@
 import { AxeBuilder } from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
-import { menuItem, openMenu, openPlaceholder } from './studio.fixtures.js';
+import { openMenu, openPlaceholder } from './studio.fixtures.js';
 
 const appearance = (page: Page) =>
   page.getByRole('menuitem', { name: /^Appearance /u });
