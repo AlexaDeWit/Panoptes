@@ -14,7 +14,6 @@
     "check": "pnpm nx sync:check && pnpm nx run-many -t lint boundaries && pnpm format:check && pnpm nx run-many -t build typecheck && pnpm nx run-many -t test -- --coverage.enabled=true",
     "fix": "oxlint apps packages --fix && pnpm format",
     "snapshots:update": "vitest run --update --project",
-    "social-card:update": "pnpm --filter @saerskriven/studio-e2e social-card --update-snapshots=all",
     "format": "oxfmt",
     "format:check": "oxfmt --check"
   },

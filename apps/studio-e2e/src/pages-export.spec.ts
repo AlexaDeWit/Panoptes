@@ -1,11 +1,10 @@
-import { readFileSync } from 'node:fs';
 import { expect, test } from '@playwright/test';
 import {
   expectedPdfDigest,
   pdfDigest,
   pdfPageCount,
 } from './exports.fixtures.js';
-import { exportedFile, openFile, vendored } from './studio.fixtures.js';
+import { exportedFile, openFile } from './studio.fixtures.js';
 
 const socialImage = 'https://alexadewit.github.io/Saerskriven/social-card.png';
 const socialImageAlt =
@@ -48,7 +47,10 @@ test('the Pages build publishes the social card and its text alternative', async
   );
   expect(response.ok()).toBe(true);
   expect(response.headers()['content-type']).toContain('image/png');
-  expect(await response.body()).toEqual(
-    readFileSync(vendored('apps/studio/public/social-card.png')),
+  const png = await response.body();
+  expect(png.subarray(0, 8)).toEqual(
+    Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]),
   );
+  expect(png.readUInt32BE(16)).toBe(1200);
+  expect(png.readUInt32BE(20)).toBe(630);
 });

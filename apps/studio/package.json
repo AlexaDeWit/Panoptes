@@ -5,7 +5,7 @@
   "type": "module",
   "//": [
     "build repeats the Vite plugin's inferred inputs because a leaf override replaces them, then adds the three environment inputs below.",
-    "The studio emits external fonts and Pages metadata, so changes to their paths must invalidate the cached build."
+    "The studio emits external fonts, Pages metadata, and a browser-rendered card, so changes to their paths must invalidate the cached build."
   ],
   "dependencies": {
     "@radix-ui/react-icons": "catalog:",
@@ -24,6 +24,7 @@
     "@testing-library/dom": "catalog:",
     "@testing-library/react": "catalog:",
     "@testing-library/user-event": "catalog:",
+    "@playwright/test": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
     "ajv": "catalog:"
@@ -47,9 +48,16 @@
             "env": "PAGES_SITE_URL"
           },
           {
+            "env": "PLAYWRIGHT_BROWSERS_PATH"
+          },
+          {
+            "env": "PLAYWRIGHT_DRIVER_VERSION"
+          },
+          {
             "externalDependencies": [
               "vite",
-              "@vitejs/plugin-react"
+              "@vitejs/plugin-react",
+              "@playwright/test"
             ]
           },
           "viteGlobals"

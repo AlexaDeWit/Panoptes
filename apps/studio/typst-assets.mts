@@ -9,7 +9,7 @@ const publicId = 'virtual:saerskriven-typst-assets';
 const resolvedId = `\0${publicId}`;
 const wasmId = 'virtual:saerskriven-typst-wasm?url';
 
-const refuse = (sentence: string): never => {
+export const refuseStudioBuild = (sentence: string): never => {
   throw new Error(
     `${sentence} Run the studio inside the flake shell: nix develop --command pnpm nx build @saerskriven/studio`,
   );
@@ -32,7 +32,7 @@ export const typstFontUrls = [${names.join(', ')}];\n`;
  * The Nix-provided PDF fonts and render-owned compiler module as Vite assets.
  */
 export function typstAssets() {
-  const assets = typstFontAssets(refuse);
+  const assets = typstFontAssets(refuseStudioBuild);
   const fonts = new Map(
     assets.map((asset, index) => [fontId(index), `${asset.from}?url`]),
   );

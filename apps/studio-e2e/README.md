@@ -37,8 +37,8 @@ the main browser project is testing. It writes to the e2e project's
 output.
 
 `apps/studio/social-card-source.html` is the editable source for the social
-card. `pnpm social-card:update` renders it through the pinned Chromium, and
-`social-card.spec.ts` fails when the published PNG differs from that source.
+card. The studio build renders it through the pinned Chromium, and the Pages
+spec checks the published image and its text alternative.
 
 `src/` holds the Playwright specs and the fixtures they share. `tests/` holds
 this project's own unit specs: the chords the browser suite presses, held

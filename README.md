@@ -152,7 +152,6 @@ nix develop            # or let direnv do it
 pnpm install
 pnpm check             # everything the CI gate runs
 pnpm fix               # write formatting and lint fixes
-pnpm social-card:update # render the social card from its editable source
 pnpm nx e2e @saerskriven/studio-e2e   # browser smoke, excluded from pnpm check
 semgrep scan --config auto --severity ERROR --severity WARNING --error .   # SAST scan, excluded from pnpm check
 scripts/check-provenance.mjs       # dependency provenance, excluded from pnpm check
