@@ -4,6 +4,7 @@ import { registeredChords } from './chords.js';
 import { savedFromMenu } from './commands.fixtures.js';
 import {
   handleOn,
+  menuButton,
   menuItem,
   nodeNamed,
   openMenu,
@@ -214,7 +215,7 @@ test('the studio carries no violation with the menu open', async ({ page }) => {
   await expect(name).toBeFocused();
   await name.press('Enter');
   await expect(name).toHaveCount(0);
-  await page.keyboard.press(registeredChords['close-file'][0]);
+  await menuButton(page).press(registeredChords['close-file'][0]);
   await expect(menuItem(page, 'Discard the changes and close')).toBeVisible();
 
   await audit(page, 'showing the menu asking before it closes a file');

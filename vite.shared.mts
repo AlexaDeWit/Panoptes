@@ -48,6 +48,8 @@ export const reactLib = (projectRoot: string) =>
 
 type ReactAppOptions = {
   readonly base?: string;
+  readonly cacheDirectory?: string;
+  readonly outDirectory?: string;
   readonly port?: number;
   readonly plugins?: PluginOption[];
   readonly setupFiles?: string[];
@@ -58,6 +60,8 @@ export const reactApp = (
   projectRoot: string,
   {
     base,
+    cacheDirectory,
+    outDirectory = './dist',
     port = 4200,
     plugins = [],
     setupFiles = [],
@@ -67,7 +71,7 @@ export const reactApp = (
   defineConfig({
     base,
     root: projectRoot,
-    cacheDir: cacheDir(projectRoot),
+    cacheDir: cacheDirectory ?? cacheDir(projectRoot),
     plugins: [
       react(),
       ...plugins,
@@ -76,7 +80,7 @@ export const reactApp = (
     server: { port, host: 'localhost' },
     preview: { port, host: 'localhost' },
     build: {
-      outDir: './dist',
+      outDir: outDirectory,
       emptyOutDir: true,
       reportCompressedSize: true,
       commonjsOptions: { transformMixedEsModules: true },

@@ -30,6 +30,12 @@ Its PDF export catches missing hashed chunks, WASM files, fonts, or base-path
 prefixes. It runs after the main browser project, so PDF compilation does not
 contend with its keyboard and gesture tests.
 
+Playwright starts the Pages build beside the development server. The build
+uses a second Vite cache, so its dependency optimizer cannot reload the page
+the main browser project is testing. It writes to the e2e project's
+`test-output/pages-site` directory, which the e2e target declares as its own
+output.
+
 `src/` holds the Playwright specs and the fixtures they share. `tests/` holds
 this project's own unit specs: the chords the browser suite presses, held
 against the studio's command registry, and the diff walk the round-trip spec
