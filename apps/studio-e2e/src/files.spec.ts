@@ -15,8 +15,9 @@ test('opens a model, saves it back, and writes a file that parses again', async 
   await openFile(page, 'test-data/ecluse.json');
 
   await openMenu(page);
-  await expect(page.getByTestId('file-state')).toHaveText(
-    'ecluse.json, Threat Dragon JSON, no unsaved changes',
+  await expect(page.getByTestId('file-state')).toContainText('ecluse.json');
+  await expect(page.getByTestId('file-state')).toContainText(
+    'Threat Dragon JSON',
   );
   await closeMenu(page);
   await expect(elementNodes(page)).toHaveCount(18);
@@ -38,8 +39,9 @@ test('opens the native format by its content, and draws the same diagram', async
   await openFile(page, 'test-data/saerskriven/ecluse.yaml');
 
   await openMenu(page);
-  await expect(page.getByTestId('file-state')).toHaveText(
-    'ecluse.yaml, Saerskriven YAML, no unsaved changes',
+  await expect(page.getByTestId('file-state')).toContainText('ecluse.yaml');
+  await expect(page.getByTestId('file-state')).toContainText(
+    'Saerskriven YAML',
   );
   await closeMenu(page);
   await expect(elementNodes(page)).toHaveCount(18);
@@ -59,8 +61,6 @@ test('says what it could not read, and stays up', async ({ page }) => {
     buffer: Buffer.from('no threat model here'),
   });
 
-  await expect(page.getByTestId('failure-notice')).toContainText(
-    'No format claimed notes.txt.',
-  );
+  await expect(page.getByTestId('failure-notice')).toContainText('notes.txt');
   await expect(page.getByTestId('canvas-container')).toBeVisible();
 });

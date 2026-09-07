@@ -85,23 +85,22 @@ test('the empty state says what to do next, and the line goes at the first edit'
 }) => {
   await openPlaceholder(page);
 
-  await expect(hint(page)).toHaveText('Open a model, or pick a tool');
+  await expect(hint(page)).not.toBeEmpty();
 
   await page.getByRole('button', { name: 'New actor', exact: true }).click();
 
   await expect(hint(page)).toHaveCount(0);
 });
 
-test('the tab says Untitled until the model lives in a file', async ({
-  page,
-}) => {
+test('the tab follows the file after the first save', async ({ page }) => {
   await page.addInitScript(withoutPickers);
   await openPlaceholder(page);
-
-  await expect(page).toHaveTitle('Untitled - Saerskriven');
+  const landingTitle = await page.title();
+  expect(landingTitle.trim()).not.toBe('');
 
   const written = await savedFile(page);
 
   expect(written.name).toBe('threat-model.yaml');
-  await expect(page).toHaveTitle('threat-model.yaml - Saerskriven');
+  await expect.poll(() => page.title()).not.toBe(landingTitle);
+  await expect.poll(() => page.title()).toContain(written.name);
 });

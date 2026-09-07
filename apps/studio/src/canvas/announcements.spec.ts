@@ -7,20 +7,22 @@ import {
 } from './announcements.js';
 
 describe('announce', () => {
+  const message = 'message';
+
   beforeEach(() => {
     resetAnnouncements();
   });
 
   it('holds what was last said', () => {
-    announce('Added New actor, actor.');
+    announce(message);
 
-    expect(currentAnnouncement().message).toBe('Added New actor, actor.');
+    expect(currentAnnouncement().message).toBe(message);
   });
 
   it('counts every announcement, so the same words twice over are two of them', () => {
-    announce('Added New actor, actor.');
+    announce(message);
     const first = currentAnnouncement();
-    announce('Added New actor, actor.');
+    announce(message);
 
     expect(currentAnnouncement().sequence).toBe(first.sequence + 1);
   });
@@ -30,7 +32,7 @@ describe('announce', () => {
   });
 
   it('starts again from silence when reset', () => {
-    announce('Added New actor, actor.');
+    announce(message);
     resetAnnouncements();
 
     expect(currentAnnouncement().message).toBe('');
@@ -44,15 +46,12 @@ describe('useAnnouncement', () => {
 
   it('tells a subscribed component what was said, and that it was unsaid', () => {
     const { result } = renderHook(() => useAnnouncement());
+    const message = 'message';
 
     act(() => {
-      announce(
-        'Removed Reader, actor. no flows detached, no threat links dropped.',
-      );
+      announce(message);
     });
-    expect(result.current.message).toBe(
-      'Removed Reader, actor. no flows detached, no threat links dropped.',
-    );
+    expect(result.current.message).toBe(message);
 
     act(() => {
       resetAnnouncements();

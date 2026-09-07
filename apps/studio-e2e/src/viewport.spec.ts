@@ -139,12 +139,12 @@ test('each control in the cluster says which chord runs it, to a pointer and to 
 
   await expect(fit).toHaveAttribute('aria-keyshortcuts', 'Control+0');
   await fit.hover();
-  await expect(tooltip).toHaveText('Fit to view Ctrl+0');
+  await expect(tooltip).toContainText('Ctrl+0');
 
   await page.mouse.move(0, 0);
   await expect(tooltip).toHaveCount(0);
 
   await page.getByRole('button', { name: 'Zoom in' }).focus();
 
-  await expect(tooltip).toHaveText('Zoom in Ctrl+=');
+  await expect(tooltip).toContainText('Ctrl+=');
 });

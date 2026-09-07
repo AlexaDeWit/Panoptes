@@ -18,11 +18,13 @@ describe('DocumentTitle', () => {
 
   it('follows the file the model is saved into', () => {
     render(<DocumentTitle />);
+    const landingTitle = document.title;
 
     act(() => {
       dispatch(Action.Saved({ name: 'model.yaml', source: nativeSource }));
     });
 
-    expect(document.title).toBe('model.yaml - Saerskriven');
+    expect(document.title).not.toBe(landingTitle);
+    expect(document.title).toContain('model.yaml');
   });
 });

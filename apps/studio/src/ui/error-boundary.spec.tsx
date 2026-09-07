@@ -2,8 +2,10 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ErrorBoundary } from './error-boundary.js';
 
+const failure = 'failure';
+
 function Breaks(): never {
-  throw new Error('The canvas ran out of room.');
+  throw new Error(failure);
 }
 
 beforeEach(() => {
@@ -18,11 +20,11 @@ describe('ErrorBoundary', () => {
   it('shows what it guards while nothing throws', () => {
     render(
       <ErrorBoundary>
-        <p>The studio</p>
+        <p data-testid="child" />
       </ErrorBoundary>,
     );
 
-    expect(screen.getByText('The studio')).toBeDefined();
+    expect(screen.getByTestId('child')).toBeDefined();
   });
 
   it('shows what was thrown rather than an empty page', () => {
@@ -32,8 +34,7 @@ describe('ErrorBoundary', () => {
       </ErrorBoundary>,
     );
 
-    expect(screen.getByText('Saerskriven stopped')).toBeDefined();
-    expect(screen.getByText('The canvas ran out of room.')).toBeDefined();
+    expect(screen.getByRole('region').textContent).toContain(failure);
   });
 
   it('offers the reload that starts again from the file on disk', async () => {

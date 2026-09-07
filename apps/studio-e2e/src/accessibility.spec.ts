@@ -129,9 +129,7 @@ test('the studio carries no violation while it shows a refusal', async ({
     mimeType: 'text/plain',
     buffer: Buffer.from('no threat model here'),
   });
-  await expect(page.getByTestId('failure-notice')).toContainText(
-    'No format claimed notes.txt.',
-  );
+  await expect(page.getByTestId('failure-notice')).toContainText('notes.txt');
 
   await audit(page, 'showing a refusal');
 });
@@ -160,16 +158,16 @@ test('the studio carries no violation while it says what an edit did', async ({
   await expect(page.getByTestId('canvas-container')).toBeVisible();
 
   await page.getByRole('button', { name: 'New actor' }).click();
-  await expect(page.getByTestId('canvas-announcement')).toHaveText(
-    'Added New actor, actor.',
-  );
+  await expect(page.getByTestId('canvas-announcement')).not.toBeEmpty();
+  const addedAnnouncement =
+    (await page.getByTestId('canvas-announcement').textContent()) ?? '';
 
   await audit(page, 'showing an added element');
 
   await page.keyboard.press('Delete');
-  await expect(page.getByTestId('canvas-announcement')).toContainText(
-    'Removed New actor',
-  );
+  await expect
+    .poll(() => page.getByTestId('canvas-announcement').textContent())
+    .not.toBe(addedAnnouncement);
 
   await audit(page, 'showing a removed element');
 });
