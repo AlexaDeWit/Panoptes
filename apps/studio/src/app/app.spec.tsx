@@ -62,6 +62,14 @@ describe(
         button: 0,
         clientX: 100,
         clientY: 100,
+        isPrimary: false,
+        pointerId: 2,
+      });
+      expect(elementsHeld()).toBe(3);
+      fireEvent.pointerUp(canvas, {
+        button: 0,
+        clientX: 100,
+        clientY: 100,
         isPrimary: true,
         pointerId: 1,
       });

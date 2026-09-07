@@ -260,10 +260,11 @@ export function usePlacement(
 
   const pointerUp = (event: PointerEvent<HTMLDivElement>): void => {
     const started = gesture.current;
+    if (started === undefined || started.pointerId !== event.pointerId) {
+      return;
+    }
     const current = currentTool();
     if (
-      started === undefined ||
-      started.pointerId !== event.pointerId ||
       started.tool !== current.active ||
       started.revision !== current.revision ||
       started.transition !== current.transition ||
