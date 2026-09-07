@@ -181,11 +181,13 @@ the region below, which speaks only for edits that landed.
 - **Edit a note.** Note placement opens a multiline field over the new note
   and selects its placeholder text. Leaving the field or pressing Control or
   Command with Enter commits one `EditNote`. Escape keeps the placeholder.
-- **Resize.** A selected element the model can resize carries one control, at
-  its bottom right corner, and the gesture reaches the store once, at its end,
-  as one `ResizeElement`. React Flow reports an extent on every frame and
-  again when it settles, and the settled report is the only one folded into an
-  action, as with a drag.
+- **Resize.** A selected resizable element carries a line control on each side
+  and a handle at each corner. A side changes one axis. A corner changes both.
+  The opposite side stays fixed, including when the top or left control moves
+  the element. React Flow reports the settled position and size in model
+  coordinates. The studio dispatches that pair once as one `ResizeElement`,
+  so pan, zoom and drag frames add no model edits. Width and height stop at ten
+  model units.
 
 The toolbox holds the studio's unnamed status host ([the
 controls](../ui/README.md)). It reports an edit only when the next focus does
@@ -335,9 +337,8 @@ use an arrow key. An arrow moves one selection five model units. Shift moves it
 twenty. Each press is one undoable singular or group action. Shift+Enter adds
 or removes the focused element. React Flow announces moves in its live region.
 
-Every edit has a keyboard path of its own, and every one of them is a
-registered command with its chord shown beside it ([the
-commands](../commands/README.md)). Placing is selecting a tool by its button,
+Every edit has a keyboard path. Page commands have their chords in the command
+registry ([the commands](../commands/README.md)). Placing is selecting a tool by its button,
 letter or number and then clicking, dragging or pressing Enter. Note follows
 that path and puts focus in its multiline editor. Connecting is
 selecting an element on the canvas and then pressing the
@@ -350,16 +351,12 @@ Renaming is F2 on the selection, and the field it opens keeps every key a
 person types, Escape and Backspace among them: a chord fires inside a control
 that takes characters only where the registry exempts it ([the
 commands](../commands/README.md)).
+Resizing starts on one of the named side or corner controls inside a selected
+element. An arrow key moves the matching edge five model units. Shift moves it
+twenty. Each press is one undo step, and the opposite edge stays fixed.
 
 ## What is not attempted here
 
-- Resizing is pointer-only. React Flow's resize control is a drag on a corner
-  and carries no key binding, and a keyboard path would be a size control of
-  its own, which belongs with the toolbar. The corner is the only control
-  offered, on every element the model resizes: a control on the top or the
-  left moves the element as well as sizing it, which is two operations for one
-  gesture where the store has one action per edit. A boundary curve carries
-  none, the model giving it no extent to set.
 - A flow alone selects but does not move. A group move translates its
   waypoints and free ends. Its attached ends follow their elements.
 - Nothing pans to a flow that was just connected, and nothing pans a selected

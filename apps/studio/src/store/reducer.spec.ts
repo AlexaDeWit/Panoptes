@@ -70,6 +70,7 @@ const applied: ActionsByTag<ModelActionTag> = {
   }),
   ResizeElement: Action.ResizeElement({
     elementId: processElement,
+    offset: { x: -10, y: -5 },
     size: { width: 200, height: 90 },
   }),
   RenameElement: Action.RenameElement({
@@ -118,6 +119,7 @@ const refused: ActionsByTag<ModelActionTag> = {
   }),
   ResizeElement: Action.ResizeElement({
     elementId: elementId('element-missing'),
+    offset: { x: 0, y: 0 },
     size: { width: 10, height: 10 },
   }),
   RenameElement: Action.RenameElement({

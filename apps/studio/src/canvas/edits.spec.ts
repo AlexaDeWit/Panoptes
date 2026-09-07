@@ -8,6 +8,7 @@ import { elementId } from '@saerskriven/model/fixtures';
 import { initialState } from '../store/state.js';
 import { modelStore } from '../store/store.js';
 import { currentAnnouncement, resetAnnouncements } from './announcements.js';
+import { currentLayout } from './layout.js';
 import {
   boundaryElement,
   canvasModel,
@@ -23,6 +24,7 @@ import {
   placeElement,
   removalCascade,
   removeSelected,
+  resizeNode,
   selectAll,
 } from './edits.js';
 import { freshElement } from './elements.js';
@@ -241,6 +243,50 @@ describe('removeSelected', () => {
     expect(modelStore.getState().past).toHaveLength(1);
     expect(modelStore.getState().selection).toEqual([]);
     expect(said()).toContain('2 elements');
+  });
+});
+
+describe('resizeNode', () => {
+  beforeEach(() => {
+    opened([readerElement]);
+  });
+
+  it('commits position and size as one undo step', () => {
+    const node = currentLayout(modelStore.getState()).nodes.find(
+      (candidate) => candidate.id === readerElement,
+    );
+    expect(node).toBeDefined();
+    if (node === undefined) {
+      return;
+    }
+
+    resizeNode(node, {
+      position: { x: -20, y: -10 },
+      size: { width: 140, height: 70 },
+    });
+
+    const state = modelStore.getState();
+    expect(state.past).toHaveLength(1);
+    expect(
+      state.present.diagrams[0].elements.find(
+        (element) => element.id === readerElement,
+      ),
+    ).toMatchObject({
+      position: { x: -20, y: -10 },
+      size: { width: 140, height: 70 },
+    });
+  });
+
+  it('does not commit unchanged geometry', () => {
+    const node = currentLayout(modelStore.getState()).nodes.find(
+      (candidate) => candidate.id === readerElement,
+    );
+    expect(node).toBeDefined();
+    if (node !== undefined) {
+      resizeNode(node, { position: node.position, size: node.size });
+    }
+
+    expect(modelStore.getState().past).toHaveLength(0);
   });
 });
 

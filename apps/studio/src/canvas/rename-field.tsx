@@ -38,6 +38,7 @@ import {
   commitNote,
   commitRename,
   endInlineEditing,
+  resizeNode,
   stopInlineEditing,
 } from './edits.js';
 import { edgeLabel, nodeLabel } from './names.js';
@@ -190,7 +191,13 @@ function EditingNodeBody(props: NodeProps<CanvasFlowNode>) {
 
   return (
     <>
-      <CanvasNodeBody {...props} controlsVisible={!editing} />
+      <CanvasNodeBody
+        {...props}
+        controlsVisible={!editing}
+        onResizeEnd={(box) => {
+          resizeNode(node, box);
+        }}
+      />
       {editingName && (
         <div
           className={`${styles.overNode} nodrag nopan`}

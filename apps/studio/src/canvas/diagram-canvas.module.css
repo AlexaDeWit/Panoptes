@@ -113,20 +113,49 @@
   pointer-events: none;
 }
 
-/* The control that resizes the selected element, which React Flow draws as a
-   blue square outlined in white. Neither is a colour the studio draws in, and
-   the white is a literal in React Flow's own sheet rather than a property to
-   hand a token to, so the control is restyled here. The square is left square:
-   it is what tells the control apart from the round handle a flow is drawn
-   from, which sits at the same corner. The cursor naming the direction it
-   sizes in is React Flow's own. */
+/* Resize handles stay square to differ from round connection handles. */
 .canvas :global(.react-flow__resize-control.handle) {
+  width: 9px;
+  height: 9px;
   background: var(--pn-colour-text);
   border-color: var(--pn-colour-badge-ground);
+  z-index: 2;
 }
 
-.canvas :global(.react-flow__resize-control.handle.bottom.right) {
-  translate: -100% -100%;
+.canvas :global(.react-flow__resize-control.line) {
+  border-color: var(--pn-colour-text);
+  z-index: 1;
+}
+
+.canvas :global(.react-flow__resize-control.line.left),
+.canvas :global(.react-flow__resize-control.line.right) {
+  width: 9px;
+}
+
+.canvas :global(.react-flow__resize-control.line.top),
+.canvas :global(.react-flow__resize-control.line.bottom) {
+  height: 9px;
+}
+
+.canvas :global(.react-flow__resize-control > button) {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: inherit;
+}
+
+.canvas :global(.react-flow__resize-control:hover) {
+  border-color: var(--pn-colour-accent);
+  background: var(--pn-colour-accent-hover);
+}
+
+.canvas :global(.react-flow__resize-control > button:focus-visible) {
+  outline: var(--pn-focus-ring);
+  outline-offset: var(--pn-focus-ring-offset);
 }
 
 /* The handles a flow attaches to are drawn on the element under the pointer
@@ -139,6 +168,7 @@
    boundary, which no flow ends on, shows none. */
 .canvas :global(.react-flow__handle) {
   visibility: hidden;
+  z-index: 3;
 }
 
 .canvas :global(.react-flow__handle-left.connectable) {

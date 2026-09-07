@@ -1,3 +1,4 @@
+import type { CanvasNode, NodeBox } from '@saerskriven/canvas';
 import type { Element, ElementId, Model, Point } from '@saerskriven/model';
 import { Action } from '../store/actions.js';
 import {
@@ -205,6 +206,28 @@ export function commitNote(elementId: ElementId, text: string): void {
     return;
   }
   dispatch(Action.EditNote({ elementId, text }));
+}
+
+/** Applies a node's new position and size as one undoable resize. */
+export function resizeNode(node: CanvasNode, box: NodeBox): void {
+  if (
+    node.position.x === box.position.x &&
+    node.position.y === box.position.y &&
+    node.size.width === box.size.width &&
+    node.size.height === box.size.height
+  ) {
+    return;
+  }
+  dispatch(
+    Action.ResizeElement({
+      elementId: node.id,
+      offset: {
+        x: box.position.x - node.position.x,
+        y: box.position.y - node.position.y,
+      },
+      size: box.size,
+    }),
+  );
 }
 
 function added(action: Action, elementId: ElementId): void {

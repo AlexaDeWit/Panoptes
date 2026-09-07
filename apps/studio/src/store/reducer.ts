@@ -40,8 +40,13 @@ export function reduce(state: State, action: Action): State {
           moveElement(model, elementId, offset),
         ),
       ),
-    ResizeElement: ({ elementId, size }) =>
-      edited(state, resizeElement(state.present, elementId, size)),
+    ResizeElement: ({ elementId, offset, size }) =>
+      edited(
+        state,
+        Either.flatMap(moveElement(state.present, elementId, offset), (moved) =>
+          resizeElement(moved, elementId, size),
+        ),
+      ),
     RenameElement: ({ elementId, name }) =>
       edited(state, renameElement(state.present, elementId, name)),
     EditNote: ({ elementId, text }) =>

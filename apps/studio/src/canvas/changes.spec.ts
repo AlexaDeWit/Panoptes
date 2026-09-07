@@ -15,7 +15,6 @@ import {
   applyConnection,
   betweenTwoElements,
   moveActions,
-  resizeActions,
   selectionActions,
   type DiagramChange,
 } from './changes.js';
@@ -36,7 +35,7 @@ const selecting = (id: string, selected: boolean): DiagramChange => ({
 const moving = (
   id: string,
   position: { x: number; y: number },
-  dragging: boolean,
+  dragging: boolean | undefined,
 ): DiagramChange => ({ id, type: 'position', position, dragging });
 
 const sizing = (
@@ -127,6 +126,19 @@ describe('moveActions', () => {
     ).toEqual([]);
   });
 
+  it('leaves the position change of an active resize to its control', () => {
+    expect(
+      moveActions(
+        [
+          sizing(readerElement, { width: 110, height: 60 }, true),
+          moving(readerElement, { x: 10, y: 0 }, undefined),
+        ],
+        nodes,
+        [readerElement],
+      ),
+    ).toEqual([]);
+  });
+
   it('asks for nothing where the element ended up where it started', () => {
     expect(
       moveActions([moving(readerElement, { x: 0, y: 0 }, false)], nodes, [
@@ -154,55 +166,6 @@ describe('moveActions', () => {
         offset: { x: 40, y: 25 },
       }),
     ]);
-  });
-});
-
-describe('resizeActions', () => {
-  it('resizes an element to the extent a settled gesture reported', () => {
-    expect(
-      resizeActions(
-        [sizing(readerElement, { width: 200, height: 90 }, false)],
-        nodes,
-      ),
-    ).toEqual([
-      Action.ResizeElement({
-        elementId: readerElement,
-        size: { width: 200, height: 90 },
-      }),
-    ]);
-  });
-
-  it('leaves a gesture still in flight to the canvas', () => {
-    expect(
-      resizeActions(
-        [sizing(readerElement, { width: 200, height: 90 }, true)],
-        nodes,
-      ),
-    ).toEqual([]);
-  });
-
-  it('asks for nothing where React Flow reported a measurement of its own', () => {
-    expect(
-      resizeActions(
-        [sizing(readerElement, { width: 200, height: 90 }, undefined)],
-        nodes,
-      ),
-    ).toEqual([]);
-  });
-
-  it('asks for nothing where the extent ended up where it started', () => {
-    expect(
-      resizeActions(
-        [sizing(readerElement, { width: 120, height: 60 }, false)],
-        nodes,
-      ),
-    ).toEqual([]);
-  });
-
-  it('resizes nothing for an id that names no drawn node', () => {
-    expect(
-      resizeActions([sizing(anchor, { width: 20, height: 20 }, false)], nodes),
-    ).toEqual([]);
   });
 });
 
@@ -324,24 +287,5 @@ describe('applyChanges', () => {
           (element) => element.id === readerElement,
         ),
     ).toMatchObject({ position: { x: 40, y: 25 } });
-  });
-
-  it('resizes an element the model holds, so undo has something to take back', () => {
-    opened();
-
-    applyChanges(
-      [sizing(readerElement, { width: 200, height: 90 }, false)],
-      elements,
-      nodes,
-    );
-
-    expect(modelStore.getState().past).toHaveLength(1);
-    expect(
-      modelStore
-        .getState()
-        .present.diagrams[0].elements.find(
-          (element) => element.id === readerElement,
-        ),
-    ).toMatchObject({ size: { width: 200, height: 90 } });
   });
 });
