@@ -1,16 +1,35 @@
+import type { Size } from '@saerskriven/model';
 import type { ReactElement } from 'react';
 import { badgeAnchor, ThreatBadgeGlyph } from './badges.js';
 import { WrappedText } from './labels.js';
 import { nodeTextPlacement, processCircle } from './label-placement.js';
-import type { CanvasEdge, CanvasNode } from './layout.js';
+import type { CanvasEdge, CanvasNode, CanvasNodeKind } from './layout.js';
 import { svgNumber } from './numbers.js';
 import { arrowheadPath, polylinePath, smoothPath, translate } from './paths.js';
 import { canvasClassNames } from './stylesheet.js';
 
-type NodeOf<Kind extends CanvasNode['kind']> = Extract<
-  CanvasNode,
-  { kind: Kind }
->;
+/** An element kind whose model geometry is a position and size. */
+export type BoxElementKind = Exclude<CanvasNodeKind, 'boundary-curve' | 'text'>;
+
+/** One box element's outline in its own coordinates. */
+export function BoxElementGlyph({
+  kind,
+  size,
+}: {
+  readonly kind: BoxElementKind;
+  readonly size: Size;
+}): ReactElement {
+  if (kind === 'actor') {
+    return actorOutline(size);
+  }
+  if (kind === 'process') {
+    return processOutline(size);
+  }
+  if (kind === 'store') {
+    return storeOutline(size);
+  }
+  return boundaryBoxOutline(size);
+}
 
 /**
  * One element's glyph in the element's own coordinates, its origin at the
@@ -91,36 +110,26 @@ function shapeClass(outline: string): string {
 }
 
 function outlineOf(node: CanvasNode): ReactElement | null {
-  if (node.kind === 'actor') {
-    return actorOutline(node);
-  }
-  if (node.kind === 'process') {
-    return processOutline(node);
-  }
-  if (node.kind === 'store') {
-    return storeOutline(node);
-  }
-  if (node.kind === 'boundary-box') {
-    return boundaryBoxOutline(node);
-  }
   if (node.kind === 'boundary-curve') {
     return boundaryCurveOutline(node);
   }
-  return null;
+  return node.kind === 'text' ? null : (
+    <BoxElementGlyph kind={node.kind} size={node.size} />
+  );
 }
 
-function actorOutline(node: NodeOf<'actor'>): ReactElement {
+function actorOutline(size: Size): ReactElement {
   return (
     <rect
       className={shapeClass(canvasClassNames.actor)}
-      width={svgNumber(node.size.width)}
-      height={svgNumber(node.size.height)}
+      width={svgNumber(size.width)}
+      height={svgNumber(size.height)}
     />
   );
 }
 
-function processOutline(node: NodeOf<'process'>): ReactElement {
-  const circle = processCircle(node.size);
+function processOutline(size: Size): ReactElement {
+  const circle = processCircle(size);
   return (
     <circle
       className={shapeClass(canvasClassNames.process)}
@@ -131,9 +140,9 @@ function processOutline(node: NodeOf<'process'>): ReactElement {
   );
 }
 
-function storeOutline(node: NodeOf<'store'>): ReactElement {
-  const right = svgNumber(node.size.width);
-  const bottom = svgNumber(node.size.height);
+function storeOutline(size: Size): ReactElement {
+  const right = svgNumber(size.width);
+  const bottom = svgNumber(size.height);
   return (
     <>
       <line
@@ -154,17 +163,19 @@ function storeOutline(node: NodeOf<'store'>): ReactElement {
   );
 }
 
-function boundaryBoxOutline(node: NodeOf<'boundary-box'>): ReactElement {
+function boundaryBoxOutline(size: Size): ReactElement {
   return (
     <rect
       className={shapeClass(canvasClassNames.boundaryBox)}
-      width={svgNumber(node.size.width)}
-      height={svgNumber(node.size.height)}
+      width={svgNumber(size.width)}
+      height={svgNumber(size.height)}
     />
   );
 }
 
-function boundaryCurveOutline(node: NodeOf<'boundary-curve'>): ReactElement {
+function boundaryCurveOutline(
+  node: Extract<CanvasNode, { kind: 'boundary-curve' }>,
+): ReactElement {
   return (
     <path
       className={shapeClass(canvasClassNames.boundaryCurve)}

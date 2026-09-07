@@ -1,10 +1,6 @@
-import {
-  smoothPath,
-  type CanvasFlowEdge,
-  type CanvasLayout,
-} from '@saerskriven/canvas';
-import type { Point } from '@saerskriven/model';
-import { ViewportPortal, type ReactFlowInstance } from '@xyflow/react';
+import type { CanvasFlowEdge, CanvasLayout } from '@saerskriven/canvas';
+import type { Point, Size } from '@saerskriven/model';
+import type { ReactFlowInstance } from '@xyflow/react';
 import {
   useCallback,
   useEffect,
@@ -24,6 +20,7 @@ import {
   type ElementTool,
 } from './elements.js';
 import type { DiagramNode } from './nodes.js';
+import type { PlacementDraft } from './placement-preview.js';
 import {
   currentTool,
   finishPlacement,
@@ -31,20 +28,49 @@ import {
   useTool,
   type ToolState,
 } from './tools.js';
-import styles from './placement.module.css';
 
 const noPoints: readonly Point[] = [];
 
 type BoxTool = Exclude<ElementTool, 'boundary-curve'>;
+
+type PlacementView = Pick<
+  ReactFlowInstance<DiagramNode, CanvasFlowEdge>,
+  'screenToFlowPosition'
+>;
+
+type PlacementPointerEvent = Pick<
+  PointerEvent<HTMLDivElement>,
+  | 'button'
+  | 'clientX'
+  | 'clientY'
+  | 'currentTarget'
+  | 'isPrimary'
+  | 'pointerId'
+  | 'preventDefault'
+  | 'stopPropagation'
+  | 'target'
+>;
+
+type PlacementCancellationEvent = Pick<
+  PointerEvent<HTMLDivElement>,
+  'pointerId'
+>;
 
 type PlacementGesture = {
   readonly pointerId: number;
   readonly tool: BoxTool;
   readonly revision: number;
   readonly transition: number;
+  readonly contextRevision: number;
   readonly layout: CanvasLayout;
   readonly screen: Point;
   readonly flow: Point;
+  readonly geometry: PlacementGeometry;
+};
+
+type PlacementGeometry = {
+  readonly position: Point;
+  readonly size: Size;
 };
 
 type CurveDraft = {
@@ -54,21 +80,28 @@ type CurveDraft = {
   readonly pointer: Point | undefined;
 };
 
+type BoxDraft = {
+  readonly contextRevision: number;
+  readonly transition: number;
+  readonly layout: CanvasLayout;
+  readonly gesture: PlacementGesture | undefined;
+};
+
 /** The active mode and event handlers for placement gestures. */
 export type PlacementControls = {
   readonly mode: ToolState;
-  readonly preview: readonly Point[];
+  readonly preview: PlacementDraft | undefined;
   readonly click: (event: MouseEvent<HTMLDivElement>) => boolean;
-  readonly pointerDown: (event: PointerEvent<HTMLDivElement>) => void;
-  readonly pointerMove: (event: PointerEvent<HTMLDivElement>) => void;
-  readonly pointerUp: (event: PointerEvent<HTMLDivElement>) => void;
-  readonly pointerCancel: () => void;
+  readonly pointerDown: (event: PlacementPointerEvent) => void;
+  readonly pointerMove: (event: PlacementPointerEvent) => void;
+  readonly pointerUp: (event: PlacementPointerEvent) => void;
+  readonly pointerCancel: (event: PlacementCancellationEvent) => void;
 };
 
 /** Connects toolbox modes to pointer and Enter placement gestures. */
 export function usePlacement(
   surface: RefObject<HTMLDivElement | null>,
-  view: RefObject<ReactFlowInstance<DiagramNode, CanvasFlowEdge> | null>,
+  view: RefObject<PlacementView | null>,
   layout: CanvasLayout,
 ): PlacementControls {
   const mode = useTool();
@@ -93,6 +126,27 @@ export function usePlacement(
   const curve = currentDraft ? curveDraft.waypoints : noPoints;
   const curvePointer = currentDraft ? curveDraft.pointer : undefined;
   const gesture = useRef<PlacementGesture | undefined>(undefined);
+  const [boxDraft, setBoxDraft] = useState<BoxDraft>({
+    contextRevision: 0,
+    transition: mode.transition,
+    layout,
+    gesture: undefined,
+  });
+  if (boxDraft.transition !== mode.transition || boxDraft.layout !== layout) {
+    setBoxDraft({
+      contextRevision: boxDraft.contextRevision + 1,
+      transition: mode.transition,
+      layout,
+      gesture: undefined,
+    });
+  }
+  const currentBoxDraft =
+    boxDraft.transition === mode.transition && boxDraft.layout === layout
+      ? boxDraft.gesture
+      : undefined;
+  const setBoxGesture = (next: PlacementGesture | undefined): void => {
+    setBoxDraft((current) => ({ ...current, gesture: next }));
+  };
 
   const clearCurve = useCallback((): void => {
     setCurveDraft({
@@ -209,10 +263,12 @@ export function usePlacement(
     return true;
   };
 
-  const pointerDown = (event: PointerEvent<HTMLDivElement>): void => {
+  const pointerDown = (event: PlacementPointerEvent): void => {
     if (
       event.button !== 0 ||
       !event.isPrimary ||
+      (gesture.current !== undefined &&
+        gesture.current.contextRevision === boxDraft.contextRevision) ||
       !isBoxTool(mode.active) ||
       !(event.target instanceof Element) ||
       event.target.closest('input, textarea, button, a') !== null ||
@@ -224,21 +280,61 @@ export function usePlacement(
     if (flow === undefined) {
       return;
     }
-    gesture.current = {
+    const started = {
       pointerId: event.pointerId,
       tool: mode.active,
       revision: mode.revision,
       transition: mode.transition,
+      contextRevision: boxDraft.contextRevision,
       layout,
       screen: { x: event.clientX, y: event.clientY },
       flow,
+      geometry: centredPlacement(mode.active, flow),
     };
+    gesture.current = started;
+    setBoxGesture(started);
     event.currentTarget.setPointerCapture?.(event.pointerId);
     event.preventDefault();
     event.stopPropagation();
   };
 
-  const pointerMove = (event: PointerEvent<HTMLDivElement>): void => {
+  const pointerMove = (event: PlacementPointerEvent): void => {
+    const started = gesture.current;
+    if (started !== undefined && started.pointerId === event.pointerId) {
+      const current = currentTool();
+      if (
+        started.tool !== current.active ||
+        started.revision !== current.revision ||
+        started.transition !== current.transition ||
+        started.contextRevision !== boxDraft.contextRevision ||
+        started.layout !== layout
+      ) {
+        gesture.current = undefined;
+        setBoxGesture(undefined);
+        return;
+      }
+      const point = screenToFlow(event.clientX, event.clientY);
+      if (point === undefined) {
+        return;
+      }
+      const moved = {
+        ...started,
+        geometry: pointerPlacement(
+          started.tool,
+          started.flow,
+          point,
+          Math.hypot(
+            event.clientX - started.screen.x,
+            event.clientY - started.screen.y,
+          ),
+        ),
+      };
+      gesture.current = moved;
+      setBoxGesture(moved);
+      event.preventDefault();
+      event.stopPropagation();
+      return;
+    }
     if (
       mode.active !== 'boundary-curve' ||
       !(event.target instanceof Element) ||
@@ -258,79 +354,60 @@ export function usePlacement(
     }));
   };
 
-  const pointerUp = (event: PointerEvent<HTMLDivElement>): void => {
+  const pointerUp = (event: PlacementPointerEvent): void => {
     const started = gesture.current;
     if (started === undefined || started.pointerId !== event.pointerId) {
       return;
     }
+    gesture.current = undefined;
+    setBoxGesture(undefined);
+    event.currentTarget.releasePointerCapture?.(event.pointerId);
     const current = currentTool();
     if (
       started.tool !== current.active ||
       started.revision !== current.revision ||
       started.transition !== current.transition ||
+      started.contextRevision !== boxDraft.contextRevision ||
       started.layout !== layout
     ) {
-      gesture.current = undefined;
       return;
     }
-    gesture.current = undefined;
-    event.currentTarget.releasePointerCapture?.(event.pointerId);
     event.preventDefault();
     event.stopPropagation();
-    const end = screenToFlow(event.clientX, event.clientY);
-    if (end === undefined) {
-      return;
-    }
-    const geometry = pointerPlacement(
-      started.tool,
-      started.flow,
-      end,
-      Math.hypot(
-        event.clientX - started.screen.x,
-        event.clientY - started.screen.y,
-      ),
-    );
+    const { geometry } = started;
     if (placeElement(started.tool, geometry.position, geometry.size)) {
       finishPlacement();
     }
   };
 
+  const curvePreview =
+    curvePointer === undefined ? curve : [...curve, curvePointer];
+  const preview: PlacementDraft | undefined =
+    currentBoxDraft === undefined
+      ? curvePreview.length === 0
+        ? undefined
+        : { kind: 'curve', points: curvePreview }
+      : {
+          kind: 'box',
+          tool: currentBoxDraft.tool,
+          ...currentBoxDraft.geometry,
+        };
+
   return {
     mode,
-    preview: curvePointer === undefined ? curve : [...curve, curvePointer],
+    preview,
     click,
     pointerDown,
     pointerMove,
     pointerUp,
-    pointerCancel: () => {
+    pointerCancel: (event) => {
+      if (gesture.current?.pointerId !== event.pointerId) {
+        return;
+      }
       gesture.current = undefined;
+      setBoxGesture(undefined);
     },
   };
-}
-
-/** The boundary curve route shown before it reaches the model. */
-export function PlacementPreview({
-  points,
-}: {
-  readonly points: readonly Point[];
-}) {
-  if (points.length === 0) {
-    return null;
-  }
-  return (
-    <ViewportPortal>
-      <svg
-        aria-hidden="true"
-        className={styles.curve}
-        data-testid="curve-draft"
-      >
-        <path d={smoothPath(points)} />
-        {points.map((point, index) => (
-          <circle cx={point.x} cy={point.y} key={index} r="3" />
-        ))}
-      </svg>
-    </ViewportPortal>
-  );
 }
 
 function isBoxTool(tool: string): tool is BoxTool {

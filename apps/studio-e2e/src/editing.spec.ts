@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { boxOf } from './canvas-geometry.fixtures.js';
 import { registeredChords } from './chords.js';
 import { viewportTransform } from './commands.fixtures.js';
 import {
@@ -30,6 +31,19 @@ const boxTools = [
   ['Process', /^New process, process/u],
   ['Store', /^New store, store/u],
   ['Trust boundary', /^New trust boundary, trust boundary/u],
+] as const;
+
+const previewedBoxTools = [
+  ['Actor', /^New actor, actor/u, '.pn-actor', 1, false],
+  ['Process', /^New process, process/u, '.pn-process', 1, true],
+  ['Store', /^New store, store/u, '.pn-store', 2, false],
+  [
+    'Trust boundary',
+    /^New trust boundary, trust boundary/u,
+    '.pn-boundary-box',
+    1,
+    false,
+  ],
 ] as const;
 
 const keyboardTools = [
@@ -121,7 +135,10 @@ test('changing tools cancels a box drag before pointer release', async ({
   await toolButton(page, 'Actor').click();
   await page.mouse.move(at.x, at.y);
   await page.mouse.down();
+  await page.mouse.move(at.x + 80, at.y + 40, { steps: 4 });
+  await expect(page.getByTestId('box-draft')).toBeVisible();
   await page.keyboard.press(registeredChords['select-tool'][1]);
+  await expect(page.getByTestId('box-draft')).toHaveCount(0);
   await page.mouse.up();
 
   await expect(nodeNamed(page, /^New actor, actor/u)).toHaveCount(0);
@@ -247,20 +264,36 @@ test('a flow is drawn by keyboard alone, from the selected element', async ({
   await expect(editAnnouncement(page)).toContainText('Store');
 });
 
-test('a pointer drag sizes a process to its shorter side', async ({ page }) => {
-  await openPlaceholder(page);
-  const from = await emptyCanvasPoint(page);
+for (const [tool, named, shape, shapeCount, square] of previewedBoxTools) {
+  test(`the ${tool} drag previews and commits its geometry`, async ({
+    page,
+  }) => {
+    await openPlaceholder(page);
+    const from = await emptyCanvasPoint(page);
 
-  await toolButton(page, 'Process').click();
-  await page.mouse.move(from.x, from.y);
-  await page.mouse.down();
-  await page.mouse.move(from.x + 140, from.y + 70, { steps: 8 });
-  await page.mouse.up();
+    await toolButton(page, tool).click();
+    await page.mouse.move(from.x, from.y);
+    await page.mouse.down();
+    await page.mouse.move(from.x + 160, from.y + 80, { steps: 8 });
 
-  const box = await nodeNamed(page, /^New process, process/u).boundingBox();
-  expect(box).not.toBeNull();
-  expect(box?.width).toBeCloseTo(box?.height ?? 0, 0);
-});
+    const draft = page.getByTestId('box-draft');
+    await expect(draft).toBeVisible();
+    await expect(draft).toHaveAttribute('aria-hidden', 'true');
+    await expect(draft.locator(shape)).toHaveCount(shapeCount);
+    const drawn = await draft.boundingBox();
+    expect(drawn).not.toBeNull();
+    expect(drawn?.x).toBeCloseTo(from.x, 0);
+    expect(drawn?.y).toBeCloseTo(from.y, 0);
+    expect(drawn?.width).toBeCloseTo(square ? 80 : 160, 0);
+    expect(drawn?.height).toBeCloseTo(80, 0);
+    const preview = await boxOf(draft);
+
+    await page.mouse.up();
+
+    await expect(draft).toHaveCount(0);
+    expect(await boxOf(nodeNamed(page, named))).toEqual(preview);
+  });
+}
 
 test('double clicking an element tool locks it until Escape', async ({
   page,
