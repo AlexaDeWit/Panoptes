@@ -54,7 +54,7 @@ const table = {
     id: 'select-canvas-item',
     label: 'Select the focused item',
     group: 'Canvas navigation',
-    shortcuts: enterKey,
+    shortcuts: [enterChord, bare(' ')],
     when: 'The focused item is not the only selected item',
   },
   'edit-canvas-text': {

@@ -1,6 +1,7 @@
 import type { ElementId } from '@saerskriven/model';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { hostPlatform } from '../commands/shortcuts.js';
 import { elementById } from '../store/selectors.js';
 import { initialState } from '../store/state.js';
 import { modelStore } from '../store/store.js';
@@ -145,6 +146,34 @@ describe('the inline editor', () => {
 
     expect(textOf(noteElement)).toBe('First line\nSecond line');
     expect(state().past).toHaveLength(1);
+    expect(state().inlineEditor).toBeUndefined();
+  });
+
+  it('commits a Note with the platform modifier and leaves the foreign one alone', async () => {
+    const user = userEvent.setup();
+    editing(noteElement, 'note');
+    render(<DiagramCanvas />);
+    const note = field('Note text');
+
+    await user.clear(note);
+    await user.type(note, 'Changed');
+    fireEvent.keyDown(note, {
+      key: 'Enter',
+      ...(hostPlatform === 'apple' ? { ctrlKey: true } : { metaKey: true }),
+    });
+
+    expect(textOf(noteElement)).not.toBe('Changed');
+    expect(state().inlineEditor).toEqual({
+      kind: 'note',
+      elementId: noteElement,
+    });
+
+    fireEvent.keyDown(note, {
+      key: 'Enter',
+      ...(hostPlatform === 'apple' ? { metaKey: true } : { ctrlKey: true }),
+    });
+
+    expect(textOf(noteElement)).toBe('Changed');
     expect(state().inlineEditor).toBeUndefined();
   });
 });

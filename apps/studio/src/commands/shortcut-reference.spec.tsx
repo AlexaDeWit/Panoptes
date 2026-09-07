@@ -16,6 +16,9 @@ const idsOf = (attribute: string): string[] =>
 const commandRow = (id: string): HTMLElement =>
   document.querySelector(`[data-command-id="${id}"]`) ?? document.body;
 
+const contextualRow = (id: string): HTMLElement =>
+  document.querySelector(`[data-contextual-id="${id}"]`) ?? document.body;
+
 describe('ShortcutReference', () => {
   beforeEach(() => {
     modelStore.setState(initialState(placeholderModel), true);
@@ -41,6 +44,9 @@ describe('ShortcutReference', () => {
     ).toBeTruthy();
     expect(
       within(commandRow('export-pdf')).getByText('No shortcut'),
+    ).toBeTruthy();
+    expect(
+      within(contextualRow('select-canvas-item')).getByText('Enter or Space'),
     ).toBeTruthy();
   });
 

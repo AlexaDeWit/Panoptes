@@ -39,7 +39,7 @@ import {
   describeContextualShortcuts,
   pressesContextualShortcut,
 } from '../commands/contextual-shortcuts.js';
-import { commandFor } from '../commands/registry.js';
+import { commandFor, describeCommandShortcuts } from '../commands/registry.js';
 import { hostPlatform } from '../commands/shortcuts.js';
 import { selectedElement, selectedElements } from '../store/selectors.js';
 import { dispatch, modelStore, useModelStore } from '../store/store.js';
@@ -78,11 +78,27 @@ import styles from './diagram-canvas.module.css';
 
 const exactLabelDelay = 50;
 const mouseButtonsForTouchPanOnly: number[] = [];
+const canvasCommandDescription = describeCommandShortcuts(
+  ['hand-tool', 'focus-threats', 'delete', 'select-tool'],
+  hostPlatform,
+);
+const canvasItemDescription = describeContextualShortcuts(
+  [
+    'select-canvas-item',
+    'edit-canvas-text',
+    'toggle-canvas-item',
+    'move-selection',
+    'move-selection-far',
+  ],
+  hostPlatform,
+);
+const flowDescription = describeContextualShortcuts(
+  ['select-canvas-item', 'edit-canvas-text', 'toggle-canvas-item'],
+  hostPlatform,
+);
 const canvasA11y = {
-  'node.a11yDescription.keyboardDisabled':
-    'Press Enter or Space to select this item. If it is selected, press Enter to edit its text. Press Shift and Enter to change a group selection. Use arrow keys to move a selection. Holding Space also uses Hand. Press T to focus threats, Delete to remove the selection, or Escape to cancel.',
-  'edge.a11yDescription.default':
-    'Press Enter or Space to select this flow. If it is selected, press Enter to edit its name. Press Shift and Enter to change a group selection. Holding Space also uses Hand. Press T to focus threats, Delete to remove the selection, or Escape to cancel.',
+  'node.a11yDescription.keyboardDisabled': `${canvasItemDescription} ${canvasCommandDescription}`,
+  'edge.a11yDescription.default': `${flowDescription} ${canvasCommandDescription}`,
 };
 
 type ScreenPoint = { readonly x: number; readonly y: number };
@@ -289,8 +305,13 @@ export function DiagramCanvas() {
   };
 
   const onKeyDownCapture = (event: KeyboardEvent<HTMLDivElement>): void => {
-    const activates = pressesContextualShortcut(
+    const selects = pressesContextualShortcut(
       'select-canvas-item',
+      event,
+      hostPlatform,
+    );
+    const edits = pressesContextualShortcut(
+      'edit-canvas-text',
       event,
       hostPlatform,
     );
@@ -301,7 +322,7 @@ export function DiagramCanvas() {
     );
     if (
       currentTool().active !== 'select' ||
-      (!activates && !toggles) ||
+      (!selects && !toggles) ||
       keyboardOwner(event.target) !== 'page'
     ) {
       return;
@@ -317,7 +338,7 @@ export function DiagramCanvas() {
       dispatch(Action.Select({ elementIds: nextSelection }));
     } else if (selection.length > 1) {
       dispatch(Action.Select({ elementIds: [element] }));
-    } else if (element !== selected || !beginEditingText(element)) {
+    } else if (!edits || element !== selected || !beginEditingText(element)) {
       return;
     }
     event.preventDefault();

@@ -13,6 +13,7 @@ import {
   firedBy,
   mod,
   modShift,
+  spellShortcuts,
   type Chord,
   type ChordEvent,
   type Platform,
@@ -399,6 +400,19 @@ export const commands: readonly Command[] = Object.values(table);
 /** The command `id` names. */
 export function commandById(id: CommandId): Command {
   return table[id];
+}
+
+/** The spoken description of the selected registered commands. */
+export function describeCommandShortcuts(
+  ids: readonly CommandId[],
+  platform: Platform,
+): string {
+  return ids
+    .map((id) => {
+      const entry = table[id];
+      return `${entry.label}: ${spellShortcuts(entry.shortcuts, platform)}. ${entry.when}.`;
+    })
+    .join(' ');
 }
 
 /** The SVG command bound to one diagram in a model of one or several. */

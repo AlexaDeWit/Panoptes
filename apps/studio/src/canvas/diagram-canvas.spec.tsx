@@ -181,6 +181,20 @@ describe('DiagramCanvas', () => {
     expect(document.activeElement).toBe(reader());
   });
 
+  it('leaves Space to select without opening the text editor', () => {
+    render(<DiagramCanvas />);
+    reader().focus();
+
+    fireEvent.keyDown(reader(), { key: ' ' });
+
+    expect(modelStore.getState().selection).toEqual([readerElement]);
+    expect(modelStore.getState().inlineEditor).toBeUndefined();
+
+    fireEvent.keyDown(reader(), { key: ' ' });
+
+    expect(modelStore.getState().inlineEditor).toBeUndefined();
+  });
+
   it('reduces a group to the element clicked or activated with Enter', () => {
     opened([readerElement, studioElement]);
     render(<DiagramCanvas />);
@@ -323,15 +337,14 @@ describe('DiagramCanvas', () => {
       '[id^="react-flow__edge-desc"]',
     );
 
+    expect(nodeDescription?.textContent).toContain('Enter or Space');
     expect(nodeDescription?.textContent).toContain(
-      'press Enter to edit its text',
+      'Edit the selected canvas text: Enter',
     );
-    expect(nodeDescription?.textContent).toContain(
-      'Holding Space also uses Hand',
-    );
-    expect(nodeDescription?.textContent).toContain('Press T to focus threats');
+    expect(nodeDescription?.textContent).toContain('Hand: H or Space');
+    expect(nodeDescription?.textContent).toContain('Focus threats: T');
     expect(flowDescription?.textContent).toContain(
-      'press Enter to edit its name',
+      'Edit the selected canvas text: Enter',
     );
   });
 

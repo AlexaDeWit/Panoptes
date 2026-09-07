@@ -139,7 +139,8 @@ function InlineField({
       !multiline &&
       pressesContextualShortcut('commit-name', event, hostPlatform);
     const commitsNote =
-      multiline && event.key === 'Enter' && (event.ctrlKey || event.metaKey);
+      multiline &&
+      pressesContextualShortcut('commit-note', event, hostPlatform);
     if (commitsName || commitsNote) {
       event.preventDefault();
       commit(true);
