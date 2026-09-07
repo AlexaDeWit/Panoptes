@@ -120,7 +120,7 @@ test('the pointer says what a click would do, over an element, a handle, a flow 
 
   await expect(node).toHaveCSS('cursor', 'pointer');
   await expect(handlesOn(node).first()).toHaveCSS('cursor', 'crosshair');
-  await expect(pane(page)).toHaveCSS('cursor', 'default');
+  await expect(pane(page)).toHaveCSS('cursor', 'grab');
 
   const flow = await drawFlow(page);
 

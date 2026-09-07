@@ -302,14 +302,24 @@ export const emptyCanvasPoint = async (page: Page): Promise<Point> => {
   const drawn = await Promise.all(
     (await elementNodes(page).all()).map(async (node) => node.boundingBox()),
   );
-  const clear = grid
+  const candidates = grid
     .flatMap((column) =>
       grid.map((row) => ({
         x: corner.x + (room.width * column) / steps,
         y: corner.y + (room.height * row) / steps,
       })),
     )
-    .find((at) => clearOf(drawn, at));
+    .filter((at) => clearOf(drawn, at));
+  const clear = await page.evaluate(
+    (points) =>
+      points.find(
+        (at) =>
+          document
+            .elementFromPoint(at.x, at.y)
+            ?.closest('.react-flow__pane') instanceof Element,
+      ),
+    candidates,
+  );
 
   expect(clear, 'the canvas has no point clear of every element').toBeDefined();
   return clear ?? corner;

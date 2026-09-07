@@ -233,7 +233,7 @@ export function DiagramCanvas() {
         onKeyDown={onKeyDown}
         onNodesChange={onNodesChange}
         panActivationKeyCode={null}
-        panOnDrag={mode.active === 'hand'}
+        panOnDrag={mode.active === 'select' || mode.active === 'hand'}
         ref={surface}
         selectionKeyCode={null}
         tabIndex={-1}

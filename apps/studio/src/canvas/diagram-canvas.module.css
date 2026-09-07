@@ -64,10 +64,6 @@
   cursor: pointer;
 }
 
-.canvas:not([data-tool]) :global(.react-flow__pane) {
-  cursor: default;
-}
-
 .canvas :global(.react-flow__node.draggable.dragging) {
   cursor: grabbing;
 }
