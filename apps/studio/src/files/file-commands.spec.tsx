@@ -135,6 +135,9 @@ describe('useFileSession', () => {
               });
             } else {
               result.current.commands[older]();
+              if (older === 'open') {
+                result.current.confirmOpen();
+              }
             }
           });
           picker.mockResolvedValueOnce([
@@ -155,6 +158,7 @@ describe('useFileSession', () => {
               });
             } else {
               result.current.commands.open();
+              result.current.confirmOpen();
             }
           });
           await waitFor(() => {
@@ -319,6 +323,10 @@ describe('useFileSession', () => {
             break;
           }
           case 'picker refusal':
+            picker.mockRejectedValueOnce(new Error('NotAllowedError'));
+            result.current.commands.open();
+            result.current.confirmOpen();
+            break;
           case 'save finishes first': {
             picker.mockRejectedValueOnce(new Error('NotAllowedError'));
             result.current.commands.open();
@@ -329,11 +337,13 @@ describe('useFileSession', () => {
               new DOMException('Dismissed', 'AbortError'),
             );
             result.current.commands.open();
+            result.current.confirmOpen();
             break;
           }
           case 'successful open':
           case 'stale write refusal': {
             result.current.commands.open();
+            result.current.confirmOpen();
           }
         }
       });
@@ -694,6 +704,7 @@ describe('useFileSession', () => {
         await act(async () => {
           if (path === 'picker') {
             result.current.commands.open();
+            result.current.confirmOpen();
           } else {
             await result.current.receive(file);
           }

@@ -131,8 +131,8 @@ type UnsavedChangesCommandProps = {
   readonly asking: boolean;
   readonly cancel: () => void;
   readonly command: CommandId;
-  readonly confirm: () => void;
   readonly dirty: boolean;
+  readonly proceed: () => void;
   readonly question: string;
 };
 
@@ -140,8 +140,8 @@ function UnsavedChangesCommand({
   asking,
   cancel,
   command,
-  confirm,
   dirty,
+  proceed,
   question,
 }: UnsavedChangesCommandProps) {
   const entry = commandById(command);
@@ -161,7 +161,7 @@ function UnsavedChangesCommand({
         }
         onChoose={
           asking
-            ? confirm
+            ? proceed
             : () => {
                 runCommand(entry, surface);
               }
@@ -276,8 +276,8 @@ export function StudioMenu({
               asking={askingOpen}
               cancel={cancelOpen}
               command="open"
-              confirm={confirmOpen}
               dirty={dirty}
+              proceed={confirmOpen}
               question="Discard the changes and open"
             />
             <MenuCommand command="save" />
@@ -325,8 +325,8 @@ export function StudioMenu({
               asking={askingClose}
               cancel={cancelClose}
               command="close-file"
-              confirm={confirmClose}
               dirty={dirty}
+              proceed={confirmClose}
               question="Discard the changes and close"
             />
           </DropdownMenu.Group>
