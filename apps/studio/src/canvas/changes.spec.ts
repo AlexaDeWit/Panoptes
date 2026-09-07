@@ -47,11 +47,11 @@ const sizing = (
 
 const anchor = flowEndNodeId(probeFlow, 'target');
 
-const opened = (selection?: ElementId): void => {
+const opened = (selection: readonly ElementId[] = []): void => {
   modelStore.setState({ ...initialState(canvasModel), selection }, true);
 };
 
-const selectionHeld = (): ElementId | undefined =>
+const selectionHeld = (): readonly ElementId[] =>
   modelStore.getState().selection;
 
 const flowDrawn = (): Flow | undefined => {
@@ -62,37 +62,31 @@ const flowDrawn = (): Flow | undefined => {
 describe('selectionActions', () => {
   it('selects the element the changes chose', () => {
     expect(
-      selectionActions([selecting(readerElement, true)], elements, undefined),
-    ).toEqual([Action.Select({ elementId: readerElement })]);
+      selectionActions([selecting(readerElement, true)], elements, []),
+    ).toEqual([Action.Select({ elementIds: [readerElement] })]);
   });
 
   it('asks for nothing where the chosen element is the one already selected', () => {
     expect(
-      selectionActions(
-        [selecting(readerElement, true)],
-        elements,
+      selectionActions([selecting(readerElement, true)], elements, [
         readerElement,
-      ),
+      ]),
     ).toEqual([]);
   });
 
   it('clears the selection where the element holding it was dropped', () => {
     expect(
-      selectionActions(
-        [selecting(readerElement, false)],
-        elements,
+      selectionActions([selecting(readerElement, false)], elements, [
         readerElement,
-      ),
-    ).toEqual([Action.Select({ elementId: undefined })]);
+      ]),
+    ).toEqual([Action.Select({ elementIds: [] })]);
   });
 
   it('leaves a selection alone where another element was dropped', () => {
     expect(
-      selectionActions(
-        [selecting(studioElement, false)],
-        elements,
+      selectionActions([selecting(studioElement, false)], elements, [
         requestFlow,
-      ),
+      ]),
     ).toEqual([]);
   });
 
@@ -101,22 +95,22 @@ describe('selectionActions', () => {
       selectionActions(
         [selecting(readerElement, false), selecting(requestFlow, true)],
         elements,
-        readerElement,
+        [readerElement],
       ),
-    ).toEqual([Action.Select({ elementId: requestFlow })]);
+    ).toEqual([Action.Select({ elementIds: [requestFlow] })]);
   });
 
   it('selects nothing for an id that names no element', () => {
-    expect(
-      selectionActions([selecting(anchor, true)], elements, undefined),
-    ).toEqual([]);
+    expect(selectionActions([selecting(anchor, true)], elements, [])).toEqual(
+      [],
+    );
   });
 });
 
 describe('moveActions', () => {
   it('moves an element by the offset from where the model has it', () => {
     expect(
-      moveActions([moving(readerElement, { x: 40, y: 25 }, false)], nodes),
+      moveActions([moving(readerElement, { x: 40, y: 25 }, false)], nodes, []),
     ).toEqual([
       Action.MoveElement({
         elementId: readerElement,
@@ -127,20 +121,39 @@ describe('moveActions', () => {
 
   it('leaves a gesture still in flight to the canvas', () => {
     expect(
-      moveActions([moving(readerElement, { x: 40, y: 25 }, true)], nodes),
+      moveActions([moving(readerElement, { x: 40, y: 25 }, true)], nodes, [
+        readerElement,
+      ]),
     ).toEqual([]);
   });
 
   it('asks for nothing where the element ended up where it started', () => {
     expect(
-      moveActions([moving(readerElement, { x: 0, y: 0 }, false)], nodes),
+      moveActions([moving(readerElement, { x: 0, y: 0 }, false)], nodes, [
+        readerElement,
+      ]),
     ).toEqual([]);
   });
 
   it('moves nothing for an id that names no drawn node', () => {
-    expect(moveActions([moving(anchor, { x: 9, y: 9 }, false)], nodes)).toEqual(
-      [],
-    );
+    expect(
+      moveActions([moving(anchor, { x: 9, y: 9 }, false)], nodes, []),
+    ).toEqual([]);
+  });
+
+  it('moves a multi-selection through one plural action', () => {
+    expect(
+      moveActions([moving(readerElement, { x: 40, y: 25 }, false)], nodes, [
+        readerElement,
+        studioElement,
+        requestFlow,
+      ]),
+    ).toEqual([
+      Action.MoveElements({
+        elementIds: [readerElement, studioElement, requestFlow],
+        offset: { x: 40, y: 25 },
+      }),
+    ]);
   });
 });
 
@@ -265,33 +278,33 @@ describe('applyChanges', () => {
 
     applyChanges([selecting(readerElement, true)], elements, nodes);
 
-    expect(selectionHeld()).toBe(readerElement);
+    expect(selectionHeld()).toEqual([readerElement]);
   });
 
   it('moves the selection from an element to a flow, deselection last', () => {
-    opened(readerElement);
+    opened([readerElement]);
 
     applyChanges([selecting(requestFlow, true)], elements, nodes);
     applyChanges([selecting(readerElement, false)], elements, nodes);
 
-    expect(selectionHeld()).toBe(requestFlow);
+    expect(selectionHeld()).toEqual([requestFlow]);
   });
 
   it('moves the selection from a flow to an element, deselection last', () => {
-    opened(requestFlow);
+    opened([requestFlow]);
 
     applyChanges([selecting(readerElement, true)], elements, nodes);
     applyChanges([selecting(requestFlow, false)], elements, nodes);
 
-    expect(selectionHeld()).toBe(readerElement);
+    expect(selectionHeld()).toEqual([readerElement]);
   });
 
   it('clears the selection where nothing was chosen in its place', () => {
-    opened(readerElement);
+    opened([readerElement]);
 
     applyChanges([selecting(readerElement, false)], elements, nodes);
 
-    expect(selectionHeld()).toBeUndefined();
+    expect(selectionHeld()).toEqual([]);
   });
 
   it('moves an element the model holds, so undo has something to take back', () => {

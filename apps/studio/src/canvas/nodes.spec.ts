@@ -22,13 +22,13 @@ const names = accessibleNames(layout);
 
 describe('diagramGraph', () => {
   it('carries an element node per drawn node and an anchor per free end', () => {
-    const { nodes } = diagramGraph(layout, undefined);
+    const { nodes } = diagramGraph(layout, []);
     expect(nodes).toHaveLength(layout.nodes.length + 1);
     expect(nodes.at(-1)?.id).toBe(flowEndNodeId(probeFlow, 'target'));
   });
 
   it('names each element node and marks the one the store has selected', () => {
-    const { nodes } = diagramGraph(layout, readerElement);
+    const { nodes } = diagramGraph(layout, [readerElement]);
     const reader = nodes.find((node) => node.id === readerElement);
     expect(reader?.selected).toBe(true);
     expect(reader?.ariaLabel).toBe(names.get(readerElement));
@@ -38,7 +38,7 @@ describe('diagramGraph', () => {
   });
 
   it('marks a node a flow can end on connectable, and no other', () => {
-    const { nodes } = diagramGraph(layout, undefined);
+    const { nodes } = diagramGraph(layout, []);
     const connectable = (id: string): boolean | undefined =>
       nodes.find((node) => node.id === id)?.connectable;
 
@@ -49,7 +49,7 @@ describe('diagramGraph', () => {
   });
 
   it('carries one named edge per flow and marks the selected one', () => {
-    const { edges } = diagramGraph(layout, requestFlow);
+    const { edges } = diagramGraph(layout, [requestFlow]);
     expect(edges).toHaveLength(2);
     const request = edges.find((edge) => edge.id === requestFlow);
     expect(request?.selected).toBe(true);
@@ -57,7 +57,7 @@ describe('diagramGraph', () => {
   });
 
   it('marks a selected flow on the flow alone, no node beside it', () => {
-    const { nodes } = diagramGraph(layout, requestFlow);
+    const { nodes } = diagramGraph(layout, [requestFlow]);
     expect(nodes.some((node) => node.selected)).toBe(false);
   });
 });
@@ -83,21 +83,18 @@ describe('nodesById', () => {
 
 describe('withMeasurements', () => {
   it('carries the extent React Flow measured onto the nodes the model gives', () => {
-    const measured = diagramGraph(layout, undefined).nodes.map((node) => ({
+    const measured = diagramGraph(layout, []).nodes.map((node) => ({
       ...node,
       measured: { width: 120, height: 60 },
     }));
 
-    const carried = withMeasurements(
-      diagramGraph(layout, undefined).nodes,
-      measured,
-    );
+    const carried = withMeasurements(diagramGraph(layout, []).nodes, measured);
 
     expect(carried[0].measured).toEqual({ width: 120, height: 60 });
   });
 
   it('leaves a node nothing was measured for as the model gave it', () => {
-    const [first] = withMeasurements(diagramGraph(layout, undefined).nodes, []);
+    const [first] = withMeasurements(diagramGraph(layout, []).nodes, []);
     expect(first.measured).toBeUndefined();
   });
 });

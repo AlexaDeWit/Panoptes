@@ -112,15 +112,15 @@ test('a flow reads heavier under the pointer, and heavier again once it is selec
   expect(await weightOf(line)).toBeLessThan(selected);
 });
 
-test('the pointer says what a click would do, over an element, a handle, a flow and the background', async ({
+test('Select rests on the arrow while handles and flows keep their own cursors', async ({
   page,
 }) => {
   await openPlaceholder(page);
   const node = nodeNamed(page, actor);
 
-  await expect(node).toHaveCSS('cursor', 'pointer');
+  await expect(node).toHaveCSS('cursor', 'default');
   await expect(handlesOn(node).first()).toHaveCSS('cursor', 'crosshair');
-  await expect(pane(page)).toHaveCSS('cursor', 'grab');
+  await expect(pane(page)).toHaveCSS('cursor', 'default');
 
   const flow = await drawFlow(page);
 
@@ -150,7 +150,7 @@ test('the tool the toolbox has active says it over the whole canvas', async ({
 
   await tool('select');
 
-  await expect(node).toHaveCSS('cursor', 'pointer');
+  await expect(node).toHaveCSS('cursor', 'default');
 });
 
 test('only the selected element carries the control that resizes it, and the pointer names the direction', async ({

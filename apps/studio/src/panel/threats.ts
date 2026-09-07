@@ -8,6 +8,7 @@ import {
   type ThreatId,
 } from '@saerskriven/model';
 import { Action } from '../store/actions.js';
+import { selectedElement } from '../store/selectors.js';
 import type { State } from '../store/state.js';
 
 const threatFields = threatSchema.keyof().options;
@@ -21,11 +22,7 @@ const kindWords = {
   'trust-boundary': 'trust boundary',
 } as const satisfies Record<Element['kind'], string>;
 
-/**
- * What an open panel is about: the one element whose threats it edits, or how
- * many are selected where more than one is. The count is the branch issue 156
- * fills, the store holding one selection until it lands.
- */
+/** What an open panel shows for one or several selected elements. */
 export type PanelSubject =
   | { readonly kind: 'element'; readonly element: Element }
   | { readonly kind: 'several'; readonly count: number };
@@ -39,12 +36,16 @@ export type PanelSubject =
  */
 export function panelSubject(state: State): PanelSubject | undefined {
   const selected = state.selection;
+  if (selected.length > 1) {
+    return { kind: 'several', count: selected.length };
+  }
+  const selectedId = selectedElement(state);
   const element =
-    selected === undefined
+    selectedId === undefined
       ? undefined
       : state.present.diagrams
           .flatMap((diagram) => diagram.elements)
-          .find((candidate) => candidate.id === selected);
+          .find((candidate) => candidate.id === selectedId);
   return element === undefined ? undefined : { kind: 'element', element };
 }
 
@@ -70,7 +71,7 @@ export function openFileName(state: State): string | undefined {
  * subscribes through zustand's `useShallow`.
  */
 export function attachedThreats(state: State): readonly Threat[] {
-  const selected = state.selection;
+  const selected = selectedElement(state);
   return selected === undefined
     ? []
     : state.present.threats.filter((threat) =>

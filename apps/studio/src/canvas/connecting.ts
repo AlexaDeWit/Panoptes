@@ -1,9 +1,10 @@
 import type { ElementId } from '@saerskriven/model';
 import { useSyncExternalStore } from 'react';
+import { selectedElement } from '../store/selectors.js';
 import { modelStore } from '../store/store.js';
 import { connectElements } from './edits.js';
 import { flowEnds } from './elements.js';
-import { currentLayout, selectedElement } from './layout.js';
+import { currentLayout } from './layout.js';
 
 /**
  * Whether the target chooser is open, and the element a flow already started

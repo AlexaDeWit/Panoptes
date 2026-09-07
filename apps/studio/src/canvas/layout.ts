@@ -1,5 +1,5 @@
 import { layoutDiagram, type CanvasLayout } from '@saerskriven/canvas';
-import type { DiagramId, ElementId, Model } from '@saerskriven/model';
+import type { DiagramId, Model } from '@saerskriven/model';
 import type { State } from '../store/state.js';
 
 type LaidOut = {
@@ -45,9 +45,4 @@ export function currentLayout(state: State): CanvasLayout {
   const layout = layoutDiagram(diagram, state.present);
   laidOut.set(state.present, { diagram: diagram.id, layout });
   return layout;
-}
-
-/** The element the studio has selected, or nothing while none is. */
-export function selectedElement(state: State): ElementId | undefined {
-  return state.selection;
 }

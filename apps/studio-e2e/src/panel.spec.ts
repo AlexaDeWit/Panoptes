@@ -35,10 +35,12 @@ const panAcross = async (page: Page, by: number): Promise<void> => {
   const box = await page.locator('.react-flow__pane').boundingBox();
   const pane = box ?? { x: 0, y: 0, width: 0, height: 0 };
   const from = { x: pane.x + 24, y: pane.y + pane.height / 2 };
+  await page.keyboard.down('Space');
   await page.mouse.move(from.x, from.y);
   await page.mouse.down();
   await page.mouse.move(from.x + by, from.y, { steps: 8 });
   await page.mouse.up();
+  await page.keyboard.up('Space');
   await canvasSettled(page);
 };
 

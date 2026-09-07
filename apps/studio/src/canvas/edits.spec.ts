@@ -1,4 +1,9 @@
-import { emptyModel, type ElementId } from '@saerskriven/model';
+import {
+  emptyModel,
+  type ElementId,
+  type Flow,
+  type Model,
+} from '@saerskriven/model';
 import { elementId } from '@saerskriven/model/fixtures';
 import { initialState } from '../store/state.js';
 import { modelStore } from '../store/store.js';
@@ -18,9 +23,10 @@ import {
   placeElement,
   removalCascade,
   removeSelected,
+  selectAll,
 } from './edits.js';
 
-const opened = (selection?: ElementId): void => {
+const opened = (selection: readonly ElementId[] = []): void => {
   modelStore.setState({ ...initialState(canvasModel), selection }, true);
   resetAnnouncements();
 };
@@ -81,8 +87,8 @@ describe('placing an element', () => {
 
     const state = modelStore.getState();
     expect(state.present.diagrams[0].elements).toHaveLength(7);
-    expect(state.selection).toBeDefined();
-    expect(state.renaming).toBe(state.selection);
+    expect(state.selection).toHaveLength(1);
+    expect(state.renaming).toBe(state.selection.at(0));
     expect(said()).toContain('New actor');
   });
 
@@ -178,7 +184,7 @@ describe('removeSelected', () => {
   });
 
   it('says nothing where the model refuses the removal', () => {
-    opened(elementId('ghost-element'));
+    opened([elementId('ghost-element')]);
 
     expect(removeSelected()).toBe(false);
     expect(modelStore.getState().past).toHaveLength(0);
@@ -186,7 +192,7 @@ describe('removeSelected', () => {
   });
 
   it('removes the selection and says what the cascade took with it', () => {
-    opened(readerElement);
+    opened([readerElement]);
 
     expect(removeSelected()).toBe(true);
     expect(said()).toContain('Reader');
@@ -194,7 +200,7 @@ describe('removeSelected', () => {
   });
 
   it('leaves the removed element out of the model and its flow attached to nothing', () => {
-    opened(readerElement);
+    opened([readerElement]);
 
     removeSelected();
 
@@ -205,5 +211,56 @@ describe('removeSelected', () => {
     expect(
       elements.find((element) => element.id === requestFlow),
     ).toMatchObject({ source: { kind: 'free' } });
+  });
+
+  it('removes several selected elements in one undo step', () => {
+    opened([readerElement, studioElement]);
+
+    expect(removeSelected()).toBe(true);
+
+    expect(modelStore.getState().past).toHaveLength(1);
+    expect(modelStore.getState().selection).toEqual([]);
+    expect(said()).toContain('2 elements');
+  });
+});
+
+describe('selectAll', () => {
+  it('selects every element in the diagram on screen', () => {
+    opened([readerElement]);
+
+    selectAll();
+
+    expect(modelStore.getState().selection).toEqual(
+      canvasModel.diagrams[0].elements.map((element) => element.id),
+    );
+    expect(modelStore.getState().past).toEqual([]);
+  });
+
+  it('leaves an unplaced flow out of the selection', () => {
+    const hiddenFlow: Flow = {
+      kind: 'flow',
+      id: elementId('flow-hidden'),
+      name: 'Hidden flow',
+      description: '',
+      outOfScope: false,
+      reasonOutOfScope: '',
+      source: { kind: 'attached', element: requestFlow },
+      target: { kind: 'attached', element: readerElement },
+      waypoints: [],
+    };
+    const model: Model = {
+      ...canvasModel,
+      diagrams: [
+        {
+          ...canvasModel.diagrams[0],
+          elements: [...canvasModel.diagrams[0].elements, hiddenFlow],
+        },
+      ],
+    };
+    modelStore.setState(initialState(model), true);
+
+    selectAll();
+
+    expect(modelStore.getState().selection).not.toContain(hiddenFlow.id);
   });
 });

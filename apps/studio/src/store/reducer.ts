@@ -38,8 +38,16 @@ export function reduce(state: State, action: Action): State {
     AddElement: ({ diagramId, element }) =>
       edited(state, addElement(state.present, diagramId, element)),
     RemoveElement: ({ elementId }) => removedElement(state, elementId),
+    RemoveElements: ({ elementIds }) => removedElements(state, elementIds),
     MoveElement: ({ elementId, offset }) =>
       edited(state, moveElement(state.present, elementId, offset)),
+    MoveElements: ({ elementIds, offset }) =>
+      edited(
+        state,
+        editElements(state.present, elementIds, (model, elementId) =>
+          moveElement(model, elementId, offset),
+        ),
+      ),
     ResizeElement: ({ elementId, size }) =>
       edited(state, resizeElement(state.present, elementId, size)),
     RenameElement: ({ elementId, name }) =>
@@ -55,7 +63,10 @@ export function reduce(state: State, action: Action): State {
       edited(state, detachThreat(state.present, threatId, elementId)),
     Undo: () => undone(state),
     Redo: () => redone(state),
-    Select: ({ elementId }) => ({ ...state, selection: elementId }),
+    Select: ({ elementIds }) => ({
+      ...state,
+      selection: [...new Set(elementIds)],
+    }),
     Renaming: ({ elementId }) => ({ ...state, renaming: elementId }),
     Opened: ({ model, name, source }) => ({
       ...initialState(model),
@@ -106,9 +117,49 @@ function removedElement(state: State, elementId: ElementId): State {
   }
   return {
     ...next,
-    selection: next.selection === elementId ? undefined : next.selection,
+    selection: next.selection.filter((selected) => selected !== elementId),
     renaming: next.renaming === elementId ? undefined : next.renaming,
   };
+}
+
+function removedElements(
+  state: State,
+  elementIds: readonly ElementId[],
+): State {
+  const removed = new Set(elementIds);
+  if (removed.size === 0) {
+    return state;
+  }
+  const outcome = editElements(state.present, [...removed], removeElement);
+  const next = edited(state, outcome);
+  if (Either.isLeft(outcome)) {
+    return next;
+  }
+  return {
+    ...next,
+    selection: next.selection.filter((selected) => !removed.has(selected)),
+    renaming:
+      next.renaming !== undefined && removed.has(next.renaming)
+        ? undefined
+        : next.renaming,
+  };
+}
+
+function editElements(
+  model: Model,
+  elementIds: readonly ElementId[],
+  edit: (
+    current: Model,
+    elementId: ElementId,
+  ) => Either.Either<Model, OperationFailure>,
+): Either.Either<Model, OperationFailure> {
+  return [...new Set(elementIds)].reduce<
+    Either.Either<Model, OperationFailure>
+  >(
+    (outcome, elementId) =>
+      Either.flatMap(outcome, (current) => edit(current, elementId)),
+    Either.right(model),
+  );
 }
 
 function undone(state: State): State {

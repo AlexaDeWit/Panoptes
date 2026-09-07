@@ -6,9 +6,9 @@ and the headless renderer draw one picture from one set of numbers.
 
 ## What it derives, and what it holds
 
-`layout.ts` holds the two selectors the canvas reads, the laid-out first
-diagram of the model on screen and the selection. A layout is kept against
-the model it came from and handed back while that model is the same object,
+`layout.ts` holds the laid-out first diagram on screen. The store selectors
+provide the selection. A layout is kept against the model it came from and
+handed back while that model is the same object,
 which saves the work and, more than that, is what lets the canvas subscribe
 at all: zustand reads a store through `useSyncExternalStore`, which refuses a
 snapshot that is a new object on every call. `names.ts` says what an element
@@ -60,8 +60,8 @@ one pass over a diagram's elements with nothing measured, which is what lets
 the canvas keep no view of the model of its own. What it does keep is what
 React Flow reports about a gesture in flight, a dragged node's position among
 it, folded back onto the model's own nodes as soon as the model moves. A
-gesture reaches the store once, when it settles: one `MoveElement` carrying
-the offset from where the model has the element, drag and key press alike.
+gesture reaches the store once when it settles. A single move dispatches
+`MoveElement`. A group move dispatches `MoveElements` with one shared offset.
 What it asks for is settled against the store's own selection rather than the
 one a render closed over, because React Flow reports a click that moves the
 selection between a node and a flow as two synchronous calls with no render
@@ -85,6 +85,14 @@ from the store. A selection that follows an edit is a second dispatch and
 costs no history, the store keeping selection out of its stacks. An edit the
 model refuses moves nothing and is said by the failure notice rather than by
 the region below, which speaks only for edits that landed.
+
+- **Select.** A click replaces the selection. Shift-click or Shift+Enter on a
+  focused element adds or removes it. Control+A or Command+A selects every
+  element in the diagram. A background drag in Select draws a box and takes
+  every node and drawn flow wholly inside it. The store holds the result as a
+  unique, ordered ID array. Select rests on the arrow cursor. Hand, selected
+  with H or held with Space, pans with a hand cursor.
+  Dragging any selected node moves the full selection.
 
 - **Place.** Select, Actor, Process, Store, Boundary box, Boundary curve and
   Hand are icon buttons in the floating toolbox, each showing every shortcut
@@ -141,17 +149,16 @@ the region below, which speaks only for edits that landed.
   Radix rather than the registry, an open overlay owning its own keys, so
   cancelling leaves the selection where it was. A selection no flow can run
   from starts nothing.
-- **Delete.** Delete or Backspace removes the selected element or flow as one
-  `RemoveElement`. The command registry binds the two keys for the whole page
+- **Delete.** Delete or Backspace removes the selection as one `RemoveElement`
+  or `RemoveElements`. The command registry binds both keys for the whole page
   ([the commands](../commands/README.md)), and the canvas binds them again for
   itself: a press the canvas has answered is marked handled, so one press is
   one removal whichever of the two took it. Consolidating the two into the
   registry alone is a follow-up. The cascade is the
   model's own: a flow attached to what went loses that end and keeps the
   other, and a threat that named it keeps its record and loses the link. The
-  announcement counts both before the dispatch, since afterwards there is
-  nothing left to count them from. Focus lands on the canvas, the element that
-  held it having gone.
+  announcement counts the full cascade before the dispatch and reports it
+  once. Focus lands on the canvas after the focused element goes.
 - **Rename.** Double-clicking an element or a flow, or pressing F2 with one
   selected, opens a field over the name where the diagram draws it: over the
   glyph for an element and over the label for a flow, at the placement the
@@ -244,17 +251,9 @@ makes widening that line under the pointer both the cue and the band. What
 that band should be is issue 191's, along with the boundary hit testing named
 below.
 
-The pointer says what a click would do. React Flow's own sheet already lands
-`pointer` on a flow, `crosshair` on a handle a flow is drawn from, and `grab`
-then `grabbing` on the background that pans. What the studio adds is
-`pointer` over an element, which React Flow leaves at the `grab` it gives any
-draggable node, so the cursor speaks for the selection a click makes rather
-than for the drag. The other two cursors the epic asks for belong to the tool
-modes of issue 175, and the CSS module holds them against a `data-tool`
-attribute on the canvas container: `select`, which is the attribute absent
-and the rules above, `place`, a crosshair over the whole canvas because a
-placement tool draws where the click lands, and `hand`, the pan's own grab
-everywhere. Nothing sets the attribute until 175 does.
+Select rests on the plain arrow over the pane and nodes. A flow keeps its link
+pointer, and a connection handle keeps its crosshair. Place uses a crosshair
+over the canvas. Hand uses `grab`, then `grabbing` during its pan.
 
 The control that resizes the selected element is a square where the handle a
 flow is drawn from is a circle, and the two sit at the same corner, so shape
@@ -336,10 +335,10 @@ and the weights above. Both are an outline or a border rather than a shadow,
 so forced-colours mode keeps them. Severity is legible without colour on the
 canvas itself: a badge carries its count over a letter for the severity.
 
-Moving an element by keyboard is React Flow's own path: tab to it, Enter to
-select it, then an arrow key moves it five model units, twenty with shift
-held. Each press is one undoable `MoveElement`. React Flow announces the move
-in a live region of its own and pans a newly focused element into view.
+Moving by keyboard is React Flow's path: tab to an element, press Enter, then
+use an arrow key. An arrow moves one selection five model units. Shift moves it
+twenty. Each press is one undoable singular or group action. Shift+Enter adds
+or removes the focused element. React Flow announces moves in its live region.
 
 Every edit has a keyboard path of its own, and every one of them is a
 registered command with its chord shown beside it ([the
@@ -365,8 +364,8 @@ commands](../commands/README.md)).
   left moves the element as well as sizing it, which is two operations for one
   gesture where the store has one action per edit. A boundary curve carries
   none, the model giving it no extent to set.
-- A flow selects but does not move, and its waypoints cannot be edited: its
-  geometry follows the elements its ends are attached to.
+- A flow alone selects but does not move. A group move translates its
+  waypoints and free ends. Its attached ends follow their elements.
 - Nothing pans to a flow that was just connected, and nothing pans a selected
   flow out from under the threat panel: a flow has no box, so whether it is in
   view is not the question a node's is.
@@ -385,9 +384,10 @@ commands](../commands/README.md)).
   the refused draft goes with the field it was in.
 - Nothing pans to a flow that was just connected: a flow has no box, so
   whether it is in view is not the question a node's is.
-- Selection is single. Multi-select and box select are unbound, because the
-  store holds one selection and a plural gesture has no plural action behind
-  it.
+- A flow's full drawn bounds must sit inside a selection box. An unplaced flow
+  has no drawn bounds, so Select All and box selection leave it out.
+- A selection box stays inside the current viewport. Pan with Hand before
+  drawing a box around elements outside it.
 - Panning remains a pointer drag. Hand makes that drag own the whole canvas,
   selected by H or held temporarily with Space. Reaching an element does not
   need a keyboard pan, since focusing an element pans it into view.

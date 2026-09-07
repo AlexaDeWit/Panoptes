@@ -339,7 +339,7 @@ describe('what the studio says about the file', () => {
     ).not.toBeNull();
 
     act(() => {
-      dispatch(Action.Select({ elementId: actorElement }));
+      dispatch(Action.Select({ elementIds: [actorElement] }));
     });
 
     expect(
@@ -356,7 +356,7 @@ describe('what the studio says about the file', () => {
     mounted(specBridge());
     act(() => {
       dispatch(Action.AddElement({ diagramId: mainDiagram, element: note }));
-      dispatch(Action.Select({ elementId: note.id }));
+      dispatch(Action.Select({ elementIds: [note.id] }));
     });
 
     await openMenu(user);
@@ -373,7 +373,7 @@ describe('what the studio says about the file', () => {
     const user = userEvent.setup();
     mounted(specBridge());
     act(() => {
-      dispatch(Action.Select({ elementId: actorElement }));
+      dispatch(Action.Select({ elementIds: [actorElement] }));
     });
 
     await choose(user, 'Rename the selection');

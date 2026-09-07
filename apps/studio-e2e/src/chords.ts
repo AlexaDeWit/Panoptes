@@ -34,6 +34,3 @@ export const registeredChords = {
   'boundary-box-tool': ['b', '5'],
   'boundary-curve-tool': ['c', '6'],
 } as const;
-
-/** The commands whose surface has not landed, and the chord each claims. */
-export const chordsWaitingOnASurface = [registeredChords['select-all'][0]];

@@ -12,7 +12,11 @@ const softHyphen = '­';
 
 const renaming = (elementId: ElementId): void => {
   modelStore.setState(
-    { ...initialState(canvasModel), selection: elementId, renaming: elementId },
+    {
+      ...initialState(canvasModel),
+      selection: [elementId],
+      renaming: elementId,
+    },
     true,
   );
   resetAnnouncements();

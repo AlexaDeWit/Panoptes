@@ -104,12 +104,8 @@ something else instead.
 
 ## What a later slice does
 
-- Flip a `pending` entry to `runs` in the issue that lands its surface.
-  Multi-select (#156) owns select all. Starting a flow (#178) already runs:
-  the chord opens the target chooser on
-  the selected element, which is the canvas's own channel rather than a member
-  of `CommandSurface`, since a flow in progress is neither the file session nor
-  the viewport ([the canvas](../canvas/README.md)).
+- Flip a `pending` entry to `runs` when the issue lands its surface. A pending
+  command keeps its chord reserved until then.
 - Render a command through `CommandButton`, or `IconCommandButton` where the
   control is a glyph, or read `commandById` for a surface that draws its own
   control. Never hold a label or a chord beside a control: the menu, the

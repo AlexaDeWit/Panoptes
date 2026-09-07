@@ -28,19 +28,13 @@ there is a panel at all, holds the drafts and answers for the keyboard.
 
 ## What it binds to
 
-`threats.ts` holds the selectors and the pure functions the panel is built
-from. `panelSubject` is what the panel is about, the element `State.selection`
-names or nothing at all, and `attachedThreats` the threats that name it, in
-register order. A flow is a selection like any other: it carries threats, so
-it opens the panel as a box does. Status plays no part in the list, where it
-decides the badge: the panel shows what has been recorded against the element,
-the canvas what is still open.
+`threats.ts` holds the selectors and pure functions for the panel.
+`panelSubject` returns one element, the count of several selected elements, or
+nothing. `attachedThreats` returns threats only for a single selection. A flow
+is an element here because it carries threats.
 
-`PanelSubject` also has a branch for several elements selected at once, where
-the panel says how many and offers no field: there is no one element to record
-a threat against. Nothing produces that branch yet, the store holding one
-selection until #156 lands, and the panel is built to take it now so that
-issue changes the selector rather than the panel.
+For several selected elements, the panel states the count and offers no field.
+There is no single element to record a threat against.
 
 The panel holds no copy of model state. What it does hold is its own view
 state: which threat is expanded, which control focus is being sent to, what

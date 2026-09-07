@@ -2,9 +2,9 @@ import type { CanvasFlowEdge, CanvasNode } from '@saerskriven/canvas';
 import type { ElementId } from '@saerskriven/model';
 import type { Connection, Edge, EdgeChange, NodeChange } from '@xyflow/react';
 import { Action } from '../store/actions.js';
+import { selectedElements } from '../store/selectors.js';
 import { dispatch, modelStore } from '../store/store.js';
 import { connectElements } from './edits.js';
-import { selectedElement } from './layout.js';
 import type { DiagramNode } from './nodes.js';
 
 /** One thing React Flow reports about a node or a flow it draws. */
@@ -26,10 +26,10 @@ export function applyChanges(
   elements: ReadonlyMap<string, ElementId>,
   nodes: ReadonlyMap<string, CanvasNode>,
 ): void {
-  const selection = selectedElement(modelStore.getState());
+  const selection = selectedElements(modelStore.getState());
   for (const action of [
     ...selectionActions(changes, elements, selection),
-    ...moveActions(changes, nodes),
+    ...moveActions(changes, nodes, selection),
     ...resizeActions(changes, nodes),
   ]) {
     dispatch(action);
@@ -37,37 +37,41 @@ export function applyChanges(
 }
 
 /**
- * The selection the reported changes ask for, which is one action or none:
- * the studio holds a single selection, so a change of it is one dispatch
- * however many elements React Flow reports. A click on one element is
- * reported as a selection there and a deselection everywhere else, in two
- * calls where both a node and a flow are involved, so a deselection reaches
- * the store only when it names the element the store has. `selection` is
- * therefore the store's live one, which {@link applyChanges} reads for every
- * call rather than passing the same value to both.
+ * The selection React Flow reports, folded onto the current store selection.
+ * Node and edge changes arrive through separate callbacks, so each call uses
+ * the selection that the prior callback left behind.
  */
 export function selectionActions(
   changes: readonly DiagramChange[],
   elements: ReadonlyMap<string, ElementId>,
-  selection: ElementId | undefined,
+  selection: readonly ElementId[],
 ): Action[] {
-  const chosen = selectionIds(changes, true).at(0);
-  if (chosen !== undefined) {
-    const element = elements.get(chosen);
-    return element === undefined || element === selection
-      ? []
-      : [Action.Select({ elementId: element })];
+  const next = [...selection];
+  for (const change of changes) {
+    if (change.type !== 'select') {
+      continue;
+    }
+    const element = elements.get(change.id);
+    if (element === undefined) {
+      continue;
+    }
+    const index = next.indexOf(element);
+    if (change.selected && index === -1) {
+      next.push(element);
+    } else if (!change.selected && index !== -1) {
+      next.splice(index, 1);
+    }
   }
-  const dropped =
-    selection !== undefined && selectionIds(changes, false).includes(selection);
-  return dropped ? [Action.Select({ elementId: undefined })] : [];
+  return sameSelection(selection, next)
+    ? []
+    : [Action.Select({ elementIds: next })];
 }
 
 /**
  * The moves the reported changes ask for, as offsets from where the model
  * has each element. React Flow reports a position on every frame of a drag
  * and once more when the gesture ends, so a change still dragging is the
- * canvas's own business and only the settled one reaches the store: one
+ * canvas's own business and only the settled one reaches the store: one store
  * action for a whole drag, and one for each arrow key a keyboard move
  * presses. A gesture that put an element back where it was asks for nothing,
  * since an operation that changes no geometry still costs an undo entry.
@@ -75,8 +79,9 @@ export function selectionActions(
 export function moveActions(
   changes: readonly DiagramChange[],
   nodes: ReadonlyMap<string, CanvasNode>,
+  selection: readonly ElementId[],
 ): Action[] {
-  return changes.flatMap((change) => {
+  const settled = changes.flatMap((change) => {
     if (
       change.type !== 'position' ||
       change.dragging === true ||
@@ -94,8 +99,18 @@ export function moveActions(
     };
     return offset.x === 0 && offset.y === 0
       ? []
-      : [Action.MoveElement({ elementId: node.id, offset })];
+      : [{ elementId: node.id, offset }];
   });
+  const first = settled.at(0);
+  if (first === undefined) {
+    return [];
+  }
+  const elementIds = selection.includes(first.elementId)
+    ? selection
+    : [first.elementId];
+  return elementIds.length === 1
+    ? [Action.MoveElement(first)]
+    : [Action.MoveElements({ elementIds, offset: first.offset })];
 }
 
 /**
@@ -161,11 +176,12 @@ export function applyConnection(
   }
 }
 
-function selectionIds(
-  changes: readonly DiagramChange[],
-  selected: boolean,
-): string[] {
-  return changes.flatMap((change) =>
-    change.type === 'select' && change.selected === selected ? [change.id] : [],
+function sameSelection(
+  before: readonly ElementId[],
+  after: readonly ElementId[],
+): boolean {
+  return (
+    before.length === after.length &&
+    before.every((elementId, index) => elementId === after[index])
   );
 }

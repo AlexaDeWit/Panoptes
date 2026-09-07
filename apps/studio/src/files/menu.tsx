@@ -141,7 +141,7 @@ export function StudioMenu({ session }: StudioMenuProps) {
   const dirty = useModelStore(isDirty);
   const undoable = useModelStore(canUndo);
   const redoable = useModelStore(canRedo);
-  const nothing = useModelStore((state) => state.selection === undefined);
+  const nothing = useModelStore((state) => state.selection.length === 0);
   const renamable = useModelStore(renameable);
   const [open, setOpen] = useState(false);
 

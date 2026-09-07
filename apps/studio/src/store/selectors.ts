@@ -54,6 +54,16 @@ export function elementById(
     .find((element) => element.id === elementId);
 }
 
+/** The selected element ID where exactly one is selected. */
+export function selectedElement(state: State): ElementId | undefined {
+  return state.selection.length === 1 ? state.selection.at(0) : undefined;
+}
+
+/** The selected element IDs, in selection order. */
+export function selectedElements(state: State): readonly ElementId[] {
+  return state.selection;
+}
+
 /**
  * Whether the element `elementId` names has a name a field can open. A text
  * note has not: what it draws is its prose rather than its name, so a field
@@ -70,7 +80,8 @@ export function nameEditable(state: State, elementId: ElementId): boolean {
  * do nothing to.
  */
 export function renameable(state: State): boolean {
-  return state.selection !== undefined && nameEditable(state, state.selection);
+  const selected = selectedElement(state);
+  return selected !== undefined && nameEditable(state, selected);
 }
 
 /**

@@ -37,15 +37,16 @@ export type DiagramGraph = {
  */
 export function diagramGraph(
   layout: CanvasLayout,
-  selection: ElementId | undefined,
+  selection: readonly ElementId[],
 ): DiagramGraph {
   const names = accessibleNames(layout);
   const ends = new Set<string>(flowEnds(layout).map((node) => node.id));
+  const selected = new Set<string>(selection);
   return {
     nodes: [
       ...toReactFlowNodes(layout).map((node) => ({
         ...node,
-        selected: node.id === selection,
+        selected: selected.has(node.id),
         connectable: ends.has(node.id),
         ariaLabel: names.get(node.id),
       })),
@@ -53,7 +54,7 @@ export function diagramGraph(
     ],
     edges: toReactFlowEdges(layout).map((edge) => ({
       ...edge,
-      selected: edge.id === selection,
+      selected: selected.has(edge.id),
       ariaLabel: names.get(edge.id),
     })),
   };

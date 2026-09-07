@@ -57,7 +57,7 @@ describe('the command registry', () => {
     expect(commandById('select-tool').inTextFields).toBe(false);
   });
 
-  it('names the issue that will give each command still without a dispatch one', () => {
+  it('names the issue for any command still without a dispatch', () => {
     const waiting = commands.filter(
       (command) => command.dispatch.kind === 'pending',
     );
@@ -66,7 +66,7 @@ describe('the command registry', () => {
         command.id,
         command.dispatch.kind === 'pending' ? command.dispatch.issue : 0,
       ]),
-    ).toEqual([['select-all', 156]]);
+    ).toEqual([]);
   });
 
   it('binds every toolbox mode to a command of its own', () => {
@@ -173,13 +173,15 @@ describe('runCommand', () => {
     expect(recording.asked).toEqual([]);
   });
 
-  it('does nothing at all for a command still waiting on its surface', () => {
+  it('selects the diagram through the select-all command', () => {
     const recording = recordingSurface();
-    const before = modelStore.getState();
 
     runCommand(commandById('select-all'), recording.surface);
 
-    expect(modelStore.getState()).toBe(before);
+    expect(modelStore.getState().selection).toEqual(
+      placeholderModel.diagrams[0].elements.map((element) => element.id),
+    );
+    expect(modelStore.getState().past).toEqual([]);
     expect(recording.asked).toEqual([]);
   });
 });
