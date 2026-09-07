@@ -18,6 +18,11 @@ import { canRedo, canUndo, isDirty, renameable } from '../store/selectors.js';
 import { useModelStore } from '../store/store.js';
 import { FailureNotice } from '../ui/failure-notice.js';
 import { LiveRegion } from '../ui/live-region.js';
+import {
+  colourModes,
+  isColourMode,
+  type ColourMode,
+} from '../theme-preference.js';
 import type { FileSession } from './file-commands.js';
 import styles from './menu.module.css';
 import {
@@ -132,10 +137,18 @@ function SourceLink() {
 }
 
 /** The session the items run their commands through. */
-export type StudioMenuProps = { readonly session: FileSession };
+export type StudioMenuProps = {
+  readonly session: FileSession;
+  readonly colourMode?: ColourMode;
+  readonly onColourModeChange?: (mode: ColourMode) => void;
+};
 
 /** The non-modal file, edit and project menu, with reports beside its trigger. */
-export function StudioMenu({ session }: StudioMenuProps) {
+export function StudioMenu({
+  session,
+  colourMode,
+  onColourModeChange,
+}: StudioMenuProps) {
   const file = useModelStore((state) => state.file);
   const failure = useModelStore((state) => state.lastFailure);
   const dirty = useModelStore(isDirty);
@@ -144,6 +157,7 @@ export function StudioMenu({ session }: StudioMenuProps) {
   const nothing = useModelStore((state) => state.selection.length === 0);
   const renamable = useModelStore(renameable);
   const [open, setOpen] = useState(false);
+  const selectedColourMode = colourMode ?? 'system';
 
   useCloseGuard(dirty);
   useAsking(session.closing, dirty, setOpen, session.cancelClose);
@@ -267,6 +281,40 @@ export function StudioMenu({ session }: StudioMenuProps) {
               <MenuItem onChoose={cancelClose}>Keep the file open</MenuItem>
             )}
           </DropdownMenu.Group>
+          <DropdownMenu.Separator className={styles.rule} />
+          <DropdownMenu.Sub>
+            <DropdownMenu.SubTrigger className={styles.item}>
+              <span>Appearance</span>
+              <span aria-hidden="true" className={styles.chord}>
+                {selectedColourMode[0].toUpperCase() +
+                  selectedColourMode.slice(1)}
+              </span>
+            </DropdownMenu.SubTrigger>
+            <DropdownMenu.SubContent className={styles.panel}>
+              <DropdownMenu.RadioGroup
+                aria-label="Appearance"
+                onValueChange={(value) => {
+                  if (isColourMode(value)) {
+                    onColourModeChange?.(value);
+                  }
+                }}
+                value={selectedColourMode}
+              >
+                {colourModes.map((mode) => (
+                  <DropdownMenu.RadioItem
+                    className={styles.item}
+                    key={mode}
+                    value={mode}
+                  >
+                    <span aria-hidden="true" className={styles.radioMark}>
+                      {selectedColourMode === mode ? '●' : '○'}
+                    </span>
+                    <span>{mode[0].toUpperCase() + mode.slice(1)}</span>
+                  </DropdownMenu.RadioItem>
+                ))}
+              </DropdownMenu.RadioGroup>
+            </DropdownMenu.SubContent>
+          </DropdownMenu.Sub>
           <DropdownMenu.Separator className={styles.rule} />
           <DropdownMenu.Group>
             <DropdownMenu.Label className={styles.heading}>

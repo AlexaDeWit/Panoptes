@@ -1,4 +1,24 @@
 import { tokenStylesheet } from '@saerskriven/canvas';
+import { useEffect, useSyncExternalStore } from 'react';
+import {
+  readColourMode,
+  writeColourMode,
+  type ColourMode,
+} from './theme-preference.js';
+
+let selectedMode: ColourMode | undefined;
+const subscribers = new Set<() => void>();
+
+const currentMode = (): ColourMode =>
+  (selectedMode ??= readColourMode(readStorage()));
+
+const readStorage = (): Storage | undefined => {
+  try {
+    return globalThis.localStorage;
+  } catch {
+    return undefined;
+  }
+};
 
 /**
  * The design tokens, as the custom properties every CSS module in the studio
@@ -13,5 +33,42 @@ import { tokenStylesheet } from '@saerskriven/canvas';
  * mode it is in.
  */
 export function DesignTokens() {
-  return <style>{tokenStylesheet}</style>;
+  const [mode] = useColourMode();
+
+  useEffect(() => {
+    const root = document.documentElement;
+    if (mode === 'system') {
+      delete root.dataset.pnColourMode;
+    } else {
+      root.dataset.pnColourMode = mode;
+    }
+  }, [mode]);
+
+  return <style data-mode={mode}>{tokenStylesheet}</style>;
+}
+
+export function useColourMode(): readonly [
+  ColourMode,
+  (mode: ColourMode) => void,
+] {
+  const mode = useSyncExternalStore(
+    (subscribe) => {
+      subscribers.add(subscribe);
+      return () => {
+        subscribers.delete(subscribe);
+      };
+    },
+    currentMode,
+    (): ColourMode => 'system',
+  );
+
+  const choose = (next: ColourMode): void => {
+    selectedMode = next;
+    writeColourMode(readStorage(), next);
+    subscribers.forEach((subscriber) => {
+      subscriber();
+    });
+  };
+
+  return [mode, choose];
 }

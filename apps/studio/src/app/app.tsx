@@ -6,6 +6,7 @@ import { CommandSurfaceProvider } from '../commands/binding.js';
 import type { CommandSurface } from '../commands/registry.js';
 import { useFileSession } from '../files/file-commands.js';
 import { StudioMenu } from '../files/menu.js';
+import { useColourMode } from '../theme.js';
 import styles from './app.module.css';
 
 /** The studio shell and the provider that exposes its viewport commands. */
@@ -20,6 +21,7 @@ export function App() {
 function Studio() {
   const session = useFileSession();
   const view = useViewCommands();
+  const [colourMode, setColourMode] = useColourMode();
 
   const surface = useMemo<CommandSurface>(
     () => ({ files: session.commands, view }),
@@ -32,7 +34,11 @@ function Studio() {
         <main className={styles.diagram}>
           <h1 className={styles.title}>Saerskriven</h1>
           <div className={styles.stage}>
-            <StudioMenu session={session} />
+            <StudioMenu
+              colourMode={colourMode}
+              onColourModeChange={setColourMode}
+              session={session}
+            />
             <DiagramCanvas />
           </div>
         </main>
