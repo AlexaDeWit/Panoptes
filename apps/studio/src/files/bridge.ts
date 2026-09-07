@@ -1,28 +1,13 @@
 import { Data } from 'effect';
 
-/**
- * A file the studio was handed, as the little of it the open path reads: its
- * name, how many bytes it holds, and its text on demand. It is structural,
- * so a browser `File` satisfies it and a spec hands over a literal.
- */
+/** The browser File fields needed for a bounded read. */
 export type ChosenFile = {
   readonly name: string;
   readonly size: number;
   text(): Promise<string>;
 };
 
-/**
- * What asking for a file produced.
- *
- * `Chosen` is the text, already inside the bound the caller named.
- * `TooLarge` is a file past that bound, measured before its text was read,
- * which is what keeps the read itself finite. `Unreadable` is the file never
- * arriving, which is the platform's answer and no codec's. `Cancelled` is
- * the person dismissing the picker, which is not a failure and says nothing.
- * `NoPicker` is a bridge with no picker of its own, so the caller opens
- * through its own file input; the browser bridge answers this wherever the
- * File System Access API is missing.
- */
+/** Chosen text is within the byte bound but still needs codec validation. */
 export type OpenOutcome = Data.TaggedEnum<{
   Chosen: { readonly name: string; readonly text: string };
   TooLarge: {
@@ -35,66 +20,81 @@ export type OpenOutcome = Data.TaggedEnum<{
   NoPicker: {};
 }>;
 
-/**
- * Constructors for {@link OpenOutcome}, plus Effect's `$is` and `$match`
- * helpers.
- */
+/** Constructors and matching helpers for open outcomes. */
 export const OpenOutcome = Data.taggedEnum<OpenOutcome>();
 
-/**
- * What asking to write a file produced. `Written` names the file the text
- * reached, which is the one the person chose where they were asked and not
- * always the one that was proposed, so it is also what says which format was
- * written. `Cancelled` is the person dismissing the picker. `Refused` is the
- * platform declining to write.
- */
+/** Written names the file that received the text, which can differ from the proposed name. */
 export type SaveOutcome = Data.TaggedEnum<{
   Written: { readonly name: string };
   Cancelled: {};
   Refused: { readonly reason: string };
 }>;
 
-/**
- * Constructors for {@link SaveOutcome}, plus Effect's `$is` and `$match`
- * helpers.
- */
+/** Constructors and matching helpers for save outcomes. */
 export const SaveOutcome = Data.taggedEnum<SaveOutcome>();
 
-/**
- * One format a save picker offers, shaped as the File System Access API asks
- * for it: the words a person reads in the picker, and the extensions each
- * media type is written under.
- */
+/** A format offered through the File System Access API. */
 export type SaveFileType = {
   readonly description: string;
   readonly accept: Readonly<Record<string, readonly string[]>>;
 };
 
-/**
- * The text a save-as writes, once the file it goes to has a name. A picker
- * offering more than one format lets the person name the file in any of
- * them, and the name they settle on is what decides the codec, so the text
- * cannot be settled before the picker has answered.
- */
+/** Produces text after the chosen file name determines its format. */
 export type SaveText = (name: string) => string;
 
 /** Text or binary content the studio can place outside its open file. */
 export type FileContent = string | Uint8Array;
 
-/**
- * The injected file interface. An export places content without retaining
- * the chosen handle as the model's open file. Binary content stays a
- * `Uint8Array`, which a later Electron IPC bridge can clone.
- */
+/** Settle once before dispatch, retaining the candidate handle or releasing the association. */
+export type FileResult<Outcome> = {
+  readonly outcome: Outcome;
+  settle(retain: boolean): boolean;
+};
+
+/** Only the latest request can settle its handle, and Close invalidates every pending result. */
+export function fileOwnership<Handle>() {
+  let owner: symbol | undefined;
+  let held: Handle | undefined;
+  return {
+    current: (): Handle | undefined => held,
+    begin: () => {
+      const operation = Symbol();
+      owner = operation;
+      return <Outcome>(
+        outcome: Outcome,
+        candidate: Handle | undefined,
+      ): FileResult<Outcome> => ({
+        outcome,
+        settle: (retain) => {
+          if (owner !== operation) {
+            return false;
+          }
+          owner = undefined;
+          held = retain ? candidate : undefined;
+          return true;
+        },
+      });
+    },
+    release: (): void => {
+      owner = undefined;
+      held = undefined;
+    },
+  };
+}
+
+/** File operations defer handle adoption until settlement. Exports never change the association. */
 export type FileBridge = {
-  open(maxBytes: number): Promise<OpenOutcome>;
-  received(file: ChosenFile, maxBytes: number): Promise<OpenOutcome>;
-  save(name: string, text: string): Promise<SaveOutcome>;
+  open(maxBytes: number): Promise<FileResult<OpenOutcome>>;
+  received(
+    file: ChosenFile,
+    maxBytes: number,
+  ): Promise<FileResult<OpenOutcome>>;
+  save(name: string, text: string): Promise<FileResult<SaveOutcome>>;
   saveAs(
     name: string,
     types: readonly SaveFileType[],
     text: SaveText,
-  ): Promise<SaveOutcome>;
+  ): Promise<FileResult<SaveOutcome>>;
   exportFile(
     name: string,
     type: SaveFileType,
@@ -104,11 +104,7 @@ export type FileBridge = {
   release(): void;
 };
 
-/**
- * A chosen file as text, refusing one past the bound before any of it is
- * read. Every bridge reads a file through this, so the size check cannot be
- * missed on one path and taken on another.
- */
+/** Refuses an oversized file before requesting its text. */
 export async function readWithin(
   file: ChosenFile,
   maxBytes: number,
@@ -127,11 +123,7 @@ export async function readWithin(
   }
 }
 
-/**
- * What a platform refused with, as a line for a person. A browser rejects
- * with a `DOMException` carrying a message worth showing, and anything else
- * is rendered rather than dropped.
- */
+/** Preserves an Error message and converts other rejection values to text. */
 export function reasonOf(cause: unknown): string {
   return cause instanceof Error ? cause.message : String(cause);
 }

@@ -14,20 +14,31 @@ and the view opens one. `asksWhere` is the same fact on the save side, and a
 question rather than an answer: a save-as puts every registered format in the
 platform's picker, so a platform with none is asked in advance and the studio
 puts the question in its own menu instead, handing the save-as the one format
-it settled on. The handle a picker returned is held in the bridge, not the
-store, and only where the crossing it names happened: a read that produced a
-text, and a save-as whose write landed.
+it settled on. The bridge holds the native handle only after the session
+accepts the outcome of the current operation.
+
+Each open, fallback selection, save, or save-as starts one operation identity.
+The latest request owns settlement, regardless of completion order. The
+bridge returns an outcome and a settlement function without changing its
+held handle. The session validates the read and settles the handle before
+dispatching the matching store action, with no asynchronous step between them.
+A stale settlement returns false and changes neither association. Close
+releases the handle and invalidates pending operations. Exports own no file
+association and do not interrupt these operations.
 
 A failed open keeps the model, history, saved checkpoint, and loss report,
 but drops the file association and releases the bridge's handle. This applies
-to a read failure and to text a codec refuses. A refused save also drops the
-association and releases the handle. The next Save downloads native YAML,
-leaving both the previous file and any rejected file untouched. Unsaved
-changes stay guarded. Dismissing a picker keeps the file association.
+to a read failure and to text a codec refuses. The next Save downloads native
+YAML, leaving both the previous file and any rejected file untouched. A
+refused save retains the current file and handle for retry. Unsaved changes
+stay guarded. Dismissing a picker keeps the last settled association but does
+not revive an older pending operation. An empty fallback selection starts no
+operation.
 
-A save already in progress can still write its target. After the association
-changes, its completion cannot rename or mark the current model saved.
-A fallback read releases the handle when it completes, including a failed read.
+A save already in progress can still write its target. Once another file
+operation starts, that save cannot rename or mark the current model saved.
+A successful fallback selection settles with no handle, so its next Save
+downloads under the selected name.
 
 `session.ts` is what the studio does with a file, as pure functions the
 component calls and a spec calls directly. A read is the size against

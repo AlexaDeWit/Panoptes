@@ -151,7 +151,10 @@ const studioActions: ActionsByTag<StudioActionTag> = {
     name: 'model.yaml',
     failure: ReadFailure.MalformedText({ message: 'not YAML' }),
   }),
-  FileRefused: Action.FileRefused({ reason: 'the browser said no' }),
+  FileRefused: Action.FileRefused({
+    operation: 'open',
+    reason: 'the browser said no',
+  }),
 };
 
 const purityCases: readonly (readonly [State, Action])[] = [
@@ -379,6 +382,22 @@ describe('the file lifecycle', () => {
 });
 
 describe('a refusal outside the model', () => {
+  it.each(['open', 'save'] as const)(
+    'records a %s refusal with its file policy',
+    (operation) => {
+      const opened = reduce(start, studioActions.Opened);
+      const next = reduce(
+        opened,
+        Action.FileRefused({ operation, reason: 'NotAllowedError' }),
+      );
+      expect(next.file).toEqual(
+        operation === 'open' ? FileLifecycle.NoFile() : opened.file,
+      );
+      expect(next.present).toBe(opened.present);
+      expect(next.saved).toBe(opened.saved);
+    },
+  );
+
   it('records why nothing read the file, leaving the model alone', () => {
     const next = reduce(start, studioActions.ReadFailed);
     expect(next.present).toBe(start.present);

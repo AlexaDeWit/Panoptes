@@ -1,11 +1,13 @@
 import {
   OpenOutcome,
   SaveOutcome,
+  fileOwnership,
   readWithin,
   reasonOf,
   type ChosenFile,
   type FileContent,
   type FileBridge,
+  type FileResult,
   type SaveFileType,
   type SaveText,
 } from './bridge.js';
@@ -26,83 +28,89 @@ declare global {
   }
 }
 
-let held: FileSystemFileHandle | undefined;
-let revision = 0;
+const ownership = fileOwnership<FileSystemFileHandle>();
 
 const dismissed = (cause: unknown): boolean =>
   cause instanceof DOMException && cause.name === 'AbortError';
 
-async function open(maxBytes: number): Promise<OpenOutcome> {
+async function open(maxBytes: number): Promise<FileResult<OpenOutcome>> {
+  const complete = ownership.begin();
+  const previous = ownership.current();
   const picker = window.showOpenFilePicker;
   if (picker === undefined) {
-    return OpenOutcome.NoPicker();
+    return complete(OpenOutcome.NoPicker(), previous);
   }
   try {
     const chosen = await picker({ multiple: false });
     const handle = chosen.at(0);
     if (handle === undefined) {
-      return OpenOutcome.Cancelled();
+      return complete(OpenOutcome.Cancelled(), previous);
     }
     const outcome = await readWithin(await handle.getFile(), maxBytes);
-    held = OpenOutcome.$is('Chosen')(outcome) ? handle : undefined;
-    revision += 1;
-    return outcome;
+    return complete(outcome, handle);
   } catch (cause) {
-    return dismissed(cause)
-      ? OpenOutcome.Cancelled()
-      : OpenOutcome.Unreadable({ reason: reasonOf(cause) });
+    return complete(
+      dismissed(cause)
+        ? OpenOutcome.Cancelled()
+        : OpenOutcome.Unreadable({ reason: reasonOf(cause) }),
+      previous,
+    );
   }
 }
 
 async function received(
   file: ChosenFile,
   maxBytes: number,
-): Promise<OpenOutcome> {
-  const outcome = await readWithin(file, maxBytes);
-  release();
-  return outcome;
+): Promise<FileResult<OpenOutcome>> {
+  const complete = ownership.begin();
+  return complete(await readWithin(file, maxBytes), undefined);
 }
 
 function release(): void {
-  held = undefined;
-  revision += 1;
+  ownership.release();
 }
 
-async function save(name: string, text: string): Promise<SaveOutcome> {
-  const started = revision;
+async function save(
+  name: string,
+  text: string,
+): Promise<FileResult<SaveOutcome>> {
+  const complete = ownership.begin();
+  const held = ownership.current();
   const outcome =
     held === undefined
       ? download(name, text, 'text/plain;charset=utf-8')
       : await writeTo(held, held.name, text);
-  if (started === revision && SaveOutcome.$is('Written')(outcome)) {
-    revision += 1;
-  }
-  return outcome;
+  return complete(outcome, held);
 }
 
 async function saveAs(
   name: string,
   types: readonly SaveFileType[],
   text: SaveText,
-): Promise<SaveOutcome> {
-  const started = revision;
+): Promise<FileResult<SaveOutcome>> {
+  const complete = ownership.begin();
+  const previous = ownership.current();
   const picker = window.showSaveFilePicker;
   if (picker === undefined) {
-    release();
-    return download(name, text(name), 'text/plain;charset=utf-8');
+    return complete(
+      download(name, text(name), 'text/plain;charset=utf-8'),
+      undefined,
+    );
   }
   try {
     const handle = await picker({ suggestedName: name, types });
     const outcome = await writeTo(handle, handle.name, text(handle.name));
-    if (started === revision && SaveOutcome.$is('Written')(outcome)) {
-      held = handle;
-      revision += 1;
-    }
-    return outcome;
+    return complete(
+      outcome,
+      SaveOutcome.$is('Written')(outcome) ? handle : previous,
+    );
   } catch (cause) {
-    return dismissed(cause)
-      ? SaveOutcome.Cancelled()
-      : SaveOutcome.Refused({ reason: reasonOf(cause) });
+    return complete(
+      dismissed(cause)
+        ? SaveOutcome.Cancelled()
+        : SaveOutcome.Refused({ reason: reasonOf(cause) }),
+      previous,
+    );
   }
 }
 
@@ -173,10 +181,7 @@ function mediaTypeOf(type: SaveFileType): string {
   return Object.keys(type.accept)[0] ?? 'application/octet-stream';
 }
 
-/**
- * Handles are dropped by release, completed fallback reads, fallback save-as, and bounded picker read failures.
- * Save completions cannot replace a newer association.
- */
+/** Only settlement adopts or drops a handle. Close releases it and invalidates pending operations. */
 export const browserFileBridge: FileBridge = {
   open,
   received,

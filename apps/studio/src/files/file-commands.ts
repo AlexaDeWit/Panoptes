@@ -21,6 +21,7 @@ import {
   SaveOutcome,
   type ChosenFile,
   type FileBridge,
+  type FileResult,
 } from './bridge.js';
 import {
   formatOf,
@@ -38,7 +39,6 @@ import {
 } from './session.js';
 
 type PlannedSave = {
-  readonly file: State['file'];
   readonly target: SaveTarget;
   readonly written: WriteResult;
 };
@@ -61,7 +61,7 @@ export type FileSession = {
   readonly cancelChoice: () => void;
 };
 
-/** A stable file session that ignores save results after the file association changes. */
+/** Settles handle ownership before synchronously dispatching the matching store action. */
 export function useFileSession(
   bridge: FileBridge = browserFileBridge,
   pdf: PdfExport = browserPdfExport,
@@ -84,39 +84,29 @@ export function useFileSession(
     dispatch(Action.Closed());
   }, [bridge]);
 
-  const applyOpen = useCallback(
-    (outcome: OpenOutcome): void => {
-      const action = openedBy(outcome);
-      if (action === undefined) {
-        return;
-      }
-      if (Action.$is('Opened')(action)) {
-        setReport(openReport(action.divergences));
-      } else {
-        bridge.release();
-      }
-      dispatch(action);
-    },
-    [bridge],
-  );
+  const applyOpen = useCallback((result: FileResult<OpenOutcome>): void => {
+    const action = openedBy(result.outcome);
+    if (action === undefined || !result.settle(Action.$is('Opened')(action))) {
+      return;
+    }
+    dispatch(action);
+    if (Action.$is('Opened')(action)) {
+      setReport(openReport(action.divergences));
+    }
+  }, []);
 
   const land = useCallback(
-    (outcome: SaveOutcome, planned: PlannedSave): void => {
-      if (planned.file !== modelStore.getState().file) {
+    (result: FileResult<SaveOutcome>, planned: PlannedSave): void => {
+      const action = savedBy(result.outcome, planned.target.source);
+      if (action === undefined || !result.settle(true)) {
         return;
       }
-      const action = savedBy(outcome, planned.target.source);
-      if (action !== undefined) {
-        if (Action.$is('FileRefused')(action)) {
-          bridge.release();
-        }
-        dispatch(action);
-      }
-      if (SaveOutcome.$is('Written')(outcome)) {
+      dispatch(action);
+      if (SaveOutcome.$is('Written')(result.outcome)) {
         setReport(saveReport(planned.written.divergences));
       }
     },
-    [bridge],
+    [],
   );
 
   const chooseFormat = useCallback(
@@ -144,12 +134,12 @@ export function useFileSession(
       if (!mayDiscard(isDirty(modelStore.getState()))) {
         return;
       }
-      const outcome = await bridge.open(readLimits.maxTextBytes);
-      if (OpenOutcome.$is('NoPicker')(outcome)) {
+      const result = await bridge.open(readLimits.maxTextBytes);
+      if (OpenOutcome.$is('NoPicker')(result.outcome)) {
         picker.current?.click();
         return;
       }
-      applyOpen(outcome);
+      applyOpen(result);
     };
 
     const store = async (): Promise<void> => {
@@ -276,7 +266,6 @@ export function useFileSession(
 function planSave(state: State, format: FormatName): PlannedSave {
   const target = saveTarget(state.file, format);
   return {
-    file: state.file,
     target,
     written: writeThrough(state.present, target.source),
   };

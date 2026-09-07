@@ -3,10 +3,12 @@ import { join } from 'node:path';
 import {
   OpenOutcome,
   SaveOutcome,
+  fileOwnership,
   readWithin,
   type ChosenFile,
   type FileContent,
   type FileBridge,
+  type FileResult,
   type SaveFileType,
 } from './bridge.js';
 
@@ -37,6 +39,36 @@ export const handleFor = (
       close,
     }),
 });
+
+/** A promise whose result a spec supplies after starting concurrent operations. */
+export function deferred<Value>() {
+  let resolveValue: ((value: Value) => void) | undefined;
+  let rejectValue: ((reason: Error) => void) | undefined;
+  const promise = new Promise<Value>((resolve, reject) => {
+    resolveValue = resolve;
+    rejectValue = reject;
+  });
+  return {
+    promise,
+    resolve: (value: Value): void => {
+      resolveValue?.(value);
+    },
+    reject: (reason: Error): void => {
+      rejectValue?.(reason);
+    },
+  };
+}
+
+/** Settles a bridge outcome without codec validation for platform-level specs. */
+export async function settled<Outcome extends OpenOutcome | SaveOutcome>(
+  pending: Promise<FileResult<Outcome>>,
+): Promise<Outcome> {
+  const result = await pending;
+  result.settle(
+    result.outcome._tag !== 'TooLarge' && result.outcome._tag !== 'Unreadable',
+  );
+  return result.outcome;
+}
 
 /** A committed file with its on-disk byte count, addressed from the repository root. */
 export function vendoredFile(path: string): ChosenFile {
@@ -77,9 +109,17 @@ export type SpecBridgeOptions = {
 
 /** Reads through the production size bound and records the requested writes. */
 export function specBridge(options: SpecBridgeOptions = {}): SpecBridge {
+  const ownership = fileOwnership<never>();
   const writes: Recorded[] = [];
   const offered: (readonly SaveFileType[])[] = [];
   const releases: Releases = { count: 0 };
+
+  const request = async <Outcome>(
+    work: () => Promise<Outcome>,
+  ): Promise<FileResult<Outcome>> => {
+    const complete = ownership.begin();
+    return complete(await work(), undefined);
+  };
 
   const opened = (maxBytes: number): Promise<OpenOutcome> => {
     if (options.picker === false) {
@@ -111,15 +151,16 @@ export function specBridge(options: SpecBridgeOptions = {}): SpecBridge {
     writes,
     offered,
     releases,
-    open: opened,
-    received: (file, maxBytes) => readWithin(file, maxBytes),
-    save: (name, text) => answer(name, text, false),
-    saveAs: (name, types, text) => {
-      offered.push(types);
-      const chosen =
-        options.picker === false ? name : (options.chooses ?? name);
-      return answer(chosen, text(chosen), true);
-    },
+    open: (maxBytes) => request(() => opened(maxBytes)),
+    received: (file, maxBytes) => request(() => readWithin(file, maxBytes)),
+    save: (name, text) => request(() => answer(name, text, false)),
+    saveAs: (name, types, text) =>
+      request(() => {
+        offered.push(types);
+        const chosen =
+          options.picker === false ? name : (options.chooses ?? name);
+        return answer(chosen, text(chosen), true);
+      }),
     exportFile: (name, type, content) => {
       offered.push([type]);
       const chosen =
@@ -128,6 +169,7 @@ export function specBridge(options: SpecBridgeOptions = {}): SpecBridge {
     },
     asksWhere: () => options.picker !== false,
     release: () => {
+      ownership.release();
       releases.count += 1;
     },
   };

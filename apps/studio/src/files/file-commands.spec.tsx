@@ -23,7 +23,12 @@ import {
 } from './bridge.js';
 import { browserFileBridge } from './browser-bridge.js';
 import { useFileSession } from './file-commands.js';
-import { chosenFile, handleFor, specBridge } from './files.fixtures.js';
+import {
+  chosenFile,
+  deferred,
+  handleFor,
+  specBridge,
+} from './files.fixtures.js';
 
 const nativeText = saerskrivenYamlCodec.write(sampleModel).output;
 const downloads: string[] = [];
@@ -81,6 +86,148 @@ afterEach(() => {
 });
 
 describe('useFileSession', () => {
+  describe.each(['open', 'fallback', 'save'] as const)(
+    'a failed %s beside a successful Open',
+    (older) => {
+      it.each([
+        ['failure first', 'native'],
+        ['success first', 'native'],
+        ['failure first', 'fallback'],
+        ['success first', 'fallback'],
+      ] as const)(
+        'keeps the newer file when callbacks finish %s (%s)',
+        async (order, newer) => {
+          const failure = deferred<void>();
+          const success = deferred<string>();
+          const original: FileContent[] = [];
+          const replacement: FileContent[] = [];
+          const text = vi.fn<() => Promise<string>>(() => success.promise);
+          const picker = vi
+            .fn<() => Promise<ReturnType<typeof handleFor>[]>>()
+            .mockResolvedValueOnce([
+              handleFor(
+                'original.yaml',
+                nativeText,
+                original,
+                () => failure.promise,
+              ),
+            ]);
+          vi.stubGlobal('showOpenFilePicker', picker);
+          const result = session(browserFileBridge);
+          await act(() => {
+            result.current.commands.open();
+            return Promise.resolve();
+          });
+          edit();
+          if (older === 'open') {
+            picker.mockResolvedValueOnce([
+              {
+                ...handleFor('failed.yaml', nativeText, []),
+                getFile: () =>
+                  Promise.resolve({
+                    ...chosenFile('failed.yaml', nativeText),
+                    text: () => failure.promise.then(() => nativeText),
+                  }),
+              },
+            ]);
+          }
+          act(() => {
+            if (older === 'fallback') {
+              void result.current.receive({
+                ...chosenFile('failed.yaml', nativeText),
+                text: () => failure.promise.then(() => nativeText),
+              });
+            } else {
+              result.current.commands[older]();
+            }
+          });
+          picker.mockResolvedValueOnce([
+            {
+              ...handleFor('replacement.yaml', nativeText, replacement),
+              getFile: () =>
+                Promise.resolve({
+                  ...chosenFile('replacement.yaml', nativeText),
+                  text,
+                }),
+            },
+          ]);
+          act(() => {
+            if (newer === 'fallback') {
+              void result.current.receive({
+                ...chosenFile('replacement.yaml', nativeText),
+                text,
+              });
+            } else {
+              result.current.commands.open();
+            }
+          });
+          await waitFor(() => {
+            expect(text).toHaveBeenCalledTimes(1);
+          });
+          await act(async () => {
+            if (order === 'failure first') {
+              failure.reject(new Error('NotAllowedError'));
+              success.resolve(nativeText);
+            } else {
+              success.resolve(nativeText);
+              failure.reject(new Error('NotAllowedError'));
+            }
+            await Promise.allSettled([failure.promise, success.promise]);
+          });
+          expect(modelStore.getState().file).toMatchObject({
+            _tag: 'Opened',
+            name: 'replacement.yaml',
+          });
+          expect(modelStore.getState().lastFailure).toBeUndefined();
+          await act(() => {
+            result.current.commands.save();
+            return Promise.resolve();
+          });
+          expect(replacement).toHaveLength(newer === 'native' ? 1 : 0);
+          expect(downloads).toEqual(
+            newer === 'native' ? [] : ['replacement.yaml'],
+          );
+        },
+      );
+    },
+  );
+
+  it.each(['save', 'saveAs'] as const)(
+    'retries a refused %s through the original handle',
+    async (command) => {
+      const written: FileContent[] = [];
+      const original = handleFor('original.yaml', nativeText, written);
+      const elsewhere = handleFor('elsewhere.yaml', nativeText, []);
+      vi.stubGlobal('showOpenFilePicker', () => Promise.resolve([original]));
+      vi.stubGlobal('showSaveFilePicker', () => Promise.resolve(elsewhere));
+      const result = session(browserFileBridge);
+      await act(() => {
+        result.current.commands.open();
+        return Promise.resolve();
+      });
+      edit();
+      const before = modelStore.getState();
+      vi.spyOn(
+        command === 'save' ? original : elsewhere,
+        'createWritable',
+      ).mockRejectedValueOnce(new Error('NotAllowedError'));
+      await act(() => {
+        result.current.commands[command]();
+        return Promise.resolve();
+      });
+      expect(modelStore.getState().file).toBe(before.file);
+      expect(modelStore.getState().lastFailure?._tag).toBe('File');
+      expect(isDirty(modelStore.getState())).toBe(true);
+      await act(() => {
+        result.current.commands.save();
+        return Promise.resolve();
+      });
+      expect(written).toHaveLength(1);
+      expect(downloads).toEqual([]);
+      expect(isDirty(modelStore.getState())).toBe(false);
+    },
+  );
+
   describe.each(['save', 'saveAs'] as const)('an overlapping %s', (command) => {
     it.each([
       'picker refusal',
@@ -201,15 +348,11 @@ describe('useFileSession', () => {
       });
 
       expect(modelStore.getState().present).toBe(later.present);
-      expect(modelStore.getState().saved).toBe(
-        change === 'cancelled open' ? later.present : later.saved,
-      );
+      expect(modelStore.getState().saved).toBe(later.saved);
       expect(modelStore.getState().lastFailure).toBe(later.lastFailure);
       const destination =
         change === 'cancelled open'
-          ? command === 'save'
-            ? 'original.yaml'
-            : 'elsewhere.yaml'
+          ? 'original.yaml'
           : change === 'successful open' ||
               change === 'stale write refusal' ||
               change === 'newer save-as'
@@ -311,26 +454,20 @@ describe('useFileSession', () => {
             });
           }
 
-          const name =
-            outcome === 'chosen'
-              ? 'replacement.yaml'
-              : outcome === 'cancelled'
-                ? 'elsewhere.yaml'
-                : 'threat-model.yaml';
-          expect(modelStore.getState().file).toMatchObject(
-            name === 'threat-model.yaml'
-              ? FileLifecycle.NoFile()
-              : { _tag: 'Opened', name },
-          );
+          const name = 'elsewhere.yaml';
+          expect(modelStore.getState().file).toMatchObject({
+            _tag: 'Opened',
+            name,
+          });
           expect(elsewhere).toHaveLength(1);
           await act(() => {
             result.current.commands.save();
             return Promise.resolve();
           });
 
-          expect(downloads).toEqual(outcome === 'cancelled' ? [] : [name]);
+          expect(downloads).toEqual([]);
           expect(original).toEqual([]);
-          expect(elsewhere).toHaveLength(outcome === 'cancelled' ? 2 : 1);
+          expect(elsewhere).toHaveLength(2);
           expect(modelStore.getState().file).toMatchObject({
             _tag: 'Opened',
             name,
@@ -525,7 +662,7 @@ describe('useFileSession', () => {
         });
 
         await waitFor(() => {
-          expect(bridge.releases.count).toBe(1);
+          expect(modelStore.getState().lastFailure).toBeDefined();
         });
         const after = modelStore.getState();
         expect(after.file).toEqual(FileLifecycle.NoFile());
@@ -556,7 +693,7 @@ describe('useFileSession', () => {
   });
 
   it.each(['save', 'saveAs'] as const)(
-    'releases a refused %s without losing unsaved work',
+    'retains a refused %s without losing unsaved work',
     async (command) => {
       const bridge = specBridge({
         save: SaveOutcome.Refused({ reason: 'The folder is read only.' }),
@@ -573,10 +710,10 @@ describe('useFileSession', () => {
       });
 
       await waitFor(() => {
-        expect(bridge.releases.count).toBe(1);
+        expect(modelStore.getState().lastFailure).toBeDefined();
       });
       const after = modelStore.getState();
-      expect(after.file).toEqual(FileLifecycle.NoFile());
+      expect(after.file).toBe(before.file);
       expect(after.present).toBe(before.present);
       expect(after.saved).toBe(before.saved);
       expect(after.past).toBe(before.past);

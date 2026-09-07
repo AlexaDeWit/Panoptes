@@ -18,7 +18,12 @@ import {
   placeholderModel,
 } from '../store/state.js';
 import { dispatch, modelStore } from '../store/store.js';
-import { specBridge, vendoredFile, type SpecBridge } from './files.fixtures.js';
+import {
+  settled,
+  specBridge,
+  vendoredFile,
+  type SpecBridge,
+} from './files.fixtures.js';
 import {
   formatOf,
   openedBy,
@@ -71,7 +76,7 @@ const applied = (action: Action | undefined): void => {
 };
 
 const opened = async (bridge: SpecBridge): Promise<void> => {
-  applied(openedBy(await bridge.open(readLimits.maxTextBytes)));
+  applied(openedBy(await settled(bridge.open(readLimits.maxTextBytes))));
 };
 
 const saved = async (bridge: SpecBridge): Promise<readonly Divergence[]> => {
@@ -79,7 +84,10 @@ const saved = async (bridge: SpecBridge): Promise<readonly Divergence[]> => {
   const target = saveTarget(state.file, formatOf(state.file));
   const written = writeThrough(state.present, target.source);
   applied(
-    savedBy(await bridge.save(target.name, written.output), target.source),
+    savedBy(
+      await settled(bridge.save(target.name, written.output)),
+      target.source,
+    ),
   );
   return written.divergences;
 };

@@ -75,9 +75,9 @@ export function reduce(state: State, action: Action): State {
       file: FileLifecycle.NoFile(),
       lastFailure: StudioFailure.Read({ name, failure }),
     }),
-    FileRefused: ({ reason }) => ({
+    FileRefused: ({ operation, reason }) => ({
       ...state,
-      file: FileLifecycle.NoFile(),
+      file: operation === 'open' ? FileLifecycle.NoFile() : state.file,
       lastFailure: StudioFailure.File({ reason }),
     }),
   });
