@@ -1,4 +1,9 @@
-import { emptyModel, type ElementId } from '@saerskriven/model';
+import {
+  emptyModel,
+  type ElementId,
+  type Flow,
+  type Model,
+} from '@saerskriven/model';
 import { elementId } from '@saerskriven/model/fixtures';
 import { initialState } from '../store/state.js';
 import { modelStore } from '../store/store.js';
@@ -229,5 +234,33 @@ describe('selectAll', () => {
       canvasModel.diagrams[0].elements.map((element) => element.id),
     );
     expect(modelStore.getState().past).toEqual([]);
+  });
+
+  it('leaves an unplaced flow out of the selection', () => {
+    const hiddenFlow: Flow = {
+      kind: 'flow',
+      id: elementId('flow-hidden'),
+      name: 'Hidden flow',
+      description: '',
+      outOfScope: false,
+      reasonOutOfScope: '',
+      source: { kind: 'attached', element: requestFlow },
+      target: { kind: 'attached', element: readerElement },
+      waypoints: [],
+    };
+    const model: Model = {
+      ...canvasModel,
+      diagrams: [
+        {
+          ...canvasModel.diagrams[0],
+          elements: [...canvasModel.diagrams[0].elements, hiddenFlow],
+        },
+      ],
+    };
+    modelStore.setState(initialState(model), true);
+
+    selectAll();
+
+    expect(modelStore.getState().selection).not.toContain(hiddenFlow.id);
   });
 });

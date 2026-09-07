@@ -19,6 +19,7 @@ import {
 } from './elements.js';
 import { currentLayout } from './layout.js';
 import { accessibleNames } from './names.js';
+import { elementIds } from './nodes.js';
 
 /**
  * What a removal takes with the element, counted before it happens. The model
@@ -75,20 +76,20 @@ export function connectElements(source: ElementId, target: ElementId): void {
 /** Removes the selection and announces its combined cascade once. */
 export function removeSelected(): boolean {
   const state = modelStore.getState();
-  const elementIds = state.selection;
-  if (elementIds.length === 0) {
+  const selection = state.selection;
+  if (selection.length === 0) {
     return false;
   }
-  const one = elementIds.at(0);
+  const one = selection.at(0);
   const name =
-    elementIds.length === 1 && one !== undefined
+    selection.length === 1 && one !== undefined
       ? spokenName(state, one)
-      : counted(elementIds.length, 'element');
-  const cascade = removalCascade(state.present, elementIds);
+      : counted(selection.length, 'element');
+  const cascade = removalCascade(state.present, selection);
   const action =
-    elementIds.length === 1 && one !== undefined
+    selection.length === 1 && one !== undefined
       ? Action.RemoveElement({ elementId: one })
-      : Action.RemoveElements({ elementIds });
+      : Action.RemoveElements({ elementIds: selection });
   if (!changedModel(action)) {
     return false;
   }
@@ -153,12 +154,9 @@ export function renameSelected(): void {
 
 /** Selects every element in the diagram on screen. */
 export function selectAll(): void {
-  const elementIds =
-    modelStore
-      .getState()
-      .present.diagrams.at(0)
-      ?.elements.map((element) => element.id) ?? [];
-  dispatch(Action.Select({ elementIds }));
+  const layout = currentLayout(modelStore.getState());
+  const selected = [...new Set(elementIds(layout).values())];
+  dispatch(Action.Select({ elementIds: selected }));
 }
 
 /**

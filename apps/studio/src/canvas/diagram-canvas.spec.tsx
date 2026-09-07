@@ -4,7 +4,12 @@ import { currentAnnouncement, resetAnnouncements } from './announcements.js';
 import { Action } from '../store/actions.js';
 import { initialState } from '../store/state.js';
 import { dispatch, modelStore } from '../store/store.js';
-import { canvasModel, readerElement, requestFlow } from './canvas.fixtures.js';
+import {
+  canvasModel,
+  readerElement,
+  requestFlow,
+  studioElement,
+} from './canvas.fixtures.js';
 import { DiagramCanvas } from './diagram-canvas.js';
 import { resetTools } from './tools.js';
 
@@ -137,6 +142,34 @@ describe('DiagramCanvas', () => {
 
     expect(modelStore.getState().selection).toEqual([readerElement]);
     expect(document.activeElement).toBe(reader());
+  });
+
+  it('reduces a group to the element clicked or activated with Enter', () => {
+    opened([readerElement, studioElement]);
+    render(<DiagramCanvas />);
+
+    fireEvent.click(reader());
+    expect(modelStore.getState().selection).toEqual([readerElement]);
+
+    act(() => {
+      dispatch(Action.Select({ elementIds: [readerElement, studioElement] }));
+    });
+    fireEvent.keyDown(reader(), { key: 'Enter' });
+    expect(modelStore.getState().selection).toEqual([readerElement]);
+  });
+
+  it('toggles a focused element with Shift+Enter', () => {
+    opened([readerElement, studioElement]);
+    render(<DiagramCanvas />);
+
+    fireEvent.keyDown(reader(), { key: 'Enter', shiftKey: true });
+    expect(modelStore.getState().selection).toEqual([studioElement]);
+
+    fireEvent.keyDown(reader(), { key: 'Enter', shiftKey: true });
+    expect(modelStore.getState().selection).toEqual([
+      studioElement,
+      readerElement,
+    ]);
   });
 
   it('clears a selected flow when the pointer lands on nothing', () => {

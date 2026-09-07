@@ -55,6 +55,11 @@
   stroke-width: var(--pn-cue-flow-selection);
 }
 
+/* Keep selected nodes clickable. Group dragging starts on a selected node. */
+.canvas :global(.react-flow__nodesselection-rect) {
+  pointer-events: none;
+}
+
 /* Select rests on the arrow. The hand appears only during a drag. */
 .canvas :global(.react-flow__pane.selection),
 .canvas :global(.react-flow__node.selectable),

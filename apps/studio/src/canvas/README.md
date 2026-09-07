@@ -89,10 +89,10 @@ the region below, which speaks only for edits that landed.
 - **Select.** A click replaces the selection. Shift-click or Shift+Enter on a
   focused element adds or removes it. Control+A or Command+A selects every
   element in the diagram. A background drag in Select draws a box and takes
-  nodes wholly inside it. React Flow also takes flows attached to those nodes.
-  The store holds the result as a unique, ordered ID array. Select rests on the
-  arrow cursor. Hand, selected with H or held with Space, pans with a hand
-  cursor.
+  every node and drawn flow wholly inside it. The store holds the result as a
+  unique, ordered ID array. Select rests on the arrow cursor. Hand, selected
+  with H or held with Space, pans with a hand cursor.
+  Dragging any selected node moves the full selection.
 
 - **Place.** Select, Actor, Process, Store, Boundary box, Boundary curve and
   Hand are icon buttons in the floating toolbox, each showing every shortcut
@@ -380,8 +380,10 @@ commands](../commands/README.md)).
   the refused draft goes with the field it was in.
 - Nothing pans to a flow that was just connected: a flow has no box, so
   whether it is in view is not the question a node's is.
-- A selection box tests node rectangles. React Flow adds flows attached to
-  those nodes, but it does not test a flow path against the box.
+- A flow's full drawn bounds must sit inside a selection box. An unplaced flow
+  has no drawn bounds, so Select All and box selection leave it out.
+- A selection box stays inside the current viewport. Pan with Hand before
+  drawing a box around elements outside it.
 - Panning remains a pointer drag. Hand makes that drag own the whole canvas,
   selected by H or held temporarily with Space. Reaching an element does not
   need a keyboard pan, since focusing an element pans it into view.
