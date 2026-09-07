@@ -4,6 +4,7 @@ import { savedFromMenu } from './commands.fixtures.js';
 import {
   canvasSettled,
   elementNodes,
+  focusSettled,
   menuButton,
   menuItem,
   nodeNamed,
@@ -68,6 +69,7 @@ test('every item is reached, run and left by the keyboard alone', async ({
   const added = nodeNamed(page, /^New actor, actor/u);
   await placeByClick(page, 'Actor', /^New actor, actor/u);
   await page.keyboard.press('Enter');
+  await focusSettled(added);
 
   await menuButton(page).press('Enter');
   await expect(menuItem(page, 'Open a model')).toBeFocused();
@@ -126,12 +128,12 @@ test('closing asks in the menu before it drops work that is in no file', async (
 }) => {
   await openFile(page, 'test-data/saerskriven/ecluse.yaml');
   await expect(elementNodes(page)).toHaveCount(18);
-  await placeByClick(page, 'Actor', /^New actor, actor/u);
+  const added = await placeByClick(page, 'Actor', /^New actor, actor/u);
   await page.keyboard.press('Enter');
   await expect(elementNodes(page)).toHaveCount(19);
+  await focusSettled(added);
 
-  await menuButton(page).focus();
-  await page.keyboard.press('Enter');
+  await menuButton(page).press('Enter');
   await expect(menuItem(page, 'Open a model')).toBeFocused();
   for (const name of ['Save', 'Save as', 'Export', 'Close the file']) {
     await page.keyboard.press('ArrowDown');
