@@ -1,7 +1,11 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { darkPalette, lightPalette } from '@saerskriven/canvas';
-import { initialPageStylesheet } from '../../initial-page.mjs';
+import {
+  initialColourModeScript,
+  initialPageStylesheet,
+} from '../../initial-page.mjs';
+import { colourModeStorageKey } from '../theme-preference.js';
 
 const source = readFileSync(
   join(import.meta.dirname, '../../index.html'),
@@ -33,6 +37,7 @@ describe('the initial page', () => {
   });
 
   it('starts on the canvas colour for either system scheme', () => {
+    expect(initialColourModeScript).toContain(colourModeStorageKey);
     expect(initialPageStylesheet).toContain(lightPalette.surfaceCanvas);
     expect(initialPageStylesheet).toContain(darkPalette.surfaceCanvas);
     expect(initialPageStylesheet).toContain(

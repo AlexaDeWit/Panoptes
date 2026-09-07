@@ -15,10 +15,11 @@ The values are the canvas package's
 projected as custom properties into the document head by
 [`../../initial-page.mts`](../../initial-page.mts). The browser receives that
 sheet before the app script, so the loading indicator and the diagram use the
-same canvas ground. [`../theme.tsx`](../theme.tsx) applies an explicit mode to
-the document root. A colour written into another stylesheet is a failing
-spec, `../theme.spec.tsx`, which walks the production files of this app and of
-the canvas package for one.
+same canvas ground. A blocking script beside the sheet applies a saved Light
+or Dark choice before the first paint. [`../theme.tsx`](../theme.tsx) applies
+later choices to the document root. A colour written into another stylesheet
+is a failing spec, `../theme.spec.tsx`, which walks the production files of
+this app and of the canvas package for one.
 
 Every colour token is declared twice, the second time under
 `prefers-color-scheme: dark` from the dark table. That is the whole of dark

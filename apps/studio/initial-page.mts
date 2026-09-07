@@ -1,4 +1,14 @@
 import { tokenStylesheet } from '@saerskriven/canvas/tokens';
+import { colourModeStorageKey } from './src/theme-preference.js';
+
+/** Script that applies a stored mode before the browser paints the page. */
+export const initialColourModeScript = `try {
+  const mode = globalThis.localStorage.getItem(${JSON.stringify(colourModeStorageKey)});
+  if (mode === 'light' || mode === 'dark') {
+    document.documentElement.dataset.pnColourMode = mode;
+  }
+} catch {}
+`;
 
 /** Styles needed before the studio JavaScript mounts the application. */
 export const initialPageStylesheet = `${tokenStylesheet}
