@@ -83,28 +83,36 @@ export function useFileSession(
     dispatch(Action.Closed());
   }, [bridge]);
 
-  const applyOpen = useCallback((outcome: OpenOutcome): void => {
-    const action = openedBy(outcome);
-    if (action === undefined) {
-      return;
-    }
-    if (Action.$is('Opened')(action)) {
-      setReport(openReport(action.divergences));
-    }
-    dispatch(action);
-  }, []);
+  const applyOpen = useCallback(
+    (outcome: OpenOutcome): void => {
+      const action = openedBy(outcome);
+      if (action === undefined) {
+        return;
+      }
+      if (Action.$is('Opened')(action)) {
+        setReport(openReport(action.divergences));
+      } else {
+        bridge.release();
+      }
+      dispatch(action);
+    },
+    [bridge],
+  );
 
   const land = useCallback(
     (outcome: SaveOutcome, planned: PlannedSave): void => {
       const action = savedBy(outcome, planned.target.source);
       if (action !== undefined) {
+        if (Action.$is('FileRefused')(action)) {
+          bridge.release();
+        }
         dispatch(action);
       }
       if (SaveOutcome.$is('Written')(outcome)) {
         setReport(saveReport(planned.written.divergences));
       }
     },
-    [],
+    [bridge],
   );
 
   const chooseFormat = useCallback(

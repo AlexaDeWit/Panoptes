@@ -290,6 +290,37 @@ describe('saving', () => {
     expect(written).toEqual([]);
     expect(downloads).toEqual(['threat-model.yaml']);
   });
+
+  it.each(['picker', 'input'] as const)(
+    'downloads after the session releases a refused %s open',
+    async (path) => {
+      const original: FileContent[] = [];
+      const rejected: FileContent[] = [];
+      const picker = vi
+        .fn<() => Promise<ReturnType<typeof handleFor>[]>>()
+        .mockResolvedValueOnce([handleFor('model.yaml', 'a: 1', original)])
+        .mockResolvedValueOnce([
+          handleFor('notes.txt', 'not a model', rejected),
+        ]);
+      vi.stubGlobal('showOpenFilePicker', picker);
+      const bridge = await freshBridge();
+      await bridge.open(1024);
+
+      const outcome =
+        path === 'picker'
+          ? await bridge.open(1024)
+          : await bridge.received(chosenFile('notes.txt', 'not a model'), 1024);
+      expect(outcome._tag).toBe('Chosen');
+
+      bridge.release();
+      expect(await bridge.save('threat-model.yaml', 'b: 2')).toEqual(
+        SaveOutcome.Written({ name: 'threat-model.yaml' }),
+      );
+      expect(original).toEqual([]);
+      expect(rejected).toEqual([]);
+      expect(downloads).toEqual(['threat-model.yaml']);
+    },
+  );
 });
 
 describe('exporting', () => {

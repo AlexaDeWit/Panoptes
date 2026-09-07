@@ -158,7 +158,7 @@ function mediaTypeOf(type: SaveFileType): string {
   return Object.keys(type.accept)[0] ?? 'application/octet-stream';
 }
 
-/** The browser bridge, using native pickers where they exist and downloads otherwise. */
+/** Handles are dropped by release, fallback opens or save-as, and bounded picker read failures. */
 export const browserFileBridge: FileBridge = {
   open,
   received,

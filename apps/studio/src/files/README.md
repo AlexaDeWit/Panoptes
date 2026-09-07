@@ -18,6 +18,13 @@ it settled on. The handle a picker returned is held in the bridge, not the
 store, and only where the crossing it names happened: a read that produced a
 text, and a save-as whose write landed.
 
+A failed open keeps the model, history, saved checkpoint, and loss report,
+but drops the file association and releases the bridge's handle. This applies
+to a read failure and to text a codec refuses. A refused save also drops the
+association and releases the handle. The next Save downloads native YAML,
+leaving both the previous file and any rejected file untouched. Unsaved
+changes stay guarded. Dismissing a picker keeps the file association.
+
 `session.ts` is what the studio does with a file, as pure functions the
 component calls and a spec calls directly. A read is the size against
 `readLimits.maxTextBytes` first, since that bound keeps the parse finite, then
