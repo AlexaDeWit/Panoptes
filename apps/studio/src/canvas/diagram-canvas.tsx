@@ -45,7 +45,8 @@ import {
   type DiagramNode,
 } from './nodes.js';
 import { renamingEdgeTypes, renamingNodeTypes } from './rename-field.js';
-import { PlacementPreview, usePlacement } from './placement.js';
+import { PlacementPreview } from './placement-preview.js';
+import { usePlacement } from './placement.js';
 import { Toolbox } from './toolbox.js';
 import { currentTool } from './tools.js';
 import { FitOnOpen } from './view-commands.js';
@@ -240,7 +241,7 @@ export function DiagramCanvas() {
         zoomOnDoubleClick={false}
       >
         <Background gap={gridSpacing} variant={BackgroundVariant.Lines} />
-        <PlacementPreview points={placement.preview} />
+        <PlacementPreview preview={placement.preview} />
         <FitOnOpen />
       </ReactFlow>
       <EmptyStateHint />

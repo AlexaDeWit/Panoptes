@@ -89,10 +89,14 @@ the region below, which speaks only for edits that landed.
 - **Place.** Select, Actor, Process, Store, Boundary box, Boundary curve and
   Hand are icon buttons in the floating toolbox, each showing every shortcut
   its registered command owns ([the commands](../commands/README.md)). A click
-  with an element tool places its default size centred under the pointer. A
-  drag places the box between its opposite corners; a process takes the
-  shorter side for its circular glyph. Movement under four screen pixels is a
-  click whatever the zoom. Enter places the default at the viewport centre.
+  with an element tool places its default size centred under the pointer.
+  Pointer-down shows that geometry through the element's shared outline
+  primitive. A drag updates it between opposite corners. A process takes the
+  shorter axis and anchors the resulting square in the drag direction.
+  Movement under four screen pixels remains the centred default at every
+  zoom. Pointer-up commits the last previewed position and size as one edit.
+  Pointer cancellation, Escape, a tool change or a model replacement drops
+  the preview without an edit. Enter places the default at the viewport centre.
   A placed element arrives with a placeholder name, selected, with that name
   open in the in-place field; its one `AddElement` is one undo step. The tool
   then returns to Select, unless a double click on its icon locked it for

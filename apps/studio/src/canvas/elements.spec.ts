@@ -36,20 +36,51 @@ describe('placement geometry', () => {
     });
   });
 
-  it('draws an element between either ordering of its corners', () => {
-    expect(
-      draggedPlacement('actor', { x: 180, y: 90 }, { x: 20, y: 30 }),
-    ).toEqual({
-      position: { x: 20, y: 30 },
-      size: { width: 160, height: 60 },
-    });
-  });
+  it.each(['actor', 'store', 'boundary-box'] as const)(
+    'draws a %s between either ordering of its corners',
+    (kind) => {
+      expect(
+        draggedPlacement(kind, { x: 180, y: 90 }, { x: 20, y: 30 }),
+      ).toEqual({
+        position: { x: 20, y: 30 },
+        size: { width: 160, height: 60 },
+      });
+    },
+  );
 
   it('takes the shorter side for a process', () => {
     expect(
       draggedPlacement('process', { x: 100, y: 100 }, { x: 20, y: 40 }),
     ).toEqual({
       position: { x: 40, y: 40 },
+      size: { width: 60, height: 60 },
+    });
+  });
+
+  it.each([
+    [
+      { x: 180, y: 160 },
+      { x: 120, y: 100 },
+      { x: 120, y: 100 },
+    ],
+    [
+      { x: 100, y: 160 },
+      { x: 160, y: 100 },
+      { x: 100, y: 100 },
+    ],
+    [
+      { x: 180, y: 100 },
+      { x: 120, y: 160 },
+      { x: 120, y: 100 },
+    ],
+    [
+      { x: 100, y: 100 },
+      { x: 160, y: 160 },
+      { x: 100, y: 100 },
+    ],
+  ])('anchors a process in every drag direction', (from, to, position) => {
+    expect(draggedPlacement('process', from, to)).toEqual({
+      position,
       size: { width: 60, height: 60 },
     });
   });
