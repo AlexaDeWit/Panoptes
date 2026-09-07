@@ -134,7 +134,7 @@ test('closing asks in the menu before it drops work that is in no file', async (
   await menuButton(page).focus();
   await page.keyboard.press('Enter');
   await expect(menuItem(page, 'Open a model')).toBeFocused();
-  for (const name of ['Save', 'Save as', 'Close the file']) {
+  for (const name of ['Save', 'Save as', 'Export', 'Close the file']) {
     await page.keyboard.press('ArrowDown');
     await expect(menuItem(page, name)).toBeFocused();
   }
