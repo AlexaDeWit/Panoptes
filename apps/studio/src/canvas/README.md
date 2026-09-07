@@ -99,13 +99,14 @@ the region below, which speaks only for edits that landed.
   shorter axis and anchors the resulting square in the drag direction.
   Drag geometry reserves the outline's half-stroke on each exposed side.
   The rendered ink and the selection frame stay inside the pointer rectangle.
-  Movement under four screen pixels remains the centred default. A rectangle
-  under forty model units on either axis does too, since it cannot hold the
-  name field and its focus ring. Pointer-up commits one edit.
+  Movement under four screen pixels remains the centred default. Any longer
+  movement keeps its pointer rectangle. A thin element reduces its stroke to
+  fit. Pointer-up commits one edit.
   Pointer cancellation, Escape, a tool change or a model replacement drops
   the preview without an edit. Enter places the default at the viewport centre.
-  A placed element arrives with a placeholder name, selected, with that name
-  open in the in-place field; its one `AddElement` is one undo step. The tool
+  A placed element arrives with a placeholder name and is selected. Its name
+  opens in the in-place field when that field fits. A smaller element takes
+  focus without the field. Its one `AddElement` is one undo step. The tool
   then returns to Select, unless a double click on its icon locked it for
   repeated placement. Escape returns to Select and unlocks it.
 - **Boundary curve.** Each click commits one waypoint and the transformed

@@ -151,3 +151,19 @@ test('a group drag carries an attached flow, its label and its badge before poin
   expect(await label.boundingBox()).toEqual(labelLive);
   expect(await badge.boundingBox()).toEqual(badgeLive);
 });
+
+test('a quick release keeps the last live label placement', async ({
+  page,
+}) => {
+  await openEcluse(page);
+  const dragged = nodeNamed(page, proxy);
+  const label = nodeNamed(page, inward).locator('.pn-flow-label');
+
+  const at = await pressOn(page, dragged);
+  await page.mouse.move(at.x + 70, at.y + 55, { steps: 8 });
+  const live = await label.boundingBox();
+  expect(live).not.toBeNull();
+  await page.mouse.up();
+
+  expect(await label.boundingBox()).toEqual(live);
+});

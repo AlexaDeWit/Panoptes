@@ -18,7 +18,6 @@ import {
   freshBoundaryCurve,
   freshElement,
   freshFlow,
-  minimumDragExtent,
   placeholderNames,
   pointerPlacement,
 } from './elements.js';
@@ -90,10 +89,11 @@ describe('placement geometry', () => {
     });
   });
 
-  it('refuses a drag rectangle too small to hold its editor', () => {
-    expect(
-      draggedPlacement('store', { x: 0, y: 0 }, { x: 50, y: 0 }),
-    ).toBeUndefined();
+  it('keeps a long, thin drag as its pointer rectangle', () => {
+    expect(draggedPlacement('store', { x: 0, y: 0 }, { x: 50, y: 0 })).toEqual({
+      position: { x: 0, y: 0.25 },
+      size: { width: 50, height: 0.5 },
+    });
   });
 
   it('treats movement below four screen pixels as a click', () => {
@@ -102,22 +102,16 @@ describe('placement geometry', () => {
     ).toEqual(centredPlacement('actor', { x: 100, y: 80 }));
   });
 
-  it('keeps a small rectangle as a default-sized click placement', () => {
+  it('keeps a four-screen-pixel rectangle as a drag placement', () => {
     expect(
       pointerPlacement('actor', { x: 100, y: 80 }, { x: 104, y: 84 }, 4),
-    ).toEqual(centredPlacement('actor', { x: 100, y: 80 }));
+    ).toEqual({ position: { x: 101, y: 81 }, size: { width: 2, height: 2 } });
   });
 
-  it('accepts a rectangle at the minimum outer extent', () => {
-    expect(
-      draggedPlacement(
-        'actor',
-        { x: 0, y: 0 },
-        { x: minimumDragExtent, y: minimumDragExtent },
-      ),
-    ).toEqual({
-      position: { x: 1, y: 1 },
-      size: { width: 38, height: 38 },
+  it('fits the stroke inside a small outer extent', () => {
+    expect(draggedPlacement('actor', { x: 0, y: 0 }, { x: 1, y: 1 })).toEqual({
+      position: { x: 0.25, y: 0.25 },
+      size: { width: 0.5, height: 0.5 },
     });
   });
 });

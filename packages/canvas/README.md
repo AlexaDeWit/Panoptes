@@ -356,12 +356,9 @@ the diagram.
 
 `layoutDuringMove` applies React Flow's local node boxes and the group offset
 to a settled layout. It moves selected flow waypoints and free ends, resolves
-attached endpoints, and runs the label collision search. The interactive
-canvas calls it after pointer movement pauses and before pointer-up commits.
-
-`CanvasEdgeBody` reads its endpoint nodes for each drag frame. It keeps a
-label on the same segment until the paused collision pass supplies a new
-placement.
+attached endpoints, and places labels for the flows that changed. The
+interactive canvas calls it on each drag frame while retaining static label
+placements. A paused or finished drag runs the full label search.
 
 Nothing here reads what kind of element a box belongs to. A flow attached to
 a trust boundary follows it as it follows any other node. A free end is

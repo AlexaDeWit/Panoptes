@@ -54,6 +54,16 @@ const keyboardTools = [
   [registeredChords['boundary-curve-tool'][0], /^New trust boundary curve/u],
 ] as const;
 
+const expectInside = (
+  inner: { x: number; y: number; width: number; height: number },
+  outer: { x: number; y: number; width: number; height: number },
+): void => {
+  expect(inner.x).toBeGreaterThanOrEqual(outer.x);
+  expect(inner.y).toBeGreaterThanOrEqual(outer.y);
+  expect(inner.x + inner.width).toBeLessThanOrEqual(outer.x + outer.width);
+  expect(inner.y + inner.height).toBeLessThanOrEqual(outer.y + outer.height);
+};
+
 for (const [tool, drawn] of boxTools) {
   test(`the ${tool} tool places its element by pointer`, async ({ page }) => {
     await openPlaceholder(page);
@@ -313,8 +323,47 @@ for (const [tool, named, shape, shapeCount, square] of previewedBoxTools) {
         };
       }),
     ).toEqual({ boxSizing: 'border-box', inset: ['0px', '0px', '0px', '0px'] });
+
+    await page.keyboard.press('Enter');
+    await expect(node).toBeFocused();
+    const controls = node.locator(
+      '.react-flow__handle:visible, .react-flow__resize-control:visible',
+    );
+    for (const control of await controls.all()) {
+      const bounds = await control.boundingBox();
+      expect(bounds).not.toBeNull();
+      expectInside(bounds ?? committed, committed);
+    }
+    const focus = await node.evaluate((element) => ({
+      boxShadow: getComputedStyle(element).boxShadow,
+      outline: getComputedStyle(element).outlineStyle,
+    }));
+    expect(focus.boxShadow).not.toBe('none');
+    expect(focus.outline).toBe('none');
   });
 }
+
+test('a thin drag keeps the pointer rectangle', async ({ page }) => {
+  await openPlaceholder(page);
+  const from = await emptyCanvasPoint(page);
+
+  await toolButton(page, 'Actor').click();
+  await page.mouse.move(from.x, from.y);
+  await page.mouse.down();
+  await page.mouse.move(from.x + 200, from.y + 20, { steps: 8 });
+
+  const draft = page.getByTestId('box-draft');
+  const preview = await inkBoxOf(draft.locator('.pn-actor'));
+  expect(preview.width).toBeCloseTo(200, 0);
+  expect(preview.height).toBeCloseTo(20, 0);
+  await page.mouse.up();
+
+  const node = nodeNamed(page, /^New actor, actor/u);
+  const committed = await inkBoxOf(node.locator('.pn-actor'));
+  expect(committed).toEqual(preview);
+  await expect(node.getByRole('textbox')).toHaveCount(0);
+  await expect(node).toBeFocused();
+});
 
 test('double clicking an element tool locks it until Escape', async ({
   page,

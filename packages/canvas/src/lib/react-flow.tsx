@@ -78,6 +78,8 @@ export function layoutAtReactFlowNodes(
   layout: CanvasLayout,
   nodes: readonly (CanvasFlowNode | CanvasFreeEndNode)[],
   selection: readonly ElementId[],
+  exactLabels = true,
+  labelBases: ReadonlyMap<string, CanvasEdge> = new Map(),
 ): CanvasLayout {
   const original = new Map<string, CanvasNode>(
     layout.nodes.map((node) => [node.id, node]),
@@ -115,7 +117,14 @@ export function layoutAtReactFlowNodes(
       },
     });
   }
-  return layoutDuringMove(layout, boxes, selected, offset);
+  return layoutDuringMove(
+    layout,
+    boxes,
+    selected,
+    offset,
+    exactLabels,
+    labelBases,
+  );
 }
 
 /** The React Flow node type of the anchor a flow's free end rides on. */

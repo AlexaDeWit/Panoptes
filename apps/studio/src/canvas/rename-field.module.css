@@ -17,7 +17,10 @@
 }
 
 .overNode .field {
+  height: calc(1.2em + 2px);
+  min-height: 0;
   padding-block: 0;
+  line-height: 1.2;
 }
 
 .field {
@@ -33,8 +36,8 @@
 }
 
 .field:focus-visible {
-  outline: var(--pn-focus-ring);
-  outline-offset: var(--pn-focus-ring-offset);
+  outline: none;
+  box-shadow: inset 0 0 0 var(--pn-focus-ring-width) var(--pn-colour-accent);
 }
 
 /* The refusal reads as text rather than as a colour alone, as the panel's

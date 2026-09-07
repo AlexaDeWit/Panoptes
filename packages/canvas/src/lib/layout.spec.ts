@@ -5,6 +5,7 @@ import { everyGlyphModel } from './canvas.fixtures.js';
 import { handlePositions, type NodeBox } from './handles.js';
 import { flowLabelPlacements } from './label-placement.js';
 import {
+  flowLabelFollows,
   layoutDiagram,
   layoutDuringMove,
   reanchoredFlow,
@@ -429,6 +430,23 @@ describe('reanchoredFlow', () => {
     expect(moved.label.badge).not.toEqual(badged.label.badge);
   });
 
+  it('recognizes whether a label kept its path candidate', () => {
+    const moved = reanchoredFlow(settled, nodeBoxAt(0, 200), right);
+    const changed = {
+      ...moved,
+      label: {
+        ...moved.label,
+        name: {
+          ...moved.label.name,
+          at: { ...moved.label.name.at, x: moved.label.name.at.x + 1 },
+        },
+      },
+    };
+
+    expect(flowLabelFollows(settled, moved)).toBe(true);
+    expect(flowLabelFollows(settled, changed)).toBe(false);
+  });
+
   it('matches a settled label when one endpoint moves', () => {
     const moved = reanchoredFlow(settled, nodeBoxAt(0, 200), right);
     const nodes = layoutOf(
@@ -530,6 +548,69 @@ describe('reanchoredFlow', () => {
 });
 
 describe('layoutDuringMove', () => {
+  it('places a moving label while retaining a static flow label', () => {
+    const movingFlow = flowBetween(
+      attached('el-left'),
+      attached('el-right'),
+      [],
+    );
+    const staticFlow = {
+      ...flowBetween(
+        { kind: 'free', position: { x: 0, y: 300 } },
+        { kind: 'free', position: { x: 500, y: 300 } },
+        [],
+      ),
+      id: 'el-static',
+      name: 'Static',
+    };
+    const settled = layoutOf(twoBoxDiagram(movingFlow, [staticFlow]));
+    const rightNode = settled.nodes.find(
+      (node) => node.id === elementId('el-right'),
+    );
+    if (rightNode === undefined) {
+      throw new Error('No right node in the layout');
+    }
+    const boxes = new Map([
+      [
+        elementId('el-right'),
+        {
+          position: { x: 400, y: 200 },
+          size: rightNode.size,
+        },
+      ],
+    ]);
+
+    const moved = layoutDuringMove(
+      settled,
+      boxes,
+      new Set(),
+      { x: 0, y: 0 },
+      false,
+    );
+
+    expect(moved.edges.find((edge) => edge.id === elementId('el-static'))).toBe(
+      settled.edges.find((edge) => edge.id === elementId('el-static')),
+    );
+    expect(
+      moved.edges.find((edge) => edge.id === elementId('el-flow'))?.label,
+    ).not.toEqual(
+      settled.edges.find((edge) => edge.id === elementId('el-flow'))?.label,
+    );
+  });
+
+  it('reuses an edge whose geometry and exact label stay unchanged', () => {
+    const settled = layoutOf(
+      twoBoxDiagram(flowBetween(attached('el-left'), attached('el-right'), [])),
+    );
+
+    const unchanged = layoutDuringMove(settled, new Map(), new Set(), {
+      x: 0,
+      y: 0,
+    });
+
+    expect(unchanged.edges[0]).toBe(settled.edges[0]);
+  });
+
   it('moves selected flow waypoints with the live group', () => {
     const settled = layoutOf(
       twoBoxDiagram(
@@ -568,5 +649,30 @@ describe('layoutDuringMove', () => {
       x: settled.edges[0].target.x + offset.x,
       y: settled.edges[0].target.y + offset.y,
     });
+  });
+
+  it('moves selected free ends with their flow', () => {
+    const settled = layoutOf(
+      twoBoxDiagram(
+        flowBetween(
+          { kind: 'free', position: { x: 20, y: 30 } },
+          { kind: 'free', position: { x: 380, y: 70 } },
+          [{ x: 200, y: 140 }],
+        ),
+      ),
+    );
+    const edge = settled.edges[0];
+    const offset = { x: 15, y: 25 };
+
+    const moved = layoutDuringMove(
+      settled,
+      new Map(),
+      new Set([edge.id]),
+      offset,
+    ).edges[0];
+
+    expect(moved.source).toEqual({ x: 35, y: 55 });
+    expect(moved.target).toEqual({ x: 395, y: 95 });
+    expect(moved.waypoints).toEqual([{ x: 215, y: 165 }]);
   });
 });

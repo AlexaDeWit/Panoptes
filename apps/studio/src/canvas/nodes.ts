@@ -87,6 +87,13 @@ export function elementIds(
   ]);
 }
 
+/** Every laid-out flow keyed by its model id. */
+export function canvasEdgesById(
+  layout: CanvasLayout,
+): ReadonlyMap<string, CanvasEdge> {
+  return new Map(layout.edges.map((edge) => [edge.id, edge]));
+}
+
 /**
  * The nodes the model gives, carrying the extents React Flow measured for
  * the ones already on screen. React Flow reads where a flow ends off a
@@ -110,9 +117,7 @@ export function withLiveEdges(
   edges: readonly CanvasFlowEdge[],
   layout: CanvasLayout,
 ): CanvasFlowEdge[] {
-  const live = new Map<string, CanvasEdge>(
-    layout.edges.map((edge) => [edge.id, edge]),
-  );
+  const live = canvasEdgesById(layout);
   const boxes = new Map(
     layout.nodes.map((node) => [
       node.id,

@@ -5,6 +5,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { everyGlyphModel } from './canvas.fixtures.js';
 import {
   boxElementStrokeInsets,
+  BoxElementGlyph,
   ElementGlyph,
   FlowGlyph,
   PlacedElementGlyph,
@@ -79,6 +80,20 @@ describe('ElementGlyph, taking its extent from the model', () => {
       bottom: strokeWidths.store / 2,
       left: 0,
     });
+  });
+
+  it('reduces a stroke that would exceed a thin box', () => {
+    const size = { width: 50, height: 0.5 };
+
+    expect(boxElementStrokeInsets('store', size)).toEqual({
+      top: 0.25,
+      right: 0,
+      bottom: 0.25,
+      left: 0,
+    });
+    expect(
+      renderToStaticMarkup(<BoxElementGlyph kind="store" size={size} />),
+    ).toContain('stroke-width:0.5');
   });
 
   it('draws an actor as a rectangle of the model width and height', () => {

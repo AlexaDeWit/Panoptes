@@ -243,6 +243,17 @@ describe('CanvasEdgeBody', () => {
     expect(edgeMarkup(data, nodes, true)).toContain(settled);
   });
 
+  it('uses settled geometry while a live node has no extent', () => {
+    const nodes = toReactFlowNodes(layout).map((node) =>
+      node.id === elementId('el-client')
+        ? { ...node, width: undefined, height: undefined }
+        : node,
+    );
+    const data = toReactFlowEdges(layout)[0].data;
+
+    expect(edgeMarkup(data, nodes)).toContain(settled);
+  });
+
   it('draws nothing where React Flow hands it an edge with no data', () => {
     expect(edgeMarkup(undefined)).toBe('');
   });
@@ -371,6 +382,19 @@ describe('layoutAtReactFlowNodes', () => {
         [],
       ).edges,
     ).toHaveLength(layout.edges.length);
+  });
+
+  it('falls back to settled extents when React Flow has none', () => {
+    const nodes = toReactFlowNodes(layout).map((node) => ({
+      ...node,
+      measured: undefined,
+      width: undefined,
+      height: undefined,
+    }));
+
+    expect(layoutAtReactFlowNodes(layout, nodes, []).nodes[0].size).toEqual(
+      layout.nodes[0].size,
+    );
   });
 });
 

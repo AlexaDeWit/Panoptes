@@ -55,9 +55,6 @@ const nominalSizes = {
 /** The screen-pixel movement below which a placement remains a click. */
 export const placementClickDistance = 4;
 
-/** The smallest outer extent that can hold the name field and its focus ring. */
-export const minimumDragExtent = 40;
-
 /** The default size of an element placed by a click or by Enter. */
 export function defaultSize(kind: ElementTool): Size {
   return nominalSizes[kind];
@@ -80,18 +77,15 @@ export function centredPlacement(
 
 /**
  * An element sized between opposite corners. A process takes the shorter
- * side. A rectangle too small to hold its editor is not a drag placement.
+ * side.
  */
 export function draggedPlacement(
   kind: Exclude<ElementTool, 'boundary-curve'>,
   from: Point,
   to: Point,
-): { readonly position: Point; readonly size: Size } | undefined {
+): { readonly position: Point; readonly size: Size } {
   const width = Math.max(Math.abs(to.x - from.x), 1);
   const height = Math.max(Math.abs(to.y - from.y), 1);
-  if (width < minimumDragExtent || height < minimumDragExtent) {
-    return undefined;
-  }
   if (kind === 'process') {
     const side = Math.min(width, height);
     return insideStroke(kind, {
@@ -112,9 +106,25 @@ function insideStroke(
   kind: BoxElementKind,
   outer: { readonly position: Point; readonly size: Size },
 ): { readonly position: Point; readonly size: Size } {
-  const inset = boxElementStrokeInsets(kind);
-  const width = Math.max(outer.size.width - inset.left - inset.right, 1);
-  const height = Math.max(outer.size.height - inset.top - inset.bottom, 1);
+  const nominal = boxElementStrokeInsets(kind);
+  const nominalWidth = nominal.top + nominal.bottom;
+  const available =
+    kind === 'store'
+      ? outer.size.height / 2
+      : Math.min(outer.size.width, outer.size.height) / 2;
+  const strokeWidth = Math.min(nominalWidth, available);
+  const halfStroke = strokeWidth / 2;
+  const inset =
+    kind === 'store'
+      ? { top: halfStroke, right: 0, bottom: halfStroke, left: 0 }
+      : {
+          top: halfStroke,
+          right: halfStroke,
+          bottom: halfStroke,
+          left: halfStroke,
+        };
+  const width = outer.size.width - inset.left - inset.right;
+  const height = outer.size.height - inset.top - inset.bottom;
   return {
     position: {
       x: outer.position.x + (outer.size.width - width) / 2,
@@ -133,7 +143,7 @@ export function pointerPlacement(
 ): { readonly position: Point; readonly size: Size } {
   return screenDistance < placementClickDistance
     ? centredPlacement(kind, from)
-    : (draggedPlacement(kind, from, to) ?? centredPlacement(kind, from));
+    : draggedPlacement(kind, from, to);
 }
 
 /** The default boundary curve centred on a click or on the viewport. */
