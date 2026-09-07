@@ -3,6 +3,7 @@ import { Accordion } from 'radix-ui';
 import {
   useCallback,
   useEffect,
+  useId,
   useRef,
   useState,
   type KeyboardEvent,
@@ -10,8 +11,14 @@ import {
 import { useShallow } from 'zustand/react/shallow';
 import { announce, resetAnnouncements } from '../canvas/announcements.js';
 import { keyboardOwner } from '../commands/binding.js';
+import {
+  describeContextualShortcuts,
+  pressesContextualShortcut,
+} from '../commands/contextual-shortcuts.js';
+import { hostPlatform } from '../commands/shortcuts.js';
 import { Action } from '../store/actions.js';
 import { dispatch, modelStore, useModelStore } from '../store/store.js';
+import { VisuallyHidden } from '../ui/visually-hidden.js';
 import {
   ThreatEditor,
   type EditorFocus,
@@ -93,6 +100,7 @@ export function ThreatPanel({
   const [focus, setFocus] = useState<PanelFocus | undefined>(undefined);
   const [draft, setDraft] = useState<HeldDraft | undefined>(opened);
   const addControl = useRef<HTMLButtonElement>(null);
+  const keyboardDescriptionId = useId();
   const held = threats.some((threat) => threat.id === draft?.threatId)
     ? draft
     : undefined;
@@ -185,7 +193,10 @@ export function ThreatPanel({
   };
 
   const closing = (event: KeyboardEvent<HTMLElement>): void => {
-    if (event.key !== 'Escape' || keyboardOwner(event.target) === 'overlay') {
+    if (
+      !pressesContextualShortcut('close-threat-panel', event, hostPlatform) ||
+      keyboardOwner(event.target) === 'overlay'
+    ) {
       return;
     }
     event.preventDefault();
@@ -194,11 +205,15 @@ export function ThreatPanel({
 
   return (
     <section
+      aria-describedby={keyboardDescriptionId}
       aria-label="Threats"
       className={styles.panel}
       data-testid="threat-panel"
       onKeyDownCapture={closing}
     >
+      <VisuallyHidden id={keyboardDescriptionId}>
+        {describeContextualShortcuts(['close-threat-panel'], hostPlatform)}
+      </VisuallyHidden>
       <h2 className={styles.heading}>
         {element === undefined
           ? 'Threats'

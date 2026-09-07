@@ -35,4 +35,5 @@ export const registeredChords = {
   'boundary-box-tool': ['b', '5'],
   'boundary-curve-tool': ['c', '6'],
   'note-tool': ['n', '7'],
+  'shortcut-reference': ['?', 'F1'],
 } as const;

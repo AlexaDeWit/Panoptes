@@ -7,10 +7,14 @@ import { focusThreatPanel } from '../panel/panel-focus.js';
 import { Action } from '../store/actions.js';
 import { dispatch, modelStore } from '../store/store.js';
 import {
+  bare,
+  character,
+  escapeChord,
   firedBy,
+  mod,
+  modShift,
   type Chord,
   type ChordEvent,
-  type ChordKey,
   type Platform,
 } from './shortcuts.js';
 
@@ -38,6 +42,11 @@ export type ViewCommands = {
   fitToView(): void;
 };
 
+/** The shortcut reference controlled by a registered command. */
+export type ReferenceCommands = {
+  toggle(): void;
+};
+
 /**
  * What a command reaches that the store and the canvas edits do not offer as
  * module-level functions: the file bridge, which a component holds a picker
@@ -48,6 +57,7 @@ export type ViewCommands = {
  */
 export type CommandSurface = {
   readonly files: FileCommands;
+  readonly reference: ReferenceCommands;
   readonly view: ViewCommands;
 };
 
@@ -65,19 +75,18 @@ export type CommandDispatch =
 export type CommandEntry = {
   readonly id: string;
   readonly label: string;
+  readonly group: CommandGroup;
   readonly shortcuts: readonly Chord[];
+  readonly when: string;
   readonly inTextFields: boolean;
   readonly dispatch: CommandDispatch;
 };
 
-const mod = (key: ChordKey): Chord => ({ modifiers: ['Mod'], key });
+/** The headings used to group commands in the shortcut reference. */
+export const commandGroups = ['File', 'Edit', 'View', 'Tools', 'Help'] as const;
 
-const modShift = (key: ChordKey): Chord => ({
-  modifiers: ['Mod', 'Shift'],
-  key,
-});
-
-const bare = (key: ChordKey): Chord => ({ modifiers: [], key });
+/** One command heading in the shortcut reference. */
+export type CommandGroup = (typeof commandGroups)[number];
 
 const runs = (run: (surface: CommandSurface) => void): CommandDispatch => ({
   kind: 'runs',
@@ -102,7 +111,9 @@ const table = {
   open: {
     id: 'open',
     label: 'Open a model',
+    group: 'File',
     shortcuts: [mod('o')],
+    when: 'Outside text fields',
     inTextFields: false,
     dispatch: runs((surface) => {
       surface.files.open();
@@ -111,7 +122,9 @@ const table = {
   save: {
     id: 'save',
     label: 'Save',
+    group: 'File',
     shortcuts: [mod('s')],
+    when: 'Anywhere in the studio',
     inTextFields: true,
     dispatch: runs((surface) => {
       surface.files.save();
@@ -120,7 +133,9 @@ const table = {
   'save-as': {
     id: 'save-as',
     label: 'Save as',
+    group: 'File',
     shortcuts: [modShift('s')],
+    when: 'Anywhere in the studio',
     inTextFields: true,
     dispatch: runs((surface) => {
       surface.files.saveAs();
@@ -129,7 +144,9 @@ const table = {
   'export-diagram': {
     id: 'export-diagram',
     label: 'Diagram as SVG',
+    group: 'File',
     shortcuts: [],
+    when: 'From the File menu',
     inTextFields: false,
     dispatch: runs((surface) => {
       surface.files.exportDiagram();
@@ -138,7 +155,9 @@ const table = {
   'export-register': {
     id: 'export-register',
     label: 'Register as Markdown',
+    group: 'File',
     shortcuts: [],
+    when: 'From the File menu',
     inTextFields: false,
     dispatch: runs((surface) => {
       surface.files.exportRegister();
@@ -147,7 +166,9 @@ const table = {
   'export-typst': {
     id: 'export-typst',
     label: 'Model as Typst',
+    group: 'File',
     shortcuts: [],
+    when: 'From the File menu',
     inTextFields: false,
     dispatch: runs((surface) => {
       surface.files.exportTypst();
@@ -156,7 +177,9 @@ const table = {
   'export-pdf': {
     id: 'export-pdf',
     label: 'Model as PDF',
+    group: 'File',
     shortcuts: [],
+    when: 'From the File menu',
     inTextFields: false,
     dispatch: runs((surface) => {
       surface.files.exportPdf();
@@ -165,7 +188,9 @@ const table = {
   'close-file': {
     id: 'close-file',
     label: 'Close the file',
+    group: 'File',
     shortcuts: [modShift('x')],
+    when: 'Outside text fields',
     inTextFields: false,
     dispatch: runs((surface) => {
       surface.files.close();
@@ -174,21 +199,27 @@ const table = {
   undo: {
     id: 'undo',
     label: 'Undo',
+    group: 'Edit',
     shortcuts: [mod('z')],
+    when: 'Anywhere in the studio',
     inTextFields: true,
     dispatch: history(Action.Undo(), 'Undo completed.'),
   },
   redo: {
     id: 'redo',
     label: 'Redo',
+    group: 'Edit',
     shortcuts: [modShift('z'), mod('y')],
+    when: 'Anywhere in the studio',
     inTextFields: true,
     dispatch: history(Action.Redo(), 'Redo completed.'),
   },
   delete: {
     id: 'delete',
     label: 'Delete the selection',
+    group: 'Edit',
     shortcuts: [bare('Delete'), bare('Backspace')],
+    when: 'A canvas selection exists and focus is outside a text field',
     inTextFields: false,
     dispatch: runs(() => {
       removeSelected();
@@ -197,7 +228,9 @@ const table = {
   rename: {
     id: 'rename',
     label: 'Rename the selection',
+    group: 'Edit',
     shortcuts: [bare('F2')],
+    when: 'One renameable canvas item is selected',
     inTextFields: false,
     dispatch: runs(() => {
       renameSelected();
@@ -206,7 +239,9 @@ const table = {
   'focus-threats': {
     id: 'focus-threats',
     label: 'Focus threats',
+    group: 'Edit',
     shortcuts: [bare('t')],
+    when: 'One canvas item is selected and focus is outside a text field',
     inTextFields: false,
     dispatch: runs(() => {
       focusThreatPanel();
@@ -215,7 +250,9 @@ const table = {
   'select-all': {
     id: 'select-all',
     label: 'Select all',
+    group: 'Edit',
     shortcuts: [mod('a')],
+    when: 'Focus is outside a text field',
     inTextFields: false,
     dispatch: runs(() => {
       selectAll();
@@ -224,7 +261,9 @@ const table = {
   'fit-to-view': {
     id: 'fit-to-view',
     label: 'Fit to view',
+    group: 'View',
     shortcuts: [mod('0')],
+    when: 'Focus is outside a text field',
     inTextFields: false,
     dispatch: runs((surface) => {
       surface.view.fitToView();
@@ -233,7 +272,9 @@ const table = {
   'zoom-in': {
     id: 'zoom-in',
     label: 'Zoom in',
+    group: 'View',
     shortcuts: [mod('=')],
+    when: 'Focus is outside a text field',
     inTextFields: false,
     dispatch: runs((surface) => {
       surface.view.zoomIn();
@@ -242,7 +283,9 @@ const table = {
   'zoom-out': {
     id: 'zoom-out',
     label: 'Zoom out',
+    group: 'View',
     shortcuts: [mod('-')],
+    when: 'Focus is outside a text field',
     inTextFields: false,
     dispatch: runs((surface) => {
       surface.view.zoomOut();
@@ -251,7 +294,9 @@ const table = {
   'start-flow': {
     id: 'start-flow',
     label: 'Start a flow',
+    group: 'Edit',
     shortcuts: [bare('f')],
+    when: 'One canvas item is selected',
     inTextFields: false,
     dispatch: runs(() => {
       startFlow();
@@ -260,58 +305,85 @@ const table = {
   'select-tool': {
     id: 'select-tool',
     label: 'Select',
-    shortcuts: [bare('v'), bare('Escape'), bare('1')],
+    group: 'Tools',
+    shortcuts: [bare('v'), escapeChord, bare('1')],
+    when: 'Outside text fields. Escape cancels placement and clears selection',
     inTextFields: false,
     dispatch: activates('select'),
   },
   'hand-tool': {
     id: 'hand-tool',
     label: 'Hand',
+    group: 'Tools',
     shortcuts: [bare('h'), bare(' ')],
+    when: 'Hold Space for a temporary Hand tool outside text fields',
     inTextFields: false,
     dispatch: activates('hand'),
   },
   'actor-tool': {
     id: 'actor-tool',
     label: 'Actor',
+    group: 'Tools',
     shortcuts: [bare('a'), bare('2')],
+    when: 'Focus is outside a text field or open menu',
     inTextFields: false,
     dispatch: activates('actor'),
   },
   'process-tool': {
     id: 'process-tool',
     label: 'Process',
+    group: 'Tools',
     shortcuts: [bare('p'), bare('3')],
+    when: 'Focus is outside a text field or open menu',
     inTextFields: false,
     dispatch: activates('process'),
   },
   'store-tool': {
     id: 'store-tool',
     label: 'Store',
+    group: 'Tools',
     shortcuts: [bare('s'), bare('4')],
+    when: 'Focus is outside a text field or open menu',
     inTextFields: false,
     dispatch: activates('store'),
   },
   'note-tool': {
     id: 'note-tool',
     label: 'Note',
+    group: 'Tools',
     shortcuts: [bare('n'), bare('7')],
+    when: 'Focus is outside a text field or open menu',
     inTextFields: false,
     dispatch: activates('note'),
   },
   'boundary-box-tool': {
     id: 'boundary-box-tool',
     label: 'Trust boundary',
+    group: 'Tools',
     shortcuts: [bare('b'), bare('5')],
+    when: 'Focus is outside a text field or open menu',
     inTextFields: false,
     dispatch: activates('boundary-box'),
   },
   'boundary-curve-tool': {
     id: 'boundary-curve-tool',
     label: 'Trust boundary curve',
+    group: 'Tools',
     shortcuts: [bare('c'), bare('6')],
+    when: 'Focus is outside a text field or open menu',
     inTextFields: false,
     dispatch: activates('boundary-curve'),
+  },
+  'shortcut-reference': {
+    id: 'shortcut-reference',
+    label: 'Keyboard shortcuts',
+    group: 'Help',
+    shortcuts: [character('?'), bare('F1')],
+    when: 'Focus is outside a text field or open menu',
+    inTextFields: false,
+    dispatch: runs((surface) => {
+      surface.reference.toggle();
+    }),
   },
 } as const satisfies Record<string, CommandEntry>;
 

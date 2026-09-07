@@ -24,7 +24,13 @@ export const keyboardResizeStep = 5;
 /** The model-space distance of one shifted keyboard resize. */
 export const shiftedKeyboardResizeStep = 20;
 
-const resizeKeys = ['ArrowUp', 'ArrowRight', 'ArrowDown', 'ArrowLeft'] as const;
+/** The keys that move an active resize control. */
+export const resizeKeys = [
+  'ArrowUp',
+  'ArrowRight',
+  'ArrowDown',
+  'ArrowLeft',
+] as const;
 
 type ResizeKey = (typeof resizeKeys)[number];
 

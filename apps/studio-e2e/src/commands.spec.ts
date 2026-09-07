@@ -158,9 +158,18 @@ test('a shortcut waits while a name is being typed, and saving and undo do not',
 
   await page.keyboard.press(registeredChords['select-all'][0]);
   await page.keyboard.type('actor');
+  await page.keyboard.press(registeredChords['shortcut-reference'][0]);
+  await expect(title).toHaveValue('actor?');
+  await expect(
+    page.getByRole('region', { name: 'Keyboard shortcuts' }),
+  ).toHaveCount(0);
+  await page.keyboard.press(registeredChords['shortcut-reference'][1]);
+  await expect(
+    page.getByRole('region', { name: 'Keyboard shortcuts' }),
+  ).toHaveCount(0);
   await page.keyboard.press(registeredChords.delete[0]);
 
-  await expect(title).toHaveValue('actor');
+  await expect(title).toHaveValue('actor?');
   await expect(elementNodes(page)).toHaveCount(2);
 
   const written = await savedByKey(page, registeredChords.save[0]);
@@ -228,4 +237,41 @@ test('every control says which key runs it: beside a menu item, and as a note be
     'aria-keyshortcuts',
     'Control+Z',
   );
+});
+
+test('the complete shortcut reference opens by menu or key and returns focus', async ({
+  page,
+}) => {
+  await openPlaceholder(page);
+  await openMenu(page);
+  const entry = menuItem(page, 'Keyboard shortcuts');
+
+  await expect(entry).toHaveText(/\? or F1/u);
+  await expect(entry).toHaveAttribute('aria-keyshortcuts', '? F1');
+  await entry.click();
+
+  const reference = page.getByRole('region', { name: 'Keyboard shortcuts' });
+  const heading = reference.getByRole('heading', {
+    level: 2,
+    name: 'Keyboard shortcuts',
+  });
+  await expect(reference).toBeVisible();
+  await expect(heading).toBeFocused();
+  await expect(
+    reference.locator('[data-command-id="save"]').getByText('Ctrl+S'),
+  ).toBeVisible();
+  await expect(reference).toContainText('Edit the selected canvas text');
+
+  await page.keyboard.press('Escape');
+  await expect(reference).toHaveCount(0);
+  await expect(menuButton(page)).toBeFocused();
+
+  await page.setViewportSize({ width: 480, height: 720 });
+  await page.keyboard.press(registeredChords['shortcut-reference'][1]);
+  await expect(reference).toBeVisible();
+  const narrowPanel = await reference.boundingBox();
+  expect(narrowPanel?.height).toBeLessThanOrEqual(432);
+  expect(narrowPanel?.y).toBeGreaterThan(250);
+  await page.keyboard.press(registeredChords['shortcut-reference'][0]);
+  await expect(reference).toHaveCount(0);
 });

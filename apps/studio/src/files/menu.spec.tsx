@@ -154,10 +154,10 @@ describe('what the menu offers', () => {
     await openMenu(user);
 
     const items = screen.getAllByRole('menuitem');
-    expect(items).toHaveLength(12);
+    expect(items).toHaveLength(13);
     expect(
       items.filter((entry) => entry.hasAttribute('aria-keyshortcuts')),
-    ).toHaveLength(9);
+    ).toHaveLength(10);
     expect(
       screen.getAllByRole('group').map((group) => group.textContent),
     ).toContain(

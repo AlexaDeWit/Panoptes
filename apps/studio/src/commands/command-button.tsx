@@ -1,5 +1,6 @@
 import { Tooltip } from 'radix-ui';
 import { useId, type MouseEventHandler, type ReactNode } from 'react';
+import { VisuallyHidden } from '../ui/visually-hidden.js';
 import { useCommandSurface } from './binding.js';
 import {
   commandById,
@@ -74,9 +75,7 @@ export function CommandButton({
       >
         {children ?? entry.label}
       </button>
-      <span className={styles.shortcut} id={description}>
-        Shortcut: {spelled}
-      </span>
+      <VisuallyHidden id={description}>Shortcut: {spelled}</VisuallyHidden>
     </>
   );
 }

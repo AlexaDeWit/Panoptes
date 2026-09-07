@@ -1,0 +1,117 @@
+.panel {
+  position: absolute;
+  z-index: 3;
+  inset-block-start: calc(var(--pn-space-3) * 2 + 2rem + 2px);
+  inset-block-end: var(--pn-space-3);
+  inset-inline-start: var(--pn-space-3);
+  box-sizing: border-box;
+  inline-size: min(32rem, calc(100% - 2 * var(--pn-space-3)));
+  padding: var(--pn-space-3);
+  border: 1px solid var(--pn-colour-border);
+  border-radius: var(--pn-radius);
+  background: var(--pn-colour-surface-raised);
+  color: var(--pn-colour-text);
+  overflow-y: auto;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--pn-space-3);
+}
+
+.heading,
+.groupHeading,
+.introduction {
+  margin: 0;
+}
+
+.heading {
+  font-size: 1.25rem;
+}
+
+.heading:focus-visible,
+.close:focus-visible {
+  outline: var(--pn-focus-ring);
+  outline-offset: var(--pn-focus-ring-offset);
+}
+
+.close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: 0;
+  border-radius: var(--pn-radius);
+  background: none;
+  color: var(--pn-colour-text);
+}
+
+.close:hover {
+  background: var(--pn-colour-surface);
+}
+
+.introduction,
+.when {
+  color: var(--pn-colour-text-muted);
+}
+
+.introduction {
+  margin-block-start: var(--pn-space-2);
+}
+
+.group {
+  margin-block-start: var(--pn-space-4);
+}
+
+.groupHeading {
+  font-size: 1rem;
+}
+
+.entries {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pn-space-2);
+  margin: var(--pn-space-2) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.entry {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--pn-space-1) var(--pn-space-3);
+  padding-block-start: var(--pn-space-2);
+  border-top: 1px solid var(--pn-colour-border);
+}
+
+.label {
+  font-weight: 600;
+}
+
+.keys {
+  align-self: start;
+  padding: 0 var(--pn-space-1);
+  border: 1px solid var(--pn-colour-border);
+  border-radius: var(--pn-radius);
+  background: var(--pn-colour-surface);
+  color: var(--pn-colour-text);
+  font: inherit;
+  white-space: nowrap;
+}
+
+.when {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 45rem) {
+  .panel {
+    inset-block-start: auto;
+    block-size: min(60dvh, 32rem);
+    inline-size: auto;
+    inset-inline-end: var(--pn-space-3);
+  }
+}

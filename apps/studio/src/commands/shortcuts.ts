@@ -39,7 +39,15 @@ export const chordKeys = [
   'Backspace',
   'Delete',
   'Escape',
+  'F1',
   'F2',
+  'Tab',
+  'Enter',
+  'ArrowUp',
+  'ArrowRight',
+  'ArrowDown',
+  'ArrowLeft',
+  '?',
 ] as const;
 
 /** One key a chord ends on, written as a `KeyboardEvent.key` reports it. */
@@ -59,7 +67,39 @@ export type ChordModifier = (typeof chordModifiers)[number];
 export type Chord = {
   readonly modifiers: readonly ChordModifier[];
   readonly key: ChordKey;
+  readonly character?: true;
 };
+
+/** A key with no command modifier. */
+export const bare = (key: ChordKey): Chord => ({ modifiers: [], key });
+
+/** A character whose Shift state is part of producing the character. */
+export const character = (key: ChordKey): Chord => ({
+  character: true,
+  modifiers: [],
+  key,
+});
+
+/** A key with the platform command modifier. */
+export const mod = (key: ChordKey): Chord => ({ modifiers: ['Mod'], key });
+
+/** A key with the platform command modifier and Shift. */
+export const modShift = (key: ChordKey): Chord => ({
+  modifiers: ['Mod', 'Shift'],
+  key,
+});
+
+/** A key with Shift. */
+export const shift = (key: ChordKey): Chord => ({
+  modifiers: ['Shift'],
+  key,
+});
+
+/** The unmodified Enter chord shared by contextual actions. */
+export const enterChord = bare('Enter');
+
+/** The unmodified Escape chord shared by commands and contextual actions. */
+export const escapeChord = bare('Escape');
 
 /**
  * The two conventions a shortcut is written and pressed under. Apple hardware
@@ -109,7 +149,7 @@ export type ChordEvent = {
   readonly metaKey: boolean;
   readonly shiftKey: boolean;
   readonly altKey: boolean;
-  getModifierState?: (modifier: string) => boolean;
+  getModifierState?: (modifier: 'AltGraph') => boolean;
 };
 
 /**
@@ -128,10 +168,13 @@ export function firedBy(
 ): boolean {
   const command = platform === 'apple' ? event.metaKey : event.ctrlKey;
   const foreign = platform === 'apple' ? event.ctrlKey : event.metaKey;
+  const shiftMatches =
+    chord.character === true ||
+    event.shiftKey === chord.modifiers.includes('Shift');
   return (
     event.key.toLowerCase() === chord.key.toLowerCase() &&
     command === chord.modifiers.includes('Mod') &&
-    event.shiftKey === chord.modifiers.includes('Shift') &&
+    shiftMatches &&
     !foreign &&
     !event.altKey &&
     event.getModifierState?.('AltGraph') !== true

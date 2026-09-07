@@ -27,6 +27,7 @@ export const unmountedSurface: CommandSurface = {
     exportPdf: nothing,
     close: nothing,
   },
+  reference: { toggle: nothing },
   view: { zoomIn: nothing, zoomOut: nothing, fitToView: nothing },
 };
 

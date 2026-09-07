@@ -23,6 +23,7 @@ import type { ElementId } from '@saerskriven/model';
 import {
   useCallback,
   useEffect,
+  useId,
   useMemo,
   useRef,
   useState,
@@ -33,8 +34,16 @@ import {
 import { ThreatOverlay } from '../panel/threat-overlay.js';
 import { Action } from '../store/actions.js';
 import { keyboardOwner } from '../commands/binding.js';
+import {
+  contextualShortcuts,
+  describeContextualShortcuts,
+  pressesContextualShortcut,
+} from '../commands/contextual-shortcuts.js';
+import { commandFor } from '../commands/registry.js';
+import { hostPlatform } from '../commands/shortcuts.js';
 import { selectedElement, selectedElements } from '../store/selectors.js';
 import { dispatch, modelStore, useModelStore } from '../store/store.js';
+import { VisuallyHidden } from '../ui/visually-hidden.js';
 import {
   applyChanges,
   applyConnection,
@@ -67,7 +76,6 @@ import {
 import { ZoomCluster } from './zoom-cluster.js';
 import styles from './diagram-canvas.module.css';
 
-const deleteKeys = new Set(['Delete', 'Backspace']);
 const exactLabelDelay = 50;
 const mouseButtonsForTouchPanOnly: number[] = [];
 const canvasA11y = {
@@ -112,12 +120,19 @@ export function DiagramCanvas() {
   const layout = useModelStore(currentLayout);
   const selection = useModelStore(selectedElements);
   const selected = useModelStore(selectedElement);
+  const keyboardDescriptionId = useId();
   const graph = useMemo(
     () => diagramGraph(layout, selection),
     [layout, selection],
   );
   const elements = useMemo(() => elementIds(layout), [layout]);
   const positions = useMemo(() => nodesById(layout), [layout]);
+  const keyboardDescription = describeContextualShortcuts(
+    contextualShortcuts
+      .filter((entry) => entry.group !== 'Panels')
+      .map((entry) => entry.id),
+    hostPlatform,
+  );
   const [onScreen, setOnScreen] = useState<DiagramNode[]>(graph.nodes);
   const [folded, setFolded] = useState<DiagramNode[]>(graph.nodes);
   const [exactEdges, setExactEdges] = useState<CanvasFlowEdge[] | undefined>();
@@ -260,7 +275,10 @@ export function DiagramCanvas() {
   };
 
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>): void => {
-    if (keyboardOwner(event.target) !== 'page' || !deleteKeys.has(event.key)) {
+    if (
+      keyboardOwner(event.target) !== 'page' ||
+      commandFor(event, hostPlatform)?.id !== 'delete'
+    ) {
       return;
     }
     if (!removeSelected()) {
@@ -271,9 +289,19 @@ export function DiagramCanvas() {
   };
 
   const onKeyDownCapture = (event: KeyboardEvent<HTMLDivElement>): void => {
+    const activates = pressesContextualShortcut(
+      'select-canvas-item',
+      event,
+      hostPlatform,
+    );
+    const toggles = pressesContextualShortcut(
+      'toggle-canvas-item',
+      event,
+      hostPlatform,
+    );
     if (
       currentTool().active !== 'select' ||
-      event.key !== 'Enter' ||
+      (!activates && !toggles) ||
       keyboardOwner(event.target) !== 'page'
     ) {
       return;
@@ -282,7 +310,7 @@ export function DiagramCanvas() {
     if (element === undefined) {
       return;
     }
-    if (event.shiftKey) {
+    if (toggles) {
       const nextSelection = selection.includes(element)
         ? selection.filter((selectedId) => selectedId !== element)
         : [...selection, element];
@@ -363,7 +391,11 @@ export function DiagramCanvas() {
       onPointerUpCapture={placement.pointerUp}
     >
       <style>{themedCanvasStylesheet}</style>
+      <VisuallyHidden id={keyboardDescriptionId}>
+        {keyboardDescription}
+      </VisuallyHidden>
       <ReactFlow
+        aria-describedby={keyboardDescriptionId}
         aria-label="Diagram"
         ariaLabelConfig={canvasA11y}
         attributionPosition="bottom-left"

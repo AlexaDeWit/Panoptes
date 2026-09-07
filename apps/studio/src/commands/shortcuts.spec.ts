@@ -1,4 +1,5 @@
 import {
+  character,
   firedBy,
   keyShortcutsAttribute,
   platformOf,
@@ -58,6 +59,13 @@ describe('spelling a chord', () => {
       'Control+S Escape',
     );
   });
+
+  it('writes a produced character without exposing its physical Shift key', () => {
+    const help = character('?');
+
+    expect(spellChord(help, 'other')).toBe('?');
+    expect(keyShortcutsAttribute([help], 'other')).toBe('?');
+  });
 });
 
 describe('firedBy', () => {
@@ -96,5 +104,21 @@ describe('firedBy', () => {
         'other',
       ),
     ).toBe(true);
+  });
+
+  it('matches a produced character with the Shift state needed to type it', () => {
+    const help = character('?');
+
+    expect(firedBy(press({ key: '?', shiftKey: true }), help, 'other')).toBe(
+      true,
+    );
+    expect(firedBy(press({ key: '/' }), help, 'other')).toBe(false);
+    expect(
+      firedBy(
+        press({ key: '?', shiftKey: true, ctrlKey: true }),
+        help,
+        'other',
+      ),
+    ).toBe(false);
   });
 });
