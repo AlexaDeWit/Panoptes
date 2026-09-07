@@ -2,6 +2,7 @@ import type { ElementId } from '@saerskriven/model';
 import { useSyncExternalStore } from 'react';
 import { selectedElement } from '../store/selectors.js';
 import { modelStore } from '../store/store.js';
+import { resetAnnouncements } from './announcements.js';
 import { connectElements } from './edits.js';
 import { flowEnds } from './elements.js';
 import { currentLayout } from './layout.js';
@@ -21,17 +22,6 @@ let current = atRest;
 
 const listeners = new Set<() => void>();
 
-/**
- * Starts a flow from the selected element by opening the target chooser on
- * it, which is what the start-flow command runs. It is a channel of its own
- * rather than a field of the model store, on the same terms as the canvas's
- * announcements: a gesture in progress is not the model and must not ride
- * the undo stacks, and a command reaches it from wherever it was pressed.
- *
- * A selection that is no end of a flow starts nothing. The chooser is
- * disabled there and {@link connectElements} would refuse the flow anyway,
- * so the key press is claimed from the browser and does nothing else.
- */
 export function startFlow(): void {
   const state = modelStore.getState();
   const selection = selectedElement(state);
@@ -82,7 +72,11 @@ export function useConnecting(): Connecting {
 }
 
 function moveTo(next: Connecting): void {
+  if (next.open === current.open && next.from === current.from) {
+    return;
+  }
   current = next;
+  resetAnnouncements();
   for (const listener of listeners) {
     listener();
   }

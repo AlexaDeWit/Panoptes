@@ -28,6 +28,7 @@ const showEditor = (
     threat: sampleThreat,
     focus: undefined,
     held: undefined,
+    onChange: noop,
     onCommit: noop,
     onRefusal: noop,
     onDelete: noop,

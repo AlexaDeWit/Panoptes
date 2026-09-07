@@ -282,10 +282,10 @@ export function DiagramCanvas() {
       data-testid="canvas-container"
       onClickCapture={onCanvasClickCapture}
       onKeyDownCapture={onKeyDownCapture}
-      onPointerCancelCapture={() => {
+      onPointerCancelCapture={(event) => {
         boxSelecting.current = false;
         boxStart.current = undefined;
-        placement.pointerCancel();
+        placement.pointerCancel(event);
       }}
       onPointerDownCapture={onPointerDownCapture}
       onPointerMoveCapture={placement.pointerMove}

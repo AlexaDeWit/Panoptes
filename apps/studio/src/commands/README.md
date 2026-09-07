@@ -34,6 +34,9 @@ session and the viewport. The viewport half is a hook the canvas exports, so
 the fit a command runs and the fit an open runs are one calculation ([the
 canvas](../canvas/README.md)).
 
+A completed Undo or Redo command writes its name to the shared edit status.
+The command says nothing when its history stack is empty.
+
 ## Chords, and how a platform writes them
 
 `shortcuts.ts` holds the chord. A chord is a set of modifiers and one key

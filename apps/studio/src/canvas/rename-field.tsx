@@ -26,7 +26,7 @@ import {
 import type { State } from '../store/state.js';
 import { useModelStore } from '../store/store.js';
 import { refusedText, type TextRefusal } from '../ui/text-field.js';
-import { announce } from './announcements.js';
+import { announce, resetAnnouncements } from './announcements.js';
 import { commitRename, endRenaming, stopRenaming } from './edits.js';
 import { edgeLabel, nodeLabel } from './names.js';
 import styles from './rename-field.module.css';
@@ -110,6 +110,7 @@ function NameField({ elementId, label, name }: NameFieldProps) {
           }
         }}
         onChange={(event) => {
+          resetAnnouncements();
           setDraft({ shown: name, text: event.target.value });
         }}
         onKeyDown={(event) => {

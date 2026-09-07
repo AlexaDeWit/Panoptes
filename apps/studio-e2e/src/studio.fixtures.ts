@@ -38,6 +38,20 @@ export const canvasSettled = async (page: Page): Promise<void> => {
     .toBe(true);
 };
 
+export const focusSettled = async (target: Locator): Promise<void> => {
+  let before = false;
+  await expect
+    .poll(async () => {
+      const now = await target.evaluate(
+        (element) => element === document.activeElement,
+      );
+      const settled = now && before;
+      before = now;
+      return settled;
+    })
+    .toBe(true);
+};
+
 /**
  * Opens the studio on Écluse's model, put on the page before the studio's own
  * modules run under the name `apps/studio/src/store/development-model.ts`

@@ -3,7 +3,6 @@ import { registeredChords } from './chords.js';
 import {
   dragOnto,
   dragTo,
-  editAnnouncement,
   emptyCanvasPoint,
   handleOn,
   menuItem,
@@ -70,8 +69,6 @@ test('a flow is drawn by dragging from one handle to another', async ({
   );
 
   await expect(page.locator(flows)).toHaveCount(2);
-  await expect(editAnnouncement(page)).toContainText('Actor');
-  await expect(editAnnouncement(page)).toContainText('Store');
 });
 
 test('a drag released over empty canvas draws nothing and costs no undo step', async ({
@@ -106,12 +103,10 @@ test('the start-flow chord draws a flow from the selected element', async ({
 
   await page.keyboard.press(registeredChords['start-flow'][0]);
   await expect(page.getByRole('listbox')).toBeVisible();
-  const chosen = await stepThroughOptions(page, 'ArrowDown');
+  await stepThroughOptions(page, 'ArrowDown');
   await page.keyboard.press('Enter');
 
   await expect(page.locator(flows)).toHaveCount(21);
-  await expect(editAnnouncement(page)).toContainText('Écluse proxy');
-  await expect(editAnnouncement(page)).toContainText(chosen);
 });
 
 test('escape cancels a flow the chord started and leaves the selection', async ({

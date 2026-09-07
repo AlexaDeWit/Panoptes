@@ -1,11 +1,6 @@
 import { useSyncExternalStore } from 'react';
+import { modelStore } from '../store/store.js';
 
-/**
- * What the canvas last said about an edit, and how many have been said. The
- * count is what lets the same words be announced twice: a live region speaks
- * when its content changes, so two adds of the same kind would otherwise be
- * announced once.
- */
 export type Announcement = {
   readonly message: string;
   readonly sequence: number;
@@ -17,24 +12,35 @@ let current = nothingSaid;
 
 const listeners = new Set<() => void>();
 
-/**
- * Says `message` in the canvas's live region. It is a channel of its own
- * rather than a field of the model store: an announcement is not the model,
- * it must not ride the undo stacks, and the toolbox and the canvas are
- * siblings that both speak into one region. It reaches the region the way
- * `dispatch` reaches the store, so an edit command has one way to say what
- * it did wherever it was invoked from.
- */
+modelStore.subscribe((state, previous) => {
+  if (
+    state.present !== previous.present ||
+    state.selection !== previous.selection ||
+    state.renaming !== previous.renaming
+  ) {
+    clear();
+  }
+});
+
 export function announce(message: string): void {
   current = { message, sequence: current.sequence + 1 };
-  for (const listener of listeners) {
-    listener();
-  }
+  notify();
 }
 
-/** Forgets what was said, which is how a spec starts from silence. */
 export function resetAnnouncements(): void {
   current = nothingSaid;
+  notify();
+}
+
+function clear(): void {
+  if (current.message === '') {
+    return;
+  }
+  current = { ...current, message: '' };
+  notify();
+}
+
+function notify(): void {
   for (const listener of listeners) {
     listener();
   }

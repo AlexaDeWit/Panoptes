@@ -210,7 +210,6 @@ function added(action: Action, elementId: ElementId): void {
     return;
   }
   dispatch(Action.Select({ elementIds: [elementId] }));
-  announce(`Added ${spokenName(modelStore.getState(), elementId)}.`);
   focusElement(elementId);
 }
 
@@ -220,7 +219,6 @@ function placed(action: Action, elementId: ElementId): boolean {
   }
   dispatch(Action.Select({ elementIds: [elementId] }));
   dispatch(Action.Renaming({ elementId }));
-  announce(`Added ${spokenName(modelStore.getState(), elementId)}.`);
   return true;
 }
 

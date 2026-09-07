@@ -82,14 +82,14 @@ describe('placing an element', () => {
     opened();
   });
 
-  it('adds the element, selects it, opens its name and says so', () => {
+  it('adds the element, selects it and opens its name without repeating it', () => {
     placeElement('actor', { x: 10, y: 20 }, { width: 100, height: 50 });
 
     const state = modelStore.getState();
     expect(state.present.diagrams[0].elements).toHaveLength(7);
     expect(state.selection).toHaveLength(1);
     expect(state.renaming).toBe(state.selection.at(0));
-    expect(said()).toContain('New actor');
+    expect(said()).toBe('');
   });
 
   it('costs one step of the undo stack, the selection beside it costing none', () => {
@@ -142,11 +142,10 @@ describe('connectElements', () => {
     opened();
   });
 
-  it('adds one flow between the two elements and names its ends', () => {
+  it('adds one flow between the two elements without repeating its focused name', () => {
     connectElements(readerElement, studioElement);
 
-    expect(said()).toContain('Reader');
-    expect(said()).toContain('Studio');
+    expect(said()).toBe('');
     expect(modelStore.getState().past).toHaveLength(1);
   });
 

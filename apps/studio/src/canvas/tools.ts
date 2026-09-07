@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from 'react';
 import { Action } from '../store/actions.js';
 import { dispatch } from '../store/store.js';
+import { resetAnnouncements } from './announcements.js';
 import { elementTools, type ElementTool } from './elements.js';
 
 /** Every mode the toolbox offers. */
@@ -104,6 +105,7 @@ function moveTo(
     return;
   }
   current = { ...next, revision, transition: current.transition + 1 };
+  resetAnnouncements();
   for (const listener of listeners) {
     listener();
   }

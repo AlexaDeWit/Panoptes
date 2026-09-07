@@ -212,7 +212,7 @@ test('Enter finishes a boundary curve after two waypoint clicks', async ({
   ).toHaveCount(1);
 });
 
-test('a placed element opens its name, is announced, and undo takes it back as one step', async ({
+test('a placed element opens its name without a second message, and undo takes it back as one step', async ({
   page,
 }) => {
   await openPlaceholder(page);
@@ -223,7 +223,7 @@ test('a placed element opens its name, is announced, and undo takes it back as o
     page.getByRole('textbox', { name: 'Name of New actor' }),
   ).toBeFocused();
   await expect(page.getByRole('region', { name: 'Threats' })).toBeVisible();
-  await expect(editAnnouncement(page)).toContainText('New actor');
+  await expect(editAnnouncement(page)).toBeEmpty();
   await page.keyboard.press('Enter');
 
   await runFromMenu(page, 'Undo');
@@ -246,8 +246,7 @@ test('a flow is drawn by dragging from one handle to another', async ({
   );
 
   await expect(page.locator('.react-flow__edge')).toHaveCount(2);
-  await expect(editAnnouncement(page)).toContainText('Actor');
-  await expect(editAnnouncement(page)).toContainText('Store');
+  await expect(editAnnouncement(page)).toBeEmpty();
 });
 
 test('a flow is drawn by keyboard alone, from the selected element', async ({
@@ -260,8 +259,7 @@ test('a flow is drawn by keyboard alone, from the selected element', async ({
   await page.getByRole('option', { name: 'Store' }).press('Enter');
 
   await expect(page.locator('.react-flow__edge')).toHaveCount(2);
-  await expect(editAnnouncement(page)).toContainText('Actor');
-  await expect(editAnnouncement(page)).toContainText('Store');
+  await expect(editAnnouncement(page)).toBeEmpty();
 });
 
 for (const [tool, named, shape, shapeCount, square] of previewedBoxTools) {

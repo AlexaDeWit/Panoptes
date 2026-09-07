@@ -1,4 +1,8 @@
 import { act, renderHook } from '@testing-library/react';
+import { Action } from '../store/actions.js';
+import { initialState } from '../store/state.js';
+import { actorElement, sampleModel } from '../store/store.fixtures.js';
+import { dispatch, modelStore } from '../store/store.js';
 import {
   announce,
   currentAnnouncement,
@@ -10,6 +14,7 @@ describe('announce', () => {
   const message = 'message';
 
   beforeEach(() => {
+    modelStore.setState(initialState(sampleModel), true);
     resetAnnouncements();
   });
 
@@ -37,10 +42,27 @@ describe('announce', () => {
 
     expect(currentAnnouncement().message).toBe('');
   });
+
+  it('clears when the next action changes canvas state', () => {
+    announce(message);
+
+    dispatch(Action.Select({ elementIds: [actorElement] }));
+
+    expect(currentAnnouncement().message).toBe('');
+  });
+
+  it('stays when an action changes nothing', () => {
+    announce(message);
+
+    dispatch(Action.Undo());
+
+    expect(currentAnnouncement().message).toBe(message);
+  });
 });
 
 describe('useAnnouncement', () => {
   beforeEach(() => {
+    modelStore.setState(initialState(sampleModel), true);
     resetAnnouncements();
   });
 

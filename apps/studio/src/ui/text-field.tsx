@@ -80,14 +80,6 @@ export type RefusedDraft = {
 
 /**
  * Why the model would not take this text, or nothing for text it accepts.
- * Every string of the model is text of a defined character set, and a paste
- * is where a character outside it arrives, so the field says which character
- * stopped the edit rather than letting the model carry text no codec can
- * write back out.
- *
- * The position is counted in characters, not in the code units the model
- * reports the refusal at, so an emoji earlier in the text does not shift the
- * number a person counts to.
  */
 export function refusedText(
   label: string,
@@ -112,6 +104,7 @@ export type TextFieldProps = {
   readonly label: string;
   readonly value: string;
   readonly held?: string;
+  readonly onChange?: () => void;
   readonly onCommit: (text: string) => void;
   readonly onRefused: (refused: RefusedDraft | undefined) => void;
   readonly ref?: Ref<HTMLInputElement>;
@@ -121,24 +114,12 @@ export type TextFieldProps = {
  * One line of text, committed when the field is left rather than as it is
  * typed, so one edit is one undo step. Enter commits it too, and leaves focus
  * where it is, the control being on a line of its own.
- *
- * What is typed is the field's until it is committed, which is what keeps a
- * refused character on screen to be corrected. Every change to whether the
- * model is refusing the draft reaches `onRefused`, carrying the text as well
- * as the sentence, so what mounts the field can say so, keep the field on
- * screen while a refused draft stands, and put that draft back in a field it
- * mounts later. It is reported after the render rather than during it,
- * because the field's own refusal drops during render, when the value it is
- * given moves, and a parent cannot take a report from a child that is still
- * rendering.
- *
- * An edit that lands from anywhere else, an undo among them, replaces the
- * draft: the field follows the value it is given whenever that value moves.
  */
 export function TextField({
   label,
   value,
   held,
+  onChange,
   onCommit,
   onRefused,
   ref,
@@ -165,6 +146,7 @@ export function TextField({
         id={fieldId}
         onBlur={commit}
         onChange={(event) => {
+          onChange?.();
           change(event.target.value);
         }}
         onKeyDown={(event) => {
@@ -196,6 +178,7 @@ export function ProseField({
   label,
   value,
   held,
+  onChange,
   onCommit,
   onRefused,
 }: TextFieldProps) {
@@ -221,6 +204,7 @@ export function ProseField({
         id={fieldId}
         onBlur={commit}
         onChange={(event) => {
+          onChange?.();
           change(event.target.value);
         }}
         rows={4}
