@@ -1,10 +1,43 @@
 /// <reference types="vitest" />
-// Root-defined vite configuration for React projects. A leaf's vite.config.mts
-// is one line: `export default reactLib(import.meta.dirname)` for a library,
-// `reactApp` for an application. Deviations belong here, behind a parameter.
+// Leaf configs pass options here so the shared build owns deviations.
 import { defineConfig } from 'vite';
+import type { Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import { cacheDir, sharedTest } from './vitest.shared.mts';
+
+const searchIndexFiles = (siteUrl: string): Plugin => {
+  const canonicalUrl = siteUrl.endsWith('/') ? siteUrl : `${siteUrl}/`;
+
+  return {
+    name: 'search-index-files',
+    apply: 'build',
+    transformIndexHtml: () => [
+      {
+        tag: 'link',
+        attrs: { href: canonicalUrl, rel: 'canonical' },
+        injectTo: 'head',
+      },
+    ],
+    generateBundle() {
+      this.emitFile({
+        type: 'asset',
+        fileName: 'robots.txt',
+        source: `User-agent: *\nAllow: /\n\nSitemap: ${canonicalUrl}sitemap.xml\n`,
+      });
+      this.emitFile({
+        type: 'asset',
+        fileName: 'sitemap.xml',
+        source: `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>${canonicalUrl}</loc>
+  </url>
+</urlset>
+`,
+      });
+    },
+  };
+};
 
 export const reactLib = (projectRoot: string) =>
   defineConfig({
@@ -17,16 +50,20 @@ export const reactLib = (projectRoot: string) =>
 type ReactAppOptions = {
   readonly port?: number;
   readonly setupFiles?: string[];
+  readonly siteUrl?: string;
 };
 
 export const reactApp = (
   projectRoot: string,
-  { port = 4200, setupFiles = [] }: ReactAppOptions = {},
+  { port = 4200, setupFiles = [], siteUrl }: ReactAppOptions = {},
 ) =>
   defineConfig({
     root: projectRoot,
     cacheDir: cacheDir(projectRoot),
-    plugins: [react()],
+    plugins: [
+      react(),
+      ...(siteUrl === undefined ? [] : [searchIndexFiles(siteUrl)]),
+    ],
     server: { port, host: 'localhost' },
     preview: { port, host: 'localhost' },
     build: {

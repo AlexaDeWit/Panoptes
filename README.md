@@ -174,6 +174,12 @@ before that first dispatch. The workflow reads the site's base path from
 GitHub, so both a project site and a later custom domain receive valid asset
 URLs without a separate build configuration.
 
+The same Pages value sets the canonical URL, `sitemap.xml`, and `robots.txt`.
+A project site cannot control the host-root `robots.txt` on the shared
+`github.io` domain. The generated file starts to govern crawlers when the site
+uses a custom domain. Submit the sitemap URL to search engines after the first
+deployment.
+
 ### Packaging the CLI
 
 `nx build @saerskriven/cli` bundles the CLI into one ESM file with every

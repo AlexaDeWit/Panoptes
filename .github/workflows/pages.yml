@@ -54,6 +54,7 @@ jobs:
       - name: Build the studio for its Pages path
         env:
           PAGES_BASE_PATH: ${{ steps.pages.outputs.base_path }}
+          PAGES_SITE_URL: ${{ steps.pages.outputs.base_url }}
         run: >-
           nix develop .#ci --command
           pnpm nx build @saerskriven/studio --base="${PAGES_BASE_PATH}/"

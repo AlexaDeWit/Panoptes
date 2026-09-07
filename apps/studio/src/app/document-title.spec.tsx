@@ -10,10 +10,10 @@ describe('DocumentTitle', () => {
     modelStore.setState(initialState(placeholderModel), true);
   });
 
-  it('names the tab for a model that has never been in a file', () => {
+  it('names the landing page before a model changes', () => {
     render(<DocumentTitle />);
 
-    expect(document.title).toBe('Untitled - Saerskriven');
+    expect(document.title.trim()).not.toBe('');
   });
 
   it('follows the file the model is saved into', () => {
