@@ -176,6 +176,7 @@ function InlineField({
 
 function EditingNodeBody(props: NodeProps<CanvasFlowNode>) {
   const { node } = props.data;
+  const [resizing, setResizing] = useState(false);
   const editor = useModelStore(
     useCallback(
       (state: State) =>
@@ -194,9 +195,14 @@ function EditingNodeBody(props: NodeProps<CanvasFlowNode>) {
       <CanvasNodeBody
         {...props}
         controlsVisible={!editing}
+        onResizeStart={() => {
+          setResizing(true);
+        }}
         onResizeEnd={(box) => {
+          setResizing(false);
           resizeNode(node, box);
         }}
+        resizing={resizing}
       />
       {editingName && (
         <div

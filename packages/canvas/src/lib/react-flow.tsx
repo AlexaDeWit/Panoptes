@@ -192,16 +192,22 @@ export function CanvasNodeBody({
   height,
   isConnectable,
   onResizeEnd,
+  onResizeStart,
+  resizing = false,
   selected,
   width,
 }: NodeProps<CanvasFlowNode> & {
   readonly controlsVisible?: boolean;
   readonly onResizeEnd?: (box: NodeBox) => void;
+  readonly onResizeStart?: () => void;
+  readonly resizing?: boolean;
 }): ReactElement {
-  const shownSize = {
-    width: width ?? data.node.size.width,
-    height: height ?? data.node.size.height,
-  };
+  const shownSize = resizing
+    ? {
+        width: width ?? data.node.size.width,
+        height: height ?? data.node.size.height,
+      }
+    : data.node.size;
   const shownNode =
     shownSize.width === data.node.size.width &&
     shownSize.height === data.node.size.height
@@ -233,6 +239,7 @@ export function CanvasNodeBody({
         <ResizeControls
           node={data.node}
           onResizeEnd={onResizeEnd}
+          onResizeStart={onResizeStart}
           visible={controlsVisible}
         />
       ) : null}
@@ -243,10 +250,12 @@ export function CanvasNodeBody({
 function ResizeControls({
   node,
   onResizeEnd,
+  onResizeStart,
   visible,
 }: {
   readonly node: CanvasNode;
   readonly onResizeEnd: ((box: NodeBox) => void) | undefined;
+  readonly onResizeStart: (() => void) | undefined;
   readonly visible: boolean;
 }): ReactElement {
   const name = node.name.trim() || node.kind.replace('-', ' ');
@@ -284,6 +293,7 @@ function ResizeControls({
               size: { width: resized.width, height: resized.height },
             });
           }}
+          onResizeStart={onResizeStart}
           position={position}
           resizeDirection={
             position === 'left' || position === 'right'
