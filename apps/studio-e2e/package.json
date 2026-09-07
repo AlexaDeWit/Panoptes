@@ -2,6 +2,9 @@
   "name": "@saerskriven/studio-e2e",
   "version": "0.0.1",
   "private": true,
+  "scripts": {
+    "social-card": "playwright test --config social-card.config.ts"
+  },
   "devDependencies": {
     "@axe-core/playwright": "catalog:",
     "@saerskriven/canvas": "workspace:*",

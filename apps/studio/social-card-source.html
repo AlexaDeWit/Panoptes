@@ -1,0 +1,362 @@
+<!doctype html>
+<html lang="en" data-pn-colour-mode="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=1200, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <title>Saerskriven social card source</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        width: 1200px;
+        height: 630px;
+        margin: 0;
+        overflow: hidden;
+      }
+
+      body {
+        background: var(--pn-colour-surface);
+        color: var(--pn-colour-text);
+        font-family: var(--pn-font-family);
+      }
+
+      .card {
+        position: absolute;
+        inset: 24px;
+        display: grid;
+        grid-template-columns: 650px 1fr;
+        overflow: hidden;
+        border: 2px solid var(--pn-colour-border);
+        border-radius: 28px;
+        background: var(--pn-colour-canvas);
+      }
+
+      .copy {
+        display: flex;
+        flex-direction: column;
+        padding: 46px 0 54px 52px;
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 22px;
+      }
+
+      .mark {
+        width: 72px;
+        height: 72px;
+        border: 1.5px solid var(--pn-colour-border);
+        border-radius: 15px;
+      }
+
+      .product-name {
+        margin: 0;
+        font-size: 49px;
+        font-weight: 700;
+        letter-spacing: -1.5px;
+        line-height: 1;
+      }
+
+      .kind {
+        margin: 34px 0 0 2px;
+        color: var(--pn-colour-accent);
+        font-size: 18px;
+        font-weight: 700;
+        letter-spacing: 2.4px;
+        line-height: 1;
+      }
+
+      .headline {
+        margin: 43px 0 0;
+        font-size: 62px;
+        font-weight: 700;
+        letter-spacing: -2.4px;
+        line-height: 1.2;
+        white-space: nowrap;
+      }
+
+      .description {
+        margin: 30px 0 0 2px;
+        color: var(--pn-colour-text-muted);
+        font-size: 24px;
+        line-height: 1.2;
+      }
+
+      .features {
+        display: flex;
+        gap: 14px;
+        margin: auto 0 0;
+        padding: 0;
+        list-style: none;
+      }
+
+      .features li {
+        min-width: 130px;
+        padding: 11px 14px 10px;
+        border-radius: 22px;
+        background: var(--pn-colour-process);
+        font-size: 17px;
+        font-weight: 650;
+        line-height: 23px;
+        text-align: center;
+      }
+
+      .features li:nth-child(2) {
+        background: var(--pn-colour-actor);
+      }
+
+      .visual {
+        display: grid;
+        place-items: center;
+      }
+
+      .diagram {
+        width: 420px;
+        height: 490px;
+        overflow: hidden;
+        border: 2px solid var(--pn-colour-border);
+        border-radius: 18px;
+        background-color: var(--pn-colour-canvas);
+        background-image:
+          linear-gradient(var(--pn-colour-grid) 1px, transparent 1px),
+          linear-gradient(90deg, var(--pn-colour-grid) 1px, transparent 1px);
+        background-size: 20px 20px;
+        box-shadow: 0 10px 30px rgb(56 52 46 / 12%);
+      }
+
+      .diagram svg {
+        display: block;
+        width: 100%;
+        height: 100%;
+      }
+
+      .diagram text {
+        fill: var(--pn-colour-text);
+        font-family: Arial, sans-serif;
+      }
+
+      .diagram .muted {
+        fill: var(--pn-colour-text-muted);
+      }
+    </style>
+  </head>
+  <body>
+    <main class="card">
+      <section class="copy" aria-labelledby="social-card-title">
+        <div class="brand">
+          <img class="mark" src="/favicon.svg" alt="" />
+          <h1 class="product-name" id="social-card-title">Saerskriven</h1>
+        </div>
+        <p class="kind">OPEN-SOURCE THREAT MODELLING STUDIO</p>
+        <p class="headline">Draw the system.<br />Record the threats.</p>
+        <p class="description">Threats live on the diagram, not beside it.</p>
+        <ul class="features" aria-label="Features">
+          <li>Browser studio</li>
+          <li>Typed core</li>
+          <li>CLI exports</li>
+        </ul>
+      </section>
+
+      <section class="visual" aria-label="Example threat model">
+        <div class="diagram">
+          <svg
+            viewBox="0 0 420 490"
+            role="img"
+            aria-labelledby="diagram-title diagram-description"
+          >
+            <title id="diagram-title">Threat model</title>
+            <desc id="diagram-description">
+              A maintainer sends a model to the studio, which exports a model
+              file. Two threat badges mark the diagram.
+            </desc>
+            <defs>
+              <marker
+                id="arrow"
+                viewBox="0 0 10 10"
+                refX="9"
+                refY="5"
+                markerWidth="7"
+                markerHeight="7"
+                orient="auto"
+              >
+                <path d="M0 0L10 5L0 10Z" fill="var(--pn-colour-text)" />
+              </marker>
+            </defs>
+
+            <g transform="translate(83 30)">
+              <rect
+                width="252"
+                height="44"
+                rx="6"
+                fill="var(--pn-colour-surface-raised)"
+                stroke="var(--pn-colour-border)"
+                stroke-width="1.5"
+              />
+              <rect
+                x="7"
+                y="7"
+                width="30"
+                height="30"
+                rx="4"
+                fill="var(--pn-colour-accent)"
+              />
+              <path
+                d="M16 14L29 24L23 25L27 32L23 34L19 27L15 31Z"
+                fill="var(--pn-colour-accent-text)"
+              />
+              <rect
+                x="53"
+                y="15"
+                width="18"
+                height="14"
+                fill="none"
+                stroke="var(--pn-colour-text)"
+                stroke-width="2"
+              />
+              <circle
+                cx="94"
+                cy="22"
+                r="8"
+                fill="none"
+                stroke="var(--pn-colour-text)"
+                stroke-width="2"
+              />
+              <path
+                d="M119 16H137M119 22H137M119 28H137"
+                stroke="var(--pn-colour-text)"
+                stroke-width="2"
+              />
+              <path
+                d="M157 16H175V29H157Z"
+                fill="none"
+                stroke="var(--pn-colour-text)"
+                stroke-width="2"
+              />
+              <path
+                d="M195 29C200 13 205 13 210 29C215 13 220 13 225 29"
+                fill="none"
+                stroke="var(--pn-colour-text)"
+                stroke-width="2"
+              />
+            </g>
+
+            <rect
+              x="41"
+              y="107"
+              width="340"
+              height="320"
+              rx="3"
+              fill="none"
+              stroke="var(--pn-colour-text-muted)"
+              stroke-width="2"
+              stroke-dasharray="8 6"
+            />
+            <text class="muted" x="57" y="131" font-size="13">
+              Trust boundary
+            </text>
+
+            <rect
+              x="65"
+              y="181"
+              width="96"
+              height="58"
+              fill="var(--pn-colour-actor)"
+              stroke="var(--pn-colour-text)"
+              stroke-width="2"
+            />
+            <text x="113" y="215" font-size="15" text-anchor="middle">
+              Maintainer
+            </text>
+
+            <circle
+              cx="252"
+              cy="210"
+              r="48"
+              fill="var(--pn-colour-process)"
+              stroke="var(--pn-colour-text)"
+              stroke-width="2"
+            />
+            <text x="252" y="215" font-size="15" text-anchor="middle">
+              Studio
+            </text>
+
+            <path
+              d="M161 210H196"
+              fill="none"
+              stroke="var(--pn-colour-text)"
+              stroke-width="2"
+              marker-end="url(#arrow)"
+            />
+            <text
+              class="muted"
+              x="179"
+              y="192"
+              font-size="12"
+              text-anchor="middle"
+            >
+              models
+            </text>
+
+            <path
+              d="M252 258V303"
+              fill="none"
+              stroke="var(--pn-colour-text)"
+              stroke-width="2"
+              marker-end="url(#arrow)"
+            />
+            <text class="muted" x="270" y="285" font-size="12">exports</text>
+
+            <path
+              d="M192 321H312M192 339H312"
+              stroke="var(--pn-colour-text)"
+              stroke-width="3"
+            />
+            <text x="252" y="369" font-size="15" text-anchor="middle">
+              Model file
+            </text>
+
+            <g transform="translate(145 187)">
+              <circle
+                r="14"
+                fill="var(--pn-colour-tone-critical)"
+                stroke="var(--pn-colour-badge-ground)"
+                stroke-width="3"
+              />
+              <text
+                y="5"
+                fill="var(--pn-colour-badge-ground)"
+                font-size="14"
+                font-weight="700"
+                text-anchor="middle"
+              >
+                1
+              </text>
+            </g>
+            <g transform="translate(312 249)">
+              <circle
+                r="14"
+                fill="var(--pn-colour-tone-medium)"
+                stroke="var(--pn-colour-badge-ground)"
+                stroke-width="3"
+              />
+              <text
+                y="5"
+                fill="var(--pn-colour-badge-ground)"
+                font-size="14"
+                font-weight="700"
+                text-anchor="middle"
+              >
+                2
+              </text>
+            </g>
+          </svg>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

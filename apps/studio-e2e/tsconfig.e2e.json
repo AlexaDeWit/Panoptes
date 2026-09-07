@@ -9,5 +9,5 @@
     "module": "esnext",
     "moduleResolution": "bundler"
   },
-  "include": ["playwright.config.ts", "src/**/*.ts"]
+  "include": ["playwright.config.ts", "social-card.config.ts", "src/**/*.ts"]
 }

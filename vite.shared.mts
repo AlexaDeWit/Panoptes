@@ -4,19 +4,74 @@ import { defineConfig, type Plugin, type PluginOption } from 'vite';
 import react from '@vitejs/plugin-react';
 import { cacheDir, sharedTest } from './vitest.shared.mts';
 
-const searchIndexFiles = (siteUrl: string): Plugin => {
+type SocialImage = {
+  readonly alt: string;
+  readonly height: number;
+  readonly path: string;
+  readonly width: number;
+};
+
+const pageMetadata = (html: string) => {
+  const title = html.match(/<title>([^<]+)<\/title>/u)?.[1]?.trim();
+  const description = html
+    .match(/<meta\s+name="description"\s+content="([^"]+)"/u)?.[1]
+    ?.trim();
+
+  if (title === undefined || description === undefined) {
+    throw new Error('The page must declare its title and description.');
+  }
+
+  return { description, title };
+};
+
+const metadataTag = (attrs: Record<string, string>) => ({
+  tag: 'meta',
+  attrs,
+  injectTo: 'head' as const,
+});
+
+const siteFiles = (siteUrl: string, socialImage?: SocialImage): Plugin => {
   const canonicalUrl = siteUrl.endsWith('/') ? siteUrl : `${siteUrl}/`;
 
   return {
-    name: 'search-index-files',
+    name: 'site-files',
     apply: 'build',
-    transformIndexHtml: () => [
-      {
+    transformIndexHtml: (html) => {
+      const canonical = {
         tag: 'link',
         attrs: { href: canonicalUrl, rel: 'canonical' },
-        injectTo: 'head',
-      },
-    ],
+        injectTo: 'head' as const,
+      };
+
+      if (socialImage === undefined) {
+        return [canonical];
+      }
+
+      const { description, title } = pageMetadata(html);
+      const imageUrl = new URL(socialImage.path, canonicalUrl).href;
+
+      return [
+        canonical,
+        metadataTag({ property: 'og:type', content: 'website' }),
+        metadataTag({ property: 'og:title', content: title }),
+        metadataTag({ property: 'og:description', content: description }),
+        metadataTag({ property: 'og:url', content: canonicalUrl }),
+        metadataTag({ property: 'og:image', content: imageUrl }),
+        metadataTag({ property: 'og:image:type', content: 'image/png' }),
+        metadataTag({
+          property: 'og:image:width',
+          content: String(socialImage.width),
+        }),
+        metadataTag({
+          property: 'og:image:height',
+          content: String(socialImage.height),
+        }),
+        metadataTag({ property: 'og:image:alt', content: socialImage.alt }),
+        metadataTag({ name: 'twitter:card', content: 'summary_large_image' }),
+        metadataTag({ name: 'twitter:image', content: imageUrl }),
+        metadataTag({ name: 'twitter:image:alt', content: socialImage.alt }),
+      ];
+    },
     generateBundle() {
       this.emitFile({
         type: 'asset',
@@ -54,6 +109,7 @@ type ReactAppOptions = {
   readonly plugins?: PluginOption[];
   readonly setupFiles?: string[];
   readonly siteUrl?: string;
+  readonly socialImage?: SocialImage;
 };
 
 export const reactApp = (
@@ -66,6 +122,7 @@ export const reactApp = (
     plugins = [],
     setupFiles = [],
     siteUrl,
+    socialImage,
   }: ReactAppOptions = {},
 ) =>
   defineConfig({
@@ -75,7 +132,7 @@ export const reactApp = (
     plugins: [
       react(),
       ...plugins,
-      ...(siteUrl === undefined ? [] : [searchIndexFiles(siteUrl)]),
+      ...(siteUrl === undefined ? [] : [siteFiles(siteUrl, socialImage)]),
     ],
     server: { port, host: 'localhost' },
     preview: { port, host: 'localhost' },
