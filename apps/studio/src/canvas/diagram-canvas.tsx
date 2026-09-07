@@ -300,7 +300,6 @@ export function DiagramCanvas() {
         deleteKeyCode={null}
         edges={graph.edges}
         edgeTypes={renamingEdgeTypes}
-        elevateNodesOnSelect={false}
         elementsSelectable={mode.active === 'select'}
         isValidConnection={betweenTwoElements}
         maxZoom={zoomLimits.maximum}
@@ -332,6 +331,7 @@ export function DiagramCanvas() {
         selectionOnDrag={mode.active === 'select'}
         tabIndex={-1}
         zoomOnDoubleClick={false}
+        zIndexMode="manual"
       >
         <Background gap={gridSpacing} variant={BackgroundVariant.Lines} />
         <PlacementPreview preview={placement.preview} />

@@ -31,6 +31,8 @@ const anchorExtent = 1;
 
 const boundaryZIndex = -1;
 
+const nodeZIndex = 0;
+
 const boundaryHitTargetClass = 'pn-boundary-hit-target';
 
 const resizableKinds = new Set<CanvasNodeKind>([
@@ -77,9 +79,11 @@ export type CanvasFreeEndNode = Node<CanvasFreeEndData, typeof freeEndNodeKind>;
  * width and height, and a handle at each side midpoint. Every handle is of
  * type `source`, so the canvas that mounts these passes
  * `connectionMode={ConnectionMode.Loose}` for a flow to be able to end on
- * one. The wrapper adds nothing of its own to the drawing, and the drawing
- * is hidden from assistive technology: the node's accessible name says what
- * the glyph shows, and the canvas mounting it settles that name.
+ * one. Each handle takes the node's resolved connectability, so a trust
+ * boundary handle cannot start a connection. The wrapper adds nothing of
+ * its own to the drawing. The drawing is hidden from assistive technology:
+ * the node's accessible name says what the glyph shows, and the canvas
+ * mounting it settles that name.
  *
  * A selected element the model can resize carries one control, at its bottom
  * right corner. It is the corner alone because a control on the top or the
@@ -89,6 +93,7 @@ export type CanvasFreeEndNode = Node<CanvasFreeEndData, typeof freeEndNodeKind>;
  */
 export function CanvasNodeBody({
   data,
+  isConnectable,
   selected,
 }: NodeProps<CanvasFlowNode>): ReactElement {
   return (
@@ -108,6 +113,7 @@ export function CanvasNodeBody({
           id={side}
           type="source"
           position={handlePlacement[side]}
+          isConnectable={isConnectable}
         />
       ))}
       {selected && resizableKinds.has(data.node.kind) && (
@@ -253,7 +259,7 @@ export function toReactFlowNodes(layout: CanvasLayout): CanvasFlowNode[] {
       height: node.size.height,
       data: { node },
       style: boundary ? { pointerEvents: 'none' } : undefined,
-      zIndex: boundary ? boundaryZIndex : undefined,
+      zIndex: boundary ? boundaryZIndex : nodeZIndex,
     };
   });
 }

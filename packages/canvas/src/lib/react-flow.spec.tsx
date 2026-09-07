@@ -59,10 +59,18 @@ const edgeProps = (
   data,
 });
 
-const bodyMarkup = (node: CanvasNode, selected = false): string =>
+const bodyMarkup = (
+  node: CanvasNode,
+  selected = false,
+  isConnectable = false,
+): string =>
   renderToStaticMarkup(
     <ReactFlowProvider>
-      <CanvasNodeBody {...nodeProps(node)} selected={selected} />
+      <CanvasNodeBody
+        {...nodeProps(node)}
+        selected={selected}
+        isConnectable={isConnectable}
+      />
     </ReactFlowProvider>,
   );
 
@@ -119,6 +127,15 @@ describe('CanvasNodeBody', () => {
     for (const side of handleSides) {
       expect(markup).toContain(`data-handleid="${side}"`);
     }
+  });
+
+  it('lets React Flow connect only through handles of a connectable node', () => {
+    expect(bodyMarkup(nodeNamed('el-client'), false, true)).toMatch(
+      /class="[^"]*\bconnectable\b/u,
+    );
+    expect(bodyMarkup(nodeNamed('el-zone'))).not.toMatch(
+      /class="[^"]*\bconnectable\b/u,
+    );
   });
 
   it('offers a resize control on a selected element the model can resize', () => {
@@ -196,7 +213,7 @@ describe('toReactFlowNodes', () => {
       height: node.size.height,
       data: { node },
       style: undefined,
-      zIndex: undefined,
+      zIndex: 0,
     });
   });
 
@@ -210,7 +227,7 @@ describe('toReactFlowNodes', () => {
         }),
         expect.objectContaining({
           id: elementId('el-client'),
-          zIndex: undefined,
+          zIndex: 0,
         }),
       ]),
     );

@@ -251,11 +251,13 @@ path at the `interactionWidths.flow` width. The same edge wrapper holds the
 name, so a click on the line, its wider interaction path or the name selects
 the flow.
 
-Trust boundaries have a lower z-index than every flow and other node. React
-Flow does not raise a selected node, so selection cannot change that order.
-The boundary's interior passes pointer events through. Its name, resize
-control and an invisible `interactionWidths.boundary` stroke around its
-outline remain selectable and draggable.
+React Flow uses manual z-index values here. A boundary is at -1, a regular
+node at 0 and a selected regular node at 1. Selection therefore keeps a
+regular node visible without raising a boundary above enclosed items. The
+boundary's interior passes pointer events through. Its name, resize control
+and an invisible `interactionWidths.boundary` stroke around its outline
+remain selectable and draggable. Its disabled connection handles cannot take
+an outline drag.
 
 Select rests on the plain arrow over the pane and nodes. A flow keeps its link
 pointer, and a connection handle keeps its crosshair. Place uses a crosshair
