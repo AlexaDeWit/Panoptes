@@ -146,7 +146,10 @@ export function parseWithinLimits(
   );
 }
 
-function withinTextLimit(text: string): Either.Either<string, ReadFailure> {
+/** Refuses text whose UTF-8 size exceeds the shared read bound. */
+export function withinTextLimit(
+  text: string,
+): Either.Either<string, ReadFailure> {
   const observed =
     text.length > readLimits.maxTextBytes
       ? text.length

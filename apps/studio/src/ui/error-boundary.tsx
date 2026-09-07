@@ -3,11 +3,7 @@ import styles from './error-boundary.module.css';
 
 type BoundaryState = { readonly message: string | undefined };
 
-/**
- * What an {@link ErrorBoundary} guards, and what its control does. `reload`
- * is the studio starting again, which is a page load in a browser and is
- * taken as a prop so a spec can watch it without a window moving.
- */
+/** The guarded content and an injectable page reload for specs. */
 export type ErrorBoundaryProps = {
   readonly children: ReactNode;
   readonly reload?: () => void;
@@ -17,18 +13,7 @@ function reloadPage(): void {
   globalThis.location.reload();
 }
 
-/**
- * The last stop for a throw from anywhere below it. Nothing in the studio
- * uses a throw as an error channel, so what reaches here is a defect rather
- * than a refusal a view was meant to render: the whole tree below is gone,
- * and this shows what was thrown and offers the reload that starts again
- * from the file on disk.
- *
- * It is a class because React offers no other way to catch a render error,
- * and it holds the one piece of state a component here is allowed to hold
- * for the same reason. Everything else about the studio's state lives in the
- * store.
- */
+/** Shows an unexpected render failure and offers a page reload. */
 export class ErrorBoundary extends Component<
   ErrorBoundaryProps,
   BoundaryState
@@ -51,9 +36,9 @@ export class ErrorBoundary extends Component<
       <section aria-label="Saerskriven stopped" className={styles.stopped}>
         <h1 className={styles.headline}>Saerskriven stopped</h1>
         <p>
-          The studio ran into something it has no handling for, so what was on
-          screen is gone. Reloading starts again from the file on disk, and
-          anything unsaved is not in it.
+          The studio ran into something it has no handling for. Reloading uses
+          the last completed recovery snapshot. Work after a failed recovery
+          write may be gone.
         </p>
         <p className={styles.detail}>{message}</p>
         <button

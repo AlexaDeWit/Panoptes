@@ -389,21 +389,45 @@ describe('what the studio says about the file', () => {
     expect(burger().getAttribute('aria-label')).toBe('Menu');
   });
 
-  it('guards the tab while the model has changes in no file, and lets go once they are in one', async () => {
-    const user = userEvent.setup();
+  it('guards the tab only after the latest recovery write fails', () => {
     mounted(specBridge());
 
     expect(asked()).toBe(false);
 
     edit();
 
-    expect(asked()).toBe(true);
+    expect(asked()).toBe(false);
 
-    await choose(user, 'Save');
-
-    await waitFor(() => {
-      expect(asked()).toBe(false);
+    const setItem = vi
+      .spyOn(Storage.prototype, 'setItem')
+      .mockImplementationOnce(() => {
+        throw new DOMException('Quota reached', 'QuotaExceededError');
+      });
+    act(() => {
+      dispatch(
+        Action.RenameElement({
+          elementId: actorElement,
+          name: 'Changed once',
+        }),
+      );
     });
+
+    expect(asked()).toBe(true);
+    expect(screen.getByTestId('failure-notice').textContent).toContain(
+      'Local recovery is unavailable.',
+    );
+
+    setItem.mockRestore();
+    act(() => {
+      dispatch(
+        Action.RenameElement({
+          elementId: actorElement,
+          name: 'Changed again',
+        }),
+      );
+    });
+
+    expect(asked()).toBe(false);
   });
 });
 
