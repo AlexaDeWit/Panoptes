@@ -738,9 +738,9 @@ describe('the every-glyph label beside the Order API process', () => {
     ]);
   });
 
-  it('takes the corner of its box that the drawn circle leaves clear', () => {
+  it('keeps the smaller name clear of the process box', () => {
     const name = boxNamed('"Submit order"');
-    expect(boxesOverlap(name, boxOf(orderApi))).toBe(true);
+    expect(boxesOverlap(name, boxOf(orderApi))).toBe(false);
     expect(boxMeetsCircle(name, circleOf(orderApi))).toBe(false);
   });
 

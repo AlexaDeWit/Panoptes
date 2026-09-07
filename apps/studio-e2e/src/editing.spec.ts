@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { boxOf } from './canvas-geometry.fixtures.js';
+import { inkBoxOf } from './canvas-geometry.fixtures.js';
 import { registeredChords } from './chords.js';
 import { viewportTransform } from './commands.fixtures.js';
 import {
@@ -278,18 +278,41 @@ for (const [tool, named, shape, shapeCount, square] of previewedBoxTools) {
     await expect(draft).toBeVisible();
     await expect(draft).toHaveAttribute('aria-hidden', 'true');
     await expect(draft.locator(shape)).toHaveCount(shapeCount);
-    const drawn = await draft.boundingBox();
-    expect(drawn).not.toBeNull();
-    expect(drawn?.x).toBeCloseTo(from.x, 0);
-    expect(drawn?.y).toBeCloseTo(from.y, 0);
-    expect(drawn?.width).toBeCloseTo(square ? 80 : 160, 0);
-    expect(drawn?.height).toBeCloseTo(80, 0);
-    const preview = await boxOf(draft);
-
+    const drawn = await inkBoxOf(draft.locator(shape));
+    expect(drawn.x).toBeCloseTo(from.x, 0);
+    expect(drawn.y).toBeCloseTo(from.y, 0);
+    expect(drawn.width).toBeCloseTo(square ? 80 : 160, 0);
+    expect(drawn.height).toBeCloseTo(80, 0);
     await page.mouse.up();
 
     await expect(draft).toHaveCount(0);
-    expect(await boxOf(nodeNamed(page, named))).toEqual(preview);
+    const node = nodeNamed(page, named);
+    const committed = await inkBoxOf(node.locator(shape));
+    const field = await node.getByRole('textbox').boundingBox();
+    await expect(node.locator('.react-flow__handle').first()).toBeHidden();
+    await expect(node.locator('.react-flow__resize-control')).toBeHidden();
+    expect(committed.x).toBeCloseTo(drawn.x);
+    expect(committed.y).toBeCloseTo(drawn.y);
+    expect(committed.width).toBeCloseTo(drawn.width);
+    expect(committed.height).toBeCloseTo(drawn.height);
+    expect(field).not.toBeNull();
+    expect(field?.x ?? 0).toBeGreaterThanOrEqual(drawn.x);
+    expect(field?.y ?? 0).toBeGreaterThanOrEqual(drawn.y);
+    expect((field?.x ?? 0) + (field?.width ?? 0)).toBeLessThanOrEqual(
+      drawn.x + drawn.width,
+    );
+    expect((field?.y ?? 0) + (field?.height ?? 0)).toBeLessThanOrEqual(
+      drawn.y + drawn.height,
+    );
+    expect(
+      await node.evaluate((element) => {
+        const frame = getComputedStyle(element, '::after');
+        return {
+          boxSizing: frame.boxSizing,
+          inset: [frame.top, frame.right, frame.bottom, frame.left],
+        };
+      }),
+    ).toEqual({ boxSizing: 'border-box', inset: ['0px', '0px', '0px', '0px'] });
   });
 }
 

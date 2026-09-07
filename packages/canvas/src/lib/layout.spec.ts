@@ -3,8 +3,10 @@ import { elementId, parsedFixture } from '@saerskriven/model/fixtures';
 import { badgeExtent } from './badges.js';
 import { everyGlyphModel } from './canvas.fixtures.js';
 import { handlePositions, type NodeBox } from './handles.js';
+import { flowLabelPlacements } from './label-placement.js';
 import {
   layoutDiagram,
+  layoutDuringMove,
   reanchoredFlow,
   type CanvasEdge,
   type CanvasNode,
@@ -386,6 +388,14 @@ describe('reanchoredFlow', () => {
 
   const left = nodeBoxAt(0, 0);
   const right = nodeBoxAt(400, 0);
+  const badged = {
+    ...settled,
+    badge: { count: 1, severity: 'high', secondary: 0 },
+    label: {
+      ...settled.label,
+      badge: { x: settled.label.name.at.x, y: 30 },
+    },
+  } as const;
 
   it('gives the settled flow back where each box is where the model has it', () => {
     expect(reanchoredFlow(settled, left, right)).toEqual(settled);
@@ -413,9 +423,62 @@ describe('reanchoredFlow', () => {
     ]);
   });
 
-  it('keeps the name and the badge where the whole diagram settled them', () => {
-    expect(reanchoredFlow(settled, nodeBoxAt(0, 200), right).label).toBe(
-      settled.label,
+  it('moves the name and badge with the live path', () => {
+    const moved = reanchoredFlow(badged, nodeBoxAt(0, 200), right);
+    expect(moved.label.name.at).not.toEqual(settled.label.name.at);
+    expect(moved.label.badge).not.toEqual(badged.label.badge);
+  });
+
+  it('matches a settled label when one endpoint moves', () => {
+    const moved = reanchoredFlow(settled, nodeBoxAt(0, 200), right);
+    const nodes = layoutOf(
+      twoBoxDiagram(flowBetween(attached('el-left'), attached('el-right'), [])),
+    ).nodes.map((node) =>
+      node.id === elementId('el-left')
+        ? { ...node, position: { x: 0, y: 200 } }
+        : node,
+    );
+    expect(moved.label).toEqual(
+      flowLabelPlacements(
+        [
+          {
+            id: moved.id,
+            name: moved.name,
+            badge: moved.badge,
+            points: [moved.source, ...moved.waypoints, moved.target],
+          },
+        ],
+        nodes,
+      )[0],
+    );
+  });
+
+  it('translates the path, name and badge when both boxes move together', () => {
+    const offset = { x: 80, y: 120 };
+    const moved = reanchoredFlow(
+      badged,
+      nodeBoxAt(offset.x, offset.y),
+      nodeBoxAt(400 + offset.x, offset.y),
+    );
+    expect(moved.source).toEqual({
+      x: badged.source.x + offset.x,
+      y: badged.source.y + offset.y,
+    });
+    expect(moved.target).toEqual({
+      x: badged.target.x + offset.x,
+      y: badged.target.y + offset.y,
+    });
+    expect(moved.label.name.at).toEqual({
+      x: badged.label.name.at.x + offset.x,
+      y: badged.label.name.at.y + offset.y,
+    });
+    expect(moved.label.badge).toEqual(
+      badged.label.badge === undefined
+        ? undefined
+        : {
+            x: badged.label.badge.x + offset.x,
+            y: badged.label.badge.y + offset.y,
+          },
     );
   });
 
@@ -462,6 +525,48 @@ describe('reanchoredFlow', () => {
     expect(reanchoredFlow(crossing, left, nodeBoxAt(400, 200)).target).toEqual({
       x: 400,
       y: 250,
+    });
+  });
+});
+
+describe('layoutDuringMove', () => {
+  it('moves selected flow waypoints with the live group', () => {
+    const settled = layoutOf(
+      twoBoxDiagram(
+        flowBetween(attached('el-left'), attached('el-right'), [
+          { x: 250, y: 180 },
+        ]),
+      ),
+    );
+    const offset = { x: 60, y: 45 };
+    const boxes = new Map(
+      settled.nodes.map((node) => [
+        node.id,
+        {
+          position: {
+            x: node.position.x + offset.x,
+            y: node.position.y + offset.y,
+          },
+          size: node.size,
+        },
+      ]),
+    );
+
+    const moved = layoutDuringMove(
+      settled,
+      boxes,
+      new Set(settled.edges.map((edge) => edge.id)),
+      offset,
+    );
+
+    expect(moved.edges[0].waypoints).toEqual([{ x: 310, y: 225 }]);
+    expect(moved.edges[0].source).toEqual({
+      x: settled.edges[0].source.x + offset.x,
+      y: settled.edges[0].source.y + offset.y,
+    });
+    expect(moved.edges[0].target).toEqual({
+      x: settled.edges[0].target.x + offset.x,
+      y: settled.edges[0].target.y + offset.y,
     });
   });
 });

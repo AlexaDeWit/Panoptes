@@ -1,4 +1,9 @@
-import type { CanvasLayout, CanvasNode } from '@saerskriven/canvas';
+import {
+  boxElementStrokeInsets,
+  type BoxElementKind,
+  type CanvasLayout,
+  type CanvasNode,
+} from '@saerskriven/canvas';
 import {
   generateElementId,
   type Element,
@@ -50,6 +55,9 @@ const nominalSizes = {
 /** The screen-pixel movement below which a placement remains a click. */
 export const placementClickDistance = 4;
 
+/** The smallest outer extent that can hold the name field and its focus ring. */
+export const minimumDragExtent = 40;
+
 /** The default size of an element placed by a click or by Enter. */
 export function defaultSize(kind: ElementTool): Size {
   return nominalSizes[kind];
@@ -72,29 +80,46 @@ export function centredPlacement(
 
 /**
  * An element sized between opposite corners. A process takes the shorter
- * side, so the box it gives the circular glyph is square. A zero side is
- * kept drawable at one model unit rather than asking the model for a zero
- * extent it refuses.
+ * side. A rectangle too small to hold its editor is not a drag placement.
  */
 export function draggedPlacement(
   kind: Exclude<ElementTool, 'boundary-curve'>,
   from: Point,
   to: Point,
-): { readonly position: Point; readonly size: Size } {
+): { readonly position: Point; readonly size: Size } | undefined {
   const width = Math.max(Math.abs(to.x - from.x), 1);
   const height = Math.max(Math.abs(to.y - from.y), 1);
+  if (width < minimumDragExtent || height < minimumDragExtent) {
+    return undefined;
+  }
   if (kind === 'process') {
     const side = Math.min(width, height);
-    return {
+    return insideStroke(kind, {
       position: {
         x: to.x < from.x ? from.x - side : from.x,
         y: to.y < from.y ? from.y - side : from.y,
       },
       size: { width: side, height: side },
-    };
+    });
   }
-  return {
+  return insideStroke(kind, {
     position: { x: Math.min(from.x, to.x), y: Math.min(from.y, to.y) },
+    size: { width, height },
+  });
+}
+
+function insideStroke(
+  kind: BoxElementKind,
+  outer: { readonly position: Point; readonly size: Size },
+): { readonly position: Point; readonly size: Size } {
+  const inset = boxElementStrokeInsets(kind);
+  const width = Math.max(outer.size.width - inset.left - inset.right, 1);
+  const height = Math.max(outer.size.height - inset.top - inset.bottom, 1);
+  return {
+    position: {
+      x: outer.position.x + (outer.size.width - width) / 2,
+      y: outer.position.y + (outer.size.height - height) / 2,
+    },
     size: { width, height },
   };
 }
@@ -108,7 +133,7 @@ export function pointerPlacement(
 ): { readonly position: Point; readonly size: Size } {
   return screenDistance < placementClickDistance
     ? centredPlacement(kind, from)
-    : draggedPlacement(kind, from, to);
+    : (draggedPlacement(kind, from, to) ?? centredPlacement(kind, from));
 }
 
 /** The default boundary curve centred on a click or on the viewport. */

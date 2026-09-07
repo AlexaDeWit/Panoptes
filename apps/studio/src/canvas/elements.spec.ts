@@ -18,6 +18,7 @@ import {
   freshBoundaryCurve,
   freshElement,
   freshFlow,
+  minimumDragExtent,
   placeholderNames,
   pointerPlacement,
 } from './elements.js';
@@ -36,14 +37,18 @@ describe('placement geometry', () => {
     });
   });
 
-  it.each(['actor', 'store', 'boundary-box'] as const)(
+  it.each([
+    ['actor', { x: 21, y: 31 }, { width: 158, height: 58 }],
+    ['store', { x: 20, y: 31.25 }, { width: 160, height: 57.5 }],
+    ['boundary-box', { x: 21, y: 31 }, { width: 158, height: 58 }],
+  ] as const)(
     'draws a %s between either ordering of its corners',
-    (kind) => {
+    (kind, position, size) => {
       expect(
         draggedPlacement(kind, { x: 180, y: 90 }, { x: 20, y: 30 }),
       ).toEqual({
-        position: { x: 20, y: 30 },
-        size: { width: 160, height: 60 },
+        position,
+        size,
       });
     },
   );
@@ -52,8 +57,8 @@ describe('placement geometry', () => {
     expect(
       draggedPlacement('process', { x: 100, y: 100 }, { x: 20, y: 40 }),
     ).toEqual({
-      position: { x: 40, y: 40 },
-      size: { width: 60, height: 60 },
+      position: { x: 41, y: 41 },
+      size: { width: 58, height: 58 },
     });
   });
 
@@ -61,34 +66,34 @@ describe('placement geometry', () => {
     [
       { x: 180, y: 160 },
       { x: 120, y: 100 },
-      { x: 120, y: 100 },
+      { x: 121, y: 101 },
     ],
     [
       { x: 100, y: 160 },
       { x: 160, y: 100 },
-      { x: 100, y: 100 },
+      { x: 101, y: 101 },
     ],
     [
       { x: 180, y: 100 },
       { x: 120, y: 160 },
-      { x: 120, y: 100 },
+      { x: 121, y: 101 },
     ],
     [
       { x: 100, y: 100 },
       { x: 160, y: 160 },
-      { x: 100, y: 100 },
+      { x: 101, y: 101 },
     ],
   ])('anchors a process in every drag direction', (from, to, position) => {
     expect(draggedPlacement('process', from, to)).toEqual({
       position,
-      size: { width: 60, height: 60 },
+      size: { width: 58, height: 58 },
     });
   });
 
-  it('keeps a one-dimensional drag drawable', () => {
+  it('refuses a drag rectangle too small to hold its editor', () => {
     expect(
-      draggedPlacement('store', { x: 0, y: 0 }, { x: 50, y: 0 }).size,
-    ).toEqual({ width: 50, height: 1 });
+      draggedPlacement('store', { x: 0, y: 0 }, { x: 50, y: 0 }),
+    ).toBeUndefined();
   });
 
   it('treats movement below four screen pixels as a click', () => {
@@ -97,12 +102,22 @@ describe('placement geometry', () => {
     ).toEqual(centredPlacement('actor', { x: 100, y: 80 }));
   });
 
-  it('treats movement at four screen pixels as a drag', () => {
+  it('keeps a small rectangle as a default-sized click placement', () => {
     expect(
       pointerPlacement('actor', { x: 100, y: 80 }, { x: 104, y: 84 }, 4),
+    ).toEqual(centredPlacement('actor', { x: 100, y: 80 }));
+  });
+
+  it('accepts a rectangle at the minimum outer extent', () => {
+    expect(
+      draggedPlacement(
+        'actor',
+        { x: 0, y: 0 },
+        { x: minimumDragExtent, y: minimumDragExtent },
+      ),
     ).toEqual({
-      position: { x: 100, y: 80 },
-      size: { width: 4, height: 4 },
+      position: { x: 1, y: 1 },
+      size: { width: 38, height: 38 },
     });
   });
 });

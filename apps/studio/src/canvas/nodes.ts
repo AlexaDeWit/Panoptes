@@ -3,6 +3,7 @@ import {
   isBoundary,
   toReactFlowEdges,
   toReactFlowNodes,
+  type CanvasEdge,
   type CanvasFlowEdge,
   type CanvasFlowNode,
   type CanvasFreeEndNode,
@@ -101,5 +102,41 @@ export function withMeasurements(
   return nodes.map((node) => {
     const extent = measured.get(node.id);
     return extent === undefined ? node : { ...node, measured: extent };
+  });
+}
+
+/** Replaces only the React Flow edges whose transient geometry changed. */
+export function withLiveEdges(
+  edges: readonly CanvasFlowEdge[],
+  layout: CanvasLayout,
+): CanvasFlowEdge[] {
+  const live = new Map<string, CanvasEdge>(
+    layout.edges.map((edge) => [edge.id, edge]),
+  );
+  const boxes = new Map(
+    layout.nodes.map((node) => [
+      node.id,
+      { position: node.position, size: node.size },
+    ]),
+  );
+  return edges.map((edge) => {
+    const next = live.get(edge.id);
+    return next === undefined || next === edge.data?.edge
+      ? edge
+      : {
+          ...edge,
+          data: {
+            edge: next,
+            boxes,
+            sourceBox:
+              next.sourceElement === undefined
+                ? undefined
+                : boxes.get(next.sourceElement),
+            targetBox:
+              next.targetElement === undefined
+                ? undefined
+                : boxes.get(next.targetElement),
+          },
+        };
   });
 }

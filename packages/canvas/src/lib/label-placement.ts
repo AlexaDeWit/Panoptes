@@ -227,6 +227,50 @@ export type FlowLabelPlacement = {
 };
 
 /**
+ * Moves a settled flow label with the segment that carries it. The nearest
+ * old segment supplies the fraction, side, and standoff. The matching new
+ * segment adds the text or badge reach in its new direction. A drag can then
+ * change the path without running the diagram-wide collision search.
+ */
+export function movedFlowLabel(
+  label: FlowLabelPlacement,
+  badge: ThreatBadge | undefined,
+  from: readonly [Point, ...Point[]],
+  to: readonly [Point, ...Point[]],
+): FlowLabelPlacement {
+  const oldSegments = segmentsOfPolyline(from);
+  const newSegments = segmentsOfPolyline(to);
+  if (oldSegments.length === 0 || oldSegments.length !== newSegments.length) {
+    return label;
+  }
+  const nameRule = wrappedTextStyles[label.name.textStyle];
+  const nameExtent = textExtent(
+    wrapText(label.name.text, nameRule.fontSize, label.name.width),
+    nameRule.fontSize,
+  );
+  return {
+    name: {
+      ...label.name,
+      at: movedWithNearestSegment(
+        label.name.at,
+        oldSegments,
+        newSegments,
+        (direction) => projectedHalfExtent(nameExtent, direction),
+      ),
+    },
+    badge:
+      label.badge === undefined || badge === undefined
+        ? undefined
+        : movedWithNearestSegment(
+            label.badge,
+            oldSegments,
+            newSegments,
+            (direction) => badgeReach(badge, direction),
+          ),
+  };
+}
+
+/**
  * What placing one flow's label needs of that flow: which flow it is, what
  * its name says, the badge it carries, and the points its line runs through.
  * A flow has at least the one point its label hangs beside, so the type
@@ -482,20 +526,20 @@ function cheapestCandidate(flow: FlowGeometry, drawn: Obstacles): Candidate {
   return best;
 }
 
-function candidatesOf(
+function* candidatesOf(
   flow: FlowGeometry,
   segments: readonly Segment[],
   middle: Point,
-): Candidate[] {
-  return segments.flatMap((segment) =>
-    anchorFractions.flatMap((fraction) =>
-      standoffSteps.flatMap((step) =>
-        normalSides.map((side) =>
-          candidateAt(flow, segment, fraction, step, side, middle),
-        ),
-      ),
-    ),
-  );
+): Generator<Candidate> {
+  for (const segment of segments) {
+    for (const fraction of anchorFractions) {
+      for (const step of standoffSteps) {
+        for (const side of normalSides) {
+          yield candidateAt(flow, segment, fraction, step, side, middle);
+        }
+      }
+    }
+  }
 }
 
 function candidateAt(
@@ -564,11 +608,17 @@ function boxCollisions(box: Box | undefined, solids: Solids): number {
   if (box === undefined) {
     return 0;
   }
-  return (
-    solids.boxes.filter((other) => boxesOverlap(box, other)).length +
-    solids.circles.filter((circle) => boxMeetsCircle(box, circle)).length +
-    solids.lines.filter((line) => segmentMeetsBox(line, box)).length
-  );
+  let collisions = 0;
+  for (const other of solids.boxes) {
+    collisions += boxesOverlap(box, other) ? 1 : 0;
+  }
+  for (const circle of solids.circles) {
+    collisions += boxMeetsCircle(box, circle) ? 1 : 0;
+  }
+  for (const line of solids.lines) {
+    collisions += segmentMeetsBox(line, box) ? 1 : 0;
+  }
+  return collisions;
 }
 
 function drawnObstacles(
@@ -681,6 +731,69 @@ function alongSegment(segment: Segment, fraction: number): Point {
   return {
     x: segment.from.x + (segment.to.x - segment.from.x) * fraction,
     y: segment.from.y + (segment.to.y - segment.from.y) * fraction,
+  };
+}
+
+function movedWithNearestSegment(
+  point: Point,
+  from: readonly Segment[],
+  to: readonly Segment[],
+  reach: (direction: Point) => number,
+): Point {
+  let nearest = projectedOn(from[0], point);
+  let index = 0;
+  for (let candidate = 1; candidate < from.length; candidate += 1) {
+    const projected = projectedOn(from[candidate], point);
+    if (projected.distance < nearest.distance) {
+      nearest = projected;
+      index = candidate;
+    }
+  }
+  const side = nearest.signedDistance < 0 ? -1 : 1;
+  const oldDirection = scaledBy(labelNormal(from[index]), side);
+  const newDirection = scaledBy(labelNormal(to[index]), side);
+  const standoff = Math.abs(nearest.signedDistance) - reach(oldDirection);
+  const next = to[index];
+  return offsetBy(
+    alongSegment(next, nearest.fraction),
+    newDirection,
+    standoff + reach(newDirection),
+  );
+}
+
+function projectedOn(
+  segment: Segment,
+  point: Point,
+): {
+  readonly distance: number;
+  readonly fraction: number;
+  readonly signedDistance: number;
+} {
+  const run = {
+    x: segment.to.x - segment.from.x,
+    y: segment.to.y - segment.from.y,
+  };
+  const lengthSquared = run.x * run.x + run.y * run.y;
+  const fraction =
+    lengthSquared === 0
+      ? 0
+      : Math.max(
+          0,
+          Math.min(
+            1,
+            ((point.x - segment.from.x) * run.x +
+              (point.y - segment.from.y) * run.y) /
+              lengthSquared,
+          ),
+        );
+  const at = alongSegment(segment, fraction);
+  const normal = labelNormal(segment);
+  const signedDistance =
+    (point.x - at.x) * normal.x + (point.y - at.y) * normal.y;
+  return {
+    distance: Math.hypot(point.x - at.x, point.y - at.y),
+    fraction,
+    signedDistance,
   };
 }
 

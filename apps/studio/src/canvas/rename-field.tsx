@@ -144,7 +144,7 @@ function RenamingNodeBody(props: NodeProps<CanvasFlowNode>) {
 
   return (
     <>
-      <CanvasNodeBody {...props} />
+      <CanvasNodeBody {...props} controlsVisible={!renaming} />
       {renaming && (
         <div
           className={`${styles.overNode} nodrag nopan`}

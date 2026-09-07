@@ -3,7 +3,12 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { everyGlyphModel } from './canvas.fixtures.js';
-import { ElementGlyph, FlowGlyph, PlacedElementGlyph } from './glyphs.js';
+import {
+  boxElementStrokeInsets,
+  ElementGlyph,
+  FlowGlyph,
+  PlacedElementGlyph,
+} from './glyphs.js';
 import { layoutDiagram, type CanvasEdge, type CanvasNode } from './layout.js';
 import {
   boundaryStrokeWidth,
@@ -19,6 +24,7 @@ import {
   looseLabelWidth,
   textExtent,
 } from './typography.js';
+import { strokeWidths } from './tokens.js';
 
 const layout = layoutDiagram(everyGlyphModel.diagrams[0], everyGlyphModel);
 
@@ -60,6 +66,21 @@ const sources = sourceFiles(packageSource).map((path) => ({
 }));
 
 describe('ElementGlyph, taking its extent from the model', () => {
+  it('names the stroke outside each box outline', () => {
+    expect(boxElementStrokeInsets('actor')).toEqual({
+      top: strokeWidths.outline / 2,
+      right: strokeWidths.outline / 2,
+      bottom: strokeWidths.outline / 2,
+      left: strokeWidths.outline / 2,
+    });
+    expect(boxElementStrokeInsets('store')).toEqual({
+      top: strokeWidths.store / 2,
+      right: 0,
+      bottom: strokeWidths.store / 2,
+      left: 0,
+    });
+  });
+
   it('draws an actor as a rectangle of the model width and height', () => {
     const node = nodeNamed('el-client');
     expect(glyphOf('el-client')).toContain(

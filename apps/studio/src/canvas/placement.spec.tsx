@@ -92,8 +92,8 @@ describe('box placement gestures', () => {
     });
     const shown = boxPreview(result.current);
     expect(shown).toMatchObject({
-      position: { x: 100, y: 80 },
-      size: { width: 80, height: 60 },
+      position: { x: 101, y: 81 },
+      size: { width: 78, height: 58 },
     });
 
     act(() => {
@@ -178,8 +178,8 @@ describe('box placement gestures', () => {
       result.current.pointerMove(pointer({ x: 180, y: 140 }, 1));
     });
     expect(boxPreview(result.current)).toMatchObject({
-      position: { x: 100, y: 80 },
-      size: { width: 80, height: 60 },
+      position: { x: 101, y: 81 },
+      size: { width: 78, height: 58 },
     });
 
     act(() => {

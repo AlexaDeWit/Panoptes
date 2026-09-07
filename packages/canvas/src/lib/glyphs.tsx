@@ -7,9 +7,29 @@ import type { CanvasEdge, CanvasNode, CanvasNodeKind } from './layout.js';
 import { svgNumber } from './numbers.js';
 import { arrowheadPath, polylinePath, smoothPath, translate } from './paths.js';
 import { canvasClassNames } from './stylesheet.js';
+import { strokeWidths } from './tokens.js';
 
 /** An element kind whose model geometry is a position and size. */
 export type BoxElementKind = Exclude<CanvasNodeKind, 'boundary-curve' | 'text'>;
+
+/** How far a box element's stroke reaches past its model box. */
+export function boxElementStrokeInsets(kind: BoxElementKind): {
+  readonly top: number;
+  readonly right: number;
+  readonly bottom: number;
+  readonly left: number;
+} {
+  const halfStroke =
+    (kind === 'store' ? strokeWidths.store : strokeWidths.outline) / 2;
+  return kind === 'store'
+    ? { top: halfStroke, right: 0, bottom: halfStroke, left: 0 }
+    : {
+        top: halfStroke,
+        right: halfStroke,
+        bottom: halfStroke,
+        left: halfStroke,
+      };
+}
 
 /** One box element's outline in its own coordinates. */
 export function BoxElementGlyph({

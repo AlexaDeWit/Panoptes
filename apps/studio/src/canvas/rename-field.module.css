@@ -12,6 +12,14 @@
   pointer-events: all;
 }
 
+.overNode {
+  min-width: 0;
+}
+
+.overNode .field {
+  padding-block: 0;
+}
+
 .field {
   box-sizing: border-box;
   width: 100%;

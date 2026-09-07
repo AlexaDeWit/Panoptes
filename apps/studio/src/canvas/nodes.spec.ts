@@ -14,6 +14,7 @@ import {
   elementIds,
   nodesById,
   withMeasurements,
+  withLiveEdges,
 } from './nodes.js';
 
 const layout = layoutDiagram(canvasModel.diagrams[0], canvasModel);
@@ -103,5 +104,25 @@ describe('withMeasurements', () => {
   it('leaves a node nothing was measured for as the model gave it', () => {
     const [first] = withMeasurements(diagramGraph(layout, []).nodes, []);
     expect(first.measured).toBeUndefined();
+  });
+});
+
+describe('withLiveEdges', () => {
+  it('reuses settled edges and replaces changed geometry', () => {
+    const graph = diagramGraph(layout, []);
+    const changed = {
+      ...layout,
+      edges: layout.edges.map((edge, index) =>
+        index === 0
+          ? { ...edge, source: { x: edge.source.x + 10, y: edge.source.y } }
+          : edge,
+      ),
+    };
+
+    const live = withLiveEdges(graph.edges, changed);
+
+    expect(live[0]).not.toBe(graph.edges[0]);
+    expect(live[0].data?.edge).toBe(changed.edges[0]);
+    expect(live[1]).toBe(graph.edges[1]);
   });
 });

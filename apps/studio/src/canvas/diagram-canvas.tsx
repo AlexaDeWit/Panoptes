@@ -1,5 +1,6 @@
 import {
   gridSpacing,
+  layoutAtReactFlowNodes,
   themedCanvasStylesheet,
   type CanvasFlowEdge,
 } from '@saerskriven/canvas';
@@ -46,6 +47,7 @@ import {
   elementIds,
   nodesById,
   withMeasurements,
+  withLiveEdges,
   type DiagramNode,
 } from './nodes.js';
 import { renamingEdgeTypes, renamingNodeTypes } from './rename-field.js';
@@ -64,6 +66,8 @@ import { ZoomCluster } from './zoom-cluster.js';
 import styles from './diagram-canvas.module.css';
 
 const deleteKeys = new Set(['Delete', 'Backspace']);
+
+const exactLabelDelay = 50;
 
 type ScreenPoint = { readonly x: number; readonly y: number };
 
@@ -108,6 +112,8 @@ export function DiagramCanvas() {
   const positions = useMemo(() => nodesById(layout), [layout]);
   const [onScreen, setOnScreen] = useState<DiagramNode[]>(graph.nodes);
   const [folded, setFolded] = useState<DiagramNode[]>(graph.nodes);
+  const [exactEdges, setExactEdges] = useState<CanvasFlowEdge[] | undefined>();
+  const [moving, setMoving] = useState(false);
   const surface = useRef<HTMLDivElement>(null);
   const boxSelecting = useRef(false);
   const boxStart = useRef<ScreenPoint | undefined>(undefined);
@@ -121,7 +127,25 @@ export function DiagramCanvas() {
   if (folded !== graph.nodes) {
     setFolded(graph.nodes);
     setOnScreen(withMeasurements(graph.nodes, onScreen));
+    setExactEdges(undefined);
   }
+
+  useEffect(() => {
+    if (!moving) {
+      return undefined;
+    }
+    const timer = globalThis.setTimeout(() => {
+      setExactEdges(
+        withLiveEdges(
+          graph.edges,
+          layoutAtReactFlowNodes(layout, onScreen, selection),
+        ),
+      );
+    }, exactLabelDelay);
+    return () => {
+      globalThis.clearTimeout(timer);
+    };
+  }, [graph.edges, layout, moving, onScreen, selection]);
 
   useEffect(() => {
     if (revealed.current === selected) {
@@ -143,7 +167,30 @@ export function DiagramCanvas() {
   }, [positions, selected]);
 
   const onNodesChange = (changes: NodeChange<DiagramNode>[]): void => {
-    setOnScreen((current) => applyNodeChanges(changes, current));
+    const next = applyNodeChanges(changes, onScreen);
+    setOnScreen(next);
+    setExactEdges(undefined);
+    const active = changes.some(
+      (change) =>
+        (change.type === 'position' && change.dragging === true) ||
+        (change.type === 'dimensions' && change.resizing === true),
+    );
+    const finished = changes.some(
+      (change) =>
+        (change.type === 'position' && change.dragging === false) ||
+        (change.type === 'dimensions' && change.resizing === false),
+    );
+    if (active || finished) {
+      setMoving(active);
+    }
+    if (finished) {
+      setExactEdges(
+        withLiveEdges(
+          graph.edges,
+          layoutAtReactFlowNodes(layout, next, selection),
+        ),
+      );
+    }
     applyChanges(changes, elements, positions);
   };
 
@@ -298,7 +345,7 @@ export function DiagramCanvas() {
         autoPanOnSelection={false}
         connectionMode={ConnectionMode.Loose}
         deleteKeyCode={null}
-        edges={graph.edges}
+        edges={exactEdges ?? graph.edges}
         edgeTypes={renamingEdgeTypes}
         elementsSelectable={mode.active === 'select'}
         isValidConnection={betweenTwoElements}

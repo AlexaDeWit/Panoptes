@@ -13,10 +13,12 @@ import {
   flowEndNodeId,
   freeEndNodeKind,
   freeEndNodes,
+  layoutAtReactFlowNodes,
   toReactFlowEdges,
   toReactFlowNodes,
   type CanvasFlowEdge,
   type CanvasFlowNode,
+  type CanvasEdgeData,
 } from './react-flow.js';
 
 const layout = layoutDiagram(everyGlyphModel.diagrams[0], everyGlyphModel);
@@ -45,7 +47,8 @@ const nodeProps = (node: CanvasNode) => ({
 });
 
 const edgeProps = (
-  data: { readonly edge: (typeof layout.edges)[number] } | undefined,
+  data: CanvasEdgeData | undefined,
+  selected = false,
 ): EdgeProps<CanvasFlowEdge> => ({
   id: 'el-request',
   source: 'el-client',
@@ -56,6 +59,7 @@ const edgeProps = (
   targetY: 0,
   sourcePosition: Position.Right,
   targetPosition: Position.Left,
+  selected,
   data,
 });
 
@@ -75,12 +79,13 @@ const bodyMarkup = (
   );
 
 const edgeMarkup = (
-  data: { readonly edge: (typeof layout.edges)[number] } | undefined,
+  data: CanvasEdgeData | undefined,
   nodes: CanvasFlowNode[] = [],
+  selected = false,
 ): string =>
   renderToStaticMarkup(
     <ReactFlowProvider initialNodes={nodes}>
-      <CanvasEdgeBody {...edgeProps(data)} />
+      <CanvasEdgeBody {...edgeProps(data, selected)} />
     </ReactFlowProvider>,
   );
 
@@ -114,7 +119,7 @@ describe('CanvasNodeBody', () => {
   it('sizes its surface from the model and measures nothing', () => {
     const node = nodeNamed('el-client');
     expect(bodyMarkup(node)).toContain(
-      `<svg width="${node.size.width}" height="${node.size.height}"`,
+      `<svg width="${node.size.width}" height="${node.size.height}" style="display:block"`,
     );
   });
 
@@ -173,9 +178,8 @@ describe('CanvasEdgeBody', () => {
   const settled = 'd="M 200 100 L 240 100 L 280 120"';
 
   it('draws the flow from the geometry the layout resolved', () => {
-    expect(
-      edgeMarkup({ edge: layout.edges[0] }, nodesWith('el-client', 0)),
-    ).toContain(settled);
+    const data = toReactFlowEdges(layout)[0].data;
+    expect(edgeMarkup(data, nodesWith('el-client', 0))).toContain(settled);
   });
 
   it("adds React Flow's wider interaction path around the flow", () => {
@@ -185,13 +189,41 @@ describe('CanvasEdgeBody', () => {
   });
 
   it('anchors an end on the node React Flow has, not the model position', () => {
-    expect(
-      edgeMarkup({ edge: layout.edges[0] }, nodesWith('el-client', 200)),
-    ).toContain('d="M 120 260 L 240 100 L 280 120"');
+    const data = toReactFlowEdges(layout)[0].data;
+    expect(edgeMarkup(data, nodesWith('el-client', 200))).toContain(
+      'd="M 120 260 L 240 100 L 280 120"',
+    );
   });
 
   it('falls back on the settled geometry where React Flow has no node', () => {
     expect(edgeMarkup({ edge: layout.edges[0] })).toContain(settled);
+  });
+
+  it('draws changed geometry from the transient layout', () => {
+    const moved = {
+      ...layout.edges[0],
+      source: { x: 120, y: 260 },
+    };
+    expect(edgeMarkup({ edge: moved })).toContain(
+      'd="M 120 260 L 240 100 L 280 120"',
+    );
+  });
+
+  it('moves a selected flow with an unrelated dragged node', () => {
+    const nodes = toReactFlowNodes(layout).map((node) =>
+      node.id === elementId('el-note')
+        ? {
+            ...node,
+            position: { x: node.position.x + 40, y: node.position.y + 25 },
+            selected: true,
+          }
+        : node,
+    );
+    const data = toReactFlowEdges(layout)[0].data;
+
+    expect(edgeMarkup(data, nodes, true)).toContain(
+      'd="M 200 100 L 280 125 L 280 120"',
+    );
   });
 
   it('draws nothing where React Flow hands it an edge with no data', () => {
@@ -275,6 +307,43 @@ describe('toReactFlowEdges', () => {
     expect(converted?.source).toBe(
       flowEndNodeId(elementId('el-probe'), 'source'),
     );
+  });
+});
+
+describe('layoutAtReactFlowNodes', () => {
+  it('moves selected flow waypoints by the live group offset', () => {
+    const offset = { x: 50, y: 40 };
+    const movedNodes = [elementId('el-client'), elementId('el-api')];
+    const nodes = toReactFlowNodes(layout).map((node) =>
+      node.id === movedNodes[0]
+        ? {
+            ...node,
+            position: {
+              x: node.position.x + offset.x,
+              y: node.position.y + offset.y,
+            },
+          }
+        : node,
+    );
+    const edge = layout.edges[0];
+
+    const moved = layoutAtReactFlowNodes(layout, nodes, [
+      ...movedNodes,
+      edge.id,
+    ]);
+
+    expect(moved.edges[0].waypoints).toEqual(
+      edge.waypoints.map((point) => ({
+        x: point.x + offset.x,
+        y: point.y + offset.y,
+      })),
+    );
+    expect(
+      moved.nodes.find((node) => node.id === movedNodes[1])?.position,
+    ).toEqual({
+      x: nodeNamed('el-api').position.x + offset.x,
+      y: nodeNamed('el-api').position.y + offset.y,
+    });
   });
 });
 

@@ -67,15 +67,11 @@ one a render closed over, because React Flow reports a click that moves the
 selection between a node and a flow as two synchronous calls with no render
 between them.
 
-The flows follow that in-flight position without passing through here. A
-dragged node's position reaches React Flow's own node store as the canvas
-folds each frame in, and the flow edge reads it there
-([the drawing primitives](../../../../packages/canvas/README.md)), so a line
-is drawn to where its element is on every frame while the store still hears of
-the move once. Only the moved node's own flows are redrawn, and only their two
-anchors move: the names and the badges are placed over the whole diagram at
-once, which is a pass the canvas takes at the drop rather than per frame, so
-they stay where they were until then.
+Each flow reads its endpoint nodes during a drag. Selected flow waypoints move
+by the group offset. Names and badges keep their place on the moving segment.
+When pointer movement pauses, the canvas runs the collision search for the
+whole transient layout. Pointer-up runs it once more before the model store
+receives its one action.
 
 ## Editing
 
@@ -101,8 +97,11 @@ the region below, which speaks only for edits that landed.
   Pointer-down shows that geometry through the element's shared outline
   primitive. A drag updates it between opposite corners. A process takes the
   shorter axis and anchors the resulting square in the drag direction.
-  Movement under four screen pixels remains the centred default at every
-  zoom. Pointer-up commits the last previewed position and size as one edit.
+  Drag geometry reserves the outline's half-stroke on each exposed side.
+  The rendered ink and the selection frame stay inside the pointer rectangle.
+  Movement under four screen pixels remains the centred default. A rectangle
+  under forty model units on either axis does too, since it cannot hold the
+  name field and its focus ring. Pointer-up commits one edit.
   Pointer cancellation, Escape, a tool change or a model replacement drops
   the preview without an edit. Enter places the default at the viewport centre.
   A placed element arrives with a placeholder name, selected, with that name
