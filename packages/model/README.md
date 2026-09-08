@@ -86,3 +86,8 @@ build. Who may import it is a workspace rule, stated in
 themselves, regenerated and checked on every test run.
 
 Unit tests: `pnpm nx test @saerskriven/model`.
+
+`setFlowWaypoints` replaces one flow's ordered intermediate points. It
+preserves the endpoints and metadata, rejects another element kind, and
+returns the same model for an unchanged list. The studio uses that identity
+to leave history and dirty state unchanged for a route with no edits.

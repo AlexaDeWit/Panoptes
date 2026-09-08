@@ -33,6 +33,10 @@ export type Action = Data.TaggedEnum<{
   };
   RenameElement: { readonly elementId: ElementId; readonly name: string };
   EditNote: { readonly elementId: ElementId; readonly text: string };
+  SetFlowWaypoints: {
+    readonly elementId: ElementId;
+    readonly waypoints: readonly Point[];
+  };
   AddThreat: { readonly threat: Threat };
   RemoveThreat: { readonly threatId: ThreatId };
   ReplaceThreat: { readonly threat: Threat };

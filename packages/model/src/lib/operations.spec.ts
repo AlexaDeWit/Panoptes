@@ -10,6 +10,7 @@ import {
   removeElement,
   renameElement,
   resizeElement,
+  setFlowWaypoints,
 } from './operations.js';
 import { parseModel, type Model } from './parse.js';
 
@@ -90,6 +91,44 @@ const cache = elementSchema.parse(storeInput);
 const writeFlow = elementSchema.parse(flowInput);
 const note = elementSchema.parse(noteInput);
 const withNote = modelOf(addElement(base, mainDiagram, note));
+
+describe('setFlowWaypoints', () => {
+  const before = modelOf(addElement(base, mainDiagram, writeFlow));
+  it('preserves the flow metadata and model while changing ordered route points', () => {
+    const snapshot = structuredClone(before);
+    const waypoints = [
+      { x: -10.5, y: 30 },
+      { x: 400, y: 100 },
+    ];
+    const next = modelOf(setFlowWaypoints(before, writeFlow.id, waypoints));
+    expect(flowIn(next, writeFlow.id)).toEqual({ ...writeFlow, waypoints });
+    expect(before).toEqual(snapshot);
+    expect(next.threats).toBe(before.threats);
+    waypoints[0].x = 999;
+    expect(flowIn(next, writeFlow.id).waypoints[0].x).toBe(-10.5);
+    expect(
+      modelOf(
+        setFlowWaypoints(
+          next,
+          writeFlow.id,
+          flowIn(next, writeFlow.id).waypoints,
+        ),
+      ),
+    ).toBe(next);
+    expect(
+      flowIn(modelOf(setFlowWaypoints(next, writeFlow.id, [])), writeFlow.id)
+        .waypoints,
+    ).toEqual([]);
+  });
+  it('refuses missing elements and other element kinds', () => {
+    expect(errorOf(setFlowWaypoints(before, elementId('missing'), []))).toEqual(
+      OperationFailure.UnknownElement({ elementId: elementId('missing') }),
+    );
+    expect(errorOf(setFlowWaypoints(withNote, note.id, []))).toEqual(
+      OperationFailure.NotFlowElement({ elementId: note.id }),
+    );
+  });
+});
 
 describe('addElement', () => {
   it('adds a node to the named diagram', () => {

@@ -124,6 +124,7 @@ function describeOperation(failure: OperationFailure): string {
     NotResizable: ({ elementId }) => `Element ${elementId} has no size to set.`,
     NotTextElement: ({ elementId }) =>
       `Element ${elementId} is not a canvas note.`,
+    NotFlowElement: ({ elementId }) => `Element ${elementId} is not a flow.`,
     EmptyName: ({ elementId }) =>
       `Element ${elementId} cannot be left without a name.`,
     RefusedCharacter: ({ elementId }) =>

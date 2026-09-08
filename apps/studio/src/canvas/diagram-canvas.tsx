@@ -51,7 +51,8 @@ import {
   gestureSelection,
 } from './changes.js';
 import { beginEditingText, drawnElement, removeSelected } from './edits.js';
-import { currentLayout } from './layout.js';
+import { useFlowBends } from './flow-bends.js';
+import { FlowBendControls } from './flow-bend-controls.js';
 import {
   canvasEdgesById,
   diagramGraph,
@@ -133,7 +134,8 @@ function containedFlows(
 
 /** The controlled diagram canvas and its floating editing controls. */
 export function DiagramCanvas() {
-  const layout = useModelStore(currentLayout);
+  const bends = useFlowBends();
+  const { layout } = bends;
   const selection = useModelStore(selectedElements);
   const selected = useModelStore(selectedElement);
   const keyboardDescriptionId = useId();
@@ -468,6 +470,7 @@ export function DiagramCanvas() {
       >
         <Background gap={gridSpacing} variant={BackgroundVariant.Lines} />
         <PlacementPreview preview={placement.preview} />
+        <FlowBendControls bends={bends} />
         <FitOnOpen />
       </ReactFlow>
       <Toolbox />

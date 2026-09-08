@@ -8,8 +8,8 @@ const registry = readFileSync(
 );
 
 const asChordCall = (chord: string): string => {
-  if (chord === '?') {
-    return "character('?')";
+  if (chord === '?' || chord === '+') {
+    return `character('${chord}')`;
   }
   if (chord === 'Escape') {
     return 'escapeChord';

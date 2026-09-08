@@ -105,7 +105,8 @@ export const halfwayAlong = (line: Locator): Promise<Point> =>
 export const drawnBy = async (line: Locator): Promise<string> =>
   (await line.getAttribute('d')) ?? '';
 
-const turnsOf = (drawn: string): Point[] =>
+/** The ordered route points in a drawn SVG path. */
+export const turnsOf = (drawn: string): Point[] =>
   [...drawn.matchAll(/(-?[\d.]+)\s+(-?[\d.]+)/gu)].map((turn) =>
     rounded({ x: Number(turn[1]), y: Number(turn[2]) }),
   );

@@ -81,6 +81,10 @@ const applied: ActionsByTag<ModelActionTag> = {
     elementId: noteElement,
     text: 'Edited note',
   }),
+  SetFlowWaypoints: Action.SetFlowWaypoints({
+    elementId: elementId('placeholder-flow'),
+    waypoints: [{ x: 200, y: 100 }],
+  }),
   AddThreat: Action.AddThreat({
     threat: { ...sampleThreat, id: threatId('threat-added'), number: 2 },
   }),
@@ -129,6 +133,10 @@ const refused: ActionsByTag<ModelActionTag> = {
   EditNote: Action.EditNote({
     elementId: processElement,
     text: 'Not a note',
+  }),
+  SetFlowWaypoints: Action.SetFlowWaypoints({
+    elementId: processElement,
+    waypoints: [],
   }),
   AddThreat: Action.AddThreat({
     threat: { ...sampleThreat, id: threatId('threat-reused'), number: 1 },
@@ -190,8 +198,20 @@ const purityCases: readonly (readonly [State, Action])[] = [
 ];
 
 function stateFor(action: Action): State {
+  if (Action.$is('SetFlowWaypoints')(action)) {
+    return initialState(placeholderModel);
+  }
   return Action.$is('EditNote')(action) ? noteStart : start;
 }
+
+it('keeps history and saved identity for an unchanged route', () => {
+  const before = stateFor(applied.SetFlowWaypoints);
+  const next = reduce(
+    before,
+    Action.SetFlowWaypoints({ ...applied.SetFlowWaypoints, waypoints: [] }),
+  );
+  expect(next).toBe(before);
+});
 
 describe('purity', () => {
   for (const [state, action] of purityCases) {
