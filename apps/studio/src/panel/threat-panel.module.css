@@ -53,6 +53,8 @@
   margin: 0;
   font-size: 1rem;
   flex: 1 1 12ch;
+  max-block-size: 3lh;
+  overflow-y: auto;
   overflow-wrap: anywhere;
 }
 
@@ -74,6 +76,7 @@
   font: inherit;
 }
 
+.heading:focus-visible,
 .width:focus-visible,
 .close:focus-visible,
 .add:focus-visible,

@@ -524,3 +524,39 @@ test('long titles and fields remain usable in a narrow viewport', async ({
   await expect(panel).toHaveCount(0);
   await expect(nodeNamed(page, /^Écluse Dredger, process/u)).toBeFocused();
 });
+
+test('a long element name leaves the pane heading and editor reachable', async ({
+  page,
+}) => {
+  await openPlaceholder(page);
+  await selectByKeyboard(page, /^Actor, actor/u);
+  await page.keyboard.press('Enter');
+  const name = page.getByRole('textbox', { name: 'Name of Actor' });
+  await name.fill('A long system component name '.repeat(30));
+  await name.press('Enter');
+  await page.setViewportSize({ width: 360, height: 640 });
+  const panel = threatPanel(page);
+  const heading = panel.getByRole('heading', { level: 2 });
+  await panel.getByRole('button', { name: 'Widen pane' }).focus();
+  await page.keyboard.press('Shift+Tab');
+  await expect(heading).toBeFocused();
+  await page.keyboard.press('ArrowDown');
+  await expect
+    .poll(async () => heading.evaluate((node) => node.scrollTop))
+    .toBeGreaterThan(0);
+  await page.keyboard.press('Tab');
+  await expect(panel.getByRole('button', { name: 'Widen pane' })).toBeFocused();
+  await page.keyboard.press('Enter');
+  await panel.getByRole('button', { name: 'Add a threat' }).click();
+  await expect(titleField(page)).toBeFocused();
+  await titleField(page).fill('A threat under a long element name');
+  await titleField(page).press('Enter');
+  const description = panel.getByRole('textbox', { name: 'Description' });
+  await description.fill('The editor remains reachable.');
+  await panel.getByRole('button', { name: 'Close threats' }).click();
+  await expect(panel).toHaveCount(0);
+  await expect(nodeNamed(page, /^A long system component name/u)).toBeFocused();
+  await page.keyboard.press(registeredChords['focus-threats'][0]);
+  await disclosure(page, /A threat under a long element name/u).click();
+  await expect(description).toHaveValue('The editor remains reachable.');
+});
