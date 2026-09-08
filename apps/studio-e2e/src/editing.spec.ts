@@ -97,6 +97,34 @@ test('each element tool key selects its mode and Enter places it', async ({
   await expect(elementNodes(page)).toHaveCount(7);
 });
 
+test('a delayed focus return preserves the next keyboard placement editor', async ({
+  page,
+}) => {
+  await openPlaceholder(page);
+  const now = new Date();
+  await page.clock.install({ time: now });
+  await page.clock.pauseAt(now);
+
+  await page.keyboard.press(registeredChords['actor-tool'][0]);
+  await page.keyboard.press('Enter');
+  const actorName = page.getByRole('textbox', { name: 'Name of New actor' });
+  await expect(actorName).toBeFocused();
+  await actorName.press('Enter');
+
+  await page.keyboard.press(registeredChords['process-tool'][0]);
+  await page.keyboard.press('Enter');
+  const processName = page.getByRole('textbox', {
+    name: 'Name of New process',
+  });
+  await expect(processName).toBeFocused();
+  await page.clock.runFor(50);
+
+  await expect(processName).toBeFocused();
+  await processName.fill('Worker');
+  await processName.press('Enter');
+  await expect(nodeNamed(page, /^Worker, process/u)).toBeFocused();
+});
+
 test('Select clears a selected element when the pointer lands on empty canvas', async ({
   page,
 }) => {

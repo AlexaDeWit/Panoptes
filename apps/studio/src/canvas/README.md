@@ -310,6 +310,8 @@ panel](../panel/README.md)). T runs the Focus threats command and lands on
 "Add a threat" for the one selected element. The command opens a panel that
 Escape closed. Escape in the panel puts focus back on the element through
 `focusElement`, which is the same route an added element takes to focus.
+Focus retries stop when the model state changes or another control takes
+focus, so a pending return cannot close the next inline editor.
 
 ## What a gesture will do, said before it is made
 

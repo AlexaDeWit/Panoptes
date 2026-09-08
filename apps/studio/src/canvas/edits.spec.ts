@@ -20,6 +20,7 @@ import {
 import {
   connectElements,
   describeRemoval,
+  focusElement,
   placeBoundaryCurve,
   placeElement,
   removalCascade,
@@ -40,6 +41,66 @@ const emptied = (): void => {
   modelStore.setState(initialState(emptyModel), true);
   resetAnnouncements();
 };
+
+describe('focusElement', () => {
+  const drawn = document.createElement('button');
+  const field = document.createElement('input');
+  drawn.className = 'react-flow__node';
+  drawn.dataset['id'] = readerElement;
+
+  beforeEach(() => {
+    opened([readerElement]);
+    vi.useFakeTimers();
+    document.body.append(drawn, field);
+  });
+
+  afterEach(() => {
+    vi.clearAllTimers();
+    vi.useRealTimers();
+    drawn.remove();
+    field.remove();
+  });
+
+  it('waits for an element that has not rendered yet', () => {
+    drawn.remove();
+    focusElement(readerElement);
+    document.body.append(drawn);
+
+    vi.advanceTimersByTime(50);
+
+    expect(document.activeElement).toBe(drawn);
+  });
+
+  it('retries when rendering removes the focused element', () => {
+    focusElement(readerElement);
+    drawn.remove();
+    document.body.append(drawn);
+
+    vi.advanceTimersByTime(50);
+
+    expect(document.activeElement).toBe(drawn);
+  });
+
+  it('leaves a field focused when the user moves there before a retry', () => {
+    focusElement(readerElement);
+    field.focus();
+
+    vi.advanceTimersByTime(50);
+
+    expect(document.activeElement).toBe(field);
+  });
+
+  it('abandons a pending render retry after selection changes', () => {
+    drawn.remove();
+    focusElement(readerElement);
+    modelStore.setState({ selection: [studioElement] });
+    document.body.append(drawn);
+
+    vi.advanceTimersByTime(50);
+
+    expect(document.activeElement).not.toBe(drawn);
+  });
+});
 
 describe('removalCascade', () => {
   it('counts the flows an element holds and the threats that name it', () => {

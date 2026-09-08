@@ -15,12 +15,7 @@ import { currentLayout } from './layout.js';
 import { accessibleNames } from './names.js';
 import { elementIds } from './nodes.js';
 
-/**
- * What a removal takes with the element, counted before it happens. The model
- * keeps a flow whose end was attached and frees that end, and keeps a threat
- * whose link named the element and drops the link, so both are changes a
- * person watching the canvas has to be told about rather than losses.
- */
+/** Counts flows detached and threat links dropped by removal. */
 export type RemovalCascade = {
   readonly flows: number;
   readonly threats: number;
@@ -51,10 +46,7 @@ export function placeBoundaryCurve(waypoints: readonly Point[]): boolean {
   return placed(Action.AddElement({ diagramId, element }), element.id, 'name');
 }
 
-/**
- * Draws a flow between two valid ends. This rejects other element kinds
- * before the model can retain a flow that the layout cannot draw.
- */
+/** Draws a flow between two connectable elements. */
 export function connectElements(source: ElementId, target: ElementId): void {
   const state = modelStore.getState();
   const diagramId = firstDiagramId(state);
@@ -118,25 +110,14 @@ export function removalCascade(
   return { flows, threats };
 }
 
-/**
- * A removal in words: what went, and what the model changed around it. The
- * counts are always said, a zero among them included, so silence never has
- * to be read as either nothing happening or nothing being counted.
- */
+/** Describes removal with explicit counts, including zero. */
 export function describeRemoval(name: string, cascade: RemovalCascade): string {
   const flows = counted(cascade.flows, 'flow');
   const threats = counted(cascade.threats, 'threat link');
   return `Removed ${name}. ${flows} detached, ${threats} dropped.`;
 }
 
-/**
- * Opens the selected element's name in a field on the canvas, and does
- * nothing while nothing is selected. It is what the rename command runs, so
- * the key and the double-click reach one place. Which element is being
- * renamed is store state rather than the canvas's own, because the command
- * is pressed with nothing of the canvas mounted above it ([the
- * store](../store/README.md)).
- */
+/** Opens the selected element's inline editor when its text is editable. */
 export function renameSelected(): void {
   const state = modelStore.getState();
   const elementId = selectedElement(state);
@@ -166,33 +147,18 @@ export function beginEditingText(elementId: ElementId): boolean {
   return true;
 }
 
-/**
- * Closes the open field and puts focus back on the element it was drawn
- * over. It is what a key press settles on, Enter and Escape alike, where the
- * person left focus in the field and would otherwise be dropped onto the
- * page.
- */
+/** Closes the inline editor and returns focus to its element. */
 export function endInlineEditing(elementId: ElementId): void {
   dispatch(Action.InlineEditing({ editor: undefined }));
   focusElement(elementId);
 }
 
-/**
- * Closes the open field and leaves focus where it is. It is what a field
- * settles on when it is left, the person having already put focus on
- * something else: sending it back would undo the click that landed there.
- */
+/** Closes the inline editor without changing focus after blur. */
 export function stopInlineEditing(): void {
   dispatch(Action.InlineEditing({ editor: undefined }));
 }
 
-/**
- * Renames `elementId`, as one action and so one undo step. A name the model
- * already holds dispatches nothing: a model operation returns a new model
- * whatever it was asked to do, so the store would push an undo entry and
- * mark the file dirty over an edit nobody made, which is the rule the panel
- * commits its fields under ([the panel](../panel/README.md)).
- */
+/** Renames an element as one undo step, skipping unchanged names. */
 export function commitRename(elementId: ElementId, name: string): void {
   const element = elementById(modelStore.getState(), elementId);
   if (element === undefined || element.name === name) {
@@ -278,12 +244,7 @@ const drawnSelector = '.react-flow__node, .react-flow__edge';
 
 const focusAttempts = 3;
 
-/**
- * The element a drawn node or flow stands for, and nothing where `target` is
- * neither: React Flow marks what it drew with the element's own id, and
- * `elements` is the canvas's own map from those to the model's ids. It is how
- * a key press is read as a press on the element under it.
- */
+/** Resolves a drawn node or flow through the current layout's ID map. */
 export function drawnElement(
   target: EventTarget | null,
   elements: ReadonlyMap<string, ElementId>,
@@ -297,32 +258,34 @@ export function drawnElement(
     : elements.get(drawn);
 }
 
-/**
- * Puts focus on the element as the canvas drew it, which React Flow marks
- * with the element's own id. It is what an edit does after adding something,
- * and what the threat panel does when Escape hands the keyboard back to the
- * element the panel was about. A node not yet drawn is waited a frame for, so
- * a focus asked for in the same tick as the dispatch that draws it lands.
- */
+/** Focuses a drawn element, retrying across renders until state or focus changes. */
 export function focusElement(
   elementId: ElementId,
   attempts = focusAttempts,
 ): void {
+  const state = modelStore.getState();
   const drawn = [...document.querySelectorAll(drawnSelector)].find(
     (candidate) => candidate.getAttribute('data-id') === elementId,
   );
   if (drawn instanceof HTMLElement || drawn instanceof SVGElement) {
     drawn.focus();
-    if (attempts > 1) {
-      setTimeout(() => {
-        focusElement(elementId, attempts - 1);
-      }, 0);
-    }
+  }
+  if (attempts <= 1) {
     return;
   }
-  if (attempts > 1) {
-    requestAnimationFrame(() => {
+  const focused = document.activeElement;
+  const retry = (): void => {
+    if (
+      modelStore.getState() === state &&
+      (document.activeElement === focused ||
+        document.activeElement === document.body)
+    ) {
       focusElement(elementId, attempts - 1);
-    });
+    }
+  };
+  if (drawn instanceof HTMLElement || drawn instanceof SVGElement) {
+    setTimeout(retry, 0);
+  } else {
+    requestAnimationFrame(retry);
   }
 }
