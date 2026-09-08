@@ -17,7 +17,7 @@ describe('ZoomCluster', () => {
     );
 
     expect(control('Zoom in').getAttribute('aria-keyshortcuts')).toBe(
-      'Control+=',
+      'Control+= Control+Plus',
     );
     expect(control('Zoom out').getAttribute('aria-keyshortcuts')).toBe(
       'Control+-',

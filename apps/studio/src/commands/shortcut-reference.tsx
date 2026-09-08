@@ -1,4 +1,5 @@
-import { Cross1Icon } from '@radix-ui/react-icons';
+import { Accordion } from 'radix-ui';
+import { Cross1Icon, ChevronDownIcon } from '@radix-ui/react-icons';
 import {
   useCallback,
   useEffect,
@@ -130,24 +131,28 @@ export function ShortcutReference({
         Shortcuts run only in the contexts shown. Commands typed into a text
         field stay with that field unless their context says otherwise.
       </p>
-      {commandGroups.map((group) => (
-        <ReferenceSection
-          entries={commands.filter((entry) => entry.group === group)}
-          key={group}
-          platform={platform}
-          title={group}
-          type="command"
-        />
-      ))}
-      {contextualGroups.map((group) => (
-        <ReferenceSection
-          entries={contextualShortcuts.filter((entry) => entry.group === group)}
-          key={group}
-          platform={platform}
-          title={group}
-          type="contextual"
-        />
-      ))}
+      <Accordion.Root type="multiple" className={styles.groups}>
+        {commandGroups.map((group) => (
+          <ReferenceSection
+            entries={commands.filter((entry) => entry.group === group)}
+            key={group}
+            platform={platform}
+            title={group}
+            type="command"
+          />
+        ))}
+        {contextualGroups.map((group) => (
+          <ReferenceSection
+            entries={contextualShortcuts.filter(
+              (entry) => entry.group === group,
+            )}
+            key={group}
+            platform={platform}
+            title={group}
+            type="contextual"
+          />
+        ))}
+      </Accordion.Root>
     </section>
   );
 }
@@ -164,26 +169,36 @@ function ReferenceSection({
   readonly type: 'command' | 'contextual';
 }) {
   return (
-    <section className={styles.group}>
-      <h3 className={styles.groupHeading}>{title}</h3>
-      <ul className={styles.entries}>
-        {entries.map((entry) => (
-          <li
-            className={styles.entry}
-            data-command-id={type === 'command' ? entry.id : undefined}
-            data-contextual-id={type === 'contextual' ? entry.id : undefined}
-            key={entry.id}
-          >
-            <span className={styles.label}>{entry.label}</span>
-            <kbd className={styles.keys}>
-              {entry.shortcuts.length === 0
-                ? 'No shortcut'
-                : spellShortcuts(entry.shortcuts, platform)}
-            </kbd>
-            <span className={styles.when}>{entry.when}</span>
-          </li>
-        ))}
-      </ul>
-    </section>
+    <Accordion.Item className={styles.group} value={`${type}-${title}`}>
+      <Accordion.Header className={styles.groupHeading}>
+        <Accordion.Trigger className={styles.disclosure}>
+          <span>{title}</span>
+          <span aria-hidden="true" className={styles.count}>
+            {entries.length}
+          </span>
+          <ChevronDownIcon aria-hidden="true" className={styles.chevron} />
+        </Accordion.Trigger>
+      </Accordion.Header>
+      <Accordion.Content>
+        <ul className={styles.entries}>
+          {entries.map((entry) => (
+            <li
+              className={styles.entry}
+              data-command-id={type === 'command' ? entry.id : undefined}
+              data-contextual-id={type === 'contextual' ? entry.id : undefined}
+              key={entry.id}
+            >
+              <span className={styles.label}>{entry.label}</span>
+              <kbd className={styles.keys}>
+                {entry.shortcuts.length === 0
+                  ? 'No shortcut'
+                  : spellShortcuts(entry.shortcuts, platform)}
+              </kbd>
+              <span className={styles.when}>{entry.when}</span>
+            </li>
+          ))}
+        </ul>
+      </Accordion.Content>
+    </Accordion.Item>
   );
 }

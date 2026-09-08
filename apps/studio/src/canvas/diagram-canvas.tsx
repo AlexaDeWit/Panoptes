@@ -84,7 +84,7 @@ import { useBackgroundSelection } from './background-selection.js';
 import styles from './diagram-canvas.module.css';
 
 const exactLabelDelay = 50;
-const mouseButtonsForTouchPanOnly: number[] = [];
+const panMouseButtons: number[] = [1];
 const canvasCommandDescription = describeCommandShortcuts(
   ['hand-tool', 'focus-threats', 'delete', 'select-tool'],
   hostPlatform,
@@ -211,13 +211,15 @@ export function DiagramCanvas({
   }, [graph.edges, layout, moving, onScreen]);
 
   useEffect(() => {
+    const previous = revealed.current;
+    revealed.current = { selected, cover: panelCover };
     if (
-      revealed.current?.selected === selected &&
-      revealed.current?.cover === panelCover
+      previous !== undefined &&
+      previous.selected === selected &&
+      (previous.cover > 0 || panelCover === 0)
     ) {
       return;
     }
-    revealed.current = { selected, cover: panelCover };
     const node = selected === undefined ? undefined : positions.get(selected);
     const extent = surface.current?.getBoundingClientRect();
     const instance = view.current;
@@ -483,7 +485,7 @@ export function DiagramCanvas({
           mode.active === 'hand'
             ? true
             : mode.active === 'select'
-              ? mouseButtonsForTouchPanOnly
+              ? panMouseButtons
               : false
         }
         panOnScroll

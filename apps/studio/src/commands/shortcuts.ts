@@ -4,12 +4,7 @@ declare global {
   }
 }
 
-/**
- * Every key a shortcut is built on. The set is closed so that a chord names a
- * key the studio has decided to bind rather than any string a keyboard can
- * produce, and so that two commands reaching for one key is a comparison over
- * a known alphabet.
- */
+/** The closed set of keys the studio binds. */
 export const chordKeys = [
   'a',
   'b',
@@ -56,11 +51,7 @@ export const chordKeys = [
 /** One key a chord ends on, written as a `KeyboardEvent.key` reports it. */
 export type ChordKey = (typeof chordKeys)[number];
 
-/**
- * The modifiers a chord holds. `Mod` is the platform's command modifier,
- * Command on Apple hardware and Control everywhere else, so one chord is
- * written once and read as the platform writes it.
- */
+/** Mod means Command on Apple platforms and Control elsewhere. */
 export const chordModifiers = ['Mod', 'Shift'] as const;
 
 /** One modifier held down through a chord. */
@@ -71,20 +62,28 @@ export type Chord = {
   readonly modifiers: readonly ChordModifier[];
   readonly key: ChordKey;
   readonly character?: true;
+  readonly platform?: Platform;
 };
 
 /** A key with no command modifier. */
 export const bare = (key: ChordKey): Chord => ({ modifiers: [], key });
 
 /** A character whose Shift state is part of producing the character. */
-export const character = (key: ChordKey): Chord => ({
+export const character = (
+  key: ChordKey,
+  modifiers: readonly ChordModifier[] = [],
+): Chord => ({
   character: true,
-  modifiers: [],
+  modifiers,
   key,
 });
 
 /** A key with the platform command modifier. */
-export const mod = (key: ChordKey): Chord => ({ modifiers: ['Mod'], key });
+export const mod = (key: ChordKey, platform?: Platform): Chord => ({
+  modifiers: ['Mod'],
+  key,
+  ...(platform === undefined ? {} : { platform }),
+});
 
 /** A key with the platform command modifier and Shift. */
 export const modShift = (key: ChordKey): Chord => ({
@@ -104,11 +103,7 @@ export const enterChord = bare('Enter');
 /** The unmodified Escape chord shared by commands and contextual actions. */
 export const escapeChord = bare('Escape');
 
-/**
- * The two conventions a shortcut is written and pressed under. Apple hardware
- * carries the Command key and spells a chord in symbols; everything else
- * holds Control and spells it in words.
- */
+/** The platform conventions used for modifier matching and display. */
 export const platforms = ['apple', 'other'] as const;
 
 /** Which convention a chord is written and pressed under. */
@@ -120,34 +115,22 @@ export type PlatformHints = {
   readonly userAgent?: string;
 };
 
-/**
- * Which convention `hints` describes. Both fields are read because
- * `navigator.platform` is deprecated and the user agent data that replaces it
- * is not offered by every browser, and neither is worth a second guess: a
- * machine that says nothing recognizable is written to in words.
- */
+/** Detects Apple platforms from browser platform or user-agent hints. */
 export function platformOf(hints: PlatformHints): Platform {
   const written = `${hints.platform ?? ''} ${hints.userAgent ?? ''}`;
   return /mac|iphone|ipad|ipod/iu.test(written) ? 'apple' : 'other';
 }
 
-/**
- * The machine the studio is running on, settled once at load. Nothing about
- * it changes while a page is open, and a control that renders a shortcut
- * would otherwise ask on every render.
- */
+/** The platform detected once when the page loads. */
 export const hostPlatform: Platform = platformOf({
   platform: navigator.userAgentData?.platform ?? navigator.platform,
   userAgent: navigator.userAgent,
 });
 
-/**
- * A key press, as much of one as a chord is matched against. It is
- * structural, so a `KeyboardEvent` satisfies it and a spec hands over a
- * literal without a browser.
- */
+/** The keyboard event fields used to match a chord. */
 export type ChordEvent = {
   readonly key: string;
+  readonly code?: string;
   readonly ctrlKey: boolean;
   readonly metaKey: boolean;
   readonly shiftKey: boolean;
@@ -161,13 +144,20 @@ export function firedBy(
   chord: Chord,
   platform: Platform,
 ): boolean {
+  const keyMatches =
+    event.key.toLowerCase() === chord.key.toLowerCase() ||
+    (chord.modifiers.includes('Mod') &&
+      chord.modifiers.includes('Shift') &&
+      /^[0-9]$/u.test(chord.key) &&
+      event.code === `Digit${chord.key}`);
   const command = platform === 'apple' ? event.metaKey : event.ctrlKey;
   const foreign = platform === 'apple' ? event.ctrlKey : event.metaKey;
   const shiftMatches =
     chord.character === true ||
     event.shiftKey === chord.modifiers.includes('Shift');
   return (
-    event.key.toLowerCase() === chord.key.toLowerCase() &&
+    appliesTo(chord, platform) &&
+    keyMatches &&
     command === chord.modifiers.includes('Mod') &&
     shiftMatches &&
     !foreign &&
@@ -176,10 +166,7 @@ export function firedBy(
   );
 }
 
-/**
- * One chord as its platform writes it: symbols run together on Apple
- * hardware, words joined by a plus sign elsewhere.
- */
+/** Spells a chord with Apple symbols or modifier names. */
 export function spellChord(chord: Chord, platform: Platform): string {
   const written = heldIn(chord, platform).map((modifier) =>
     platform === 'apple' ? appleSymbols[modifier] : modifierWords[modifier],
@@ -190,16 +177,14 @@ export function spellChord(chord: Chord, platform: Platform): string {
     : [...written, key].join('+');
 }
 
-/**
- * Every chord a command answers to, as one phrase for a person to read. A
- * command with two of them offers both rather than picking one, because
- * neither is the fallback of the other.
- */
+/** Spells only the shortcuts available on the given platform. */
 export function spellShortcuts(
   shortcuts: readonly Chord[],
   platform: Platform,
 ): string {
-  return shortcuts.map((chord) => spellChord(chord, platform)).join(' or ');
+  return shortcutsOn(shortcuts, platform)
+    .map((chord) => spellChord(chord, platform))
+    .join(' or ');
 }
 
 /** The spoken description of shortcut entries and their contexts. */
@@ -219,18 +204,12 @@ export function describeShortcutEntries(
     .join(' ');
 }
 
-/**
- * The same chords as `aria-keyshortcuts` declares them: modifiers under the
- * names a `KeyboardEvent` gives them, in the order the attribute asks for,
- * chords separated by a space. It is the one attribute that says which key
- * runs a control, so assistive technology reads the binding rather than the
- * studio's spelling of it.
- */
+/** Declares available chords using ARIA modifier and key names. */
 export function keyShortcutsAttribute(
   shortcuts: readonly Chord[],
   platform: Platform,
 ): string {
-  return shortcuts
+  return shortcutsOn(shortcuts, platform)
     .map((chord) =>
       [
         ...heldIn(chord, platform).map(
@@ -240,6 +219,18 @@ export function keyShortcutsAttribute(
       ].join('+'),
     )
     .join(' ');
+}
+
+/** The chords available on one platform, in display order. */
+export function shortcutsOn(
+  shortcuts: readonly Chord[],
+  platform: Platform,
+): readonly Chord[] {
+  return shortcuts.filter((chord) => appliesTo(chord, platform));
+}
+
+function appliesTo(chord: Chord, platform: Platform): boolean {
+  return chord.platform === undefined || chord.platform === platform;
 }
 
 const appleSymbols: Record<ChordModifier, string> = {

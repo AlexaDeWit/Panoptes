@@ -287,8 +287,9 @@ on the same selection this pans for ([the panel](../panel/README.md)), so an
 element under it is an element out of sight, and the pan centres what it
 reveals in the room the panel leaves rather than in the canvas.
 `clearOfPanel` and `revealCentre` in `viewport.ts` use the pane's measured
-coverage, including its outer inset. Pane and canvas resizes update that measurement. A coverage change reveals
-a covered selection again. The `panelCover` token
+coverage, including its outer inset. Pane and canvas resizes update that measurement. Widening or restoring an
+open pane leaves the viewport unchanged. A new selection or reopening the
+pane reveals a covered node. Explicit fit commands use the current coverage. The `panelCover` token
 sets the default width only ([the panel](../panel/README.md)).
 
 ## The panel over it
@@ -350,8 +351,8 @@ What is fitted is the model as it arrived, read by identity from the store
 object and fits again, an edit is not a model as it arrived and moves nothing,
 and a save leaves the model where it is. `FitOnOpen` applies it from inside
 React Flow, which is what holds the canvas's extent, and the same calculation
-answers the fit-to-view command, so a control and an open cannot disagree
-about where the diagram sits.
+answers the fit-to-view command. Opening uses the full canvas extent.
+Explicit fitting uses the area left of the open threat pane.
 
 The controls are `zoom-cluster.tsx`, three icons floating over the bottom
 right of the canvas, each one registered command showing its chord in a
@@ -364,6 +365,7 @@ Scrolling over the canvas pans in both directions. A trackpad pinch keeps its
 zoom gesture. Touch drag pans while Select is active, without starting a
 selection box or clearing the selection. A mouse drag still draws the Select
 box, while Hand or held Space makes a mouse drag pan from anywhere.
+In Select mode, middle-button dragging pans without changing the selection.
 
 ## Accessibility
 

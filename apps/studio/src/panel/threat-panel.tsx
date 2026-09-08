@@ -1,6 +1,6 @@
-import { Cross1Icon } from '@radix-ui/react-icons';
+import { Cross1Icon, WidthIcon, ArrowRightIcon } from '@radix-ui/react-icons';
 import type { ElementId, Threat, ThreatId } from '@saerskriven/model';
-import { Accordion } from 'radix-ui';
+import { Accordion, Tooltip } from 'radix-ui';
 import {
   useCallback,
   useEffect,
@@ -229,28 +229,41 @@ export function ThreatPanel({
         {describeContextualShortcuts(['close-threat-panel'], hostPlatform)}
       </VisuallyHidden>
       <header className={styles.panelHeader}>
+        <Tooltip.Provider>
+          <Tooltip.Root>
+            <Tooltip.Trigger asChild>
+              <button
+                aria-label={wide ? 'Restore pane width' : 'Widen pane'}
+                aria-pressed={wide}
+                className={styles.width}
+                onClick={onToggleWidth}
+                type="button"
+              >
+                {wide ? (
+                  <ArrowRightIcon aria-hidden="true" />
+                ) : (
+                  <WidthIcon aria-hidden="true" />
+                )}
+              </button>
+            </Tooltip.Trigger>
+            <Tooltip.Content className={styles.tooltip} side="bottom">
+              {wide ? 'Restore pane width' : 'Widen pane'}
+            </Tooltip.Content>
+          </Tooltip.Root>
+        </Tooltip.Provider>
         <h2 className={styles.heading}>
           {element === undefined
             ? 'Threats'
             : `Threats on ${elementLabel(element)}`}
         </h2>
-        <div className={styles.controls}>
-          <button
-            className={styles.width}
-            onClick={onToggleWidth}
-            type="button"
-          >
-            {wide ? 'Restore pane width' : 'Widen pane'}
-          </button>
-          <button
-            aria-label="Close threats"
-            className={styles.close}
-            onClick={onClose}
-            type="button"
-          >
-            <Cross1Icon aria-hidden="true" />
-          </button>
-        </div>
+        <button
+          aria-label="Close threats"
+          className={styles.close}
+          onClick={onClose}
+          type="button"
+        >
+          <Cross1Icon aria-hidden="true" />
+        </button>
       </header>
       <div className={styles.body}>
         {subject.kind === 'several' ? (

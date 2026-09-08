@@ -3,6 +3,8 @@ import {
   firedBy,
   keyShortcutsAttribute,
   platformOf,
+  mod,
+  modShift,
   spellChord,
   spellShortcuts,
   type Chord,
@@ -43,6 +45,7 @@ describe('platformOf', () => {
 
   it('writes to a machine it cannot place in words', () => {
     expect(platformOf({ platform: 'Linux x86_64' })).toBe('other');
+    expect(platformOf({ platform: 'Win32' })).toBe('other');
     expect(platformOf({})).toBe('other');
   });
 });
@@ -77,6 +80,20 @@ describe('spelling a chord', () => {
     expect(spellChord(help, 'other')).toBe('?');
     expect(keyShortcutsAttribute([help], 'other')).toBe('?');
   });
+});
+
+it('limits platform-specific alternatives in matching, labels and ARIA', () => {
+  const redoAlternative = mod('y', 'other');
+  expect(spellShortcuts([redoAlternative], 'apple')).toBe('');
+  expect(keyShortcutsAttribute([redoAlternative], 'apple')).toBe('');
+  expect(
+    firedBy(press({ key: 'y', metaKey: true }), redoAlternative, 'apple'),
+  ).toBe(false);
+  expect(spellShortcuts([redoAlternative], 'other')).toBe('Ctrl+Y');
+  expect(keyShortcutsAttribute([redoAlternative], 'other')).toBe('Control+Y');
+  expect(
+    firedBy(press({ key: 'y', ctrlKey: true }), redoAlternative, 'other'),
+  ).toBe(true);
 });
 
 describe('firedBy', () => {
@@ -133,3 +150,59 @@ describe('firedBy', () => {
     ).toBe(false);
   });
 });
+
+it.each(['apple', 'other'] as const)(
+  'matches shifted number-row shortcuts on %s',
+  (platform) => {
+    const modifiers = {
+      ctrlKey: platform === 'other',
+      metaKey: platform === 'apple',
+      shiftKey: true,
+    };
+    expect(
+      firedBy(
+        press({ key: '!', code: 'Digit1', ...modifiers }),
+        modShift('1'),
+        platform,
+      ),
+    ).toBe(true);
+    expect(
+      firedBy(
+        press({ key: '@', code: 'Digit2', ...modifiers }),
+        modShift('2'),
+        platform,
+      ),
+    ).toBe(true);
+    expect(
+      firedBy(
+        press({ key: '@', code: 'Digit2', ...modifiers }),
+        modShift('1'),
+        platform,
+      ),
+    ).toBe(false);
+  },
+);
+
+it.each(['apple', 'other'] as const)(
+  'accepts the produced plus character for zoom on %s',
+  (platform) => {
+    const zoom = character('+', ['Mod']);
+    for (const shiftKey of [false, true]) {
+      expect(
+        firedBy(
+          press({
+            key: '+',
+            ctrlKey: platform === 'other',
+            metaKey: platform === 'apple',
+            shiftKey,
+          }),
+          zoom,
+          platform,
+        ),
+      ).toBe(true);
+    }
+    expect(firedBy(press({ key: '+', shiftKey: true }), zoom, platform)).toBe(
+      false,
+    );
+  },
+);

@@ -55,6 +55,26 @@ test('scroll pans while a modified scroll keeps pinch zoom', async ({
     .not.toBe(scaleOf(afterPan));
 });
 
+test('middle-button dragging pans without zooming or clearing selection', async ({
+  page,
+}) => {
+  await openPlaceholder(page);
+  const actor = nodeNamed(page, /^Actor, actor/u);
+  await actor.click();
+  const from = await emptyCanvasPoint(page);
+  const to = movedPoint(page, from);
+  const before = await viewportTransform(page);
+
+  await page.mouse.move(from.x, from.y);
+  await page.mouse.down({ button: 'middle' });
+  await page.mouse.move(to.x, to.y, { steps: 6 });
+  await page.mouse.up({ button: 'middle' });
+
+  await expect.poll(() => viewportTransform(page)).not.toBe(before);
+  expect(scaleOf(await viewportTransform(page))).toBe(scaleOf(before));
+  await expect(actor).toHaveClass(/selected/u);
+});
+
 test('a touch drag pans without becoming a selection click', async ({
   page,
 }) => {
@@ -72,7 +92,7 @@ test('a touch drag pans without becoming a selection click', async ({
   await session.detach();
 });
 
-const notePlacements = ['click', 'drag', 'keyboard'] as const;
+const notePlacements = ['click', 'drag', 'touch', 'keyboard'] as const;
 
 for (const placement of notePlacements) {
   test(`a ${placement} placement opens the new Note for typing`, async ({
@@ -87,7 +107,13 @@ for (const placement of notePlacements) {
       await page.keyboard.press('Enter');
     } else {
       await toolButton(page, 'Note').click();
-      if (placement === 'click') {
+      if (placement === 'touch') {
+        const session = await touchSession(page);
+        const before = await viewportTransform(page);
+        await touchDrag(session, from, movedPoint(page, from));
+        expect(await viewportTransform(page)).toBe(before);
+        await session.detach();
+      } else if (placement === 'click') {
         await page.mouse.click(from.x, from.y);
       } else {
         const to = movedPoint(page, from);

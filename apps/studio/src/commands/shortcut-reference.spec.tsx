@@ -4,8 +4,11 @@ import { App } from '../app/app.js';
 import { resetTools } from '../canvas/tools.js';
 import { initialState, placeholderModel } from '../store/state.js';
 import { modelStore } from '../store/store.js';
-import { contextualShortcuts } from './contextual-shortcuts.js';
-import { commands } from './registry.js';
+import {
+  contextualGroups,
+  contextualShortcuts,
+} from './contextual-shortcuts.js';
+import { commandGroups, commands } from './registry.js';
 import { ShortcutReference } from './shortcut-reference.js';
 
 const idsOf = (attribute: string): string[] =>
@@ -27,6 +30,13 @@ describe('ShortcutReference', () => {
 
   it('renders every metadata entry exactly once with platform spelling', () => {
     render(<ShortcutReference onClose={() => undefined} platform="apple" />);
+
+    for (const group of [...commandGroups, ...contextualGroups]) {
+      const trigger = screen.getByRole('button', { name: group });
+      expect(trigger.getAttribute('aria-expanded')).toBe('false');
+      fireEvent.click(trigger);
+      expect(trigger.getAttribute('aria-expanded')).toBe('true');
+    }
 
     const commandIds = idsOf('data-command-id');
     const contextualIds = idsOf('data-contextual-id');

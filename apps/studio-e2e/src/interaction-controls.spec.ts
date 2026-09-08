@@ -1,3 +1,4 @@
+import { registeredChords } from './chords.js';
 import { AxeBuilder } from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
 import { readAnyFormat } from '@saerskriven/formats';
@@ -9,7 +10,6 @@ import {
   emptyCanvasPoint,
   nodeNamed,
   openPlaceholder,
-  runFromMenu,
   savedFile,
   selectByKeyboard,
   openFile,
@@ -144,13 +144,13 @@ test('clipboard commands preserve graph references and leave text fields their o
   await page.keyboard.press('Escape');
 });
 
-test('geometry fields support click-only movement and resizing, cancellation, and one undo step', async ({
+test('geometry fields support movement and resizing, cancellation, and one undo step', async ({
   page,
 }) => {
   await page.addInitScript(withoutPickers);
   await openPlaceholder(page);
   const actor = await selectByKeyboard(page, actorName);
-  await runFromMenu(page, 'Position and size');
+  await page.keyboard.press(registeredChords['edit-geometry'][0]);
   const panel = page.getByRole('region', { name: 'Position and size' });
   await expect(
     panel.getByRole('spinbutton', { name: 'X', exact: true }),
@@ -373,25 +373,27 @@ test('the reset control exposes the current scale to assistive technology', asyn
   await expect(reset).toHaveAccessibleDescription(/Current zoom: \d+%/u);
 });
 
-test('fit selection keeps a node clear of the widened threat pane', async ({
-  page,
-}) => {
-  await page.setViewportSize({ width: 1440, height: 900 });
-  await openPlaceholder(page);
-  const actor = await selectByKeyboard(page, actorName);
-  const panel = page.getByTestId('threat-panel');
-  await panel.getByRole('button', { name: 'Widen pane' }).click();
-  await canvasSettled(page);
-  await page
-    .getByRole('button', { name: 'Fit selection', exact: true })
-    .click();
-  await canvasSettled(page);
-  const node = await actor.boundingBox();
-  const pane = await panel.boundingBox();
-  expect(node).not.toBeNull();
-  expect(pane).not.toBeNull();
-  expect((node?.x ?? 0) + (node?.width ?? 0)).toBeLessThanOrEqual(pane?.x ?? 0);
-  await expect(
-    page.getByRole('button', { name: /^Menu/u }),
-  ).toHaveAccessibleName('Menu');
-});
+for (const command of ['fit-selection', 'fit-to-view'] as const) {
+  test(`${command} keeps a node clear of the widened threat pane`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await openPlaceholder(page);
+    const actor = await selectByKeyboard(page, /^Store, store/u);
+    const panel = page.getByTestId('threat-panel');
+    await panel.getByRole('button', { name: 'Widen pane' }).click();
+    await canvasSettled(page);
+    await page.keyboard.press(registeredChords[command][0]);
+    await canvasSettled(page);
+    const node = await actor.boundingBox();
+    const pane = await panel.boundingBox();
+    expect(node).not.toBeNull();
+    expect(pane).not.toBeNull();
+    expect((node?.x ?? 0) + (node?.width ?? 0)).toBeLessThanOrEqual(
+      pane?.x ?? 0,
+    );
+    await expect(
+      page.getByRole('button', { name: /^Menu/u }),
+    ).toHaveAccessibleName('Menu');
+  });
+}

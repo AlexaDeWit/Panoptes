@@ -1,6 +1,6 @@
 import { focusSelectionControl } from '../canvas/selection-control.js';
 import { useSnap } from '../canvas/snap.js';
-import { ExternalLinkIcon } from '@radix-ui/react-icons';
+import { ExternalLinkIcon, ChevronRightIcon } from '@radix-ui/react-icons';
 import { DropdownMenu } from 'radix-ui';
 import { useEffect, useState, type ReactNode, type RefObject } from 'react';
 import { useCommandSurface } from '../commands/binding.js';
@@ -17,13 +17,11 @@ import {
   spellShortcuts,
 } from '../commands/shortcuts.js';
 import {
-  elementById,
   canRedo,
   canUndo,
   isDirty,
   needsCloseGuard,
   renameable,
-  selectedElement,
 } from '../store/selectors.js';
 import { useModelStore } from '../store/store.js';
 import { FailureNotice } from '../ui/failure-notice.js';
@@ -178,6 +176,21 @@ function UnsavedChangesCommand({
   );
 }
 
+function SubmenuTrigger({
+  children,
+  label,
+}: {
+  readonly children: ReactNode;
+  readonly label?: string;
+}) {
+  return (
+    <DropdownMenu.SubTrigger aria-label={label} className={styles.item}>
+      {children}
+      <ChevronRightIcon aria-hidden="true" className={styles.chord} />
+    </DropdownMenu.SubTrigger>
+  );
+}
+
 function ProjectLink({
   href,
   children,
@@ -219,11 +232,6 @@ export function StudioMenu({
   const redoable = useModelStore(canRedo);
   const nothing = useModelStore((state) => state.selection.length === 0);
   const renamable = useModelStore(renameable);
-  const selected = useModelStore(selectedElement);
-  const selectedFlow = useModelStore((state) => {
-    const id = selectedElement(state);
-    return id !== undefined && elementById(state, id)?.kind === 'flow';
-  });
   const [open, setOpen] = useState(false);
   const selectedColourMode = colourMode ?? 'system';
 
@@ -353,16 +361,13 @@ export function StudioMenu({
           </DropdownMenu.Group>
           <DropdownMenu.Separator className={styles.rule} />
           <DropdownMenu.Sub>
-            <DropdownMenu.SubTrigger
-              aria-label={`Appearance ${selectedColourMode}`}
-              className={styles.item}
-            >
+            <SubmenuTrigger label={`Appearance ${selectedColourMode}`}>
               <span>Appearance</span>
               <span aria-hidden="true" className={styles.chord}>
                 {selectedColourMode[0].toUpperCase() +
                   selectedColourMode.slice(1)}
               </span>
-            </DropdownMenu.SubTrigger>
+            </SubmenuTrigger>
             <DropdownMenu.SubContent tabIndex={0} className={styles.panel}>
               <DropdownMenu.RadioGroup
                 aria-label="Appearance"
@@ -398,14 +403,8 @@ export function StudioMenu({
             <MenuCommand command="copy" disabled={nothing} />
             <MenuCommand command="cut" disabled={nothing} />
             <MenuCommand command="paste" />
-            <MenuCommand command="duplicate" disabled={nothing} />
-            <MenuCommand command="edit-geometry" disabled={nothing} />
-            <MenuCommand command="reconnect-source" disabled={!selectedFlow} />
-            <MenuCommand command="reconnect-target" disabled={!selectedFlow} />
             <DropdownMenu.Sub>
-              <DropdownMenu.SubTrigger className={styles.item}>
-                Arrange
-              </DropdownMenu.SubTrigger>
+              <SubmenuTrigger>Arrange</SubmenuTrigger>
               <DropdownMenu.SubContent tabIndex={0} className={styles.panel}>
                 {(
                   [
@@ -428,11 +427,6 @@ export function StudioMenu({
               </DropdownMenu.SubContent>
             </DropdownMenu.Sub>
             <MenuCommand command="rename" disabled={!renamable} />
-            <MenuCommand
-              command="focus-threats"
-              disabled={selected === undefined}
-            />
-            <MenuCommand command="delete" disabled={nothing} />
           </DropdownMenu.Group>
           <DropdownMenu.Separator className={styles.rule} />
           <DropdownMenu.Group>
@@ -536,12 +530,9 @@ function ExportMenu() {
 
   return (
     <DropdownMenu.Sub>
-      <DropdownMenu.SubTrigger className={styles.item}>
+      <SubmenuTrigger>
         <span>Export</span>
-        <span aria-hidden="true" className={styles.chord}>
-          ›
-        </span>
-      </DropdownMenu.SubTrigger>
+      </SubmenuTrigger>
       <DropdownMenu.SubContent
         tabIndex={0}
         className={styles.panel}
