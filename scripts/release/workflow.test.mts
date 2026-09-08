@@ -37,6 +37,7 @@ const jobSchema = z.object({
         uses: z.string().optional(),
         if: z.string().optional(),
         env: z.record(z.string(), z.string()).optional(),
+        with: z.record(z.string(), z.unknown()).optional(),
       }),
     )
     .optional(),
@@ -118,14 +119,21 @@ void test('every check run builds the full release artifacts before signing', ()
   const upload = steps.find(({ uses }) =>
     uses?.startsWith('actions/upload-artifact@'),
   );
+  const installer = steps.find(({ run }) =>
+    run?.includes('package-installer.sh'),
+  );
   assert.ok(compile);
   assert.ok(compiledTests);
   assert.ok(upload);
+  assert.ok(installer);
   assert.equal(compile.if, undefined);
   assert.equal(compiledTests.if, undefined);
   assert.equal(upload.if, undefined);
+  assert.equal(installer.if, undefined);
   assert.ok(steps.indexOf(compiledTests) < steps.indexOf(compile));
   assert.ok(steps.indexOf(compile) < steps.indexOf(upload));
+  assert.ok(steps.indexOf(compile) < steps.indexOf(installer));
+  assert.ok(steps.indexOf(installer) < steps.indexOf(upload));
   assert.equal(
     ci.jobs['pages-build']?.if?.trim(),
     "!cancelled() && !inputs.deploy_pages && needs.checks.result == 'success'",
@@ -163,6 +171,11 @@ void test('only tokens that can sign reach the attestation job', () => {
     run?.includes('gh attestation verify'),
   );
   assert.ok(verification?.run);
+  assert.ok(verification.run.includes('cli/install.sh'));
+  const subjects = steps.find(({ uses }) =>
+    uses?.startsWith('actions/attest-build-provenance@'),
+  )?.with?.['subject-path'];
+  assert.ok(z.string().parse(subjects).split('\n').includes('cli/install.sh'));
   for (const argument of [
     '--signer-workflow',
     '--source-ref "$GITHUB_REF"',
@@ -170,6 +183,15 @@ void test('only tokens that can sign reach the attestation job', () => {
   ]) {
     assert.ok(verification.run.includes(argument));
   }
+});
+
+void test('new releases and publication retries both attach the installer', () => {
+  const publish = workflow('ci.yml').jobs['publish']?.steps?.find(({ run }) =>
+    run?.includes('gh release upload'),
+  )?.run;
+  assert.ok(publish);
+  assert.match(publish, /gh release upload[^\n]*cli\/install\.sh/u);
+  assert.match(publish, /gh release create[\s\S]*cli\/install\.sh/u);
 });
 
 const verdict = (job: string, env: Record<string, string>) => {

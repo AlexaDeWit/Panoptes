@@ -49,10 +49,11 @@ Pull requests rehearse the release through artifact creation and attestation.
 The same jobs run on ordinary main, tag, and manual CI runs:
 
 - Build and test the host CLI, then compile all five targets twice and compare
-  their bytes. Check the host version and every executable checksum.
+  their bytes. Package `install.sh` with the workspace release tag embedded.
+  Check the host version and every executable and installer checksum.
 - Build the studio archive and metadata from the workspace version. A tag run
   additionally requires that version to match its tag.
-- Generate attestations for the executables, checksums, website archive, and
+- Generate attestations for the executables, installer, checksums, website archive, and
   metadata. Verify each against this repository, workflow, source ref, and commit.
 - Require those stages in `CI gate` before publication can run.
 
@@ -170,7 +171,7 @@ manifest and the built version with the tag before creating `studio.tar` and
 `studio-release.json`. The latter records the source commit and CI run.
 
 `attest` waits for the source checks and website build. It attests the CLI
-executables, `SHA256SUMS`, and both website assets, then verifies every asset
+executables, `install.sh`, `SHA256SUMS`, and both website assets, then verifies every asset
 against the source ref and commit. `CI gate` requires that verification.
 `publish` waits for the gate and creates or updates the release with those
 files. A failed gate, website build, or attestation prevents publication.
@@ -239,9 +240,11 @@ nor forces an editor reload.
 
 ### 6. Check what shipped (owner)
 
-Download one executable from the release page, verify it against
-`SHA256SUMS`, check its provenance with all three flags, and run
-`saerskriven --version`:
+Download `install.sh` from the release page and follow the
+[installation instructions](../README.md#macos-and-linux), including installer
+attestation verification before execution. Run it with `--verify-attestation`,
+then run `saerskriven --version` and compare with the release tag.
+The installer must also appear in `SHA256SUMS`. For a manual executable check:
 
 ```sh
 gh attestation verify saerskriven-* --repo AlexaDeWit/Saerskriven \
@@ -278,8 +281,7 @@ configured, and the commands that check it has not drifted.
   would put the owner between the gate and a public release.
 - Every asset carries a **build provenance attestation** from the `attest`
   job, which needs no repository setting and which a stranger can check. The
-  [README's install section](../README.md#install) has the command and what
-  its two flags do and do not enforce.
+  [README's install section](../README.md#install) has the commands and the verification limits.
 
 ### Checking the configuration has not drifted
 

@@ -79,6 +79,9 @@ jobs:
       - name: Compile every target and run the host one
         run: nix develop .#ci --command pnpm nx compile @saerskriven/cli --configuration=all
 
+      - name: Package the installer for this release
+        run: nix develop .#ci --command bash scripts/release/package-installer.sh
+
       - name: Check the executable version and all checksums
         env:
           TAG: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || '' }}
@@ -369,6 +372,7 @@ jobs:
           subject-path: |
             cli/saerskriven-*
             cli/SHA256SUMS
+            cli/install.sh
             release-site/studio.tar
             release-site/studio-release.json
 
@@ -377,7 +381,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         run: |
-          for asset in cli/saerskriven-* cli/SHA256SUMS release-site/studio.tar release-site/studio-release.json; do
+          for asset in cli/saerskriven-* cli/SHA256SUMS cli/install.sh release-site/studio.tar release-site/studio-release.json; do
             gh attestation verify "$asset" --repo "$GH_REPO" \
               --signer-workflow "$GH_REPO/.github/workflows/ci.yml" \
               --source-ref "$GITHUB_REF" --source-digest "$GITHUB_SHA"
@@ -465,7 +469,7 @@ jobs:
           TAG: ${{ github.ref_name }}
         run: |
           if gh release view "$TAG" >/dev/null 2>&1; then
-            gh release upload "$TAG" --clobber cli/saerskriven-* cli/SHA256SUMS release-site/studio.tar release-site/studio-release.json
+            gh release upload "$TAG" --clobber cli/saerskriven-* cli/SHA256SUMS cli/install.sh release-site/studio.tar release-site/studio-release.json
           else
             notes=(--generate-notes)
             if [ -s release-notes.md ]; then
@@ -475,7 +479,7 @@ jobs:
               notes+=(--prerelease)
             fi
             gh release create "$TAG" --title "$TAG" --verify-tag \
-              "${notes[@]}" cli/saerskriven-* cli/SHA256SUMS release-site/studio.tar release-site/studio-release.json
+              "${notes[@]}" cli/saerskriven-* cli/SHA256SUMS cli/install.sh release-site/studio.tar release-site/studio-release.json
           fi
 
   pages-prepare:
