@@ -15,6 +15,7 @@ import { fileURLToPath } from 'node:url';
 import { test } from 'node:test';
 import { parse } from 'yaml';
 import { z } from 'zod';
+import { temporaryWorkspace } from './release.fixtures.mts';
 
 const root = fileURLToPath(new URL('../../', import.meta.url));
 
@@ -37,6 +38,7 @@ const jobSchema = z.object({
         uses: z.string().optional(),
         if: z.string().optional(),
         env: z.record(z.string(), z.string()).optional(),
+        with: z.record(z.string(), z.unknown()).optional(),
       }),
     )
     .optional(),
@@ -69,6 +71,7 @@ void test('publication waits for the gate, prepared website, and attestation', (
   assert.ok('workflow_dispatch' in ci.on);
   for (const job of [
     'build-test',
+    'installer-smoke',
     'static-checks',
     'e2e-smoke',
     'dependency-changes',
@@ -118,14 +121,21 @@ void test('every check run builds the full release artifacts before signing', ()
   const upload = steps.find(({ uses }) =>
     uses?.startsWith('actions/upload-artifact@'),
   );
+  const installer = steps.find(({ run }) =>
+    run?.includes('package-installer.sh'),
+  );
   assert.ok(compile);
   assert.ok(compiledTests);
   assert.ok(upload);
+  assert.ok(installer);
   assert.equal(compile.if, undefined);
   assert.equal(compiledTests.if, undefined);
   assert.equal(upload.if, undefined);
+  assert.equal(installer.if, undefined);
   assert.ok(steps.indexOf(compiledTests) < steps.indexOf(compile));
   assert.ok(steps.indexOf(compile) < steps.indexOf(upload));
+  assert.ok(steps.indexOf(compile) < steps.indexOf(installer));
+  assert.ok(steps.indexOf(installer) < steps.indexOf(upload));
   assert.equal(
     ci.jobs['pages-build']?.if?.trim(),
     "!cancelled() && !inputs.deploy_pages && needs.checks.result == 'success'",
@@ -163,12 +173,81 @@ void test('only tokens that can sign reach the attestation job', () => {
     run?.includes('gh attestation verify'),
   );
   assert.ok(verification?.run);
+  assert.ok(verification.run.includes('cli/install.sh'));
+  const subjects = steps.find(({ uses }) =>
+    uses?.startsWith('actions/attest-build-provenance@'),
+  )?.with?.['subject-path'];
+  assert.ok(z.string().parse(subjects).split('\n').includes('cli/install.sh'));
   for (const argument of [
     '--signer-workflow',
     '--source-ref "$GITHUB_REF"',
     '--source-digest "$GITHUB_SHA"',
   ]) {
     assert.ok(verification.run.includes(argument));
+  }
+});
+
+void test('new releases and publication retries both attach the installer', () => {
+  const publish = workflow('ci.yml').jobs['publish']?.steps?.find(({ run }) =>
+    run?.includes('gh release upload'),
+  )?.run;
+  assert.ok(publish);
+  assert.match(publish, /gh release upload[^\n]*cli\/install\.sh/u);
+  assert.match(publish, /gh release create[\s\S]*cli\/install\.sh/u);
+});
+
+void test('release notes include pinned installation commands with changelog or generated notes', () => {
+  const script = workflow('ci.yml').jobs['publish']?.steps?.find(({ run }) =>
+    run?.includes('scripts/release/install-notes.md'),
+  )?.run;
+  assert.ok(script);
+  for (const changelog of [true, false]) {
+    const directory = temporaryWorkspace();
+    mkdirSync(join(directory, 'scripts/release'), { recursive: true });
+    mkdirSync(join(directory, 'tools'));
+    writeFileSync(
+      join(directory, 'scripts/release/install-notes.md'),
+      readFileSync(join(root, 'scripts/release/install-notes.md')),
+    );
+    writeFileSync(
+      join(directory, 'tools/gh'),
+      '#!/usr/bin/env bash\nprintf "Generated changelog\\n"\n',
+      { mode: 0o755 },
+    );
+    if (changelog)
+      writeFileSync(
+        join(directory, 'CHANGELOG.md'),
+        '# 1.2.3\n\nRelease changes\n',
+      );
+    for (let retry = 0; retry < 2; retry++) {
+      const result: SpawnSyncReturns<string> = spawnSync(
+        'bash',
+        ['-euo', 'pipefail', '-c', script],
+        {
+          cwd: directory,
+          encoding: 'utf8',
+          env: {
+            ...process.env,
+            TAG: 'v1.2.3',
+            GH_REPO: 'AlexaDeWit/Saerskriven',
+            PATH: `${join(directory, 'tools')}:${process.env['PATH'] ?? ''}`,
+          },
+        },
+      );
+      assert.equal(result.status, 0, result.stderr);
+      const notes = readFileSync(join(directory, 'release-notes.md'), 'utf8');
+      assert.ok(
+        notes.includes(changelog ? 'Release changes' : 'Generated changelog'),
+      );
+      assert.ok(
+        notes.includes(
+          'https://github.com/AlexaDeWit/Saerskriven/releases/download/v1.2.3/install.sh',
+        ),
+      );
+      assert.ok(notes.includes('bash install.sh'));
+      assert.equal(notes.split('## Install the CLI').length, 2);
+      assert.equal(notes.includes('@RELEASE_TAG@'), false);
+    }
   }
 });
 
@@ -226,6 +305,7 @@ void test('source checks accept a provenance skip only on a PR with unchanged de
   const passing = {
     EVENT_NAME: 'pull_request',
     BUILD_TEST: 'success',
+    INSTALLER_SMOKE: 'success',
     STATIC_CHECKS: 'success',
     E2E_SMOKE: 'success',
     DEPENDENCY_CHANGES: 'success',
@@ -235,6 +315,7 @@ void test('source checks accept a provenance skip only on a PR with unchanged de
   assert.equal(verdict('checks', passing).status, 0);
   for (const name of [
     'BUILD_TEST',
+    'INSTALLER_SMOKE',
     'STATIC_CHECKS',
     'E2E_SMOKE',
     'DEPENDENCY_CHANGES',
@@ -274,7 +355,7 @@ void test('artifact validation rejects a wrong tag and a corrupted executable', 
     JSON.stringify({ version: '1.2.3' }),
   );
   mkdirSync(join(directory, 'dist/cli'), { recursive: true });
-  const executable = 'saerskriven-1.2.3-x86_64-unknown-linux-gnu';
+  const executable = 'saer-1.2.3-x86_64-unknown-linux-gnu';
   const binary = '#!/usr/bin/env bash\necho 1.2.3\n';
   writeFileSync(join(directory, 'dist/cli', executable), binary, {
     mode: 0o755,

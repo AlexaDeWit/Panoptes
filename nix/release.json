@@ -1,5 +1,6 @@
 {
   "version": "0.1.0",
+  "binaryName": "saerskriven",
   "assets": {
     "x86_64-linux": {
       "target": "x86_64-unknown-linux-gnu",

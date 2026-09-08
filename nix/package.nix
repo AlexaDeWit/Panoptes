@@ -10,7 +10,7 @@ in stdenvNoCC.mkDerivation {
   inherit (release) version;
 
   src = fetchurl {
-    url = "https://github.com/AlexaDeWit/Saerskriven/releases/download/v${release.version}/saerskriven-${release.version}-${asset.target}";
+    url = "https://github.com/AlexaDeWit/Saerskriven/releases/download/v${release.version}/${release.binaryName}-${release.version}-${asset.target}";
     sha256 = asset.hash;
   };
 
@@ -35,16 +35,17 @@ in stdenvNoCC.mkDerivation {
       echo "Unsupported Saerskriven ELF payload trailer. Review the release's Deno format." >&2
       exit 1
     fi
-    head -c "$((file_size - payload_size))" "$src" > "$out/bin/saerskriven"
+    head -c "$((file_size - payload_size))" "$src" > "$out/bin/saer"
     patchelf \
       --set-interpreter "${stdenv.cc.bintools.dynamicLinker}" \
       --set-rpath "${lib.makeLibraryPath [ stdenv.cc.libc stdenv.cc.cc.lib ]}" \
-      "$out/bin/saerskriven"
-    tail -c "$payload_size" "$src" >> "$out/bin/saerskriven"
+      "$out/bin/saer"
+    tail -c "$payload_size" "$src" >> "$out/bin/saer"
   '' + lib.optionalString stdenvNoCC.hostPlatform.isDarwin ''
-    cp "$src" "$out/bin/saerskriven"
+    cp "$src" "$out/bin/saer"
   '' + ''
-    chmod 755 "$out/bin/saerskriven"
+    chmod 755 "$out/bin/saer"
+    ln -s saer "$out/bin/saerskriven"
     runHook postInstall
   '';
 
@@ -52,7 +53,7 @@ in stdenvNoCC.mkDerivation {
     description = "Threat model validation and rendering CLI";
     homepage = "https://github.com/AlexaDeWit/Saerskriven";
     license = lib.licenses.asl20;
-    mainProgram = "saerskriven";
+    mainProgram = "saer";
     platforms = builtins.attrNames release.assets;
     sourceProvenance = [ lib.sourceTypes.binaryNativeCode ];
   };

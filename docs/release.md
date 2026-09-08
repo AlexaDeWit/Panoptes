@@ -7,7 +7,7 @@ who moves it, and what turns it into downloadable executables.
 
 One number for the whole workspace. The root [`package.json`](../package.json)
 carries it, every project's manifest carries the same one, and the CLI build
-stamps it into the executable, so `saerskriven --version` and the tag cannot
+stamps it into the executable, so `saer --version` and the tag cannot
 disagree.
 
 `nx release` writes that number. It reads the [Conventional
@@ -49,12 +49,18 @@ Pull requests rehearse the release through artifact creation and attestation.
 The same jobs run on ordinary main, tag, and manual CI runs:
 
 - Build and test the host CLI, then compile all five targets twice and compare
-  their bytes. Check the host version and every executable checksum.
+  their bytes. Package `install.sh` with the release tag and every binary's SHA-256 embedded.
+  Check the host version and every executable and installer checksum.
 - Build the studio archive and metadata from the workspace version. A tag run
   additionally requires that version to match its tag.
-- Generate attestations for the executables, checksums, website archive, and
+- Generate attestations for the executables, installer, checksums, website archive, and
   metadata. Verify each against this repository, workflow, source ref, and commit.
 - Require those stages in `CI gate` before publication can run.
+
+Native Linux and macOS smoke jobs use the packaged installer with the system
+Bash and tools, without Nix or Node. They replace the download transport with
+local release assets, run the installed CLI, repeat the install, and confirm
+that a corrupted download leaves the installed version unchanged.
 
 Fork and Dependabot PRs still build and validate the artifacts. GitHub gives
 them read-only tokens, so they cannot generate attestations. The gate accepts
@@ -160,8 +166,9 @@ tag cannot be moved or deleted.
 ### 5. Build, attest, publish, and deploy (automatic)
 
 Pushing the tag runs [`.github/workflows/ci.yml`](../.github/workflows/ci.yml).
-It runs the same CI gate as a pull request, compiles every CLI target, and
-checks the executable version against the tag.
+It runs the same CI gate as a pull request, compiles every CLI target as `saer-<version>-<target>`, and
+checks the executable version against the tag. The installer places the binary
+at `saer` and adds `saerskriven -> saer` for compatibility.
 
 After source checks pass, `pages-build` builds the website from that exact tag.
 It takes the Pages base path and site URL from GitHub and stamps the workspace
@@ -170,7 +177,7 @@ manifest and the built version with the tag before creating `studio.tar` and
 `studio-release.json`. The latter records the source commit and CI run.
 
 `attest` waits for the source checks and website build. It attests the CLI
-executables, `SHA256SUMS`, and both website assets, then verifies every asset
+executables, `install.sh`, `SHA256SUMS`, and both website assets, then verifies every asset
 against the source ref and commit. `CI gate` requires that verification.
 `publish` waits for the gate and creates or updates the release with those
 files. A failed gate, website build, or attestation prevents publication.
@@ -178,7 +185,8 @@ Neither attest nor publish installs dependencies. The `release` environment
 still permits only `v*` tags.
 A tag containing a prerelease suffix creates a prerelease, which cannot reach
 production Pages. Release notes use the changelog section, or GitHub's generated
-notes when the section is missing.
+notes when the section is missing. Both paths append installation commands
+pinned to this tag. Publication retries refresh those notes along with the assets.
 
 #### Website promotion and recovery
 
@@ -239,12 +247,14 @@ nor forces an editor reload.
 
 ### 6. Check what shipped (owner)
 
-Download one executable from the release page, verify it against
-`SHA256SUMS`, check its provenance with all three flags, and run
-`saerskriven --version`:
+Download `install.sh` from the release page and follow the
+[installation instructions](../README.md#macos-and-linux), including installer
+attestation verification before execution. Run it with `--verify-attestation`,
+then run `saer --version` and compare with the release tag.
+The installer must also appear in `SHA256SUMS`. For a manual executable check:
 
 ```sh
-gh attestation verify saerskriven-* --repo AlexaDeWit/Saerskriven \
+gh attestation verify saer-* --repo AlexaDeWit/Saerskriven \
   --signer-workflow AlexaDeWit/Saerskriven/.github/workflows/ci.yml \
   --source-ref "refs/tags/v<version>"
 ```
@@ -278,8 +288,7 @@ configured, and the commands that check it has not drifted.
   would put the owner between the gate and a public release.
 - Every asset carries a **build provenance attestation** from the `attest`
   job, which needs no repository setting and which a stranger can check. The
-  [README's install section](../README.md#install) has the command and what
-  its two flags do and do not enforce.
+  [README's install section](../README.md#install) has the commands and the verification limits.
 
 ### Checking the configuration has not drifted
 
@@ -381,7 +390,7 @@ replace that:
   modes.** `deno compile` records every embedded file's name, modification
   time and executable bit in the virtual file system it embeds, so the script
   stages what it compiles into a directory of its own: the bundle as a fixed
-  `main.js`, and beside it the assets an executable carries, the Typst
+  `saer.js`, and beside it the assets an executable carries, the Typst
   WebAssembly module and the fonts. It stamps every file there to the epoch
   and to mode 644, every directory to mode 755, and compiles that. It then
   compiles every target into two directories and fails unless the two are byte

@@ -41,7 +41,7 @@ const repositoryRoot = join(import.meta.dirname, '../../..');
 
 const directory = mkdtempSync(join(tmpdir(), 'saerskriven-cli-main-'));
 
-const bundlePath = join(repositoryRoot, 'apps/cli/dist/main.js');
+const bundlePath = join(repositoryRoot, 'apps/cli/dist/saer.js');
 
 const bundle: Runner = {
   name: 'the bundle under node',
@@ -60,7 +60,7 @@ const hostTarget = (): string | undefined => {
 const executablePath = join(
   repositoryRoot,
   'dist/cli',
-  `saerskriven-${cliVersion}-${hostTarget() ?? 'unknown-host-target'}`,
+  `saer-${cliVersion}-${hostTarget() ?? 'unknown-host-target'}`,
 );
 
 const compiled: Runner = {
@@ -216,7 +216,7 @@ for (const runner of runners) {
         const result = text(runner, []);
         expect(result.code).toEqual(2);
         expect(result.out).toEqual('');
-        expect(result.err).toContain('Usage: saerskriven [options] [command]');
+        expect(result.err).toContain('Usage: saer [options] [command]');
       });
 
       it('writes the register of the Écluse fixture as the golden file', () => {

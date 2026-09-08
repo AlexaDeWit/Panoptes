@@ -27,6 +27,7 @@ import {
 
 const repository = 'AlexaDeWit/Saerskriven';
 const manifestPath = 'nix/release.json';
+const binaryNameSchema = z.enum(['saer', 'saerskriven']);
 const systemSchema = z.enum([
   'x86_64-linux',
   'aarch64-linux',
@@ -44,12 +45,14 @@ const assetSchema = z.object({
 });
 const manifestSchema = z.object({
   version: z.string(),
+  binaryName: binaryNameSchema,
   assets: z.record(systemSchema, assetSchema),
 });
 const releaseSchema = z.object({
   draft: z.literal(false),
   prerelease: z.literal(false),
   tag_name: z.string(),
+  assets: z.array(z.object({ name: z.string() })),
 });
 const objectSchema = z.object({ sha: z.string().regex(/^[0-9a-f]{40}$/u) });
 const tagRefSchema = z.object({
@@ -136,6 +139,18 @@ const preparePin = (
     );
     if (release.tag_name !== tag)
       return yield* refuse(`the release response does not name ${tag}`);
+    const binaryName = binaryNameSchema.options.find((name) =>
+      Object.values(manifest.assets).every((asset) =>
+        release.assets.some(
+          (candidate) =>
+            candidate.name === `${name}-${version}-${asset.target}`,
+        ),
+      ),
+    );
+    if (binaryName === undefined)
+      return yield* refuse(
+        `the release has no complete CLI asset set for ${tag}`,
+      );
     const reference = yield* githubJson(
       run,
       `repos/${repository}/git/ref/tags/${tag}`,
@@ -149,7 +164,7 @@ const preparePin = (
       { schema: tagSchema },
     );
     for (const asset of Object.values(manifest.assets)) {
-      const name = `saerskriven-${version}-${asset.target}`;
+      const name = `${binaryName}-${version}-${asset.target}`;
       const path = join(directory, name);
       asset.hash = yield* fetchAssetHash(
         run,
@@ -163,7 +178,7 @@ const preparePin = (
     yield* attempt(manifestPath, () => {
       writeFileSync(
         candidate,
-        `${JSON.stringify({ ...manifest, version }, null, 2)}\n`,
+        `${JSON.stringify({ ...manifest, version, binaryName }, null, 2)}\n`,
       );
       renameSync(candidate, join(cwd, manifestPath));
     });

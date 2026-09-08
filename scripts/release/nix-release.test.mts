@@ -18,6 +18,7 @@ import type { CommandResult } from './release-io.mts';
 
 const manifestSchema = z.object({
   version: z.string(),
+  binaryName: z.enum(['saer', 'saerskriven']),
   assets: z.record(
     z.string(),
     z.object({ target: z.string(), hash: z.string() }),
@@ -51,6 +52,12 @@ const fixture = (failure = '') => {
                   draft: failure === 'draft',
                   prerelease: false,
                   tag_name: 'v1.2.3',
+                  assets:
+                    failure === 'missing-assets'
+                      ? []
+                      : Object.values(manifest.assets).map(({ target }) => ({
+                          name: `${failure === 'legacy' ? 'saerskriven' : 'saer'}-1.2.3-${target}`,
+                        })),
                 }),
           ),
     ],
@@ -99,13 +106,12 @@ void test('the updater pins hashes from verified asset bytes for the explicit re
     JSON.parse(readFileSync(probe.destination, 'utf8')),
   );
   assert.equal(updated.version, '1.2.3');
+  assert.equal(updated.binaryName, 'saer');
   assert.deepEqual(Object.keys(updated.assets), Object.keys(manifest.assets));
   for (const { target, hash } of Object.values(updated.assets)) {
     assert.equal(
       hash,
-      createHash('sha256')
-        .update(`binary: saerskriven-1.2.3-${target}`)
-        .digest('hex'),
+      createHash('sha256').update(`binary: saer-1.2.3-${target}`).digest('hex'),
     );
   }
   const verifications = probe.calls.filter(
@@ -128,6 +134,23 @@ void test('the updater pins hashes from verified asset bytes for the explicit re
   assert.deepEqual(readdirSync(join(probe.cwd, 'nix')), ['release.json']);
 });
 
+void test('the updater preserves the published binary name when pinning an older release', () => {
+  const probe = fixture('legacy');
+  right(updateNixRelease({ cwd: probe.cwd, input: 'v1.2.3', run: probe.run }));
+  const updated = manifestSchema.parse(
+    JSON.parse(readFileSync(probe.destination, 'utf8')),
+  );
+  assert.equal(updated.binaryName, 'saerskriven');
+  for (const { target, hash } of Object.values(updated.assets)) {
+    assert.equal(
+      hash,
+      createHash('sha256')
+        .update(`binary: saerskriven-1.2.3-${target}`)
+        .digest('hex'),
+    );
+  }
+});
+
 for (const failure of [
   'api',
   'json',
@@ -137,6 +160,7 @@ for (const failure of [
   'download',
   'last-attestation',
   'invalid-version',
+  'missing-assets',
 ]) {
   void test(`the updater preserves the pin and removes downloads after ${failure} failure`, () => {
     const probe = fixture(failure);

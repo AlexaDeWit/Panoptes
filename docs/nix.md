@@ -1,8 +1,10 @@
 # Using the released CLI from Nix
 
-`packages.${system}.saerskriven` installs `bin/saerskriven` from the release
+`packages.${system}.saerskriven` installs `bin/saer` and the compatibility link
+`bin/saerskriven -> saer` from the release
 pinned in [`nix/release.json`](../nix/release.json). Each asset has a versioned
-URL and a committed SHA-256 hash. Evaluation reads only local Nix and JSON
+URL and a committed SHA-256 hash. The pin records the published binary name,
+so older releases still use their original asset URLs. Evaluation reads only local Nix and JSON
 files. Building fetches the selected asset if the Nix store does not hold it.
 Shell entry never resolves Latest or downloads a checksum file.
 
@@ -46,8 +48,8 @@ support. The `v0.1.0` source tag predates it.
 
 ```sh
 nix build .#saerskriven
-nix develop --command saerskriven --version
-nix develop .#ci --command saerskriven validate threat-model.yaml
+nix develop --command saer --version
+nix develop .#ci --command saer validate threat-model.yaml
 ```
 
 The overlay calls [`nix/package.nix`](../nix/package.nix) with the caller's
@@ -115,7 +117,8 @@ RELEASE_VERSION=v0.1.0 nix develop --command pnpm nx run release-tools:update-ni
 
 Set `RELEASE_VERSION` to the explicit stable version. Authenticate the GitHub CLI
 before running it. The updater resolves that annotated tag's source commit,
-downloads each asset named by the existing target map, and verifies its
+selects a complete `saer` asset set or a legacy `saerskriven` set for the
+existing target map, downloads each asset, and verifies its
 attestation against this repository, `ci.yml`, the tag, and the source commit.
 It computes SHA-256 from each verified asset's bytes. It replaces
 `nix/release.json` only after every download and verification succeeds.
@@ -133,8 +136,8 @@ After that PR merges, update Écluse's input lock in its own reviewed change:
 
 ```sh
 nix flake update saerskriven
-nix develop --command saerskriven --version
-nix develop .#ci --command saerskriven validate threat-model.yaml
+nix develop --command saer --version
+nix develop .#ci --command saer validate threat-model.yaml
 ```
 
 Review the downstream lock diff and exercise the rendering commands the
