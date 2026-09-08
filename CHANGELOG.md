@@ -1,3 +1,38 @@
+## 0.2.1
+
+### Studio
+
+- Simplify the burger menu. Duplicate, Position and size, Change flow source, Change flow target, Focus threats, and Delete selection remain available through shortcuts.
+- Add right-pointing arrows to Export, Appearance, and Arrange submenu entries.
+- Organize the keyboard shortcut reference into expandable categories, with two columns on wide screens and one column on narrow screens.
+- Replace the threat pane's width labels with an icon button on the left. Widening or restoring the pane leaves the diagram stationary.
+- Keep fitted content clear of the threat pane with both Fit to view and Fit selection.
+- Enable middle-button dragging to pan in Select mode. Preserve trackpad panning and touch placement.
+
+These changes are in [#302](https://github.com/AlexaDeWit/Saerskriven/pull/302).
+
+### Keyboard shortcuts
+
+- Use Command on macOS and Ctrl on Linux and Windows. macOS Redo uses Shift+Command+Z. Linux and Windows retain Ctrl+Shift+Z and Ctrl+Y.
+- Keep shortcut labels, tooltips, and accessibility attributes consistent with the active platform.
+- Accept the produced plus character for zoom, including Shift+Command+plus on macOS.
+- Recognize shifted number-row shortcuts when the keyboard reports punctuation, including the shortcuts for changing flow endpoints.
+
+These changes are also in [#302](https://github.com/AlexaDeWit/Saerskriven/pull/302).
+
+### Maintenance
+
+- Prevent missing Codecov statuses or failed uploads from blocking releases after the required repository checks pass. Pull requests retain their coverage requirements. ([#299](https://github.com/AlexaDeWit/Saerskriven/pull/299))
+- Update the Nix package to the verified v0.2.0 CLI assets and retain the `saerskriven` compatibility command. ([#300](https://github.com/AlexaDeWit/Saerskriven/pull/300))
+- Remove stale documentation and review artifacts. ([#298](https://github.com/AlexaDeWit/Saerskriven/pull/298))
+
+### Upgrading
+
+CLI arguments and model file formats are unchanged.
+The Nix package keeps a separate release pin. Its update to v0.2.1 follows publication and verification of the new assets.
+
+[Full changelog](https://github.com/AlexaDeWit/Saerskriven/compare/v0.2.0...v0.2.1)
+
 ## 0.2.0 (2026-09-08)
 
 ### Features
