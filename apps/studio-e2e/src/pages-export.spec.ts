@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import {
   expectedPdfDigest,
@@ -61,23 +62,30 @@ test('the release build identifies its own version and release notes', async ({
 }) => {
   await page.goto('./');
   await page.getByRole('button', { name: /^Menu/u }).click();
-  const notes = page.getByRole('menuitem', {
-    name: /^Saerskriven [0-9]+\.[0-9]+\.[0-9]+ release notes$/u,
-  });
-  const href = (await notes.getAttribute('href')) ?? '';
-  const version = href.replace(
-    'https://github.com/AlexaDeWit/Saerskriven/releases/tag/v',
-    '',
-  );
   const manifest: unknown = JSON.parse(
     readFileSync(vendored('package.json'), 'utf8'),
   );
-  expect(manifest).toMatchObject({ version });
+  assert.ok(
+    typeof manifest === 'object' && manifest !== null && 'version' in manifest,
+  );
+  const version = manifest.version;
+  assert.equal(typeof version, 'string');
+  const notes = page.getByRole('menuitem', {
+    name: `Saerskriven ${String(version)} release notes`,
+    exact: true,
+  });
+  await expect(notes).toHaveAttribute(
+    'href',
+    `https://github.com/AlexaDeWit/Saerskriven/releases/tag/v${String(version)}`,
+  );
   await notes.focus();
   await expect(notes).toBeFocused();
   const response = await page.request.get(
     new URL('version.json', page.url()).href,
   );
   expect(response.ok()).toBe(true);
-  expect(await response.json()).toEqual({ version, tag: `v${version}` });
+  expect(await response.json()).toEqual({
+    version,
+    tag: `v${String(version)}`,
+  });
 });

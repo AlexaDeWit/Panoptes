@@ -41,6 +41,16 @@ import {
 } from './files.fixtures.js';
 import { StudioMenu } from './menu.js';
 
+const build = vi.hoisted(() => ({ version: '1.2.3', tag: '' }));
+vi.mock('../version.js', () => ({
+  get studioVersion() {
+    return build.version;
+  },
+  get studioReleaseTag() {
+    return build.tag;
+  },
+}));
+
 const nativeText = saerskrivenYamlCodec.write(sampleModel).output;
 
 type User = ReturnType<typeof userEvent.setup>;
@@ -138,6 +148,8 @@ const withUndeclaredKeys = async (): Promise<string> =>
     .replace('"detail": {', '"detail": {\n    "unknownDetail": "nor this",');
 
 beforeEach(() => {
+  build.version = '1.2.3';
+  build.tag = '';
   modelStore.setState(initialState(sampleModel), true);
 });
 
@@ -164,6 +176,23 @@ describe('what the menu offers', () => {
       'FileOpen a modelCtrl+OSaveCtrl+SSave asCtrl+Shift+SExport›Close the fileCtrl+Shift+X',
     );
   });
+
+  it.each(['1.2.3', '1.2.3-beta.1'])(
+    'links the built version %s to its release notes',
+    async (version) => {
+      build.version = version;
+      build.tag = `v${version}`;
+      const user = userEvent.setup();
+      mounted(specBridge());
+      await openMenu(user);
+      const notes = item(`Saerskriven ${version} release notes`);
+      expect(notes.getAttribute('href')).toBe(
+        `https://github.com/AlexaDeWit/Saerskriven/releases/tag/v${version}`,
+      );
+      notes.focus();
+      expect(document.activeElement).toBe(notes);
+    },
+  );
 
   it('links to the source in a new tab with a popout icon', async () => {
     const user = userEvent.setup();
