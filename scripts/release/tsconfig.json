@@ -5,5 +5,5 @@
     "lib": ["ES2023"],
     "noEmit": true
   },
-  "include": ["release.mts", "release.test.mts"]
+  "include": ["*.mts"]
 }

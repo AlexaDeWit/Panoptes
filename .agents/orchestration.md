@@ -10,7 +10,7 @@ Edit here when the process changes, in the same PR as the change.
   [`.github/workflows/ci.yml`](../.github/workflows/ci.yml); its `needs` list
   and verdict step define the gating set. Wire a new gating job into both.
 - That workflow also runs on a `v*` tag, where it builds the release: the
-  `attest` and `publish` jobs after the gate both need it, and run only on a
+  `pages-build`, `attest`, and `publish` jobs follow the gate and run only on a
   push to a tag ref. They are a consequence of a green gate, not members of
   the gating set, so they belong in neither the gate's `needs` nor its
   verdict.

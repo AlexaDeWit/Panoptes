@@ -23,6 +23,7 @@ import {
   selectedElement,
 } from '../store/selectors.js';
 import { useModelStore } from '../store/store.js';
+import { studioReleaseTag, studioVersion } from '../version.js';
 import { FailureNotice } from '../ui/failure-notice.js';
 import { LiveRegion } from '../ui/live-region.js';
 import {
@@ -175,15 +176,17 @@ function UnsavedChangesCommand({
   );
 }
 
-function SourceLink() {
+function ProjectLink({
+  href,
+  children,
+}: {
+  readonly href: string;
+  readonly children: ReactNode;
+}) {
   return (
     <DropdownMenu.Item asChild className={styles.item}>
-      <a
-        href="https://github.com/AlexaDeWit/Saerskriven"
-        rel="noopener noreferrer"
-        target="_blank"
-      >
-        <span>View source on GitHub</span>
+      <a href={href} rel="noopener noreferrer" target="_blank">
+        <span>{children}</span>
         <ExternalLinkIcon aria-hidden="true" className={styles.externalLink} />
       </a>
     </DropdownMenu.Item>
@@ -388,7 +391,20 @@ export function StudioMenu({
             <DropdownMenu.Label className={styles.heading}>
               Project
             </DropdownMenu.Label>
-            <SourceLink />
+            <ProjectLink href="https://github.com/AlexaDeWit/Saerskriven">
+              View source on GitHub
+            </ProjectLink>
+            {studioReleaseTag === '' ? (
+              <p className={styles.state}>
+                Saerskriven {studioVersion} (development)
+              </p>
+            ) : (
+              <ProjectLink
+                href={`https://github.com/AlexaDeWit/Saerskriven/releases/tag/${studioReleaseTag}`}
+              >
+                Saerskriven {studioVersion} release notes
+              </ProjectLink>
+            )}
           </DropdownMenu.Group>
           <DropdownMenu.Separator className={styles.rule} />
           <DropdownMenu.Group className={styles.about}>

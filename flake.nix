@@ -37,21 +37,15 @@
           SAERSKRIVEN_FONTS_DIR = "${pkgs.liberation_ttf}/share/fonts/truetype";
         };
 
-        # The runtimes only. The flake pins node and pnpm; pnpm-workspace.yaml
-        # catalogs pin every JS dependency. package.json's packageManager field
-        # must name the same pnpm version this set provides, so a run outside the
-        # flake fails loudly instead of resolving differently.
+        # The flake pins executable tools. JS libraries use the pnpm catalog.
         toolchainInputs = [
+          pkgs.jq
+          pkgs.gnutar
           pkgs.bashInteractive
           pkgs.nodejs_24
           pkgs.pnpm
-          # Packaging only: `deno compile` turns the CLI's esbuild bundle into
-          # the standalone executables a release attaches
-          # (scripts/package-cli.sh). Deno never resolves the workspace, never
-          # runs a test, and never drives a build; node stays the development
-          # and test runtime. Deno never upgrades itself: its version is
-          # this binary's, and the runtime it embeds in an executable is
-          # pinned separately by denortHashes below.
+          # Deno packages the CLI. Node remains the development and test runtime.
+          # The runtime embedded by Deno is pinned separately below.
           pkgs.deno
         ];
 

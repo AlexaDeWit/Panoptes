@@ -166,13 +166,24 @@ so the editor and the format check inside `pnpm check` agree.
 
 ### Publishing the studio
 
-[`pages.yml`](.github/workflows/pages.yml) builds the studio from `main` and
-deploys it to GitHub Pages each night at 05:17 UTC. It also accepts a manual
-dispatch from `main`, including for the first deployment. In the repository's
-Pages settings, select **GitHub Actions** as the build and deployment source
-before that first dispatch. The workflow reads the site's base path from
-GitHub, so both a project site and a later custom domain receive valid asset
-URLs without a separate build configuration.
+Tag CI builds the studio from the release commit, then attests and attaches its
+archive to the GitHub release alongside the CLI.
+[`pages.yml`](.github/workflows/pages.yml) deploys that archive after CI succeeds,
+provided the release is GitHub's Latest stable release. It does not build `main`
+or deploy on a nightly schedule. The studio's Project menu shows the built
+version and links to its release notes. Other builds say `development`.
+
+A manual Pages dispatch from `main` retries the current Latest release using
+its existing archive. It does not rebuild the website or publish a release.
+In Pages settings, select **GitHub Actions** as the source. Keep the
+`github-pages` environment restricted to `main`: the promotion workflow runs
+there and verifies the release archive against the tag's commit.
+[The release procedure](docs/release.md#website-promotion-and-recovery) describes
+first-release setup and recovery.
+
+The tag build reads the site's base path from GitHub, so project sites and
+custom domains receive the matching asset URLs. A domain or base-path change
+needs a new release because promotion keeps the archived website unchanged.
 
 The same Pages value sets the canonical URL, `sitemap.xml`, and `robots.txt`.
 A project site cannot control the host-root `robots.txt` on the shared
