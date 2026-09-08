@@ -50,6 +50,11 @@ Playwright's downloader.
 
 ## Waiting on the canvas
 
+`src/flow-bends.spec.ts` covers line pulling, individual bend movement and
+removal, keyboard insertion, cancellation, undo/redo, click-only editing, and
+pan/zoom coordinates. It reopens edited Threat Dragon JSON and native YAML
+and checks the SVG route. It also audits the open bend controls with axe.
+
 A gesture is sent to a canvas that has stopped moving. Opening a model fits
 the viewport to the whole of the diagram it carries, which `FitOnOpen` applies
 from inside React Flow, once it has measured the canvas ([the studio's

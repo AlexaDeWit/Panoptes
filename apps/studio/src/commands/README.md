@@ -129,6 +129,14 @@ button follows the same path.
 
 ## What a later slice does
 
+Add bend (`+`) acts on one selected flow. It highlights a segment for
+Left/Right selection, then Enter starts a bend. Arrow keys position the
+preview, Enter commits, and Escape cancels. Existing focused bend handles
+accept arrows and Delete/Backspace. These local keys belong to the bend
+control, as resize keys belong to resize controls. `+` accepts either Shift
+state because keyboard layouts differ in how they produce that character.
+Ctrl or Command keeps its separate zoom binding. Text fields retain `+`.
+
 - Flip a `pending` entry to `runs` when the issue lands its surface. A pending
   command keeps its chord reserved until then.
 - Render a command through `CommandButton`, or `IconCommandButton` where the

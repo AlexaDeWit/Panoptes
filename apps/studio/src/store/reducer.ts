@@ -10,6 +10,7 @@ import {
   renameElement,
   replaceThreat,
   resizeElement,
+  setFlowWaypoints,
   type ElementId,
   type Model,
   type OperationFailure,
@@ -51,6 +52,8 @@ export function reduce(state: State, action: Action): State {
       edited(state, renameElement(state.present, elementId, name)),
     EditNote: ({ elementId, text }) =>
       edited(state, editNote(state.present, elementId, text)),
+    SetFlowWaypoints: ({ elementId, waypoints }) =>
+      edited(state, setFlowWaypoints(state.present, elementId, waypoints)),
     AddThreat: ({ threat }) => edited(state, addThreat(state.present, threat)),
     RemoveThreat: ({ threatId }) =>
       edited(state, removeThreat(state.present, threatId)),
@@ -100,13 +103,16 @@ function edited(
       ...state,
       lastFailure: StudioFailure.Operation({ failure }),
     }),
-    onRight: (present) => ({
-      ...state,
-      present,
-      past: [...state.past, state.present],
-      future: [],
-      lastFailure: undefined,
-    }),
+    onRight: (present) =>
+      present === state.present
+        ? state
+        : {
+            ...state,
+            present,
+            past: [...state.past, state.present],
+            future: [],
+            lastFailure: undefined,
+          },
   });
 }
 

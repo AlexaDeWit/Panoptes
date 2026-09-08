@@ -48,15 +48,43 @@ export type EditNoteFailure = Extract<
   { _tag: 'UnknownElement' | 'NotTextElement' | 'RefusedCharacter' }
 >;
 
-/**
- * Returns a new model with `element` appended to the diagram named by
- * `diagramId`. Any element kind adds this way, flows and trust boundaries
- * included. Fails when the diagram is unknown, when the element's id is
- * already taken anywhere in the model, or when an attached flow endpoint
- * references the flow itself or an element outside the target diagram.
- * The element value comes from the element schema; what this operation
- * checks is its fit against the model. The input model is never mutated.
- */
+/** The failures a flow route edit can produce. */
+export type SetFlowWaypointsFailure = Extract<
+  OperationFailure,
+  { _tag: 'UnknownElement' | 'NotFlowElement' }
+>;
+
+/** Replaces a flow's ordered bends, preserving the model for an unchanged route. */
+export function setFlowWaypoints(
+  model: Model,
+  elementId: ElementId,
+  waypoints: readonly Point[],
+): Either.Either<Model, SetFlowWaypointsFailure> {
+  const located = locateElement(model, elementId);
+  if (located === undefined) {
+    return Either.left(OperationFailure.UnknownElement({ elementId }));
+  }
+  const flow = located.element;
+  if (flow.kind !== 'flow') {
+    return Either.left(OperationFailure.NotFlowElement({ elementId }));
+  }
+  const unchanged =
+    flow.waypoints.length === waypoints.length &&
+    flow.waypoints.every(
+      (point, index) =>
+        point.x === waypoints[index].x && point.y === waypoints[index].y,
+    );
+  return Either.right(
+    unchanged
+      ? model
+      : withElement(model, located.diagramIndex, {
+          ...flow,
+          waypoints: waypoints.map((point) => ({ ...point })),
+        }),
+  );
+}
+
+/** Adds an element after checking its diagram, ID, and attached endpoint references. */
 export function addElement(
   model: Model,
   diagramId: DiagramId,
@@ -88,17 +116,7 @@ export function addElement(
   );
 }
 
-/**
- * Returns a new model without the element named by `elementId`, cascading
- * so the rest of the model stays consistent: a flow endpoint attached to
- * the removed element becomes a free endpoint, and threats and assumptions
- * lose the removed element from their `elements` links while the records
- * themselves stay. A freed endpoint lands on the removed element's anchor
- * point: the centre of a node or box boundary, the first waypoint of a
- * curve boundary, and for a flow its first waypoint, else a free
- * endpoint's position, else the canvas origin. Fails when the element is
- * unknown. The input model is never mutated.
- */
+/** Removes an element and its threat and assumption links. Attached flows keep their identity and acquire free endpoints at the removed element's anchor. */
 export function removeElement(
   model: Model,
   elementId: ElementId,
@@ -142,14 +160,7 @@ export function removeElement(
   });
 }
 
-/**
- * Returns a new model with the element named by `elementId` translated by
- * `offset`, a displacement in canvas units: a node or box boundary shifts
- * its position, a curve boundary its waypoints, and a flow its waypoints
- * and free endpoints, while attached endpoints keep following their
- * element. Fails when the element is unknown. The input model is never
- * mutated.
- */
+/** Translates positions, waypoints, and free endpoints. Attached endpoints keep following their elements. */
 export function moveElement(
   model: Model,
   elementId: ElementId,
@@ -168,14 +179,7 @@ export function moveElement(
   );
 }
 
-/**
- * Returns a new model with the element named by `elementId` given `size`.
- * Only elements carrying an extent resize: actors, processes, stores, and
- * box trust boundaries. Fails when the element is unknown and refuses a
- * flow or a curve boundary as not resizable. The size value comes from
- * the size schema, which keeps extents strictly positive. The input model
- * is never mutated.
- */
+/** Resizes an element that carries an extent. The caller supplies a schema-valid size. */
 export function resizeElement(
   model: Model,
   elementId: ElementId,
@@ -192,16 +196,7 @@ export function resizeElement(
   return Either.right(withElement(model, located.diagramIndex, next));
 }
 
-/**
- * Returns a new model with the element named by `elementId` called `name`.
- * Every element kind renames this way, a flow's name being what the canvas
- * draws as its label. Fails when the element is unknown, when the name is
- * empty, and when the name carries a character the model's text rule
- * refuses, which is the rule the parse boundary screens a foreign file by:
- * the failure carries where the first such character sits, from
- * {@link firstRefusedCharacter}. Empty is {@link isEmptyName}, so a name of
- * spaces is refused with the empty string. The input model is never mutated.
- */
+/** Renames any element, rejecting empty names and characters refused by the model. */
 export function renameElement(
   model: Model,
   elementId: ElementId,
@@ -223,11 +218,7 @@ export function renameElement(
   );
 }
 
-/**
- * Returns a new model with the text of one canvas note changed. An empty note
- * is valid. The operation fails for an unknown element, another element kind,
- * or a character the model refuses.
- */
+/** Changes a canvas note's text. Empty text is valid. */
 export function editNote(
   model: Model,
   elementId: ElementId,

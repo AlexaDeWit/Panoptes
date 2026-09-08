@@ -57,6 +57,9 @@ const operationFailures: ByTag<OperationFailure> = {
   NotTextElement: OperationFailure.NotTextElement({
     elementId: elementId('element-process'),
   }),
+  NotFlowElement: OperationFailure.NotFlowElement({
+    elementId: elementId('element-process'),
+  }),
   EmptyName: OperationFailure.EmptyName({
     elementId: elementId('element-unnamed'),
   }),

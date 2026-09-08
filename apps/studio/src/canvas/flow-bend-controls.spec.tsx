@@ -1,0 +1,135 @@
+import { act, fireEvent, render, screen } from '@testing-library/react';
+import { Action } from '../store/actions.js';
+import { initialState } from '../store/state.js';
+import { dispatch, modelStore } from '../store/store.js';
+import { canvasModel, requestFlow, readerElement } from './canvas.fixtures.js';
+import { DiagramCanvas } from './diagram-canvas.js';
+import { currentLayout } from './layout.js';
+import { resetTools } from './tools.js';
+
+const press = (key: string, shiftKey = false): void => {
+  fireEvent.keyDown(document.activeElement ?? document.body, { key, shiftKey });
+};
+const points = () =>
+  currentLayout(modelStore.getState()).edges.find(
+    (edge) => edge.id === requestFlow,
+  )?.waypoints;
+const add = (): void => {
+  fireEvent.click(screen.getByRole('button', { name: 'Add bend' }));
+};
+const bend = () => screen.getByRole('button', { name: 'Bend 1' });
+
+beforeEach(() => {
+  resetTools();
+  modelStore.setState(
+    { ...initialState(canvasModel), selection: [requestFlow] },
+    true,
+  );
+});
+
+it('inserts at the chosen segment with keyboard preview, cancellation, and one commit', () => {
+  render(<DiagramCanvas />);
+  add();
+  press('ArrowLeft');
+  press('Enter');
+  press('ArrowUp');
+  press('ArrowRight', true);
+  press('ArrowLeft');
+  expect(points()).toEqual([]);
+  expect(screen.getByRole('button', { name: 'Bend 1' })).toBeTruthy();
+  press('Enter');
+  expect(points()).toEqual([{ x: 225, y: 25 }]);
+  expect(modelStore.getState().past).toHaveLength(1);
+  add();
+  press('ArrowRight');
+  press('Enter');
+  press('ArrowDown', true);
+  press('Escape');
+  expect(points()).toEqual([{ x: 225, y: 25 }]);
+  expect(modelStore.getState().past).toHaveLength(1);
+  add();
+  press('Tab');
+  expect(document.querySelector('[data-chosen]')).toBeNull();
+});
+
+it('nudges a focused bend and keeps deletion and actions local to that bend', () => {
+  render(<DiagramCanvas />);
+  add();
+  press('Enter');
+  press('ArrowDown');
+  press('Enter');
+  bend().focus();
+  press('ArrowUp', true);
+  press('ArrowLeft');
+  expect(points()).toEqual([{ x: 205, y: 15 }]);
+  fireEvent.click(bend());
+  expect(screen.getByRole('button', { name: 'Remove bend' })).toBe(
+    document.activeElement,
+  );
+  fireEvent.click(screen.getByRole('button', { name: 'Move bend' }));
+  press('ArrowRight');
+  press('Enter');
+  expect(points()).toEqual([{ x: 210, y: 15 }]);
+  fireEvent.click(bend());
+  fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+  expect(screen.queryByRole('group', { name: 'Bend actions' })).toBeNull();
+  bend().focus();
+  press('Backspace');
+  expect(points()).toEqual([]);
+  expect(
+    modelStore
+      .getState()
+      .present.diagrams[0].elements.some(
+        (element) => element.id === requestFlow,
+      ),
+  ).toBe(true);
+  add();
+  press('Enter');
+  press('Enter');
+  fireEvent.click(bend());
+  fireEvent.click(screen.getByRole('button', { name: 'Remove bend' }));
+  expect(points()).toEqual([]);
+});
+
+it('places and moves with clicks, and drops previews on another selection', () => {
+  render(<DiagramCanvas />);
+  add();
+  const segment = document.querySelector('[data-bend-segment="0"]');
+  expect(segment).not.toBeNull();
+  fireEvent.click(segment ?? document.body);
+  const pane = document.querySelector('.react-flow__pane') ?? document.body;
+  fireEvent.pointerDown(pane);
+  fireEvent.click(pane, { clientX: 250, clientY: 100 });
+  expect(points()).toHaveLength(1);
+  fireEvent.click(bend());
+  fireEvent.click(screen.getByRole('button', { name: 'Move bend' }));
+  fireEvent.click(pane, { clientX: 270, clientY: 120 });
+  const committed = modelStore.getState().present;
+  add();
+  press('Enter');
+  press('ArrowUp');
+  act(() => {
+    dispatch(Action.Select({ elementIds: [readerElement] }));
+  });
+  expect(screen.queryByRole('button', { name: 'Add bend' })).toBeNull();
+  expect(modelStore.getState().present).toBe(committed);
+});
+
+it('cancels on a window blur and preserves the flow rename action', () => {
+  render(<DiagramCanvas />);
+  add();
+  press('Enter');
+  press('ArrowDown');
+  fireEvent.blur(window);
+  expect(points()).toEqual([]);
+  add();
+  fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+  expect(points()).toEqual([]);
+  const segment = document.querySelector('[data-bend-segment="0"]');
+  fireEvent.doubleClick(segment ?? document.body);
+  expect(modelStore.getState().inlineEditor).toEqual({
+    kind: 'name',
+    elementId: requestFlow,
+  });
+  expect(screen.queryByRole('button', { name: 'Add bend' })).toBeNull();
+});

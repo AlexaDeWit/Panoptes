@@ -34,6 +34,7 @@ export const chordKeys = [
   '6',
   '7',
   '=',
+  '+',
   '-',
   '0',
   'Backspace',
@@ -241,7 +242,7 @@ export function keyShortcutsAttribute(
         ...heldIn(chord, platform).map(
           (modifier) => ariaNames[platform][modifier],
         ),
-        spellKey(chord.key),
+        chord.key === '+' ? 'Plus' : spellKey(chord.key),
       ].join('+'),
     )
     .join(' ');

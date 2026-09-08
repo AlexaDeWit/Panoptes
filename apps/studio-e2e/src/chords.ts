@@ -27,6 +27,7 @@ export const registeredChords = {
   'zoom-in': ['ControlOrMeta+='],
   'zoom-out': ['ControlOrMeta+-'],
   'start-flow': ['f'],
+  'add-bend': ['+'],
   'select-tool': ['v', 'Escape', '1'],
   'hand-tool': ['h', 'Space'],
   'actor-tool': ['a', '2'],

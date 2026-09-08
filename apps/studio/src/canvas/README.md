@@ -63,6 +63,36 @@ receives its one action.
 
 ## Editing
 
+### Flow bends
+
+Select one flow to reveal its bend handles and the Add bend control. Pull
+any segment of the line to create a bend. Drag a handle to move a bend.
+Click a handle for Remove bend or Move bend. Move bend accepts a destination
+click, so moving does not require a held drag.
+
+Add bend, or `+`, highlights a segment. Left/Right chooses a segment and
+Enter starts a bend at its midpoint. Arrow keys position the preview by five
+model units, or twenty with Shift. Enter commits the insertion and Escape
+cancels it. Pointer users can click a segment and then its destination.
+Existing handles also accept arrow keys. Delete or Backspace on a focused
+handle removes that bend alone. Removing the final bend restores a direct line.
+
+Each completed drag or insertion is one undo step. Cancellation and returned
+drags leave the model and history unchanged. Selection, model, tool, and inline
+editor changes invalidate previews. A window blur cancels an active gesture.
+Tab leaves insertion without saving it. Coordinates remain unsnapped.
+
+`flow-bends.ts` owns the preview and model edit. `flow-bend-interaction.ts`
+binds pointer and keyboard gestures, and `flow-bend-controls.tsx` draws their
+controls. Add bend lives in the command registry. The `bend-insertion.ts`
+event connects that command to the mounted controls.
+
+The focused Chromium browser spec covers pointer, keyboard, click-only edits,
+pan and zoom, an axe audit with bend actions open, and both format round trips.
+No manual screen-reader session was run for this change.
+
+### Element edits
+
 Every edit is one dispatched action, so undo takes back exactly what one
 gesture or one press did, and the canvas draws the result because it derives
 from the store. A selection that follows an edit is a second dispatch and

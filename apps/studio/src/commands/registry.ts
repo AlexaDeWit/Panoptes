@@ -1,6 +1,7 @@
 import type { Diagram, DiagramId } from '@saerskriven/model';
 import { announce } from '../canvas/announcements.js';
 import { startFlow } from '../canvas/connecting.js';
+import { startBendInsertion } from '../canvas/bend-insertion.js';
 import { removeSelected, renameSelected, selectAll } from '../canvas/edits.js';
 import { selectTool, type Tool } from '../canvas/tools.js';
 import { focusThreatPanel } from '../panel/panel-focus.js';
@@ -291,6 +292,15 @@ const table = {
     dispatch: runs((surface) => {
       surface.view.zoomOut();
     }),
+  },
+  'add-bend': {
+    id: 'add-bend',
+    label: 'Add bend',
+    group: 'Edit',
+    shortcuts: [character('+')],
+    when: 'One flow is selected',
+    inTextFields: false,
+    dispatch: runs(startBendInsertion),
   },
   'start-flow': {
     id: 'start-flow',
