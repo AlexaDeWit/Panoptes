@@ -38,6 +38,7 @@ export type CommandButtonProps = {
  * shows nothing.
  */
 export type IconCommandButtonProps = {
+  readonly description?: string;
   readonly command: CommandId;
   readonly className?: string;
   readonly disabled?: boolean;
@@ -80,20 +81,9 @@ export function CommandButton({
   );
 }
 
-/**
- * The same control drawn as an icon alone, which is what the floating chrome
- * carries. The registry's label is the accessible name, the glyph having
- * none, and the label with its chord is what the tooltip says. The tooltip is
- * Radix's rather than the `title` attribute the worded control carries,
- * because a control with no words on it has to say what it is to a keyboard
- * as well as to a pointer and `title` is shown on hover alone. It renders
- * where it stands rather than through a portal, so it stays inside the
- * landmark the control sits in ([the studio's UI](../ui/README.md)), and it
- * leaves with the pointer that opened it: it holds nothing to reach into, so
- * Radix's grace area for reaching would only leave it standing over the
- * canvas.
- */
+/** An icon control with its registered name, shortcut tooltip, and optional state description. */
 export function IconCommandButton({
+  description,
   command,
   className,
   disabled,
@@ -101,12 +91,16 @@ export function IconCommandButton({
   onDoubleClick,
   children,
 }: IconCommandButtonProps) {
+  const descriptionId = useId();
   const { entry, spelled, keyShortcuts, press } = usePressed(command);
 
   return (
     <Tooltip.Provider delayDuration={tooltipDelay} disableHoverableContent>
       <Tooltip.Root>
         <Tooltip.Trigger
+          {...(description === undefined
+            ? {}
+            : { 'aria-describedby': descriptionId })}
           aria-keyshortcuts={keyShortcuts}
           aria-label={entry.label}
           aria-pressed={pressed}
@@ -121,6 +115,11 @@ export function IconCommandButton({
         <Tooltip.Content className={styles.tooltip} sideOffset={tooltipOffset}>
           {entry.label} <span className={styles.chord}>{spelled}</span>
         </Tooltip.Content>
+        {description !== undefined && (
+          <VisuallyHidden id={descriptionId}>
+            {description} Shortcut: {spelled}
+          </VisuallyHidden>
+        )}
       </Tooltip.Root>
     </Tooltip.Provider>
   );

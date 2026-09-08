@@ -22,6 +22,9 @@ describe('ZoomCluster', () => {
     expect(control('Zoom out').getAttribute('aria-keyshortcuts')).toBe(
       'Control+-',
     );
+    expect(
+      control('Reset zoom to 100%').getAttribute('aria-describedby'),
+    ).toBeTruthy();
     expect(control('Fit to view').getAttribute('aria-keyshortcuts')).toBe(
       'Control+0',
     );

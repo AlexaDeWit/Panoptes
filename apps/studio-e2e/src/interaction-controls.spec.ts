@@ -328,3 +328,47 @@ test('snapping is optional and preserves manual placement when disabled', async 
   const manual = await boxOf(actor);
   expect(manual.x % gridSpacing).not.toBe(0);
 });
+
+test('endpoint typeahead keeps its keyboard ownership', async ({ page }) => {
+  await openPlaceholder(page);
+  await selectByKeyboard(page, flowName);
+  await page.keyboard.press('ControlOrMeta+Shift+1');
+  const select = page.getByRole('combobox', { name: 'Source' });
+  await expect(select).toBeFocused();
+  await page.keyboard.press('a');
+  await expect(select).toBeVisible();
+  await expect(page.getByTestId('canvas-container')).toHaveAttribute(
+    'data-active-tool',
+    'select',
+  );
+});
+
+test('Escape on a geometry button retains selection and returns focus', async ({
+  page,
+}) => {
+  await openPlaceholder(page);
+  const actor = await selectByKeyboard(page, actorName);
+  await page.keyboard.press('ControlOrMeta+Shift+p');
+  const panel = page.getByRole('region', { name: 'Position and size' });
+  await expect(
+    panel.getByRole('spinbutton', { name: 'X', exact: true }),
+  ).toBeFocused();
+  await panel.getByRole('button', { name: 'Cancel' }).focus();
+  await page.keyboard.press('Escape');
+  await expect(panel).toHaveCount(0);
+  await expect(actor).toHaveClass(/selected/u);
+  await expect(actor).toBeFocused();
+});
+
+test('the reset control exposes the current scale to assistive technology', async ({
+  page,
+}) => {
+  await openPlaceholder(page);
+  const reset = page.getByRole('button', { name: 'Reset zoom to 100%' });
+  await reset.click();
+  await expect(reset).toHaveAccessibleDescription(/Current zoom: 100%/u);
+  await page.getByRole('button', { name: 'Zoom out', exact: true }).click();
+  await reset.focus();
+  await expect(reset).not.toHaveAccessibleDescription(/Current zoom: 100%/u);
+  await expect(reset).toHaveAccessibleDescription(/Current zoom: \d+%/u);
+});

@@ -18,7 +18,11 @@ export function ZoomCluster() {
       <IconCommandButton className={styles.control} command="zoom-out">
         <ZoomOutIcon aria-hidden="true" className={styles.glyph} />
       </IconCommandButton>
-      <IconCommandButton className={styles.percentage} command="reset-zoom">
+      <IconCommandButton
+        className={styles.percentage}
+        command="reset-zoom"
+        description={`Current zoom: ${String(Math.round(zoom * 100))}%.`}
+      >
         <span>{Math.round(zoom * 100)}%</span>
       </IconCommandButton>
       <IconCommandButton className={styles.control} command="fit-selection">

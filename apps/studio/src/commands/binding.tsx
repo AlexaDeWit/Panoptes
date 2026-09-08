@@ -47,7 +47,7 @@ const overlaySelector =
   '[role="combobox"][aria-expanded="true"], [role="listbox"], [role="menu"], [role="dialog"]';
 
 const typingSelector =
-  'input, textarea, [contenteditable]:not([contenteditable="false"]), [role="combobox"]';
+  'input, textarea, select, [contenteditable]:not([contenteditable="false"]), [role="combobox"]';
 
 const nativeActivationSelector = 'button, a[href]';
 

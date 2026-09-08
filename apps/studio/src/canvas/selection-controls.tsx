@@ -114,12 +114,12 @@ function SelectionEditor({
         onClose();
       }
     };
-    document.addEventListener('keydown', key);
+    document.addEventListener('keydown', key, true);
     window.addEventListener('blur', blur);
     return () => {
       cancelAnimationFrame(frame);
       window.removeEventListener('blur', blur);
-      document.removeEventListener('keydown', key);
+      document.removeEventListener('keydown', key, true);
       if (panel?.contains(document.activeElement)) {
         document.querySelector<HTMLElement>('.react-flow')?.focus();
       }
