@@ -15,14 +15,16 @@
       "inputs": [
         "default",
         "sharedGlobals",
+        "{workspaceRoot}/.github/workflows/ci.yml",
+        "{workspaceRoot}/flake.lock",
         {
-          "externalDependencies": ["effect", "zod"]
+          "externalDependencies": ["effect", "zod", "yaml"]
         }
       ],
       "options": {
         "commands": [
           {
-            "command": "node --test scripts/release/release.test.mts",
+            "command": "node --test scripts/release/*.test.mts",
             "forwardAllArgs": false
           }
         ]
@@ -35,7 +37,7 @@
         "default",
         "{workspaceRoot}/tsconfig.base.json",
         {
-          "externalDependencies": ["effect", "typescript", "zod"]
+          "externalDependencies": ["effect", "typescript", "zod", "yaml"]
         }
       ],
       "options": {

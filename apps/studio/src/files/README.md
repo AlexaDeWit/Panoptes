@@ -126,7 +126,8 @@ the menu and open it again around an answer.
 
 `menu.tsx` mounts the rest: the burger button over the top left of the canvas,
 the file and edit commands, the Export submenu, the project link, and the
-state of the open file. The submenu has one SVG item per diagram when the
+state of the open file. The Project group shows the built application version
+and its release notes. Builds without a release tag say `development`. The submenu has one SVG item per diagram when the
 model has several.
 The other items export the register as markdown, or the whole model as Typst
 or PDF. Every proposed name replaces the open file's extension, or starts

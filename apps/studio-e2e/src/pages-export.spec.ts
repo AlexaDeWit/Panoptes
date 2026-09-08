@@ -1,10 +1,12 @@
 import { expect, test } from '@playwright/test';
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import {
   expectedPdfDigest,
   pdfDigest,
   pdfPageCount,
 } from './exports.fixtures.js';
-import { exportedFile, openFile } from './studio.fixtures.js';
+import { exportedFile, openFile, vendored } from './studio.fixtures.js';
 
 const socialImage = 'https://alexadewit.github.io/Saerskriven/social-card.png';
 const socialImageAlt =
@@ -53,4 +55,37 @@ test('the Pages build publishes the social card and its text alternative', async
   );
   expect(png.readUInt32BE(16)).toBe(1200);
   expect(png.readUInt32BE(20)).toBe(630);
+});
+
+test('the release build identifies its own version and release notes', async ({
+  page,
+}) => {
+  await page.goto('./');
+  await page.getByRole('button', { name: /^Menu/u }).click();
+  const manifest: unknown = JSON.parse(
+    readFileSync(vendored('package.json'), 'utf8'),
+  );
+  assert.ok(
+    typeof manifest === 'object' && manifest !== null && 'version' in manifest,
+  );
+  const version = manifest.version;
+  assert.equal(typeof version, 'string');
+  const notes = page.getByRole('menuitem', {
+    name: `Saerskriven ${String(version)} release notes`,
+    exact: true,
+  });
+  await expect(notes).toHaveAttribute(
+    'href',
+    `https://github.com/AlexaDeWit/Saerskriven/releases/tag/v${String(version)}`,
+  );
+  await notes.focus();
+  await expect(notes).toBeFocused();
+  const response = await page.request.get(
+    new URL('version.json', page.url()).href,
+  );
+  expect(response.ok()).toBe(true);
+  expect(await response.json()).toEqual({
+    version,
+    tag: `v${String(version)}`,
+  });
 });

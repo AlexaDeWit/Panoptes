@@ -137,39 +137,83 @@ verifies its signature, and asks you to type the tag before it pushes. It
 removes the local tag if any later check or the confirmation fails. The pushed
 tag cannot be moved or deleted.
 
-### 5. The executables are built and attached (automatic, no credentials)
+### 5. Build, attest, publish, and deploy (automatic)
 
-Pushing the tag runs [`.github/workflows/ci.yml`](../.github/workflows/ci.yml),
-the same workflow every pull request runs. There is no separate release
-pipeline to drift from it: a release is what this one produces when the ref is
-a tag.
+Pushing the tag runs [`.github/workflows/ci.yml`](../.github/workflows/ci.yml).
+It runs the same CI gate as a pull request, compiles every CLI target, and
+checks the executable version against the tag.
 
-Off a tag, `build-test` compiles the CLI for the host target alone, which is
-what keeps the common run short. On a tag it compiles the whole matrix with
-[`scripts/package-cli.sh`](../scripts/package-cli.sh), fails unless the Linux
-executable's `--version` is the tag's, and hands the executables on as a
-workflow artifact. Those three steps are the only ones the tag adds, and they
-are skipped on every other run.
+After the gate passes, `pages-build` builds the website from that exact tag.
+It takes the Pages base path and site URL from GitHub and stamps the workspace
+version into the browser bundle and `version.json`. It compares every project
+manifest and the built version with the tag before creating `studio.tar` and
+`studio-release.json`. The latter records the source commit and CI run.
 
-The **CI gate** then passes or fails exactly as it does on a pull request: its
-jobs and its verdict do not change on a tag. Two jobs hang off it, both on a
-`v*` ref alone. **attest** takes the artifact and records a build provenance
-attestation over every executable and over `SHA256SUMS`. **publish** waits for
-that, then creates or updates the GitHub release with the same files. So a
-release exists only where the whole gate was green on that tag, and nothing is
-attached before it is attested.
+`attest` waits for the gate and website build. It attests the CLI executables,
+`SHA256SUMS`, and both website assets. `publish` waits for those jobs and creates
+or updates the release with their files. A failed gate, website build, or
+attestation prevents publication. Neither attest nor publish installs
+dependencies. The `release` environment still permits only `v*` tags.
+A tag containing a prerelease suffix creates a prerelease, which cannot reach
+production Pages. Release notes use the changelog section, or GitHub's generated
+notes when the section is missing.
 
-Neither job installs or compiles anything, so no write permission sits beside
-a dependency tree, and neither job's permissions exist on a run that is not a
-tag. Publish holds `contents: write` and nothing else. Attest holds the two
-the attestation needs, `id-token: write` for the OIDC identity it is signed
-against and `attestations: write` to record it, plus `contents: read`. No job
-reads a secret: the workflow's own `GITHUB_TOKEN` is what talks to the release
-API. Publish also names the `release` environment, whose deployment policy
-admits `v*` tags only; the section below records that and the rest of the
-configuration. If `CHANGELOG.md` has no section for the version, the notes
-fall back to GitHub's generated ones rather than failing, because a tag cannot
-be moved and a stopped release would leave the version unshippable.
+#### Website promotion and recovery
+
+After publication, `pages-prepare` and `pages-deploy` run in the same
+[CI workflow](../.github/workflows/ci.yml). Automatic deployment uses that run's
+tag and archive. If another release supersedes it as Latest, it skips the old
+deployment. There is no separate Pages workflow or cross-workflow dispatch.
+
+Promotion verifies both website assets' attestations against this repository,
+`ci.yml`, the release tag, and its exact source commit. It checks the source
+run's tag-push identity and its latest completed gate, website-build,
+attestation, and publication jobs. It does not wait for the whole run, which
+includes this deployment. A failed deployment can therefore retry after the
+release stages succeeded. Preparation holds read permissions. Deployment
+holds `pages: write` and `id-token: write`, without installing dependencies.
+
+The `github-pages` concurrency group serializes deployments. The deployment
+job rechecks Latest after any queue or environment approval wait. An older
+run cannot overwrite a newer deployment. GitHub can replace a pending job
+when another enters the group, so retry a cancelled deployment as described
+below. Publication and deployment are separate GitHub operations within one
+run. The previous website remains visible during promotion or after failure.
+
+For the first release, select **GitHub Actions** as the Pages source and set
+the intended custom domain before tagging. The `github-pages` environment must
+allow `v*` tags for automatic releases and `main` for manual retries. The
+separate `release` environment remains restricted to tags. Check the Pages
+policy with:
+
+```sh
+gh api repos/AlexaDeWit/Saerskriven/environments/github-pages/deployment-branch-policies
+```
+
+Cut a new release containing these workflows through the guarded procedure
+above. A pre-existing release without website assets cannot bootstrap this
+pipeline. Drafts and prereleases do not bootstrap a production site either.
+
+If Pages fails after publication, rerun its failed jobs while the staged
+artifact exists, or dispatch CI from `main` with the deployment-only option:
+
+```sh
+gh workflow run ci.yml --repo AlexaDeWit/Saerskriven --ref main -f deploy_pages=true
+```
+
+This mode skips the build, check, and publication jobs. Its skipped gate uses
+a different check name to preserve the last CI verdict on `main`. It resolves Latest
+again and reuses its attested release assets,
+including after the temporary Actions artifacts expire. Missing assets or a
+failed attestation stop promotion. A code fix or a changed Pages domain/base
+path requires a new release. Do not substitute a build from current `main`.
+
+After deployment, a bounded check requests `version.json` with cache bypass
+parameters and compares it with the promoted tag. A stale response keeps the
+run failed until a retry sees the expected version. Verify the Project menu in
+a fresh browser load too. Existing tabs retain their loaded version and
+unsaved work. The studio neither relabels an older bundle from the release API
+nor forces an editor reload.
 
 ### 6. Check what shipped (owner)
 
@@ -259,8 +303,10 @@ gh api repos/AlexaDeWit/Saerskriven/actions/permissions/workflow \
 {"can_approve_pull_request_reviews":false,"default_workflow_permissions":"read"}
 ```
 
-A workflow token therefore starts read-only, so the `contents: write` on
-publish is the only write any job in `ci.yml` holds.
+A workflow token starts read-only. `publish` adds release writes.
+`attest` adds attestation and OIDC writes. `pages-deploy` adds Pages and OIDC
+writes. Build jobs do not receive release
+or Pages deployment permissions.
 
 ### What none of this can do
 
@@ -271,11 +317,10 @@ a release from this pipeline exists only where the gate was green on a tag the
 owner signed and pushed, and every genuine asset is attested, so an imposter
 is distinguishable by anyone rather than only by us.
 
-`ci.yml` accepts `workflow_dispatch`, and both tag jobs once tested the ref
-alone, so a dispatch aimed at an existing `v*` tag could re-drive attest and
-publish with no push behind them. Both now require
-`github.event_name == 'push'` as well, so a dispatch runs the checks and
-stops.
+`ci.yml` accepts `workflow_dispatch`. Publication still requires
+`github.event_name == 'push'` and a tag ref. An ordinary dispatch runs checks
+without publishing. The `deploy_pages` option runs only deployment and only
+from `main`, using an existing attested stable release.
 
 Immutable releases, the fourth rule #114 proposed, is conditioned there on the
 setting being available on this plan; it is not, so assets can still be

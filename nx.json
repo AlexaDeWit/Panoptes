@@ -185,6 +185,7 @@
         {
           "env": "PAGES_SITE_URL"
         },
+        { "env": "SAERSKRIVEN_RELEASE_TAG" },
         // The Pages export compiles with fonts outside the repository. Their
         // store path changes when the pinned nixpkgs input changes.
         {

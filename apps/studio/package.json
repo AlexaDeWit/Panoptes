@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "//": [
-    "build repeats the Vite plugin's inferred inputs because a leaf override replaces them, then adds the three environment inputs below.",
+    "build repeats the Vite plugin's inferred inputs because a leaf override replaces them, then adds the environment inputs below.",
     "The studio emits external fonts, Pages metadata, and a browser-rendered card, so changes to their paths must invalidate the cached build."
   ],
   "dependencies": {
@@ -61,7 +61,10 @@
               "@playwright/test"
             ]
           },
-          "viteGlobals"
+          "viteGlobals",
+          {
+            "env": "SAERSKRIVEN_RELEASE_TAG"
+          }
         ]
       },
       "boundaries": {},
@@ -70,6 +73,9 @@
         "inputs": [
           "...",
           "viteGlobals",
+          {
+            "env": "SAERSKRIVEN_RELEASE_TAG"
+          },
           "studioTestFixtures",
           {
             "env": "SAERSKRIVEN_FONTS_DIR"

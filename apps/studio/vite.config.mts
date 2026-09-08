@@ -1,3 +1,4 @@
+import { versionDefine, workspaceVersion } from '../../workspace-version.mts';
 import { reactApp } from '../../vite.shared.mts';
 import {
   initialColourModeScript,
@@ -37,10 +38,43 @@ const initialPageStyles = () => ({
   ],
 });
 
+const versionStamp = () => {
+  const version = workspaceVersion();
+  const tag = process.env['SAERSKRIVEN_RELEASE_TAG'] ?? '';
+  return {
+    name: 'studio-version',
+    config: () => ({
+      define: {
+        ...versionDefine(),
+        SAERSKRIVEN_RELEASE_TAG: JSON.stringify(tag),
+      },
+    }),
+    buildStart() {
+      if (tag !== '' && tag !== `v${version}`) {
+        this.error(
+          `Release tag ${tag} disagrees with workspace version ${version}.`,
+        );
+      }
+    },
+    generateBundle() {
+      this.emitFile({
+        type: 'asset',
+        fileName: 'version.json',
+        source: JSON.stringify({ version, tag }),
+      });
+    },
+  } satisfies import('vite').Plugin;
+};
+
 export const studioConfig = (options: StudioConfigOptions = {}) =>
   reactApp(import.meta.dirname, {
     base,
-    plugins: [initialPageStyles(), typstAssets(), socialCardAsset()],
+    plugins: [
+      versionStamp(),
+      initialPageStyles(),
+      typstAssets(),
+      socialCardAsset(),
+    ],
     setupFiles: ['./src/test-setup.ts'],
     siteUrl,
     socialImage,
