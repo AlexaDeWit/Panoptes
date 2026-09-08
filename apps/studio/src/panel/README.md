@@ -15,12 +15,16 @@ whole canvas, which is why the panel is the only place a threat is added
 from. It is held clear of the zoom cluster in the corner below it rather than
 drawn over it, and the diagram is not resized when it opens: what the panel
 covers is dealt with by panning, not by taking the room off the canvas ([the
-canvas](../canvas/README.md)). How much it covers is one token, `panelCover`
-in the canvas package's token module, which reaches the page as
-`--pn-panel-cover` ([the visual
-system](../../../../packages/canvas/README.md#the-visual-system)): the panel
-sizes its border box from it and the pan reads the same number, so the width
-the panel draws and the width the pan reasons about cannot differ.
+canvas](../canvas/README.md)). The normal pane is 460 pixels wide. Widen pane
+adds half the default coverage, and Restore pane width returns to normal.
+Both controls support the keyboard. The overlay retains that choice across
+selection changes and closing during the session. CSS bounds either width to
+the canvas, including on narrow or zoomed viewports.
+
+The pane observes its own box and the canvas with `ResizeObserver`. It reports
+its actual coverage, including the outer inset, to the canvas. Selection and
+coverage changes reveal a covered node using that measurement. The default
+comes from `panelCover` in the canvas tokens, projected as `--pn-panel-cover`.
 
 `threat-overlay.tsx` is the mount: it reads the selection, decides whether
 there is a panel at all, holds the drafts and answers for the keyboard.
@@ -47,7 +51,8 @@ uses `panel-focus.ts`, a channel of its own rather than a field of the store.
 Focus does not belong in the model or its undo stacks. Enter on the focused
 control adds a threat and moves focus to its title.
 
-Escape inside the panel closes it and puts focus back on the element, which
+The visible Close threats button and Escape close the panel and return focus
+to the element, which
 stays selected, so a second Escape is the studio's own and clears the
 selection ([the commands](../commands/README.md)). The panel claims that first
 press, which is what keeps one Escape from doing both. A listbox open inside
@@ -67,6 +72,19 @@ and starts on what the model says. Which file that is, is its name, so a save
 that writes another one starts the drafts afresh as an open does; keying them
 on the sitting rather than the name is a follow-up, the state carrying nothing
 else that tells the two apart.
+
+## Reading and writing
+
+Each summary shows the number, wrapping title, labelled severity, and separate
+status. The severity marker uses the canvas tone class. Its text remains
+readable in forced colours. The summary remains the accordion control, and
+hidden content has no layout box or keyboard controls.
+
+The pane starts below the toolbox and ends above the zoom controls.
+The heading, width control, and close button sit outside the scrollable body.
+Severity and status share a row when space permits. Description and Mitigation
+start at eight lines and grow with content to 24 lines. They retain the
+browser's manual vertical resize control.
 
 ## The commit rule
 
@@ -136,9 +154,8 @@ is in it.
   threat's own `mitigation` prose is a threat field and is edited here.
 - Markdown is edited as its source. A preview beside the prose is deferred
   with the rest of the rendering surface.
-- A threat names any number of elements, and the panel shows one element's
-  threats with no list of the others, so `AttachThreat` and `DetachThreat`
-  have no control here. Deleting therefore removes the threat from the model
+- A shared threat lists its attached elements by name. The list is read-only,
+  so `AttachThreat` and `DetachThreat` have no control here. Deleting therefore removes the threat from the model
   rather than detaching it from the element, and a threat naming several
   elements leaves all of them at once, which the item says beside the delete
   control rather than leaving to be discovered. Undo takes it back.

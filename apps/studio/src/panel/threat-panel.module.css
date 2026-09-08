@@ -1,26 +1,59 @@
 .panel {
   position: absolute;
   z-index: 1;
-  inset-block-start: var(--pn-space-3);
+  inset-block-start: calc(
+    var(--pn-space-3) * 2 + 2rem + var(--pn-space-1) * 2 + 2px
+  );
   inset-inline-end: var(--pn-space-3);
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  gap: var(--pn-space-3);
   inline-size: calc(var(--pn-panel-cover) - var(--pn-space-3));
   max-block-size: calc(
-    100% - var(--pn-space-3) * 3 - (2rem + var(--pn-space-1) * 2 + 2px)
+    100% - var(--pn-space-3) * 4 - (2rem + var(--pn-space-1) * 2 + 2px) * 2
   );
-  padding: var(--pn-space-3);
+  max-inline-size: calc(100% - var(--pn-space-3) * 2);
   border: 1px solid var(--pn-colour-border);
   border-radius: var(--pn-radius);
   background: var(--pn-colour-surface-raised);
+  overflow: hidden;
+}
+
+.panel[data-wide='true'] {
+  inline-size: calc(var(--pn-panel-cover) * 1.5 - var(--pn-space-3));
+}
+
+.panelHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: start;
+  gap: var(--pn-space-2);
+  padding: var(--pn-space-3);
+  border-bottom: 1px solid var(--pn-colour-border);
+}
+
+.controls {
+  display: flex;
+  align-items: center;
+  gap: var(--pn-space-2);
+  margin-inline-start: auto;
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pn-space-3);
+  min-block-size: 0;
+  padding: var(--pn-space-3);
   overflow-y: auto;
+  scrollbar-gutter: stable;
 }
 
 .heading {
   margin: 0;
   font-size: 1rem;
+  flex: 1 1 12ch;
+  overflow-wrap: anywhere;
 }
 
 .instruction,
@@ -30,7 +63,9 @@
 }
 
 .add,
-.delete {
+.delete,
+.width,
+.close {
   padding: var(--pn-space-2) var(--pn-space-3);
   border: 1px solid var(--pn-colour-border);
   border-radius: var(--pn-radius);
@@ -39,6 +74,8 @@
   font: inherit;
 }
 
+.width:focus-visible,
+.close:focus-visible,
 .add:focus-visible,
 .delete:focus-visible,
 .disclosure:focus-visible {
@@ -83,13 +120,61 @@
 }
 
 .summary {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pn-space-1);
   flex: 1;
+  min-inline-size: 0;
+  overflow-wrap: anywhere;
 }
 
-/* Radix reports the item's own state on the trigger, which is where the
-   chevron turns from rather than a class the component would have to keep in
-   step. The glyph is hidden from assistive technology: the trigger already
-   carries its expanded state. */
+.metadata {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--pn-space-1) var(--pn-space-2);
+  font-size: var(--pn-font-size);
+}
+
+.severity {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--pn-space-1);
+  padding-inline: var(--pn-space-1);
+  border: 1px solid var(--pn-colour-border);
+  border-radius: var(--pn-radius);
+}
+
+.tone {
+  inline-size: 1em;
+  block-size: 1em;
+  flex: none;
+}
+
+.assessment {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 9rem), 1fr));
+  gap: var(--pn-space-3);
+}
+
+.attachments {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--pn-space-1) var(--pn-space-3);
+  padding-inline-start: var(--pn-space-3);
+}
+
+.spread {
+  overflow-wrap: anywhere;
+}
+
+.spread p {
+  margin: 0;
+}
+
+.content[hidden] {
+  display: none;
+}
+
 .disclosure[data-state='open'] .chevron {
   transform: rotate(180deg);
 }

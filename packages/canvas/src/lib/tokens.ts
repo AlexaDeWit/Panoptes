@@ -236,15 +236,8 @@ export const focusRing = {
   offset: '2px',
 } as const;
 
-/**
- * What the studio's threat panel covers of the canvas it floats over, in
- * pixels of the page: its whole border box and the inset it floats at. The
- * panel is drawn from it and the canvas keeps that band clear of a selected
- * element, so the width the panel draws and the width the pan reasons about
- * are one number. It is a length rather than a colour, so it is declared once
- * and not again under the dark preference.
- */
-export const panelCover = 358;
+/** Default threat pane coverage, including its outer inset, in screen pixels. */
+export const panelCover = 472;
 
 const colourProperties = {
   surfaceApp: '--pn-colour-surface',

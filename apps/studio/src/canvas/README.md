@@ -234,13 +234,10 @@ What counts as in view is what the threat panel is not over. The panel opens
 on the same selection this pans for ([the panel](../panel/README.md)), so an
 element under it is an element out of sight, and the pan centres what it
 reveals in the room the panel leaves rather than in the canvas.
-`clearOfPanel` and `revealCentre` in `viewport.ts` are that arithmetic, over
-`panelCover`, which is what the panel covers: its border box and the inset it
-floats at. That number has one home, the canvas package's token module, which
-declares it on the document root as `--pn-panel-cover` for the panel's own
-stylesheet to size its box from ([the visual
-system](../../../../packages/canvas/README.md#the-visual-system)), so a panel
-drawn wider than the pan expects is not a state the two can reach.
+`clearOfPanel` and `revealCentre` in `viewport.ts` use the pane's measured
+coverage, including its outer inset. Pane and canvas resizes update that measurement. A coverage change reveals
+a covered selection again. The `panelCover` token
+sets the default width only ([the panel](../panel/README.md)).
 
 ## The panel over it
 
@@ -286,18 +283,6 @@ Four lines resize a selected element from its sides. Four square handles
 resize it from its corners. A side line takes the pointer away from the round
 connection handle at the midpoint. Each control uses a directional cursor and
 shows hover and keyboard focus ([Resize](#editing)).
-
-What counts as in view is what the threat panel is not over. The panel opens
-on the same selection this pans for ([the panel](../panel/README.md)), so an
-element under it is an element out of sight, and the pan centres what it
-reveals in the room the panel leaves rather than in the canvas.
-`clearOfPanel` and `revealCentre` in `viewport.ts` are that arithmetic, over
-`panelCover`, which is what the panel covers: its border box and the inset it
-floats at. That number has one home, the canvas package's token module, which
-declares it on the document root as `--pn-panel-cover` for the panel's own
-stylesheet to size its box from ([the visual
-system](../../../../packages/canvas/README.md#the-visual-system)), so a panel
-drawn wider than the pan expects is not a state the two can reach.
 
 ## The view
 
