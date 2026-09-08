@@ -17,6 +17,7 @@
         "sharedGlobals",
         "{workspaceRoot}/.github/workflows/ci.yml",
         "{workspaceRoot}/flake.lock",
+        "{workspaceRoot}/nix/release.json",
         {
           "externalDependencies": ["effect", "zod", "yaml"]
         }
@@ -63,6 +64,18 @@
         "commands": [
           {
             "command": "scripts/release/release.mts tag",
+            "forwardAllArgs": false
+          }
+        ]
+      }
+    },
+    "update-nix": {
+      "executor": "nx:run-commands",
+      "cache": false,
+      "options": {
+        "commands": [
+          {
+            "command": "scripts/release/nix-release.mts",
             "forwardAllArgs": false
           }
         ]

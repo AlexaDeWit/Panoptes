@@ -95,6 +95,10 @@ The command needs [the GitHub CLI](https://cli.github.com/) and reads the
 attestation from GitHub. A missing attestation or a different repository,
 workflow, or source ref fails verification.
 
+Nix users can consume the pinned CLI through a locked flake input.
+See [Nix installation and updates](docs/nix.md) for the downstream shell example
+and the execution coverage of each target.
+
 On Windows, rename the file to `saerskriven.exe` and put it somewhere on `PATH`.
 On macOS the executables are unsigned, so Gatekeeper holds the first run:
 `xattr -cr ~/.local/bin/saerskriven` clears the quarantine flag. Signing and

@@ -47,6 +47,9 @@ jobs:
         with:
           install-dependencies: 'true'
 
+      - name: Check the installed Nix CLI without runtime network access
+        run: nix build --no-link --print-build-logs --option sandbox true .#checks.x86_64-linux.saerskriven
+
       - name: Check
         run: nix develop .#ci --command pnpm check
 

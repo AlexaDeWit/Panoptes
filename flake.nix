@@ -2,22 +2,20 @@
   description = "saerskriven: threat modelling studio";
 
   inputs = {
-    # Single pinned nixpkgs: every tool comes from this one set.
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-26.05";
     flake-utils.url = "github:numtide/flake-utils";
   };
 
-  # Nothing here needs the flake's own source tree, but Nix always passes `self`,
-  # so absorb it with `...` rather than binding it.
   outputs = { nixpkgs, flake-utils, ... }:
-    flake-utils.lib.eachDefaultSystem (system:
+    let
+      packageFor = pkgs: pkgs.callPackage ./nix/package.nix { };
+    in {
+      overlays.default = final: _prev: { saerskriven = packageFor final; };
+    } // flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
 
-        # What both shells export beyond the tool-specific sets below.
         shellEnv = {
-          # A UTF-8 locale, so test-runner output encodes regardless of host
-          # locale.
           LANG = "C.UTF-8";
           LC_ALL = "C.UTF-8";
 
@@ -27,19 +25,14 @@
             unset NO_COLOR
           '';
 
-          # The fonts the CLI typesets a PDF with, pinned by this flake's
-          # nixpkgs revision rather than committed to the tree: a binary
-          # Saerskriven did not author is a toolchain input (CODING.md,
-          # Dependencies and versions). apps/cli/esbuild.config.mts reads the
-          # faces it needs by name from here, takes the licence from the same
-          # store path, and refuses to build without this variable rather than
-          # writing an executable that cannot typeset.
+          # The build reads these pinned fonts. No font binaries live in git.
           SAERSKRIVEN_FONTS_DIR = "${pkgs.liberation_ttf}/share/fonts/truetype";
         };
 
         # The flake pins executable tools. JS libraries use the pnpm catalog.
         toolchainInputs = [
           pkgs.jq
+          pkgs.gh
           pkgs.gnutar
           pkgs.bashInteractive
           pkgs.nodejs_24
@@ -92,15 +85,11 @@
           SAERSKRIVEN_UNSHARE = "${pkgs.util-linux}/bin/unshare";
         };
 
-        # Workflow linters. CI's static-checks job gates on these, and they
-        # live in both shells so a local run matches the gate.
         workflowLintInputs = [
           pkgs.actionlint
           pkgs.zizmor
         ];
 
-        # SAST scanner. CI's static-checks job gates on its findings, and it
-        # lives in both shells so a local run matches the gate.
         sastInputs = [
           pkgs.semgrep
         ];
@@ -118,9 +107,11 @@
           PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS = "true";
         };
       in {
-        # The pinned denort runtimes, buildable on their own so a cache can
-        # be warmed without entering a shell.
         packages.denort-cache = denortCache;
+        packages.saerskriven = packageFor pkgs;
+        checks.saerskriven = pkgs.callPackage ./nix/check.nix {
+          saerskriven = packageFor pkgs;
+        };
 
         devShells = {
           # The shell every CI job enters: one closure, one cache entry.
