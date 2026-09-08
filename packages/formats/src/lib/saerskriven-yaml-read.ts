@@ -23,13 +23,8 @@ import {
   type SaerskrivenYamlThreat,
 } from '@saerskriven/wire-saerskriven-yaml';
 import { Either } from 'effect';
-import { parseDocument, YAMLParseError } from 'yaml';
 import type { z } from 'zod';
 import { ReadFailure, type ReadResult } from './codec.js';
-import {
-  aliasCostIn,
-  type ComposedDocument,
-} from './saerskriven-yaml-document.js';
 import {
   assumptionStatusesToModel,
   mitigationStatusesToModel,
@@ -37,11 +32,7 @@ import {
   threatStatusesToModel,
   toModelCategory,
 } from './saerskriven-yaml-vocabulary.js';
-import {
-  exceededReadLimit,
-  parseWithinLimits,
-  readLimits,
-} from './read-limits.js';
+import { parseYaml } from './parse-yaml.js';
 import { undeclaredDivergences } from './undeclared.js';
 
 type MetadataInput = z.input<typeof modelMetadataSchema>;
@@ -53,112 +44,11 @@ type ThreatInput = z.input<typeof threatSchema>;
 type MitigationInput = z.input<typeof mitigationSchema>;
 type AssumptionInput = z.input<typeof assumptionSchema>;
 
-/**
- * A Saerskriven YAML file as the internal model, the document it was mapped
- * from, and where the two do not correspond.
- *
- * The file and the model are separate declarations that say the same thing
- * today, so the mapping below is written out record by record rather than
- * handed across: the two are free to stop matching, and this is where that
- * would show. Ids reach the model as the plain strings the file holds and
- * are branded by `parseModel`, the same way the Threat Dragon read hands
- * them over. Vocabularies go through the tables in
- * `saerskriven-yaml-vocabulary.ts`, which are total in both directions at
- * compile time. Geometry is a pair of numbers on either side and crosses
- * unchanged.
- *
- * `parseModel` is what enforces the cross-record rules no wire schema
- * states: ids unique where they must be, threat numbers unique and under
- * the mark, flow endpoints anchored inside their own diagram, and every
- * reference resolving.
- *
- * Nothing is defaulted and nothing is narrowed on the way through, so a
- * valid file reports no divergence at all. A key the wire schema does not
- * declare is reported as `undeclared`, which is the one entry a read of
- * this format can produce, and it means the file was written by a release
- * carrying something this one does not, since nothing else writes these
- * files.
- *
- * Threats arrive in the order the file lists them, which for a file
- * Saerskriven wrote is number order. Reading reorders nothing.
- *
- * Nothing throws. A text past a bound in `readLimits` is
- * `ExceededReadLimit`. The read is in three steps rather than one call to
- * the parser, because the two alias bounds have to be taken between two of
- * them: the text is composed into a document, how many aliases resolving it
- * works through and how much of the document they repeat are measured
- * before any of them is resolved, and only then is the document turned into
- * a value. Resolving is where an alias costs anything, and
- * `saerskriven-yaml-document.ts` carries what each measurement bounds.
- *
- * The parser's alias accounting is turned off rather than tuned, since it
- * costs more than what it bounds: `toJS` is given `maxAliasCount: -1`, and
- * both alias bounds are this package's own. A nesting the parser has no
- * stack for still arrives as a parse error coded `RESOURCE_EXHAUSTION`,
- * reported as the depth bound because it catches its composer's overflow
- * whole and reports nothing finer than that it ran out.
- *
- * Text that is not YAML is `MalformedText`. A document the wire schema
- * refuses, a missing or wrong `formatVersion` among them, is
- * `InvalidWireDocument` with paths into the file. A mapping `parseModel`
- * refuses is `InvalidModel` with paths into the model.
- */
+/** Reads native YAML and retains its wire document for subsequent saves. */
 export function readSaerskrivenYaml(
   text: string,
 ): Either.Either<ReadResult<typeof saerskrivenYamlWireSchema>, ReadFailure> {
   return Either.flatMap(parseYaml(text), mapDocument);
-}
-
-function parseYaml(text: string): Either.Either<unknown, ReadFailure> {
-  return parseWithinLimits(text, (bounded) =>
-    Either.flatMap(
-      Either.flatMap(compose(bounded), withinAliasLimits),
-      toValue,
-    ),
-  );
-}
-
-function compose(text: string): Either.Either<ComposedDocument, ReadFailure> {
-  return Either.flatMap(
-    Either.try({ try: () => parseDocument(text), catch: toReadFailure }),
-    (document) => {
-      const [refused] = document.errors;
-      return refused === undefined
-        ? Either.right(document)
-        : Either.left(toReadFailure(refused));
-    },
-  );
-}
-
-function withinAliasLimits(
-  document: ComposedDocument,
-): Either.Either<ComposedDocument, ReadFailure> {
-  const cost = aliasCostIn(document, {
-    expanded: readLimits.maxAliasCount + 1,
-    reached: readLimits.maxAliasExpansion + 1,
-  });
-  if (cost.expanded > readLimits.maxAliasCount) {
-    return Either.left(exceededReadLimit('maxAliasCount', cost.expanded));
-  }
-  return cost.reached > readLimits.maxAliasExpansion
-    ? Either.left(exceededReadLimit('maxAliasExpansion', cost.reached))
-    : Either.right(document);
-}
-
-function toValue(
-  document: ComposedDocument,
-): Either.Either<unknown, ReadFailure> {
-  return Either.try({
-    try: () => document.toJS({ maxAliasCount: -1 }) as unknown,
-    catch: toReadFailure,
-  });
-}
-
-function toReadFailure(error: unknown): ReadFailure {
-  if (error instanceof YAMLParseError && error.code === 'RESOURCE_EXHAUSTION') {
-    return exceededReadLimit('maxNestingDepth', readLimits.maxNestingDepth + 1);
-  }
-  return ReadFailure.MalformedText({ message: String(error) });
 }
 
 function mapDocument(

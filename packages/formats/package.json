@@ -19,7 +19,9 @@
     "@saerskriven/wire-threat-dragon": "workspace:*",
     "effect": "catalog:",
     "yaml": "catalog:",
-    "zod": "catalog:"
+    "zod": "catalog:",
+    "@saerskriven/wire-otm": "workspace:*",
+    "@saerskriven/wire-tmbom": "workspace:*"
   },
   "devDependencies": {
     "ajv": "catalog:",

@@ -32,12 +32,13 @@ const chordsOn = (platform: (typeof platforms)[number]): string[] =>
   );
 
 describe('the command registry', () => {
-  it('leaves shortcuts off only the exports issue 190 added without one', () => {
+  it('leaves import and export commands without shortcuts', () => {
     expect(
       commands
         .filter((command) => command.shortcuts.length === 0)
         .map((command) => command.id),
     ).toEqual([
+      'import',
       'export-diagram',
       'export-register',
       'export-typst',

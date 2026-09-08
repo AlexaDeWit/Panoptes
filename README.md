@@ -46,6 +46,10 @@ Dragon and license it under the same Apache License 2.0. See
 | `apps/cli`                       | The command-line interface                                                                                                                                                                                                                                                                                                       |
 | `apps/studio-e2e`                | The studio's [browser suite](apps/studio-e2e/README.md), and the round-trip coverage matrix it holds                                                                                                                                                                                                                             |
 
+The studio also [imports OTM and TM-BOM](packages/formats/IMPORT.md) into new
+native models. Their schemas live in `packages/wire-otm` and
+`packages/wire-tmbom`.
+
 A wire package declares one file format and depends on zod alone, so no
 change to the internal model can change what a released format version
 means. `packages/formats` is the only project that knows both a format and

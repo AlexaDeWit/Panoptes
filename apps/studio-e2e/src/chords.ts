@@ -20,6 +20,7 @@ export const registeredChords = {
   'fit-selection': ['ControlOrMeta+Shift+0'],
 
   open: ['ControlOrMeta+o'],
+  import: [],
   save: ['ControlOrMeta+s'],
   'save-as': ['ControlOrMeta+Shift+s'],
   'export-diagram': [],

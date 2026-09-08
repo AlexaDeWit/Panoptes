@@ -31,6 +31,7 @@ import {
 /** File operations whose session guards unsaved changes before replacing the model. */
 export type FileCommands = {
   open(): void;
+  import(): void;
   save(): void;
   saveAs(): void;
   exportDiagram(diagramId?: DiagramId): void;
@@ -281,6 +282,17 @@ const table = {
     inTextFields: false,
     dispatch: runs((surface) => {
       surface.files.open();
+    }),
+  },
+  import: {
+    id: 'import',
+    label: 'Import',
+    group: 'File',
+    shortcuts: [],
+    when: 'Convert an OTM or TM-BOM file into a new native model',
+    inTextFields: false,
+    dispatch: runs((surface) => {
+      surface.files.import();
     }),
   },
   save: {

@@ -34,11 +34,13 @@
       "{workspaceRoot}/threat-modelling/saerskriven.yaml"
     ],
     "studioTestFixtures": [
+      "{workspaceRoot}/test-data/otm/**/*",
       "{workspaceRoot}/test-data/ecluse.json",
       "{workspaceRoot}/test-data/threat-dragon/schema/threat-dragon-v2.schema.json",
       "{workspaceRoot}/threat-modelling/saerskriven.yaml"
     ],
     "studioE2eFixtures": [
+      "{workspaceRoot}/test-data/otm/**/*",
       "{workspaceRoot}/test-data/ecluse.json",
       "{workspaceRoot}/test-data/ecluse.model.json",
       "{workspaceRoot}/test-data/saerskriven/ecluse.yaml",

@@ -10,15 +10,11 @@ import { hostPlatform, type Platform } from './shortcuts.js';
 
 const nothing = (): void => undefined;
 
-/**
- * The surface a command reaches while nothing that answers for it is
- * mounted. It is the context's default, so a control rendered on its own in
- * a spec still runs the commands the store answers for and the rest do
- * nothing rather than failing.
- */
+/** Commands without a mounted surface do nothing. Store commands remain available. */
 export const unmountedSurface: CommandSurface = {
   files: {
     open: nothing,
+    import: nothing,
     save: nothing,
     saveAs: nothing,
     exportDiagram: nothing,
@@ -75,16 +71,7 @@ export function keyboardOwner(target: EventTarget | null): KeyboardOwner {
   return target.closest(typingSelector) === null ? 'page' : 'typing';
 }
 
-/**
- * The command a key press runs, and nothing at all where it runs none: a
- * press a control has already acted on, one an open overlay owns, one no
- * chord matches, and one aimed at a command the control it was typed in
- * suppresses.
- *
- * A press the canvas has already answered arrives here with its default
- * prevented, which is how one Delete removes one element while the canvas
- * still binds that key itself.
- */
+/** Selects a command while respecting handled events, overlays, and text-field ownership. */
 export function commandForKey(
   event: KeyboardEvent,
   platform: Platform,
@@ -100,13 +87,7 @@ export function commandForKey(
   return command;
 }
 
-/**
- * Binds every registered chord, for the whole page rather than for the
- * control that holds focus, which is what makes a command reachable wherever
- * a person is. A chord the registry claims is taken from the browser whether
- * or not the command has a dispatch yet, so a shortcut the studio advertises
- * never does something else instead.
- */
+/** Binds registered chords at page scope and suppresses matching browser shortcuts. */
 export function useCommandKeys(surface: CommandSurface): void {
   useEffect(() => {
     const pressed = (event: KeyboardEvent): void => {
@@ -148,11 +129,7 @@ export type CommandSurfaceProviderProps = {
   readonly children: ReactNode;
 };
 
-/**
- * Where the registry meets a running studio: it installs the chords and
- * offers the same surface to every control below it, so one command has one
- * dispatch whether it was pressed or clicked.
- */
+/** Shares one command surface between keyboard dispatch and controls. */
 export function CommandSurfaceProvider({
   surface,
   children,

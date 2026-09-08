@@ -38,13 +38,13 @@ text the format's syntax refuses, a document the wire schema refuses, and a
 mapping `parseModel` refuses. The two schema variants carry the model
 package's `ParseIssue`, so issues read the same way whichever boundary
 produced them, and `readFailureIssues` folds any failure to the issues it
-carries. Nothing throws. Imports `@saerskriven/model` and the two wire packages,
+carries. Nothing throws. Imports `@saerskriven/model` and the wire packages,
 and no other internal package.
 
 `readLimits` is what a read may spend on a text before it refuses it. It is
 one exported value, so a caller that checks a file before handing it over
 enforces the numbers the codecs enforce rather than numbers of its own. Four
-bounds today, each with headroom over the largest file the repository vendors
+parsing bounds today, each with headroom over the largest file the repository vendors
 and each justified by a fixture under `test-data/adversarial` built to break
 it: the size of the text in UTF-8 bytes, 4 MiB and about thirty times that
 file; how far below the root a value may sit, 64 levels; how many aliases
@@ -303,6 +303,9 @@ narrowing on the name pairs a source document with the codec that produced it:
 member's source with the other member's codec does not compile. Which document
 belongs to which codec is what a caller cannot check by looking at the
 document, which is why the codec comes back and not the model alone.
+
+[Import](IMPORT.md) is a separate conversion path for OTM and TM-BOM. It
+produces native models without adding those formats to Open or Save As.
 
 Nothing here parses a text of its own. Detection is the codec reads, so the
 bounds those reads put on size, nesting and aliases bound a detected read

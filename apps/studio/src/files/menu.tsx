@@ -40,6 +40,7 @@ import {
   nameOf,
   reportHeadlines,
   reportLines,
+  type LossReport,
 } from './session.js';
 
 type MenuItemProps = {
@@ -153,11 +154,13 @@ function UnsavedChangesCommand({
     <>
       <MenuItem
         chord={
-          asking ? undefined : spellShortcuts(entry.shortcuts, hostPlatform)
+          asking || entry.shortcuts.length === 0
+            ? undefined
+            : spellShortcuts(entry.shortcuts, hostPlatform)
         }
         keepOpen={dirty && !asking}
         keyShortcuts={
-          asking
+          asking || entry.shortcuts.length === 0
             ? undefined
             : keyShortcutsAttribute(entry.shortcuts, hostPlatform)
         }
@@ -237,6 +240,7 @@ export function StudioMenu({
 
   useCloseGuard(guarded);
   useAsking(session.opening, dirty, setOpen, session.cancelOpen);
+  useAsking(session.importing, dirty, setOpen, session.cancelImport);
   useAsking(session.closing, dirty, setOpen, session.cancelClose);
   useChoosing(session.choosing, setOpen);
 
@@ -272,6 +276,7 @@ export function StudioMenu({
           setOpen(next);
           if (!next) {
             cancelOpen();
+            session.cancelImport();
             cancelClose();
             cancelChoice();
           }
@@ -349,6 +354,14 @@ export function StudioMenu({
                     Save as {formatFiles[option].label}
                   </MenuItem>
                 ))}
+            <UnsavedChangesCommand
+              asking={session.importing && dirty}
+              cancel={session.cancelImport}
+              command="import"
+              dirty={dirty}
+              proceed={session.confirmImport}
+              question="Discard changes and import"
+            />
             <ExportMenu />
             <UnsavedChangesCommand
               asking={askingClose}
@@ -486,11 +499,7 @@ export function StudioMenu({
             <p className={styles.headline}>
               {reportHeadlines[report.occasion]}
             </p>
-            <ul className={styles.lines}>
-              {reportLines(report.divergences).map((line, index) => (
-                <li key={`${String(index)} ${line}`}>{line}</li>
-              ))}
-            </ul>
+            <ReportDetails report={report} />
             <button
               className={styles.dismiss}
               onClick={dismissReport}
@@ -521,6 +530,24 @@ export function StudioMenu({
         )}
       </LiveRegion>
     </div>
+  );
+}
+
+function ReportDetails({ report }: { readonly report: LossReport }) {
+  const lines = (
+    <ul className={styles.lines}>
+      {reportLines(report.divergences, report.occasion).map((line, index) => (
+        <li key={`${String(index)} ${line}`}>{line}</li>
+      ))}
+    </ul>
+  );
+  return report.occasion === 'import' ? (
+    <details>
+      <summary>{report.divergences.length} conversion details</summary>
+      {lines}
+    </details>
+  ) : (
+    lines
   );
 }
 

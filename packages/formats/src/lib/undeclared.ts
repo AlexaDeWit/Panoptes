@@ -3,47 +3,39 @@ import { isRecord } from './records.js';
 
 const escapableSegment = /[\\.]/g;
 
-/**
- * The keys a wire schema did not declare and so did not keep, as
- * `undeclared` divergences, one per key in the order the document holds
- * them. `given` is the document as the format's own parser produced it and
- * `kept` is what the wire schema returned for it.
- *
- * The walk descends only where both sides carry structure, so its depth is
- * the schema's and not the file's: it runs on a document the schema
- * accepted, and a value the schema does not describe is reported rather
- * than descended into. Membership is `Object.hasOwn`, so a key named after
- * a prototype member (`__proto__`, `toString`) is reported like any other
- * rather than mistaken for a declared one. A dot or a backslash inside a
- * key is escaped, so a key carrying one cannot render as a path through
- * two.
- */
+/** Reports stripped keys. An import can reserve diagnostic space before paths are assembled. */
 export function undeclaredDivergences(
   given: unknown,
   kept: unknown,
+  reservePath: (path: readonly string[]) => boolean = () => true,
 ): readonly Divergence[] {
-  return undeclaredKeys(given, kept, []).map((key): Divergence => ({
-    subject: { kind: 'model' },
-    detail: `the key ${key}`,
-    reason: 'undeclared',
-  }));
+  return undeclaredKeys(given, kept, [], reservePath).map(
+    (key): Divergence => ({
+      subject: { kind: 'model' },
+      detail: `the key ${key}`,
+      reason: 'undeclared',
+    }),
+  );
 }
 
 function undeclaredKeys(
   given: unknown,
   kept: unknown,
   path: readonly string[],
+  reservePath: (path: readonly string[]) => boolean,
 ): string[] {
   if (Array.isArray(given) && Array.isArray(kept)) {
     return given.flatMap((entry, index) =>
-      undeclaredKeys(entry, kept[index], [...path, String(index)]),
+      undeclaredKeys(entry, kept[index], [...path, String(index)], reservePath),
     );
   }
   if (isRecord(given) && isRecord(kept)) {
     return Object.keys(given).flatMap((key) =>
       Object.hasOwn(kept, key)
-        ? undeclaredKeys(given[key], kept[key], [...path, key])
-        : [joinPath([...path, key])],
+        ? undeclaredKeys(given[key], kept[key], [...path, key], reservePath)
+        : reservePath([...path, key])
+          ? [joinPath([...path, key])]
+          : [],
     );
   }
   return [];

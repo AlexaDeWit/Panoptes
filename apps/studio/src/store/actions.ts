@@ -64,13 +64,22 @@ export type Action = Data.TaggedEnum<{
     readonly source: RetainedSource;
     readonly divergences: readonly Divergence[];
   };
+  Imported: {
+    readonly model: Model;
+    readonly name: string;
+    readonly divergences: readonly Divergence[];
+  };
+  ImportFailed: { readonly name: string; readonly failure: ReadFailure };
   Saved: { readonly name: string; readonly source: RetainedSource };
   Closed: {};
   ReadFailed: {
     readonly name: string;
     readonly failure: ReadFailure | DetectionFailure;
   };
-  FileRefused: { readonly operation: 'open' | 'save'; readonly reason: string };
+  FileRefused: {
+    readonly operation: 'open' | 'save' | 'import';
+    readonly reason: string;
+  };
 }>;
 
 /** Constructors and matching helpers for store actions. */

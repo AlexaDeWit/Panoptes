@@ -1,4 +1,6 @@
 import {
+  escapedForTerminal,
+  importModel,
   ReadFailure,
   formatNameSchema,
   hasDiverged,
@@ -149,12 +151,22 @@ export function writeThrough(
     : saerskrivenYamlCodec.write(model, source.document);
 }
 
-/** Cancellation produces no action. Read and codec refusals identify an open failure. */
-export function openedBy(outcome: OpenOutcome): Action | undefined {
+/** The selected read operation determines whether the source remains a save target. */
+export type ReadIntent = 'open' | 'import';
+
+/** Cancellation produces no action. Import refuses without changing the current file. */
+export function openedBy(
+  outcome: OpenOutcome,
+  intent: ReadIntent = 'open',
+): Action | undefined {
+  const failed = intent === 'import' ? Action.ImportFailed : Action.ReadFailed;
   return OpenOutcome.$match(outcome, {
-    Chosen: ({ name, text }) => actionForText(name, text),
+    Chosen: ({ name, text }) =>
+      intent === 'import'
+        ? actionForImport(name, text)
+        : actionForText(name, text),
     TooLarge: ({ name, bound, observed }) =>
-      Action.ReadFailed({
+      failed({
         name,
         failure: ReadFailure.ExceededReadLimit({
           limit: 'maxTextBytes',
@@ -163,7 +175,7 @@ export function openedBy(outcome: OpenOutcome): Action | undefined {
         }),
       }),
     Unreadable: ({ reason }) =>
-      Action.FileRefused({ operation: 'open', reason }),
+      Action.FileRefused({ operation: intent, reason }),
     Cancelled: () => undefined,
     NoPicker: () => undefined,
   });
@@ -184,14 +196,17 @@ export function savedBy(
 /** Uses the codec renderer to escape foreign identifiers and format divergences. */
 export function reportLines(
   divergences: readonly Divergence[],
+  occasion?: LossOccasion,
 ): readonly string[] {
+  if (occasion === 'import')
+    return divergences.map(({ detail }) => escapedForTerminal(detail));
   return hasDiverged(divergences)
     ? renderDivergences(divergences).split('\n')
     : [];
 }
 
 /** Whether a loss report is about a file being read or one being written. */
-export type LossOccasion = 'open' | 'save';
+export type LossOccasion = 'open' | 'save' | 'import';
 
 /** What one open or one save cost, and which of the two it was. */
 export type LossReport = {
@@ -202,14 +217,16 @@ export type LossReport = {
 /** How each occasion introduces its report to a person. */
 export const reportHeadlines: Record<LossOccasion, string> = {
   open: 'Opening the file dropped what it holds and Saerskriven does not:',
+  import: 'Import created a native model with these conversions and omissions:',
   save: 'The last save did not carry everything the model holds:',
 };
 
 /** Reports losses from reading, including fields absent from the retained document. */
 export function openReport(
   divergences: readonly Divergence[],
+  occasion: ReadIntent = 'open',
 ): LossReport | undefined {
-  return reported('open', divergences);
+  return reported(occasion, divergences);
 }
 
 /** What a save cost, and nothing at all where it carried everything. */
@@ -242,6 +259,18 @@ function actionForText(name: string, text: string): Action {
         name,
         source: retainedSource(read),
         divergences: read.divergences,
+      }),
+  });
+}
+
+function actionForImport(name: string, text: string): Action {
+  return Either.match(importModel(text), {
+    onLeft: (failure) => Action.ImportFailed({ name, failure }),
+    onRight: ({ model, divergences }) =>
+      Action.Imported({
+        model,
+        name: proposedName(name, nativeFormat),
+        divergences,
       }),
   });
 }

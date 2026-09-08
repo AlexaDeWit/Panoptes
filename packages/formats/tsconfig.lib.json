@@ -11,13 +11,19 @@
   "include": ["src/**/*.ts"],
   "references": [
     {
-      "path": "../model/tsconfig.lib.json"
+      "path": "../wire-tmbom/tsconfig.lib.json"
+    },
+    {
+      "path": "../wire-otm/tsconfig.lib.json"
+    },
+    {
+      "path": "../wire-threat-dragon/tsconfig.lib.json"
     },
     {
       "path": "../wire-saerskriven-yaml/tsconfig.lib.json"
     },
     {
-      "path": "../wire-threat-dragon/tsconfig.lib.json"
+      "path": "../model/tsconfig.lib.json"
     }
   ],
   "exclude": [
