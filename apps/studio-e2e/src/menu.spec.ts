@@ -24,10 +24,14 @@ test('the menu shows assigned shortcuts and the project link', async ({
 
   await openMenu(page);
 
-  await expect(page.getByRole('menuitem')).toHaveCount(13);
-  await expect(
-    page.locator('[role="menuitem"][aria-keyshortcuts]'),
-  ).toHaveCount(10);
+  await expect(menuItem(page, 'Copy')).toHaveAttribute(
+    'aria-keyshortcuts',
+    'Control+C',
+  );
+  await expect(menuItem(page, 'Paste')).toHaveAttribute(
+    'aria-keyshortcuts',
+    'Control+V',
+  );
   await expect(menuItem(page, 'Export')).toBeVisible();
   const source = menuItem(page, 'View source on GitHub');
   await expect(source).toHaveAttribute(
@@ -47,7 +51,6 @@ test('save as asks the format in the menu where the browser has no picker of its
   await openMenu(page);
   await menuItem(page, 'Save as').click();
 
-  await expect(page.getByRole('menuitem')).toHaveCount(14);
   await expect(menuItem(page, 'Save as Saerskriven YAML')).toBeVisible();
   await expect(menuItem(page, 'Save as Threat Dragon JSON')).toBeVisible();
   await expect(menuItem(page, 'Export')).toBeVisible();

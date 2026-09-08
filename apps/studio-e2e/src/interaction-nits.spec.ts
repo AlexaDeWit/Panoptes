@@ -1,4 +1,5 @@
-import { expect, test, type CDPSession, type Page } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
+import { touchDrag, touchSession } from './touch.fixtures.js';
 import { viewportTransform } from './commands.fixtures.js';
 import { registeredChords } from './chords.js';
 import {
@@ -20,47 +21,6 @@ const movedPoint = (page: Page, from: Point): Point => {
     x: from.x + (from.x < width / 2 ? 100 : -100),
     y: from.y + 60,
   };
-};
-
-const touchPoint = (at: Point) => ({
-  x: Math.round(at.x),
-  y: Math.round(at.y),
-  id: 1,
-});
-
-const touchSession = async (page: Page): Promise<CDPSession> => {
-  const session = await page.context().newCDPSession(page);
-  await session.send('Emulation.setTouchEmulationEnabled', {
-    enabled: true,
-    maxTouchPoints: 2,
-  });
-  return session;
-};
-
-const touchDrag = async (
-  session: CDPSession,
-  from: Point,
-  to: Point,
-): Promise<void> => {
-  await session.send('Input.dispatchTouchEvent', {
-    type: 'touchStart',
-    touchPoints: [touchPoint(from)],
-  });
-  for (let step = 1; step <= 6; step += 1) {
-    await session.send('Input.dispatchTouchEvent', {
-      type: 'touchMove',
-      touchPoints: [
-        touchPoint({
-          x: from.x + ((to.x - from.x) * step) / 6,
-          y: from.y + ((to.y - from.y) * step) / 6,
-        }),
-      ],
-    });
-  }
-  await session.send('Input.dispatchTouchEvent', {
-    type: 'touchEnd',
-    touchPoints: [],
-  });
 };
 
 test('the startup canvas has no transient hint', async ({ page }) => {

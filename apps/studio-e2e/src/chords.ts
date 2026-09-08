@@ -1,14 +1,24 @@
-/**
- * Every chord the studio registers, as Playwright presses them.
- * `ControlOrMeta` is the platform command modifier the registry writes as
- * `Mod`, so one entry drives the binding a person holds on either machine.
- * The list is the browser half of the registry's own spec: what is here is
- * pressed once, and what is not here is a command with no keyboard route.
- * `tests/chords.spec.ts` holds it against the registry, so a chord that
- * moves on one side and not the other is a red test rather than a shortcut
- * nothing drives.
- */
+/** Every chord the studio registers, as Playwright presses them. */
 export const registeredChords = {
+  copy: ['ControlOrMeta+c'],
+  cut: ['ControlOrMeta+x'],
+  paste: ['ControlOrMeta+v'],
+  duplicate: ['ControlOrMeta+d'],
+  'edit-geometry': ['ControlOrMeta+Shift+p'],
+  'reconnect-source': ['ControlOrMeta+Shift+1'],
+  'reconnect-target': ['ControlOrMeta+Shift+2'],
+  'align-left': ['ControlOrMeta+Shift+ArrowLeft'],
+  'align-centre': ['ControlOrMeta+Shift+h'],
+  'align-right': ['ControlOrMeta+Shift+ArrowRight'],
+  'align-top': ['ControlOrMeta+Shift+ArrowUp'],
+  'align-middle': ['ControlOrMeta+Shift+v'],
+  'align-bottom': ['ControlOrMeta+Shift+ArrowDown'],
+  'distribute-horizontal': ['ControlOrMeta+Shift+d'],
+  'distribute-vertical': ['ControlOrMeta+Shift+b'],
+  'snap-to-grid': ['ControlOrMeta+Shift+g'],
+  'reset-zoom': ['ControlOrMeta+1'],
+  'fit-selection': ['ControlOrMeta+Shift+0'],
+
   open: ['ControlOrMeta+o'],
   save: ['ControlOrMeta+s'],
   'save-as': ['ControlOrMeta+Shift+s'],

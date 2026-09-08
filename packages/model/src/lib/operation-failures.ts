@@ -1,19 +1,10 @@
+import type { ParseIssue } from './parse.js';
 import { Data } from 'effect';
 import type { DiagramId, ElementId, ThreatId } from './ids.js';
 
-/**
- * Why an operation refused to produce a model: `_tag` discriminates the
- * violation, following Effect's own convention, and the remaining fields
- * carry the offending id or reference. Operation failures are relational
- * facts about the model; structural validity of an input value is its own
- * schema's contract. One vocabulary serves every operation module, and each
- * operation's Either narrows its error channel to the members it can
- * actually produce. `ReusedThreatNumber` and `ChangedThreatNumber` guard
- * the same rule from two sides: a threat number is issued once and never
- * moves. `EmptyName` and `RefusedCharacter` describe text that an editor
- * cannot commit.
- */
+/** Why an operation refused to produce a model: `_tag` discriminates the violation, following Effect's own convention, and the remaining fields carry the offending id or reference. */
 export type OperationFailure = Data.TaggedEnum<{
+  InvalidFragment: { readonly issues: readonly ParseIssue[] };
   UnknownDiagram: { readonly diagramId: DiagramId };
   UnknownElement: { readonly elementId: ElementId };
   UnknownThreat: { readonly threatId: ThreatId };

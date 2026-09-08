@@ -84,6 +84,45 @@ export function setFlowWaypoints(
   );
 }
 
+/** Reattaches one flow endpoint to a different actor, process, or store in its diagram. */
+export function reconnectFlow(
+  model: Model,
+  elementId: ElementId,
+  side: 'source' | 'target',
+  endpointId: ElementId,
+): Either.Either<Model, OperationFailure> {
+  const located = locateElement(model, elementId);
+  if (located === undefined) {
+    return Either.left(OperationFailure.UnknownElement({ elementId }));
+  }
+  const flow = located.element;
+  if (flow.kind !== 'flow') {
+    return Either.left(OperationFailure.NotFlowElement({ elementId }));
+  }
+  const endpoint = model.diagrams[located.diagramIndex].elements.find(
+    (element) => element.id === endpointId,
+  );
+  const other = side === 'source' ? flow.target : flow.source;
+  if (
+    endpoint === undefined ||
+    !['actor', 'process', 'store'].includes(endpoint.kind) ||
+    (other.kind === 'attached' && other.element === endpointId)
+  ) {
+    return Either.left(
+      OperationFailure.InvalidFlowEndpoint({ side, reference: endpointId }),
+    );
+  }
+  const previous = flow[side];
+  return Either.right(
+    previous.kind === 'attached' && previous.element === endpointId
+      ? model
+      : withElement(model, located.diagramIndex, {
+          ...flow,
+          [side]: { kind: 'attached', element: endpointId },
+        }),
+  );
+}
+
 /** Adds an element after checking its diagram, ID, and attached endpoint references. */
 export function addElement(
   model: Model,
@@ -174,7 +213,7 @@ export function moveElement(
     withElement(
       model,
       located.diagramIndex,
-      translated(located.element, offset),
+      translatedElement(located.element, offset),
     ),
   );
 }
@@ -337,7 +376,8 @@ function freeEndpointPosition(flow: Flow): Point | undefined {
     .at(0);
 }
 
-function translated(element: Element, offset: Point): Element {
+/** Translates element geometry while attached endpoints retain their references. */
+export function translatedElement(element: Element, offset: Point): Element {
   if (element.kind === 'flow') {
     return {
       ...element,

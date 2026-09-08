@@ -1,4 +1,12 @@
 import type { Diagram, DiagramId } from '@saerskriven/model';
+import {
+  copySelected,
+  duplicateSelected,
+  pasteSelected,
+} from '../canvas/clipboard.js';
+import { arrangeSelected } from '../canvas/arrangement.js';
+import { openSelectionControl } from '../canvas/selection-control.js';
+import { toggleSnap } from '../canvas/snap.js';
 import { announce } from '../canvas/announcements.js';
 import { startFlow } from '../canvas/connecting.js';
 import { startBendInsertion } from '../canvas/bend-insertion.js';
@@ -37,6 +45,8 @@ export type ViewCommands = {
   zoomIn(): void;
   zoomOut(): void;
   fitToView(): void;
+  fitSelection(): void;
+  resetZoom(): void;
 };
 
 /** The shortcut reference controlled by a registered command. */
@@ -92,7 +102,176 @@ const history = (action: Action, message: string): CommandDispatch =>
     }
   });
 
+const editCommand = <const Id extends string>({
+  id,
+  label,
+  run,
+  shortcuts,
+}: Pick<CommandEntry, 'label' | 'shortcuts'> & {
+  readonly id: Id;
+  readonly run: () => void;
+}): CommandEntry & { readonly id: Id } => ({
+  id,
+  label,
+  group: 'Edit',
+  shortcuts,
+  when: 'With a canvas selection, outside text fields and open overlays',
+  inTextFields: false,
+  dispatch: runs(run),
+});
+
 const table = {
+  copy: editCommand({
+    id: 'copy',
+    label: 'Copy',
+    shortcuts: [mod('c')],
+    run: () => {
+      void copySelected();
+    },
+  }),
+  cut: editCommand({
+    id: 'cut',
+    label: 'Cut',
+    shortcuts: [mod('x')],
+    run: () => {
+      void copySelected(true);
+    },
+  }),
+  paste: editCommand({
+    id: 'paste',
+    label: 'Paste',
+    shortcuts: [mod('v')],
+    run: () => {
+      void pasteSelected();
+    },
+  }),
+  duplicate: editCommand({
+    id: 'duplicate',
+    label: 'Duplicate',
+    shortcuts: [mod('d')],
+    run: () => {
+      duplicateSelected();
+    },
+  }),
+  'edit-geometry': editCommand({
+    id: 'edit-geometry',
+    label: 'Position and size',
+    shortcuts: [modShift('p')],
+    run: () => {
+      openSelectionControl('geometry');
+    },
+  }),
+  'reconnect-source': editCommand({
+    id: 'reconnect-source',
+    label: 'Change flow source',
+    shortcuts: [modShift('1')],
+    run: () => {
+      openSelectionControl('source');
+    },
+  }),
+  'reconnect-target': editCommand({
+    id: 'reconnect-target',
+    label: 'Change flow target',
+    shortcuts: [modShift('2')],
+    run: () => {
+      openSelectionControl('target');
+    },
+  }),
+  'align-left': editCommand({
+    id: 'align-left',
+    label: 'Align left',
+    shortcuts: [modShift('ArrowLeft')],
+    run: () => {
+      arrangeSelected('left');
+    },
+  }),
+  'align-centre': editCommand({
+    id: 'align-centre',
+    label: 'Align centres',
+    shortcuts: [modShift('h')],
+    run: () => {
+      arrangeSelected('centre');
+    },
+  }),
+  'align-right': editCommand({
+    id: 'align-right',
+    label: 'Align right',
+    shortcuts: [modShift('ArrowRight')],
+    run: () => {
+      arrangeSelected('right');
+    },
+  }),
+  'align-top': editCommand({
+    id: 'align-top',
+    label: 'Align top',
+    shortcuts: [modShift('ArrowUp')],
+    run: () => {
+      arrangeSelected('top');
+    },
+  }),
+  'align-middle': editCommand({
+    id: 'align-middle',
+    label: 'Align middles',
+    shortcuts: [modShift('v')],
+    run: () => {
+      arrangeSelected('middle');
+    },
+  }),
+  'align-bottom': editCommand({
+    id: 'align-bottom',
+    label: 'Align bottom',
+    shortcuts: [modShift('ArrowDown')],
+    run: () => {
+      arrangeSelected('bottom');
+    },
+  }),
+  'distribute-horizontal': editCommand({
+    id: 'distribute-horizontal',
+    label: 'Distribute horizontally',
+    shortcuts: [modShift('d')],
+    run: () => {
+      arrangeSelected('horizontal');
+    },
+  }),
+  'distribute-vertical': editCommand({
+    id: 'distribute-vertical',
+    label: 'Distribute vertically',
+    shortcuts: [modShift('b')],
+    run: () => {
+      arrangeSelected('vertical');
+    },
+  }),
+  'snap-to-grid': {
+    id: 'snap-to-grid',
+    label: 'Snap to grid',
+    group: 'View',
+    shortcuts: [modShift('g')],
+    when: 'From the View menu',
+    inTextFields: false,
+    dispatch: runs(toggleSnap),
+  },
+  'reset-zoom': {
+    id: 'reset-zoom',
+    label: 'Reset zoom to 100%',
+    group: 'View',
+    shortcuts: [mod('1')],
+    when: 'Outside text fields',
+    inTextFields: false,
+    dispatch: runs((surface) => {
+      surface.view.resetZoom();
+    }),
+  },
+  'fit-selection': {
+    id: 'fit-selection',
+    label: 'Fit selection',
+    group: 'View',
+    shortcuts: [modShift('0')],
+    when: 'With a canvas selection, outside text fields',
+    inTextFields: false,
+    dispatch: runs((surface) => {
+      surface.view.fitSelection();
+    }),
+  },
   open: {
     id: 'open',
     label: 'Open',

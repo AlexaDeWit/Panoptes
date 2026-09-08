@@ -1,0 +1,57 @@
+.panel,
+.endpoints {
+  position: absolute;
+  z-index: 2;
+  inset-inline-start: var(--pn-space-3);
+  inset-block-start: 5rem;
+  max-width: min(22rem, 90vw);
+  max-height: 65vh;
+  overflow: auto;
+  padding: var(--pn-space-3);
+  border: 1px solid var(--pn-colour-border);
+  border-radius: var(--pn-radius);
+  background: var(--pn-colour-surface-raised);
+  color: var(--pn-colour-text);
+}
+.endpoints {
+  display: flex;
+  gap: var(--pn-space-2);
+}
+.panel {
+  z-index: 3;
+}
+.panel h2 {
+  font-size: var(--pn-font-size);
+  margin-block: 0 var(--pn-space-2);
+}
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pn-space-1);
+  margin-block-end: var(--pn-space-2);
+}
+.field span,
+.actions {
+  display: flex;
+  gap: var(--pn-space-2);
+}
+.field input {
+  min-width: 0;
+  width: 8rem;
+}
+.panel button,
+.panel input,
+.panel select,
+.endpoints button {
+  min-height: 2rem;
+  border: 1px solid var(--pn-colour-border);
+  border-radius: var(--pn-radius);
+  background: var(--pn-colour-surface);
+  color: var(--pn-colour-text);
+  font: inherit;
+}
+.panel :focus-visible,
+.endpoints :focus-visible {
+  outline: var(--pn-focus-ring);
+  outline-offset: var(--pn-focus-ring-offset);
+}

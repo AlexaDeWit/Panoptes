@@ -19,6 +19,18 @@ import type { InlineEditor, RetainedSource } from './state.js';
 /** Every state change the reducer accepts. */
 export type Action = Data.TaggedEnum<{
   AddElement: { readonly diagramId: DiagramId; readonly element: Element };
+  InsertFragment: { readonly diagramId: DiagramId; readonly fragment: Model };
+  ArrangeElements: {
+    readonly moves: readonly {
+      readonly elementId: ElementId;
+      readonly offset: Point;
+    }[];
+  };
+  ReconnectFlow: {
+    readonly elementId: ElementId;
+    readonly side: 'source' | 'target';
+    readonly endpointId: ElementId;
+  };
   RemoveElement: { readonly elementId: ElementId };
   RemoveElements: { readonly elementIds: readonly ElementId[] };
   MoveElement: { readonly elementId: ElementId; readonly offset: Point };

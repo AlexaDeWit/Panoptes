@@ -2,6 +2,7 @@ import type { CanvasFlowEdge, CanvasNode } from '@saerskriven/canvas';
 import type { ElementId } from '@saerskriven/model';
 import type { Connection, Edge, EdgeChange, NodeChange } from '@xyflow/react';
 import { Action } from '../store/actions.js';
+import { sameSelection } from '../store/selection.js';
 import { selectedElements } from '../store/selectors.js';
 import { dispatch, modelStore } from '../store/store.js';
 import { connectElements } from './edits.js';
@@ -12,15 +13,7 @@ export type DiagramChange =
   | NodeChange<DiagramNode>
   | EdgeChange<CanvasFlowEdge>;
 
-/**
- * Turns what React Flow reports about a gesture into store actions and
- * dispatches them. The selection it works from is the store's own at the
- * moment of the call, never a value a render closed over: React Flow reports
- * a click that moves the selection between a node and a flow as two
- * synchronous calls, one selecting and one deselecting, with no render
- * between them, so a caller holding the older selection would clear what the
- * first call had just selected.
- */
+/** Turns what React Flow reports about a gesture into store actions and dispatches them. */
 export function applyChanges(
   changes: readonly DiagramChange[],
   elements: ReadonlyMap<string, ElementId>,
@@ -66,15 +59,7 @@ export function selectionActions(
     : [Action.Select({ elementIds: next })];
 }
 
-/**
- * The moves the reported changes ask for, as offsets from where the model
- * has each element. React Flow reports a position on every frame of a drag
- * and once more when the gesture ends, so a change still dragging is the
- * canvas's own business and only the settled one reaches the store: one store
- * action for a whole drag, and one for each arrow key a keyboard move
- * presses. A gesture that put an element back where it was asks for nothing,
- * since an operation that changes no geometry still costs an undo entry.
- */
+/** The moves the reported changes ask for, as offsets from where the model has each element. */
 export function moveActions(
   changes: readonly DiagramChange[],
   nodes: ReadonlyMap<string, CanvasNode>,
@@ -166,14 +151,4 @@ export function applyConnection(
   if (source !== undefined && target !== undefined) {
     connectElements(source, target);
   }
-}
-
-function sameSelection(
-  before: readonly ElementId[],
-  after: readonly ElementId[],
-): boolean {
-  return (
-    before.length === after.length &&
-    before.every((elementId, index) => elementId === after[index])
-  );
 }

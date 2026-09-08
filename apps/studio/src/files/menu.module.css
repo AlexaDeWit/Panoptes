@@ -43,6 +43,8 @@
 }
 
 .panel {
+  max-height: var(--radix-dropdown-menu-content-available-height);
+  overflow-y: auto;
   min-width: 18rem;
   max-width: 30rem;
   padding: var(--pn-space-1);
