@@ -44,7 +44,7 @@ and no other internal package.
 `readLimits` is what a read may spend on a text before it refuses it. It is
 one exported value, so a caller that checks a file before handing it over
 enforces the numbers the codecs enforce rather than numbers of its own. Four
-bounds today, each with headroom over the largest file the repository vendors
+parsing bounds today, each with headroom over the largest file the repository vendors
 and each justified by a fixture under `test-data/adversarial` built to break
 it: the size of the text in UTF-8 bytes, 4 MiB and about thirty times that
 file; how far below the root a value may sit, 64 levels; how many aliases

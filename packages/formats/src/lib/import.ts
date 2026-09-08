@@ -62,20 +62,27 @@ export function importModel(
         );
       const source = parsed.data;
       const mapped = 'otmVersion' in source ? mapOtm(source) : mapTmbom(source);
+      if (mapped.context.failure !== undefined)
+        return Either.left(mapped.context.failure);
       if (mapped.context.issues.length > 0)
         return Either.left(
           ReadFailure.InvalidWireDocument({ issues: mapped.context.issues }),
         );
+      const undeclared = undeclaredDivergences(given, source, (path) =>
+        mapped.context.reserve(
+          8 +
+            path.reduce((total, segment) => total + 4 * segment.length + 1, 0),
+        ),
+      );
+      if (mapped.context.failure !== undefined)
+        return Either.left(mapped.context.failure);
       return Either.mapBoth(parseModel(mapped.input), {
         onLeft: (failure) =>
           ReadFailure.InvalidModel({ issues: failure.issues }),
         onRight: (model) => ({
           format,
           model,
-          divergences: [
-            ...undeclaredDivergences(given, source),
-            ...mapped.context.divergences,
-          ],
+          divergences: [...undeclared, ...mapped.context.divergences],
         }),
       });
     },

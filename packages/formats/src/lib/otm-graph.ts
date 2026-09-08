@@ -1,7 +1,6 @@
 import type { OtmDocument } from '@saerskriven/wire-otm';
 import {
   importElement,
-  importId,
   importPosition,
   type ImportContext,
   type ImportElement,
@@ -37,8 +36,8 @@ export function otmGraph(document: OtmDocument, context: ImportContext) {
     fields(representation, ['id', 'name', 'type']);
   const elements: ImportElement[] = [];
   const dataProse = (ids: readonly (string | null)[], path: string): string =>
-    ids
-      .flatMap((id) => {
+    context.text(
+      ids.flatMap((id) => {
         if (id === null) return [];
         const asset = assets.get(id);
         if (asset === undefined) {
@@ -46,10 +45,10 @@ export function otmGraph(document: OtmDocument, context: ImportContext) {
           return [];
         }
         fields(asset, ['id', 'name', 'description']);
-        return [asset.name, asset.description ?? ''].filter(Boolean).join(': ');
-      })
-      .join('\n');
-
+        return context.text([asset.name, asset.description ?? ''], ': ');
+      }),
+      '\n',
+    );
   for (const component of components) {
     fields(component, [
       'id',
@@ -60,20 +59,18 @@ export function otmGraph(document: OtmDocument, context: ImportContext) {
       'assets',
       'threats',
     ]);
-    const id = importId('otm-component', component.id);
+    const id = context.id('otm-component', component.id);
     const data = component.assets;
     if (data !== null && data !== undefined)
       fields(data, ['processed', 'stored']);
-    const description = [
+    const description = context.text([
       component.description ?? '',
       `Source component type: ${component.type}`,
       dataProse(data?.processed ?? [], 'components.assets.processed'),
       dataProse(data?.stored ?? [], 'components.assets.stored'),
-    ]
-      .filter(Boolean)
-      .join('\n\n');
+    ]);
     elements.push({
-      ...importElement(id, component.name, description),
+      ...importElement(context, id, component.name, description),
       kind: 'process',
       ...otmGeometry(component, representation?.id, elements.length, context),
     });
@@ -86,7 +83,8 @@ export function otmGraph(document: OtmDocument, context: ImportContext) {
     fields(zone, ['id', 'name', 'description', 'representations']);
     elements.push({
       ...importElement(
-        importId('otm-zone', zone.id),
+        context,
+        context.id('otm-zone', zone.id),
         zone.name,
         zone.description ?? '',
       ),
@@ -119,30 +117,33 @@ export function otmGraph(document: OtmDocument, context: ImportContext) {
     for (const reverse of flow.bidirectional === true
       ? [false, true]
       : [false]) {
-      const id = importId('otm-flow', flow.id, reverse ? 'reverse' : 'forward');
+      const id = context.id(
+        'otm-flow',
+        flow.id,
+        reverse ? 'reverse' : 'forward',
+      );
       attached.push(id);
       elements.push({
         ...importElement(
+          context,
           id,
           flow.name,
-          [
+          context.text([
             flow.description ?? '',
             dataProse(flow.assets ?? [], 'dataflows.assets'),
-          ]
-            .filter(Boolean)
-            .join('\n\n'),
+          ]),
         ),
         kind: 'flow',
         source: {
           kind: 'attached',
-          element: importId(
+          element: context.id(
             'otm-component',
             reverse ? flow.destination : flow.source,
           ),
         },
         target: {
           kind: 'attached',
-          element: importId(
+          element: context.id(
             'otm-component',
             reverse ? flow.source : flow.destination,
           ),

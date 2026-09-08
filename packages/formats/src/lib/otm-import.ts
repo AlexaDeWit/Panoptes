@@ -1,5 +1,5 @@
 import type { OtmDocument } from '@saerskriven/wire-otm';
-import { importContext, importId } from './import-model.js';
+import { importContext } from './import-model.js';
 import { otmGraph } from './otm-graph.js';
 import { otmRegister } from './otm-register.js';
 
@@ -37,7 +37,7 @@ export function mapOtm(document: OtmDocument) {
       },
       diagrams: [
         {
-          id: importId('otm-diagram', project.id),
+          id: context.id('otm-diagram', project.id),
           title: graph.title,
           elements: graph.elements,
         },

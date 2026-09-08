@@ -34,13 +34,13 @@ export function mapTmbom(document: TmbomDocument) {
         title: scope.title,
         owner: '',
         contributors: [],
-        description: [
+        description: context.text([
           scope.description,
           document.description ?? '',
-          ...unconfirmed.map((prose) => `Unconfirmed assumption: ${prose}`),
-        ]
-          .filter(Boolean)
-          .join('\n\n'),
+          ...unconfirmed.map((prose) =>
+            context.text(['Unconfirmed assumption: ', prose], ''),
+          ),
+        ]),
       },
       diagrams: [{ id: 'tmbom-diagram', title: scope.title, elements }],
       threats,

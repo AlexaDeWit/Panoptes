@@ -7,6 +7,7 @@ import {
 } from '@saerskriven/model';
 import type { z } from 'zod';
 import type { Divergence } from './divergence.js';
+import { importBudget } from './import-budget.js';
 import { isRecord } from './records.js';
 
 /** Unbranded model inputs cross through parseModel after conversion. */
@@ -18,23 +19,30 @@ export type ImportMitigation = z.input<typeof mitigationSchema>;
 /** An assumption expressible by the current model. */
 export type ImportAssumption = z.input<typeof assumptionSchema>;
 
-/** Distinguishes source namespaces without depending on their identifier syntax. */
-export function importId(kind: string, ...parts: readonly string[]): string {
-  return `${kind}:${JSON.stringify(parts)}`;
-}
-
 /** A deterministic layout for records with no drawable position. */
 export function importPosition(index: number) {
   return { x: 60 + (index % 4) * 260, y: 60 + Math.floor(index / 4) * 160 };
 }
 
 /** Common fields for imported elements, with scoping left undecided by the source. */
-export function importElement(id: string, name: string, description = '') {
-  return { id, name, description, outOfScope: false, reasonOutOfScope: '' };
+export function importElement(
+  context: ImportContext,
+  id: string,
+  name: string,
+  description = '',
+) {
+  return {
+    id,
+    name: context.text([name]),
+    description: context.text([description]),
+    outOfScope: false,
+    reasonOutOfScope: '',
+  };
 }
 
 /** Tracks mapped fields so every remaining wire field appears in the import report. */
 export function importContext() {
+  const budget = importBudget();
   const used = new WeakMap<object, Set<string>>();
   const divergences: Divergence[] = [];
   const issues: ParseIssue[] = [];
@@ -42,6 +50,7 @@ export function importContext() {
     detail: string,
     reason: Divergence['reason'] = 'narrowed',
   ): void => {
+    if (budget.failure !== undefined) return;
     divergences.push({ subject: { kind: 'model' }, detail, reason });
   };
   const problem = (
@@ -51,6 +60,12 @@ export function importContext() {
     issues.push({ path: [...path], message, code: 'custom' });
   };
   return {
+    text: budget.text,
+    reserve: budget.reserve,
+    id: budget.id,
+    get failure() {
+      return budget.failure;
+    },
     divergences,
     issues,
     report,

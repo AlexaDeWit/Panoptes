@@ -1,6 +1,5 @@
 import type { TmbomDocument } from '@saerskriven/wire-tmbom';
 import {
-  importId,
   type ImportAssumption,
   type ImportContext,
   type ImportThreat,
@@ -39,10 +38,13 @@ export function tmbomRegister(document: TmbomDocument, context: ImportContext) {
             `Unknown component ${JSON.stringify(id)}`,
           );
       return {
-        id: importId('tmbom-threat', threat.symbolic_name),
+        id: context.id('tmbom-threat', threat.symbolic_name),
         number: index + 1,
-        title: threat.title,
-        description: `${threat.description}\n\nTrigger: ${threat.event}`,
+        title: context.text([threat.title]),
+        description: context.text([
+          threat.description,
+          `Trigger: ${threat.event}`,
+        ]),
         severity: 'undecided',
         status: 'open',
         category: {
@@ -52,7 +54,7 @@ export function tmbomRegister(document: TmbomDocument, context: ImportContext) {
         },
         mitigation: '',
         elements: (threat.components_affected ?? []).map((id) =>
-          tmbomNodeId('process', id),
+          tmbomNodeId('process', id, context),
         ),
       };
     },
@@ -82,11 +84,14 @@ export function tmbomRegister(document: TmbomDocument, context: ImportContext) {
       );
     return [
       {
-        id: importId('tmbom-control', control.symbolic_name),
-        title: control.title,
-        prose: `${control.description}\n\nSource status: ${control.status}`,
+        id: context.id('tmbom-control', control.symbolic_name),
+        title: context.text([control.title]),
+        prose: context.text([
+          control.description,
+          `Source status: ${control.status}`,
+        ]),
         status,
-        threats: control.threats.map((id) => importId('tmbom-threat', id)),
+        threats: control.threats.map((id) => context.id('tmbom-threat', id)),
       },
     ];
   });
@@ -98,14 +103,14 @@ export function tmbomRegister(document: TmbomDocument, context: ImportContext) {
       assumption.validity === undefined ||
       assumption.validity === 'unconfirmed'
     ) {
-      unconfirmed.push(assumption.description);
+      unconfirmed.push(context.text([assumption.description]));
       report(
         `Assumption ${String(index)} is unconfirmed and remains prose in the model description.`,
       );
     } else {
       assumptions.push({
-        id: importId('tmbom-assumption', String(index)),
-        prose: assumption.description,
+        id: context.id('tmbom-assumption', String(index)),
+        prose: context.text([assumption.description]),
         status: assumption.validity === 'confirmed' ? 'valid' : 'invalidated',
         elements: [],
         threats: [],

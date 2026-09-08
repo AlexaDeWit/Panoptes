@@ -222,3 +222,113 @@ it('identifies an unsupported import before reporting schema fields', () => {
     },
   });
 });
+
+it.each(['assets', 'threats', 'mitigations'] as const)(
+  'bounds OTM %s reference expansion before producing a native model',
+  (kind) => {
+    const document = otmFixture();
+    const repeated = 'x'.repeat(65_536);
+    const component = document.components?.[0];
+    const asset = document.assets?.[0];
+    const threat = document.threats?.[0];
+    const mitigation = document.mitigations?.[0];
+    if (
+      component === undefined ||
+      asset === undefined ||
+      threat === undefined ||
+      mitigation === undefined
+    )
+      throw new Error('The upstream fixture lacks its referenced records');
+    if (kind === 'assets') {
+      asset.name = repeated;
+      component.assets = {
+        processed: Array.from({ length: 512 }, () => asset.id),
+      };
+    } else {
+      if (kind === 'threats') threat.name = repeated;
+      else mitigation.name = repeated;
+      component.threats = Array.from({ length: 512 }, () => ({
+        threat: threat.id,
+        state: 'exposed',
+        mitigations: [{ mitigation: mitigation.id, state: 'required' }],
+      }));
+    }
+    const text = JSON.stringify(document);
+    expect(text.length).toBeLessThan(readLimits.maxTextBytes);
+    expect(importModel(text)).toMatchObject({
+      _tag: 'Left',
+      left: { _tag: 'ExceededReadLimit', limit: 'maxImportTextUnits' },
+    });
+  },
+);
+
+it('bounds TM-BOM data-placement expansion before joining store descriptions', () => {
+  const document = tmbomFixture();
+  document.data_sets = [
+    {
+      symbolic_name: 'repeated-data',
+      title: 'x'.repeat(65_536),
+      description: 'Data in the store',
+      data_sensitivity: ['cred'],
+      placements: Array.from({ length: 512 }, () => ({
+        data_store: document.data_stores[0].symbolic_name,
+      })),
+    },
+  ];
+  const text = JSON.stringify(document);
+  expect(text.length).toBeLessThan(readLimits.maxTextBytes);
+  expect(importModel(text)).toMatchObject({
+    _tag: 'Left',
+    left: { _tag: 'ExceededReadLimit', limit: 'maxImportTextUnits' },
+  });
+});
+
+it('budgets generated OTM identifiers before escaping and repeating them', () => {
+  const document = otmFixture();
+  const component = document.components?.[0];
+  if (component === undefined)
+    throw new Error('The upstream fixture lacks a component');
+  const old = component.id;
+  component.id = 'x'.repeat(1_048_576);
+  for (const flow of document.dataflows ?? []) {
+    if (flow.source === old) flow.source = component.id;
+    if (flow.destination === old) flow.destination = component.id;
+  }
+  const text = JSON.stringify(document);
+  expect(text.length).toBeLessThan(readLimits.maxTextBytes);
+  expect(importModel(text)).toMatchObject({
+    _tag: 'Left',
+    left: { _tag: 'ExceededReadLimit', limit: 'maxImportTextUnits' },
+  });
+});
+
+it('budgets repeated diagnostic paths from aliased assumptions', () => {
+  const document = tmbomFixture();
+  const assumption = {
+    description: 'A premise',
+    validity: 'confirmed' as const,
+    ['x'.repeat(262_144)]: true,
+  };
+  document.assumptions = Array.from({ length: 40 }, () => assumption);
+  const text = stringify(document);
+  expect(text.length).toBeLessThan(readLimits.maxTextBytes);
+  expect(importModel(text)).toMatchObject({
+    _tag: 'Left',
+    left: { _tag: 'ExceededReadLimit', limit: 'maxImportTextUnits' },
+  });
+});
+
+it.each(['confirmed', 'unconfirmed'] as const)(
+  'bounds repeated %s assumption text from YAML aliases',
+  (validity) => {
+    const document = tmbomFixture();
+    const assumption = { description: 'x'.repeat(1_048_576), validity };
+    document.assumptions = Array.from({ length: 40 }, () => assumption);
+    const text = stringify(document);
+    expect(text.length).toBeLessThan(readLimits.maxTextBytes);
+    expect(importModel(text)).toMatchObject({
+      _tag: 'Left',
+      left: { _tag: 'ExceededReadLimit', limit: 'maxImportTextUnits' },
+    });
+  },
+);

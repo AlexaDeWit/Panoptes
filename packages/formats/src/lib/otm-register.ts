@@ -1,6 +1,5 @@
 import type { OtmDocument } from '@saerskriven/wire-otm';
 import {
-  importId,
   type ImportContext,
   type ImportMitigation,
   type ImportThreat,
@@ -32,6 +31,7 @@ export function otmRegister(document: OtmDocument, context: ImportContext) {
     owner: string,
     attached: readonly string[],
   ): void => {
+    if (context.failure !== undefined) return;
     fields(definition, ['id', 'name', 'description']);
     if (referencedThreats.has(definition.id))
       report(
@@ -39,7 +39,7 @@ export function otmRegister(document: OtmDocument, context: ImportContext) {
         'split',
       );
     referencedThreats.add(definition.id);
-    const id = importId(
+    const id = context.id(
       'otm-threat',
       definition.id,
       owner,
@@ -52,13 +52,11 @@ export function otmRegister(document: OtmDocument, context: ImportContext) {
     threats.push({
       id,
       number: threats.length + 1,
-      title: definition.name,
-      description: [
+      title: context.text([definition.name]),
+      description: context.text([
         definition.description ?? '',
         state === undefined ? '' : `Source status: ${state}`,
-      ]
-        .filter(Boolean)
-        .join('\n\n'),
+      ]),
       category: {
         methodology: 'custom',
         methodologyName: 'OTM',
@@ -105,14 +103,12 @@ export function otmRegister(document: OtmDocument, context: ImportContext) {
           `Mitigation ${JSON.stringify(mitigation.id)} has source status ${JSON.stringify(given.state)}, retained in its description and imported as proposed.`,
         );
       mitigations.push({
-        id: importId('otm-mitigation', mitigation.id, id, String(index)),
-        title: mitigation.name,
-        prose: [
+        id: context.id('otm-mitigation', mitigation.id, id, String(index)),
+        title: context.text([mitigation.name]),
+        prose: context.text([
           mitigation.description ?? '',
           given.state == null ? '' : `Source status: ${given.state}`,
-        ]
-          .filter(Boolean)
-          .join('\n\n'),
+        ]),
         status: mitigationStatus,
         threats: [id],
       });
@@ -134,18 +130,18 @@ export function otmRegister(document: OtmDocument, context: ImportContext) {
     }
   };
   for (const component of document.components ?? []) {
-    const id = importId('otm-component', component.id);
+    const id = context.id('otm-component', component.id);
     occurrences(component.threats ?? [], id, [id]);
   }
   for (const flow of document.dataflows ?? []) {
     const attached =
       flow.bidirectional === true
         ? [
-            importId('otm-flow', flow.id, 'forward'),
-            importId('otm-flow', flow.id, 'reverse'),
+            context.id('otm-flow', flow.id, 'forward'),
+            context.id('otm-flow', flow.id, 'reverse'),
           ]
-        : [importId('otm-flow', flow.id, 'forward')];
-    occurrences(flow.threats ?? [], importId('otm-flow', flow.id), attached);
+        : [context.id('otm-flow', flow.id, 'forward')];
+    occurrences(flow.threats ?? [], context.id('otm-flow', flow.id), attached);
   }
   for (const definition of definitions.values()) {
     if (!referencedThreats.has(definition.id))
@@ -155,8 +151,8 @@ export function otmRegister(document: OtmDocument, context: ImportContext) {
     if (referencedMitigations.has(definition.id)) continue;
     fields(definition, ['id', 'name', 'description']);
     mitigations.push({
-      id: importId('otm-mitigation', definition.id),
-      title: definition.name,
+      id: context.id('otm-mitigation', definition.id),
+      title: context.text([definition.name]),
       prose: definition.description ?? '',
       status: 'proposed',
       threats: [],

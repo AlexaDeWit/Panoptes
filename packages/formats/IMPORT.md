@@ -14,7 +14,12 @@ its omitted information matters.
 `importModel(text)` provides the same conversion to application code. It
 returns Effect's `Either`, with `ReadFailure` on refusal. Content determines
 the format. Both JSON and YAML pass through the existing size, depth, and
-alias bounds. Each wire package declares its foreign document independently
+alias bounds. Reference expansion and generated identifiers share a budget
+of 16,777,216 UTF-16 units, exposed as `readLimits.maxImportTextUnits`.
+Concatenation charges its complete result before joining. Identifier
+creation charges six units per input unit as an upper bound on JSON escaping.
+Intermediate strings and escaped diagnostic paths also consume this budget. A conversion over the budget
+returns `ExceededReadLimit` before constructing the expanded text. Each wire package declares its foreign document independently
 of the core. The mapping validates references it uses before parsing the
 result through `parseModel`.
 

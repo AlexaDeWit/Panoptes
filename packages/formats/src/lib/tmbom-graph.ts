@@ -1,7 +1,6 @@
 import type { TmbomDocument } from '@saerskriven/wire-tmbom';
 import {
   importElement,
-  importId,
   type ImportContext,
   type ImportElement,
 } from './import-model.js';
@@ -76,7 +75,8 @@ export function tmbomGraph(document: TmbomDocument, context: ImportContext) {
       fields(zone, ['symbolic_name', 'title', 'description']);
       elements.push({
         ...importElement(
-          importId('tmbom-zone', zone.symbolic_name),
+          context,
+          context.id('tmbom-zone', zone.symbolic_name),
           zone.title,
           zone.description,
         ),
@@ -93,16 +93,15 @@ export function tmbomGraph(document: TmbomDocument, context: ImportContext) {
       if ('trust_zone' in source) fields(source, ['trust_zone']);
       elements.push({
         ...importElement(
-          tmbomNodeId(kind, source.symbolic_name),
+          context,
+          tmbomNodeId(kind, source.symbolic_name, context),
           source.title,
-          [
+          context.text([
             source.description,
             ...(kind === 'store'
               ? (descriptions.get(source.symbolic_name) ?? [])
               : []),
-          ]
-            .filter(Boolean)
-            .join('\n\n'),
+          ]),
         ),
         kind,
         position: {
@@ -138,7 +137,7 @@ export function tmbomGraph(document: TmbomDocument, context: ImportContext) {
         ['data_flows'],
         `Unknown endpoint ${JSON.stringify(given)}`,
       );
-    return tmbomNodeId(kind ?? 'process', given.object);
+    return tmbomNodeId(kind ?? 'process', given.object, context);
   };
   for (const flow of document.data_flows) {
     fields(flow, [
@@ -152,7 +151,8 @@ export function tmbomGraph(document: TmbomDocument, context: ImportContext) {
     ]);
     elements.push({
       ...importElement(
-        importId('tmbom-flow', flow.symbolic_name),
+        context,
+        context.id('tmbom-flow', flow.symbolic_name),
         flow.title,
         `${flow.description}\n\nEncrypted: ${String(flow.encrypted)}\nCarries sensitive data: ${String(flow.has_sensitive_data)}`,
       ),
@@ -178,8 +178,9 @@ export function tmbomGraph(document: TmbomDocument, context: ImportContext) {
 export function tmbomNodeId(
   kind: 'actor' | 'process' | 'store',
   id: string,
+  context: ImportContext,
 ): string {
-  return importId(`tmbom-${kind}`, id);
+  return context.id(`tmbom-${kind}`, id);
 }
 
 function dataDescriptions(
@@ -205,7 +206,7 @@ function dataDescriptions(
           `Unknown data store ${JSON.stringify(placement.data_store)}`,
         );
       const prose = descriptions.get(placement.data_store) ?? [];
-      prose.push(`${data.title}: ${data.description}`);
+      prose.push(context.text([data.title, data.description], ': '));
       descriptions.set(placement.data_store, prose);
       placements += 1;
     }

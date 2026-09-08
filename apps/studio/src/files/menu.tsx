@@ -154,11 +154,13 @@ function UnsavedChangesCommand({
     <>
       <MenuItem
         chord={
-          asking ? undefined : spellShortcuts(entry.shortcuts, hostPlatform)
+          asking || entry.shortcuts.length === 0
+            ? undefined
+            : spellShortcuts(entry.shortcuts, hostPlatform)
         }
         keepOpen={dirty && !asking}
         keyShortcuts={
-          asking
+          asking || entry.shortcuts.length === 0
             ? undefined
             : keyShortcutsAttribute(entry.shortcuts, hostPlatform)
         }
