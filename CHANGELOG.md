@@ -1,3 +1,38 @@
+## 0.2.0 (2026-09-08)
+
+### Features
+
+- **CLI:** Use `saer` as the command. The macOS and Linux installer embeds the release tag and binary SHA-256 hashes, then verifies the download before installation. Optional GitHub attestation verification checks build origin. ([#295](https://github.com/AlexaDeWit/Saerskriven/pull/295))
+- **Nix:** Add the pinned CLI to downstream development shells without a separate Node, Deno, browser, or Typst installation. ([#291](https://github.com/AlexaDeWit/Saerskriven/pull/291))
+- **Studio:** Copy, cut, paste, and duplicate selections. Reconnect flows, edit geometry, arrange elements, and enable snapping. Zoom controls follow the selection, and background clicks consistently clear it. ([#293](https://github.com/AlexaDeWit/Saerskriven/pull/293))
+- **Threat pane:** See severity and status in collapsed summaries. Choose a wider pane for writing, keep its heading visible, and see which elements share a threat. ([#294](https://github.com/AlexaDeWit/Saerskriven/pull/294))
+
+### Fixes
+
+- **Studio:** Simplify menu labels and move the version badge onto the canvas. ([#292](https://github.com/AlexaDeWit/Saerskriven/pull/292))
+- **Studio:** Stop delayed focus retries from closing the next element's name editor during keyboard placement. ([#296](https://github.com/AlexaDeWit/Saerskriven/pull/296))
+
+### Release verification
+
+- Rehearse release builds and artifact attestations on pull requests. Native Linux and macOS checks exercise installation, upgrades, compatibility links, and rejection of corrupted downloads. ([#289](https://github.com/AlexaDeWit/Saerskriven/pull/289), [#295](https://github.com/AlexaDeWit/Saerskriven/pull/295))
+
+### Upgrading
+
+The executable is now `saer`. The installer defaults to `~/.local/bin/saer`
+and adds `saerskriven -> saer` for compatibility. It can migrate an older
+`saerskriven` installation and refuses to overwrite an unrelated `saer` command.
+
+Release downloads now use `saer-<version>-<target>` filenames, with `.exe` on
+Windows. Update scripts that construct download URLs from the old filenames.
+The CLI arguments remain compatible.
+
+The Nix package keeps a separate release pin. Its update to `0.2.0` follows
+publication, once the new assets and their attestations exist.
+
+### Contributors
+
+- Alexandra de Wit (@AlexaDeWit)
+
 ## 0.1.0 (2026-09-08)
 
 ### 🚀 Features
