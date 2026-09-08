@@ -664,7 +664,7 @@ describe('saving', () => {
     await choose(user, 'Save as');
 
     await screen.findByRole('menuitem', { name: 'Save as Saerskriven YAML' });
-    expect(screen.getAllByRole('menuitem')).toHaveLength(13);
+    expect(screen.getAllByRole('menuitem')).toHaveLength(14);
     expect(item('Save as Saerskriven YAML')).toBeDefined();
     expect(item('Save as Threat Dragon JSON')).toBeDefined();
     expect(item('Export')).toBeDefined();
