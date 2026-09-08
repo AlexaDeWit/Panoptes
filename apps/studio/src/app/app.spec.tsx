@@ -7,6 +7,16 @@ import { modelStore } from '../store/store.js';
 import { appTimeout } from './app.fixtures.js';
 import { App } from './app.js';
 
+const build = vi.hoisted(() => ({ version: '1.2.3', tag: '' }));
+vi.mock('../version.js', () => ({
+  get studioVersion() {
+    return build.version;
+  },
+  get studioReleaseTag() {
+    return build.tag;
+  },
+}));
+
 const elementsHeld = (): number => elementCount(modelStore.getState());
 
 const processTool = (): HTMLElement =>
@@ -23,6 +33,8 @@ describe(
   'App',
   () => {
     beforeEach(() => {
+      build.version = '1.2.3';
+      build.tag = '';
       modelStore.setState(initialState(placeholderModel), true);
       resetTools();
     });
@@ -30,6 +42,26 @@ describe(
     it('renders the canvas', () => {
       render(<App />);
       expect(screen.getByTestId('canvas-container')).toBeTruthy();
+    });
+
+    it.each(['1.2.3', '1.2.3-beta.1'])(
+      'shows release %s outside the menu without another link',
+      (version) => {
+        build.version = version;
+        build.tag = `v${version}`;
+        render(<App />);
+        const badge = screen.getByTestId('studio-version');
+        expect(badge.textContent).toBe(version);
+        expect(badge.closest('a')).toBeNull();
+        expect(screen.queryByRole('menu')).toBeNull();
+      },
+    );
+
+    it('identifies development builds in the version badge', () => {
+      render(<App />);
+      expect(screen.getByTestId('studio-version').textContent).toBe(
+        `${build.version} (development)`,
+      );
     });
 
     it('draws no threat panel while nothing is selected', () => {

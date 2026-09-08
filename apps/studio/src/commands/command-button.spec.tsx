@@ -58,7 +58,7 @@ describe('CommandButton', () => {
       </CommandSurfaceProvider>,
     );
 
-    await user.click(screen.getByRole('button', { name: 'Open a model' }));
+    await user.click(screen.getByRole('button', { name: 'Open' }));
 
     expect(recording.asked).toEqual(['open']);
   });

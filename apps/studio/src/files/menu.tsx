@@ -23,7 +23,6 @@ import {
   selectedElement,
 } from '../store/selectors.js';
 import { useModelStore } from '../store/store.js';
-import { studioReleaseTag, studioVersion } from '../version.js';
 import { FailureNotice } from '../ui/failure-notice.js';
 import { LiveRegion } from '../ui/live-region.js';
 import {
@@ -171,7 +170,7 @@ function UnsavedChangesCommand({
       >
         {asking ? question : entry.label}
       </MenuItem>
-      {asking && <MenuItem onChoose={cancel}>Keep the file open</MenuItem>}
+      {asking && <MenuItem onChoose={cancel}>Cancel</MenuItem>}
     </>
   );
 }
@@ -286,7 +285,7 @@ export function StudioMenu({
               command="open"
               dirty={dirty}
               proceed={confirmOpen}
-              question="Discard the changes and open"
+              question="Discard changes and open"
             />
             <MenuCommand command="save" />
             <MenuItem
@@ -335,7 +334,7 @@ export function StudioMenu({
               command="close-file"
               dirty={dirty}
               proceed={confirmClose}
-              question="Discard the changes and close"
+              question="Discard changes and create new model"
             />
           </DropdownMenu.Group>
           <DropdownMenu.Separator className={styles.rule} />
@@ -397,17 +396,6 @@ export function StudioMenu({
             <ProjectLink href="https://github.com/AlexaDeWit/Saerskriven">
               View source on GitHub
             </ProjectLink>
-            {studioReleaseTag === '' ? (
-              <p className={styles.state}>
-                Saerskriven {studioVersion} (development)
-              </p>
-            ) : (
-              <ProjectLink
-                href={`https://github.com/AlexaDeWit/Saerskriven/releases/tag/${studioReleaseTag}`}
-              >
-                Saerskriven {studioVersion} release notes
-              </ProjectLink>
-            )}
           </DropdownMenu.Group>
           <DropdownMenu.Separator className={styles.rule} />
           <DropdownMenu.Group>
@@ -457,7 +445,7 @@ export function StudioMenu({
               onClick={dismissReport}
               type="button"
             >
-              Dismiss the report
+              Dismiss report
             </button>
           </>
         )}
@@ -476,7 +464,7 @@ export function StudioMenu({
               onClick={dismissExportNotice}
               type="button"
             >
-              Dismiss the export report
+              Dismiss export report
             </button>
           </div>
         )}

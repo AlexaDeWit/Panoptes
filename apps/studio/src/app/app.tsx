@@ -11,6 +11,7 @@ import {
 import { useFileSession } from '../files/file-commands.js';
 import { StudioMenu } from '../files/menu.js';
 import { useColourMode } from '../theme.js';
+import { studioReleaseTag, studioVersion } from '../version.js';
 import styles from './app.module.css';
 
 /** The studio shell and the provider that exposes its viewport commands. */
@@ -50,6 +51,10 @@ function Studio() {
               triggerRef={reference.menuTrigger}
             />
             <DiagramCanvas />
+            <span className={styles.version} data-testid="studio-version">
+              {studioVersion}
+              {studioReleaseTag === '' && ' (development)'}
+            </span>
             {reference.open && <ShortcutReference onClose={reference.close} />}
           </div>
         </main>

@@ -74,13 +74,13 @@ test('every item is reached, run and left by the keyboard alone', async ({
 
   await menuButton(page).click();
   await page.keyboard.press('ArrowDown');
-  await expect(menuItem(page, 'Open a model')).toBeFocused();
+  await expect(menuItem(page, 'Open')).toBeFocused();
 
   for (const name of [
     'Save',
     'Save as',
     'Export',
-    'Close the file',
+    'New model',
     /^Appearance /u,
     'Undo',
   ]) {
@@ -100,7 +100,7 @@ test('every item is reached, run and left by the keyboard alone', async ({
 
   await menuButton(page).click();
   await page.keyboard.press('ArrowDown');
-  await expect(menuItem(page, 'Open a model')).toBeFocused();
+  await expect(menuItem(page, 'Open')).toBeFocused();
 
   await page.keyboard.press('Escape');
 
@@ -148,20 +148,20 @@ test('closing asks in the menu before it drops work that is in no file', async (
   await focusSettled(added);
 
   await menuButton(page).press('Enter');
-  await expect(menuItem(page, 'Open a model')).toBeFocused();
-  for (const name of ['Save', 'Save as', 'Export', 'Close the file']) {
+  await expect(menuItem(page, 'Open')).toBeFocused();
+  for (const name of ['Save', 'Save as', 'Export', 'New model']) {
     await page.keyboard.press('ArrowDown');
     await expect(menuItem(page, name)).toBeFocused();
   }
 
   await page.keyboard.press('Enter');
 
-  const discard = menuItem(page, 'Discard the changes and close');
+  const discard = menuItem(page, 'Discard changes and create new model');
   await expect(discard).toBeFocused();
   await expect(elementNodes(page)).toHaveCount(19);
 
   await page.keyboard.press('ArrowDown');
-  await expect(menuItem(page, 'Keep the file open')).toBeFocused();
+  await expect(menuItem(page, 'Cancel')).toBeFocused();
   await page.keyboard.press('Enter');
 
   await expect(page.getByRole('menu')).toHaveCount(0);
@@ -188,7 +188,7 @@ test('opening asks from its chord and discards on the second step', async ({
   await focusSettled(added);
 
   await page.keyboard.press(registeredChords.open[0]);
-  const discard = menuItem(page, 'Discard the changes and open');
+  const discard = menuItem(page, 'Discard changes and open');
   await expect(discard).toBeFocused();
 
   const chooser = page.waitForEvent('filechooser');
@@ -208,13 +208,13 @@ test('opening keeps the file when asked', async ({ page }) => {
   await expect(elementNodes(page)).toHaveCount(19);
 
   await openMenu(page);
-  await menuItem(page, 'Open a model').click();
-  await menuItem(page, 'Keep the file open').click();
+  await menuItem(page, 'Open').click();
+  await menuItem(page, 'Cancel').click();
 
   await expect(page.getByRole('menu')).toHaveCount(0);
   await expect(elementNodes(page)).toHaveCount(19);
   await openMenu(page);
-  await expect(menuItem(page, 'Open a model')).toBeVisible();
+  await expect(menuItem(page, 'Open')).toBeVisible();
 });
 
 test('Escape cancels the open question', async ({ page }) => {
@@ -224,14 +224,14 @@ test('Escape cancels the open question', async ({ page }) => {
   await expect(elementNodes(page)).toHaveCount(19);
 
   await openMenu(page);
-  await menuItem(page, 'Open a model').click();
-  await expect(menuItem(page, 'Discard the changes and open')).toBeVisible();
+  await menuItem(page, 'Open').click();
+  await expect(menuItem(page, 'Discard changes and open')).toBeVisible();
   await page.keyboard.press('Escape');
 
   await expect(page.getByRole('menu')).toHaveCount(0);
   await expect(elementNodes(page)).toHaveCount(19);
   await openMenu(page);
-  await expect(menuItem(page, 'Open a model')).toBeVisible();
+  await expect(menuItem(page, 'Open')).toBeVisible();
 });
 
 test('closing a file that holds everything on screen takes no second press', async ({
@@ -240,7 +240,7 @@ test('closing a file that holds everything on screen takes no second press', asy
   await openFile(page, 'test-data/saerskriven/ecluse.yaml');
   await expect(elementNodes(page)).toHaveCount(18);
 
-  await runFromMenu(page, 'Close the file');
+  await runFromMenu(page, 'New model');
 
   await canvasSettled(page);
   await expect(elementNodes(page)).toHaveCount(2);
@@ -261,7 +261,7 @@ test('the menu chrome carries what a save could not hold, and puts it away again
   expect(written.name).toBe('threat-model.json');
   await expect(page.getByTestId('loss-report')).not.toBeEmpty();
 
-  await page.getByRole('button', { name: 'Dismiss the report' }).click();
+  await page.getByRole('button', { name: 'Dismiss report' }).click();
 
   await expect(page.getByTestId('loss-report')).toBeEmpty();
 });

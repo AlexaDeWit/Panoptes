@@ -20,12 +20,7 @@ import {
   type Platform,
 } from './shortcuts.js';
 
-/**
- * Opening, saving, exporting and closing, which reach the file session
- * around it rather than the store alone. `close` asks rather than closes
- * where the model has changes in no file: the reducer is total and cannot
- * refuse, so the guard sits with the session that holds the answer.
- */
+/** File operations whose session guards unsaved changes before replacing the model. */
 export type FileCommands = {
   open(): void;
   save(): void;
@@ -49,26 +44,14 @@ export type ReferenceCommands = {
   toggle(): void;
 };
 
-/**
- * What a command reaches that the store and the canvas edits do not offer as
- * module-level functions: the file bridge, which a component holds a picker
- * for, and the viewport, which is React Flow's and lives for as long as the
- * canvas is mounted. The app builds one and hands it to every route into the
- * registry, so a keyboard chord and a control run one dispatch against one
- * set of collaborators.
- */
+/** Commands that use the file session, shortcut reference, or canvas viewport. */
 export type CommandSurface = {
   readonly files: FileCommands;
   readonly reference: ReferenceCommands;
   readonly view: ViewCommands;
 };
 
-/**
- * What running a command does. `pending` names the issue that will give the
- * command a dispatch: the chord is registered and shown now so the shortcut
- * a person learns does not move when the surface that answers it lands, and
- * the studio claims the key press rather than leaving it to the browser.
- */
+/** A runnable command or a reserved shortcut waiting for its issue. */
 export type CommandDispatch =
   | { readonly kind: 'runs'; readonly run: (surface: CommandSurface) => void }
   | { readonly kind: 'pending'; readonly issue: number };
@@ -112,7 +95,7 @@ const history = (action: Action, message: string): CommandDispatch =>
 const table = {
   open: {
     id: 'open',
-    label: 'Open a model',
+    label: 'Open',
     group: 'File',
     shortcuts: [mod('o')],
     when: 'Outside text fields',
@@ -189,7 +172,7 @@ const table = {
   },
   'close-file': {
     id: 'close-file',
-    label: 'Close the file',
+    label: 'New model',
     group: 'File',
     shortcuts: [modShift('x')],
     when: 'Outside text fields',
@@ -218,7 +201,7 @@ const table = {
   },
   delete: {
     id: 'delete',
-    label: 'Delete the selection',
+    label: 'Delete selection',
     group: 'Edit',
     shortcuts: [bare('Delete'), bare('Backspace')],
     when: 'A canvas selection exists and focus is outside a text field',
@@ -229,7 +212,7 @@ const table = {
   },
   rename: {
     id: 'rename',
-    label: 'Rename the selection',
+    label: 'Rename selection',
     group: 'Edit',
     shortcuts: [bare('F2')],
     when: 'One renameable canvas item is selected',
@@ -438,10 +421,7 @@ export function diagramExportCommand(
   };
 }
 
-/**
- * Which command each toolbox mode belongs to, so the buttons and their keys
- * select one mode through one dispatch.
- */
+/** The registered command for each toolbox mode. */
 export const toolCommands = {
   select: 'select-tool',
   actor: 'actor-tool',
@@ -453,11 +433,7 @@ export const toolCommands = {
   hand: 'hand-tool',
 } as const satisfies Record<Tool, CommandId>;
 
-/**
- * The command `event` presses, and nothing at all where it presses none. The
- * first match wins, which the registry's spec keeps meaningful by holding
- * that no two commands answer to one chord.
- */
+/** Returns the first command whose shortcut matches the event. */
 export function commandFor(
   event: ChordEvent,
   platform: Platform,
@@ -467,11 +443,7 @@ export function commandFor(
   );
 }
 
-/**
- * Runs `command` against `surface`. A command whose surface has not landed
- * does nothing rather than reporting, since a person pressing a key the
- * studio advertises has nothing to act on.
- */
+/** Runs a command against the mounted surface when its dispatch is available. */
 export function runCommand(command: Command, surface: CommandSurface): void {
   if (command.dispatch.kind === 'runs') {
     command.dispatch.run(surface);

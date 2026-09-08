@@ -169,8 +169,9 @@ It generates and verifies attestations where the run's token permits signing.
 Only tag pushes attach the archive to a GitHub release alongside the CLI.
 The same [CI workflow](.github/workflows/ci.yml) then deploys that archive,
 provided the release is GitHub's Latest stable release. It does not build `main`
-for deployment. The studio's Project menu shows the built
-version and links to its release notes. Other builds say `development`.
+for deployment. The studio shows the built version in a small badge above the React Flow
+attribution. Other builds also say `development`. The Project menu links to
+GitHub.
 
 Dispatch CI from `main` with `deploy_pages=true` to retry the current Latest
 release. This mode reuses its archive. It does not rebuild the website or publish a release.
