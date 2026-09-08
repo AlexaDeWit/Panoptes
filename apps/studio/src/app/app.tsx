@@ -1,5 +1,5 @@
 import { ReactFlowProvider } from '@xyflow/react';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { DiagramCanvas } from '../canvas/diagram-canvas.js';
 import { useViewCommands } from '../canvas/view-commands.js';
 import { CommandSurfaceProvider } from '../commands/binding.js';
@@ -25,7 +25,8 @@ export function App() {
 
 function Studio() {
   const session = useFileSession();
-  const view = useViewCommands();
+  const paneCoverage = useState(0);
+  const view = useViewCommands(paneCoverage[0]);
   const [colourMode, setColourMode] = useColourMode();
   const reference = useShortcutReference();
 
@@ -50,7 +51,7 @@ function Studio() {
               session={session}
               triggerRef={reference.menuTrigger}
             />
-            <DiagramCanvas />
+            <DiagramCanvas paneCoverage={paneCoverage} />
             <span className={styles.version} data-testid="studio-version">
               {studioVersion}
               {studioReleaseTag === '' && ' (development)'}

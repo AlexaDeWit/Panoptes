@@ -83,9 +83,9 @@ describe('FitOnOpen', () => {
   });
 });
 
-function ViewControls() {
+function ViewControls({ cover = 0 }: { readonly cover?: number }) {
   const snapping = useSnap();
-  const view = useViewCommands();
+  const view = useViewCommands(cover);
   return (
     <CommandSurfaceProvider surface={{ ...recordingSurface().surface, view }}>
       <CommandButton command="fit-selection" />
@@ -138,4 +138,30 @@ it('fits a selected flow and resets zoom without editing the document or its his
   const at = transform();
   fireEvent.click(screen.getByRole('button', { name: 'Fit selection' }));
   expect(transform()).toBe(at);
+});
+
+it('refits the selection when pane coverage changes without changing the document', async () => {
+  const flow = placeholderModel.diagrams[0].elements[2];
+  modelStore.setState(
+    { ...initialState(placeholderModel), selection: [flow.id] },
+    true,
+  );
+  const before = modelStore.getState();
+  const { rerender } = render(
+    <ReactFlow width={1000} height={600} edges={[]} nodes={[]}>
+      <ViewControls cover={100} />
+    </ReactFlow>,
+  );
+  fireEvent.click(screen.getByRole('button', { name: 'Fit selection' }));
+  const narrow = await fitted();
+  rerender(
+    <ReactFlow width={1000} height={600} edges={[]} nodes={[]}>
+      <ViewControls cover={200} />
+    </ReactFlow>,
+  );
+  fireEvent.click(screen.getByRole('button', { name: 'Fit selection' }));
+  await waitFor(() => {
+    expect(transform()).not.toBe(narrow);
+  });
+  expect(modelStore.getState()).toBe(before);
 });

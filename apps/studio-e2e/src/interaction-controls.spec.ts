@@ -372,3 +372,26 @@ test('the reset control exposes the current scale to assistive technology', asyn
   await expect(reset).not.toHaveAccessibleDescription(/Current zoom: 100%/u);
   await expect(reset).toHaveAccessibleDescription(/Current zoom: \d+%/u);
 });
+
+test('fit selection keeps a node clear of the widened threat pane', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await openPlaceholder(page);
+  const actor = await selectByKeyboard(page, actorName);
+  const panel = page.getByTestId('threat-panel');
+  await panel.getByRole('button', { name: 'Widen pane' }).click();
+  await canvasSettled(page);
+  await page
+    .getByRole('button', { name: 'Fit selection', exact: true })
+    .click();
+  await canvasSettled(page);
+  const node = await actor.boundingBox();
+  const pane = await panel.boundingBox();
+  expect(node).not.toBeNull();
+  expect(pane).not.toBeNull();
+  expect((node?.x ?? 0) + (node?.width ?? 0)).toBeLessThanOrEqual(pane?.x ?? 0);
+  await expect(
+    page.getByRole('button', { name: /^Menu/u }),
+  ).toHaveAccessibleName('Menu');
+});

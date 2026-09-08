@@ -139,7 +139,11 @@ function containedFlows(
 }
 
 /** The controlled diagram canvas and its floating editing controls. */
-export function DiagramCanvas() {
+export function DiagramCanvas({
+  paneCoverage,
+}: {
+  readonly paneCoverage?: readonly [number, (cover: number) => void];
+} = {}) {
   const snapping = useSnap();
   const backgroundSelection = useBackgroundSelection();
   const bends = useFlowBends();
@@ -171,7 +175,8 @@ export function DiagramCanvas() {
   const view = useRef<ReactFlowInstance<DiagramNode, CanvasFlowEdge> | null>(
     null,
   );
-  const [panelCover, setPanelCover] = useState(0);
+  const localCoverage = useState(0);
+  const [panelCover, setPanelCover] = paneCoverage ?? localCoverage;
   const revealed = useRef<
     | { readonly selected: ElementId | undefined; readonly cover: number }
     | undefined

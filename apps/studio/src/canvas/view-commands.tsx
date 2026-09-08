@@ -8,13 +8,8 @@ import { modelStore, useModelStore } from '../store/store.js';
 import { currentLayout } from './layout.js';
 import { clearOfPanel, fitViewport } from './viewport.js';
 
-/**
- * The viewport half of the command surface ([the
- * commands](../commands/README.md)). Zooming is React Flow's own, and fitting
- * is this directory's calculation over the laid-out diagram's ink, so the fit
- * a person asks for and the fit an open performs are one answer.
- */
-export function useViewCommands(): ViewCommands {
+/** View commands share the measured pane coverage with automatic selection reveal. */
+export function useViewCommands(panelCover = 0): ViewCommands {
   const flow = useReactFlow();
   const fit = useCanvasFit();
   const width = useStore((state) => state.width);
@@ -33,7 +28,10 @@ export function useViewCommands(): ViewCommands {
           layout.nodes.filter((node) => selected.has(node.id)),
           layout.edges.filter((edge) => selected.has(edge.id)),
         );
-        const viewport = fitViewport(bounds, clearOfPanel({ width, height }));
+        const viewport = fitViewport(
+          bounds,
+          clearOfPanel({ width, height }, panelCover),
+        );
         if (viewport !== undefined) {
           void flow.setViewport(viewport);
         }
@@ -48,7 +46,7 @@ export function useViewCommands(): ViewCommands {
         fit?.();
       },
     }),
-    [fit, flow, width, height],
+    [fit, flow, width, height, panelCover],
   );
 }
 

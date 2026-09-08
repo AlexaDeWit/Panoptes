@@ -118,7 +118,7 @@ alone.
 
 The zoom cluster shows the current percentage. Its percentage button resets
 zoom to 100%. Fit selection includes selected flows, their labels, and badges,
-and keeps space clear for the threat panel. View commands add no undo entries
+and uses the measured threat-pane width to keep the selection clear. View commands add no undo entries
 and do not dirty the model.
 
 The focused Chromium spec checks keyboard and pointer controls, touch taps
