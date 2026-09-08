@@ -87,6 +87,16 @@ themselves, regenerated and checked on every test run.
 
 Unit tests: `pnpm nx test @saerskriven/model`.
 
+`selectionFragment` copies a selection, closes its attached flow endpoints,
+and restricts related record links to the copied graph. `remapFragment` gives
+every record a caller-supplied fresh prefix and translates its geometry.
+`insertFragment` validates the combined graph before returning it and issues
+new threat numbers. An ID collision refuses the entire insertion.
+
+`reconnectFlow` changes one endpoint to an actor, process, or store in the
+same diagram. It refuses an endpoint that would connect the node to itself.
+The remaining flow fields and threat links keep their values.
+
 `setFlowWaypoints` replaces one flow's ordered intermediate points. It
 preserves the endpoints and metadata, rejects another element kind, and
 returns the same model for an unchanged list. The studio uses that identity

@@ -28,19 +28,16 @@ export const unmountedSurface: CommandSurface = {
     close: nothing,
   },
   reference: { toggle: nothing },
-  view: { zoomIn: nothing, zoomOut: nothing, fitToView: nothing },
+  view: {
+    zoomIn: nothing,
+    zoomOut: nothing,
+    fitToView: nothing,
+    fitSelection: nothing,
+    resetZoom: nothing,
+  },
 };
 
-/**
- * Who a key press belongs to. An overlay that is open is handling the same
- * keys the studio binds, Escape and every letter among them, so nothing is
- * taken out from under it. `typing` is where a pressed character lands in a
- * control rather than in the studio: a text field, and a listbox trigger
- * that is closed, whose typeahead is the same thing. Only the commands the
- * registry exempts fire there, so saving and the history moves are never
- * dead under a person's hands. Everything else is the page, where every
- * shortcut is the studio's.
- */
+/** Who a key press belongs to. */
 export const keyboardOwners = ['page', 'typing', 'overlay'] as const;
 
 /** Who the key press in front of the studio belongs to. */
@@ -50,7 +47,7 @@ const overlaySelector =
   '[role="combobox"][aria-expanded="true"], [role="listbox"], [role="menu"], [role="dialog"]';
 
 const typingSelector =
-  'input, textarea, [contenteditable]:not([contenteditable="false"]), [role="combobox"]';
+  'input, textarea, select, [contenteditable]:not([contenteditable="false"]), [role="combobox"]';
 
 const nativeActivationSelector = 'button, a[href]';
 

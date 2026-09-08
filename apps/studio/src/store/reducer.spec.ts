@@ -52,6 +52,18 @@ type ActionsByTag<Tag extends Action['_tag']> = {
 };
 
 const applied: ActionsByTag<ModelActionTag> = {
+  InsertFragment: Action.InsertFragment({
+    diagramId: mainDiagram,
+    fragment: placeholderModel,
+  }),
+  ArrangeElements: Action.ArrangeElements({
+    moves: [{ elementId: processElement, offset: { x: 10, y: 20 } }],
+  }),
+  ReconnectFlow: Action.ReconnectFlow({
+    elementId: elementId('placeholder-flow'),
+    side: 'source',
+    endpointId: elementId('extra-actor'),
+  }),
   AddElement: Action.AddElement({
     diagramId: mainDiagram,
     element: newProcess('process-added', 'Added'),
@@ -103,6 +115,21 @@ const applied: ActionsByTag<ModelActionTag> = {
 };
 
 const refused: ActionsByTag<ModelActionTag> = {
+  InsertFragment: Action.InsertFragment({
+    diagramId: mainDiagram,
+    fragment: sampleModel,
+  }),
+  ArrangeElements: Action.ArrangeElements({
+    moves: [
+      { elementId: processElement, offset: { x: 10, y: 20 } },
+      { elementId: elementId('missing'), offset: { x: 10, y: 20 } },
+    ],
+  }),
+  ReconnectFlow: Action.ReconnectFlow({
+    elementId: processElement,
+    side: 'source',
+    endpointId: actorElement,
+  }),
   AddElement: Action.AddElement({
     diagramId: diagramId('diagram-missing'),
     element: newProcess('process-refused', 'Refused'),
@@ -198,6 +225,17 @@ const purityCases: readonly (readonly [State, Action])[] = [
 ];
 
 function stateFor(action: Action): State {
+  if (Action.$is('ReconnectFlow')(action)) {
+    return initialState(
+      reduce(
+        initialState(placeholderModel),
+        Action.AddElement({
+          diagramId: placeholderModel.diagrams[0].id,
+          element: newProcess('extra-actor', 'Extra actor'),
+        }),
+      ).present,
+    );
+  }
   if (Action.$is('SetFlowWaypoints')(action)) {
     return initialState(placeholderModel);
   }

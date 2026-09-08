@@ -30,6 +30,8 @@ export function recordingSurface(): RecordingSurface {
         zoomIn: note('zoomIn'),
         zoomOut: note('zoomOut'),
         fitToView: note('fitToView'),
+        fitSelection: note('fitSelection'),
+        resetZoom: note('resetZoom'),
       },
     },
   };

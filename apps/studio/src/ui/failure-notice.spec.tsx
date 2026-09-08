@@ -27,6 +27,15 @@ const readFailures: ByTag<ReadFailure> = {
 };
 
 const operationFailures: ByTag<OperationFailure> = {
+  InvalidFragment: OperationFailure.InvalidFragment({
+    issues: [
+      {
+        path: ['diagrams'],
+        code: 'custom',
+        message: 'Duplicate copied element.',
+      },
+    ],
+  }),
   UnknownDiagram: OperationFailure.UnknownDiagram({
     diagramId: diagramId('diagram-missing'),
   }),

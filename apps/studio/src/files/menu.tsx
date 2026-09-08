@@ -1,3 +1,5 @@
+import { focusSelectionControl } from '../canvas/selection-control.js';
+import { useSnap } from '../canvas/snap.js';
 import { ExternalLinkIcon } from '@radix-ui/react-icons';
 import { DropdownMenu } from 'radix-ui';
 import { useEffect, useState, type ReactNode, type RefObject } from 'react';
@@ -15,6 +17,7 @@ import {
   spellShortcuts,
 } from '../commands/shortcuts.js';
 import {
+  elementById,
   canRedo,
   canUndo,
   isDirty,
@@ -207,6 +210,7 @@ export function StudioMenu({
   onColourModeChange,
   triggerRef,
 }: StudioMenuProps) {
+  const snapping = useSnap();
   const file = useModelStore((state) => state.file);
   const failure = useModelStore((state) => state.lastFailure);
   const dirty = useModelStore(isDirty);
@@ -216,6 +220,10 @@ export function StudioMenu({
   const nothing = useModelStore((state) => state.selection.length === 0);
   const renamable = useModelStore(renameable);
   const selected = useModelStore(selectedElement);
+  const selectedFlow = useModelStore((state) => {
+    const id = selectedElement(state);
+    return id !== undefined && elementById(state, id)?.kind === 'flow';
+  });
   const [open, setOpen] = useState(false);
   const selectedColourMode = colourMode ?? 'system';
 
@@ -271,6 +279,12 @@ export function StudioMenu({
           {dirty && <span aria-hidden="true" className={styles.dot} />}
         </DropdownMenu.Trigger>
         <DropdownMenu.Content
+          tabIndex={0}
+          onCloseAutoFocus={(event) => {
+            if (focusSelectionControl()) {
+              event.preventDefault();
+            }
+          }}
           align="start"
           className={styles.panel}
           sideOffset={6}
@@ -349,7 +363,7 @@ export function StudioMenu({
                   selectedColourMode.slice(1)}
               </span>
             </DropdownMenu.SubTrigger>
-            <DropdownMenu.SubContent className={styles.panel}>
+            <DropdownMenu.SubContent tabIndex={0} className={styles.panel}>
               <DropdownMenu.RadioGroup
                 aria-label="Appearance"
                 onValueChange={(value) => {
@@ -381,12 +395,55 @@ export function StudioMenu({
             </DropdownMenu.Label>
             <MenuCommand command="undo" disabled={!undoable} />
             <MenuCommand command="redo" disabled={!redoable} />
+            <MenuCommand command="copy" disabled={nothing} />
+            <MenuCommand command="cut" disabled={nothing} />
+            <MenuCommand command="paste" />
+            <MenuCommand command="duplicate" disabled={nothing} />
+            <MenuCommand command="edit-geometry" disabled={nothing} />
+            <MenuCommand command="reconnect-source" disabled={!selectedFlow} />
+            <MenuCommand command="reconnect-target" disabled={!selectedFlow} />
+            <DropdownMenu.Sub>
+              <DropdownMenu.SubTrigger className={styles.item}>
+                Arrange
+              </DropdownMenu.SubTrigger>
+              <DropdownMenu.SubContent tabIndex={0} className={styles.panel}>
+                {(
+                  [
+                    'align-left',
+                    'align-centre',
+                    'align-right',
+                    'align-top',
+                    'align-middle',
+                    'align-bottom',
+                    'distribute-horizontal',
+                    'distribute-vertical',
+                  ] as const
+                ).map((command) => (
+                  <MenuCommand
+                    command={command}
+                    disabled={nothing}
+                    key={command}
+                  />
+                ))}
+              </DropdownMenu.SubContent>
+            </DropdownMenu.Sub>
             <MenuCommand command="rename" disabled={!renamable} />
             <MenuCommand
               command="focus-threats"
               disabled={selected === undefined}
             />
             <MenuCommand command="delete" disabled={nothing} />
+          </DropdownMenu.Group>
+          <DropdownMenu.Separator className={styles.rule} />
+          <DropdownMenu.Group>
+            <DropdownMenu.Label className={styles.heading}>
+              View
+            </DropdownMenu.Label>
+            <MenuCommand command="reset-zoom" />
+            <MenuCommand command="fit-selection" disabled={nothing} />
+            <MenuCommand command="snap-to-grid">
+              {commandById('snap-to-grid').label}: {snapping ? 'on' : 'off'}
+            </MenuCommand>
           </DropdownMenu.Group>
           <DropdownMenu.Separator className={styles.rule} />
           <DropdownMenu.Group>
@@ -485,7 +542,11 @@ function ExportMenu() {
           ›
         </span>
       </DropdownMenu.SubTrigger>
-      <DropdownMenu.SubContent className={styles.panel} sideOffset={6}>
+      <DropdownMenu.SubContent
+        tabIndex={0}
+        className={styles.panel}
+        sideOffset={6}
+      >
         {diagrams.length === 0 && (
           <MenuCommand command="export-diagram" disabled />
         )}

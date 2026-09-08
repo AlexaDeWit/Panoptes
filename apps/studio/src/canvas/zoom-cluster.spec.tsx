@@ -1,3 +1,4 @@
+import { ReactFlowProvider } from '@xyflow/react';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { CommandSurfaceProvider } from '../commands/binding.js';
@@ -9,7 +10,11 @@ const control = (name: string): HTMLElement =>
 
 describe('ZoomCluster', () => {
   it('names each icon after the command it runs, and says which chord runs it', () => {
-    render(<ZoomCluster />);
+    render(
+      <ReactFlowProvider>
+        <ZoomCluster />
+      </ReactFlowProvider>,
+    );
 
     expect(control('Zoom in').getAttribute('aria-keyshortcuts')).toBe(
       'Control+=',
@@ -17,6 +22,9 @@ describe('ZoomCluster', () => {
     expect(control('Zoom out').getAttribute('aria-keyshortcuts')).toBe(
       'Control+-',
     );
+    expect(
+      control('Reset zoom to 100%').getAttribute('aria-describedby'),
+    ).toBeTruthy();
     expect(control('Fit to view').getAttribute('aria-keyshortcuts')).toBe(
       'Control+0',
     );
@@ -26,15 +34,25 @@ describe('ZoomCluster', () => {
     const user = userEvent.setup();
     const recording = recordingSurface();
     render(
-      <CommandSurfaceProvider surface={recording.surface}>
-        <ZoomCluster />
-      </CommandSurfaceProvider>,
+      <ReactFlowProvider>
+        <CommandSurfaceProvider surface={recording.surface}>
+          <ZoomCluster />
+        </CommandSurfaceProvider>
+      </ReactFlowProvider>,
     );
 
     await user.click(control('Zoom in'));
     await user.click(control('Zoom out'));
     await user.click(control('Fit to view'));
+    await user.click(control('Fit selection'));
+    await user.click(control('Reset zoom to 100%'));
 
-    expect(recording.asked).toEqual(['zoomIn', 'zoomOut', 'fitToView']);
+    expect(recording.asked).toEqual([
+      'zoomIn',
+      'zoomOut',
+      'fitToView',
+      'fitSelection',
+      'resetZoom',
+    ]);
   });
 });

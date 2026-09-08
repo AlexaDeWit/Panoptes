@@ -22,3 +22,5 @@ export * from './lib/operation-failures.js';
 export * from './lib/operations.js';
 export * from './lib/threat-operations.js';
 export * from './lib/coverage.js';
+
+export * from './lib/fragment.js';

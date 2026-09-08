@@ -1,5 +1,7 @@
 import {
   addElement,
+  insertFragment,
+  reconnectFlow,
   addThreat,
   attachThreat,
   detachThreat,
@@ -16,6 +18,7 @@ import {
   type OperationFailure,
 } from '@saerskriven/model';
 import { Either } from 'effect';
+import { sameSelection } from './selection.js';
 import { Action } from './actions.js';
 import {
   FileLifecycle,
@@ -28,6 +31,23 @@ import {
 /** Refused model operations preserve the model and history, and record the failure. */
 export function reduce(state: State, action: Action): State {
   return Action.$match(action, {
+    InsertFragment: ({ diagramId, fragment }) =>
+      edited(state, insertFragment(state.present, diagramId, fragment)),
+    ReconnectFlow: ({ elementId, side, endpointId }) =>
+      edited(state, reconnectFlow(state.present, elementId, side, endpointId)),
+    ArrangeElements: ({ moves }) =>
+      edited(
+        state,
+        moves.reduce<Either.Either<Model, OperationFailure>>(
+          (outcome, { elementId, offset }) =>
+            Either.flatMap(outcome, (model) =>
+              offset.x === 0 && offset.y === 0
+                ? Either.right(model)
+                : moveElement(model, elementId, offset),
+            ),
+          Either.right(state.present),
+        ),
+      ),
     AddElement: ({ diagramId, element }) =>
       edited(state, addElement(state.present, diagramId, element)),
     RemoveElement: ({ elementId }) => removedElement(state, elementId),
@@ -65,10 +85,12 @@ export function reduce(state: State, action: Action): State {
       edited(state, detachThreat(state.present, threatId, elementId)),
     Undo: () => undone(state),
     Redo: () => redone(state),
-    Select: ({ elementIds }) => ({
-      ...state,
-      selection: [...new Set(elementIds)],
-    }),
+    Select: ({ elementIds }) => {
+      const selection = [...new Set(elementIds)];
+      return sameSelection(state.selection, selection)
+        ? state
+        : { ...state, selection };
+    },
     InlineEditing: ({ editor }) => ({ ...state, inlineEditor: editor }),
     Opened: ({ model, name, source }) => ({
       ...initialState(model),

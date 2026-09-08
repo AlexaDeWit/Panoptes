@@ -43,10 +43,12 @@ describe('keyboardOwner', () => {
 
   it('gives typing the presses aimed at a control that takes characters', () => {
     const holder = markup(
-      '<input /><textarea></textarea><div contenteditable="true"><span>x</span></div>',
+      '<input /><textarea></textarea><select><option>Actor</option></select><div contenteditable="true"><span>x</span></div>',
     );
 
-    for (const child of holder.querySelectorAll('input, textarea, span')) {
+    for (const child of holder.querySelectorAll(
+      'input, textarea, select, option, span',
+    )) {
       expect(keyboardOwner(child)).toBe('typing');
     }
   });

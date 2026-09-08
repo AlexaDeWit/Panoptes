@@ -63,6 +63,69 @@ receives its one action.
 
 ## Editing
 
+### Selection and reuse
+
+A stationary background click or touch tap clears selection in Select, Hand,
+and held Space. A pan keeps it. Empty space inside a boundary is background.
+The boundary's outline, name, and controls still select or edit the boundary.
+Tab changes focus without clearing selection. A cleared selection returns
+focus to the canvas and uses the shared status announcement.
+
+Copy, Cut, Paste, and Duplicate live in the Edit menu and shortcut registry.
+Text fields keep their native clipboard keys. Copy includes the selected
+elements, the attached endpoints of selected flows, and flows between copied
+nodes. A free endpoint stays free. It includes attached threats, related
+mitigations, and assumptions once each. Their copied links name copied
+records only. The announcement counts excluded external links. Original
+records keep their links.
+
+The system clipboard carries a marked native YAML selection. Reads use the
+format reader's size, alias, and depth limits. A malformed or unsupported
+selection produces no edit. A failed copy leaves the existing clipboard and
+document alone. Cut waits for the write and removes only the original
+selection. A changed document or selection during that wait cancels removal.
+The ordinary removal rules keep original threat records and detach other
+flows. Paste and Duplicate give every copied record a new ID, and insertion
+issues new threat numbers. Each insertion is one undo step. Repeated Paste
+offsets the copies by another grid interval. Duplicate leaves the clipboard
+alone. Source-format fields outside the model are not copied, which the
+announcement reports for Threat Dragon files.
+
+### Geometry, arrangement, and endpoints
+
+Position and size opens a non-modal editor with coordinates, dimensions,
+and step buttons. Apply commits the whole form as one edit. Cancel and Escape
+leave the document and history alone. Multiple selected nodes move together.
+Boundary curves can move but have no dimensions to resize.
+
+Change flow source and Change flow target offer the diagram's actors,
+processes, and stores in a chooser. Apply changes only the chosen endpoint.
+The flow keeps its ID, name, route, scope fields, and attached threats.
+Choosing the other endpoint's node is unavailable. Cancellation costs no
+history. Both editors return focus to the selected element when closed.
+
+Align uses the selected nodes' outer bounds. Left, centre, right, top, middle,
+and bottom each move the nodes in one action. Distribution orders nodes by
+coordinate, keeps the first and last fixed, and makes the gaps equal.
+Overlapping outer nodes can produce negative gaps. Arrangement includes
+boundary shapes. Attached flows follow their endpoints. Flow bends and free
+endpoints stay where they were.
+
+Snap to grid is an explicit View setting, initially off. It snaps node
+dragging to the visible grid. Geometry fields and keyboard edits keep their
+specified coordinates. Changing the setting leaves the document and history
+alone.
+
+The zoom cluster shows the current percentage. Its percentage button resets
+zoom to 100%. Fit selection includes selected flows, their labels, and badges,
+and uses the measured threat-pane width to keep the selection clear. View commands add no undo entries
+and do not dirty the model.
+
+The focused Chromium spec checks keyboard and pointer controls, touch taps
+and pans, focus, status output, an axe audit of the geometry editor, and native
+YAML and Threat Dragon save/open cycles. No manual screen-reader session or
+other browser and assistive-technology combination was checked.
+
 ### Flow bends
 
 Select one flow to reveal its bend handles and the Add bend control. Pull

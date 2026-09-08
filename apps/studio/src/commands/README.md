@@ -113,6 +113,10 @@ something else instead.
 
 ## The shortcut reference
 
+The registry includes clipboard reuse, geometry, reconnection, arrangement,
+snapping, zoom reset, and fit selection. Their shortcuts appear in the
+reference and on menu items. All keep text-field key ownership.
+
 The Keyboard shortcuts item in the Help menu opens a non-modal reference
 panel. Question mark and F1 toggle it when focus is outside a text field or
 open menu. The panel overlays the left edge on a wide screen and the lower 60

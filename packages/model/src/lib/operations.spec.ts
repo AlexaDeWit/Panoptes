@@ -11,6 +11,7 @@ import {
   renameElement,
   resizeElement,
   setFlowWaypoints,
+  reconnectFlow,
 } from './operations.js';
 import { parseModel, type Model } from './parse.js';
 
@@ -555,4 +556,49 @@ describe('operation outputs re-parse through parseModel', () => {
       expect(Either.isRight(parseModel(modelOf(result)))).toBe(true);
     });
   }
+});
+
+describe('reconnectFlow', () => {
+  it('changes one endpoint and retains identity, metadata, bends, and threat links', () => {
+    const id = elementId('element-order-flow');
+    const before = flowIn(base, id);
+    const after = modelOf(
+      reconnectFlow(base, id, 'target', elementId('element-db')),
+    );
+    expect(flowIn(after, id)).toEqual({
+      ...before,
+      target: { kind: 'attached', element: elementId('element-db') },
+    });
+    expect(after.threats).toBe(base.threats);
+    expect(reconnectFlow(after, id, 'target', elementId('element-db'))).toEqual(
+      Either.right(after),
+    );
+    expect(
+      errorOf(reconnectFlow(base, id, 'target', elementId('element-customer')))
+        ?._tag,
+    ).toBe('InvalidFlowEndpoint');
+    expect(
+      errorOf(reconnectFlow(base, id, 'target', elementId('missing')))?._tag,
+    ).toBe('InvalidFlowEndpoint');
+    expect(
+      errorOf(
+        reconnectFlow(
+          base,
+          elementId('element-api'),
+          'source',
+          elementId('element-db'),
+        ),
+      )?._tag,
+    ).toBe('NotFlowElement');
+    expect(
+      errorOf(
+        reconnectFlow(
+          base,
+          elementId('missing'),
+          'source',
+          elementId('element-db'),
+        ),
+      )?._tag,
+    ).toBe('UnknownElement');
+  });
 });

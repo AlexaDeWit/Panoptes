@@ -46,19 +46,7 @@ type CanvasNodeBase = {
   readonly badge: ThreatBadge | undefined;
 };
 
-/**
- * One element laid out as a box: where React Flow places its node and where
- * the headless render translates its glyph. Every extent is the model's own,
- * except a boundary curve's, which carries no box: it takes the box its
- * waypoints span, grown by the stroke width on every side, so the drawn
- * stroke falls inside the node and a straight run or a pair of repeated
- * waypoints still has an extent to pick. Its waypoints are held again
- * relative to that box, so the glyph draws in the node's own coordinates,
- * and `nameSide` carries which bend of the curve, and which side of it,
- * {@link settledCurveNames} put its name on. A node is built without one,
- * which draws the convex side of the middle waypoint, the candidate the
- * settling tries first.
- */
+/** A node's measured box. Boundary curves use local waypoints and include stroke padding in their extent. */
 export type CanvasNode =
   | (CanvasNodeBase & { readonly kind: 'actor' })
   | (CanvasNodeBase & { readonly kind: 'process' })
@@ -88,16 +76,7 @@ type CanvasEdgeGeometry = {
   readonly waypoints: readonly Point[];
 };
 
-/**
- * One flow laid out in the diagram's own coordinates: each end resolved to a
- * handle midpoint or to its own free position, the side an attached end
- * uses, and where its name and badge hang. `sourceElement` and
- * `targetElement` are absent for a free end, which belongs to no element.
- *
- * `label` is settled once, over the whole diagram, by
- * {@link flowLabelPlacements}, so the glyph that draws the name and the
- * bounds that hold it read one placement rather than each deriving its own.
- */
+/** A flow with resolved endpoints and label placement shared by drawing and bounds calculations. */
 export type CanvasEdge = CanvasEdgeGeometry & {
   readonly label: FlowLabelPlacement;
 };
@@ -114,22 +93,7 @@ export type UnplacedEndpoint = {
   readonly element: ElementId;
 };
 
-/**
- * The smallest box holding the ink a diagram lays down: node outlines, a
- * boundary curve's cubics, the text inside and beside them, the badges
- * hanging off them, the flow lines with their arrowheads and names, and a
- * free end that belongs to no node. Every part is measured with the function
- * that draws that part, so the picture and the box around it cannot drift.
- * A curve is bounded by the convex hull of the control points
- * {@link controlPolygon} traces, which holds the curve and a little more,
- * since a sharp turn throws a control point outside the box the waypoints
- * span while the ink stays inside the hull.
- *
- * Stroke widths are the one thing outside it, since a stroke straddles the
- * line it paints, so a caller sizing a viewBox leaves whitespace for them.
- * It leaves nothing else: this is ink rather than geometry, and padding it
- * again for badges or labels pads what is already counted.
- */
+/** The extent of nodes, flows, labels, and badges. Curves use their control hull. Callers add padding for stroke widths. */
 export type CanvasBounds = {
   readonly x: number;
   readonly y: number;
@@ -181,7 +145,7 @@ export function layoutDiagram(diagram: Diagram, model: Model): CanvasLayout {
     nodes: ordered,
     edges,
     unplaced: placed.flatMap((flow) => flow.unplaced),
-    bounds: boundsOf(ordered, edges),
+    bounds: drawnBounds(ordered, edges),
   };
 }
 
@@ -352,21 +316,7 @@ export function flowWithFollowedLabel(
   };
 }
 
-/**
- * One laid-out flow with its two ends resolved again, against boxes a caller
- * holds more recently than the model does. The interactive canvas passes
- * where React Flow has each end's node while a gesture is in flight, so the
- * line follows the element under the pointer rather than waiting for the
- * drop. A box is absent for an end the layout left free and for one the
- * caller cannot resolve, and such an end keeps the anchor and the side the
- * layout settled. Nothing here reads what kind of element a box belongs to,
- * so a flow attached to a trust boundary follows it as it follows any other
- * node, and a free end is carried by no box at all, the model linking an
- * element to a boundary by nothing but where the two are drawn.
- *
- * The label and badge keep their fraction and distance from the segment that
- * carried them. This avoids the diagram-wide collision search on each frame.
- */
+/** Reanchors endpoints during movement. Free endpoints retain their anchors. Labels and badges follow their prior segment without a diagram-wide collision search. */
 export function reanchoredFlow(
   edge: CanvasEdge,
   sourceBox: NodeBox | undefined,
@@ -654,7 +604,8 @@ function anchorOf(endpoint: PlacedEndpoint, toward: Point): Anchor {
   };
 }
 
-function boundsOf(
+/** The full drawn extent of the given nodes and flows, including labels and badges. */
+export function drawnBounds(
   nodes: readonly CanvasNode[],
   edges: readonly CanvasEdge[],
 ): CanvasBounds {

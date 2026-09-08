@@ -75,6 +75,12 @@ import {
   zoomLimits,
 } from './viewport.js';
 import { ZoomCluster } from './zoom-cluster.js';
+import {
+  SelectionControls,
+  FlowEndpointCommands,
+} from './selection-controls.js';
+import { useSnap } from './snap.js';
+import { useBackgroundSelection } from './background-selection.js';
 import styles from './diagram-canvas.module.css';
 
 const exactLabelDelay = 50;
@@ -133,7 +139,13 @@ function containedFlows(
 }
 
 /** The controlled diagram canvas and its floating editing controls. */
-export function DiagramCanvas() {
+export function DiagramCanvas({
+  paneCoverage,
+}: {
+  readonly paneCoverage?: readonly [number, (cover: number) => void];
+} = {}) {
+  const snapping = useSnap();
+  const backgroundSelection = useBackgroundSelection();
   const bends = useFlowBends();
   const { layout } = bends;
   const selection = useModelStore(selectedElements);
@@ -163,7 +175,8 @@ export function DiagramCanvas() {
   const view = useRef<ReactFlowInstance<DiagramNode, CanvasFlowEdge> | null>(
     null,
   );
-  const [panelCover, setPanelCover] = useState(0);
+  const localCoverage = useState(0);
+  const [panelCover, setPanelCover] = paneCoverage ?? localCoverage;
   const revealed = useRef<
     | { readonly selected: ElementId | undefined; readonly cover: number }
     | undefined
@@ -270,6 +283,7 @@ export function DiagramCanvas() {
   };
 
   const onPointerDownCapture = (event: PointerEvent<HTMLDivElement>): void => {
+    backgroundSelection.down(event);
     edgeBases.current = canvasEdgesById(layout);
     if (
       mode.active === 'select' &&
@@ -412,13 +426,20 @@ export function DiagramCanvas() {
       onClickCapture={onCanvasClickCapture}
       onKeyDownCapture={onKeyDownCapture}
       onPointerCancelCapture={(event) => {
+        backgroundSelection.cancel();
         boxSelecting.current = false;
         boxStart.current = undefined;
         placement.pointerCancel(event);
       }}
       onPointerDownCapture={onPointerDownCapture}
-      onPointerMoveCapture={placement.pointerMove}
-      onPointerUpCapture={placement.pointerUp}
+      onPointerMoveCapture={(event) => {
+        backgroundSelection.move(event);
+        placement.pointerMove(event);
+      }}
+      onPointerUpCapture={(event) => {
+        backgroundSelection.up(event);
+        placement.pointerUp(event);
+      }}
     >
       <style>{themedCanvasStylesheet}</style>
       <VisuallyHidden id={keyboardDescriptionId}>
@@ -467,6 +488,8 @@ export function DiagramCanvas() {
         }
         panOnScroll
         ref={surface}
+        snapToGrid={snapping}
+        snapGrid={[gridSpacing, gridSpacing]}
         selectionKeyCode={null}
         selectionMode={SelectionMode.Full}
         selectionOnDrag={mode.active === 'select'}
@@ -479,9 +502,11 @@ export function DiagramCanvas() {
         <PlacementPreview preview={placement.preview} />
         <FlowBendControls bends={bends} />
         <FitOnOpen />
+        <ZoomCluster />
       </ReactFlow>
+      <SelectionControls />
+      <FlowEndpointCommands />
       <Toolbox />
-      <ZoomCluster />
       <ThreatOverlay onCover={setPanelCover} />
     </div>
   );

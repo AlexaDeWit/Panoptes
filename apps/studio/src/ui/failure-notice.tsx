@@ -106,6 +106,8 @@ function describeRead(
 
 function describeOperation(failure: OperationFailure): string {
   return OperationFailure.$match(failure, {
+    InvalidFragment: ({ issues }) =>
+      `The copied graph was refused. ${issueLines(issues).join(' ')}`,
     UnknownDiagram: ({ diagramId }) =>
       `The model holds no diagram ${diagramId}.`,
     UnknownElement: ({ elementId }) =>

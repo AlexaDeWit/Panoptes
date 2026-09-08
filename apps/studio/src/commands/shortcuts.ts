@@ -14,7 +14,9 @@ export const chordKeys = [
   'a',
   'b',
   'c',
+  'd',
   'f',
+  'g',
   'h',
   'n',
   'o',
@@ -153,15 +155,7 @@ export type ChordEvent = {
   getModifierState?: (modifier: 'AltGraph') => boolean;
 };
 
-/**
- * Whether `event` is `chord` on `platform`. The match is exact in both
- * directions: a modifier the chord does not name has to be up, so Command
- * plus Z on Apple hardware is undo and Control plus Z is nothing, and a
- * command bound to a bare letter does not fire under a modifier that belongs
- * to the browser. AltGr is asked for by name rather than read off `altKey`,
- * which it sets on Windows and not on Linux: a layout that writes a
- * character with it is writing, not pressing a shortcut.
- */
+/** Whether `event` is `chord` on `platform`. */
 export function firedBy(
   event: ChordEvent,
   chord: Chord,

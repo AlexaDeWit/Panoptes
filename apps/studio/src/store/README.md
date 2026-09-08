@@ -103,6 +103,12 @@ format, and retained source. Its next Save uses a new bridge with no handle.
 
 ## Rules for changes
 
+`InsertFragment` inserts copied elements and related records as one edit.
+`ArrangeElements` applies separate node offsets atomically.
+`ReconnectFlow` replaces one endpoint through the model operation.
+An unchanged selection retains its array identity, so repeated canvas
+callbacks do not erase the announcement for the completed selection change.
+
 - A reducer arm changes the model only by calling a `@saerskriven/model`
   operation and folding its `Either`. Never assign into `state.present` or
   into anything it holds: the stacks share those objects, so one write in
