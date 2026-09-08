@@ -54,10 +54,12 @@ jobs:
         run: nix develop .#ci --command pnpm check
 
       - name: Upload coverage to Codecov
+        continue-on-error: ${{ github.event_name != 'pull_request' }}
+        timeout-minutes: 2
         uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
         with:
           use_oidc: true # tokenless upload via GitHub OIDC, no CODECOV_TOKEN secret
-          fail_ci_if_error: true # a lost upload must not silently skip the gate
+          fail_ci_if_error: true # Report upload failures even when the step is advisory.
 
       # Ubuntu AppArmor blocks the network namespace used by the offline compiler.
       - name: Allow the unprivileged user namespace the compile runs in

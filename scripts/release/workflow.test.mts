@@ -39,6 +39,8 @@ const jobSchema = z.object({
         if: z.string().optional(),
         env: z.record(z.string(), z.string()).optional(),
         with: z.record(z.string(), z.unknown()).optional(),
+        'continue-on-error': z.union([z.string(), z.boolean()]).optional(),
+        'timeout-minutes': z.number().optional(),
       }),
     )
     .optional(),
@@ -52,6 +54,19 @@ const workflow = (name: string) =>
   workflowSchema.parse(
     parse(readFileSync(join(root, '.github/workflows', name), 'utf8')),
   );
+
+void test('Codecov upload is bounded and advisory outside pull requests', () => {
+  const upload = workflow('ci.yml').jobs['build-test']?.steps?.find(
+    ({ uses }) => uses?.startsWith('codecov/codecov-action@'),
+  );
+  assert.ok(upload);
+  assert.equal(
+    upload['continue-on-error'],
+    "${{ github.event_name != 'pull_request' }}",
+  );
+  assert.equal(upload['timeout-minutes'], 2);
+  assert.equal(upload.with?.['fail_ci_if_error'], true);
+});
 
 void test('publication waits for the gate, prepared website, and attestation', () => {
   const ci = workflow('ci.yml');

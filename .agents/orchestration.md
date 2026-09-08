@@ -6,6 +6,9 @@ Edit here when the process changes, in the same PR as the change.
 ## Gating CI
 
 - Required checks on `main`: **CI gate** and **codecov/project**.
+- The release tag guard requires **CI gate** on the exact `main` commit.
+  Codecov commit statuses do not gate tags. Coverage upload is advisory on
+  main, tag, and manual runs, with a two-minute timeout. PR uploads remain required.
 - "CI gate" in [`.github/workflows/ci.yml`](../.github/workflows/ci.yml)
   requires source checks, the website build, and verified artifact
   attestations. Source checks require the full CLI matrix and existing test
