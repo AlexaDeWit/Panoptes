@@ -292,7 +292,9 @@ jobs:
   pages-build:
     name: Build the release website
     needs: checks
-    if: ${{ !inputs.deploy_pages }}
+    # Override skip propagation from the optional provenance ancestor.
+    if: >-
+      !cancelled() && !inputs.deploy_pages && needs.checks.result == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
@@ -336,7 +338,9 @@ jobs:
     name: Attest the release assets
     needs: [checks, pages-build]
     if: >-
-      !inputs.deploy_pages && needs.checks.outputs.attestation == 'true'
+      !cancelled() && !inputs.deploy_pages
+      && needs.checks.result == 'success' && needs.pages-build.result == 'success'
+      && needs.checks.outputs.attestation == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:

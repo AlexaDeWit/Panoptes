@@ -126,7 +126,10 @@ void test('every check run builds the full release artifacts before signing', ()
   assert.equal(upload.if, undefined);
   assert.ok(steps.indexOf(compiledTests) < steps.indexOf(compile));
   assert.ok(steps.indexOf(compile) < steps.indexOf(upload));
-  assert.equal(ci.jobs['pages-build']?.if, '${{ !inputs.deploy_pages }}');
+  assert.equal(
+    ci.jobs['pages-build']?.if?.trim(),
+    "!cancelled() && !inputs.deploy_pages && needs.checks.result == 'success'",
+  );
   const website = ci.jobs['pages-build']?.steps?.find(({ run }) =>
     run?.includes('pages.sh prepare'),
   );
@@ -140,8 +143,8 @@ void test('only tokens that can sign reach the attestation job', () => {
     "${{ github.actor != 'dependabot[bot]' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}",
   );
   assert.equal(
-    ci.jobs['attest']?.if?.trim(),
-    "!inputs.deploy_pages && needs.checks.outputs.attestation == 'true'",
+    ci.jobs['attest']?.if?.trim().replace(/\s+/gu, ' '),
+    "!cancelled() && !inputs.deploy_pages && needs.checks.result == 'success' && needs.pages-build.result == 'success' && needs.checks.outputs.attestation == 'true'",
   );
   assert.deepEqual(ci.jobs['attest']?.permissions, {
     contents: 'read',
