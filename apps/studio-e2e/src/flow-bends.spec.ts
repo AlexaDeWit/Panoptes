@@ -25,6 +25,45 @@ const records = /^Records, flow/u;
 const mirrored = /^publish mirrored artifact \(minted write token\), flow/u;
 const recoveryKey = 'saerskriven:studio:recovery';
 
+test('Shift-click still deselects a flow through its line hit target', async ({
+  page,
+}) => {
+  await openPlaceholder(page);
+  const flow = await selectByKeyboard(page, records);
+  const at = await halfwayAlong(lineOf(page, records));
+  const recovery = await page.evaluate(
+    (key) => localStorage.getItem(key),
+    recoveryKey,
+  );
+  await page.keyboard.down('Shift');
+  await page.mouse.click(at.x, at.y);
+  await page.keyboard.up('Shift');
+  await expect(flow).not.toHaveClass(/selected/u);
+  await expect(
+    page.getByRole('button', { name: 'Add bend', exact: true }),
+  ).toHaveCount(0);
+  expect(
+    await page.evaluate((key) => localStorage.getItem(key), recoveryKey),
+  ).toBe(recovery);
+});
+
+test('clicking a preview bend confirms its insertion', async ({ page }) => {
+  await openPlaceholder(page);
+  await selectByKeyboard(page, records);
+  await page.keyboard.press('+');
+  await page.keyboard.press('Enter');
+  await page.keyboard.press('ArrowDown');
+  await page.getByRole('button', { name: 'Bend 1', exact: true }).click();
+  await expect(
+    page.getByRole('button', { name: 'Cancel', exact: true }),
+  ).toHaveCount(0);
+  await expect(
+    page.getByRole('button', { name: 'Remove bend', exact: true }),
+  ).toHaveCount(0);
+  await page.keyboard.press('ControlOrMeta+z');
+  await expect(page.locator('[data-bend-index]')).toHaveCount(0);
+});
+
 test('keyboard insertion chooses a segment, previews, cancels, and commits one undo step', async ({
   page,
 }) => {

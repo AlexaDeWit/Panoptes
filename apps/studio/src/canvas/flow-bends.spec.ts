@@ -49,6 +49,11 @@ it('previews an insertion without changing saved state, then commits one undoabl
     result.current.remove(0);
   });
   expect(result.current.flow?.waypoints).toEqual([]);
+  const empty = modelStore.getState();
+  act(() => {
+    result.current.remove(0);
+  });
+  expect(modelStore.getState()).toBe(empty);
 });
 
 it('cancels previews and ignores a stale commit after selection or tool changes', () => {

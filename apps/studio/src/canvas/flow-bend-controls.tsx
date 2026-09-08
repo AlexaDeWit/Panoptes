@@ -8,6 +8,8 @@ import {
 import { useEffect, useRef, type CSSProperties } from 'react';
 import { CommandButton } from '../commands/command-button.js';
 import { beginEditingText } from './edits.js';
+import { applyChanges } from './changes.js';
+import { elementIds, nodesById } from './nodes.js';
 import { useFlowBendInteraction } from './flow-bend-interaction.js';
 import type { FlowBends } from './flow-bends.js';
 import styles from './flow-bend-controls.module.css';
@@ -47,6 +49,19 @@ export function FlowBendControls({ bends }: { readonly bends: FlowBends }) {
                   : undefined
               }
               key={index}
+              onClick={(event) => {
+                if (
+                  event.shiftKey &&
+                  mode?.kind !== 'choose' &&
+                  mode?.kind !== 'place'
+                ) {
+                  applyChanges(
+                    [{ type: 'select', id: edge.id, selected: false }],
+                    elementIds(bends.layout),
+                    nodesById(bends.layout),
+                  );
+                }
+              }}
               onDoubleClick={() => {
                 beginEditingText(edge.id);
               }}
@@ -54,6 +69,9 @@ export function FlowBendControls({ bends }: { readonly bends: FlowBends }) {
                 interaction.cancel();
               }}
               onPointerDown={(event) => {
+                if (event.shiftKey) {
+                  return;
+                }
                 interaction.down(event, {
                   kind: 'insert',
                   index,

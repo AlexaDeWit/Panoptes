@@ -17,6 +17,20 @@ const points = () =>
 const add = (): void => {
   fireEvent.click(screen.getByRole('button', { name: 'Add bend' }));
 };
+
+function pointerOn(element: Element, type: string, x: number, y: number): void {
+  const event = new MouseEvent(type, {
+    bubbles: true,
+    clientX: x,
+    clientY: y,
+    button: 0,
+  });
+  Object.defineProperties(event, {
+    isPrimary: { value: true },
+    pointerId: { value: 1 },
+  });
+  fireEvent(element, event);
+}
 const bend = () => screen.getByRole('button', { name: 'Bend 1' });
 
 beforeEach(() => {
@@ -25,6 +39,90 @@ beforeEach(() => {
     { ...initialState(canvasModel), selection: [requestFlow] },
     true,
   );
+});
+
+it('keeps insertion keys and clicks separate from typing and unrelated controls', () => {
+  render(<DiagramCanvas />);
+  add();
+  press('x');
+  fireEvent.click(document.querySelector('.react-flow__pane') ?? document.body);
+  fireEvent.click(document.body);
+  expect(document.querySelector('[data-chosen="true"]')).not.toBeNull();
+  press('Enter');
+  press('x');
+  const before = modelStore.getState();
+  fireEvent.keyDown(document.activeElement ?? document.body, {
+    key: 'ArrowRight',
+    ctrlKey: true,
+  });
+  const input = document.createElement('input');
+  document.body.append(input);
+  fireEvent.keyDown(input, { key: 'ArrowDown' });
+  fireEvent.keyDown(document.body, { key: 'ArrowDown' });
+  input.remove();
+  pointerOn(
+    screen.getByRole('button', { name: 'Add bend' }),
+    'pointerdown',
+    0,
+    0,
+  );
+  expect(modelStore.getState()).toBe(before);
+  press('Enter');
+  expect(points()).toEqual([{ x: 210, y: 30 }]);
+  fireEvent.click(bend());
+  fireEvent.click(document.querySelector('.react-flow__pane') ?? document.body);
+  expect(screen.getByRole('button', { name: 'Remove bend' })).toBeTruthy();
+  fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+  add();
+  fireEvent.click(bend());
+  expect(document.querySelector('[data-chosen="true"]')).not.toBeNull();
+  press('Escape');
+  expect(modelStore.getState().past).toHaveLength(1);
+});
+
+it('wires line and handle pointer gestures and preserves Shift-click deselection', () => {
+  render(<DiagramCanvas />);
+  const segment =
+    document.querySelector('[data-bend-segment="0"]') ?? document.body;
+  pointerOn(segment, 'pointerdown', 200, 30);
+  pointerOn(segment, 'pointermove', 220, 60);
+  expect(points()).toEqual([]);
+  pointerOn(segment, 'pointercancel', 220, 60);
+  expect(screen.queryByRole('button', { name: 'Bend 1' })).toBeNull();
+  pointerOn(segment, 'pointerdown', 200, 30);
+  pointerOn(segment, 'pointermove', 220, 60);
+  pointerOn(segment, 'pointerup', 220, 60);
+  const committed = points();
+  expect(committed).toHaveLength(1);
+  const handle = bend();
+  pointerOn(handle, 'pointerdown', 220, 60);
+  pointerOn(handle, 'pointermove', 230, 80);
+  pointerOn(handle, 'pointercancel', 230, 80);
+  expect(points()).toEqual(committed);
+  fireEvent.doubleClick(handle);
+  expect(modelStore.getState().inlineEditor).toBeUndefined();
+  fireEvent.click(segment);
+  fireEvent.click(segment, { shiftKey: true });
+  expect(modelStore.getState().selection).toEqual([]);
+  expect(points()).toEqual(committed);
+});
+
+it('confirms a clicked preview without treating its index as a stored bend', () => {
+  render(<DiagramCanvas />);
+  add();
+  press('Enter');
+  press('ArrowDown');
+  fireEvent.click(bend());
+  expect(points()).toEqual([{ x: 210, y: 35 }]);
+  expect(modelStore.getState().past).toHaveLength(1);
+  add();
+  press('Enter');
+  press('ArrowDown');
+  fireEvent.click(screen.getByRole('button', { name: 'Bend 2' }));
+  expect(points()).toHaveLength(2);
+  expect(points()?.[1]).toEqual({ x: 210, y: 35 });
+  expect(modelStore.getState().past).toHaveLength(2);
+  expect(screen.queryByRole('group', { name: 'Bend actions' })).toBeNull();
 });
 
 it('inserts at the chosen segment with keyboard preview, cancellation, and one commit', () => {

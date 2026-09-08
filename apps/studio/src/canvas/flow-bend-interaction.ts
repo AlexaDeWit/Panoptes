@@ -317,6 +317,13 @@ export function useFlowBendInteraction(
     remove,
     place,
     actions: (index: number): void => {
+      if (mode?.kind === 'place') {
+        commit(mode.target);
+        return;
+      }
+      if (mode?.kind === 'choose') {
+        return;
+      }
       setMode({ kind: 'actions', index });
     },
     down: (event: BendPointer, target: BendTarget): void => {
