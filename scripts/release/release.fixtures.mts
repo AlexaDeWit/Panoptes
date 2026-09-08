@@ -88,16 +88,6 @@ export const fakeRunner = (
       ),
     ],
     [
-      key('gh', [
-        'api',
-        'repos/AlexaDeWit/Saerskriven/commits/abc123/status?per_page=100',
-      ]),
-      result(
-        0,
-        '{"statuses":[{"id":10,"context":"codecov/project","state":"success"}]}',
-      ),
-    ],
-    [
       key('git', ['rev-parse', '-q', '--verify', 'refs/tags/v0.1.0']),
       result(1),
     ],

@@ -234,6 +234,30 @@ void describe('tag creation', () => {
     assert.ok(!calls.some(({ args }) => args[0] === 'tag' && args[1] === '-s'));
   });
 
+  void test('the release guard does not query external commit statuses', async () => {
+    const { calls, run } = fakeRunner(new Map(), ({ command, args }) =>
+      command === 'gh' && args[1]?.includes('/status?')
+        ? result(1, '', 'external status service unavailable')
+        : undefined,
+    );
+    const messages: string[] = [];
+    right(
+      await tagRelease({
+        ...tagOptions(run),
+        dryRun: true,
+        write: (message) => {
+          messages.push(message);
+        },
+      }),
+    );
+    assert.equal(
+      calls.some(({ args }) => args.some((arg) => arg.includes('/status?'))),
+      false,
+    );
+    assert.match(messages.join(''), /CI gate\s+completed\/success/u);
+    assert.doesNotMatch(messages.join(''), /Codecov/u);
+  });
+
   void test('fails closed on a local tag lookup error', async () => {
     const { run } = fakeRunner(
       new Map([
@@ -264,26 +288,46 @@ void describe('tag creation', () => {
     );
   });
 
-  void test('refuses a red CI gate', async () => {
-    const { run } = fakeRunner(
-      new Map([
-        [
-          key('gh', [
-            'api',
-            'repos/AlexaDeWit/Saerskriven/commits/abc123/check-runs?per_page=100',
-          ]),
-          result(
-            0,
-            '{"check_runs":[{"id":9,"name":"CI gate","status":"completed","conclusion":"failure"}]}',
-          ),
-        ],
-      ]),
-    );
-    assert.match(
-      leftText(await tagRelease(tagOptions(run))),
-      /not completed[/]success/u,
-    );
-  });
+  for (const [name, checks] of [
+    ['absent', []],
+    [
+      'running',
+      [{ id: 9, name: 'CI gate', status: 'in_progress', conclusion: null }],
+    ],
+    [
+      'failed',
+      [{ id: 9, name: 'CI gate', status: 'completed', conclusion: 'failure' }],
+    ],
+    [
+      'newer failure',
+      [
+        { id: 8, name: 'CI gate', status: 'completed', conclusion: 'success' },
+        { id: 9, name: 'CI gate', status: 'completed', conclusion: 'failure' },
+      ],
+    ],
+  ] as const) {
+    void test(`blocks tag creation: ${name} CI gate`, async () => {
+      const { calls, run } = fakeRunner(
+        new Map([
+          [
+            key('gh', [
+              'api',
+              'repos/AlexaDeWit/Saerskriven/commits/abc123/check-runs?per_page=100',
+            ]),
+            result(0, JSON.stringify({ check_runs: checks })),
+          ],
+        ]),
+      );
+      assert.match(
+        leftText(await tagRelease(tagOptions(run))),
+        /not completed[/]success/u,
+      );
+      assert.equal(
+        calls.some(({ args }) => args[0] === 'tag' && args[1] === '-s'),
+        false,
+      );
+    });
+  }
 
   const cleanupCases: Array<
     readonly [string, ReadonlyMap<string, CommandResult>, RegExp]

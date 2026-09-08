@@ -109,12 +109,17 @@ RELEASE_VERSION=v<version> DRY_RUN=1 nix develop --command pnpm nx run release-t
 ```
 
 The script refuses unless every manifest carries the stated version, the tree
-is clean, `HEAD` is `origin/main`, and both required checks passed on that
-commit. It also requires Tag Integrity to hold its full rule set with an empty
+is clean, `HEAD` is `origin/main`, and the latest `CI gate` check passed on that
+commit. It does not require a Codecov commit status. It also requires Tag
+Integrity to hold its full rule set with an empty
 bypass list. Restore any temporary recovery bypass before this check. The tool
 refuses if the tag exists locally or on the remote. It then runs the dependency
 provenance check and prints the commit it cleared. The dry run creates and
 pushes nothing.
+
+Codecov upload failures are advisory on main, tag, and manual CI runs, with a
+two-minute timeout. An outage or missing vendor status does not block a release.
+PR uploads and the PR coverage requirement remain in place.
 
 The provenance check reads the catalog's resolved versions out of `pnpm-lock.yaml`,
 verifies each package's npm provenance attestation against the sigstore trust
@@ -501,11 +506,7 @@ again.
   takes, in which case a `Provenance-Move:` trailer on the commit that makes it
   accepts that move and no other, or the registry is answering wrongly and the
   release waits.
-- **Something unrelated to the release failed the run.** One workflow means the
-  whole gate stands between a tag and its release, so a Codecov upload that
-  cannot reach the service, a semgrep scan that cannot fetch its registry
-  rules, or a provenance check that cannot reach the npm registry, fails
-  `build-test`, `static-checks` or `provenance` and no release is created. That
-  is the trade for having no second pipeline to drift. Re-run from the Actions
-  tab once the service is back: the re-run is the recovery described above, and
-  publishing is idempotent.
+- **An external scan failed the run.** A semgrep scan that cannot fetch its
+  rules or a provenance check that cannot reach the npm registry still blocks
+  publication. Re-run from the Actions tab once the service is back.
+  Codecov upload failures remain visible in the run but do not block tag publication.

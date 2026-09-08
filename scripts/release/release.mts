@@ -74,15 +74,6 @@ const checkRunsSchema = z.object({
     }),
   ),
 });
-const statusesSchema = z.object({
-  statuses: z.array(
-    z.object({
-      context: z.string(),
-      id: z.number(),
-      state: z.string(),
-    }),
-  ),
-});
 const actionSchema = z.enum(['prepare', 'tag']);
 const expectedTagRules = [
   'deletion',
@@ -219,12 +210,12 @@ const assertTagRules = (
         );
   });
 
-const assertRequiredChecks = (
+const assertCiGate = (
   run: RunCommand,
   repository: string,
   commit: string,
   cwd: string,
-): Either.Either<Readonly<{ codecov: string; gate: string }>, ReleaseFailure> =>
+): Either.Either<string, ReleaseFailure> =>
   Either.gen(function* () {
     const checks = yield* githubJson(
       run,
@@ -243,23 +234,7 @@ const assertRequiredChecks = (
         `the 'CI gate' check on ${commit} is '${gateState}', not completed/success`,
       );
     }
-    const statusResponse = yield* githubJson(
-      run,
-      `repos/${repository}/commits/${commit}/status?per_page=100`,
-      cwd,
-      { schema: statusesSchema },
-    );
-    const codecov = newest(
-      statusResponse.statuses.filter(
-        ({ context }) => context === 'codecov/project',
-      ),
-    );
-    const codecovState = codecov?.state ?? 'absent';
-    return codecovState === 'success'
-      ? { codecov: codecovState, gate: gateState }
-      : yield* refuse(
-          `the 'codecov/project' status on ${commit} is '${codecovState}', not success`,
-        );
+    return gateState;
   });
 
 const assertCleanBranch = (
@@ -347,7 +322,7 @@ const promptForTag = async (tag: string): Promise<boolean> => {
 type TagContext = Readonly<{
   commit: string;
   repository: string;
-  required: Readonly<{ codecov: string; gate: string }>;
+  gate: string;
   subject: string;
   tag: string;
   version: string;
@@ -395,7 +370,7 @@ const tagPreflight = ({
       { schema: repositorySchema },
     )).full_name;
     yield* assertTagRules(run, repository, cwd);
-    const required = yield* assertRequiredChecks(run, repository, commit, cwd);
+    const gate = yield* assertCiGate(run, repository, commit, cwd);
     const localTagArgs = ['rev-parse', '-q', '--verify', `refs/tags/${tag}`];
     const localTag = yield* requireStatus(
       run('git', localTagArgs, { cwd }),
@@ -437,7 +412,7 @@ const tagPreflight = ({
     return {
       commit,
       repository,
-      required,
+      gate,
       subject,
       tag,
       version: workspaceVersion,
@@ -477,12 +452,12 @@ export const tagRelease = async ({
 }: TagOptions): Promise<Either.Either<string, ReleaseFailure>> => {
   const context = tagPreflight({ cwd, dryRun, input, readVersion, run });
   if (Either.isLeft(context)) return Either.left(context.left);
-  const { commit, repository, required, subject, tag, version } = context.right;
+  const { commit, repository, gate, subject, tag, version } = context.right;
   const wrote = attempt('release plan', () => {
     write(
       `\n  tag         ${tag}\n  repository  ${repository}\n  commit      ${commit}\n` +
         `  subject     ${subject}\n  manifests   ${version}\n` +
-        `  CI gate     ${required.gate}\n  Codecov     ${required.codecov}\n` +
+        `  CI gate     ${gate}\n` +
         '  provenance  passed\n  tag rules   enforced\n\n',
     );
   });
