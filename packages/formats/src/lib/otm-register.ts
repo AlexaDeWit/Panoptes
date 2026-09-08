@@ -153,7 +153,7 @@ export function otmRegister(document: OtmDocument, context: ImportContext) {
     mitigations.push({
       id: context.id('otm-mitigation', definition.id),
       title: context.text([definition.name]),
-      prose: definition.description ?? '',
+      prose: context.text([definition.description ?? '']),
       status: 'proposed',
       threats: [],
     });

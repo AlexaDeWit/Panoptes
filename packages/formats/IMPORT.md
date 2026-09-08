@@ -17,7 +17,8 @@ the format. Both JSON and YAML pass through the existing size, depth, and
 alias bounds. Reference expansion and generated identifiers share a budget
 of 16,777,216 UTF-16 units, exposed as `readLimits.maxImportTextUnits`.
 Concatenation charges its complete result before joining. Identifier
-creation charges six units per input unit as an upper bound on JSON escaping.
+creation charges six units per input unit as an upper bound on hex escaping. Imported identifiers use an ASCII
+alphabet that the canvas can address.
 Intermediate strings and escaped diagnostic paths also consume this budget. A conversion over the budget
 returns `ExceededReadLimit` before constructing the expanded text. Each wire package declares its foreign document independently
 of the core. The mapping validates references it uses before parsing the

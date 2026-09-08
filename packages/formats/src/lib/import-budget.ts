@@ -1,7 +1,7 @@
 import { exceededReadLimit, readLimits } from './read-limits.js';
 import type { ReadFailure } from './codec.js';
 
-/** Bounds cumulative imported text before concatenation or identifier escaping. */
+/** Bounds text before allocation. Identifier characters also fit the canvas selectors. */
 export function importBudget() {
   let remaining = readLimits.maxImportTextUnits;
   let failure: ReadFailure | undefined;
@@ -33,9 +33,18 @@ export function importBudget() {
     id: (kind: string, ...parts: readonly string[]): string => {
       const units =
         kind.length +
-        3 +
-        parts.reduce((total, part) => total + 3 + part.length * 6, 0);
-      return reserve(units) ? `${kind}:${JSON.stringify(parts)}` : '';
+        String(parts.length).length +
+        2 +
+        Math.max(0, parts.length - 1) +
+        parts.reduce((total, part) => total + part.length * 6, 0);
+      if (!reserve(units)) return '';
+      const encoded = parts.map((part) =>
+        part.replace(
+          /[^A-Za-z0-9]/g,
+          (unit) => `_${unit.charCodeAt(0).toString(16)}_`,
+        ),
+      );
+      return `${kind}-${String(parts.length)}-${encoded.join('-')}`;
     },
   };
 }

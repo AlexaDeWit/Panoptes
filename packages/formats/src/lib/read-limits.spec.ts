@@ -164,6 +164,7 @@ describe('the read limits against the files the repository vendors', () => {
   it('are the numbers this release enforces', () => {
     expect(readLimits).toEqual({
       maxTextBytes: 4_194_304,
+      maxImportTextUnits: 16_777_216,
       maxNestingDepth: 64,
       maxAliasCount: 50,
       maxAliasExpansion: 100_000,

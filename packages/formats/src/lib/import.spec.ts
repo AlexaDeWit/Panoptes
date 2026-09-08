@@ -332,3 +332,30 @@ it.each(['confirmed', 'unconfirmed'] as const)(
     });
   },
 );
+
+it('bounds aliased descriptions on distinct unattached OTM mitigations', () => {
+  const description = 'x'.repeat(1_048_576);
+  const aliased = `otmVersion: 0.2.0\nproject: {id: p, name: Project}\nmitigations:\n- id: first\n  name: Mitigation\n  riskReduction: 0\n  description: &description ${description}\n${Array.from({ length: 39 }, (_, index) => `- id: m${String(index)}\n  name: Mitigation\n  riskReduction: 0\n  description: *description\n`).join('')}`;
+  expect(aliased.length).toBeLessThan(readLimits.maxTextBytes);
+  expect(importModel(aliased)).toMatchObject({
+    _tag: 'Left',
+    left: { _tag: 'ExceededReadLimit', limit: 'maxImportTextUnits' },
+  });
+});
+
+it('generates distinct canvas-compatible identifiers for punctuation and Unicode', () => {
+  const document = otmFixture();
+  document.components = ['a-b', 'a_2d_b', 'a"b', '雪'].map((id) => ({
+    id,
+    name: id,
+    type: 'component',
+    parent: { trustZone: 'zone' },
+  }));
+  document.dataflows = [];
+  document.threats = [];
+  document.mitigations = [];
+  const read = Either.getOrThrow(importModel(JSON.stringify(document)));
+  const ids = read.model.diagrams[0].elements.map((element) => element.id);
+  expect(new Set(ids).size).toBe(ids.length);
+  expect(ids.every((id) => /^[A-Za-z0-9_-]+$/u.test(id))).toBe(true);
+});
