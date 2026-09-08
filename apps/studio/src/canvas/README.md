@@ -368,8 +368,8 @@ What is fitted is the model as it arrived, read by identity from the store
 object and fits again, an edit is not a model as it arrived and moves nothing,
 and a save leaves the model where it is. `FitOnOpen` applies it from inside
 React Flow, which is what holds the canvas's extent, and the same calculation
-answers the fit-to-view command, so a control and an open cannot disagree
-about where the diagram sits.
+answers the fit-to-view command. Opening uses the full canvas extent.
+Explicit fitting uses the area left of the open threat pane.
 
 The controls are `zoom-cluster.tsx`, three icons floating over the bottom
 right of the canvas, each one registered command showing its chord in a
