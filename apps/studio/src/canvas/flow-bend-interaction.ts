@@ -184,7 +184,7 @@ export function useFlowBendInteraction(
           ),
         );
       } else if (
-        pressesContextualShortcut('confirm-bend', event, hostPlatform)
+        pressesContextualShortcut('commit-bend', event, hostPlatform)
       ) {
         place(segmentBend(edge, mode.index));
       } else {
@@ -198,7 +198,7 @@ export function useFlowBendInteraction(
         bends.preview(target);
         announce(`Bend at ${String(point.x)}, ${String(point.y)}.`);
       } else if (
-        pressesContextualShortcut('confirm-bend', event, hostPlatform)
+        pressesContextualShortcut('commit-bend', event, hostPlatform)
       ) {
         commit(mode.target);
       } else {

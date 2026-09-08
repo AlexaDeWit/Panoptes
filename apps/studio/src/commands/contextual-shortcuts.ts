@@ -51,9 +51,9 @@ const table = {
     shortcuts: [bare('ArrowLeft'), bare('ArrowRight')],
     when: 'Add bend is choosing a segment',
   },
-  'confirm-bend': {
-    id: 'confirm-bend',
-    label: 'Start or confirm bend placement',
+  'commit-bend': {
+    id: 'commit-bend',
+    label: 'Start or finish bend placement',
     group: 'Flow bends',
     shortcuts: enterKey,
     when: 'A segment or bend position is being chosen',
