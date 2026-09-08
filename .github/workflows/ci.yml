@@ -1,9 +1,5 @@
 name: CI
 
-# Push-to-main and pull_request, so a feature-branch push never double-runs
-# beside its PR. A v* tag runs the same workflow: a release is what this
-# pipeline produces when the ref is a tag, not a second pipeline that would
-# drift from this one (docs/release.md).
 on:
   push:
     branches: [main]
@@ -16,25 +12,18 @@ on:
         type: boolean
         default: false
 
-# Never cancel on main or on a tag: main keeps the complete build history of
-# every commit that lands, and a cancelled tag run would leave a release
-# half made.
+# A cancelled tag run can leave a release partly published.
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}-${{ inputs.deploy_pages || false }}
   cancel-in-progress: >-
     ${{ github.ref != 'refs/heads/main'
     && !startsWith(github.ref, 'refs/tags/v') }}
 
-# Least privilege by default. Jobs that need more widen it at the job level.
 permissions:
   contents: read
 
 env:
-  # One deterministic pnpm store location, shared with the cache in
-  # .github/actions/setup-toolchain.
   npm_config_store_dir: ${{ github.workspace }}/.pnpm-store
-  # Deno packages the CLI and is told to reach for nothing: no update check,
-  # and no prompt that could hang a run waiting for an answer.
   DENO_NO_UPDATE_CHECK: '1'
   DENO_NO_PROMPT: '1'
 
@@ -58,10 +47,6 @@ jobs:
         with:
           install-dependencies: 'true'
 
-      # The same command a contributor runs locally, so local and CI cannot
-      # drift. The script (package.json) chains sync check, lint, boundaries,
-      # format check, build, typecheck, and test with coverage; the coverage
-      # output feeds the Codecov upload below.
       - name: Check
         run: nix develop .#ci --command pnpm check
 
@@ -71,14 +56,7 @@ jobs:
           use_oidc: true # tokenless upload via GitHub OIDC, no CODECOV_TOKEN secret
           fail_ci_if_error: true # a lost upload must not silently skip the gate
 
-      # GitHub's ubuntu-latest image is Ubuntu 24.04, which ships
-      # kernel.apparmor_restrict_unprivileged_userns=1 and so denies the
-      # unprivileged `unshare -rn` that scripts/package-cli.sh compiles
-      # inside. Lift it here rather than let a compile reach the network:
-      # the script refuses to run at all where the namespace cannot be made,
-      # so a runner that keeps the restriction fails the compile instead of
-      # quietly fetching a runtime nobody pinned. A no-op where the knob does
-      # not exist.
+      # Ubuntu AppArmor blocks the network namespace used by the offline compiler.
       - name: Allow the unprivileged user namespace the compile runs in
         run: |
           knob=/proc/sys/kernel/apparmor_restrict_unprivileged_userns
@@ -88,51 +66,30 @@ jobs:
             echo "no apparmor_restrict_unprivileged_userns on this runner"
           fi
 
-      # Check above built the CLI bundle; this compiles it with deno twice,
-      # in a network namespace with no route out, fails unless the two agree
-      # byte for byte, and runs the executable. A change the packaged build
-      # cannot carry therefore fails on the pull request that makes it,
-      # rather than once a tag is pushed and the ruleset forbids moving it.
-      #
-      # The host target alone off a tag, so the common run stays short. The
-      # tag run compiles the whole matrix, and those are the executables the
-      # release carries.
       - name: Compile the CLI and run it
-        if: ${{ !startsWith(github.ref, 'refs/tags/v') }}
         run: nix develop .#ci --command pnpm nx compile @saerskriven/cli
 
-      # The step above only runs --version, one validate and one PDF render.
-      # This runs the CLI's whole scenario table through the executable it
-      # just compiled. Its target hashes the compiled executable and requires
-      # that runner. The compile and bundle dependencies replay from the
-      # cache made by the preceding steps.
       - name: Run the CLI tests against the compiled executable
-        if: ${{ !startsWith(github.ref, 'refs/tags/v') }}
         run: nix develop .#ci --command pnpm nx test-compiled @saerskriven/cli
 
+      # test-compiled restores the host-only output. Compile the full matrix afterwards.
       - name: Compile every target and run the host one
-        if: startsWith(github.ref, 'refs/tags/v')
         run: nix develop .#ci --command pnpm nx compile @saerskriven/cli --configuration=all
 
-      # The executables are named after the version in the manifests, so an
-      # executable that answers with the tag's version proves the tag, the
-      # manifests and the binary agree. A tag cut on the wrong commit fails
-      # here, before anything is published. The executable is standalone, so
-      # this step needs nothing from the flake.
-      - name: Check the Linux executable against the tag
-        if: startsWith(github.ref, 'refs/tags/v')
+      - name: Check the executable version and all checksums
         env:
-          TAG: ${{ github.ref_name }}
+          TAG: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || '' }}
         run: |
-          version="${TAG#v}"
+          version="$(jq -r .version package.json)"
+          expected="${TAG:-v$version}"
           reported="$("./dist/cli/saerskriven-${version}-x86_64-unknown-linux-gnu" --version)"
-          if [ "$reported" != "$version" ]; then
-            echo "the executable reports ${reported}, the tag names ${version}" >&2
+          if [ "v$reported" != "$expected" ]; then
+            echo "the executable reports ${reported}, expected ${expected}" >&2
             exit 1
           fi
+          (cd dist/cli && sha256sum --check SHA256SUMS)
 
       - name: Hand the executables to the attest and publish jobs
-        if: startsWith(github.ref, 'refs/tags/v')
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: cli-executables
@@ -140,8 +97,6 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-      # Restore-everywhere, save-on-main-only, one writer: the same policy as
-      # the Nix store, applied to the pnpm store.
       - name: Save pnpm store (main only)
         if: github.ref == 'refs/heads/main'
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
@@ -149,10 +104,6 @@ jobs:
           path: ${{ github.workspace }}/.pnpm-store
           key: pnpm-store-${{ runner.os }}-${{ hashFiles('flake.lock', 'pnpm-lock.yaml') }}
 
-  # Workflow linting (actionlint for syntax and semantics, zizmor for the
-  # security rules the repository already commits to: SHA pins, injection-free
-  # run blocks; policy in .github/zizmor.yml) and SAST over the source tree
-  # (semgrep, findings uploaded to code scanning).
   static-checks:
     if: ${{ !inputs.deploy_pages }}
     name: Static checks
@@ -170,32 +121,23 @@ jobs:
       - name: Set up toolchain
         uses: ./.github/actions/setup-toolchain
         with:
-          # build-test is the one writer for the shared "nix" prefix.
           save-nix-store: 'false'
 
       - name: Lint workflows (actionlint)
         run: nix develop .#ci --command actionlint
 
-      # --config is explicit so a moved or undiscovered policy file fails
-      # loudly instead of silently reverting to zizmor's defaults.
       - name: Audit workflows (zizmor)
         run: >-
           nix develop .#ci --command
           zizmor --offline --config .github/zizmor.yml .github/
 
-      # --config auto fetches registry rules over the network at scan time
-      # (accepted in #70). --error exits non-zero on any finding at ERROR or
-      # WARNING severity, which fails this job and with it the gate. Per-rule
-      # exclusions go here as --exclude-rule, each with its reason beside it.
+      # Registry rules are fetched at scan time, as accepted in #70.
       - name: Scan sources (semgrep)
         run: >-
           nix develop .#ci --command
           semgrep scan --config auto --severity ERROR --severity WARNING
           --sarif-output=semgrep.sarif --error .
 
-      # The Security tab is the triage view; the gating is the --error exit
-      # above. if: always() so findings still reach code scanning when the
-      # scan step fails the job.
       - name: Upload semgrep SARIF to code scanning
         if: always()
         uses: github/codeql-action/upload-sarif@cdf488f595d80d6e07e03d4674febd5ab45fa938 # v4.37.9
@@ -203,9 +145,6 @@ jobs:
           sarif_file: semgrep.sarif
           category: semgrep
 
-  # Browser-level smoke: the app boots under a real browser from the flake's
-  # pinned browsers (no network download; PLAYWRIGHT_BROWSERS_PATH points into
-  # the nix store). Its own job so browser time never stretches build-test.
   e2e-smoke:
     if: ${{ !inputs.deploy_pages }}
     name: Playwright smoke
@@ -223,16 +162,11 @@ jobs:
         uses: ./.github/actions/setup-toolchain
         with:
           install-dependencies: 'true'
-          # build-test is the one writer for the shared "nix" prefix.
           save-nix-store: 'false'
 
       - name: Run the smoke suite
         run: nix develop .#ci --command pnpm nx e2e @saerskriven/studio-e2e
 
-  # Whether this run touches the files that decide the dependency tree. The
-  # provenance job below reaches the npm registry, so it runs when one of
-  # them moved and is skipped otherwise, and the gate accepts that skip only
-  # with this job's answer beside it.
   dependency-changes:
     if: ${{ !inputs.deploy_pages }}
     name: Dependency file changes
@@ -247,13 +181,9 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-          # HEAD and its parents. A pull request is checked out as its merge
-          # commit, whose first parent is the branch it targets; a push
-          # carries the commit before it.
+          # The PR merge ref has the base branch as its first parent.
           fetch-depth: 2
 
-      # A checkout with one commit in it (a repository's first) has nothing
-      # to compare against, so the answer there is that they changed.
       - name: Compare the dependency files against the base commit
         id: diff
         run: |
@@ -268,26 +198,6 @@ jobs:
           echo "lockfile=$changed" >>"$GITHUB_OUTPUT"
           echo "pnpm-lock.yaml or pnpm-workspace.yaml changed: $changed"
 
-  # The npm provenance attestation of every package in the catalog, verified
-  # against the sigstore trust root and compared with what the same package
-  # attested on the base commit, with the packages that publish no
-  # attestation reported as the residual (scripts/check-provenance.mjs).
-  # A move this project accepts is declared on the commit that makes it, as
-  # a `Provenance-Move:` trailer, which the script reads as a line out of the
-  # commits between the base and here, wherever a squash merge left it.
-  #
-  # It runs when the lockfile or the catalog moved, which is where a Renovate
-  # bump appears, and on normal push or dispatch checks;
-  # docs/release.md names it as a step before a tag.
-  #
-  # Its own job because it reaches the registry: a registry out of reach reds
-  # this job alone, which the verdict below names. The script attempts each
-  # audit twice before reporting that it could not run. The install is for
-  # the `yaml` package the script parses both lockfiles with, and carries
-  # --ignore-scripts, so no install-time script in the tree runs here. One
-  # package still runs code: `yaml` itself, which the script imports and
-  # which sits in the residual this job prints, so the parser is inside the
-  # audit it performs. Threat 25 records that.
   provenance:
     name: Dependency provenance
     needs: dependency-changes
@@ -304,18 +214,12 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-          # The whole history, not a bounded depth. The check reads the base
-          # commit's lockfile and every declaration in HEAD^..HEAD, which on
-          # the merge ref a pull request is checked out as means the whole
-          # branch side. A shallow store answers `git log` without error and
-          # simply holds fewer commits, so a bounded depth would drop a
-          # declaration made before the last commit in silence.
+          # Provenance-Move trailers can occur anywhere in the branch history.
           fetch-depth: 0
 
       - name: Set up toolchain
         uses: ./.github/actions/setup-toolchain
         with:
-          # build-test is the one writer for the shared "nix" prefix.
           save-nix-store: 'false'
 
       - name: Install the lockfile parser
@@ -326,11 +230,11 @@ jobs:
       - name: Check dependency provenance
         run: nix develop .#ci --command scripts/check-provenance.mjs
 
-  gate:
-    name: ${{ inputs.deploy_pages && 'Deployment retry (no CI gate)' || 'CI gate' }}
-    # The single required check. Wire a new gating job in by adding it to
-    # `needs` AND to the verdict step, so a job that silently never ran can
-    # never read as green.
+  checks:
+    name: Source checks
+    # Fork and Dependabot PRs cannot request signing permissions.
+    outputs:
+      attestation: ${{ github.actor != 'dependabot[bot]' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
     needs:
       [build-test, static-checks, e2e-smoke, dependency-changes, provenance]
     if: ${{ always() && !inputs.deploy_pages }}
@@ -339,6 +243,7 @@ jobs:
     steps:
       - name: Require every gating job
         env:
+          EVENT_NAME: ${{ github.event_name }}
           BUILD_TEST: ${{ needs.build-test.result }}
           STATIC_CHECKS: ${{ needs.static-checks.result }}
           E2E_SMOKE: ${{ needs.e2e-smoke.result }}
@@ -371,11 +276,10 @@ jobs:
             echo "FAILED  dependency-changes: $DEPENDENCY_CHANGES"
             verdict=1
           fi
-          # The provenance job is skipped where no dependency file moved.
-          # That skip, and no other, reads as green.
           if [ "$PROVENANCE" = "success" ]; then
             echo "ok      provenance"
           elif [ "$PROVENANCE" = "skipped" ] \
+            && [ "$EVENT_NAME" = "pull_request" ] \
             && [ "$DEPENDENCY_CHANGES" = "success" ] \
             && [ "$LOCKFILE_CHANGED" = "false" ]; then
             echo "ok      provenance: skipped, no dependency file changed"
@@ -387,15 +291,15 @@ jobs:
 
   pages-build:
     name: Build the release website
-    needs: gate
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    needs: checks
+    if: ${{ !inputs.deploy_pages }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
       contents: read
       pages: read
     steps:
-      - name: Checkout the release tag
+      - name: Checkout the candidate commit
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
@@ -411,9 +315,13 @@ jobs:
         env:
           PAGES_BASE_PATH: ${{ steps.pages.outputs.base_path }}
           PAGES_SITE_URL: ${{ steps.pages.outputs.base_url }}
-          SAERSKRIVEN_RELEASE_TAG: ${{ github.ref_name }}
+          SAERSKRIVEN_RELEASE_TAG: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || '' }}
           GH_REPO: ${{ github.repository }}
         run: |
+          if [ -z "$SAERSKRIVEN_RELEASE_TAG" ]; then
+            SAERSKRIVEN_RELEASE_TAG="v$(jq -r .version package.json)"
+            export SAERSKRIVEN_RELEASE_TAG
+          fi
           nix develop .#ci --command pnpm nx build @saerskriven/studio
           nix develop .#ci --command bash scripts/release/pages.sh prepare
       - name: Store the release website
@@ -424,13 +332,11 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-  # Attest after the gate and website build, with no dependency installation.
   attest:
     name: Attest the release assets
-    needs: [gate, pages-build]
+    needs: [checks, pages-build]
     if: >-
-      github.event_name == 'push'
-      && startsWith(github.ref, 'refs/tags/v')
+      !inputs.deploy_pages && needs.checks.outputs.attestation == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -459,7 +365,41 @@ jobs:
             release-site/studio.tar
             release-site/studio-release.json
 
-  # The release environment admits only v* tags. Keep publication after the gate.
+      - name: Verify every asset against this workflow run
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          for asset in cli/saerskriven-* cli/SHA256SUMS release-site/studio.tar release-site/studio-release.json; do
+            gh attestation verify "$asset" --repo "$GH_REPO" \
+              --signer-workflow "$GH_REPO/.github/workflows/ci.yml" \
+              --source-ref "$GITHUB_REF" --source-digest "$GITHUB_SHA"
+          done
+
+  gate:
+    name: ${{ inputs.deploy_pages && 'Deployment retry (no CI gate)' || 'CI gate' }}
+    needs: [checks, pages-build, attest]
+    if: ${{ always() && !inputs.deploy_pages }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Require the release rehearsal
+        env:
+          CHECKS: ${{ needs.checks.result }}
+          PAGES_BUILD: ${{ needs.pages-build.result }}
+          ATTEST: ${{ needs.attest.result }}
+          ATTESTATION_REQUIRED: ${{ needs.checks.outputs.attestation }}
+        run: |
+          if [ "$CHECKS" != success ] || [ "$PAGES_BUILD" != success ]; then
+            echo "FAILED source checks: $CHECKS, website build: $PAGES_BUILD" >&2
+            exit 1
+          fi
+          case "$ATTESTATION_REQUIRED:$ATTEST" in
+            true:success) echo 'Release artifacts built and attestations verified.' ;;
+            false:skipped) echo 'Release artifacts built. Fork and Dependabot tokens cannot sign attestations.' ;;
+            *) echo "FAILED attestation: $ATTEST (required: $ATTESTATION_REQUIRED)" >&2; exit 1 ;;
+          esac
+
   publish:
     name: Publish the release
     needs: [gate, attest, pages-build]
@@ -472,7 +412,6 @@ jobs:
     permissions:
       contents: write # create or update the release and its assets
     steps:
-      # For CHANGELOG.md alone.
       - name: Checkout the tag
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -490,8 +429,7 @@ jobs:
           name: release-site
           path: release-site
 
-      # Nx uses H1 or H2 release headings. Match the version as text, not a regex.
-      # Missing notes use GitHub-generated text because the tag cannot be moved.
+      # Nx uses H1 or H2 release headings. Missing notes use GitHub-generated text.
       - name: Take the changelog section for this version
         env:
           TAG: ${{ github.ref_name }}
@@ -512,9 +450,7 @@ jobs:
             echo "no CHANGELOG.md section for ${version}" >&2
           fi
 
-      # Idempotent: re-running this workflow on a tag that already carries a
-      # release replaces the assets instead of failing. A tag cannot be moved
-      # or deleted, so a re-run is the only recovery there is.
+      # A retry replaces assets on the existing release without moving its tag.
       - name: Create or update the release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -569,7 +505,7 @@ jobs:
           GH_REPO: ${{ github.repository }}
           EXPECTED_TAG: ${{ github.event_name == 'push' && github.ref_name || '' }}
         run: bash scripts/release/pages.sh resolve
-      # Re-upload the verified tar without extracting or rebuilding its contents.
+      # Preserve the verified archive bytes through promotion.
       - name: Stage the Pages artifact
         if: steps.release.outputs.eligible == 'true'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1

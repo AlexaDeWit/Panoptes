@@ -41,9 +41,29 @@ The repository's rulesets, not preference, set the shape:
 
 So `nx release` writes files and touches git not at all
 ([`nx.json`](../nx.json), `release`), the owner lands them like any change, and
-the owner signs the tag. The workflow's part starts after the tag exists.
+the owner signs the tag. Publication starts after the tag exists.
 
 ## The procedure
+
+Pull requests rehearse the release through artifact creation and attestation.
+The same jobs run on ordinary main, tag, and manual CI runs:
+
+- Build and test the host CLI, then compile all five targets twice and compare
+  their bytes. Check the host version and every executable checksum.
+- Build the studio archive and metadata from the workspace version. A tag run
+  additionally requires that version to match its tag.
+- Generate attestations for the executables, checksums, website archive, and
+  metadata. Verify each against this repository, workflow, source ref, and commit.
+- Require those stages in `CI gate` before publication can run.
+
+Fork and Dependabot PRs still build and validate the artifacts. GitHub gives
+them read-only tokens, so they cannot generate attestations. The gate accepts
+an attestation skip only for those runs. A failed or unexpected skipped stage
+fails the gate. Attestation jobs install no dependencies and execute no artifact.
+
+PR artifacts remain in the workflow run for seven days. PRs create neither a
+GitHub release nor a production Pages deployment. A manual deployment retry
+still reuses the current release archive and skips all build and signing jobs.
 
 ### 1. Write the version and the changelog (owner, no credentials)
 
@@ -143,17 +163,19 @@ Pushing the tag runs [`.github/workflows/ci.yml`](../.github/workflows/ci.yml).
 It runs the same CI gate as a pull request, compiles every CLI target, and
 checks the executable version against the tag.
 
-After the gate passes, `pages-build` builds the website from that exact tag.
+After source checks pass, `pages-build` builds the website from that exact tag.
 It takes the Pages base path and site URL from GitHub and stamps the workspace
 version into the browser bundle and `version.json`. It compares every project
 manifest and the built version with the tag before creating `studio.tar` and
 `studio-release.json`. The latter records the source commit and CI run.
 
-`attest` waits for the gate and website build. It attests the CLI executables,
-`SHA256SUMS`, and both website assets. `publish` waits for those jobs and creates
-or updates the release with their files. A failed gate, website build, or
-attestation prevents publication. Neither attest nor publish installs
-dependencies. The `release` environment still permits only `v*` tags.
+`attest` waits for the source checks and website build. It attests the CLI
+executables, `SHA256SUMS`, and both website assets, then verifies every asset
+against the source ref and commit. `CI gate` requires that verification.
+`publish` waits for the gate and creates or updates the release with those
+files. A failed gate, website build, or attestation prevents publication.
+Neither attest nor publish installs dependencies. The `release` environment
+still permits only `v*` tags.
 A tag containing a prerelease suffix creates a prerelease, which cannot reach
 production Pages. Release notes use the changelog section, or GitHub's generated
 notes when the section is missing.
@@ -218,16 +240,19 @@ nor forces an editor reload.
 ### 6. Check what shipped (owner)
 
 Download one executable from the release page, verify it against
-`SHA256SUMS`, check its provenance with both flags, and run
+`SHA256SUMS`, check its provenance with all three flags, and run
 `saerskriven --version`:
 
 ```sh
 gh attestation verify saerskriven-* --repo AlexaDeWit/Saerskriven \
-  --signer-workflow AlexaDeWit/Saerskriven/.github/workflows/ci.yml
+  --signer-workflow AlexaDeWit/Saerskriven/.github/workflows/ci.yml \
+  --source-ref "refs/tags/v<version>"
 ```
 
-The
-[README's install section](../README.md#install) is the instruction a user
+The source ref excludes PR and main attestations. Add `--source-digest` with
+the signed tag's commit to require that commit too.
+
+The [README's install section](../README.md#install) is the instruction a user
 follows, so following it is the test of it.
 
 ## What the rules guarantee, and what they cannot
@@ -452,7 +477,7 @@ again.
   a new version.
 - **A target stops cross-compiling.** Run
   `pnpm nx compile @saerskriven/cli --configuration=all` on Linux inside
-  `nix develop`. CI checks the host target on every pull request.
+  `nix develop`. CI compiles every target on every pull request.
 - **A dependency lost its provenance attestation, or moved to another source
   repository.** The `provenance` job fails and with it the gate, so nothing is
   published. Read what the check printed: either the move is one this project
