@@ -163,7 +163,11 @@ export function DiagramCanvas() {
   const view = useRef<ReactFlowInstance<DiagramNode, CanvasFlowEdge> | null>(
     null,
   );
-  const revealed = useRef<ElementId | undefined>(undefined);
+  const [panelCover, setPanelCover] = useState(0);
+  const revealed = useRef<
+    | { readonly selected: ElementId | undefined; readonly cover: number }
+    | undefined
+  >(undefined);
   const placement = usePlacement(surface, view, layout);
   const { mode } = placement;
 
@@ -194,10 +198,13 @@ export function DiagramCanvas() {
   }, [graph.edges, layout, moving, onScreen]);
 
   useEffect(() => {
-    if (revealed.current === selected) {
+    if (
+      revealed.current?.selected === selected &&
+      revealed.current?.cover === panelCover
+    ) {
       return;
     }
-    revealed.current = selected;
+    revealed.current = { selected, cover: panelCover };
     const node = selected === undefined ? undefined : positions.get(selected);
     const extent = surface.current?.getBoundingClientRect();
     const instance = view.current;
@@ -205,12 +212,12 @@ export function DiagramCanvas() {
       return;
     }
     const viewport = instance.getViewport();
-    if (nodeInView(node, viewport, clearOfPanel(extent))) {
+    if (nodeInView(node, viewport, clearOfPanel(extent, panelCover))) {
       return;
     }
-    const centre = revealCentre(node, viewport.zoom);
+    const centre = revealCentre(node, viewport.zoom, panelCover);
     void instance.setCenter(centre.x, centre.y, { zoom: viewport.zoom });
-  }, [positions, selected]);
+  }, [panelCover, positions, selected]);
 
   const onNodesChange = (changes: NodeChange<DiagramNode>[]): void => {
     const next = applyNodeChanges(changes, onScreen);
@@ -475,7 +482,7 @@ export function DiagramCanvas() {
       </ReactFlow>
       <Toolbox />
       <ZoomCluster />
-      <ThreatOverlay />
+      <ThreatOverlay onCover={setPanelCover} />
     </div>
   );
 }

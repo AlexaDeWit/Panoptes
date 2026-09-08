@@ -252,7 +252,8 @@ the cues nor the hit strokes.
 
 `arrowhead` sizes the triangle at a flow's target. `badgeRadius` sizes the two
 circles in a badge. `gridSpacing` sets the studio's graph paper. `panelCover`
-sets the width that the threat panel and canvas reserve for the panel
+sets the default threat pane coverage. The studio measures the actual pane
+for canvas positioning
 ([the studio's canvas](../../apps/studio/src/canvas/README.md)).
 
 `canvasStylesheet` resolves the light tokens to values, because the standalone

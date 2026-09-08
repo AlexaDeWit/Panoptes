@@ -1,6 +1,9 @@
 # The studio's browser suite
 
-What the studio does that only a real browser can show. A unit test in
+What the studio does that only a real browser can show.
+`panel.spec.ts` also covers hidden accordion layout, measured pane coverage,
+keyboard width and close controls, bounded prose growth, and narrow-screen
+layout. It checks severity markers in light, dark, and forced colours. A unit test in
 `apps/studio` runs faster and says more about why something broke, so a
 behaviour lands here when nothing short of a browser can show it:
 

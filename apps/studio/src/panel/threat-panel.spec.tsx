@@ -36,6 +36,8 @@ const showPanel = (
       drafts={new Map()}
       focusing={false}
       onClose={noop}
+      wide={false}
+      onToggleWidth={noop}
       onFocused={noop}
       subject={{ kind: 'element', element: sampleElement(selection) }}
       {...overrides}
@@ -75,6 +77,8 @@ describe(
           drafts={new Map()}
           focusing={false}
           onClose={noop}
+          wide={false}
+          onToggleWidth={noop}
           onFocused={noop}
           subject={{ kind: 'several', count: 3 }}
         />,
@@ -82,6 +86,30 @@ describe(
 
       expect(screen.getByText(/^3 elements selected/u)).toBeDefined();
       expect(screen.queryByRole('button', { name: 'Add a threat' })).toBeNull();
+    });
+
+    it('lists the names of every element sharing a threat', () => {
+      dispatch(
+        Action.ReplaceThreat({
+          threat: {
+            ...modelStore.getState().present.threats[0],
+            elements: [actorElement, processElement],
+          },
+        }),
+      );
+      showPanel(actorElement);
+      act(() => {
+        screen.getByRole('button', { name: /A reader edits/u }).click();
+      });
+      const attachments = screen.getByRole('list', {
+        name: 'Attached elements',
+      });
+      expect(attachments.textContent).toContain(
+        sampleElement(actorElement).name,
+      );
+      expect(attachments.textContent).toContain(
+        sampleElement(processElement).name,
+      );
     });
 
     it('names the selected element and lists what is recorded against it', () => {
@@ -267,6 +295,8 @@ describe(
         drafts: new Map(),
         focusing: false,
         onClose: noop,
+        wide: false,
+        onToggleWidth: noop,
         onFocused: focused,
         subject: { kind: 'element', element: sampleElement(processElement) },
       };

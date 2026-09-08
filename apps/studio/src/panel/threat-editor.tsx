@@ -1,4 +1,5 @@
-import type { Threat } from '@saerskriven/model';
+import { severityToneClass } from '@saerskriven/canvas';
+import type { Element, Threat } from '@saerskriven/model';
 import { Accordion } from 'radix-ui';
 import { useEffect, useId, useRef, useState } from 'react';
 import { CategoryField } from '../ui/category-field.js';
@@ -6,6 +7,7 @@ import { SeverityField } from '../ui/severity-field.js';
 import { StatusField } from '../ui/status-field.js';
 import { ProseField, TextField, type RefusedDraft } from '../ui/text-field.js';
 import styles from './threat-panel.module.css';
+import { elementLabel } from './threats.js';
 
 const textFields = ['Title', 'Description', 'Mitigation'] as const;
 
@@ -34,21 +36,13 @@ function draftIn(
   return held?.field === field ? held.text : undefined;
 }
 
-/**
- * Which control of one threat the panel is sending focus to, and nothing
- * while it is sending none: `title` is the field an added threat opens on,
- * `disclosure` the control that expands it, which is where focus lands after
- * the threat below it was deleted.
- */
+/** Focus after adding or deleting a threat. */
 export type EditorFocus = 'title' | 'disclosure';
 
-/**
- * One threat in the list, what an edit does, where focus is being sent, and
- * the draft the model refused the last time this threat was on screen, which
- * the field it was typed in opens on.
- */
+/** A threat, its attachments, and callbacks for edits and refused drafts. */
 export type ThreatEditorProps = {
   readonly threat: Threat;
+  readonly attachments: readonly Element[];
   readonly focus: EditorFocus | undefined;
   readonly held: RefusedField | undefined;
   readonly onChange: () => void;
@@ -58,13 +52,10 @@ export type ThreatEditorProps = {
   readonly onFocused: () => void;
 };
 
-/**
- * One threat of the list, collapsed to its number and title and expanded to
- * every field of it. Each field commits on its own: the whole threat is
- * replaced either way, and one commit is one undo step.
- */
+/** An expandable threat with one commit per field. */
 export function ThreatEditor({
   threat,
+  attachments,
   focus,
   held,
   onChange,
@@ -104,7 +95,27 @@ export function ThreatEditor({
       <Accordion.Header className={styles.header}>
         <Accordion.Trigger className={styles.disclosure} ref={disclosure}>
           <span className={styles.number}>{threat.number}</span>
-          <span className={styles.summary}>{threat.title}</span>
+          <span className={styles.summary}>
+            <span>{threat.title}</span>
+            <span className={styles.metadata}>
+              <span className={styles.severity}>
+                <svg
+                  aria-hidden="true"
+                  className={styles.tone}
+                  viewBox="0 0 12 12"
+                >
+                  <circle
+                    className={severityToneClass[threat.severity]}
+                    cx="6"
+                    cy="6"
+                    r="5"
+                  />
+                </svg>
+                Severity: {threat.severity}
+              </span>
+              <span>Status: {threat.status}</span>
+            </span>
+          </span>
           <span aria-hidden="true" className={styles.chevron}>
             ▾
           </span>
@@ -128,18 +139,20 @@ export function ThreatEditor({
           }}
           value={threat.category}
         />
-        <SeverityField
-          onCommit={(severity) => {
-            onCommit({ severity });
-          }}
-          value={threat.severity}
-        />
-        <StatusField
-          onCommit={(status) => {
-            onCommit({ status });
-          }}
-          value={threat.status}
-        />
+        <div className={styles.assessment}>
+          <SeverityField
+            onCommit={(severity) => {
+              onCommit({ severity });
+            }}
+            value={threat.severity}
+          />
+          <StatusField
+            onCommit={(status) => {
+              onCommit({ status });
+            }}
+            value={threat.status}
+          />
+        </div>
         <ProseField
           held={draftIn(held, 'Description')}
           label="Description"
@@ -161,10 +174,17 @@ export function ThreatEditor({
           value={threat.mitigation}
         />
         {spread > 1 && (
-          <p className={styles.spread} id={spreadId}>
-            This threat names {spread} elements. Deleting it takes it off all of
-            them.
-          </p>
+          <div className={styles.spread}>
+            <p id={spreadId}>
+              This threat names {spread} elements. Deleting it takes it off all
+              of them.
+            </p>
+            <ul aria-label="Attached elements" className={styles.attachments}>
+              {attachments.map((element) => (
+                <li key={element.id}>{elementLabel(element)}</li>
+              ))}
+            </ul>
+          </div>
         )}
         <button
           aria-describedby={spread > 1 ? spreadId : undefined}

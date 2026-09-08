@@ -41,14 +41,13 @@ and the focus ring, are declared once, being the same in both.
 | `--pn-colour-badge-ground`                                           | What a threat badge is lettered in |
 | `--pn-colour-tone-critical` to `--pn-colour-tone-neutral`            | One per severity                   |
 | `--pn-space-1` to `--pn-space-4`                                     | Every gap and every pad            |
-| `--pn-panel-cover`                                                   | What the threat panel covers       |
+| `--pn-panel-cover`                                                   | Default threat pane coverage       |
 | `--pn-radius`                                                        | Every corner                       |
 | `--pn-focus-ring`, `--pn-focus-ring-width`, `--pn-focus-ring-offset` | The one visible focus indicator    |
 
 The two washes, the badge ground and the five tones are the diagram's own
-colours rather than the chrome's. No control here reads them: they are
-declared because the canvas stylesheet the studio injects is written in these
-properties, which is how the diagram follows the mode
+colours rather than the chrome's. The threat summary uses the same tone classes as the canvas. The canvas
+stylesheet reads these properties, which is how both follow the mode
 ([the canvas](../canvas/README.md)). Four rows are read from both sides:
 `--pn-colour-surface-raised` is a panel in the chrome and the fill inside
 every element outline on the diagram, `--pn-colour-canvas` is the ground and
@@ -130,5 +129,9 @@ it away from the control, and the text goes with it. A field can be opened on
 a draft reported that way rather than on the value it is given, which is how
 the threat panel puts a refused draft back in the field it was typed in after
 the panel itself has been unmounted ([the panel](../panel/README.md)).
+
+`ProseField` starts at eight lines. CSS `field-sizing: content` grows it with
+its text up to 24 lines while preserving manual vertical resizing. Browsers
+without this CSS property keep the eight-line field and its resize control.
 
 The Appearance choice in the File menu selects System, Light, or Dark. System uses the browser media preference. An explicit choice sets `data-pn-colour-mode` on the document root and persists through reload. Components read tokens only, so the mode does not add palette values to component styles.

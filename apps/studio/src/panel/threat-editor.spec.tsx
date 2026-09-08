@@ -5,6 +5,7 @@ import { Accordion } from 'radix-ui';
 import {
   processElement,
   sampleThreat,
+  sampleElement,
   storeElement,
 } from '../store/store.fixtures.js';
 import { editorTimeout } from './panel.fixtures.js';
@@ -26,6 +27,7 @@ const showEditor = (
 ): void => {
   const props: ThreatEditorProps = {
     threat: sampleThreat,
+    attachments: [],
     focus: undefined,
     held: undefined,
     onChange: noop,
@@ -197,9 +199,19 @@ describe(
     it('says that deleting a threat several elements name takes it off all of them', () => {
       showEditor({
         threat: { ...sampleThreat, elements: [processElement, storeElement] },
+        attachments: [
+          sampleElement(processElement),
+          sampleElement(storeElement),
+        ],
       });
 
       expect(screen.getByText(/names 2 elements/u)).toBeDefined();
+      expect(
+        screen.getByRole('list', { name: 'Attached elements' }).textContent,
+      ).toContain(sampleElement(processElement).name);
+      expect(
+        screen.getByRole('list', { name: 'Attached elements' }).textContent,
+      ).toContain(sampleElement(storeElement).name);
       expect(
         screen
           .getByRole('button', { name: 'Delete threat 1' })

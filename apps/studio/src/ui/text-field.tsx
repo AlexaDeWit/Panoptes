@@ -65,29 +65,19 @@ export function useTextDraft(
   };
 }
 
-/**
- * A refusal in the two places it is read: `shown` under the field, where the
- * label already says which field it is, and `said` wherever the refusal is
- * announced away from it, where the field has to be named.
- */
+/** Inline and announced forms of a validation refusal. */
 export type TextRefusal = {
   readonly shown: string;
   readonly said: string;
 };
 
-/**
- * A refused draft as whatever mounts the field needs it: the sentence to say
- * away from the control, and the text still on screen, which is what lets a
- * draft be held while the field itself is gone.
- */
+/** The refused text and its announcement, retained when the editor unmounts. */
 export type RefusedDraft = {
   readonly said: string;
   readonly text: string;
 };
 
-/**
- * Why the model would not take this text, or nothing for text it accepts.
- */
+/** Identifies the first character the model refuses. */
 export function refusedText(
   label: string,
   text: string,
@@ -101,12 +91,7 @@ export function refusedText(
   return { shown, said: `${label} was not saved. ${shown}` };
 }
 
-/**
- * What a {@link TextField} or {@link ProseField} shows and where an edit
- * goes. `held` is a draft the model refused earlier, which the field opens on
- * instead of the value it is given, so a panel that was unmounted with one on
- * screen can put it back where it was being corrected.
- */
+/** A controlled value, an optional refused draft, and callbacks for changes and commits. */
 export type TextFieldProps = {
   readonly label: string;
   readonly value: string;
@@ -117,11 +102,7 @@ export type TextFieldProps = {
   readonly ref?: Ref<HTMLInputElement>;
 };
 
-/**
- * One line of text, committed when the field is left rather than as it is
- * typed, so one edit is one undo step. Enter commits it too, and leaves focus
- * where it is, the control being on a line of its own.
- */
+/** Commits a single line on blur or Enter, keeping each edit as one undo step. */
 export function TextField({
   label,
   value,
@@ -175,12 +156,7 @@ export function TextField({
   );
 }
 
-/**
- * Markdown prose, committed on the same terms as {@link TextField}. Enter
- * belongs to the text here, so leaving the field is the only commit. It is
- * the markdown source and nothing else: a preview beside it is deferred, and
- * the panel's README says why.
- */
+/** Edits Markdown source and commits on blur. The textarea grows with content and supports vertical resizing. */
 export function ProseField({
   label,
   value,
@@ -214,7 +190,7 @@ export function ProseField({
           onChange?.();
           change(event.target.value);
         }}
-        rows={4}
+        rows={8}
         value={text}
       />
       {refusal !== undefined && (
