@@ -12,7 +12,8 @@ import {
   SelectionControls,
   FlowEndpointCommands,
 } from './selection-controls.js';
-import { openSelectionControl } from './selection-control.js';
+import { commandById, runCommand } from '../commands/registry.js';
+import { recordingSurface } from '../commands/commands.fixtures.js';
 import { resetTools, selectTool } from './tools.js';
 import { currentAnnouncement } from './announcements.js';
 import { newProcess } from '../store/store.fixtures.js';
@@ -30,7 +31,7 @@ beforeEach(() => {
 it('holds geometry drafts until Apply and records position plus size as one edit', async () => {
   render(<SelectionControls />);
   act(() => {
-    openSelectionControl('geometry');
+    runCommand(commandById('edit-geometry'), recordingSurface().surface);
   });
   await waitFor(() => {
     expect(document.activeElement).toBe(
@@ -56,7 +57,7 @@ it('holds geometry drafts until Apply and records position plus size as one edit
 it('retains invalid dimensions and cancels by Escape without history', () => {
   render(<SelectionControls />);
   act(() => {
-    openSelectionControl('geometry');
+    runCommand(commandById('edit-geometry'), recordingSurface().surface);
   });
   const width = screen.getByRole('spinbutton', { name: 'Width' });
   fireEvent.change(width, { target: { value: '-2' } });
@@ -81,7 +82,7 @@ it('moves a multi-selection by one offset and invalidates a draft on tool change
   );
   render(<SelectionControls />);
   act(() => {
-    openSelectionControl('geometry');
+    runCommand(commandById('edit-geometry'), recordingSurface().surface);
   });
   expect(screen.queryByRole('spinbutton', { name: 'Width' })).toBeNull();
   fireEvent.click(screen.getByRole('button', { name: 'Decrease Y' }));
@@ -99,7 +100,7 @@ it('moves a multi-selection by one offset and invalidates a draft on tool change
   );
   expect(modelStore.getState().past).toEqual([placeholderModel]);
   act(() => {
-    openSelectionControl('geometry');
+    runCommand(commandById('edit-geometry'), recordingSurface().surface);
     selectTool('hand');
   });
   expect(screen.queryByRole('region')).toBeNull();
@@ -130,7 +131,7 @@ it('changes either endpoint with a chooser and keeps cancelling out of history',
     screen.getByRole('button', { name: 'Change flow source' }),
   ).toBeDefined();
   act(() => {
-    openSelectionControl('source');
+    runCommand(commandById('reconnect-source'), recordingSurface().surface);
   });
   fireEvent.change(screen.getByRole('combobox', { name: 'Source' }), {
     target: { value: 'extra-node' },
@@ -144,7 +145,7 @@ it('changes either endpoint with a chooser and keeps cancelling out of history',
     source: { kind: 'attached', element: 'extra-node' },
   });
   act(() => {
-    openSelectionControl('target');
+    runCommand(commandById('reconnect-target'), recordingSurface().surface);
   });
   fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
   expect(modelStore.getState().past).toEqual([base]);
@@ -158,13 +159,13 @@ it('reports a flow-only geometry selection and ignores editor requests during pl
   );
   render(<SelectionControls />);
   act(() => {
-    openSelectionControl('geometry');
+    runCommand(commandById('edit-geometry'), recordingSurface().surface);
   });
   expect(screen.queryByRole('spinbutton')).toBeNull();
   fireEvent.click(screen.getByRole('button', { name: 'Close' }));
   act(() => {
     selectTool('actor');
-    openSelectionControl('geometry');
+    runCommand(commandById('edit-geometry'), recordingSurface().surface);
   });
   expect(screen.queryByRole('region')).toBeNull();
 });

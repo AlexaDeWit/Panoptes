@@ -75,3 +75,35 @@ it('remaps references and geometry, issues new numbers, and rejects an ID collis
     position: { x: 60, y: 150 },
   });
 });
+
+it('includes flows between selected nodes and refuses missing graph references before insertion', () => {
+  const input = structuredClone(validModelFixture);
+  const flow = input.diagrams[0].elements.find(
+    (element) => element.kind === 'flow',
+  );
+  if (flow?.kind !== 'flow') {
+    throw new Error('The fixture has no flow.');
+  }
+  flow.target = { kind: 'attached', element: 'element-api' };
+  const connected = parsedFixture(input);
+  const fragment = Either.getOrThrow(
+    selectionFragment(connected, diagram, [
+      elementId('element-customer'),
+      elementId('element-api'),
+    ]),
+  );
+  expect(fragment.diagrams[0].elements.map((element) => element.id)).toContain(
+    'element-order-flow',
+  );
+  expect(
+    Either.isLeft(selectionFragment(model, diagramId('missing'), [])),
+  ).toBe(true);
+  expect(
+    Either.isLeft(selectionFragment(model, diagram, [elementId('missing')])),
+  ).toBe(true);
+  expect(
+    Either.isLeft(insertFragment(model, diagramId('missing'), fragment)),
+  ).toBe(true);
+  const empty = Either.getOrThrow(selectionFragment(model, diagram, []));
+  expect(Either.getOrThrow(insertFragment(model, diagram, empty))).toBe(model);
+});

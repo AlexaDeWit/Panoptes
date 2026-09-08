@@ -1,11 +1,21 @@
+import { CommandSurfaceProvider } from '../commands/binding.js';
+import { CommandButton } from '../commands/command-button.js';
+import { recordingSurface } from '../commands/commands.fixtures.js';
+import { currentSnap, useSnap } from './snap.js';
 import { ReactFlow } from '@xyflow/react';
-import { act, render, waitFor } from '@testing-library/react';
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from '@testing-library/react';
 import { Action } from '../store/actions.js';
 import { initialState, placeholderModel } from '../store/state.js';
 import { dispatch, modelStore } from '../store/store.js';
 import { nativeSource } from '../store/store.fixtures.js';
 import { canvasModel, readerElement } from './canvas.fixtures.js';
-import { FitOnOpen } from './view-commands.js';
+import { FitOnOpen, useViewCommands } from './view-commands.js';
 
 const unfitted = 'transform: translate(0px, 0px) scale(1)';
 
@@ -71,4 +81,61 @@ describe('FitOnOpen', () => {
 
     expect(transform()).toBe(first);
   });
+});
+
+function ViewControls() {
+  const snapping = useSnap();
+  const view = useViewCommands();
+  return (
+    <CommandSurfaceProvider surface={{ ...recordingSurface().surface, view }}>
+      <CommandButton command="fit-selection" />
+      <CommandButton command="fit-to-view" />
+      <CommandButton command="reset-zoom" />
+      <CommandButton command="zoom-in" />
+      <CommandButton command="zoom-out" />
+      <CommandButton command="snap-to-grid" />
+      <span data-testid="snap-state">{snapping ? 'on' : 'off'}</span>
+    </CommandSurfaceProvider>
+  );
+}
+
+it('fits a selected flow and resets zoom without editing the document or its history', async () => {
+  const flow = placeholderModel.diagrams[0].elements[2];
+  modelStore.setState(
+    { ...initialState(placeholderModel), selection: [flow.id] },
+    true,
+  );
+  const before = modelStore.getState();
+  render(
+    <ReactFlow width={800} height={600} edges={[]} nodes={[]}>
+      <ViewControls />
+    </ReactFlow>,
+  );
+  fireEvent.click(screen.getByRole('button', { name: 'Fit selection' }));
+  const selected = await fitted();
+  fireEvent.click(screen.getByRole('button', { name: 'Fit to view' }));
+  await waitFor(() => {
+    expect(transform()).not.toBe(selected);
+  });
+  fireEvent.click(screen.getByRole('button', { name: 'Reset zoom to 100%' }));
+  await waitFor(() => {
+    expect(transform()).toContain('scale(1)');
+  });
+  fireEvent.click(screen.getByRole('button', { name: 'Zoom out' }));
+  await waitFor(() => {
+    expect(transform()).not.toContain('scale(1)');
+  });
+  fireEvent.click(screen.getByRole('button', { name: 'Zoom in' }));
+  const snapping = currentSnap();
+  fireEvent.click(screen.getByRole('button', { name: 'Snap to grid' }));
+  expect(currentSnap()).toBe(!snapping);
+  fireEvent.click(screen.getByRole('button', { name: 'Snap to grid' }));
+  expect(currentSnap()).toBe(snapping);
+  expect(modelStore.getState()).toBe(before);
+  act(() => {
+    dispatch(Action.Select({ elementIds: [] }));
+  });
+  const at = transform();
+  fireEvent.click(screen.getByRole('button', { name: 'Fit selection' }));
+  expect(transform()).toBe(at);
 });
