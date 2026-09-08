@@ -390,7 +390,7 @@ replace that:
   modes.** `deno compile` records every embedded file's name, modification
   time and executable bit in the virtual file system it embeds, so the script
   stages what it compiles into a directory of its own: the bundle as a fixed
-  `main.js`, and beside it the assets an executable carries, the Typst
+  `saer.js`, and beside it the assets an executable carries, the Typst
   WebAssembly module and the fonts. It stamps every file there to the epoch
   and to mode 644, every directory to mode 755, and compiles that. It then
   compiles every target into two directories and fails unless the two are byte
