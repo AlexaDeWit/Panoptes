@@ -1,3 +1,4 @@
+import { registeredChords } from './chords.js';
 import { AxeBuilder } from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
 import { readAnyFormat } from '@saerskriven/formats';
@@ -9,7 +10,6 @@ import {
   emptyCanvasPoint,
   nodeNamed,
   openPlaceholder,
-  runFromMenu,
   savedFile,
   selectByKeyboard,
   openFile,
@@ -144,13 +144,13 @@ test('clipboard commands preserve graph references and leave text fields their o
   await page.keyboard.press('Escape');
 });
 
-test('geometry fields support click-only movement and resizing, cancellation, and one undo step', async ({
+test('geometry fields support movement and resizing, cancellation, and one undo step', async ({
   page,
 }) => {
   await page.addInitScript(withoutPickers);
   await openPlaceholder(page);
   const actor = await selectByKeyboard(page, actorName);
-  await runFromMenu(page, 'Position and size');
+  await page.keyboard.press(registeredChords['edit-geometry'][0]);
   const panel = page.getByRole('region', { name: 'Position and size' });
   await expect(
     panel.getByRole('spinbutton', { name: 'X', exact: true }),

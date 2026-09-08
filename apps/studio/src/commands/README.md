@@ -115,12 +115,18 @@ something else instead.
 
 The registry includes clipboard reuse, geometry, reconnection, arrangement,
 snapping, zoom reset, and fit selection. Their shortcuts appear in the
-reference and on menu items. All keep text-field key ownership.
+reference. Duplicate, Position and size, Change flow source, Change flow
+target, and Focus threats are absent from the burger menu. Their shortcuts
+remain available. All keep text-field key ownership.
 
 The Keyboard shortcuts item in the Help menu opens a non-modal reference
 panel. Question mark and F1 toggle it when focus is outside a text field or
 open menu. The panel overlays the left edge on a wide screen and the lower 60
 percent on a narrow screen.
+
+The panel starts with collapsed category cards. Each card shows its name and
+entry count. Enter or Space expands it, and arrow keys move between category
+headers. Multiple categories can stay open.
 
 The panel renders every command from `registry.ts`. It renders canvas keys
 from `contextual-shortcuts.ts`, which also supplies the matchers and accessible

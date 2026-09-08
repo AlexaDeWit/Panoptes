@@ -25,18 +25,30 @@
 
 .panelHeader {
   display: flex;
-  flex-wrap: wrap;
   align-items: start;
   gap: var(--pn-space-2);
   padding: var(--pn-space-3);
   border-bottom: 1px solid var(--pn-colour-border);
 }
 
-.controls {
+.width,
+.close {
   display: flex;
   align-items: center;
-  gap: var(--pn-space-2);
-  margin-inline-start: auto;
+  justify-content: center;
+  flex: none;
+  inline-size: 2rem;
+  block-size: 2rem;
+}
+
+.tooltip {
+  z-index: 2;
+  padding: var(--pn-space-1) var(--pn-space-2);
+  border: 1px solid var(--pn-colour-border);
+  border-radius: var(--pn-radius);
+  background: var(--pn-colour-surface-raised);
+  color: var(--pn-colour-text);
+  font-size: var(--pn-font-size);
 }
 
 .body {
@@ -52,7 +64,8 @@
 .heading {
   margin: 0;
   font-size: 1rem;
-  flex: 1 1 12ch;
+  flex: 1;
+  min-inline-size: 0;
   max-block-size: 3lh;
   overflow-y: auto;
   overflow-wrap: anywhere;
@@ -65,10 +78,14 @@
 }
 
 .add,
+.delete {
+  padding: var(--pn-space-2) var(--pn-space-3);
+}
+
+.add,
 .delete,
 .width,
 .close {
-  padding: var(--pn-space-2) var(--pn-space-3);
   border: 1px solid var(--pn-colour-border);
   border-radius: var(--pn-radius);
   background: var(--pn-colour-surface);

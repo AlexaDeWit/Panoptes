@@ -158,7 +158,16 @@ describe('what the menu offers', () => {
     ).toContain('Control+C');
     expect(
       items.filter((entry) => entry.hasAttribute('aria-keyshortcuts')),
-    ).toHaveLength(20);
+    ).toHaveLength(15);
+    for (const name of [
+      'Duplicate',
+      'Position and size',
+      'Change flow source',
+      'Change flow target',
+      'Focus threats',
+    ]) {
+      expect(screen.queryByRole('menuitem', { name })).toBeNull();
+    }
     for (const name of ['Open', 'Save', 'Save as', 'Export', 'New model']) {
       expect(item(name)).toBeDefined();
     }
@@ -331,7 +340,6 @@ describe('what the studio says about the file', () => {
     expect(
       item('Rename selection').getAttribute('data-disabled'),
     ).not.toBeNull();
-    expect(item('Focus threats').getAttribute('data-disabled')).not.toBeNull();
     expect(
       item('Delete selection').getAttribute('data-disabled'),
     ).not.toBeNull();
@@ -341,14 +349,13 @@ describe('what the studio says about the file', () => {
     });
 
     expect(item('Rename selection').getAttribute('data-disabled')).toBeNull();
-    expect(item('Focus threats').getAttribute('data-disabled')).toBeNull();
     expect(item('Delete selection').getAttribute('data-disabled')).toBeNull();
 
     act(() => {
       dispatch(Action.Select({ elementIds: [actorElement, processElement] }));
     });
 
-    expect(item('Focus threats').getAttribute('data-disabled')).not.toBeNull();
+    expect(item('Delete selection').getAttribute('data-disabled')).toBeNull();
   });
 
   it('offers no rename over a text note, which draws prose rather than a name', async () => {
@@ -365,7 +372,6 @@ describe('what the studio says about the file', () => {
     expect(
       item('Rename selection').getAttribute('data-disabled'),
     ).not.toBeNull();
-    expect(item('Focus threats').getAttribute('data-disabled')).toBeNull();
     expect(item('Delete selection').getAttribute('data-disabled')).toBeNull();
   });
 

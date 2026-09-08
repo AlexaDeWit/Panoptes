@@ -1,3 +1,4 @@
+import { AxeBuilder } from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
 import { registeredChords } from './chords.js';
 import {
@@ -257,11 +258,33 @@ test('the complete shortcut reference opens by menu or key and returns focus', a
   });
   await expect(reference).toBeVisible();
   await expect(heading).toBeFocused();
+  const fileCategory = reference.getByRole('button', {
+    name: 'File',
+    exact: true,
+  });
+  await expect(fileCategory).toHaveAttribute('aria-expanded', 'false');
+  await page.screenshot({
+    path: test.info().outputPath('shortcut-categories.png'),
+  });
+  await page.keyboard.press('Tab');
+  await page.keyboard.press('Tab');
+  await expect(fileCategory).toBeFocused();
+  await page.keyboard.press('Enter');
+  await expect(fileCategory).toHaveAttribute('aria-expanded', 'true');
   await expect(
     reference.locator('[data-command-id="save"]').getByText('Ctrl+S'),
   ).toBeVisible();
-  await expect(reference).toContainText('Edit the selected canvas text');
+  await reference
+    .getByRole('button', { name: 'Canvas navigation', exact: true })
+    .click();
+  await expect(
+    reference.locator('[data-contextual-id="edit-canvas-text"]'),
+  ).toBeVisible();
 
+  const audit = await new AxeBuilder({ page })
+    .include('[data-testid="shortcut-reference"]')
+    .analyze();
+  expect(audit.violations).toEqual([]);
   await page.keyboard.press('Escape');
   await expect(reference).toHaveCount(0);
   await expect(menuButton(page)).toBeFocused();
@@ -272,6 +295,15 @@ test('the complete shortcut reference opens by menu or key and returns focus', a
   const narrowPanel = await reference.boundingBox();
   expect(narrowPanel?.height).toBeLessThanOrEqual(432);
   expect(narrowPanel?.y).toBeGreaterThan(250);
+  await reference
+    .getByRole('button', { name: 'Canvas navigation', exact: true })
+    .click();
+  expect(
+    await reference.evaluate((node) => node.scrollWidth <= node.clientWidth),
+  ).toBe(true);
+  await page.screenshot({
+    path: test.info().outputPath('shortcut-narrow.png'),
+  });
   await page.keyboard.press(registeredChords['shortcut-reference'][0]);
   await expect(reference).toHaveCount(0);
 });

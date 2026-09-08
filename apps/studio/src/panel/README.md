@@ -17,13 +17,14 @@ drawn over it, and the diagram is not resized when it opens: what the panel
 covers is dealt with by panning, not by taking the room off the canvas ([the
 canvas](../canvas/README.md)). The normal pane is 460 pixels wide. Widen pane
 adds half the default coverage, and Restore pane width returns to normal.
-Both controls support the keyboard. The overlay retains that choice across
+The icon button sits left of the heading and supports the keyboard.
+Widening and restoring leave the diagram viewport unchanged. The overlay retains that choice across
 selection changes and closing during the session. CSS bounds either width to
 the canvas, including on narrow or zoomed viewports.
 
 The pane observes its own box and the canvas with `ResizeObserver`. It reports
-its actual coverage, including the outer inset, to the canvas. Selection and
-coverage changes reveal a covered node using that measurement. The default
+its actual coverage, including the outer inset, to the canvas. Selection changes and reopening the pane reveal a covered node using that
+measurement. Resizing an open pane does not move the diagram. The default
 comes from `panelCover` in the canvas tokens, projected as `--pn-panel-cover`.
 
 `threat-overlay.tsx` is the mount: it reads the selection, decides whether

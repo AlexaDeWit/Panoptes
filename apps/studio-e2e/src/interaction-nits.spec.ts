@@ -55,6 +55,26 @@ test('scroll pans while a modified scroll keeps pinch zoom', async ({
     .not.toBe(scaleOf(afterPan));
 });
 
+test('middle-button dragging pans without zooming or clearing selection', async ({
+  page,
+}) => {
+  await openPlaceholder(page);
+  const actor = nodeNamed(page, /^Actor, actor/u);
+  await actor.click();
+  const from = await emptyCanvasPoint(page);
+  const to = movedPoint(page, from);
+  const before = await viewportTransform(page);
+
+  await page.mouse.move(from.x, from.y);
+  await page.mouse.down({ button: 'middle' });
+  await page.mouse.move(to.x, to.y, { steps: 6 });
+  await page.mouse.up({ button: 'middle' });
+
+  await expect.poll(() => viewportTransform(page)).not.toBe(before);
+  expect(scaleOf(await viewportTransform(page))).toBe(scaleOf(before));
+  await expect(actor).toHaveClass(/selected/u);
+});
+
 test('a touch drag pans without becoming a selection click', async ({
   page,
 }) => {

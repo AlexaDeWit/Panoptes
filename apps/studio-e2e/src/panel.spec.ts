@@ -1,5 +1,6 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { darkPalette, lightPalette, rgbColour } from '@saerskriven/canvas';
+import { viewportTransform } from './commands.fixtures.js';
 import { registeredChords } from './chords.js';
 import {
   beforeCanvas,
@@ -397,7 +398,7 @@ test('collapsed summaries expose severity and status without an empty content st
   ).toBe(0);
 });
 
-test('keyboard width changes pan the selected node and persist across selection and close', async ({
+test('keyboard width changes preserve the viewport and persist across selection and close', async ({
   page,
 }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
@@ -408,15 +409,15 @@ test('keyboard width changes pan the selected node and persist across selection 
   expect(normal.width).toBeGreaterThan(346);
   await panAcross(page, normal.left - 10 - (await boxOf(actor)).right);
   const before = await boxOf(actor);
+  const viewportBefore = await viewportTransform(page);
   await panel.getByRole('button', { name: 'Widen pane' }).focus();
   await page.keyboard.press('Enter');
   await canvasSettled(page);
   const wide = await boxOf(panel);
   expect(wide.width).toBeGreaterThan(normal.width);
   expect(before.right).toBeGreaterThan(wide.left);
-  await expect
-    .poll(async () => (await boxOf(actor)).right)
-    .toBeLessThanOrEqual(wide.left);
+  expect(await viewportTransform(page)).toBe(viewportBefore);
+  expect(await boxOf(actor)).toEqual(before);
   await selectByKeyboard(page, /^Store, store/u);
   expect((await boxOf(panel)).width).toBe(wide.width);
   await expect
@@ -428,9 +429,12 @@ test('keyboard width changes pan the selected node and persist across selection 
   await expect(nodeNamed(page, /^Store, store/u)).toBeFocused();
   await page.keyboard.press(registeredChords['focus-threats'][0]);
   expect((await boxOf(panel)).width).toBe(wide.width);
+  const beforeRestore = await viewportTransform(page);
   await panel.getByRole('button', { name: 'Restore pane width' }).focus();
   await page.keyboard.press('Space');
+  await canvasSettled(page);
   expect((await boxOf(panel)).width).toBe(normal.width);
+  expect(await viewportTransform(page)).toBe(beforeRestore);
 });
 
 test('prose grows to a bound, keeps manual resizing, and commits once through pane controls', async ({
@@ -538,13 +542,13 @@ test('a long element name leaves the pane heading and editor reachable', async (
   const panel = threatPanel(page);
   const heading = panel.getByRole('heading', { level: 2 });
   await panel.getByRole('button', { name: 'Widen pane' }).focus();
-  await page.keyboard.press('Shift+Tab');
+  await page.keyboard.press('Tab');
   await expect(heading).toBeFocused();
   await page.keyboard.press('ArrowDown');
   await expect
     .poll(async () => heading.evaluate((node) => node.scrollTop))
     .toBeGreaterThan(0);
-  await page.keyboard.press('Tab');
+  await page.keyboard.press('Shift+Tab');
   await expect(panel.getByRole('button', { name: 'Widen pane' })).toBeFocused();
   await page.keyboard.press('Enter');
   await panel.getByRole('button', { name: 'Add a threat' }).click();

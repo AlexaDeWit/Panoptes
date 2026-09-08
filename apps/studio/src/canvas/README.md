@@ -298,8 +298,9 @@ on the same selection this pans for ([the panel](../panel/README.md)), so an
 element under it is an element out of sight, and the pan centres what it
 reveals in the room the panel leaves rather than in the canvas.
 `clearOfPanel` and `revealCentre` in `viewport.ts` use the pane's measured
-coverage, including its outer inset. Pane and canvas resizes update that measurement. A coverage change reveals
-a covered selection again. The `panelCover` token
+coverage, including its outer inset. Pane and canvas resizes update that measurement. Widening or restoring an
+open pane leaves the viewport unchanged. A new selection or reopening the
+pane reveals a covered node. Explicit fit commands use the current coverage. The `panelCover` token
 sets the default width only ([the panel](../panel/README.md)).
 
 ## The panel over it
@@ -381,6 +382,7 @@ Scrolling over the canvas pans in both directions. A trackpad pinch keeps its
 zoom gesture. Touch drag pans while Select is active, without starting a
 selection box or clearing the selection. A mouse drag still draws the Select
 box, while Hand or held Space makes a mouse drag pan from anywhere.
+Middle-button dragging pans without changing the active tool or selection.
 
 ## Accessibility
 

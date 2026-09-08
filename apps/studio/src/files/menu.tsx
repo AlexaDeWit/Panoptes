@@ -17,13 +17,11 @@ import {
   spellShortcuts,
 } from '../commands/shortcuts.js';
 import {
-  elementById,
   canRedo,
   canUndo,
   isDirty,
   needsCloseGuard,
   renameable,
-  selectedElement,
 } from '../store/selectors.js';
 import { useModelStore } from '../store/store.js';
 import { FailureNotice } from '../ui/failure-notice.js';
@@ -219,11 +217,6 @@ export function StudioMenu({
   const redoable = useModelStore(canRedo);
   const nothing = useModelStore((state) => state.selection.length === 0);
   const renamable = useModelStore(renameable);
-  const selected = useModelStore(selectedElement);
-  const selectedFlow = useModelStore((state) => {
-    const id = selectedElement(state);
-    return id !== undefined && elementById(state, id)?.kind === 'flow';
-  });
   const [open, setOpen] = useState(false);
   const selectedColourMode = colourMode ?? 'system';
 
@@ -398,10 +391,6 @@ export function StudioMenu({
             <MenuCommand command="copy" disabled={nothing} />
             <MenuCommand command="cut" disabled={nothing} />
             <MenuCommand command="paste" />
-            <MenuCommand command="duplicate" disabled={nothing} />
-            <MenuCommand command="edit-geometry" disabled={nothing} />
-            <MenuCommand command="reconnect-source" disabled={!selectedFlow} />
-            <MenuCommand command="reconnect-target" disabled={!selectedFlow} />
             <DropdownMenu.Sub>
               <DropdownMenu.SubTrigger className={styles.item}>
                 Arrange
@@ -428,10 +417,6 @@ export function StudioMenu({
               </DropdownMenu.SubContent>
             </DropdownMenu.Sub>
             <MenuCommand command="rename" disabled={!renamable} />
-            <MenuCommand
-              command="focus-threats"
-              disabled={selected === undefined}
-            />
             <MenuCommand command="delete" disabled={nothing} />
           </DropdownMenu.Group>
           <DropdownMenu.Separator className={styles.rule} />
