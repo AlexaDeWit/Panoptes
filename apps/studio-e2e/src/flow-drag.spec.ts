@@ -120,31 +120,30 @@ test('a group drag carries an attached flow, its label and its badge before poin
   expect(endsOn(await drawnBy(line), handlesOf(sourceLive))).toHaveLength(1);
   expect(endsOn(await drawnBy(line), handlesOf(targetLive))).toHaveLength(1);
 
-  const lineLive = await line.boundingBox();
-  const labelLive = await label.boundingBox();
-  const badgeLive = await badge.boundingBox();
-  expect(lineLive).not.toBeNull();
-  expect(labelLive).not.toBeNull();
-  expect(badgeLive).not.toBeNull();
   expect(sourceScreenLive).not.toBeNull();
   const screenOffset = {
     x: (sourceScreenLive?.x ?? 0) - (sourceScreenBefore?.x ?? 0),
     y: (sourceScreenLive?.y ?? 0) - (sourceScreenBefore?.y ?? 0),
   };
-  for (const [part, before, live] of [
-    ['line', lineBefore, lineLive],
-    ['label', labelBefore, labelLive],
-    ['badge', badgeBefore, badgeLive],
+  for (const [part, before, current] of [
+    ['line', lineBefore, line],
+    ['label', labelBefore, label],
+    ['badge', badgeBefore, badge],
   ] as const) {
-    expect(
-      (live?.x ?? 0) - (before?.x ?? 0),
-      `${part} x translation`,
-    ).toBeCloseTo(screenOffset.x);
-    expect(
-      (live?.y ?? 0) - (before?.y ?? 0),
-      `${part} y translation`,
-    ).toBeCloseTo(screenOffset.y);
+    for (const axis of ['x', 'y'] as const) {
+      await expect
+        .poll(
+          async () =>
+            ((await current.boundingBox())?.[axis] ?? Number.NaN) -
+            (before?.[axis] ?? Number.NaN),
+          `${part} ${axis} translation`,
+        )
+        .toBeCloseTo(screenOffset[axis]);
+    }
   }
+  const lineLive = await line.boundingBox();
+  const labelLive = await label.boundingBox();
+  const badgeLive = await badge.boundingBox();
 
   await page.mouse.up();
   expect(await line.boundingBox()).toEqual(lineLive);
