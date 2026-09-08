@@ -92,7 +92,7 @@ test('a touch drag pans without becoming a selection click', async ({
   await session.detach();
 });
 
-const notePlacements = ['click', 'drag', 'keyboard'] as const;
+const notePlacements = ['click', 'drag', 'touch', 'keyboard'] as const;
 
 for (const placement of notePlacements) {
   test(`a ${placement} placement opens the new Note for typing`, async ({
@@ -107,7 +107,13 @@ for (const placement of notePlacements) {
       await page.keyboard.press('Enter');
     } else {
       await toolButton(page, 'Note').click();
-      if (placement === 'click') {
+      if (placement === 'touch') {
+        const session = await touchSession(page);
+        const before = await viewportTransform(page);
+        await touchDrag(session, from, movedPoint(page, from));
+        expect(await viewportTransform(page)).toBe(before);
+        await session.detach();
+      } else if (placement === 'click') {
         await page.mouse.click(from.x, from.y);
       } else {
         const to = movedPoint(page, from);

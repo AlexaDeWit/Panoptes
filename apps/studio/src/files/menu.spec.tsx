@@ -26,7 +26,6 @@ import {
   nativeSource,
   newNote,
   newProcess,
-  processElement,
   sampleModel,
 } from '../store/store.fixtures.js';
 import { SaveOutcome } from './bridge.js';
@@ -158,13 +157,14 @@ describe('what the menu offers', () => {
     ).toContain('Control+C');
     expect(
       items.filter((entry) => entry.hasAttribute('aria-keyshortcuts')),
-    ).toHaveLength(15);
+    ).toHaveLength(14);
     for (const name of [
       'Duplicate',
       'Position and size',
       'Change flow source',
       'Change flow target',
       'Focus threats',
+      'Delete selection',
     ]) {
       expect(screen.queryByRole('menuitem', { name })).toBeNull();
     }
@@ -172,6 +172,15 @@ describe('what the menu offers', () => {
       expect(item(name)).toBeDefined();
     }
     expect(items.filter((entry) => entry.hasAttribute('href'))).toHaveLength(1);
+    const submenus = items.filter(
+      (entry) => entry.getAttribute('aria-haspopup') === 'menu',
+    );
+    expect(submenus).toHaveLength(3);
+    for (const submenu of submenus) {
+      expect(submenu.querySelector('svg')?.getAttribute('aria-hidden')).toBe(
+        'true',
+      );
+    }
   });
 
   it('links to the source in a new tab with a popout icon', async () => {
@@ -340,22 +349,12 @@ describe('what the studio says about the file', () => {
     expect(
       item('Rename selection').getAttribute('data-disabled'),
     ).not.toBeNull();
-    expect(
-      item('Delete selection').getAttribute('data-disabled'),
-    ).not.toBeNull();
 
     act(() => {
       dispatch(Action.Select({ elementIds: [actorElement] }));
     });
 
     expect(item('Rename selection').getAttribute('data-disabled')).toBeNull();
-    expect(item('Delete selection').getAttribute('data-disabled')).toBeNull();
-
-    act(() => {
-      dispatch(Action.Select({ elementIds: [actorElement, processElement] }));
-    });
-
-    expect(item('Delete selection').getAttribute('data-disabled')).toBeNull();
   });
 
   it('offers no rename over a text note, which draws prose rather than a name', async () => {
@@ -372,7 +371,6 @@ describe('what the studio says about the file', () => {
     expect(
       item('Rename selection').getAttribute('data-disabled'),
     ).not.toBeNull();
-    expect(item('Delete selection').getAttribute('data-disabled')).toBeNull();
   });
 
   it('opens the name of the selection in a field, from the menu', async () => {

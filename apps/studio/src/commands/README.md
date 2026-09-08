@@ -57,6 +57,16 @@ everywhere else. The platform is read once at load, from the user agent data
 where a browser offers it and `navigator.platform` where it does not, and
 each chord is then written three ways.
 
+Undo uses Command+Z on macOS and Ctrl+Z on Linux and Windows. Redo uses
+Shift+Command+Z on macOS, and Ctrl+Shift+Z or Ctrl+Y on Linux and Windows.
+The Ctrl+Y alternative is absent from macOS matching, labels, and ARIA
+attributes. Copy, cut, paste, open, save, selection, and view commands use
+the same platform modifier. Backspace supports the Delete key on Mac
+keyboards. Enter edits selected canvas text without requiring F2.
+Zoom accepts either the equals key or the produced plus character. Shifted
+number-row commands also match their digit key code when the event reports
+punctuation, such as `!` for Shift+1.
+
 | Where                | Apple          | Elsewhere         |
 | -------------------- | -------------- | ----------------- |
 | Tooltip, menu, panel | `⇧⌘S`          | `Ctrl+Shift+S`    |
@@ -116,7 +126,7 @@ something else instead.
 The registry includes clipboard reuse, geometry, reconnection, arrangement,
 snapping, zoom reset, and fit selection. Their shortcuts appear in the
 reference. Duplicate, Position and size, Change flow source, Change flow
-target, and Focus threats are absent from the burger menu. Their shortcuts
+target, Focus threats, and Delete selection are absent from the burger menu. Their shortcuts
 remain available. All keep text-field key ownership.
 
 The Keyboard shortcuts item in the Help menu opens a non-modal reference

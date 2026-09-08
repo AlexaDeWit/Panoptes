@@ -373,7 +373,7 @@ const table = {
     id: 'redo',
     label: 'Redo',
     group: 'Edit',
-    shortcuts: [modShift('z'), mod('y')],
+    shortcuts: [modShift('z'), mod('y', 'other')],
     when: 'Anywhere in the studio',
     inTextFields: true,
     dispatch: history(Action.Redo(), 'Redo completed.'),
@@ -437,7 +437,7 @@ const table = {
     id: 'zoom-in',
     label: 'Zoom in',
     group: 'View',
-    shortcuts: [mod('=')],
+    shortcuts: [mod('='), character('+', ['Mod'])],
     when: 'Focus is outside a text field',
     inTextFields: false,
     dispatch: runs((surface) => {

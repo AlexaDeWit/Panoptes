@@ -8,6 +8,9 @@ const registry = readFileSync(
 );
 
 const asChordCall = (chord: string): string => {
+  if (chord === 'ControlOrMeta++') {
+    return "character('+', ['Mod'])";
+  }
   if (chord === '?' || chord === '+') {
     return `character('${chord}')`;
   }
@@ -20,6 +23,9 @@ const asChordCall = (chord: string): string => {
   const held = pressed.slice(0, -1);
   if (held.length === 0) {
     return `bare('${key}')`;
+  }
+  if (held.includes('Control')) {
+    return `mod('${key}', 'other')`;
   }
   return held.includes('Shift') ? `modShift('${key}')` : `mod('${key}')`;
 };

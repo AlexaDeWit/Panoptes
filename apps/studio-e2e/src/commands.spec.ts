@@ -307,3 +307,85 @@ test('the complete shortcut reference opens by menu or key and returns focus', a
   await page.keyboard.press(registeredChords['shortcut-reference'][0]);
   await expect(reference).toHaveCount(0);
 });
+
+test('macOS uses Command shortcuts and Shift-Command-Z for redo', async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, 'platform', { value: 'MacIntel' });
+    Object.defineProperty(navigator, 'userAgentData', {
+      value: { platform: 'macOS' },
+    });
+  });
+  await openPlaceholder(page);
+  await openMenu(page);
+  await expect(menuItem(page, 'Undo')).toHaveAttribute(
+    'aria-keyshortcuts',
+    'Meta+Z',
+  );
+  await expect(menuItem(page, 'Redo')).toHaveAttribute(
+    'aria-keyshortcuts',
+    'Shift+Meta+Z',
+  );
+  await expect(menuItem(page, 'Save')).toHaveAttribute(
+    'aria-keyshortcuts',
+    'Meta+S',
+  );
+  await expect(menuItem(page, 'Copy')).toHaveAttribute(
+    'aria-keyshortcuts',
+    'Meta+C',
+  );
+  await expect(menuItem(page, 'Delete selection')).toHaveCount(0);
+  await page.screenshot({ path: test.info().outputPath('mac-menu.png') });
+  await closeMenu(page);
+  await page.getByRole('application', { name: 'Diagram' }).focus();
+
+  await page.keyboard.press('p');
+  await page.keyboard.press('Enter');
+  await page.keyboard.press('Enter');
+  const added = nodeNamed(page, /^New process, process/u);
+  await expect(added).toHaveCount(1);
+  await page.keyboard.press('Control+z');
+  await expect(added).toHaveCount(1);
+  await page.keyboard.press('Meta+z');
+  await expect(added).toHaveCount(0);
+  await page.keyboard.press('Meta+y');
+  await expect(added).toHaveCount(0);
+  await page.keyboard.press('Meta+Shift+z');
+  await expect(added).toHaveCount(1);
+  await added.focus();
+  await page.keyboard.press('Backspace');
+  await expect(added).toHaveCount(0);
+  await page.keyboard.press('Meta+z');
+  await expect(added).toHaveCount(1);
+  const beforeZoom = await viewportTransform(page);
+  await page.keyboard.press('Meta+-');
+  await expect.poll(() => viewportTransform(page)).not.toBe(beforeZoom);
+  const zoomedOut = await viewportTransform(page);
+  await page.keyboard.press('Meta+Shift++');
+  await expect.poll(() => viewportTransform(page)).not.toBe(zoomedOut);
+  const flow = nodeNamed(page, /^Records, flow/u);
+  await flow.focus();
+  await page.keyboard.press('Enter');
+  await page.keyboard.press('Meta+Shift+!');
+  await expect(
+    page
+      .getByRole('region', { name: 'Flow endpoint' })
+      .getByRole('combobox', { name: 'Source' }),
+  ).toBeFocused();
+  await page.keyboard.press('Escape');
+  await page.keyboard.press('Meta+Shift+@');
+  await expect(
+    page
+      .getByRole('region', { name: 'Flow endpoint' })
+      .getByRole('combobox', { name: 'Target' }),
+  ).toBeFocused();
+  await page.keyboard.press('Escape');
+  await page.keyboard.press('?');
+  const reference = page.getByRole('region', { name: 'Keyboard shortcuts' });
+  await reference.getByRole('button', { name: 'Edit', exact: true }).click();
+  await expect(reference.locator('[data-command-id="redo"] kbd')).toHaveText(
+    '⇧⌘Z',
+  );
+  await expect(reference.locator('[data-command-id="delete"]')).toBeVisible();
+});

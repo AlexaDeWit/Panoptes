@@ -22,11 +22,13 @@ import {
   toolCommands,
   type CommandId,
 } from './registry.js';
-import { platforms, spellChord } from './shortcuts.js';
+import { platforms, shortcutsOn, spellChord } from './shortcuts.js';
 
 const chordsOn = (platform: (typeof platforms)[number]): string[] =>
   commands.flatMap((command) =>
-    command.shortcuts.map((chord) => spellChord(chord, platform)),
+    shortcutsOn(command.shortcuts, platform).map((chord) =>
+      spellChord(chord, platform),
+    ),
   );
 
 describe('the command registry', () => {
@@ -47,6 +49,30 @@ describe('the command registry', () => {
     for (const platform of platforms) {
       const chords = chordsOn(platform);
       expect(new Set(chords).size).toBe(chords.length);
+    }
+  });
+
+  it('matches every registered chord with the platform modifier', () => {
+    for (const platform of platforms) {
+      for (const command of commands) {
+        for (const chord of shortcutsOn(command.shortcuts, platform)) {
+          const modified = chord.modifiers.includes('Mod');
+          const event = {
+            key: chord.key,
+            ctrlKey: modified && platform === 'other',
+            metaKey: modified && platform === 'apple',
+            shiftKey: chord.modifiers.includes('Shift'),
+            altKey: false,
+          };
+          expect(commandFor(event, platform)?.id).toBe(command.id);
+          expect(
+            commandFor(
+              { ...event, ctrlKey: event.metaKey, metaKey: event.ctrlKey },
+              platform,
+            )?.id,
+          ).toBe(modified ? undefined : command.id);
+        }
+      }
     }
   });
 

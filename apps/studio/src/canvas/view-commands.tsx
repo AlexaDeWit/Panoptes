@@ -11,7 +11,7 @@ import { clearOfPanel, fitViewport } from './viewport.js';
 /** View commands share the measured pane coverage with automatic selection reveal. */
 export function useViewCommands(panelCover = 0): ViewCommands {
   const flow = useReactFlow();
-  const fit = useCanvasFit();
+  const fit = useCanvasFit(panelCover);
   const width = useStore((state) => state.width);
   const height = useStore((state) => state.height);
 
@@ -50,7 +50,7 @@ export function useViewCommands(panelCover = 0): ViewCommands {
   );
 }
 
-/** Fits the viewport to a model as it arrives, so opening a file draws the diagram it carries rather than leaving it wherever the model before it put the view. */
+/** Fits each newly opened model once. */
 export function FitOnOpen() {
   const fit = useCanvasFit();
   const opened = useModelStore(modelAsOpened);
@@ -71,18 +71,21 @@ export function FitOnOpen() {
   return null;
 }
 
-function useCanvasFit(): (() => void) | undefined {
+function useCanvasFit(panelCover = 0): (() => void) | undefined {
   const flow = useReactFlow();
   const bounds = useModelStore((state) => currentLayout(state).bounds);
   const width = useStore((state) => state.width);
   const height = useStore((state) => state.height);
 
   return useMemo(() => {
-    const viewport = fitViewport(bounds, { width, height });
+    const viewport = fitViewport(
+      bounds,
+      clearOfPanel({ width, height }, panelCover),
+    );
     return viewport === undefined
       ? undefined
       : () => {
           void flow.setViewport(viewport);
         };
-  }, [bounds, flow, height, width]);
+  }, [bounds, flow, height, width, panelCover]);
 }

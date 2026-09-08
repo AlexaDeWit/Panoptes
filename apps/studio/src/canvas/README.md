@@ -382,7 +382,7 @@ Scrolling over the canvas pans in both directions. A trackpad pinch keeps its
 zoom gesture. Touch drag pans while Select is active, without starting a
 selection box or clearing the selection. A mouse drag still draws the Select
 box, while Hand or held Space makes a mouse drag pan from anywhere.
-Middle-button dragging pans without changing the active tool or selection.
+In Select mode, middle-button dragging pans without changing the selection.
 
 ## Accessibility
 

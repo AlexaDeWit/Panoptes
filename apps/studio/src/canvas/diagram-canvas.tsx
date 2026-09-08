@@ -481,7 +481,13 @@ export function DiagramCanvas({
           boxSelecting.current = true;
         }}
         panActivationKeyCode={null}
-        panOnDrag={mode.active === 'hand' ? true : panMouseButtons}
+        panOnDrag={
+          mode.active === 'hand'
+            ? true
+            : mode.active === 'select'
+              ? panMouseButtons
+              : false
+        }
         panOnScroll
         ref={surface}
         snapToGrid={snapping}
