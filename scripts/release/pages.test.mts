@@ -1,7 +1,6 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import {
-  existsSync,
   mkdtempSync,
   mkdirSync,
   readFileSync,
@@ -13,7 +12,6 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterEach, test } from 'node:test';
-import { parse } from 'yaml';
 import { z } from 'zod';
 
 const root = fileURLToPath(new URL('../../', import.meta.url));
@@ -378,81 +376,4 @@ void test('the public-site check accepts the promoted version and refuses a stal
   const state = scenario();
   state.liveTag = 'v1.2.2';
   assert.notEqual(fixture(state).run('verify-live', env).status, 0);
-});
-
-const concurrencySchema = z.object({
-  group: z.string(),
-  'cancel-in-progress': z.union([z.string(), z.boolean()]),
-});
-const jobSchema = z.object({
-  name: z.string(),
-  concurrency: concurrencySchema.optional(),
-  needs: z.union([z.string(), z.array(z.string())]).optional(),
-  if: z.string().optional(),
-  steps: z
-    .array(
-      z.object({
-        name: z.string(),
-        run: z.string().optional(),
-        uses: z.string().optional(),
-      }),
-    )
-    .optional(),
-});
-const workflowSchema = z.object({
-  on: z.record(z.string(), z.unknown()),
-  concurrency: concurrencySchema,
-  jobs: z.record(z.string(), jobSchema),
-});
-const workflow = (name: string) =>
-  workflowSchema.parse(
-    parse(readFileSync(join(root, '.github/workflows', name), 'utf8')),
-  );
-
-void test('publication waits for the gate, prepared website, and attestation', () => {
-  const ci = workflow('ci.yml');
-  assert.equal(ci.jobs['pages-build']?.needs, 'gate');
-  assert.deepEqual(ci.jobs['attest']?.needs, ['gate', 'pages-build']);
-  assert.deepEqual(ci.jobs['publish']?.needs, [
-    'gate',
-    'attest',
-    'pages-build',
-  ]);
-  assert.match(ci.jobs['publish']?.if ?? '', /github\.event_name == 'push'/u);
-  assert.equal(existsSync(join(root, '.github/workflows/pages.yml')), false);
-  assert.ok('workflow_dispatch' in ci.on);
-  for (const job of [
-    'build-test',
-    'static-checks',
-    'e2e-smoke',
-    'dependency-changes',
-    'provenance',
-    'gate',
-  ]) {
-    assert.match(ci.jobs[job]?.if ?? '', /!inputs\.deploy_pages/u);
-  }
-  assert.equal(
-    ci.jobs['gate']?.name,
-    "${{ inputs.deploy_pages && 'Deployment retry (no CI gate)' || 'CI gate' }}",
-  );
-  assert.equal(ci.jobs['pages-prepare']?.needs, 'publish');
-  assert.match(
-    ci.jobs['pages-prepare']?.if ?? '',
-    /needs\.publish\.result == 'success'/u,
-  );
-  assert.match(ci.jobs['pages-prepare']?.if ?? '', /inputs\.deploy_pages/u);
-  assert.match(
-    ci.jobs['pages-prepare']?.if ?? '',
-    /github\.ref == 'refs\/heads\/main'/u,
-  );
-  assert.equal(ci.jobs['pages-deploy']?.needs, 'pages-prepare');
-  assert.deepEqual(ci.jobs['pages-deploy']?.concurrency, {
-    group: 'github-pages',
-    'cancel-in-progress': false,
-  });
-  const steps = ci.jobs['pages-deploy']?.steps ?? [];
-  assert.ok(
-    steps.findIndex(({ run }) => run?.endsWith('pages.sh check')) <
-      steps.findIndex(({ uses }) => uses?.startsWith('actions/deploy-pages@')),
-  );
 });

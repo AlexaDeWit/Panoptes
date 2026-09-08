@@ -6,14 +6,15 @@ Edit here when the process changes, in the same PR as the change.
 ## Gating CI
 
 - Required checks on `main`: **CI gate** and **codecov/project**.
-- "CI gate" is the gating job in
-  [`.github/workflows/ci.yml`](../.github/workflows/ci.yml); its `needs` list
-  and verdict step define the gating set. Wire a new gating job into both.
-- That workflow also runs on a `v*` tag, where it builds the release: the
-  `pages-build`, `attest`, and `publish` jobs follow the gate and run only on a
-  push to a tag ref. They are a consequence of a green gate, not members of
-  the gating set, so they belong in neither the gate's `needs` nor its
-  verdict.
+- "CI gate" in [`.github/workflows/ci.yml`](../.github/workflows/ci.yml)
+  requires source checks, the website build, and verified artifact
+  attestations. Source checks require the full CLI matrix and existing test
+  and scan jobs. Wire each new gating job into its `needs` and verdict.
+- Every PR rehearses the release builds. Repository PRs also generate and
+  verify attestations. Fork and Dependabot tokens cannot sign, so the gate
+  accepts an attestation skip only for those runs.
+- `publish` follows the gate and runs only on a push to a `v*` tag. PRs
+  upload workflow artifacts without creating releases or deploying Pages.
 - `pages-prepare` and `pages-deploy` follow publication in the same workflow.
   A manual `deploy_pages` run on `main` retries the existing release archive.
   The `github-pages` environment permits `main` and `v*` tags.

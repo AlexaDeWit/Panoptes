@@ -4,7 +4,7 @@
   "private": true,
   "packageManager": "pnpm@11.23.0",
   "//": [
-    "check runs the Nx sync check, lint, boundaries, format check, build, typecheck, and unit tests with coverage. CI separately runs workflow lint, Semgrep, browser tests, dependency provenance, and the compiled CLI tests.",
+    "check runs the Nx sync check, lint, boundaries, format check, build, typecheck, and unit tests with coverage. CI separately runs workflow lint, Semgrep, browser tests, dependency provenance, compiled CLI tests, the full CLI matrix, website packaging, and artifact attestation verification.",
     "Coverage stays enabled in check so the local run and CI's Codecov upload are the same command.",
     "check splits its nx invocations because coverage flags go to the test target only: forwarded args reach every selected target, and tsc and vite reject them.",
     "format runs tree-wide because oxfmt also owns root configuration and documentation. fix runs oxlint directly because a cached task cannot replay source edits.",

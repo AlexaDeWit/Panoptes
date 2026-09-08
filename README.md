@@ -69,33 +69,31 @@ runtime, so there is nothing else to install: no node, no npm, no browser.
 | `saerskriven-<version>-aarch64-apple-darwin`       | macOS, Apple silicon  |
 | `saerskriven-<version>-x86_64-pc-windows-msvc.exe` | Windows, Intel or AMD |
 
-Download yours and the `SHA256SUMS` file beside it, then:
+Download yours and the `SHA256SUMS` file beside it. Set `release_tag` to the
+downloaded release's tag. For v0.1.0:
 
 ```sh
+release_tag=v0.1.0
 sha256sum --check --ignore-missing SHA256SUMS
 gh attestation verify saerskriven-* --repo AlexaDeWit/Saerskriven \
-  --signer-workflow AlexaDeWit/Saerskriven/.github/workflows/ci.yml
+  --signer-workflow AlexaDeWit/Saerskriven/.github/workflows/ci.yml \
+  --source-ref "refs/tags/$release_tag"
 chmod +x saerskriven-*
 mkdir -p ~/.local/bin
 mv saerskriven-* ~/.local/bin/saerskriven
 saerskriven --version                 # prints the release's version
 ```
 
-The checksum says the file arrived whole. The attestation says where it came
-from: a signed statement, recorded when the executable was built, that this
-exact file came out of a named workflow in a named repository. The two flags
-are what make that a check rather than a display. `--repo` enforces the
-repository, `--signer-workflow` enforces that the signer was this repository's
-CI workflow, and the command fails if either is not so. Without
-`--signer-workflow` the workflow is printed but not enforced, and any workflow
-in the repository able to write attestations would satisfy the check.
+The checksum checks the downloaded bytes. The attestation identifies the
+repository, workflow, source ref, and commit that built them. The three
+flags require this repository, its CI workflow, and the selected release tag.
+CI also attests PR and main builds, so the repository and workflow alone do
+not identify a release build. Add `--source-digest` with the commit named by
+the signed tag to require that commit too.
 
-What it does not tell you is which commit the file was built from: the
-attestation carries that, and `gh attestation verify` prints it, but no flag
-makes it a condition. An asset with no attestation, or one naming another
-repository or another workflow, is not ours, whatever it is attached to. The
-command needs [the GitHub CLI](https://cli.github.com/) and reads the
-attestation from GitHub, not from the download.
+The command needs [the GitHub CLI](https://cli.github.com/) and reads the
+attestation from GitHub. A missing attestation or a different repository,
+workflow, or source ref fails verification.
 
 On Windows, rename the file to `saerskriven.exe` and put it somewhere on `PATH`.
 On macOS the executables are unsigned, so Gatekeeper holds the first run:
@@ -166,11 +164,12 @@ so the editor and the format check inside `pnpm check` agree.
 
 ### Publishing the studio
 
-Tag CI builds the studio from the release commit, then attests and attaches its
-archive to the GitHub release alongside the CLI.
+CI builds the studio archive on every PR and ordinary main, tag, or manual run.
+It generates and verifies attestations where the run's token permits signing.
+Only tag pushes attach the archive to a GitHub release alongside the CLI.
 The same [CI workflow](.github/workflows/ci.yml) then deploys that archive,
 provided the release is GitHub's Latest stable release. It does not build `main`
-or deploy on a nightly schedule. The studio's Project menu shows the built
+for deployment. The studio's Project menu shows the built
 version and links to its release notes. Other builds say `development`.
 
 Dispatch CI from `main` with `deploy_pages=true` to retry the current Latest
@@ -200,10 +199,10 @@ dependency and carries the version from the root manifest.
 The `compile` target runs [`scripts/package-cli.sh`](scripts/package-cli.sh),
 which uses `deno compile` and can cross-compile every release target. It runs
 the host executable three times: once for its version, once to validate a
-vendored model, and once to render that model to PDF. CI runs the host target
-on every pull request, and the whole matrix when the ref is a
-`v*` tag. Deno is a packaging tool only. Node stays the development and test
-runtime.
+vendored model, and once to render that model to PDF. CI also runs the compiled
+CLI's scenario tests, then builds the whole matrix on every PR and ordinary
+main, tag, or manual run. Deno is a packaging tool only. Node stays the
+development and test runtime.
 
 The `test-compiled` target puts the CLI's scenario table through that
 executable. It requires the compiled runner and hashes the `compile` output.
