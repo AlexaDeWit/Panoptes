@@ -57,11 +57,10 @@ test('the Pages build publishes the social card and its text alternative', async
   expect(png.readUInt32BE(20)).toBe(630);
 });
 
-test('the release build identifies its own version and release notes', async ({
+test('the release build identifies its own version outside the menu', async ({
   page,
 }) => {
   await page.goto('./');
-  await page.getByRole('button', { name: /^Menu/u }).click();
   const manifest: unknown = JSON.parse(
     readFileSync(vendored('package.json'), 'utf8'),
   );
@@ -70,16 +69,13 @@ test('the release build identifies its own version and release notes', async ({
   );
   const version = manifest.version;
   assert.equal(typeof version, 'string');
-  const notes = page.getByRole('menuitem', {
-    name: `Saerskriven ${String(version)} release notes`,
-    exact: true,
-  });
-  await expect(notes).toHaveAttribute(
-    'href',
-    `https://github.com/AlexaDeWit/Saerskriven/releases/tag/v${String(version)}`,
+  const badge = page.getByTestId('studio-version');
+  await expect(badge).toBeVisible();
+  await expect(badge).toHaveText(String(version));
+  await page.getByRole('button', { name: /^Menu/u }).click();
+  await expect(page.getByRole('menuitem').and(page.locator('a'))).toHaveCount(
+    1,
   );
-  await notes.focus();
-  await expect(notes).toBeFocused();
   const response = await page.request.get(
     new URL('version.json', page.url()).href,
   );

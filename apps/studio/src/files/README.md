@@ -104,14 +104,12 @@ closing over a render, which is what lets the commands be built once. The reduce
 is total and cannot refuse an open or a close over work in no file, so the
 session asks first.
 
-Opening another file and closing ask in the studio's own words rather than in
-a dialog. The session holds each question as state, `opening` and `closing`.
-The menu draws each as a second press on the same item: Open a model becomes
-Discard the changes and open, and Close the file becomes Discard the changes
-and close. Each question puts Keep the file open beside it. The state is the
-session's rather than the menu's so each chord opens the menu on its question.
-Answering either way takes the question back. Dismissing the menu does too.
-When the model becomes clean underneath a question, the session cancels it.
+Open and New model ask before replacing unsaved work. The session holds
+these questions as `opening` and `closing`. A second press confirms Discard
+changes and open or Discard changes and create new model. Cancel keeps the
+current model. The session owns the question so a keyboard shortcut also
+opens the menu. Answering or dismissing the menu clears the question.
+The session also clears it when the model becomes clean.
 
 `choosing` is that shape a second time, for the format a save-as writes, and
 the studio asks it only where the platform has no picker to ask it in. Save as
@@ -126,15 +124,16 @@ the menu and open it again around an answer.
 
 `menu.tsx` mounts the rest: the burger button over the top left of the canvas,
 the file and edit commands, the Export submenu, the project link, and the
-state of the open file. The Project group shows the built application version
-and its release notes. Builds without a release tag say `development`. The submenu has one SVG item per diagram when the
+state of the open file. The Project group links to GitHub. The app shows the
+built version above the React Flow attribution, with `development` for builds
+without a release tag. The submenu has one SVG item per diagram when the
 model has several.
 The other items export the register as markdown, or the whole model as Typst
 or PDF. Every proposed name replaces the open file's extension, or starts
 with `Untitled` when no file is open. The menu also holds the fallback
 picker's input and the guard on closing the tab. The guard stands only while
 the model is dirty and the latest recovery write is unconfirmed. Open and
-Close still ask before they replace or clear a dirty recovered session. Close
+New model still ask before they replace or clear a dirty recovered session. New model
 releases the native handle only after the recovery snapshot clears.
 
 The report of the last crossing, an export report, and the failure notice sit

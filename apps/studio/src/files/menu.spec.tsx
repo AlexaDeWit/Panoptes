@@ -41,16 +41,6 @@ import {
 } from './files.fixtures.js';
 import { StudioMenu } from './menu.js';
 
-const build = vi.hoisted(() => ({ version: '1.2.3', tag: '' }));
-vi.mock('../version.js', () => ({
-  get studioVersion() {
-    return build.version;
-  },
-  get studioReleaseTag() {
-    return build.tag;
-  },
-}));
-
 const nativeText = saerskrivenYamlCodec.write(sampleModel).output;
 
 type User = ReturnType<typeof userEvent.setup>;
@@ -138,7 +128,6 @@ const mounted = (
 const asked = (): boolean =>
   !globalThis.dispatchEvent(new Event('beforeunload', { cancelable: true }));
 
-/** Returns Écluse with undeclared keys at the root and under `detail`. */
 const withUndeclaredKeys = async (): Promise<string> =>
   (await vendoredFile('test-data/ecluse.json').text())
     .replace(
@@ -148,8 +137,6 @@ const withUndeclaredKeys = async (): Promise<string> =>
     .replace('"detail": {', '"detail": {\n    "unknownDetail": "nor this",');
 
 beforeEach(() => {
-  build.version = '1.2.3';
-  build.tag = '';
   modelStore.setState(initialState(sampleModel), true);
 });
 
@@ -170,29 +157,11 @@ describe('what the menu offers', () => {
     expect(
       items.filter((entry) => entry.hasAttribute('aria-keyshortcuts')),
     ).toHaveLength(10);
-    expect(
-      screen.getAllByRole('group').map((group) => group.textContent),
-    ).toContain(
-      'FileOpen a modelCtrl+OSaveCtrl+SSave asCtrl+Shift+SExport›Close the fileCtrl+Shift+X',
-    );
+    for (const name of ['Open', 'Save', 'Save as', 'Export', 'New model']) {
+      expect(item(name)).toBeDefined();
+    }
+    expect(items.filter((entry) => entry.hasAttribute('href'))).toHaveLength(1);
   });
-
-  it.each(['1.2.3', '1.2.3-beta.1'])(
-    'links the built version %s to its release notes',
-    async (version) => {
-      build.version = version;
-      build.tag = `v${version}`;
-      const user = userEvent.setup();
-      mounted(specBridge());
-      await openMenu(user);
-      const notes = item(`Saerskriven ${version} release notes`);
-      expect(notes.getAttribute('href')).toBe(
-        `https://github.com/AlexaDeWit/Saerskriven/releases/tag/v${version}`,
-      );
-      notes.focus();
-      expect(document.activeElement).toBe(notes);
-    },
-  );
 
   it('links to the source in a new tab with a popout icon', async () => {
     const user = userEvent.setup();
@@ -297,7 +266,7 @@ describe('what the menu offers', () => {
     expect(bridge.writes).toEqual([]);
 
     await user.click(
-      screen.getByRole('button', { name: 'Dismiss the export report' }),
+      screen.getByRole('button', { name: 'Dismiss export report' }),
     );
     expect(screen.queryByTestId('export-report')).toBeNull();
   });
@@ -358,24 +327,20 @@ describe('what the studio says about the file', () => {
 
     await openMenu(user);
     expect(
-      item('Rename the selection').getAttribute('data-disabled'),
+      item('Rename selection').getAttribute('data-disabled'),
     ).not.toBeNull();
     expect(item('Focus threats').getAttribute('data-disabled')).not.toBeNull();
     expect(
-      item('Delete the selection').getAttribute('data-disabled'),
+      item('Delete selection').getAttribute('data-disabled'),
     ).not.toBeNull();
 
     act(() => {
       dispatch(Action.Select({ elementIds: [actorElement] }));
     });
 
-    expect(
-      item('Rename the selection').getAttribute('data-disabled'),
-    ).toBeNull();
+    expect(item('Rename selection').getAttribute('data-disabled')).toBeNull();
     expect(item('Focus threats').getAttribute('data-disabled')).toBeNull();
-    expect(
-      item('Delete the selection').getAttribute('data-disabled'),
-    ).toBeNull();
+    expect(item('Delete selection').getAttribute('data-disabled')).toBeNull();
 
     act(() => {
       dispatch(Action.Select({ elementIds: [actorElement, processElement] }));
@@ -396,12 +361,10 @@ describe('what the studio says about the file', () => {
     await openMenu(user);
 
     expect(
-      item('Rename the selection').getAttribute('data-disabled'),
+      item('Rename selection').getAttribute('data-disabled'),
     ).not.toBeNull();
     expect(item('Focus threats').getAttribute('data-disabled')).toBeNull();
-    expect(
-      item('Delete the selection').getAttribute('data-disabled'),
-    ).toBeNull();
+    expect(item('Delete selection').getAttribute('data-disabled')).toBeNull();
   });
 
   it('opens the name of the selection in a field, from the menu', async () => {
@@ -411,7 +374,7 @@ describe('what the studio says about the file', () => {
       dispatch(Action.Select({ elementIds: [actorElement] }));
     });
 
-    await choose(user, 'Rename the selection');
+    await choose(user, 'Rename selection');
 
     expect(modelStore.getState().inlineEditor).toEqual({
       kind: 'name',
@@ -474,7 +437,7 @@ describe('opening', () => {
     const user = userEvent.setup();
     mounted(specBridge({ offers: chosenFile('model.yaml', nativeText) }));
 
-    await choose(user, 'Open a model');
+    await choose(user, 'Open');
 
     await waitFor(() => {
       expect(nameOf(modelStore.getState().file)).toBe('model.yaml');
@@ -487,16 +450,16 @@ describe('opening', () => {
     mounted(specBridge({ offers: chosenFile('model.yaml', nativeText) }));
     edit();
 
-    await choose(user, 'Open a model');
+    await choose(user, 'Open');
 
-    expect(item('Discard the changes and open')).toBeDefined();
+    expect(item('Discard changes and open')).toBeDefined();
     expect(modelStore.getState().file._tag).toBe('NoFile');
     expect(isDirty(modelStore.getState())).toBe(true);
 
-    await user.click(item('Keep the file open'));
+    await user.click(item('Cancel'));
 
     await openMenu(user);
-    expect(item('Open a model')).toBeDefined();
+    expect(item('Open')).toBeDefined();
   });
 
   it('opens on the second step, dropping the changes it warned about', async () => {
@@ -504,8 +467,8 @@ describe('opening', () => {
     mounted(specBridge({ offers: chosenFile('model.yaml', nativeText) }));
     edit();
 
-    await choose(user, 'Open a model');
-    await user.click(item('Discard the changes and open'));
+    await choose(user, 'Open');
+    await user.click(item('Discard changes and open'));
 
     await waitFor(() => {
       expect(nameOf(modelStore.getState().file)).toBe('model.yaml');
@@ -522,7 +485,7 @@ describe('opening', () => {
 
     expect(
       await screen.findByRole('menuitem', {
-        name: 'Discard the changes and open',
+        name: 'Discard changes and open',
       }),
     ).toBeDefined();
   });
@@ -532,11 +495,11 @@ describe('opening', () => {
     mounted(specBridge());
     edit();
 
-    await choose(user, 'Open a model');
+    await choose(user, 'Open');
     await user.keyboard('{Escape}');
 
     await openMenu(user);
-    expect(item('Open a model')).toBeDefined();
+    expect(item('Open')).toBeDefined();
   });
 
   it('surfaces what the codec refused, with the paths it carries, rather than stopping', async () => {
@@ -550,7 +513,7 @@ describe('opening', () => {
       }),
     );
 
-    await choose(user, 'Open a model');
+    await choose(user, 'Open');
 
     await waitFor(() => {
       expect(screen.getByTestId('failure-notice').textContent).toContain(
@@ -583,7 +546,7 @@ describe('opening', () => {
     });
     mounted(bridge);
 
-    await choose(user, 'Open a model');
+    await choose(user, 'Open');
 
     await waitFor(() => {
       expect(reportEntries().length > 0).toBe(true);
@@ -606,7 +569,7 @@ describe('opening', () => {
     const user = userEvent.setup();
     mounted(specBridge());
 
-    await choose(user, 'Open a model');
+    await choose(user, 'Open');
 
     expect(modelStore.getState().file._tag).toBe('NoFile');
     expect(isDirty(modelStore.getState())).toBe(false);
@@ -621,7 +584,7 @@ describe('opening', () => {
         offers: chosenFile('ecluse.json', await withUndeclaredKeys()),
       }),
     );
-    await choose(user, 'Open a model');
+    await choose(user, 'Open');
     await waitFor(() => {
       expect(reportEntries().length > 0).toBe(true);
     });
@@ -643,7 +606,7 @@ describe('opening', () => {
     const clicks = vi.spyOn(HTMLInputElement.prototype, 'click');
     mounted(specBridge({ picker: false }));
 
-    await choose(user, 'Open a model');
+    await choose(user, 'Open');
 
     await waitFor(() => {
       expect(clicks).toHaveBeenCalledTimes(1);
@@ -737,9 +700,7 @@ describe('saving', () => {
     expect(bridge.writes[0].name).toBe('threat-model.json');
     expect(bridge.writes[0].elsewhere).toBe(true);
 
-    await user.click(
-      screen.getByRole('button', { name: 'Dismiss the report' }),
-    );
+    await user.click(screen.getByRole('button', { name: 'Dismiss report' }));
 
     expect(reportEntries()).toEqual([]);
   });
@@ -762,12 +723,12 @@ describe('closing', () => {
   it('closes at once while there is nothing to lose', async () => {
     const user = userEvent.setup();
     mounted(specBridge({ offers: chosenFile('model.yaml', nativeText) }));
-    await choose(user, 'Open a model');
+    await choose(user, 'Open');
     await waitFor(() => {
       expect(nameOf(modelStore.getState().file)).toBe('model.yaml');
     });
 
-    await choose(user, 'Close the file');
+    await choose(user, 'New model');
 
     expect(modelStore.getState().present).toBe(placeholderModel);
     expect(modelStore.getState().file._tag).toBe('NoFile');
@@ -780,11 +741,11 @@ describe('closing', () => {
     mounted(bridge);
     edit();
 
-    await choose(user, 'Close the file');
+    await choose(user, 'New model');
 
-    expect(item('Discard the changes and close')).toBeDefined();
+    expect(item('Discard changes and create new model')).toBeDefined();
 
-    await user.click(item('Keep the file open'));
+    await user.click(item('Cancel'));
 
     await waitFor(() => {
       expect(screen.queryByRole('menu')).toBe(null);
@@ -794,7 +755,7 @@ describe('closing', () => {
 
     await openMenu(user);
 
-    expect(item('Close the file')).toBeDefined();
+    expect(item('New model')).toBeDefined();
   });
 
   it('closes on the second step, dropping the changes it warned about', async () => {
@@ -802,8 +763,8 @@ describe('closing', () => {
     mounted(specBridge());
     edit();
 
-    await choose(user, 'Close the file');
-    await user.click(item('Discard the changes and close'));
+    await choose(user, 'New model');
+    await user.click(item('Discard changes and create new model'));
 
     expect(modelStore.getState().present).toBe(placeholderModel);
     expect(modelStore.getState().file._tag).toBe('NoFile');
@@ -815,14 +776,14 @@ describe('closing', () => {
     const bridge = specBridge();
     mounted(bridge);
     edit();
-    await choose(user, 'Close the file');
+    await choose(user, 'New model');
     const removeItem = vi
       .spyOn(Storage.prototype, 'removeItem')
       .mockImplementationOnce(() => {
         throw new Error('Clear failed.');
       });
 
-    await user.click(item('Discard the changes and close'));
+    await user.click(item('Discard changes and create new model'));
 
     expect(isDirty(modelStore.getState())).toBe(true);
     expect(bridge.releases.count).toBe(0);
@@ -831,8 +792,8 @@ describe('closing', () => {
     );
 
     removeItem.mockRestore();
-    await choose(user, 'Close the file');
-    await user.click(item('Discard the changes and close'));
+    await choose(user, 'New model');
+    await user.click(item('Discard changes and create new model'));
 
     expect(modelStore.getState().present).toBe(placeholderModel);
     expect(bridge.releases.count).toBe(1);
@@ -847,7 +808,7 @@ describe('closing', () => {
 
     expect(
       await screen.findByRole('menuitem', {
-        name: 'Discard the changes and close',
+        name: 'Discard changes and create new model',
       }),
     ).toBeDefined();
     expect(isDirty(modelStore.getState())).toBe(true);
@@ -858,9 +819,9 @@ describe('closing', () => {
     mounted(specBridge());
     edit();
 
-    await choose(user, 'Close the file');
+    await choose(user, 'New model');
 
-    expect(item('Discard the changes and close')).toBeDefined();
+    expect(item('Discard changes and create new model')).toBeDefined();
 
     act(() => {
       dispatch(Action.Saved({ name: 'model.yaml', source: nativeSource }));
@@ -868,10 +829,10 @@ describe('closing', () => {
 
     expect(
       screen.queryByRole('menuitem', {
-        name: 'Discard the changes and close',
+        name: 'Discard changes and create new model',
       }),
     ).toBe(null);
-    expect(item('Close the file')).toBeDefined();
+    expect(item('New model')).toBeDefined();
   });
 
   it('takes the question back when the menu is dismissed', async () => {
@@ -879,7 +840,7 @@ describe('closing', () => {
     mounted(specBridge());
     edit();
 
-    await choose(user, 'Close the file');
+    await choose(user, 'New model');
     await user.keyboard('{Escape}');
 
     await waitFor(() => {
@@ -888,6 +849,6 @@ describe('closing', () => {
 
     await openMenu(user);
 
-    expect(item('Close the file')).toBeDefined();
+    expect(item('New model')).toBeDefined();
   });
 });

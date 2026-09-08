@@ -37,7 +37,7 @@ test('reload restores the last completed edit', async ({ page }) => {
     { handleWriteKey, sourceText },
   );
   await openPlaceholder(page);
-  await runFromMenu(page, 'Open a model');
+  await runFromMenu(page, 'Open');
   await expect(nodeNamed(page, /^Écluse proxy, process/u)).toBeVisible();
   await canvasSettled(page);
 

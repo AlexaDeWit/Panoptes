@@ -81,7 +81,7 @@ test('the menu opens the name of the selection in a field', async ({
   await openPlaceholder(page);
   await selectNode(page, /^Store, store/u);
 
-  await runFromMenu(page, 'Rename the selection');
+  await runFromMenu(page, 'Rename selection');
 
   await expect(rename(page, 'Store')).toBeFocused();
   await rename(page, 'Store').fill('Ledger');
