@@ -279,6 +279,7 @@ export function StudioMenu({
           {dirty && <span aria-hidden="true" className={styles.dot} />}
         </DropdownMenu.Trigger>
         <DropdownMenu.Content
+          tabIndex={0}
           onCloseAutoFocus={(event) => {
             if (focusSelectionControl()) {
               event.preventDefault();
@@ -362,7 +363,7 @@ export function StudioMenu({
                   selectedColourMode.slice(1)}
               </span>
             </DropdownMenu.SubTrigger>
-            <DropdownMenu.SubContent className={styles.panel}>
+            <DropdownMenu.SubContent tabIndex={0} className={styles.panel}>
               <DropdownMenu.RadioGroup
                 aria-label="Appearance"
                 onValueChange={(value) => {
@@ -405,7 +406,7 @@ export function StudioMenu({
               <DropdownMenu.SubTrigger className={styles.item}>
                 Arrange
               </DropdownMenu.SubTrigger>
-              <DropdownMenu.SubContent className={styles.panel}>
+              <DropdownMenu.SubContent tabIndex={0} className={styles.panel}>
                 {(
                   [
                     'align-left',
@@ -541,7 +542,11 @@ function ExportMenu() {
           ›
         </span>
       </DropdownMenu.SubTrigger>
-      <DropdownMenu.SubContent className={styles.panel} sideOffset={6}>
+      <DropdownMenu.SubContent
+        tabIndex={0}
+        className={styles.panel}
+        sideOffset={6}
+      >
         {diagrams.length === 0 && (
           <MenuCommand command="export-diagram" disabled />
         )}

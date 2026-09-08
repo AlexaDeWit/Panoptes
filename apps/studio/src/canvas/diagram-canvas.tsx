@@ -497,11 +497,11 @@ export function DiagramCanvas() {
         <PlacementPreview preview={placement.preview} />
         <FlowBendControls bends={bends} />
         <FitOnOpen />
+        <ZoomCluster />
       </ReactFlow>
       <SelectionControls />
       <FlowEndpointCommands />
       <Toolbox />
-      <ZoomCluster />
       <ThreatOverlay onCover={setPanelCover} />
     </div>
   );
