@@ -51,15 +51,15 @@ On a branch cut from an up-to-date `main`:
 
 ```sh
 git switch -c release-v<version>
-pnpm nx release version --dry-run     # read the bump it derives, and why
-pnpm nx release version
-pnpm nx release changelog <version>   # the version the step above wrote
+RELEASE_VERSION=v<version> DRY_RUN=1 nix develop --command pnpm nx run release-tools:prepare
+RELEASE_VERSION=v<version> nix develop --command pnpm nx run release-tools:prepare
 ```
 
-`release version` writes the new version into every project manifest and into
-the root manifest, and refreshes `pnpm-lock.yaml`. `release changelog` writes
-the section for that version at the top of `CHANGELOG.md`. Read both diffs: the
-changelog is what users will see on the release page.
+The dry run shows the bump Nx derives from the commit history. The full run
+writes that version into every manifest, refreshes `pnpm-lock.yaml`, and writes
+the changelog. It then formats the generated changelog and checks the whole
+tree's formatting. Read both diffs: the changelog is what users will see on the
+release page.
 
 Then run the local check, as for any change:
 
@@ -73,16 +73,24 @@ Open a pull request in the usual way and merge it once the gate is green. Give
 it a `chore(release): v<version>` title: it is the squash subject, and a
 `chore` subject asks for no further bump.
 
-### 3. Check dependency provenance (owner, no credentials)
+### 3. Rehearse the guarded release (owner, GitHub CLI)
 
 On the merge commit, before the tag exists:
 
 ```sh
 git switch main && git pull --ff-only
-nix develop --command scripts/check-provenance.mjs
+RELEASE_VERSION=v<version> DRY_RUN=1 nix develop --command pnpm nx run release-tools:tag
 ```
 
-The check reads the catalog's resolved versions out of `pnpm-lock.yaml`,
+The script refuses unless every manifest carries the stated version, the tree
+is clean, `HEAD` is `origin/main`, and both required checks passed on that
+commit. It also requires Tag Integrity to hold its full rule set with an empty
+bypass list. Restore any temporary recovery bypass before this check. The tool
+refuses if the tag exists locally or on the remote. It then runs the dependency
+provenance check and prints the commit it cleared. The dry run creates and
+pushes nothing.
+
+The provenance check reads the catalog's resolved versions out of `pnpm-lock.yaml`,
 verifies each package's npm provenance attestation against the sigstore trust
 root, and reads the source repository out of what verifies. Its baseline is
 git rather than a committed record: it reads the same catalog out of `HEAD^`'s
@@ -116,19 +124,18 @@ the workspace's own importers do not resolve `catalog:` to, or an entry no
 workspace project references at all. Only the first of those is worth running
 again; the rest name what to correct.
 
-### 4. Cut and push the signed tag (owner, GPG key)
+### 4. Cut and push the signed tag (owner, GPG key and GitHub CLI)
 
-On the merge commit, and nowhere else:
+Run the same tool without `DRY_RUN`:
 
 ```sh
-git switch main && git pull --ff-only
-git show --stat HEAD                  # confirm this is the release merge
-git tag -s "v<version>" -m "v<version>"
-git push origin "v<version>"
+RELEASE_VERSION=v<version> nix develop --command pnpm nx run release-tools:tag
 ```
 
-`-s` is required: an unsigned tag is rejected by the ruleset. The tag cannot be
-moved or deleted afterwards, so check the commit before pushing.
+The tool repeats every check, creates the signed tag on the cleared commit,
+verifies its signature, and asks you to type the tag before it pushes. It
+removes the local tag if any later check or the confirmation fails. The pushed
+tag cannot be moved or deleted.
 
 ### 5. The executables are built and attached (automatic, no credentials)
 

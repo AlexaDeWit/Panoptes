@@ -33,6 +33,7 @@
     "@vitest/coverage-v8": "catalog:",
     "@vitest/ui": "catalog:",
     "esbuild": "catalog:",
+    "effect": "catalog:",
     "eslint": "catalog:",
     "jiti": "catalog:",
     "jsdom": "catalog:",
@@ -44,7 +45,8 @@
     "typescript": "catalog:",
     "vite": "catalog:",
     "vitest": "catalog:",
-    "yaml": "catalog:"
+    "yaml": "catalog:",
+    "zod": "catalog:"
   },
   "license": "Apache-2.0"
 }
