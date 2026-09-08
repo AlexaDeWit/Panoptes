@@ -10,6 +10,7 @@ import {
 } from './contextual-shortcuts.js';
 import { commandGroups, commands } from './registry.js';
 import { ShortcutReference } from './shortcut-reference.js';
+import { platforms } from './shortcuts.js';
 
 const idsOf = (attribute: string): string[] =>
   [...document.querySelectorAll(`[${attribute}]`)].map(
@@ -21,6 +22,9 @@ const commandRow = (id: string): HTMLElement =>
 
 const contextualRow = (id: string): HTMLElement =>
   document.querySelector(`[data-contextual-id="${id}"]`) ?? document.body;
+
+const keysIn = (row: HTMLElement): readonly string[] =>
+  [...row.querySelectorAll('kbd')].map((key) => key.textContent ?? '');
 
 describe('ShortcutReference', () => {
   beforeEach(() => {
@@ -49,25 +53,53 @@ describe('ShortcutReference', () => {
       new Set(contextualShortcuts.map((entry) => entry.id)),
     );
     expect(within(commandRow('save')).getByText('⌘S')).toBeTruthy();
-    expect(
-      within(commandRow('shortcut-reference')).getByText('? or F1'),
-    ).toBeTruthy();
+    expect(keysIn(commandRow('shortcut-reference'))).toEqual(['?', 'F1']);
     expect(
       within(commandRow('export-pdf')).getByText('No shortcut'),
     ).toBeTruthy();
-    expect(
-      within(contextualRow('select-canvas-item')).getByText('Enter or Space'),
-    ).toBeTruthy();
+    expect(keysIn(contextualRow('select-canvas-item'))).toEqual([
+      'Enter',
+      'Space',
+    ]);
     expect(within(commandRow('add-bend')).getByText('+')).toBeTruthy();
-    expect(
-      within(contextualRow('choose-bend-segment')).getByText(
-        'ArrowLeft or ArrowRight',
-      ),
-    ).toBeTruthy();
-    expect(
-      within(contextualRow('remove-bend')).getByText('Delete or Backspace'),
-    ).toBeTruthy();
+    expect(keysIn(contextualRow('choose-bend-segment'))).toEqual([
+      'ArrowLeft',
+      'ArrowRight',
+    ]);
+    expect(keysIn(contextualRow('remove-bend'))).toEqual([
+      'Delete',
+      'Backspace',
+    ]);
   });
+
+  it.each(platforms)(
+    'compacts complete arrow groups and retains %s alternatives',
+    (platform) => {
+      render(
+        <ShortcutReference onClose={() => undefined} platform={platform} />,
+      );
+      for (const name of ['Canvas editing', 'Flow bends', 'Edit', 'View']) {
+        fireEvent.click(screen.getByRole('button', { name }));
+      }
+      for (const id of ['move-selection', 'resize-selection', 'move-bend']) {
+        expect(keysIn(contextualRow(id))).toEqual(['Arrow Keys']);
+        expect(keysIn(contextualRow(`${id}-far`))).toEqual(['Shift+Arrow']);
+      }
+      expect(keysIn(commandRow('redo'))).toEqual(
+        platform === 'apple' ? ['⇧⌘Z'] : ['Ctrl+Shift+Z', 'Ctrl+Y'],
+      );
+      for (const [id, key] of [
+        ['copy', 'C'],
+        ['cut', 'X'],
+        ['paste', 'V'],
+        ['reset-zoom', '1'],
+      ]) {
+        expect(keysIn(commandRow(id))).toEqual([
+          `${platform === 'apple' ? '⌘' : 'Ctrl+'}${key}`,
+        ]);
+      }
+    },
+  );
 
   it('focuses its heading and closes from Escape inside the panel', () => {
     const close = vi.fn<() => void>();

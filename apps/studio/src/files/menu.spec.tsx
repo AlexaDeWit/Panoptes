@@ -154,11 +154,15 @@ describe('what the menu offers', () => {
     const items = screen.getAllByRole('menuitem');
     expect(
       items.map((entry) => entry.getAttribute('aria-keyshortcuts')),
-    ).toContain('Control+C');
+    ).toContain('Control+S');
     expect(
       items.filter((entry) => entry.hasAttribute('aria-keyshortcuts')),
-    ).toHaveLength(14);
+    ).toHaveLength(10);
     for (const name of [
+      'Copy',
+      'Cut',
+      'Paste',
+      'Reset zoom to 100%',
       'Duplicate',
       'Position and size',
       'Change flow source',

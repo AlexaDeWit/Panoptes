@@ -1,4 +1,5 @@
 import { Accordion } from 'radix-ui';
+import { resizeKeys } from '@saerskriven/canvas';
 import { Cross1Icon, ChevronDownIcon } from '@radix-ui/react-icons';
 import {
   useCallback,
@@ -17,7 +18,8 @@ import {
 import { commandGroups, commands, type ReferenceCommands } from './registry.js';
 import {
   hostPlatform,
-  spellShortcuts,
+  shortcutsOn,
+  spellChord,
   type Chord,
   type Platform,
 } from './shortcuts.js';
@@ -189,11 +191,13 @@ function ReferenceSection({
               key={entry.id}
             >
               <span className={styles.label}>{entry.label}</span>
-              <kbd className={styles.keys}>
-                {entry.shortcuts.length === 0
-                  ? 'No shortcut'
-                  : spellShortcuts(entry.shortcuts, platform)}
-              </kbd>
+              <div className={styles.keys}>
+                {referenceKeys(entry.shortcuts, platform).map((keys) => (
+                  <kbd className={styles.key} key={keys}>
+                    {keys}
+                  </kbd>
+                ))}
+              </div>
               <span className={styles.when}>{entry.when}</span>
             </li>
           ))}
@@ -201,4 +205,29 @@ function ReferenceSection({
       </Accordion.Content>
     </Accordion.Item>
   );
+}
+
+function referenceKeys(
+  shortcuts: readonly Chord[],
+  platform: Platform,
+): readonly string[] {
+  const chords = shortcutsOn(shortcuts, platform);
+  if (chords.length === 0) {
+    return ['No shortcut'];
+  }
+  const allArrows =
+    chords.length === resizeKeys.length &&
+    resizeKeys.every((key) => chords.some((chord) => chord.key === key));
+  if (allArrows && chords.every((chord) => chord.modifiers.length === 0)) {
+    return ['Arrow Keys'];
+  }
+  if (
+    allArrows &&
+    chords.every(
+      (chord) => chord.modifiers.length === 1 && chord.modifiers[0] === 'Shift',
+    )
+  ) {
+    return ['Shift+Arrow'];
+  }
+  return chords.map((chord) => spellChord(chord, platform));
 }
