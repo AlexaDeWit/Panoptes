@@ -1,4 +1,8 @@
-import type { CanvasEdge } from '@saerskriven/canvas';
+import {
+  keyboardResizeStep,
+  shiftedKeyboardResizeStep,
+  type CanvasEdge,
+} from '@saerskriven/canvas';
 import type { Point } from '@saerskriven/model';
 import { useReactFlow } from '@xyflow/react';
 import {
@@ -10,6 +14,8 @@ import {
   type RefObject,
 } from 'react';
 import { keyboardOwner } from '../commands/binding.js';
+import { pressesContextualShortcut } from '../commands/contextual-shortcuts.js';
+import { hostPlatform, type ChordEvent } from '../commands/shortcuts.js';
 import { announce } from './announcements.js';
 import { bendInsertionEvent } from './bend-insertion.js';
 import { focusElement } from './edits.js';
@@ -52,13 +58,13 @@ export function segmentBend(edge: CanvasEdge, index: number): BendTarget {
 }
 
 /** Moves a point by the canvas keyboard step, or ignores another key. */
-export function nudgedBend(
-  point: Point,
-  key: string,
-  shift: boolean,
-): Point | undefined {
-  const step = shift ? 20 : 5;
-  switch (key) {
+export function nudgedBend(point: Point, event: ChordEvent): Point | undefined {
+  const far = pressesContextualShortcut('move-bend-far', event, hostPlatform);
+  if (!far && !pressesContextualShortcut('move-bend', event, hostPlatform)) {
+    return undefined;
+  }
+  const step = far ? shiftedKeyboardResizeStep : keyboardResizeStep;
+  switch (event.key) {
     case 'ArrowLeft':
       return { x: point.x - step, y: point.y };
     case 'ArrowRight':
@@ -149,7 +155,7 @@ export function useFlowBendInteraction(
       return;
     }
     if (
-      event.key === 'Escape' &&
+      pressesContextualShortcut('cancel-bend', event, hostPlatform) &&
       (mode !== undefined || gesture.current !== undefined)
     ) {
       event.preventDefault();
@@ -165,7 +171,9 @@ export function useFlowBendInteraction(
       return;
     }
     if (mode?.kind === 'choose') {
-      if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+      if (
+        pressesContextualShortcut('choose-bend-segment', event, hostPlatform)
+      ) {
         choose(
           Math.max(
             0,
@@ -175,19 +183,23 @@ export function useFlowBendInteraction(
             ),
           ),
         );
-      } else if (event.key === 'Enter') {
+      } else if (
+        pressesContextualShortcut('confirm-bend', event, hostPlatform)
+      ) {
         place(segmentBend(edge, mode.index));
       } else {
         return;
       }
     } else if (mode?.kind === 'place') {
-      const point = nudgedBend(mode.target.point, event.key, event.shiftKey);
+      const point = nudgedBend(mode.target.point, event);
       if (point !== undefined) {
         const target = { ...mode.target, point };
         setMode({ kind: 'place', target });
         bends.preview(target);
         announce(`Bend at ${String(point.x)}, ${String(point.y)}.`);
-      } else if (event.key === 'Enter') {
+      } else if (
+        pressesContextualShortcut('confirm-bend', event, hostPlatform)
+      ) {
         commit(mode.target);
       } else {
         return;
@@ -202,10 +214,12 @@ export function useFlowBendInteraction(
       if (point === undefined) {
         return;
       }
-      const moved = nudgedBend(point, event.key, event.shiftKey);
+      const moved = nudgedBend(point, event);
       if (moved !== undefined) {
         bends.commit({ kind: 'move', index, point: moved });
-      } else if (event.key === 'Delete' || event.key === 'Backspace') {
+      } else if (
+        pressesContextualShortcut('remove-bend', event, hostPlatform)
+      ) {
         remove(index);
       } else {
         return;

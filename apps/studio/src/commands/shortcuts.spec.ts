@@ -13,7 +13,7 @@ const saveAs: Chord = { modifiers: ['Mod', 'Shift'], key: 's' };
 const clear: Chord = { modifiers: [], key: 'Escape' };
 
 it('accepts plus from the main keyboard or keypad without taking modified zoom chords', () => {
-  const plus: Chord = { modifiers: [], key: '+', character: true };
+  const plus = character('+');
   for (const shiftKey of [false, true]) {
     expect(firedBy(press({ key: '+', shiftKey }), plus, 'other')).toBe(true);
     expect(

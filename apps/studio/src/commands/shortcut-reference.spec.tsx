@@ -48,6 +48,15 @@ describe('ShortcutReference', () => {
     expect(
       within(contextualRow('select-canvas-item')).getByText('Enter or Space'),
     ).toBeTruthy();
+    expect(within(commandRow('add-bend')).getByText('+')).toBeTruthy();
+    expect(
+      within(contextualRow('choose-bend-segment')).getByText(
+        'ArrowLeft or ArrowRight',
+      ),
+    ).toBeTruthy();
+    expect(
+      within(contextualRow('remove-bend')).getByText('Delete or Backspace'),
+    ).toBeTruthy();
   });
 
   it('focuses its heading and closes from Escape inside the panel', () => {

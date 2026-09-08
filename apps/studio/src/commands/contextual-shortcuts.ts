@@ -20,6 +20,7 @@ import {
 export const contextualGroups = [
   'Canvas navigation',
   'Canvas editing',
+  'Flow bends',
   'Placement',
   'Connecting',
   'Text editing',
@@ -43,6 +44,48 @@ const enterKey = [enterChord];
 const escapeKey = [escapeChord];
 
 const table = {
+  'choose-bend-segment': {
+    id: 'choose-bend-segment',
+    label: 'Choose a segment for the new bend',
+    group: 'Flow bends',
+    shortcuts: [bare('ArrowLeft'), bare('ArrowRight')],
+    when: 'Add bend is choosing a segment',
+  },
+  'confirm-bend': {
+    id: 'confirm-bend',
+    label: 'Start or confirm bend placement',
+    group: 'Flow bends',
+    shortcuts: enterKey,
+    when: 'A segment or bend position is being chosen',
+  },
+  'cancel-bend': {
+    id: 'cancel-bend',
+    label: 'Cancel the bend edit',
+    group: 'Flow bends',
+    shortcuts: escapeKey,
+    when: 'A bend gesture, insertion, or action control is active',
+  },
+  'move-bend': {
+    id: 'move-bend',
+    label: `Move the bend by ${String(keyboardResizeStep)} units`,
+    group: 'Flow bends',
+    shortcuts: arrowKeys,
+    when: 'A bend handle has focus or a bend position is being chosen',
+  },
+  'move-bend-far': {
+    id: 'move-bend-far',
+    label: `Move the bend by ${String(shiftedKeyboardResizeStep)} units`,
+    group: 'Flow bends',
+    shortcuts: shiftedArrowKeys,
+    when: 'A bend handle has focus or a bend position is being chosen',
+  },
+  'remove-bend': {
+    id: 'remove-bend',
+    label: 'Remove the focused bend',
+    group: 'Flow bends',
+    shortcuts: [bare('Delete'), bare('Backspace')],
+    when: 'An existing bend handle has focus',
+  },
   'focus-canvas-item': {
     id: 'focus-canvas-item',
     label: 'Move focus between canvas items',
