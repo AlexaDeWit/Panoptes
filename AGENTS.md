@@ -47,6 +47,19 @@ suggestions.
 - **One fact, one home.** Decision records only on the maintainer's explicit
   request ([CONTRIBUTING, Decision records](CONTRIBUTING.md#decision-records)).
 
+## Documentation
+
+- Write for a user or maintainer with a concrete task. Document usage,
+  interfaces, constraints, and current limitations beside the feature they describe.
+- Keep plans and task status in the tracker. Keep review and verification
+  records in commit messages or PR discussion, per `CONTRIBUTING.md`.
+- Do not commit session transcripts, handoff notes, temporary review artifacts,
+  or prose that only justifies the agent's work.
+- Keep each explanation in one home and link to it. Do not copy test names,
+  milestone checklists, or implementation walkthroughs into READMEs.
+- When behaviour changes, update or remove stale limitations and future-work
+  claims in the affected documentation.
+
 ## Commit and PR
 
 Per [`CONTRIBUTING.md`](CONTRIBUTING.md): Conventional Commits, GPG-signed,

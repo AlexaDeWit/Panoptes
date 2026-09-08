@@ -1,38 +1,26 @@
 # test-data
 
-Inputs to the test suites: files vendored from other projects, verbatim, the
-files this repository writes itself, and a few small payloads built here to
-break a bound. They live at the repository root rather than inside one
-package because more than one package reads them and the layer matrix
-forbids a package dependency between the readers: `packages/model` may
-import no internal package at all, so a fixture file owned by `model` would
-be out of reach of the packages that read it.
+Shared test inputs: vendored files, generated snapshots, and adversarial
+payloads. Root-level files let packages share data without adding imports
+that violate the layer matrix.
 
-No payload here is formatted. `.oxfmtrc.json` ignores `test-data/**/*.json`,
-`test-data/**/*.yaml` and `test-data/**/*.snapshot.md`, at any depth below
-this directory, so a vendored file keeps the bytes the foreign tool wrote,
-which is what a codec has to read, a written one keeps the bytes it was
-written with, which is what a test compares against, and an adversarial
-payload keeps the shape that makes it adversarial. The markdown pattern
-names the snapshot suffix rather than every `.md` file below, so prose like
-this note is formatted like any other document. That puts a rule on the next
-generated markdown payload: name it `*.snapshot.md`, or widen the pattern in
-the same commit. A `.md` file below under any other name is formatted, and a
-byte comparison against a formatted file flaps. A payload in a format none of
-the three patterns names needs the same decision, and the SVG diagrams below
-are where it was made once: oxfmt does not format SVG, so they need no fourth
-pattern. Whoever adds a payload in a further format runs `pnpm fix` over it
-and checks the bytes before deciding it needs none either.
+## Maintaining fixtures
 
-Each test target names the files it reads, directly or through a named fixture
+Preserve payload bytes. `.oxfmtrc.json` excludes JSON, YAML, and
+`*.snapshot.md` files here. It still formats other Markdown files, including
+this README. Name generated Markdown payloads `*.snapshot.md`. For another
+format, check whether `pnpm fix` changes its bytes before adding it.
+Oxfmt does not format SVG or Typst.
+
+Each test target declares its fixture inputs, directly or through a named
 input. Fixture changes do not invalidate lint or build targets.
 
 ## Who writes each file, and who reads it
 
-Ten files below are maintained as Vitest file snapshots. Seven are also read
-by another suite. Cached Nx tests run with `CI=true`, so they compare these
-files without writing them. `pnpm snapshots:update <project>` runs
-Vitest outside Nx when a producer must update its files.
+Cached Nx tests compare committed snapshots without writing them. Update a
+producer's snapshots outside Nx with `pnpm snapshots:update <project>`.
+The producers are `@saerskriven/model`, `@saerskriven/formats`, and
+`@saerskriven/render`. Review and commit the snapshot diff with the source change.
 
 | File                                                | Written by         | Read by                                                                     |
 | --------------------------------------------------- | ------------------ | --------------------------------------------------------------------------- |
@@ -47,20 +35,14 @@ Vitest outside Nx when a producer must update its files.
 | `render/every-glyph.snapshot.svg`                   | `packages/render`  | no other suite                                                              |
 | `render/ecluse.snapshot.typ`                        | `packages/render`  | `apps/studio-e2e`                                                           |
 
-Every other file here is input nothing writes: `ecluse.json`,
-`every-glyph.model.json`, the Threat Dragon corpus with its schema and its
-labels, the adversarial payloads, and
-`render/ecluse.snapshot.pdf.sha256`. The last is the digest both the CLI and
-studio browser suites compare their PDF against.
-
-`apps/studio-e2e` reads these from the `e2e` target rather than from a `test`
-target, and no edge orders that one. Nothing writes beside it: the
-smoke suite runs in a CI job of its own, and `pnpm check` leaves it out.
+The remaining files are maintained inputs. `render/ecluse.snapshot.pdf.sha256`
+is the expected PDF digest for the CLI and studio browser suites.
+The browser suite runs separately from `pnpm check` and only reads fixtures.
 
 ## `ecluse.json`
 
 The threat model of [Écluse](https://github.com/AlexaDeWit/Ecluse), a
-supply-chain policy proxy for package registries.
+supply-chain policy proxy for package registries. Vendored with the author's consent.
 
 | Fact           | Value                                                    |
 | -------------- | -------------------------------------------------------- |
@@ -70,173 +52,74 @@ supply-chain policy proxy for package registries.
 | Licence        | MIT, Copyright 2026 Alexandra de Wit                     |
 | MD5            | `9b61b49c0945298b8c2f1f86d2c4136e`                       |
 
-It is a real threat model of a real deployed system, published here with the
-author's consent, and it is the only production-scale Threat Dragon file the
-project has. Two uses:
+`packages/model` transcribes it as `ecluseFixture` in
+`src/lib/ecluse.fixtures.ts`. `packages/formats` compares its Threat Dragon
+read against that transcription through `ecluse.model.json`. Both preserve
+the source cell and threat IDs.
 
-- `packages/model` transcribes it into the internal form as
-  `ecluseFixture` (`src/lib/ecluse.fixtures.ts`), the fixture behind the
-  representability gate that M1's definition of done rests on (issue #22).
-- `packages/formats` reads this file through the Threat Dragon codec
-  (`readThreatDragon`) and pins the counts, vocabularies, and drifts the model
-  fixture pins. The transcription keeps Threat Dragon's own cell and threat
-  ids, so the two sides describe the same records without an id mapping, and
-  `ecluse.model.json` below is where the two are compared as one value.
-
-One drift to know about before writing that codec: the file's `threatTop` is
-28, while two of its threats are numbered 101 and 102. Threat Dragon does not
-enforce the invariant the internal model does, so the import rule is
-`lastIssuedThreatNumber = max(threatTop, highest threat number in the file)`.
-Neither half alone is enough. `threatTop` alone breaks on this file, and the
-highest number alone drops the gap left by a removed highest-numbered threat,
-which is the record the field exists to keep.
+The file's `threatTop` is 28, but it contains threats numbered 101 and 102.
+The import uses `lastIssuedThreatNumber = max(threatTop, highest threat number in the file)`.
+The maximum preserves both existing numbers and the gap from a deleted highest-numbered threat.
 
 ## `saerskriven/ecluse.yaml`
 
-Not vendored: this one is written here. It is the Écluse model above, read
-through the Threat Dragon codec and written through the Saerskriven YAML codec,
-committed so a change to what the native format writes arrives as a diff on a
-file rather than as a test that still passes.
-
-`packages/formats` compares the write against it on every run, as a vitest
-file snapshot, so it cannot fall behind the codec. Regenerate it with
-`pnpm snapshots:update @saerskriven/formats`, and read the diff. The
-file is the format's output by definition.
-
-The committed bytes are read back as well, and have to parse to the model
-they were written from, so the file gates more than its own regeneration.
+The native YAML encoding of `ecluse.json`, produced through both codecs.
+The formats suite compares the write against this snapshot and reads it back
+to check model equality.
 
 ## `ecluse.model.json`
 
-The Écluse model in the internal form: `ecluseFixture` as `packages/model`
-writes it out. Not vendored. This repository generates it, from the fixture
-that carries the representability gate.
-
-It is here because the two descriptions of that one threat model were never
-held to each other. `packages/model` owned the transcription and
-`packages/formats` pinned the same counts and vocabularies beside it, so a
-drift in an element description, an endpoint, or `outOfScope` passed both
-suites. Three assertions now hold the two to each other. `packages/model`
-compares it against the fixture on every test run with `toMatchFileSnapshot`
-and reds where the two differ. `packages/formats` compares the whole read of
-`ecluse.json` against it, and compares again what a write of that read reads
-back.
-
-Regenerate it with `pnpm snapshots:update @saerskriven/model` in the
-same commit as the source change. Read the diff.
-
-`packages/render` reads it too, as the input its markdown register is
-rendered from, so this file is where a projection meets the model core
-without either package importing the other's fixtures.
+The internal model serialized from `ecluseFixture` by `packages/model`.
+The formats suite compares its full Threat Dragon read and write/read result
+against this file. This catches differences that matching counts and
+vocabularies alone would miss. Canvas and render tests consume it as data.
 
 ## `saerskriven.model.json`
 
-Saerskriven's own threat model in the internal form, from
-[`threat-modelling/saerskriven.yaml`](../threat-modelling/README.md) read through
-the native codec. Not vendored, and derived: that file is the source.
-
-It is here for the reason `ecluse.model.json` is. `packages/render` and
-`packages/canvas` gate on the model, and the layer matrix keeps them from
-importing the codec that reads a YAML file, so a codec writes the model out
-and they read it as data.
-
-The producer differs, though, and that is the whole difference between the
-two files. `ecluse.model.json` comes from `packages/model`, out of the hand
-transcription that carries the representability gate, and `packages/formats`
-compares its read against it. This one has no transcription to come from,
-because nobody wrote the model twice: `packages/formats` reads the YAML and
-is its only producer. Which path a native fixture's model goes to is a field
-on its `nativeFixtures` entry, and Écluse's entry names none.
-
-Regenerate it with `pnpm snapshots:update @saerskriven/formats` in
-the same commit as the YAML edit.
+The internal model decoded from
+[`threat-modelling/saerskriven.yaml`](../threat-modelling/README.md).
+`packages/formats` produces it for canvas and render tests, which cannot
+import codecs. A `nativeFixtures` entry selects its output path.
 
 ## `render/ecluse.register.snapshot.md`
 
-The Écluse model as `packages/render` writes its threat register: an overview
-table of the 29 threats, then one section each. Not vendored. This repository
-generates it, from `ecluse.model.json` above read through `parseModel`.
-
-It is committed so a change to what the register writes arrives as a diff on
-a file rather than as a test that still passes. `packages/render` compares
-it on every test run with `toMatchFileSnapshot`, and it is the only place the
-register's whole shape, escaping and prose handling included, is held against
-a production-scale model.
-
-Regenerate it with `pnpm snapshots:update @saerskriven/render` in
-the same commit as the source change. Read the diff.
+The markdown register from `ecluse.model.json`: an overview of 29 threats,
+followed by a section for each. It covers the full register structure,
+escaping, and prose handling.
 
 ## `render/saerskriven.register.snapshot.md`
 
-Saerskriven's own threat model as the same register, from `saerskriven.model.json`
-above. It is the second model that register is held against, and the one that
-carries a custom methodology, a CIA category, two threats attached to no
-element, and a mitigation written as a markdown list, none of which the
-Écluse model has.
-
-Regenerate it with `pnpm snapshots:update @saerskriven/render`.
+The register from `saerskriven.model.json`. It adds a custom methodology, a
+CIA category, two unattached threats, and mitigation prose containing a
+Markdown list to the cases covered by Écluse.
 
 ## `every-glyph.model.json`
 
-One of every glyph the canvas knows, in the internal form, written here by
-hand rather than generated: the six element kinds, a trust boundary in both
-shapes, an out-of-scope element, a flow with a waypoint, a flow with a free
-end, a flow whose endpoint names another flow, and open threats spread so that
-one element carries the stacked pair of badges and another the neutral badge
-alone. Écluse holds none of the last four, so a drawing of Écluse alone leaves
-those cases uncommitted.
-
-`packages/canvas` and `packages/render` both read it through `parseModel` and
-both keep a golden drawn from it. It is here rather than inside either
-package because the layer matrix forbids a package dependency between the two
-readers, which is the same reason `ecluse.model.json` is here.
+A hand-written model with every element kind, both boundary shapes, an
+out-of-scope element, and flows with waypoints, free ends, and an endpoint
+naming another flow. Its open threats exercise paired badges and a neutral
+badge. Canvas and render tests parse it and keep separate drawing snapshots.
 
 ## `render/ecluse.snapshot.typ`
 
-The Écluse model as the Typst source of one whole document: every diagram,
-one to a landscape page, then the register above on portrait pages. Not
-vendored. This repository generates it, from `ecluse.model.json` above.
-
-It is the only committed form of what `apps/cli` hands the Typst compiler for
-`--format pdf`, so a change to the document template, to the escaping of any
-value out of the model, or to the drawing embedded inside it, arrives as a
-diff here. `ecluse.snapshot.svg` below is inside it verbatim, so the two move
-together and a diff on one without the other is a bug.
-
-Regenerate it with `pnpm snapshots:update @saerskriven/render` in
-the same commit as the source change. `oxfmt` does not know Typst,
-which is the decision this file's format needed under the rule above.
+The Typst document from `ecluse.model.json`: every diagram on a landscape
+page, followed by the register on portrait pages. It embeds
+`ecluse.snapshot.svg` verbatim, so a drawing change updates both snapshots.
 
 ## `render/*.snapshot.svg`
 
-The diagrams `packages/render` draws as standalone SVG documents. Not
-vendored: this repository generates all four.
+Standalone SVG documents from `packages/render`:
 
-`ecluse.snapshot.svg` is the `High Level` diagram of `ecluse.model.json`
-above, read through `parseModel`, so the drawing and the register come from
-the one model the model core and the codecs are held to.
-`every-glyph.snapshot.svg` is `every-glyph.model.json` above drawn the same
-way. `saerskriven-read-and-render.snapshot.svg` and
-`saerskriven-agent-and-desktop.snapshot.svg` are the two diagrams of
-`saerskriven.model.json`, which is the only committed model that
-holds more than one, so they are also where a model of several diagrams is
-drawn at all.
-
-All are committed for the reason the registers above are, and gated the same
-way: `packages/render` compares them on every test run with
-`toMatchFileSnapshot` and reds where a file and the drawing differ.
-Regenerate them with `pnpm snapshots:update @saerskriven/render` in
-the same commit as the source change.
+- `ecluse.snapshot.svg`: the `High Level` diagram of `ecluse.model.json`.
+- `every-glyph.snapshot.svg`: the diagram in `every-glyph.model.json`.
+- `saerskriven-read-and-render.snapshot.svg` and
+  `saerskriven-agent-and-desktop.snapshot.svg`: the two diagrams of
+  `saerskriven.model.json`, covering a model with multiple diagrams.
 
 ## `threat-dragon/`
 
-The threat models OWASP Threat Dragon ships inside its own repository: the
-nine v2 models its demo menu offers, and three more the repository keeps
-beside them. They are the corpus `packages/formats` reads through the Threat
-Dragon codec, which is how a wire schema that has drifted from the format
-announces itself before a user meets it. Every one of them was refused by an
-earlier draft of that schema, which is why they are here rather than
-described.
+The nine v2 models from Threat Dragon's demo menu and three models from its
+repository. The formats suite reads them through the Threat Dragon codec.
 
 | Fact           | Value                                                       |
 | -------------- | ----------------------------------------------------------- |
