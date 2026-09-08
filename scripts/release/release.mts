@@ -6,22 +6,26 @@ import { join } from 'node:path';
 import { createInterface } from 'node:readline/promises';
 import { pathToFileURL } from 'node:url';
 
-import { Data, Either } from 'effect';
+import { Either } from 'effect';
 import { z } from 'zod';
+import {
+  ReleaseFailure,
+  attempt,
+  attemptPromise,
+  describeFailure,
+  refuse,
+  parseJson,
+  runProcess,
+  requireStatus,
+  outputOf,
+  runChecked,
+  githubJson,
+  type CommandResult,
+  type RunCommand,
+} from './release-io.mts';
 
-export type CommandResult = Readonly<{
-  error?: Error;
-  status: number | null;
-  stderr: string;
-  stdout: string;
-}>;
-
-type RunOptions = Readonly<{ cwd: string; inherit?: boolean }>;
-export type RunCommand = (
-  command: string,
-  args: string[],
-  options: RunOptions,
-) => CommandResult;
+export { ReleaseFailure };
+export type { CommandResult, RunCommand };
 
 type CommonOptions = Readonly<{
   cwd: string;
@@ -37,21 +41,14 @@ type TagOptions = CommonOptions &
     write?: (message: string) => void;
   }>;
 
-export type ReleaseFailure = Data.TaggedEnum<{
-  CommandFailed: { readonly command: string; readonly reason: string };
-  InvalidData: { readonly issues: readonly string[]; readonly source: string };
-  InvalidVersion: { readonly input: string };
-  Refused: { readonly reason: string };
-}>;
-
-export const ReleaseFailure = Data.taggedEnum<ReleaseFailure>();
-
 const releaseVersionSchema = z
   .string()
   .regex(/^(?:v)?(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$/)
   .transform((input) => input.replace(/^v/u, ''))
   .transform((version) => ({ tag: `v${version}`, version }));
+type ReleaseVersion = z.output<typeof releaseVersionSchema>;
 const packageManifestSchema = z.object({ version: z.string() });
+type PackageManifest = z.output<typeof packageManifestSchema>;
 const repositorySchema = z.object({ full_name: z.string() });
 const rulesetsSchema = z.array(
   z.object({
@@ -94,80 +91,10 @@ const expectedTagRules = [
   'update',
 ];
 
-const reasonOf = (cause: unknown): string =>
-  cause instanceof Error ? cause.message : String(cause);
-
-const describeFailure = (failure: ReleaseFailure): string =>
-  ReleaseFailure.$match(failure, {
-    CommandFailed: ({ command, reason }) => `${command}: ${reason}`,
-    InvalidData: ({ issues, source }) => `${source}: ${issues.join(', ')}`,
-    InvalidVersion: ({ input }) =>
-      `'${input}' is not X.Y.Z (a leading 'v' is optional)`,
-    Refused: ({ reason }) => reason,
-  });
-
-const refuse = (reason: string): Either.Either<never, ReleaseFailure> =>
-  Either.left(ReleaseFailure.Refused({ reason }));
-
-const invalidData = (
-  source: string,
-  cause: unknown,
-): Either.Either<never, ReleaseFailure> =>
-  Either.left(
-    ReleaseFailure.InvalidData({ issues: [reasonOf(cause)], source }),
-  );
-
-const attempt = <Value,>(
-  source: string,
-  read: () => Value,
-): Either.Either<Value, ReleaseFailure> =>
-  Either.try({
-    try: read,
-    catch: (cause) =>
-      ReleaseFailure.InvalidData({ issues: [reasonOf(cause)], source }),
-  });
-
-const attemptPromise = async <Value,>(
-  source: string,
-  read: () => Promise<Value>,
-): Promise<Either.Either<Value, ReleaseFailure>> => {
-  try {
-    return Either.right(await read());
-  } catch (cause: unknown) {
-    return invalidData(source, cause);
-  }
-};
-
-const zodIssues = (issues: z.core.$ZodIssue[]): string[] =>
-  issues.map((issue) => {
-    const path = issue.path.map(String).join('.');
-    return `${path ? `${path}: ` : ''}${issue.message}`;
-  });
-
-const parseJson = <Output,>(
-  schema: z.ZodType<Output>,
-  text: string,
-  source: string,
-): Either.Either<Output, ReleaseFailure> =>
-  Either.flatMap(
-    attempt(source, () => JSON.parse(text) as unknown),
-    (value) => {
-      const parsed = schema.safeParse(value);
-      return parsed.success
-        ? Either.right(parsed.data)
-        : Either.left(
-            ReleaseFailure.InvalidData({
-              issues: zodIssues(parsed.error.issues),
-              source,
-            }),
-          );
-    },
-  );
-
 /** Parse the stable version stated by the release operator. */
 export const parseReleaseVersion = (
   input: string | undefined,
-): Either.Either<z.output<typeof releaseVersionSchema>, ReleaseFailure> => {
+): Either.Either<ReleaseVersion, ReleaseFailure> => {
   const parsed = releaseVersionSchema.safeParse(input);
   return parsed.success
     ? Either.right(parsed.data)
@@ -193,10 +120,10 @@ const manifestPaths = (cwd: string): Either.Either<string[], ReleaseFailure> =>
 const readManifest = (
   cwd: string,
   path: string,
-): Either.Either<z.output<typeof packageManifestSchema>, ReleaseFailure> =>
+): Either.Either<PackageManifest, ReleaseFailure> =>
   Either.flatMap(
     attempt(path, () => readFileSync(join(cwd, path), 'utf8')),
-    (text) => parseJson(packageManifestSchema, text, path),
+    (text) => parseJson({ schema: packageManifestSchema }, text, path),
   );
 
 /** Read and compare the root and project manifest versions. */
@@ -223,85 +150,6 @@ export const readWorkspaceVersion = (
     }
     return root;
   });
-
-const runProcess: RunCommand = (command, args, { cwd, inherit = false }) => {
-  const processResult = spawnSync(command, args, {
-    cwd,
-    encoding: 'utf8',
-    stdio: inherit ? 'inherit' : ['ignore', 'pipe', 'pipe'],
-  });
-  return {
-    error: processResult.error,
-    status: processResult.status,
-    stderr: processResult.stderr?.trimEnd() ?? '',
-    stdout: processResult.stdout?.trimEnd() ?? '',
-  };
-};
-
-const commandName = (command: string, args: string[]): string =>
-  [command, ...args].join(' ');
-
-const requireStatus = (
-  result: CommandResult,
-  allowed: number[],
-  command: string,
-  args: string[],
-): Either.Either<CommandResult, ReleaseFailure> => {
-  if (result.error) {
-    return Either.left(
-      ReleaseFailure.CommandFailed({
-        command: commandName(command, args),
-        reason: result.error.message,
-      }),
-    );
-  }
-  return result.status !== null && allowed.includes(result.status)
-    ? Either.right(result)
-    : Either.left(
-        ReleaseFailure.CommandFailed({
-          command: commandName(command, args),
-          reason:
-            result.stderr || `exited with status ${String(result.status)}`,
-        }),
-      );
-};
-
-const outputOf = (
-  run: RunCommand,
-  command: string,
-  args: string[],
-  cwd: string,
-): Either.Either<string, ReleaseFailure> =>
-  Either.map(
-    requireStatus(run(command, args, { cwd }), [0], command, args),
-    ({ stdout }) => stdout,
-  );
-
-const runChecked = (
-  run: RunCommand,
-  command: string,
-  args: string[],
-  cwd: string,
-): Either.Either<void, ReleaseFailure> =>
-  Either.map(
-    requireStatus(
-      run(command, args, { cwd, inherit: true }),
-      [0],
-      command,
-      args,
-    ),
-    () => undefined,
-  );
-
-const githubJson = <Output,>(
-  run: RunCommand,
-  endpoint: string,
-  cwd: string,
-  schema: z.ZodType<Output>,
-): Either.Either<Output, ReleaseFailure> =>
-  Either.flatMap(outputOf(run, 'gh', ['api', endpoint], cwd), (text) =>
-    parseJson(schema, text, `GitHub ${endpoint}`),
-  );
 
 const githubRepository = (
   remote: string,
@@ -339,7 +187,7 @@ const assertTagRules = (
       run,
       `repos/${repository}/rulesets`,
       cwd,
-      rulesetsSchema,
+      { schema: rulesetsSchema },
     );
     const matches = rulesets.filter(
       (ruleset) =>
@@ -356,7 +204,7 @@ const assertTagRules = (
       run,
       `repos/${repository}/rulesets/${String(matches[0]?.id)}`,
       cwd,
-      tagRulesetSchema,
+      { schema: tagRulesetSchema },
     );
     const rules = ruleset.rules.map(({ type }) => type).toSorted();
     const ready =
@@ -382,7 +230,7 @@ const assertRequiredChecks = (
       run,
       `repos/${repository}/commits/${commit}/check-runs?per_page=100`,
       cwd,
-      checkRunsSchema,
+      { schema: checkRunsSchema },
     );
     const gate = newest(
       checks.check_runs.filter(({ name }) => name === 'CI gate'),
@@ -399,7 +247,7 @@ const assertRequiredChecks = (
       run,
       `repos/${repository}/commits/${commit}/status?per_page=100`,
       cwd,
-      statusesSchema,
+      { schema: statusesSchema },
     );
     const codecov = newest(
       statusResponse.statuses.filter(
@@ -544,7 +392,7 @@ const tagPreflight = ({
       run,
       `repos/${remoteRepository}`,
       cwd,
-      repositorySchema,
+      { schema: repositorySchema },
     )).full_name;
     yield* assertTagRules(run, repository, cwd);
     const required = yield* assertRequiredChecks(run, repository, commit, cwd);

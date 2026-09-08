@@ -431,6 +431,14 @@ one Linux machine is the point of the design, so a Linux checkout, a VM or a
 container is enough; nothing needs a Mac or a Windows box. The script also
 refuses to run outside the flake shell, which is what sets the pins.
 
+## Updating the Nix package after publication
+
+Run the [Nix release updater](nix.md#updating-the-release-pin) after the
+release assets and attestations exist. It computes the four hashes and
+writes `nix/release.json`. Review that change and its package checks in a
+separate PR. The signed release tag stays unchanged, and its gate continues
+to check the previously published package.
+
 ## Rebuilding a released executable
 
 The executables are a function of the commit, so the same tag rebuilt on any
