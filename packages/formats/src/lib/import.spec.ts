@@ -359,3 +359,117 @@ it('generates distinct canvas-compatible identifiers for punctuation and Unicode
   expect(new Set(ids).size).toBe(ids.length);
   expect(ids.every((id) => /^[A-Za-z0-9_-]+$/u.test(id))).toBe(true);
 });
+
+it.each([
+  ['accepted', 'accepted-risk'],
+  ['transferred', 'transferred'],
+  ['avoided', 'avoided'],
+  ['eliminated', 'eliminated'],
+  ['not-applicable', 'not-applicable'],
+  ['vendor-pending', 'open'],
+] as const)(
+  'imports OTM treatment %s as %s and keeps the source label',
+  (state, expected) => {
+    const document = otmFixture();
+    const occurrence = document.components?.flatMap(
+      (component) => component.threats ?? [],
+    )[0];
+    if (occurrence === undefined)
+      throw new Error('The fixture lacks a threat occurrence');
+    occurrence.state = state;
+    const read = Either.getOrThrow(importModel(JSON.stringify(document)));
+    expect(read.model.threats[0].status).toBe(expected);
+    expect(read.model.threats[0].description).toContain(state);
+  },
+);
+
+it.each([
+  ['implemented', 'implemented'],
+  ['verified', 'verified'],
+  ['vendor-pending', 'proposed'],
+] as const)('imports OTM mitigation state %s as %s', (state, expected) => {
+  const document = otmFixture();
+  const occurrence = document.components?.flatMap(
+    (component) => component.threats ?? [],
+  )[0];
+  const mitigation = occurrence?.mitigations?.[0];
+  if (mitigation == null)
+    throw new Error('The fixture lacks a mitigation occurrence');
+  mitigation.state = state;
+  const read = Either.getOrThrow(importModel(JSON.stringify(document)));
+  expect(read.model.mitigations[0].status).toBe(expected);
+  expect(read.model.mitigations[0].prose).toContain(state);
+});
+
+it.each(['asset', 'threat', 'mitigation'] as const)(
+  'refuses an OTM occurrence referencing an absent %s',
+  (kind) => {
+    const document = otmFixture();
+    const component = document.components?.find(
+      (entry) => (entry.threats?.length ?? 0) > 0,
+    );
+    const occurrence = component?.threats?.[0];
+    if (component === undefined || occurrence === undefined)
+      throw new Error('The fixture lacks a threat occurrence');
+    if (kind === 'asset') component.assets = { processed: ['absent'] };
+    else if (kind === 'threat') occurrence.threat = 'absent';
+    else occurrence.mitigations = [{ mitigation: 'absent', state: 'required' }];
+    expect(importModel(JSON.stringify(document))).toMatchObject({
+      _tag: 'Left',
+      left: { _tag: 'InvalidWireDocument' },
+    });
+  },
+);
+
+it('retains OTM threat definitions that have no occurrences', () => {
+  const document = otmFixture();
+  for (const component of document.components ?? []) component.threats = [];
+  for (const flow of document.dataflows ?? []) flow.threats = [];
+  const read = Either.getOrThrow(importModel(JSON.stringify(document)));
+  expect(read.model.threats).toHaveLength(1);
+  expect(read.model.threats[0].elements).toEqual([]);
+  expect(read.model.threats[0].status).toBe('open');
+});
+
+it('imports active and pending TM-BOM controls without reviving retired or declined work', () => {
+  const document = tmbomFixture();
+  const control = document.controls?.[0];
+  if (control === undefined) throw new Error('The fixture lacks a control');
+  document.controls = [
+    {
+      ...control,
+      symbolic_name: 'active-control',
+      title: 'Active work',
+      status: 'active',
+    },
+    {
+      ...control,
+      symbolic_name: 'retired-control',
+      title: 'Retired work',
+      status: 'retired',
+    },
+    {
+      ...control,
+      symbolic_name: 'declined-control',
+      title: 'Declined work',
+      status: 'wont_do',
+    },
+    {
+      ...control,
+      symbolic_name: 'pending-control',
+      title: 'Pending work',
+      status: 'under_review',
+    },
+  ];
+  const read = Either.getOrThrow(importModel(JSON.stringify(document)));
+  expect(
+    read.model.mitigations.map((mitigation) => [
+      mitigation.title,
+      mitigation.status,
+    ]),
+  ).toEqual([
+    ['Active work', 'implemented'],
+    ['Pending work', 'proposed'],
+  ]);
+  expect(read.model.mitigations[1].prose).toContain('under_review');
+});
