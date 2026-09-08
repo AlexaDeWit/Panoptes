@@ -125,7 +125,7 @@
 
 .entry {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) fit-content(45%);
   gap: var(--pn-space-1) var(--pn-space-3);
   padding-block-start: var(--pn-space-2);
   border-top: 1px solid var(--pn-colour-border);
@@ -133,10 +133,21 @@
 
 .label {
   font-weight: 600;
+  overflow-wrap: anywhere;
 }
 
 .keys {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--pn-space-1);
   align-self: start;
+  min-inline-size: 0;
+}
+
+.key {
+  box-sizing: border-box;
+  max-inline-size: 100%;
   padding: 0 var(--pn-space-1);
   border: 1px solid var(--pn-colour-border);
   border-radius: var(--pn-radius);

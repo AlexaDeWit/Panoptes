@@ -125,9 +125,10 @@ something else instead.
 
 The registry includes clipboard reuse, geometry, reconnection, arrangement,
 snapping, zoom reset, and fit selection. Their shortcuts appear in the
-reference. Duplicate, Position and size, Change flow source, Change flow
-target, Focus threats, and Delete selection are absent from the burger menu. Their shortcuts
-remain available. All keep text-field key ownership.
+reference. Copy, Cut, Paste, Reset zoom, Duplicate, Position and size,
+Change flow source, Change flow target, Focus threats, and Delete selection
+are absent from the burger menu. Their shortcuts remain available.
+All keep text-field key ownership.
 
 The Keyboard shortcuts item in the Help menu opens a non-modal reference
 panel. Question mark and F1 toggle it when focus is outside a text field or
@@ -137,6 +138,11 @@ percent on a narrow screen.
 The panel starts with collapsed category cards. Each card shows its name and
 entry count. Enter or Space expands it, and arrow keys move between category
 headers. Multiple categories can stay open.
+
+Alternative shortcuts appear on separate lines. Complete direction groups
+read as `Arrow Keys` or `Shift+Arrow`. Groups that accept only some directions
+list those keys individually. The shortcut column leaves room for the action
+label, and its context spans the full row below.
 
 The panel renders every command from `registry.ts`. It renders canvas keys
 from `contextual-shortcuts.ts`, which also supplies the matchers and accessible

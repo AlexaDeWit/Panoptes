@@ -308,6 +308,57 @@ test('the complete shortcut reference opens by menu or key and returns focus', a
   await expect(reference).toHaveCount(0);
 });
 
+test('shortcut alternatives stack without squeezing the action label', async ({
+  page,
+}) => {
+  await openPlaceholder(page);
+  await page.keyboard.press('F1');
+  const reference = page.getByRole('region', { name: 'Keyboard shortcuts' });
+  for (const name of [
+    'Canvas editing',
+    'Canvas navigation',
+    'Edit',
+    'Flow bends',
+  ]) {
+    await reference.getByRole('button', { name, exact: true }).click();
+  }
+
+  for (const width of [1280, 480, 320]) {
+    await page.setViewportSize({ width, height: 720 });
+    const move = reference.locator('[data-contextual-id="move-selection"]');
+    const row = await move.boundingBox();
+    const label = await move.locator(':scope > span').first().boundingBox();
+    expect(row).not.toBeNull();
+    expect(label?.width).toBeGreaterThan((row?.width ?? 0) / 2);
+
+    for (const selector of [
+      '[data-contextual-id="select-canvas-item"]',
+      '[data-command-id="redo"]',
+      '[data-contextual-id="choose-bend-segment"]',
+    ]) {
+      const keys = reference.locator(selector).locator('kbd');
+      await expect(keys).toHaveCount(2);
+      const first = await keys.nth(0).boundingBox();
+      const second = await keys.nth(1).boundingBox();
+      expect(first).not.toBeNull();
+      expect(second?.y).toBeGreaterThanOrEqual(
+        (first?.y ?? 0) + (first?.height ?? 0),
+      );
+    }
+    expect(
+      await reference.evaluate((node) =>
+        [...node.querySelectorAll('li, kbd')].every(
+          (entry) => entry.scrollWidth <= entry.clientWidth,
+        ),
+      ),
+    ).toBe(true);
+    await move.scrollIntoViewIfNeeded();
+    await page.screenshot({
+      path: test.info().outputPath(`shortcut-editing-${String(width)}.png`),
+    });
+  }
+});
+
 test('macOS uses Command shortcuts and Shift-Command-Z for redo', async ({
   page,
 }) => {
@@ -331,10 +382,7 @@ test('macOS uses Command shortcuts and Shift-Command-Z for redo', async ({
     'aria-keyshortcuts',
     'Meta+S',
   );
-  await expect(menuItem(page, 'Copy')).toHaveAttribute(
-    'aria-keyshortcuts',
-    'Meta+C',
-  );
+  await expect(menuItem(page, 'Copy')).toHaveCount(0);
   await expect(menuItem(page, 'Delete selection')).toHaveCount(0);
   await page.screenshot({ path: test.info().outputPath('mac-menu.png') });
   await closeMenu(page);

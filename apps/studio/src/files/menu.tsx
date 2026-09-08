@@ -226,15 +226,10 @@ export function StudioMenu({
   onColourModeChange,
   triggerRef,
 }: StudioMenuProps) {
-  const snapping = useSnap();
   const file = useModelStore((state) => state.file);
   const failure = useModelStore((state) => state.lastFailure);
   const dirty = useModelStore(isDirty);
   const guarded = useModelStore(needsCloseGuard);
-  const undoable = useModelStore(canUndo);
-  const redoable = useModelStore(canRedo);
-  const nothing = useModelStore((state) => state.selection.length === 0);
-  const renamable = useModelStore(renameable);
   const [open, setOpen] = useState(false);
   const selectedColourMode = colourMode ?? 'system';
 
@@ -407,51 +402,9 @@ export function StudioMenu({
             </DropdownMenu.SubContent>
           </DropdownMenu.Sub>
           <DropdownMenu.Separator className={styles.rule} />
-          <DropdownMenu.Group>
-            <DropdownMenu.Label className={styles.heading}>
-              Edit
-            </DropdownMenu.Label>
-            <MenuCommand command="undo" disabled={!undoable} />
-            <MenuCommand command="redo" disabled={!redoable} />
-            <MenuCommand command="copy" disabled={nothing} />
-            <MenuCommand command="cut" disabled={nothing} />
-            <MenuCommand command="paste" />
-            <DropdownMenu.Sub>
-              <SubmenuTrigger>Arrange</SubmenuTrigger>
-              <DropdownMenu.SubContent tabIndex={0} className={styles.panel}>
-                {(
-                  [
-                    'align-left',
-                    'align-centre',
-                    'align-right',
-                    'align-top',
-                    'align-middle',
-                    'align-bottom',
-                    'distribute-horizontal',
-                    'distribute-vertical',
-                  ] as const
-                ).map((command) => (
-                  <MenuCommand
-                    command={command}
-                    disabled={nothing}
-                    key={command}
-                  />
-                ))}
-              </DropdownMenu.SubContent>
-            </DropdownMenu.Sub>
-            <MenuCommand command="rename" disabled={!renamable} />
-          </DropdownMenu.Group>
+          <EditMenu />
           <DropdownMenu.Separator className={styles.rule} />
-          <DropdownMenu.Group>
-            <DropdownMenu.Label className={styles.heading}>
-              View
-            </DropdownMenu.Label>
-            <MenuCommand command="reset-zoom" />
-            <MenuCommand command="fit-selection" disabled={nothing} />
-            <MenuCommand command="snap-to-grid">
-              {commandById('snap-to-grid').label}: {snapping ? 'on' : 'off'}
-            </MenuCommand>
-          </DropdownMenu.Group>
+          <ViewMenu />
           <DropdownMenu.Separator className={styles.rule} />
           <DropdownMenu.Group>
             <DropdownMenu.Label className={styles.heading}>
@@ -530,6 +483,56 @@ export function StudioMenu({
         )}
       </LiveRegion>
     </div>
+  );
+}
+
+function EditMenu() {
+  const undoable = useModelStore(canUndo);
+  const redoable = useModelStore(canRedo);
+  const nothing = useModelStore((state) => state.selection.length === 0);
+  const renamable = useModelStore(renameable);
+
+  return (
+    <DropdownMenu.Group>
+      <DropdownMenu.Label className={styles.heading}>Edit</DropdownMenu.Label>
+      <MenuCommand command="undo" disabled={!undoable} />
+      <MenuCommand command="redo" disabled={!redoable} />
+      <DropdownMenu.Sub>
+        <SubmenuTrigger>Arrange</SubmenuTrigger>
+        <DropdownMenu.SubContent tabIndex={0} className={styles.panel}>
+          {(
+            [
+              'align-left',
+              'align-centre',
+              'align-right',
+              'align-top',
+              'align-middle',
+              'align-bottom',
+              'distribute-horizontal',
+              'distribute-vertical',
+            ] as const
+          ).map((command) => (
+            <MenuCommand command={command} disabled={nothing} key={command} />
+          ))}
+        </DropdownMenu.SubContent>
+      </DropdownMenu.Sub>
+      <MenuCommand command="rename" disabled={!renamable} />
+    </DropdownMenu.Group>
+  );
+}
+
+function ViewMenu() {
+  const snapping = useSnap();
+  const nothing = useModelStore((state) => state.selection.length === 0);
+
+  return (
+    <DropdownMenu.Group>
+      <DropdownMenu.Label className={styles.heading}>View</DropdownMenu.Label>
+      <MenuCommand command="fit-selection" disabled={nothing} />
+      <MenuCommand command="snap-to-grid">
+        {commandById('snap-to-grid').label}: {snapping ? 'on' : 'off'}
+      </MenuCommand>
+    </DropdownMenu.Group>
   );
 }
 

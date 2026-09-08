@@ -24,14 +24,17 @@ test('the menu shows assigned shortcuts and the project link', async ({
 
   await openMenu(page);
 
-  await expect(menuItem(page, 'Copy')).toHaveAttribute(
+  await expect(menuItem(page, 'Save')).toHaveAttribute(
     'aria-keyshortcuts',
-    'Control+C',
+    'Control+S',
   );
-  await expect(menuItem(page, 'Paste')).toHaveAttribute(
+  await expect(menuItem(page, 'Undo')).toHaveAttribute(
     'aria-keyshortcuts',
-    'Control+V',
+    'Control+Z',
   );
+  for (const name of ['Copy', 'Cut', 'Paste', 'Reset zoom to 100%']) {
+    await expect(menuItem(page, name)).toHaveCount(0);
+  }
   await expect(menuItem(page, 'Export')).toBeVisible();
   const source = menuItem(page, 'View source on GitHub');
   await expect(source).toHaveAttribute(
