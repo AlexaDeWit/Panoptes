@@ -25,6 +25,7 @@ export function recordingSurface(): RecordingSurface {
         exportPdf: note('exportPdf'),
         close: note('close'),
       },
+      reference: { toggle: note('toggleReference') },
       view: {
         zoomIn: note('zoomIn'),
         zoomOut: note('zoomOut'),

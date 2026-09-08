@@ -161,6 +161,7 @@ describe('runCommand', () => {
       'export-pdf',
       'zoom-in',
       'fit-to-view',
+      'shortcut-reference',
     ];
 
     for (const id of asked) {
@@ -177,6 +178,7 @@ describe('runCommand', () => {
       'exportPdf',
       'zoomIn',
       'fitToView',
+      'toggleReference',
     ]);
   });
 

@@ -322,8 +322,11 @@ group action. Shift+Enter adds or removes the focused element. React Flow
 announces moves in its live region.
 
 Every edit has a keyboard path. Page commands have their chords in the command
-registry ([the commands](../commands/README.md)). Placing is selecting a tool by its button,
-letter or number and then clicking, dragging or pressing Enter. Note follows
+registry ([the commands](../commands/README.md)). The shortcut reference reads
+contextual canvas keys from `../commands/contextual-shortcuts.ts`. Canvas event
+handlers and accessible descriptions read the same entries. Placing is
+selecting a tool by its button, letter or number and then clicking, dragging
+or pressing Enter. Note follows
 that path and puts focus in its multiline editor. Connecting is
 selecting an element on the canvas and then pressing the
 start-flow chord, which opens the chooser on it and draws the flow the choice

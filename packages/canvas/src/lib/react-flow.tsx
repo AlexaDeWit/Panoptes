@@ -35,6 +35,7 @@ import {
   resizeBoxByKey,
   resizeBoxOnControlAxes,
   resizeControlPositions,
+  resizeKeys,
   shiftedKeyboardResizeStep,
   type ResizeControlPosition,
 } from './resizing.js';
@@ -75,15 +76,17 @@ const resizeControlLabels = {
 } as const satisfies Record<ResizeControlPosition, string>;
 
 const resizeControlKeys = {
-  top: 'ArrowUp ArrowDown',
-  right: 'ArrowLeft ArrowRight',
-  bottom: 'ArrowUp ArrowDown',
-  left: 'ArrowLeft ArrowRight',
-  'top-left': 'ArrowUp ArrowRight ArrowDown ArrowLeft',
-  'top-right': 'ArrowUp ArrowRight ArrowDown ArrowLeft',
-  'bottom-right': 'ArrowUp ArrowRight ArrowDown ArrowLeft',
-  'bottom-left': 'ArrowUp ArrowRight ArrowDown ArrowLeft',
-} as const satisfies Record<ResizeControlPosition, string>;
+  top: resizeKeys.filter((key) => key === 'ArrowUp' || key === 'ArrowDown'),
+  right: resizeKeys.filter(
+    (key) => key === 'ArrowLeft' || key === 'ArrowRight',
+  ),
+  bottom: resizeKeys.filter((key) => key === 'ArrowUp' || key === 'ArrowDown'),
+  left: resizeKeys.filter((key) => key === 'ArrowLeft' || key === 'ArrowRight'),
+  'top-left': resizeKeys,
+  'top-right': resizeKeys,
+  'bottom-right': resizeKeys,
+  'bottom-left': resizeKeys,
+} as const satisfies Record<ResizeControlPosition, readonly string[]>;
 
 const sideControls = new Set<ResizeControlPosition>(handleSides);
 
@@ -317,7 +320,7 @@ function ResizeControls({
           }
         >
           <button
-            aria-keyshortcuts={resizeControlKeys[position]}
+            aria-keyshortcuts={resizeControlKeys[position].join(' ')}
             aria-label={`Resize ${name} from ${resizeControlLabels[position]}`}
             onKeyDown={(event) => {
               keyDown(position, event);

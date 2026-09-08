@@ -4,6 +4,10 @@ import { DiagramCanvas } from '../canvas/diagram-canvas.js';
 import { useViewCommands } from '../canvas/view-commands.js';
 import { CommandSurfaceProvider } from '../commands/binding.js';
 import type { CommandSurface } from '../commands/registry.js';
+import {
+  ShortcutReference,
+  useShortcutReference,
+} from '../commands/shortcut-reference.js';
 import { useFileSession } from '../files/file-commands.js';
 import { StudioMenu } from '../files/menu.js';
 import { useColourMode } from '../theme.js';
@@ -22,10 +26,15 @@ function Studio() {
   const session = useFileSession();
   const view = useViewCommands();
   const [colourMode, setColourMode] = useColourMode();
+  const reference = useShortcutReference();
 
   const surface = useMemo<CommandSurface>(
-    () => ({ files: session.commands, view }),
-    [session.commands, view],
+    () => ({
+      files: session.commands,
+      reference: reference.commands,
+      view,
+    }),
+    [reference.commands, session.commands, view],
   );
 
   return (
@@ -38,8 +47,10 @@ function Studio() {
               colourMode={colourMode}
               onColourModeChange={setColourMode}
               session={session}
+              triggerRef={reference.menuTrigger}
             />
             <DiagramCanvas />
+            {reference.open && <ShortcutReference onClose={reference.close} />}
           </div>
         </main>
       </div>

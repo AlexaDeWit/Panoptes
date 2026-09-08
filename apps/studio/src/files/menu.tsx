@@ -1,6 +1,6 @@
 import { ExternalLinkIcon } from '@radix-ui/react-icons';
 import { DropdownMenu } from 'radix-ui';
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode, type RefObject } from 'react';
 import { useCommandSurface } from '../commands/binding.js';
 import {
   commandById,
@@ -195,6 +195,7 @@ export type StudioMenuProps = {
   readonly session: FileSession;
   readonly colourMode?: ColourMode;
   readonly onColourModeChange?: (mode: ColourMode) => void;
+  readonly triggerRef?: RefObject<HTMLButtonElement | null>;
 };
 
 /** The non-modal file, edit and project menu, with reports beside its trigger. */
@@ -202,6 +203,7 @@ export function StudioMenu({
   session,
   colourMode,
   onColourModeChange,
+  triggerRef,
 }: StudioMenuProps) {
   const file = useModelStore((state) => state.file);
   const failure = useModelStore((state) => state.lastFailure);
@@ -261,6 +263,7 @@ export function StudioMenu({
         <DropdownMenu.Trigger
           aria-label={dirty ? 'Menu, unsaved changes' : 'Menu'}
           className={styles.burger}
+          ref={triggerRef}
         >
           <span aria-hidden="true">☰</span>
           {dirty && <span aria-hidden="true" className={styles.dot} />}
@@ -389,6 +392,13 @@ export function StudioMenu({
               Project
             </DropdownMenu.Label>
             <SourceLink />
+          </DropdownMenu.Group>
+          <DropdownMenu.Separator className={styles.rule} />
+          <DropdownMenu.Group>
+            <DropdownMenu.Label className={styles.heading}>
+              Help
+            </DropdownMenu.Label>
+            <MenuCommand command="shortcut-reference" />
           </DropdownMenu.Group>
           <DropdownMenu.Separator className={styles.rule} />
           <DropdownMenu.Group className={styles.about}>

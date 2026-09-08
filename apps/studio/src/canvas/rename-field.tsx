@@ -26,8 +26,14 @@ import {
   type CSSProperties,
   type KeyboardEvent,
 } from 'react';
+import {
+  describeContextualShortcuts,
+  pressesContextualShortcut,
+} from '../commands/contextual-shortcuts.js';
+import { hostPlatform } from '../commands/shortcuts.js';
 import type { State } from '../store/state.js';
 import { useModelStore } from '../store/store.js';
+import { VisuallyHidden } from '../ui/visually-hidden.js';
 import {
   refusedText,
   useTextDraft,
@@ -83,6 +89,7 @@ function InlineField({
   refuse = refusedText,
 }: InlineFieldProps) {
   const refusalId = useId();
+  const keyboardDescriptionId = useId();
   const inputField = useRef<HTMLInputElement>(null);
   const noteField = useRef<HTMLTextAreaElement>(null);
   const settled = useRef(false);
@@ -128,20 +135,26 @@ function InlineField({
   const keyDown = (
     event: KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>,
   ): void => {
-    if (
-      event.key === 'Enter' &&
-      (!multiline || event.ctrlKey || event.metaKey)
-    ) {
+    const commitsName =
+      !multiline &&
+      pressesContextualShortcut('commit-name', event, hostPlatform);
+    const commitsNote =
+      multiline &&
+      pressesContextualShortcut('commit-note', event, hostPlatform);
+    if (commitsName || commitsNote) {
       event.preventDefault();
       commit(true);
     }
-    if (event.key === 'Escape') {
+    if (pressesContextualShortcut('cancel-canvas-text', event, hostPlatform)) {
       event.preventDefault();
       cancel();
     }
   };
   const shared = {
-    'aria-describedby': draft.refusal === undefined ? undefined : refusalId,
+    'aria-describedby':
+      draft.refusal === undefined
+        ? keyboardDescriptionId
+        : `${keyboardDescriptionId} ${refusalId}`,
     'aria-invalid': draft.refusal !== undefined,
     'aria-label': label,
     className: `${styles.field}${multiline ? ` ${styles.note}` : ''}`,
@@ -161,6 +174,12 @@ function InlineField({
 
   return (
     <>
+      <VisuallyHidden id={keyboardDescriptionId}>
+        {describeContextualShortcuts(
+          [multiline ? 'commit-note' : 'commit-name', 'cancel-canvas-text'],
+          hostPlatform,
+        )}
+      </VisuallyHidden>
       {multiline ? (
         <textarea {...shared} ref={noteField} />
       ) : (

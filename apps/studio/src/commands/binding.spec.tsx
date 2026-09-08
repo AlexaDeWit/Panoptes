@@ -122,6 +122,10 @@ describe('commandForKey', () => {
     expect(
       commandForKey(press(field, { key: 's', ctrlKey: true }), 'other')?.id,
     ).toBe('save');
+    expect(
+      commandForKey(press(field, { key: '?', shiftKey: true }), 'other'),
+    ).toBeUndefined();
+    expect(commandForKey(press(field, { key: 'F1' }), 'other')).toBeUndefined();
   });
 
   it('leaves Escape to a field holding a draft the model refused', () => {

@@ -13,6 +13,8 @@ that key rather than a search. Each entry carries:
 
 - **the label**, which is what a menu, a toolbox tooltip or a bare
   `CommandButton` says;
+- **the group and context**, which place and explain it in the shortcut
+  reference;
 - **the shortcuts**, zero or more chords, in the order they are offered;
 - **`inTextFields`**, whether the chord still fires while a person is typing;
 - **the dispatch**, either a `run` against the `CommandSurface` or `pending`
@@ -109,6 +111,22 @@ A press that is the studio's is claimed from the browser, whether or not the
 command has a dispatch yet: a chord the studio advertises must not do
 something else instead.
 
+## The shortcut reference
+
+The Keyboard shortcuts item in the Help menu opens a non-modal reference
+panel. Question mark and F1 toggle it when focus is outside a text field or
+open menu. The panel overlays the left edge on a wide screen and the lower 60
+percent on a narrow screen.
+
+The panel renders every command from `registry.ts`. It renders canvas keys
+from `contextual-shortcuts.ts`, which also supplies the matchers and accessible
+descriptions used where those keys act. Resize keys and distances come from
+the canvas package, where the resize controls use them.
+
+Opening the panel focuses its heading without trapping focus. Escape closes
+it only while focus is inside and returns focus to the opener. The Close
+button follows the same path.
+
 ## What a later slice does
 
 - Flip a `pending` entry to `runs` when the issue lands its surface. A pending
@@ -123,6 +141,8 @@ something else instead.
   technology, which reads the binding off `aria-keyshortcuts` instead.
 - Bind a new command by adding an entry, not by adding a listener. The spec
   beside the registry fails a chord that collides with one already bound.
+- Add a contextual key to `contextual-shortcuts.ts`. Renderers, event handlers,
+  and accessible descriptions read it from there.
 - The tool commands select a mode. The toolbox reads those same entries for
   its icons, accessible names and tooltips. Space is Hand's momentary chord:
   the binding restores the prior tool on keyup, which a click has no keyup to

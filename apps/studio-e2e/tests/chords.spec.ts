@@ -8,6 +8,12 @@ const registry = readFileSync(
 );
 
 const asChordCall = (chord: string): string => {
+  if (chord === '?') {
+    return "character('?')";
+  }
+  if (chord === 'Escape') {
+    return 'escapeChord';
+  }
   const pressed = chord.split('+');
   const shown = pressed.at(-1) ?? '';
   const key = shown === 'Space' ? ' ' : shown;

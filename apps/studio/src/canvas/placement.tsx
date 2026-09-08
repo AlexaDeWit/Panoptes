@@ -17,6 +17,8 @@ import {
   type RefObject,
 } from 'react';
 import { keyboardOwner, nativeActivationTarget } from '../commands/binding.js';
+import { pressesContextualShortcut } from '../commands/contextual-shortcuts.js';
+import { hostPlatform } from '../commands/shortcuts.js';
 import { placeBoundaryCurve, placeElement } from './edits.js';
 import {
   centredPlacement,
@@ -198,7 +200,7 @@ export function usePlacement(
       if (
         !isElementTool(active) ||
         event.defaultPrevented ||
-        event.key !== 'Enter' ||
+        !pressesContextualShortcut('place-at-centre', event, hostPlatform) ||
         nativeActivationTarget(event.target) ||
         keyboardOwner(event.target) !== 'page'
       ) {
