@@ -121,11 +121,6 @@ zoom to 100%. Fit selection includes selected flows, their labels, and badges,
 and uses the measured threat-pane width to keep the selection clear. View commands add no undo entries
 and do not dirty the model.
 
-The focused Chromium spec checks keyboard and pointer controls, touch taps
-and pans, focus, status output, an axe audit of the geometry editor, and native
-YAML and Threat Dragon save/open cycles. No manual screen-reader session or
-other browser and assistive-technology combination was checked.
-
 ### Flow bends
 
 Select one flow to reveal its bend handles and the Add bend control. Pull
@@ -149,10 +144,6 @@ Tab leaves insertion without saving it. Coordinates remain unsnapped.
 binds pointer and keyboard gestures, and `flow-bend-controls.tsx` draws their
 controls. Add bend lives in the command registry. The `bend-insertion.ts`
 event connects that command to the mounted controls.
-
-The focused Chromium browser spec covers pointer, keyboard, click-only edits,
-pan and zoom, an axe audit with bend actions open, and both format round trips.
-No manual screen-reader session was run for this change.
 
 ### Element edits
 
@@ -196,7 +187,7 @@ the region below, which speaks only for edits that landed.
   it has at least two waypoints. Escape changes back to Select and drops the
   draft, which never reached the model and costs no undo step. A curve placed
   by Enter before a waypoint exists uses the same default arch a click-sized
-  curve does. Freehand sampling is a later wave.
+  curve does. Freehand sampling is unavailable.
 - **Connect.** A flow runs between the actors, processes and stores the
   diagram draws. A trust boundary is not one of them at either end, being what
   a flow crosses rather than a thing it flows to, and neither is a text note,
@@ -217,9 +208,8 @@ the region below, which speaks only for edits that landed.
   costs no render of a canvas that rebuilds every node from the model.
   Releasing over empty canvas draws nothing and costs no undo step: React Flow
   reports a connection only where it resolved one, so `onConnect` is never
-  reached and nothing is dispatched. Nothing is created there either, the
-  epic's second wave holding quick-create back for the toolbox. Either way a
-  flow drawn is one `AddElement` carrying a flow with both ends attached and
+  reached and nothing is dispatched. A completed connection is one
+  `AddElement` carrying a flow with both ends attached and
   no waypoints, so the layout routes it. An element cannot be connected to
   itself: the layout resolves both ends of such a flow to one handle and would
   draw nothing.
@@ -235,8 +225,7 @@ the region below, which speaks only for edits that landed.
   or `RemoveElements`. The command registry binds both keys for the whole page
   ([the commands](../commands/README.md)), and the canvas binds them again for
   itself: a press the canvas has answered is marked handled, so one press is
-  one removal whichever of the two took it. Consolidating the two into the
-  registry alone is a follow-up. The cascade is the
+  one removal whichever of the two took it. The cascade is the
   model's own: a flow attached to what went loses that end and keeps the
   other, and a threat that named it keeps its record and loses the link. The
   announcement counts the full cascade before the dispatch and reports it
@@ -351,16 +340,10 @@ shows hover and keyboard focus ([Resize](#editing)).
 
 ## The view
 
-Opening a model fits the viewport to the whole of the diagram it carries.
-React Flow fits on mount alone, so a file opened over the model before it was
-drawn at that model's zoom and mostly off screen. `viewport.ts` holds the
-calculation, pure over the laid-out diagram's ink and the canvas's extent,
-with one padding constant that leaves the floating chrome room: the zoom
-cluster bottom right, and the toolbox of issue 175, which reads the same
-number. The zoom a fit lands on is held inside the range React Flow itself is
-given, so a fit cannot leave the view somewhere a later gesture snaps away
-from, and React Flow's own floor of 0.5 is not far enough out to draw Écluse's
-model whole.
+Opening a model fits its diagram to the viewport. `viewport.ts` calculates
+the fit from the diagram's ink bounds, the canvas extent, and padding for the
+floating controls. The result stays within the configured zoom range.
+React Flow's default minimum zoom of 0.5 cannot fit the full Écluse model.
 
 What is fitted is the model as it arrived, read by identity from the store
 ([the selectors](../store/selectors.ts)): a second open is a second model
@@ -431,9 +414,7 @@ twenty. Each press is one undo step, and the opposite edge stays fixed.
   flow out from under the threat panel: a flow has no box, so whether it is in
   view is not the question a node's is.
 - A connection released over empty canvas cancels and creates nothing. Drawing
-  an element there and attaching the flow to it is quick-create, which the
-  epic holds for its second wave and names an alias of the toolbox rather than
-  a command of its own.
+  an element there and attaching the flow to it is unavailable.
 - A rename the model refuses keeps its field open until the name is corrected
   or Escape is pressed, wherever the selection goes meanwhile. The draft is
   the field's alone, as a refused threat field is the panel's, and dropping it
@@ -447,14 +428,9 @@ twenty. Each press is one undo step, and the opposite edge stays fixed.
 - Reaching an element does not need a keyboard pan, since focusing an element
   pans it into view. Zooming and fitting have both a chord and a control of
   their own ([the commands](../commands/README.md)).
-- Tab order is React Flow's DOM order, every flow before every element, so a
-  keyboard user reaches the flows first. Choosing another order means
-  ordering the DOM, which is the same decision as how a diagram is
-  traversed, and that belongs with the toolbar rather than here.
+- Tab order follows React Flow's DOM order, with every flow before every node.
 - React Flow's container carries `role="application"`, which turns off a
   screen reader's browse mode inside the canvas: Tab reaches every element
   but the reader's own navigation keys do not. React Flow writes the role
   after any property handed to it, so it cannot be overridden from here.
-- One diagram is drawn, the model's first, until the studio can choose.
-- A real model reaches the canvas through the store's development-only hook
-  (`../store/development-model.ts`) until issue #37 lands the file dialogs.
+- The canvas draws the model's first diagram. There is no diagram chooser.
