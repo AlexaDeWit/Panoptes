@@ -14,3 +14,10 @@ export * from './lib/threat-dragon-read.js';
 export * from './lib/threat-dragon-write.js';
 export * from './lib/threat-dragon.js';
 export * from './lib/undeclared.js';
+
+export {
+  importModel,
+  importFormatSchema,
+  type ImportFormat,
+  type ImportResult,
+} from './lib/import.js';

@@ -48,7 +48,7 @@ export type FileContent = string | Uint8Array;
 /** Settle once before dispatch, retaining the candidate handle or releasing the association. */
 export type FileResult<Outcome> = {
   readonly outcome: Outcome;
-  settle(retain: boolean): boolean;
+  settle(retain: boolean | 'unchanged'): boolean;
 };
 
 /** Only the latest request can settle its handle, and Close invalidates every pending result. */
@@ -70,7 +70,7 @@ export function fileOwnership<Handle>() {
             return false;
           }
           owner = undefined;
-          held = retain ? candidate : undefined;
+          if (retain !== 'unchanged') held = retain ? candidate : undefined;
           return true;
         },
       });

@@ -1,4 +1,4 @@
-# Opening, saving and exporting
+# Opening, saving, importing and exporting
 
 The studio reaches files through `FileBridge`, a record of functions the app
 is handed rather than a platform it calls. `browser-bridge.ts` is the browser
@@ -49,6 +49,13 @@ component calls and a spec calls directly. A read is the size against
 `readAnyFormat`, then one action: the model, or the codec's own failure, which
 the panel renders with the paths it carries. A write is the codec's own write
 for the file's format, then the bridge, then one action.
+
+Import sits beside Export in the File menu and creates an unsaved native
+model. Its successful read releases the source handle and proposes a YAML
+name. A cancelled or refused import preserves the previous file association.
+Import shares operation ownership and unsaved-work guards with Open.
+[Format conversion rules](../../../../packages/formats/IMPORT.md) describe
+what each importer carries over and reports.
 
 `export-commands.ts` projects the current model through `@saerskriven/render`.
 It writes a diagram as SVG, the register as markdown, and the whole model as

@@ -96,6 +96,18 @@ export function reduce(state: State, action: Action): State {
       ...initialState(model),
       file: FileLifecycle.Opened({ name, source }),
     }),
+    Imported: ({ model, name }) => ({
+      ...initialState(model),
+      saved: { ...model },
+      file: FileLifecycle.Opened({
+        name,
+        source: { format: 'saerskriven-yaml', document: undefined },
+      }),
+    }),
+    ImportFailed: ({ name, failure }) => ({
+      ...state,
+      lastFailure: StudioFailure.Read({ name, failure }),
+    }),
     Saved: ({ name, source }) => ({
       ...state,
       saved: state.present,

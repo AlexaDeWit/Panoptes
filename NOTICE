@@ -11,3 +11,11 @@ This product includes the threat model of Écluse
 (https://github.com/AlexaDeWit/Ecluse) at test-data/ecluse.json, licensed
 under the MIT License and carrying the notice "Copyright 2026 Alexandra de
 Wit". See test-data/README.md for its provenance.
+
+This product includes schemas derived from IriusRisk OpenThreatModel
+(https://github.com/iriusrisk/OpenThreatModel), whose JSON Schema specifies
+Apache License 2.0, and the OWASP Threat Model Library
+(https://github.com/OWASP/www-project-threat-model-library), under the MIT
+License, Copyright (c) 2025 Threat Model Library Team. The latter licence
+is reproduced in packages/wire-tmbom/LICENSE. Test fixture provenance and
+licences are recorded in test-data/otm/ and test-data/tmbom/.

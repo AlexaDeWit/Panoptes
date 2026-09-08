@@ -39,6 +39,8 @@ type StudioActionTag =
   | 'Redo'
   | 'Select'
   | 'InlineEditing'
+  | 'Imported'
+  | 'ImportFailed'
   | 'Opened'
   | 'Saved'
   | 'Closed'
@@ -201,6 +203,15 @@ const studioActions: ActionsByTag<StudioActionTag> = {
     name: 'model.json',
     source: foreignSource,
     divergences: [],
+  }),
+  Imported: Action.Imported({
+    model: emptyModel,
+    name: 'imported.yaml',
+    divergences: [],
+  }),
+  ImportFailed: Action.ImportFailed({
+    name: 'model.otm',
+    failure: ReadFailure.MalformedText({ message: 'not YAML' }),
   }),
   Saved: Action.Saved({ name: 'model.yaml', source: nativeSource }),
   Closed: Action.Closed(),

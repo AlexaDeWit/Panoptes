@@ -38,7 +38,7 @@ text the format's syntax refuses, a document the wire schema refuses, and a
 mapping `parseModel` refuses. The two schema variants carry the model
 package's `ParseIssue`, so issues read the same way whichever boundary
 produced them, and `readFailureIssues` folds any failure to the issues it
-carries. Nothing throws. Imports `@saerskriven/model` and the two wire packages,
+carries. Nothing throws. Imports `@saerskriven/model` and the wire packages,
 and no other internal package.
 
 `readLimits` is what a read may spend on a text before it refuses it. It is
@@ -303,6 +303,9 @@ narrowing on the name pairs a source document with the codec that produced it:
 member's source with the other member's codec does not compile. Which document
 belongs to which codec is what a caller cannot check by looking at the
 document, which is why the codec comes back and not the model alone.
+
+[Import](IMPORT.md) is a separate conversion path for OTM and TM-BOM. It
+produces native models without adding those formats to Open or Save As.
 
 Nothing here parses a text of its own. Detection is the codec reads, so the
 bounds those reads put on size, nesting and aliases bound a detected read

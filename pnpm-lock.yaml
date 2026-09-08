@@ -385,12 +385,18 @@ importers:
       '@saerskriven/model':
         specifier: workspace:*
         version: link:../model
+      '@saerskriven/wire-otm':
+        specifier: workspace:*
+        version: link:../wire-otm
       '@saerskriven/wire-saerskriven-yaml':
         specifier: workspace:*
         version: link:../wire-saerskriven-yaml
       '@saerskriven/wire-threat-dragon':
         specifier: workspace:*
         version: link:../wire-threat-dragon
+      '@saerskriven/wire-tmbom':
+        specifier: workspace:*
+        version: link:../wire-tmbom
       effect:
         specifier: 'catalog:'
         version: 3.22.1
@@ -469,6 +475,12 @@ importers:
         specifier: 'catalog:'
         version: 30.0.1
 
+  packages/wire-otm:
+    dependencies:
+      zod:
+        specifier: 'catalog:'
+        version: 4.5.2
+
   packages/wire-saerskriven-yaml:
     dependencies:
       zod:
@@ -476,6 +488,12 @@ importers:
         version: 4.5.2
 
   packages/wire-threat-dragon:
+    dependencies:
+      zod:
+        specifier: 'catalog:'
+        version: 4.5.2
+
+  packages/wire-tmbom:
     dependencies:
       zod:
         specifier: 'catalog:'
