@@ -16,7 +16,6 @@
         "default",
         "sharedGlobals",
         "{workspaceRoot}/.github/workflows/ci.yml",
-        "{workspaceRoot}/.github/workflows/pages.yml",
         "{workspaceRoot}/flake.lock",
         {
           "externalDependencies": ["effect", "zod", "yaml"]

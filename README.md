@@ -168,16 +168,16 @@ so the editor and the format check inside `pnpm check` agree.
 
 Tag CI builds the studio from the release commit, then attests and attaches its
 archive to the GitHub release alongside the CLI.
-[`pages.yml`](.github/workflows/pages.yml) deploys that archive after CI succeeds,
+The same [CI workflow](.github/workflows/ci.yml) then deploys that archive,
 provided the release is GitHub's Latest stable release. It does not build `main`
 or deploy on a nightly schedule. The studio's Project menu shows the built
 version and links to its release notes. Other builds say `development`.
 
-A manual Pages dispatch from `main` retries the current Latest release using
-its existing archive. It does not rebuild the website or publish a release.
-In Pages settings, select **GitHub Actions** as the source. Keep the
-`github-pages` environment restricted to `main`: the promotion workflow runs
-there and verifies the release archive against the tag's commit.
+Dispatch CI from `main` with `deploy_pages=true` to retry the current Latest
+release. This mode reuses its archive. It does not rebuild the website or publish a release.
+In Pages settings, select **GitHub Actions** as the source. The
+`github-pages` environment must permit `v*` tags for releases and `main` for
+manual retries. Both paths verify the archive against its release commit.
 [The release procedure](docs/release.md#website-promotion-and-recovery) describes
 first-release setup and recovery.
 

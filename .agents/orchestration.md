@@ -14,6 +14,9 @@ Edit here when the process changes, in the same PR as the change.
   push to a tag ref. They are a consequence of a green gate, not members of
   the gating set, so they belong in neither the gate's `needs` nor its
   verdict.
+- `pages-prepare` and `pages-deploy` follow publication in the same workflow.
+  A manual `deploy_pages` run on `main` retries the existing release archive.
+  The `github-pages` environment permits `main` and `v*` tags.
 - `publish` names the **`release`** GitHub environment, whose policy admits
   `v*` tags only. That and the tag rulesets are repository settings rather
   than workflow config, so a change to them is invisible in the diff;

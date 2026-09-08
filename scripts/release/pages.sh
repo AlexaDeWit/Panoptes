@@ -53,6 +53,11 @@ JS
     ;;
   resolve)
     latest
+    if [[ -n "${EXPECTED_TAG:-}" && "$tag" != "$EXPECTED_TAG" ]]; then
+      echo 'The tagged release is no longer Latest. Skipping its deployment.'
+      echo 'eligible=false' >>"${GITHUB_OUTPUT:?missing output file}"
+      exit 0
+    fi
     mkdir -p release-site
     gh release download "$tag" --repo "$repository" --dir release-site \
       --pattern studio.tar --pattern studio-release.json
@@ -66,21 +71,22 @@ JS
        and .repository == $repository and (.run_id | type == "number" and . > 0 and . == floor)' \
       release-site/studio-release.json >/dev/null
     run_id=$(jq -r '.run_id' release-site/studio-release.json)
-    # The dispatching job can still be closing when promotion starts.
-    for attempt in {1..30}; do
-      source_run=$(gh api "repos/$repository/actions/runs/$run_id")
-      if [[ "$(jq -r '.status' <<<"$source_run")" == 'completed' ]]; then
-        break
-      fi
-      sleep 5
-    done
+    source_run=$(gh api "repos/$repository/actions/runs/$run_id")
     jq -e --arg tag "$tag" --arg commit "$commit" --arg repository "$repository" \
-      '.event == "push" and .status == "completed" and .conclusion == "success"
-       and .path == ".github/workflows/ci.yml" and .head_branch == $tag
+      '.event == "push" and .path == ".github/workflows/ci.yml" and .head_branch == $tag
        and .head_sha == $commit and .repository.full_name == $repository' \
       <<<"$source_run" >/dev/null
+    # This run includes deployment, so validate its completed prerequisites.
+    # Keep only the latest job per name when a failed stage was retried.
+    source_jobs=$(gh api "repos/$repository/actions/runs/$run_id/jobs?filter=all&per_page=100" --paginate --slurp)
+    jq -e '
+      [.[].jobs[]] | group_by(.name) | map(max_by(.id)) as $jobs |
+      all(["CI gate", "Build the release website", "Attest the release assets", "Publish the release"][];
+        . as $name | any($jobs[]; .name == $name and .status == "completed" and .conclusion == "success"))
+    ' <<<"$source_jobs" >/dev/null
     mv release-site/studio.tar release-site/artifact.tar
     {
+      echo 'eligible=true'
       echo "tag=$tag"
       echo "commit=$commit"
     } >>"${GITHUB_OUTPUT:?missing output file}"

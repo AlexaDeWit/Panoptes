@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import {
+  existsSync,
   mkdtempSync,
   mkdirSync,
   readFileSync,
@@ -40,7 +41,17 @@ const scenario = () => ({
   invalidAttestation: false,
   missingAsset: false,
   apiFailure: false,
-  pendingRunChecks: 0,
+  jobs: [
+    'CI gate',
+    'Build the release website',
+    'Attest the release assets',
+    'Publish the release',
+  ].map((name, id) => ({
+    name,
+    id,
+    status: 'completed',
+    conclusion: 'success',
+  })),
   liveTag: 'v1.2.3',
 });
 
@@ -67,12 +78,8 @@ if (args[0] === 'api') {
   if (endpoint.endsWith('/releases/latest')) console.log(JSON.stringify(state.release));
   else if (endpoint.includes('/git/ref/tags/')) console.log('b'.repeat(40));
   else if (endpoint.includes('/git/tags/')) console.log(state.commit);
-  else if (endpoint.includes('/actions/runs/')) {
-    const status = state.pendingRunChecks > 0 ? 'in_progress' : state.run.status;
-    state.pendingRunChecks -= 1;
-    fs.writeFileSync(process.env.PAGES_TEST_STATE, JSON.stringify(state));
-    console.log(JSON.stringify({ ...state.run, status }));
-  }
+  else if (endpoint.includes('/jobs?')) console.log(JSON.stringify([{ jobs: state.jobs }]));
+  else if (endpoint.includes('/actions/runs/')) console.log(JSON.stringify(state.run));
   else process.exit(2);
 } else if (args[0] === 'release' && args[1] === 'download') {
   if (state.missingAsset) process.exit(1);
@@ -188,7 +195,10 @@ for (const failure of [
         state.metadata.version = '1.2.2';
         break;
       case 'failed-ci':
-        state.run.conclusion = 'failure';
+        state.jobs = state.jobs.map((job) => ({
+          ...job,
+          conclusion: 'failure',
+        }));
         break;
       case 'wrong-workflow':
         state.run.path = '.github/workflows/other.yml';
@@ -312,12 +322,51 @@ void test('packaging checks every manifest and the built stamp before making the
   assert.notEqual(probe.run('prepare', env).status, 0);
 });
 
-void test('promotion waits for the dispatching run to finish and rejects a run that stays pending', () => {
+void test('deployment in the same run requires completed release stages without waiting for itself', () => {
   const state = scenario();
-  state.pendingRunChecks = 2;
+  state.run.status = 'in_progress';
+  state.run.conclusion = '';
+  assert.equal(
+    fixture(state).run('resolve', { EXPECTED_TAG: 'v1.2.3' }).status,
+    0,
+  );
+  state.run.status = 'completed';
+  state.run.conclusion = 'failure';
   assert.equal(fixture(state).run('resolve').status, 0);
-  state.pendingRunChecks = 100;
-  assert.notEqual(fixture(state).run('resolve').status, 0);
+});
+
+for (const name of [
+  'CI gate',
+  'Build the release website',
+  'Attest the release assets',
+  'Publish the release',
+]) {
+  void test(`promotion requires the latest successful ${name} job`, () => {
+    const state = scenario();
+    state.jobs.push({
+      name,
+      id: 100,
+      status: 'completed',
+      conclusion: 'failure',
+    });
+    assert.notEqual(fixture(state).run('resolve').status, 0);
+    state.jobs.push({
+      name,
+      id: 101,
+      status: 'completed',
+      conclusion: 'success',
+    });
+    assert.equal(fixture(state).run('resolve').status, 0);
+    state.jobs = state.jobs.filter((job) => job.name !== name);
+    assert.notEqual(fixture(state).run('resolve').status, 0);
+  });
+}
+
+void test('automatic deployment uses its tag and skips a release superseded by Latest', () => {
+  const probe = fixture();
+  assert.equal(probe.run('resolve', { EXPECTED_TAG: 'v1.2.2' }).status, 0);
+  assert.equal(probe.output(), 'eligible=false\n');
+  assert.ok(probe.calls().every(([command]) => command === 'api'));
 });
 
 void test('the public-site check accepts the promoted version and refuses a stale response', () => {
@@ -331,7 +380,13 @@ void test('the public-site check accepts the promoted version and refuses a stal
   assert.notEqual(fixture(state).run('verify-live', env).status, 0);
 });
 
+const concurrencySchema = z.object({
+  group: z.string(),
+  'cancel-in-progress': z.union([z.string(), z.boolean()]),
+});
 const jobSchema = z.object({
+  name: z.string(),
+  concurrency: concurrencySchema.optional(),
   needs: z.union([z.string(), z.array(z.string())]).optional(),
   if: z.string().optional(),
   steps: z
@@ -346,10 +401,7 @@ const jobSchema = z.object({
 });
 const workflowSchema = z.object({
   on: z.record(z.string(), z.unknown()),
-  concurrency: z.object({
-    group: z.string(),
-    'cancel-in-progress': z.union([z.string(), z.boolean()]),
-  }),
+  concurrency: concurrencySchema,
   jobs: z.record(z.string(), jobSchema),
 });
 const workflow = (name: string) =>
@@ -367,16 +419,38 @@ void test('publication waits for the gate, prepared website, and attestation', (
     'pages-build',
   ]);
   assert.match(ci.jobs['publish']?.if ?? '', /github\.event_name == 'push'/u);
-  const pages = workflow('pages.yml');
-  assert.deepEqual(Object.keys(pages.on).toSorted(), ['workflow_dispatch']);
-  assert.equal(pages.concurrency.group, 'github-pages');
-  assert.equal(pages.concurrency['cancel-in-progress'], false);
+  assert.equal(existsSync(join(root, '.github/workflows/pages.yml')), false);
+  assert.ok('workflow_dispatch' in ci.on);
+  for (const job of [
+    'build-test',
+    'static-checks',
+    'e2e-smoke',
+    'dependency-changes',
+    'provenance',
+    'gate',
+  ]) {
+    assert.match(ci.jobs[job]?.if ?? '', /!inputs\.deploy_pages/u);
+  }
+  assert.equal(
+    ci.jobs['gate']?.name,
+    "${{ inputs.deploy_pages && 'Deployment retry (no CI gate)' || 'CI gate' }}",
+  );
+  assert.equal(ci.jobs['pages-prepare']?.needs, 'publish');
   assert.match(
-    pages.jobs['prepare']?.if ?? '',
+    ci.jobs['pages-prepare']?.if ?? '',
+    /needs\.publish\.result == 'success'/u,
+  );
+  assert.match(ci.jobs['pages-prepare']?.if ?? '', /inputs\.deploy_pages/u);
+  assert.match(
+    ci.jobs['pages-prepare']?.if ?? '',
     /github\.ref == 'refs\/heads\/main'/u,
   );
-  assert.equal(pages.jobs['deploy']?.needs, 'prepare');
-  const steps = pages.jobs['deploy']?.steps ?? [];
+  assert.equal(ci.jobs['pages-deploy']?.needs, 'pages-prepare');
+  assert.deepEqual(ci.jobs['pages-deploy']?.concurrency, {
+    group: 'github-pages',
+    'cancel-in-progress': false,
+  });
+  const steps = ci.jobs['pages-deploy']?.steps ?? [];
   assert.ok(
     steps.findIndex(({ run }) => run?.endsWith('pages.sh check')) <
       steps.findIndex(({ uses }) => uses?.startsWith('actions/deploy-pages@')),

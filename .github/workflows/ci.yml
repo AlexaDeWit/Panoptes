@@ -10,12 +10,17 @@ on:
     tags: ['v*']
   pull_request:
   workflow_dispatch:
+    inputs:
+      deploy_pages:
+        description: 'Retry Latest website deployment without rebuilding or publishing'
+        type: boolean
+        default: false
 
 # Never cancel on main or on a tag: main keeps the complete build history of
 # every commit that lands, and a cancelled tag run would leave a release
 # half made.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ inputs.deploy_pages || false }}
   cancel-in-progress: >-
     ${{ github.ref != 'refs/heads/main'
     && !startsWith(github.ref, 'refs/tags/v') }}
@@ -35,6 +40,7 @@ env:
 
 jobs:
   build-test:
+    if: ${{ !inputs.deploy_pages }}
     name: Build, typecheck & tests
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -148,6 +154,7 @@ jobs:
   # run blocks; policy in .github/zizmor.yml) and SAST over the source tree
   # (semgrep, findings uploaded to code scanning).
   static-checks:
+    if: ${{ !inputs.deploy_pages }}
     name: Static checks
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -200,6 +207,7 @@ jobs:
   # pinned browsers (no network download; PLAYWRIGHT_BROWSERS_PATH points into
   # the nix store). Its own job so browser time never stretches build-test.
   e2e-smoke:
+    if: ${{ !inputs.deploy_pages }}
     name: Playwright smoke
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -226,6 +234,7 @@ jobs:
   # them moved and is skipped otherwise, and the gate accepts that skip only
   # with this job's answer beside it.
   dependency-changes:
+    if: ${{ !inputs.deploy_pages }}
     name: Dependency file changes
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -268,7 +277,7 @@ jobs:
   # commits between the base and here, wherever a squash merge left it.
   #
   # It runs when the lockfile or the catalog moved, which is where a Renovate
-  # bump appears, and unconditionally on a push and a dispatch;
+  # bump appears, and on normal push or dispatch checks;
   # docs/release.md names it as a step before a tag.
   #
   # Its own job because it reaches the registry: a registry out of reach reds
@@ -283,8 +292,9 @@ jobs:
     name: Dependency provenance
     needs: dependency-changes
     if: >-
-      github.event_name != 'pull_request'
-      || needs.dependency-changes.outputs.lockfile == 'true'
+      !inputs.deploy_pages
+      && (github.event_name != 'pull_request'
+      || needs.dependency-changes.outputs.lockfile == 'true')
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -317,13 +327,13 @@ jobs:
         run: nix develop .#ci --command scripts/check-provenance.mjs
 
   gate:
-    name: CI gate
+    name: ${{ inputs.deploy_pages && 'Deployment retry (no CI gate)' || 'CI gate' }}
     # The single required check. Wire a new gating job in by adding it to
     # `needs` AND to the verdict step, so a job that silently never ran can
     # never read as green.
     needs:
       [build-test, static-checks, e2e-smoke, dependency-changes, provenance]
-    if: always()
+    if: ${{ always() && !inputs.deploy_pages }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -461,7 +471,6 @@ jobs:
     environment: release
     permissions:
       contents: write # create or update the release and its assets
-      actions: write # dispatch production promotion after publication
     steps:
       # For CHANGELOG.md alone.
       - name: Checkout the tag
@@ -526,12 +535,85 @@ jobs:
               "${notes[@]}" cli/saerskriven-* cli/SHA256SUMS release-site/studio.tar release-site/studio-release.json
           fi
 
-      - name: Request promotion of the published website
+  pages-prepare:
+    name: Verify the latest release website
+    needs: publish
+    if: >-
+      !cancelled()
+      && ((github.event_name == 'push'
+      && startsWith(github.ref, 'refs/tags/v')
+      && !contains(github.ref_name, '-')
+      && needs.publish.result == 'success')
+      || (github.event_name == 'workflow_dispatch'
+      && github.ref == 'refs/heads/main'
+      && inputs.deploy_pages))
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      actions: read
+      attestations: read
+    outputs:
+      eligible: ${{ steps.release.outputs.eligible }}
+      tag: ${{ steps.release.outputs.tag }}
+      commit: ${{ steps.release.outputs.commit }}
+    steps:
+      - name: Checkout the promotion controls
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Resolve Latest and verify its archive
+        id: release
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
-          TAG: ${{ github.ref_name }}
-        run: |
-          if [[ "$TAG" != *-* ]]; then
-            gh workflow run pages.yml --ref main
-          fi
+          EXPECTED_TAG: ${{ github.event_name == 'push' && github.ref_name || '' }}
+        run: bash scripts/release/pages.sh resolve
+      # Re-upload the verified tar without extracting or rebuilding its contents.
+      - name: Stage the Pages artifact
+        if: steps.release.outputs.eligible == 'true'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: github-pages
+          path: release-site/artifact.tar
+          compression-level: 0
+          if-no-files-found: error
+          retention-days: 7
+
+  pages-deploy:
+    name: Deploy the latest release
+    needs: pages-prepare
+    if: ${{ !cancelled() && needs.pages-prepare.result == 'success' && needs.pages-prepare.outputs.eligible == 'true' }}
+    concurrency:
+      group: github-pages
+      cancel-in-progress: false
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    steps:
+      - name: Checkout the promotion controls
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Recheck Latest after any environment wait
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          EXPECTED_TAG: ${{ needs.pages-prepare.outputs.tag }}
+          EXPECTED_COMMIT: ${{ needs.pages-prepare.outputs.commit }}
+        run: bash scripts/release/pages.sh check
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128 # v5.0.0
+      - name: Check the version served to a fresh request
+        env:
+          SITE_URL: ${{ steps.deployment.outputs.page_url }}
+          EXPECTED_TAG: ${{ needs.pages-prepare.outputs.tag }}
+          GH_REPO: ${{ github.repository }}
+        run: bash scripts/release/pages.sh verify-live

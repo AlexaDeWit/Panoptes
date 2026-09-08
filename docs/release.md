@@ -160,34 +160,31 @@ notes when the section is missing.
 
 #### Website promotion and recovery
 
-After publication, CI explicitly dispatches [the Pages workflow](../.github/workflows/pages.yml)
-on `main`. Dispatch works when `GITHUB_TOKEN` creates the release.
-A `release: published` trigger would not run for that token's publication.
-The workflow executes promotion controls from `main`, downloads the Latest
-stable release's archive, and never executes or rebuilds the downloaded code.
+After publication, `pages-prepare` and `pages-deploy` run in the same
+[CI workflow](../.github/workflows/ci.yml). Automatic deployment uses that run's
+tag and archive. If another release supersedes it as Latest, it skips the old
+deployment. There is no separate Pages workflow or cross-workflow dispatch.
 
 Promotion verifies both website assets' attestations against this repository,
-`ci.yml`, the release tag, and its exact source commit. It also requires the
-recorded CI run to be a successful tag push in this repository. It waits up to
-150 seconds for the dispatching run to finish. Only then does
-it upload the opaque archive to Pages. Preparation holds read permissions.
-The deployment job holds `pages: write` and `id-token: write`, without installing
-dependencies.
+`ci.yml`, the release tag, and its exact source commit. It checks the source
+run's tag-push identity and its latest completed gate, website-build,
+attestation, and publication jobs. It does not wait for the whole run, which
+includes this deployment. A failed deployment can therefore retry after the
+release stages succeeded. Preparation holds read permissions. Deployment
+holds `pages: write` and `id-token: write`, without installing dependencies.
 
-The `github-pages` concurrency group serializes deployments. Every queued
-request resolves Latest when it starts, so an older request replacing a pending
-request still promotes the current release. The deployment
-job rechecks Latest after any environment approval wait. A completed older run
-cannot overwrite a newer release. A new release can still appear while a
-Pages deployment is already running. Publication and deployment are separate
-GitHub operations, so the previous website remains visible during that window
-or after a failed deployment.
+The `github-pages` concurrency group serializes deployments. The deployment
+job rechecks Latest after any queue or environment approval wait. An older
+run cannot overwrite a newer deployment. GitHub can replace a pending job
+when another enters the group, so retry a cancelled deployment as described
+below. Publication and deployment are separate GitHub operations within one
+run. The previous website remains visible during promotion or after failure.
 
 For the first release, select **GitHub Actions** as the Pages source and set
 the intended custom domain before tagging. The `github-pages` environment must
-allow `main`, which is where automatic and manual promotion execute.
-On 2026-09-08 the live environment allowed only that branch. No tag permission
-is needed there. The publish job also holds `actions: write` for the dispatch. Check it with:
+allow `v*` tags for automatic releases and `main` for manual retries. The
+separate `release` environment remains restricted to tags. Check the Pages
+policy with:
 
 ```sh
 gh api repos/AlexaDeWit/Saerskriven/environments/github-pages/deployment-branch-policies
@@ -198,13 +195,15 @@ above. A pre-existing release without website assets cannot bootstrap this
 pipeline. Drafts and prereleases do not bootstrap a production site either.
 
 If Pages fails after publication, rerun its failed jobs while the staged
-artifact exists, or dispatch `pages.yml` from `main`:
+artifact exists, or dispatch CI from `main` with the deployment-only option:
 
 ```sh
-gh workflow run pages.yml --repo AlexaDeWit/Saerskriven --ref main
+gh workflow run ci.yml --repo AlexaDeWit/Saerskriven --ref main -f deploy_pages=true
 ```
 
-The dispatch resolves Latest again and reuses its attested release assets,
+This mode skips the build, check, and publication jobs. Its skipped gate uses
+a different check name to preserve the last CI verdict on `main`. It resolves Latest
+again and reuses its attested release assets,
 including after the temporary Actions artifacts expire. Missing assets or a
 failed attestation stop promotion. A code fix or a changed Pages domain/base
 path requires a new release. Do not substitute a build from current `main`.
@@ -304,8 +303,9 @@ gh api repos/AlexaDeWit/Saerskriven/actions/permissions/workflow \
 {"can_approve_pull_request_reviews":false,"default_workflow_permissions":"read"}
 ```
 
-A workflow token starts read-only. `publish` adds release and dispatch writes.
-`attest` adds attestation and OIDC writes. Build jobs do not receive release
+A workflow token starts read-only. `publish` adds release writes.
+`attest` adds attestation and OIDC writes. `pages-deploy` adds Pages and OIDC
+writes. Build jobs do not receive release
 or Pages deployment permissions.
 
 ### What none of this can do
@@ -317,11 +317,10 @@ a release from this pipeline exists only where the gate was green on a tag the
 owner signed and pushed, and every genuine asset is attested, so an imposter
 is distinguishable by anyone rather than only by us.
 
-`ci.yml` accepts `workflow_dispatch`, and both tag jobs once tested the ref
-alone, so a dispatch aimed at an existing `v*` tag could re-drive attest and
-publish with no push behind them. Both now require
-`github.event_name == 'push'` as well, so a dispatch runs the checks and
-stops.
+`ci.yml` accepts `workflow_dispatch`. Publication still requires
+`github.event_name == 'push'` and a tag ref. An ordinary dispatch runs checks
+without publishing. The `deploy_pages` option runs only deployment and only
+from `main`, using an existing attested stable release.
 
 Immutable releases, the fourth rule #114 proposed, is conditioned there on the
 setting being available on this plan; it is not, so assets can still be
