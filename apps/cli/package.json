@@ -7,7 +7,7 @@
     "The build bundles every workspace and npm dependency as ESM for `deno compile`. It stamps the root manifest version through esbuild.config.mts.",
     "The build copies the Typst module and pinned fonts into dist/assets. The compiled executable includes that directory.",
     "The typecheck writes declarations under out-tsc. The build writes only the bundle and its runtime assets under dist.",
-    "The test target depends on build because main.spec.ts runs dist/main.js. The compiled test also runs the executable produced by compile.",
+    "The test target depends on build because main.spec.ts runs dist/saer.js. The compiled test also runs the executable produced by compile.",
     "The compile target hashes its bundle, packaging script, toolchain, fixture, and host target. Nx stores the gitignored dist/cli directory as its output."
   ],
   "nx": {
@@ -19,6 +19,7 @@
         "executor": "@nx/esbuild:esbuild",
         "options": {
           "bundle": true,
+          "outputFileName": "saer.js",
           "declaration": false,
           "thirdParty": true,
           "format": [

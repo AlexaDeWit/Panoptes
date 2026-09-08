@@ -61,19 +61,20 @@ The CLI ships as one executable per platform, attached to every
 [release](https://github.com/AlexaDeWit/Saerskriven/releases). It carries its own
 runtime, so there is nothing else to install: no node, no npm, no browser.
 
-| Executable                                         | Platform              |
-| -------------------------------------------------- | --------------------- |
-| `saerskriven-<version>-x86_64-unknown-linux-gnu`   | Linux, Intel or AMD   |
-| `saerskriven-<version>-aarch64-unknown-linux-gnu`  | Linux, 64-bit ARM     |
-| `saerskriven-<version>-x86_64-apple-darwin`        | macOS, Intel          |
-| `saerskriven-<version>-aarch64-apple-darwin`       | macOS, Apple silicon  |
-| `saerskriven-<version>-x86_64-pc-windows-msvc.exe` | Windows, Intel or AMD |
+| Executable                                  | Platform              |
+| ------------------------------------------- | --------------------- |
+| `saer-<version>-x86_64-unknown-linux-gnu`   | Linux, Intel or AMD   |
+| `saer-<version>-aarch64-unknown-linux-gnu`  | Linux, 64-bit ARM     |
+| `saer-<version>-x86_64-apple-darwin`        | macOS, Intel          |
+| `saer-<version>-aarch64-apple-darwin`       | macOS, Apple silicon  |
+| `saer-<version>-x86_64-pc-windows-msvc.exe` | Windows, Intel or AMD |
 
 ### macOS and Linux
 
 Download `install.sh` from the [latest release](https://github.com/AlexaDeWit/Saerskriven/releases/latest).
 The installer selects your platform and checks the executable against its
-embedded SHA-256 before installing it as `~/.local/bin/saerskriven`.
+embedded SHA-256 before installing it as `~/.local/bin/saer`.
+The compatibility command `saerskriven` is a symbolic link to `saer`.
 It needs Bash, curl, and either `sha256sum` (Linux) or `shasum` (macOS).
 Linux executables require glibc. Alpine Linux's musl is not supported.
 
@@ -100,13 +101,17 @@ or `~/.zshrc` (zsh), then open a new terminal:
 export PATH="$HOME/.local/bin:$PATH"
 ```
 
-Run `saerskriven --version` to check the installed version.
+Run `saer --version` to check the installed version.
 Use `bash install.sh --bin-dir "$HOME/bin"` to select another absolute directory.
 The installer never uses sudo or edits your shell configuration. Running a new
 release's installer replaces the existing regular file after verification.
 A failed download or verification leaves the existing executable unchanged.
-It refuses symbolic links and directories at the executable path.
-To uninstall the default installation, remove `~/.local/bin/saerskriven`.
+It refuses symbolic links and directories at the `saer` executable path.
+It also refuses an unrelated `saer` in the destination or on PATH. Updates
+recognise an existing installation by its `saerskriven -> saer` link.
+An older installation containing only a regular `saerskriven` executable migrates
+to the new layout. To uninstall, remove both `~/.local/bin/saer` and
+`~/.local/bin/saerskriven`.
 
 SHA-256 checks detect changed bytes. They do not prove build origin when an
 attacker can replace both the executable and the installer. For build origin
@@ -132,7 +137,7 @@ gh attestation verify install.sh --repo AlexaDeWit/Saerskriven \
 Add `--source-digest` with the signed tag's commit to require that commit too.
 
 On macOS the executables are unsigned. If Gatekeeper blocks a verified download,
-`xattr -d com.apple.quarantine ~/.local/bin/saerskriven` removes its quarantine
+`xattr -d com.apple.quarantine ~/.local/bin/saer` removes its quarantine
 attribute. The installer does not change Gatekeeper settings or execute the download.
 
 ### Other installation methods
@@ -149,16 +154,19 @@ with the executable's filename in place of `install.sh`.
 Windows is outside the installer's scope. Download the `.exe` and `SHA256SUMS`
 from the same release. In PowerShell, run `Get-FileHash .\<filename>.exe -Algorithm SHA256`
 and compare the hash with that filename's entry. Rename the verified file to
-`saerskriven.exe` and put it in a user directory on PATH.
+`saer.exe` and put it in a user directory on PATH.
 
 ## Usage
 
+Use `saer` for new scripts. The `saerskriven` compatibility command accepts the
+same arguments and runs the same executable.
+
 ```sh
-saerskriven validate threat-model.yaml
-saerskriven render threat-model.yaml --format md --out register.md
-saerskriven render threat-model.yaml --format svg --out diagram.svg
-saerskriven render threat-model.yaml --format pdf --out threat-model.pdf
-saerskriven render threat-model.yaml --format svg --out -
+saer validate threat-model.yaml
+saer render threat-model.yaml --format md --out register.md
+saer render threat-model.yaml --format svg --out diagram.svg
+saer render threat-model.yaml --format pdf --out threat-model.pdf
+saer render threat-model.yaml --format svg --out -
 ```
 
 Both commands read Threat Dragon v2 JSON and Saerskriven YAML, and the content
@@ -245,7 +253,7 @@ deployment.
 ### Packaging the CLI
 
 `pnpm nx compile @saerskriven/cli` builds and bundles the CLI, then compiles the
-standalone host executable. The bundle inlines every workspace package and
+standalone host executable. The `saer.js` bundle inlines every workspace package and
 dependency and carries the version from the root manifest.
 
 The `compile` target runs [`scripts/package-cli.sh`](scripts/package-cli.sh),

@@ -88,7 +88,7 @@ jobs:
         run: |
           version="$(jq -r .version package.json)"
           expected="${TAG:-v$version}"
-          reported="$("./dist/cli/saerskriven-${version}-x86_64-unknown-linux-gnu" --version)"
+          reported="$("./dist/cli/saer-${version}-x86_64-unknown-linux-gnu" --version)"
           if [ "v$reported" != "$expected" ]; then
             echo "the executable reports ${reported}, expected ${expected}" >&2
             exit 1
@@ -408,7 +408,7 @@ jobs:
         uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
           subject-path: |
-            cli/saerskriven-*
+            cli/saer-*
             cli/SHA256SUMS
             cli/install.sh
             release-site/studio.tar
@@ -419,7 +419,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         run: |
-          for asset in cli/saerskriven-* cli/SHA256SUMS cli/install.sh release-site/studio.tar release-site/studio-release.json; do
+          for asset in cli/saer-* cli/SHA256SUMS cli/install.sh release-site/studio.tar release-site/studio-release.json; do
             gh attestation verify "$asset" --repo "$GH_REPO" \
               --signer-workflow "$GH_REPO/.github/workflows/ci.yml" \
               --source-ref "$GITHUB_REF" --source-digest "$GITHUB_SHA"
@@ -513,7 +513,7 @@ jobs:
           TAG: ${{ github.ref_name }}
         run: |
           if gh release view "$TAG" >/dev/null 2>&1; then
-            gh release upload "$TAG" --clobber cli/saerskriven-* cli/SHA256SUMS cli/install.sh release-site/studio.tar release-site/studio-release.json
+            gh release upload "$TAG" --clobber cli/saer-* cli/SHA256SUMS cli/install.sh release-site/studio.tar release-site/studio-release.json
             gh release edit "$TAG" --notes-file release-notes.md
           else
             notes=(--notes-file release-notes.md)
@@ -521,7 +521,7 @@ jobs:
               notes+=(--prerelease)
             fi
             gh release create "$TAG" --title "$TAG" --verify-tag \
-              "${notes[@]}" cli/saerskriven-* cli/SHA256SUMS cli/install.sh release-site/studio.tar release-site/studio-release.json
+              "${notes[@]}" cli/saer-* cli/SHA256SUMS cli/install.sh release-site/studio.tar release-site/studio-release.json
           fi
 
   pages-prepare:

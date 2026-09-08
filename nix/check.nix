@@ -20,10 +20,11 @@ runCommand "saerskriven-installed-check" {
   done
 
   test "$(saerskriven --version)" = ${lib.escapeShellArg saerskriven.version}
+  test "$(saer --version)" = ${lib.escapeShellArg saerskriven.version}
   cp ${../test-data/saerskriven/ecluse.yaml} model.yaml
-  saerskriven validate model.yaml > validation.txt
+  saer validate model.yaml > validation.txt
   for format in md svg pdf; do
-    saerskriven render model.yaml --format "$format" --out "model.$format"
+    saer render model.yaml --format "$format" --out "model.$format"
     test -s "model.$format"
   done
 

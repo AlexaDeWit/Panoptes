@@ -355,7 +355,7 @@ void test('artifact validation rejects a wrong tag and a corrupted executable', 
     JSON.stringify({ version: '1.2.3' }),
   );
   mkdirSync(join(directory, 'dist/cli'), { recursive: true });
-  const executable = 'saerskriven-1.2.3-x86_64-unknown-linux-gnu';
+  const executable = 'saer-1.2.3-x86_64-unknown-linux-gnu';
   const binary = '#!/usr/bin/env bash\necho 1.2.3\n';
   writeFileSync(join(directory, 'dist/cli', executable), binary, {
     mode: 0o755,

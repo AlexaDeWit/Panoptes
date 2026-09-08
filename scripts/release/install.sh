@@ -27,6 +27,7 @@ main() {
         printf '%s\n' \
           'Usage: bash install.sh [--bin-dir /absolute/path] [--verify-attestation]' \
           "Installs ${release_tag} to \$HOME/.local/bin by default." \
+          'Provides saer and the compatibility command saerskriven.' \
           'Checks SHA-256 before replacing an existing executable.' \
           '--verify-attestation also requires gh and verifies the release build origin.'
         return
@@ -41,6 +42,7 @@ main() {
   esac
   [[ "$release_tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]] ||
     fail 'Download the release installer. This source template has no release tag.'
+  check_install_paths "$bin_dir"
 
   local os arch target
   os="$(uname -s)"
@@ -69,7 +71,7 @@ main() {
     command -v gh >/dev/null 2>&1 || fail '--verify-attestation requires the GitHub CLI (gh).'
   fi
 
-  local asset="saerskriven-${release_tag#v}-${arch}-${target}"
+  local asset="saer-${release_tag#v}-${arch}-${target}"
   local base_url="https://github.com/${repository}/releases/download/${release_tag}"
   umask 077
   scratch="$(mktemp -d "${TMPDIR:-/tmp}/saerskriven-install.XXXXXXXX")"
@@ -95,22 +97,54 @@ main() {
       --source-ref "refs/tags/$release_tag" || fail 'Release attestation verification failed.'
   fi
 
-  mkdir -p "$bin_dir"
-  local destination="$bin_dir/saerskriven"
-  [ ! -L "$destination" ] || fail "Refusing to replace a symbolic link: $destination"
-  if [ -e "$destination" ] && [ ! -f "$destination" ]; then
-    fail "The destination is not a regular file: $destination"
-  fi
-  # Stage on the destination filesystem so replacement is a single rename.
-  staging="$(mktemp -d "$bin_dir/.saerskriven-install.XXXXXXXX")"
-  cp "$scratch/$asset" "$staging/saerskriven"
-  chmod 755 "$staging/saerskriven"
-  mv -f "$staging/saerskriven" "$destination"
-  printf 'Installed %s to %s (SHA-256 verified).\n' "$release_tag" "$destination"
+  install_binary "$bin_dir" "$scratch/$asset"
+  printf 'Installed %s to %s/saer (SHA-256 verified).\n' "$release_tag" "$bin_dir"
   case ":${PATH-}:" in
     *:"$bin_dir":*) ;;
     *) printf 'Add %s to PATH in your shell configuration, then open a new terminal.\n' "$bin_dir" ;;
   esac
+}
+
+check_install_paths() {
+  local destination="$1/saer"
+  local compatibility="$1/saerskriven"
+  [ ! -L "$destination" ] || fail "Refusing to replace a symbolic link: $destination"
+  if [ -e "$destination" ] && [ ! -f "$destination" ]; then
+    fail "The destination is not a regular file: $destination"
+  fi
+  if [ -L "$compatibility" ]; then
+    [ "$(readlink "$compatibility")" = saer ] ||
+      fail "Refusing to replace an unrelated symbolic link: $compatibility"
+  elif [ -e "$compatibility" ] && [ ! -f "$compatibility" ]; then
+    fail "The compatibility path is not a regular file: $compatibility"
+  fi
+  if [ -e "$destination" ] && [ ! -L "$compatibility" ]; then
+    fail "Refusing to replace an existing saer without its saerskriven compatibility link: $destination"
+  fi
+  local found
+  found="$(command -v saer || true)"
+  if [ -n "$found" ] && [ ! "$found" -ef "$destination" ]; then
+    fail "Another saer command is already on PATH: $found"
+  fi
+}
+
+install_binary() {
+  local bin_dir="$1"
+  mkdir -p "$bin_dir"
+  check_install_paths "$bin_dir"
+  # Stage on the destination filesystem so replacement is a single rename.
+  staging="$(mktemp -d "$bin_dir/.saerskriven-install.XXXXXXXX")"
+  cp "$2" "$staging/saer"
+  chmod 755 "$staging/saer"
+  if [ ! -L "$bin_dir/saerskriven" ]; then
+    ln -s saer "$staging/saerskriven"
+    rollback_binary="$bin_dir/saer"
+  fi
+  mv -f "$staging/saer" "$bin_dir/saer"
+  if [ -n "$rollback_binary" ]; then
+    mv -f "$staging/saerskriven" "$bin_dir/saerskriven"
+  fi
+  rollback_binary=''
 }
 
 download() {
@@ -121,12 +155,19 @@ download() {
 }
 
 cleanup() {
+  if [ -n "$rollback_binary" ]; then
+    local compatibility="${rollback_binary%/*}/saerskriven"
+    if [ ! -L "$compatibility" ] || [ "$(readlink "$compatibility")" != saer ]; then
+      rm -f -- "$rollback_binary"
+    fi
+  fi
   if [ -n "$staging" ]; then rm -rf -- "$staging"; fi
   if [ -n "$scratch" ]; then rm -rf -- "$scratch"; fi
 }
 
 scratch=''
 staging=''
+rollback_binary=''
 trap cleanup EXIT
 trap 'exit 130' INT
 trap 'exit 143' TERM

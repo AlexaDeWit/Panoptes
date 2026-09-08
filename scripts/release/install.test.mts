@@ -3,11 +3,14 @@ import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import {
   existsSync,
+  lstatSync,
   mkdirSync,
   readFileSync,
   readdirSync,
+  readlinkSync,
   statSync,
   symlinkSync,
+  unlinkSync,
   writeFileSync,
 } from 'node:fs';
 import { join } from 'node:path';
@@ -33,10 +36,10 @@ const fixture = (os = 'Linux', arch = 'x86_64', sha = 'sha256sum') => {
     mkdirSync(path, { recursive: true });
   writeFileSync(join(directory, 'package.json'), '{"version":"1.2.3"}');
   for (const [, , target] of targets) {
-    writeFileSync(join(releases, `saerskriven-1.2.3-${target}`), payload);
+    writeFileSync(join(releases, `saer-1.2.3-${target}`), payload);
   }
   writeFileSync(
-    join(releases, 'saerskriven-1.2.3-x86_64-pc-windows-msvc.exe'),
+    join(releases, 'saer-1.2.3-x86_64-pc-windows-msvc.exe'),
     payload,
   );
   const packaged = spawnSync(
@@ -57,6 +60,8 @@ const fixture = (os = 'Linux', arch = 'x86_64', sha = 'sha256sum') => {
     'cp',
     'chmod',
     'mv',
+    'ln',
+    'readlink',
     ...(sha ? [sha] : []),
   ]) {
     const found = spawnSync('bash', ['-c', 'command -v "$1"', 'probe', tool], {
@@ -109,13 +114,15 @@ if (process.env.INSTALL_TEST_FAILURE === 'attestation') process.exit(1);
 `,
     { mode: 0o755 },
   );
-  const destination = join(home, '.local/bin/saerskriven');
+  const destination = join(home, '.local/bin/saer');
+  const compatibility = join(home, '.local/bin/saerskriven');
   return {
     bin,
     home,
     temp,
     releases,
     destination,
+    compatibility,
     calls: () => readFileSync(log, 'utf8'),
     sums: (text: string) => {
       const script = join(releases, 'install.sh');
@@ -130,6 +137,7 @@ if (process.env.INSTALL_TEST_FAILURE === 'attestation') process.exit(1);
     previous: () => {
       mkdirSync(join(home, '.local/bin'), { recursive: true });
       writeFileSync(destination, 'previous executable', { mode: 0o755 });
+      symlinkSync('saer', compatibility);
     },
     run: (args: string[] = [], env: Record<string, string> = {}) =>
       spawnSync('bash', [join(releases, 'install.sh'), ...args], {
@@ -158,11 +166,15 @@ for (const [os, arch, target] of targets) {
     assert.equal(result.status, 0, result.stderr);
     assert.equal(readFileSync(probe.destination, 'utf8'), payload);
     assert.equal(statSync(probe.destination).mode & 0o777, 0o755);
+    assert.equal(lstatSync(probe.destination).isSymbolicLink(), false);
+    assert.equal(readlinkSync(probe.compatibility), 'saer');
+    assert.equal(readFileSync(probe.compatibility, 'utf8'), payload);
     assert.equal(existsSync(join(probe.home, 'executed')), false);
-    assert.match(probe.calls(), new RegExp(`saerskriven-1.2.3-${target}`, 'u'));
+    assert.match(probe.calls(), new RegExp(`saer-1.2.3-${target}`, 'u'));
     assert.match(result.stdout, /PATH/u);
     assert.deepEqual(readdirSync(probe.temp), []);
     assert.deepEqual(readdirSync(join(probe.home, '.local/bin')), [
+      'saer',
       'saerskriven',
     ]);
   });
@@ -175,12 +187,10 @@ void test('packaging pins the installer tag and includes its digest in SHA256SUM
   assert.equal(installer.includes('@RELEASE_TAG@'), false);
   assert.equal(installer.includes('@RELEASE_SHA256SUMS@'), false);
   for (const [, , target] of targets) {
-    assert.ok(installer.includes(`${digest}  saerskriven-1.2.3-${target}\n`));
+    assert.ok(installer.includes(`${digest}  saer-1.2.3-${target}\n`));
   }
   assert.ok(
-    installer.includes(
-      `${digest}  saerskriven-1.2.3-x86_64-pc-windows-msvc.exe\n`,
-    ),
+    installer.includes(`${digest}  saer-1.2.3-x86_64-pc-windows-msvc.exe\n`),
   );
   assert.ok(
     readFileSync(join(probe.releases, 'SHA256SUMS'), 'utf8').includes(
@@ -189,10 +199,10 @@ void test('packaging pins the installer tag and includes its digest in SHA256SUM
   );
 });
 
-const asset = 'saerskriven-1.2.3-x86_64-unknown-linux-gnu';
+const asset = 'saer-1.2.3-x86_64-unknown-linux-gnu';
 for (const [name, manifest] of [
   ['missing', `${digest}  unrelated\n`],
-  ['wrong release', `${digest}  saerskriven-9.9.9-x86_64-unknown-linux-gnu\n`],
+  ['wrong release', `${digest}  saer-9.9.9-x86_64-unknown-linux-gnu\n`],
   ['duplicate', `${digest}  ${asset}\n${digest}  ${asset}\n`],
   ['malformed duplicate', `${digest}  ${asset}\nabcd  ${asset}\n`],
   ['malformed', `${'x'.repeat(64)}  ${asset}\n`],
@@ -256,6 +266,73 @@ void test('a verified update replaces the previous file and respects a custom PA
   const custom = join(probe.home, 'custom bin');
   assert.equal(probe.run(['--bin-dir', custom]).status, 0);
   assert.equal(readFileSync(join(custom, 'saerskriven'), 'utf8'), payload);
+});
+
+void test('migrates a legacy saerskriven binary and remains repeatable', () => {
+  const probe = fixture();
+  mkdirSync(join(probe.home, '.local/bin'), { recursive: true });
+  writeFileSync(probe.compatibility, 'legacy executable');
+  for (let run = 0; run < 2; run++) {
+    const result = probe.run();
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(readFileSync(probe.destination, 'utf8'), payload);
+    assert.equal(readlinkSync(probe.compatibility), 'saer');
+    assert.equal(lstatSync(probe.destination).isSymbolicLink(), false);
+  }
+});
+
+void test('refuses an unrelated saer in the destination or elsewhere on PATH', () => {
+  for (const location of ['destination', 'PATH']) {
+    const probe = fixture();
+    mkdirSync(join(probe.home, '.local/bin'), { recursive: true });
+    const foreign =
+      location === 'destination' ? probe.destination : join(probe.bin, 'saer');
+    writeFileSync(foreign, 'foreign executable', { mode: 0o755 });
+    assert.notEqual(probe.run().status, 0);
+    assert.equal(readFileSync(foreign, 'utf8'), 'foreign executable');
+    assert.equal(probe.calls(), '');
+  }
+});
+
+for (const failedName of ['saer', 'saerskriven']) {
+  void test(`a failed ${failedName} replacement preserves a legacy installation`, () => {
+    const probe = fixture();
+    mkdirSync(join(probe.home, '.local/bin'), { recursive: true });
+    writeFileSync(probe.compatibility, 'legacy executable');
+    const move = readlinkSync(join(probe.bin, 'mv'));
+    unlinkSync(join(probe.bin, 'mv'));
+    writeFileSync(
+      join(probe.bin, 'mv'),
+      `#!/usr/bin/env node
+const { spawnSync } = require('node:child_process');
+const { basename } = require('node:path');
+const args = process.argv.slice(2);
+if (basename(args.at(-1)) === ${JSON.stringify(failedName)}) process.exit(1);
+process.exit(spawnSync(${JSON.stringify(move)}, args).status ?? 1);
+`,
+      { mode: 0o755 },
+    );
+    assert.notEqual(probe.run().status, 0);
+    assert.equal(
+      readFileSync(probe.compatibility, 'utf8'),
+      'legacy executable',
+    );
+    assert.equal(existsSync(probe.destination), false);
+    assert.deepEqual(readdirSync(probe.temp), []);
+    assert.deepEqual(readdirSync(join(probe.home, '.local/bin')), [
+      'saerskriven',
+    ]);
+  });
+}
+
+void test('refuses a foreign compatibility link without replacing the current binary', () => {
+  const probe = fixture();
+  probe.previous();
+  unlinkSync(probe.compatibility);
+  symlinkSync('unrelated', probe.compatibility);
+  assert.notEqual(probe.run().status, 0);
+  assert.equal(readFileSync(probe.destination, 'utf8'), 'previous executable');
+  assert.equal(readlinkSync(probe.compatibility), 'unrelated');
 });
 
 for (const kind of ['symlink', 'directory']) {

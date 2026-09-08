@@ -23,14 +23,19 @@ EOF
 chmod +x "$scratch/tools/curl"
 export PATH="$scratch/tools:/usr/bin:/bin:/usr/sbin:/sbin"
 export HOME="$scratch/home"
-destination="$HOME/.local/bin/saerskriven"
-printf 'previous version\n' >"$destination"
+destination="$HOME/.local/bin/saer"
+compatibility="$HOME/.local/bin/saerskriven"
+printf 'previous version\n' >"$compatibility"
 # /bin/bash selects the system shell, including macOS Bash 3.2.
 /bin/bash "$assets/install.sh"
 first="$("$destination" --version)"
 [ "$first" = "$expected" ]
+[ ! -L "$destination" ]
+[ "$(readlink "$compatibility")" = saer ]
+[ "$("$compatibility" --version)" = "$expected" ]
 /bin/bash "$assets/install.sh"
 [ "$("$destination" --version)" = "$first" ]
+[ "$("$compatibility" --version)" = "$first" ]
 if INSTALL_SMOKE_CORRUPT=true /bin/bash "$assets/install.sh"; then
   echo 'The installer accepted a corrupted executable.' >&2
   exit 1

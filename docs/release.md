@@ -7,7 +7,7 @@ who moves it, and what turns it into downloadable executables.
 
 One number for the whole workspace. The root [`package.json`](../package.json)
 carries it, every project's manifest carries the same one, and the CLI build
-stamps it into the executable, so `saerskriven --version` and the tag cannot
+stamps it into the executable, so `saer --version` and the tag cannot
 disagree.
 
 `nx release` writes that number. It reads the [Conventional
@@ -166,8 +166,9 @@ tag cannot be moved or deleted.
 ### 5. Build, attest, publish, and deploy (automatic)
 
 Pushing the tag runs [`.github/workflows/ci.yml`](../.github/workflows/ci.yml).
-It runs the same CI gate as a pull request, compiles every CLI target, and
-checks the executable version against the tag.
+It runs the same CI gate as a pull request, compiles every CLI target as `saer-<version>-<target>`, and
+checks the executable version against the tag. The installer places the binary
+at `saer` and adds `saerskriven -> saer` for compatibility.
 
 After source checks pass, `pages-build` builds the website from that exact tag.
 It takes the Pages base path and site URL from GitHub and stamps the workspace
@@ -249,11 +250,11 @@ nor forces an editor reload.
 Download `install.sh` from the release page and follow the
 [installation instructions](../README.md#macos-and-linux), including installer
 attestation verification before execution. Run it with `--verify-attestation`,
-then run `saerskriven --version` and compare with the release tag.
+then run `saer --version` and compare with the release tag.
 The installer must also appear in `SHA256SUMS`. For a manual executable check:
 
 ```sh
-gh attestation verify saerskriven-* --repo AlexaDeWit/Saerskriven \
+gh attestation verify saer-* --repo AlexaDeWit/Saerskriven \
   --signer-workflow AlexaDeWit/Saerskriven/.github/workflows/ci.yml \
   --source-ref "refs/tags/v<version>"
 ```

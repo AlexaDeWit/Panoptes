@@ -29,22 +29,13 @@ type ParseState = {
   request: Request | undefined;
 };
 
-/**
- * Where the edge puts what a command produced. A write comes back as the
- * system's reason where the stream would not take the text.
- */
+/** Output streams return a reason when a write fails. */
 export type CliStreams = {
   readonly out: (output: CommandOutput) => Either.Either<void, string>;
   readonly err: (text: string) => Either.Either<void, string>;
 };
 
-/**
- * The arguments as the outcome they ask for. Commander reports by exiting,
- * which `exitOverride` turns into a value here, and what it recognizes
- * becomes a typed request that runs once parsing is over, so a command is
- * reached with typed arguments alone. Parsing is synchronous; the answer is
- * a promise because one projection, the PDF, is.
- */
+/** Parse arguments and run a command, returning parser errors as outcomes. */
 export function runCli(argv: readonly string[]): Promise<CommandOutcome> {
   const state: ParseState = {
     out: '',
@@ -62,13 +53,7 @@ export function runCli(argv: readonly string[]): Promise<CommandOutcome> {
     : outcomeOf(state.request);
 }
 
-/**
- * An outcome onto the streams, giving back the code the process is to exit
- * with. Both texts are written as they are, so nothing is added to a
- * document a command wrote to standard output. A stream that will not take
- * its text exits 2: standard output's reason is reported on standard error,
- * and standard error's has nowhere left to go.
- */
+/** Write output unchanged and return exit code 2 if either stream fails. */
 export function writeOutcome(
   outcome: CommandOutcome,
   streams: CliStreams,
@@ -98,7 +83,7 @@ function parseStopped(state: ParseState, error: unknown): CommandOutcome {
 
 function programFor(state: ParseState): Command {
   const program = new Command()
-    .name('saerskriven')
+    .name('saer')
     .description('Threat models on the command line.')
     .version(cliVersion)
     .exitOverride((error) => {

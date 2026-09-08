@@ -11,7 +11,9 @@ bash install.sh
 ```
 
 The installer checks the binary against its embedded SHA-256 before installing
-or replacing `~/.local/bin/saerskriven`. Repeated runs install the same version.
+or replacing `~/.local/bin/saer`. The `saerskriven` compatibility command links
+to that executable. Repeated runs install the same version.
+Use `saer validate threat-model.yaml` to validate a model.
 It needs Bash, curl, and `sha256sum` or `shasum`. It does not need a development
 environment or sudo.
 
