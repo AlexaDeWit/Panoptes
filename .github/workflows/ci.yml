@@ -110,6 +110,30 @@ jobs:
           path: ${{ github.workspace }}/.pnpm-store
           key: pnpm-store-${{ runner.os }}-${{ hashFiles('flake.lock', 'pnpm-lock.yaml') }}
 
+  installer-smoke:
+    if: ${{ !inputs.deploy_pages }}
+    name: Installer smoke (${{ matrix.os }})
+    needs: build-test
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Download the packaged CLI and installer
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: cli-executables
+          path: cli
+      - name: Install and upgrade with the system shell and tools
+        run: /bin/bash scripts/release/install-smoke.sh
+
   static-checks:
     if: ${{ !inputs.deploy_pages }}
     name: Static checks
@@ -242,7 +266,14 @@ jobs:
     outputs:
       attestation: ${{ github.actor != 'dependabot[bot]' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
     needs:
-      [build-test, static-checks, e2e-smoke, dependency-changes, provenance]
+      [
+        build-test,
+        installer-smoke,
+        static-checks,
+        e2e-smoke,
+        dependency-changes,
+        provenance,
+      ]
     if: ${{ always() && !inputs.deploy_pages }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -251,6 +282,7 @@ jobs:
         env:
           EVENT_NAME: ${{ github.event_name }}
           BUILD_TEST: ${{ needs.build-test.result }}
+          INSTALLER_SMOKE: ${{ needs.installer-smoke.result }}
           STATIC_CHECKS: ${{ needs.static-checks.result }}
           E2E_SMOKE: ${{ needs.e2e-smoke.result }}
           DEPENDENCY_CHANGES: ${{ needs.dependency-changes.result }}
@@ -268,6 +300,12 @@ jobs:
             echo "ok      static-checks"
           else
             echo "FAILED  static-checks: $STATIC_CHECKS"
+            verdict=1
+          fi
+          if [ "$INSTALLER_SMOKE" = "success" ]; then
+            echo "ok      installer-smoke"
+          else
+            echo "FAILED  installer-smoke: $INSTALLER_SMOKE"
             verdict=1
           fi
           if [ "$E2E_SMOKE" = "success" ]; then
@@ -444,6 +482,8 @@ jobs:
       - name: Take the changelog section for this version
         env:
           TAG: ${{ github.ref_name }}
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
         run: |
           version="${TAG#v}"
           : >release-notes.md
@@ -458,8 +498,12 @@ jobs:
             ' CHANGELOG.md >release-notes.md
           fi
           if [ ! -s release-notes.md ]; then
-            echo "no CHANGELOG.md section for ${version}" >&2
+            gh api "repos/$GH_REPO/releases/generate-notes" \
+              -f tag_name="$TAG" --jq .body >release-notes.md
           fi
+          printf '\n' >>release-notes.md
+          sed -e "s|@RELEASE_TAG@|$TAG|g" -e "s|@REPOSITORY@|$GH_REPO|g" \
+            scripts/release/install-notes.md >>release-notes.md
 
       # A retry replaces assets on the existing release without moving its tag.
       - name: Create or update the release
@@ -470,11 +514,9 @@ jobs:
         run: |
           if gh release view "$TAG" >/dev/null 2>&1; then
             gh release upload "$TAG" --clobber cli/saerskriven-* cli/SHA256SUMS cli/install.sh release-site/studio.tar release-site/studio-release.json
+            gh release edit "$TAG" --notes-file release-notes.md
           else
-            notes=(--generate-notes)
-            if [ -s release-notes.md ]; then
-              notes=(--notes-file release-notes.md)
-            fi
+            notes=(--notes-file release-notes.md)
             if [[ "$TAG" == *-* ]]; then
               notes+=(--prerelease)
             fi

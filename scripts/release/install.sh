@@ -3,6 +3,9 @@ set -euo pipefail
 
 readonly release_tag='@RELEASE_TAG@'
 readonly repository='AlexaDeWit/Saerskriven'
+readonly release_checksums='
+@RELEASE_SHA256SUMS@
+'
 
 fail() {
   printf 'Install failed: %s\n' "$*" >&2
@@ -70,7 +73,6 @@ main() {
   local base_url="https://github.com/${repository}/releases/download/${release_tag}"
   umask 077
   scratch="$(mktemp -d "${TMPDIR:-/tmp}/saerskriven-install.XXXXXXXX")"
-  download "$base_url/SHA256SUMS" "$scratch/SHA256SUMS"
   local expected actual
   expected="$(awk -v name="$asset" '
     $NF == name {
@@ -82,7 +84,7 @@ main() {
       if (count != 1 || bad) exit 1
       print hash
     }
-  ' "$scratch/SHA256SUMS")" || fail "Expected exactly one SHA-256 entry for $asset."
+  ' <<<"$release_checksums")" || fail "Expected exactly one SHA-256 entry for $asset."
   download "$base_url/$asset" "$scratch/$asset"
   actual="$("${checksum_command[@]}" <"$scratch/$asset")"
   actual="${actual%% *}"

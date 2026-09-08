@@ -72,8 +72,8 @@ runtime, so there is nothing else to install: no node, no npm, no browser.
 ### macOS and Linux
 
 Download `install.sh` from the [latest release](https://github.com/AlexaDeWit/Saerskriven/releases/latest).
-The installer selects your platform and checks the executable against that
-release's `SHA256SUMS` before installing it as `~/.local/bin/saerskriven`.
+The installer selects your platform and checks the executable against its
+embedded SHA-256 before installing it as `~/.local/bin/saerskriven`.
 It needs Bash, curl, and either `sha256sum` (Linux) or `shasum` (macOS).
 Linux executables require glibc. Alpine Linux's musl is not supported.
 
@@ -87,7 +87,8 @@ less install.sh
 bash install.sh
 ```
 
-The script embeds its release tag. A newer release appearing during installation
+The script embeds its release tag and all binary hashes at build time.
+It downloads only the selected binary. A newer release appearing during installation
 cannot mix the selected executable and checksums. To choose an older release,
 download its `install.sh` from that release's page. Releases published before
 this installer was added require a manual download.
@@ -108,7 +109,7 @@ It refuses symbolic links and directories at the executable path.
 To uninstall the default installation, remove `~/.local/bin/saerskriven`.
 
 SHA-256 checks detect changed bytes. They do not prove build origin when an
-attacker can replace both the executable and its checksums. For build origin
+attacker can replace both the executable and the installer. For build origin
 verification, install [the GitHub CLI](https://cli.github.com/) and use:
 
 ```sh

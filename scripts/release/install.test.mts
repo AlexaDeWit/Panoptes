@@ -35,6 +35,10 @@ const fixture = (os = 'Linux', arch = 'x86_64', sha = 'sha256sum') => {
   for (const [, , target] of targets) {
     writeFileSync(join(releases, `saerskriven-1.2.3-${target}`), payload);
   }
+  writeFileSync(
+    join(releases, 'saerskriven-1.2.3-x86_64-pc-windows-msvc.exe'),
+    payload,
+  );
   const packaged = spawnSync(
     'bash',
     [join(workspaceRoot, 'scripts/release/package-installer.sh')],
@@ -114,7 +118,14 @@ if (process.env.INSTALL_TEST_FAILURE === 'attestation') process.exit(1);
     destination,
     calls: () => readFileSync(log, 'utf8'),
     sums: (text: string) => {
-      writeFileSync(join(releases, 'SHA256SUMS'), text);
+      const script = join(releases, 'install.sh');
+      writeFileSync(
+        script,
+        readFileSync(script, 'utf8').replace(
+          /readonly release_checksums='[^']*'/u,
+          `readonly release_checksums='\n${text}'`,
+        ),
+      );
     },
     previous: () => {
       mkdirSync(join(home, '.local/bin'), { recursive: true });
@@ -162,6 +173,15 @@ void test('packaging pins the installer tag and includes its digest in SHA256SUM
   const installer = readFileSync(join(probe.releases, 'install.sh'), 'utf8');
   assert.match(installer, /release_tag='v1\.2\.3'/u);
   assert.equal(installer.includes('@RELEASE_TAG@'), false);
+  assert.equal(installer.includes('@RELEASE_SHA256SUMS@'), false);
+  for (const [, , target] of targets) {
+    assert.ok(installer.includes(`${digest}  saerskriven-1.2.3-${target}\n`));
+  }
+  assert.ok(
+    installer.includes(
+      `${digest}  saerskriven-1.2.3-x86_64-pc-windows-msvc.exe\n`,
+    ),
+  );
   assert.ok(
     readFileSync(join(probe.releases, 'SHA256SUMS'), 'utf8').includes(
       `${createHash('sha256').update(installer).digest('hex')}  install.sh\n`,
@@ -195,7 +215,7 @@ for (const [name, manifest] of [
   });
 }
 
-for (const failure of ['SHA256SUMS', asset, 'attestation', 'signal']) {
+for (const failure of [asset, 'attestation', 'signal']) {
   void test(`${failure} failure preserves the previous install and removes downloads`, () => {
     const probe = fixture();
     probe.previous();

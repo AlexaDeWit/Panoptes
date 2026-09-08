@@ -49,13 +49,18 @@ Pull requests rehearse the release through artifact creation and attestation.
 The same jobs run on ordinary main, tag, and manual CI runs:
 
 - Build and test the host CLI, then compile all five targets twice and compare
-  their bytes. Package `install.sh` with the workspace release tag embedded.
+  their bytes. Package `install.sh` with the release tag and every binary's SHA-256 embedded.
   Check the host version and every executable and installer checksum.
 - Build the studio archive and metadata from the workspace version. A tag run
   additionally requires that version to match its tag.
 - Generate attestations for the executables, installer, checksums, website archive, and
   metadata. Verify each against this repository, workflow, source ref, and commit.
 - Require those stages in `CI gate` before publication can run.
+
+Native Linux and macOS smoke jobs use the packaged installer with the system
+Bash and tools, without Nix or Node. They replace the download transport with
+local release assets, run the installed CLI, repeat the install, and confirm
+that a corrupted download leaves the installed version unchanged.
 
 Fork and Dependabot PRs still build and validate the artifacts. GitHub gives
 them read-only tokens, so they cannot generate attestations. The gate accepts
@@ -179,7 +184,8 @@ Neither attest nor publish installs dependencies. The `release` environment
 still permits only `v*` tags.
 A tag containing a prerelease suffix creates a prerelease, which cannot reach
 production Pages. Release notes use the changelog section, or GitHub's generated
-notes when the section is missing.
+notes when the section is missing. Both paths append installation commands
+pinned to this tag. Publication retries refresh those notes along with the assets.
 
 #### Website promotion and recovery
 

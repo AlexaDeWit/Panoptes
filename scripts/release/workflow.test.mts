@@ -15,6 +15,7 @@ import { fileURLToPath } from 'node:url';
 import { test } from 'node:test';
 import { parse } from 'yaml';
 import { z } from 'zod';
+import { temporaryWorkspace } from './release.fixtures.mts';
 
 const root = fileURLToPath(new URL('../../', import.meta.url));
 
@@ -70,6 +71,7 @@ void test('publication waits for the gate, prepared website, and attestation', (
   assert.ok('workflow_dispatch' in ci.on);
   for (const job of [
     'build-test',
+    'installer-smoke',
     'static-checks',
     'e2e-smoke',
     'dependency-changes',
@@ -194,6 +196,61 @@ void test('new releases and publication retries both attach the installer', () =
   assert.match(publish, /gh release create[\s\S]*cli\/install\.sh/u);
 });
 
+void test('release notes include pinned installation commands with changelog or generated notes', () => {
+  const script = workflow('ci.yml').jobs['publish']?.steps?.find(({ run }) =>
+    run?.includes('scripts/release/install-notes.md'),
+  )?.run;
+  assert.ok(script);
+  for (const changelog of [true, false]) {
+    const directory = temporaryWorkspace();
+    mkdirSync(join(directory, 'scripts/release'), { recursive: true });
+    mkdirSync(join(directory, 'tools'));
+    writeFileSync(
+      join(directory, 'scripts/release/install-notes.md'),
+      readFileSync(join(root, 'scripts/release/install-notes.md')),
+    );
+    writeFileSync(
+      join(directory, 'tools/gh'),
+      '#!/usr/bin/env bash\nprintf "Generated changelog\\n"\n',
+      { mode: 0o755 },
+    );
+    if (changelog)
+      writeFileSync(
+        join(directory, 'CHANGELOG.md'),
+        '# 1.2.3\n\nRelease changes\n',
+      );
+    for (let retry = 0; retry < 2; retry++) {
+      const result: SpawnSyncReturns<string> = spawnSync(
+        'bash',
+        ['-euo', 'pipefail', '-c', script],
+        {
+          cwd: directory,
+          encoding: 'utf8',
+          env: {
+            ...process.env,
+            TAG: 'v1.2.3',
+            GH_REPO: 'AlexaDeWit/Saerskriven',
+            PATH: `${join(directory, 'tools')}:${process.env['PATH'] ?? ''}`,
+          },
+        },
+      );
+      assert.equal(result.status, 0, result.stderr);
+      const notes = readFileSync(join(directory, 'release-notes.md'), 'utf8');
+      assert.ok(
+        notes.includes(changelog ? 'Release changes' : 'Generated changelog'),
+      );
+      assert.ok(
+        notes.includes(
+          'https://github.com/AlexaDeWit/Saerskriven/releases/download/v1.2.3/install.sh',
+        ),
+      );
+      assert.ok(notes.includes('bash install.sh'));
+      assert.equal(notes.split('## Install the CLI').length, 2);
+      assert.equal(notes.includes('@RELEASE_TAG@'), false);
+    }
+  }
+});
+
 const verdict = (job: string, env: Record<string, string>) => {
   const script = workflow('ci.yml').jobs[job]?.steps?.[0]?.run;
   assert.ok(script);
@@ -248,6 +305,7 @@ void test('source checks accept a provenance skip only on a PR with unchanged de
   const passing = {
     EVENT_NAME: 'pull_request',
     BUILD_TEST: 'success',
+    INSTALLER_SMOKE: 'success',
     STATIC_CHECKS: 'success',
     E2E_SMOKE: 'success',
     DEPENDENCY_CHANGES: 'success',
@@ -257,6 +315,7 @@ void test('source checks accept a provenance skip only on a PR with unchanged de
   assert.equal(verdict('checks', passing).status, 0);
   for (const name of [
     'BUILD_TEST',
+    'INSTALLER_SMOKE',
     'STATIC_CHECKS',
     'E2E_SMOKE',
     'DEPENDENCY_CHANGES',
