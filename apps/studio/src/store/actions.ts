@@ -17,6 +17,7 @@ import type {
 } from '@saerskriven/model';
 import { Data } from 'effect';
 import type { InlineEditor, RetainedSource } from './state.js';
+import type { SyncedState } from './sync.js';
 
 /** Every state change the reducer accepts. */
 export type Action = Data.TaggedEnum<{
@@ -82,6 +83,7 @@ export type Action = Data.TaggedEnum<{
   ImportFailed: { readonly name: string; readonly failure: ReadFailure };
   Saved: { readonly name: string; readonly source: RetainedSource };
   Closed: {};
+  Followed: { readonly state: SyncedState };
   ReadFailed: {
     readonly name: string;
     readonly failure: ReadFailure | DetectionFailure;

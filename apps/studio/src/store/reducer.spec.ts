@@ -53,6 +53,7 @@ type StudioActionTag =
   | 'Opened'
   | 'Saved'
   | 'Closed'
+  | 'Followed'
   | 'ReadFailed'
   | 'FileRefused';
 
@@ -247,6 +248,14 @@ const studioActions: ActionsByTag<StudioActionTag> = {
   }),
   Saved: Action.Saved({ name: 'model.yaml', source: nativeSource }),
   Closed: Action.Closed(),
+  Followed: Action.Followed({
+    state: {
+      ...initialState(placeholderModel),
+      past: [sampleModel],
+      file: FileLifecycle.Opened({ name: 'model.json', source: foreignSource }),
+      recoveryCurrent: true,
+    },
+  }),
   ReadFailed: Action.ReadFailed({
     name: 'model.yaml',
     failure: ReadFailure.MalformedText({ message: 'not YAML' }),
@@ -617,6 +626,87 @@ describe('the file lifecycle', () => {
     expect(closed.past).toEqual([]);
     expect(closed.future).toEqual([]);
     expect(closed.selection).toEqual([]);
+  });
+});
+
+const result = (state: State) => ({
+  present: state.present,
+  past: state.past,
+  future: state.future,
+  saved: state.saved,
+  file: state.file,
+  recoveryCurrent: state.recoveryCurrent,
+});
+
+describe('following another tab', () => {
+  const working = reduce(
+    reduce(
+      reduce(withHistory, Action.Select({ elementIds: [actorElement] })),
+      Action.InlineEditing({
+        editor: { kind: 'name', elementId: actorElement },
+      }),
+    ),
+    refused.RemoveElement,
+  );
+  const elsewhere = reduce(
+    reduce(withHistory, applied.AddElement),
+    Action.Saved({
+      name: 'elsewhere.yaml',
+      source: nativeSource,
+    }),
+  );
+  it('adopts the model, both stacks, the saved point and the file another tab reached, and clears the last refusal', () => {
+    expect(working.lastFailure).toBeDefined();
+
+    const followed = reduce(
+      working,
+      Action.Followed({ state: result(elsewhere) }),
+    );
+
+    expect(result(followed)).toEqual(result(elsewhere));
+    expect(followed.present).toBe(elsewhere.present);
+    expect(followed.past).toBe(elsewhere.past);
+    expect(followed.lastFailure).toBeUndefined();
+  });
+
+  it('keeps the selection and the open field where the model still draws them', () => {
+    const followed = reduce(
+      working,
+      Action.Followed({ state: result(elsewhere) }),
+    );
+
+    expect(followed.selection).toBe(working.selection);
+    expect(followed.inlineEditor).toBe(working.inlineEditor);
+  });
+
+  it('drops the selection and closes the field over an element the model no longer draws', () => {
+    const followed = reduce(
+      working,
+      Action.Followed({ state: result(initialState(placeholderModel)) }),
+    );
+
+    expect(followed.selection).toEqual([]);
+    expect(followed.inlineEditor).toBeUndefined();
+  });
+
+  it('keeps the diagram on screen to this tab, falling back where the adopted model lacks it', () => {
+    const shown = reduce(
+      initialState(twoDiagramModel),
+      Action.SelectDiagram({ diagramId: secondDiagram }),
+    );
+
+    const same = reduce(
+      shown,
+      Action.Followed({ state: result(initialState(twoDiagramModel)) }),
+    );
+    const without = reduce(
+      shown,
+      Action.Followed({ state: result(initialState(sampleModel)) }),
+    );
+
+    expect(same.activeDiagram).toBe(secondDiagram);
+    expect(activeDiagramId(same)).toBe(secondDiagram);
+    expect(activeDiagramId(without)).toBe(mainDiagram);
   });
 });
 

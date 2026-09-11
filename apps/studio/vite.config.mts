@@ -41,12 +41,14 @@ const initialPageStyles = () => ({
 const versionStamp = () => {
   const version = workspaceVersion();
   const tag = process.env['SAERSKRIVEN_RELEASE_TAG'] ?? '';
+  const build = process.env['GITHUB_SHA'] ?? 'development';
   return {
     name: 'studio-version',
     config: () => ({
       define: {
         ...versionDefine(),
         SAERSKRIVEN_RELEASE_TAG: JSON.stringify(tag),
+        SAERSKRIVEN_BUILD_ID: JSON.stringify(build),
       },
     }),
     buildStart() {

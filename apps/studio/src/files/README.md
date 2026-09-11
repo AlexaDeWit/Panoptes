@@ -98,7 +98,14 @@ crossed, and a close drops it because the file it describes is gone.
 
 Recovery stores that file name, format, and retained document with the current
 model. It stores no native handle. After a reload, Save follows the browser
-bridge's no-handle path and still merges through the retained document.
+bridge's no-handle path and still merges through the retained document. A
+model another tab wrote arrives the same way: the session watches the tab
+sync, and every result it follows releases the handle, one naming the same
+file included, since a name cannot say whether it is the same file. It also
+puts away the crossing report and every open question
+([the store's README](../store/README.md#other-tabs)). So once another tab has
+edited, Save in the tab that opened the file through the picker downloads a
+copy rather than writing back, as it does after a reload.
 
 `file-commands.ts` holds one session the app owns rather than handlers a
 control closes over. Its file and export actions are registered commands

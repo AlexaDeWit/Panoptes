@@ -64,7 +64,7 @@ map to the browser specs below. Paths are relative to `src/`.
 | Clipboard, geometry fields, reconnection, arrangement, and snapping   | `interaction-controls.spec.ts`                           |
 | Touch panning, scrolling, and startup overlays                        | `interaction-nits.spec.ts`                               |
 | Edit announcements                                                    | `edit-status.spec.ts`                                    |
-| Reload recovery                                                       | `recovery.spec.ts`                                       |
+| Reload recovery, and tabs staying in sync                             | `recovery.spec.ts`                                       |
 | Switching between, adding, and renaming the diagrams of a model       | `diagrams.spec.ts`                                       |
 | System and saved colour preferences                                   | `dark-mode.spec.ts`, `appearance.spec.ts`                |
 | axe-core checks of the page and open controls                         | `accessibility.spec.ts`                                  |

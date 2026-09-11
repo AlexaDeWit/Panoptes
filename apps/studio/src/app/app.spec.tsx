@@ -15,6 +15,7 @@ vi.mock('../version.js', () => ({
   get studioReleaseTag() {
     return build.tag;
   },
+  studioBuildId: 'spec',
 }));
 
 const elementsHeld = (): number => elementCount(modelStore.getState());
