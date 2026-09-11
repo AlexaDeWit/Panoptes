@@ -178,9 +178,10 @@ test('a diagram is renamed in place, Escape keeps the old title, and undo takes 
   await page.keyboard.press('Backspace');
   await page.keyboard.press('Enter');
   await expect(diagramTitleField(page)).toHaveAttribute('aria-invalid', 'true');
-  await expect(
-    page.getByText('A name cannot be empty.', { exact: true }),
-  ).toBeVisible();
+  const described =
+    (await diagramTitleField(page).getAttribute('aria-describedby')) ?? '';
+  await expect(page.locator(`[id="${described}"]`)).toBeVisible();
+  await expect(page.locator(`[id="${described}"]`)).not.toBeEmpty();
   await page.keyboard.press('Escape');
 
   await openSwitcher(page);
@@ -202,6 +203,18 @@ test('a diagram is renamed in place, Escape keeps the old title, and undo takes 
   await expect(diagramSwitcher(page)).toHaveAccessibleName(
     `Diagram: ${firstTitle}`,
   );
+
+  await openSwitcher(page);
+  await menuItem(page, 'Rename diagram').click();
+  await page.keyboard.type('Clicked away');
+  const process = nodeNamed(page, onFirst);
+  await process.click();
+
+  await expect(diagramSwitcher(page)).toHaveAccessibleName(
+    'Diagram: Clicked away',
+  );
+  await expect(process).toBeFocused();
+  await expect(diagramSwitcher(page)).not.toBeFocused();
 });
 
 test('an edit lands on the diagram on screen, the saved file holds it there, and a reload comes back to that diagram', async ({

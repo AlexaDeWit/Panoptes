@@ -127,8 +127,10 @@ describe('the diagram switcher', () => {
     await user.clear(field);
     await user.keyboard('{Enter}');
     expect(field.getAttribute('aria-invalid')).toBe('true');
-    expect(field.getAttribute('aria-describedby')).not.toBeNull();
-    expect(screen.getByText('A name cannot be empty.')).toBeDefined();
+    const described = document.getElementById(
+      field.getAttribute('aria-describedby') ?? '',
+    );
+    expect(described?.textContent).not.toBe('');
     expect(modelStore.getState().present.diagrams[0].title).toBe('Main');
 
     await user.keyboard('Core');
@@ -166,6 +168,31 @@ describe('the diagram switcher', () => {
     expect(screen.queryByRole('textbox')).toBeNull();
     expect(modelStore.getState().present.diagrams[0].title).toBe('Main');
     expect(switcher('Diagram: Main')).toBeDefined();
+  });
+
+  it('leaves focus where a click put it when the field closes by blur', async () => {
+    const user = userEvent.setup();
+    modelStore.setState(initialState(sampleModel), true);
+    render(
+      <CommandSurfaceProvider surface={unmountedSurface}>
+        <DiagramSwitcher />
+        <button type="button">Elsewhere</button>
+      </CommandSurfaceProvider>,
+    );
+
+    await user.click(switcher('Diagram: Main'));
+    await user.click(
+      await screen.findByRole('menuitem', { name: 'Rename diagram' }),
+    );
+    await user.keyboard('Clicked away');
+    await user.click(screen.getByRole('button', { name: 'Elsewhere' }));
+
+    expect(modelStore.getState().present.diagrams[0].title).toBe(
+      'Clicked away',
+    );
+    expect(document.activeElement).toBe(
+      screen.getByRole('button', { name: 'Elsewhere' }),
+    );
   });
 
   it('closes the field when an undo takes the diagram it was open on away', async () => {

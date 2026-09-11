@@ -31,8 +31,10 @@ const noDiagram = 'No diagram';
  * screen, and under it every diagram of the model to switch to, a New
  * diagram command, and Rename diagram, which turns the title into a field.
  * The field is drawn only while it is open on the diagram shown, so a
- * change of diagram under it closes it and clears the stale id, and the
- * button takes focus back when it closes.
+ * change of diagram under it closes it and clears the stale id. Enter and
+ * Escape hand focus back to the button; a blur commits what it can, closes
+ * either way, and leaves focus where the click put it, as the canvas name
+ * field does.
  */
 export function DiagramSwitcher() {
   const diagrams = useModelStore((state) => state.present.diagrams);
@@ -41,10 +43,14 @@ export function DiagramSwitcher() {
   const trigger = useRef<HTMLButtonElement>(null);
   const editing = active !== undefined && renaming === active.id;
   const wasEditing = useRef(false);
+  const blurred = useRef(false);
 
   useEffect(() => {
     if (wasEditing.current && !editing) {
-      trigger.current?.focus();
+      if (!blurred.current) {
+        trigger.current?.focus();
+      }
+      blurred.current = false;
     }
     wasEditing.current = editing;
   }, [editing]);
@@ -56,7 +62,16 @@ export function DiagramSwitcher() {
   }, [renaming, active]);
 
   if (editing) {
-    return <TitleField key={active.id} title={active.title} />;
+    return (
+      <TitleField
+        key={active.id}
+        onClose={(by) => {
+          blurred.current = by === 'blur';
+          endRenamingDiagram();
+        }}
+        title={active.title}
+      />
+    );
   }
   return (
     <DropdownMenu.Root modal={false}>
@@ -95,7 +110,12 @@ export function DiagramSwitcher() {
   );
 }
 
-function TitleField({ title }: { readonly title: string }) {
+type TitleFieldProps = {
+  readonly title: string;
+  readonly onClose: (by: 'keyboard' | 'blur') => void;
+};
+
+function TitleField({ title, onClose }: TitleFieldProps) {
   const field = useRef<HTMLInputElement>(null);
   const refusalId = useId();
   const settled = useRef(false);
@@ -120,20 +140,27 @@ function TitleField({ title }: { readonly title: string }) {
     field.current?.select();
   }, []);
 
-  const close = (): void => {
+  const close = (by: 'keyboard' | 'blur'): void => {
     settled.current = true;
-    endRenamingDiagram();
+    onClose(by);
   };
   const keyDown = (event: KeyboardEvent<HTMLInputElement>): void => {
     if (event.key === 'Enter') {
       event.preventDefault();
       if (draft.commit()) {
-        close();
+        close('keyboard');
       }
     } else if (event.key === 'Escape') {
       event.preventDefault();
-      close();
+      close('keyboard');
     }
+  };
+  const blur = (): void => {
+    if (settled.current) {
+      return;
+    }
+    draft.commit();
+    close('blur');
   };
 
   return (
@@ -144,12 +171,7 @@ function TitleField({ title }: { readonly title: string }) {
         aria-label="Diagram title"
         className={styles.titleField}
         data-testid="diagram-title"
-        onBlur={() => {
-          if (!settled.current) {
-            draft.commit();
-            close();
-          }
-        }}
+        onBlur={blur}
         onChange={(event) => {
           draft.change(event.target.value);
         }}
