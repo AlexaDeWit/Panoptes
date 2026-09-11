@@ -35,9 +35,10 @@ representations, code references, and drawing attributes are reported as
 omissions. Invalid geometry produces a model failure.
 
 Trust zones become drawn boxes. Parent relationships and numeric trust
-ratings do not enter the core. A bidirectional flow becomes two arrows.
-Referenced asset names and descriptions become prose on the arrows and
-components. These copies no longer share an editable data identity.
+ratings do not enter the core. A bidirectional dataflow becomes one
+bidirectional flow. Referenced asset names and descriptions become prose on
+the arrows and components. These copies no longer share an editable data
+identity.
 
 Each threat occurrence becomes a separate threat with its own status and
 mitigations. This preserves different treatments on different components.

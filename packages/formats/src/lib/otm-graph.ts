@@ -113,50 +113,28 @@ export function otmGraph(document: OtmDocument, context: ImportContext) {
           `Unknown component ${JSON.stringify(endpoint)}`,
         );
     }
-    const attached: string[] = [];
-    for (const reverse of flow.bidirectional === true
-      ? [false, true]
-      : [false]) {
-      const id = context.id(
-        'otm-flow',
-        flow.id,
-        reverse ? 'reverse' : 'forward',
-      );
-      attached.push(id);
-      elements.push({
-        ...importElement(
-          context,
-          id,
-          flow.name,
-          context.text([
-            flow.description ?? '',
-            dataProse(flow.assets ?? [], 'dataflows.assets'),
-          ]),
-        ),
-        kind: 'flow',
-        source: {
-          kind: 'attached',
-          element: context.id(
-            'otm-component',
-            reverse ? flow.destination : flow.source,
-          ),
-        },
-        target: {
-          kind: 'attached',
-          element: context.id(
-            'otm-component',
-            reverse ? flow.source : flow.destination,
-          ),
-        },
-        waypoints: [],
-        bidirectional: false,
-      });
-    }
-    if (attached.length > 1)
-      report(
-        `Bidirectional flow ${JSON.stringify(flow.id)} becomes two arrows.`,
-        'split',
-      );
+    elements.push({
+      ...importElement(
+        context,
+        context.id('otm-flow', flow.id),
+        flow.name,
+        context.text([
+          flow.description ?? '',
+          dataProse(flow.assets ?? [], 'dataflows.assets'),
+        ]),
+      ),
+      kind: 'flow',
+      source: {
+        kind: 'attached',
+        element: context.id('otm-component', flow.source),
+      },
+      target: {
+        kind: 'attached',
+        element: context.id('otm-component', flow.destination),
+      },
+      waypoints: [],
+      bidirectional: flow.bidirectional === true,
+    });
   }
   if (assets.size > 0)
     report(
