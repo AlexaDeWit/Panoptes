@@ -6,6 +6,11 @@ import {
 } from '@saerskriven/model';
 import { elementId } from '@saerskriven/model/fixtures';
 import { initialState } from '../store/state.js';
+import {
+  otherElement,
+  secondDiagram,
+  twoDiagramModel,
+} from '../store/store.fixtures.js';
 import { modelStore } from '../store/store.js';
 import { currentAnnouncement, resetAnnouncements } from './announcements.js';
 import { currentLayout } from './layout.js';
@@ -348,6 +353,36 @@ describe('resizeNode', () => {
     }
 
     expect(modelStore.getState().past).toHaveLength(0);
+  });
+});
+
+describe('on the diagram switched to', () => {
+  beforeEach(() => {
+    modelStore.setState(
+      { ...initialState(twoDiagramModel), activeDiagram: secondDiagram },
+      true,
+    );
+    resetAnnouncements();
+  });
+
+  it('places, connects and selects all within that diagram alone', () => {
+    const process = freshElement('process', { x: 300, y: 0 });
+    expect(placeElement(process, false)).toBe(true);
+    connectElements(otherElement, process.id);
+
+    const [first, second] = modelStore.getState().present.diagrams;
+    expect(first.elements).toHaveLength(3);
+    expect(second.elements.map((element) => element.kind)).toEqual([
+      'actor',
+      'process',
+      'flow',
+    ]);
+
+    selectAll();
+
+    expect(modelStore.getState().selection).toEqual(
+      second.elements.map((element) => element.id),
+    );
   });
 });
 

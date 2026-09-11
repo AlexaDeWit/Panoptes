@@ -5,6 +5,7 @@ import { showDiagram } from '../canvas/diagrams.js';
 import { activeDiagram, severalDiagrams } from '../store/selectors.js';
 import { useModelStore } from '../store/store.js';
 import styles from './menu.module.css';
+import { RadioChoices } from './radio-choices.js';
 
 type DiagramChoicesProps = {
   readonly diagrams: readonly Diagram[];
@@ -13,29 +14,15 @@ type DiagramChoicesProps = {
 
 function DiagramChoices({ diagrams, active }: DiagramChoicesProps) {
   return (
-    <DropdownMenu.RadioGroup
-      aria-label="Diagram"
-      onValueChange={(value) => {
-        const chosen = diagrams.find((diagram) => diagram.id === value);
-        if (chosen !== undefined) {
-          showDiagram(chosen.id);
-        }
-      }}
+    <RadioChoices
+      choices={diagrams.map((diagram) => ({
+        value: diagram.id,
+        label: diagram.title,
+      }))}
+      label="Diagram"
+      onChoose={showDiagram}
       value={active}
-    >
-      {diagrams.map((diagram) => (
-        <DropdownMenu.RadioItem
-          className={styles.item}
-          key={diagram.id}
-          value={diagram.id}
-        >
-          <span aria-hidden="true" className={styles.radioMark}>
-            {diagram.id === active ? '●' : '○'}
-          </span>
-          <span className={styles.grow}>{diagram.title}</span>
-        </DropdownMenu.RadioItem>
-      ))}
-    </DropdownMenu.RadioGroup>
+    />
   );
 }
 

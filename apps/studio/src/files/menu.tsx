@@ -26,14 +26,11 @@ import {
 import { useModelStore } from '../store/store.js';
 import { FailureNotice } from '../ui/failure-notice.js';
 import { LiveRegion } from '../ui/live-region.js';
-import {
-  colourModes,
-  isColourMode,
-  type ColourMode,
-} from '../theme-preference.js';
+import { colourModes, type ColourMode } from '../theme-preference.js';
 import { DiagramMenu, DiagramSwitcher } from './diagram-menu.js';
 import type { FileSession } from './file-commands.js';
 import styles from './menu.module.css';
+import { RadioChoices } from './radio-choices.js';
 import {
   formatFiles,
   formatOf,
@@ -382,28 +379,17 @@ export function StudioMenu({
                 </span>
               </SubmenuTrigger>
               <DropdownMenu.SubContent tabIndex={0} className={styles.panel}>
-                <DropdownMenu.RadioGroup
-                  aria-label="Appearance"
-                  onValueChange={(value) => {
-                    if (isColourMode(value)) {
-                      onColourModeChange?.(value);
-                    }
+                <RadioChoices
+                  choices={colourModes.map((mode) => ({
+                    value: mode,
+                    label: mode[0].toUpperCase() + mode.slice(1),
+                  }))}
+                  label="Appearance"
+                  onChoose={(mode) => {
+                    onColourModeChange?.(mode);
                   }}
                   value={selectedColourMode}
-                >
-                  {colourModes.map((mode) => (
-                    <DropdownMenu.RadioItem
-                      className={styles.item}
-                      key={mode}
-                      value={mode}
-                    >
-                      <span aria-hidden="true" className={styles.radioMark}>
-                        {selectedColourMode === mode ? '●' : '○'}
-                      </span>
-                      <span>{mode[0].toUpperCase() + mode.slice(1)}</span>
-                    </DropdownMenu.RadioItem>
-                  ))}
-                </DropdownMenu.RadioGroup>
+                />
               </DropdownMenu.SubContent>
             </DropdownMenu.Sub>
             <DropdownMenu.Separator className={styles.rule} />

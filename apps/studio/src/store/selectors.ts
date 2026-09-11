@@ -60,6 +60,17 @@ export function activeDiagram(
   );
 }
 
+/** Whether `model` holds a diagram of id `diagramId`. */
+export function holdsDiagram(
+  model: Model,
+  diagramId: DiagramId | undefined,
+): boolean {
+  return (
+    diagramId !== undefined &&
+    model.diagrams.some((diagram) => diagram.id === diagramId)
+  );
+}
+
 /** The id of {@link activeDiagram}. */
 export function activeDiagramId(
   state: Pick<State, 'present' | 'activeDiagram'>,

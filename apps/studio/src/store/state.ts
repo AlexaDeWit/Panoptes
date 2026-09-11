@@ -64,9 +64,10 @@ export type InlineEditor = {
 
 /**
  * The model, history, transient view state, file, and recovery status.
- * `activeDiagram` names the diagram on screen, and nothing while the first
- * one the model holds is: it stays out of the undo stacks with the rest of
- * the view state, so an undo moves the model and never the view.
+ * `activeDiagram` names the diagram on screen, and nothing until one has
+ * been chosen, the first the model holds being on screen meanwhile: it stays
+ * out of the undo stacks with the rest of the view state, so an undo moves
+ * the model and never the view.
  */
 export type State = {
   readonly present: Model;

@@ -22,7 +22,7 @@ import {
 import { Either } from 'effect';
 import { sameSelection } from './selection.js';
 import { Action } from './actions.js';
-import { activeDiagramId } from './selectors.js';
+import { activeDiagramId, holdsDiagram } from './selectors.js';
 import {
   FileLifecycle,
   StudioFailure,
@@ -160,7 +160,7 @@ function edited(
 }
 
 function selectedDiagram(state: State, diagramId: DiagramId): State {
-  if (!state.present.diagrams.some((diagram) => diagram.id === diagramId)) {
+  if (!holdsDiagram(state.present, diagramId)) {
     return {
       ...state,
       lastFailure: StudioFailure.Operation({

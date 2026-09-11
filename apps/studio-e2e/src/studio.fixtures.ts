@@ -245,10 +245,11 @@ export const toolButton = (page: Page, name: string): Locator =>
 /**
  * The last control on the tab path before the canvas, which is where a spec
  * that tabs into the diagram starts. The menu's button is that stop whether or
- * not anything is selected, the only controls after it being the diagram
- * switcher, in the page only while the model holds more than one diagram,
- * and the one that dismisses a loss report, which is in the page only while
- * a crossing of the file boundary has cost something.
+ * not anything is selected, the only control after it being the one that
+ * dismisses a loss report, which is in the page only while a crossing of the
+ * file boundary has cost something. A model of more than one diagram puts
+ * the diagram switcher after the button too, so a spec on such a model
+ * starts from the switcher rather than from here.
  */
 export const beforeCanvas = (page: Page): Locator => menuButton(page);
 

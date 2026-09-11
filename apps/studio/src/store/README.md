@@ -58,7 +58,8 @@ and no immutable snapshot to push onto a stack.
 
 The active diagram, selection, the inline editor, and the file lifecycle stay
 out of the undo stacks. `activeDiagram` names the diagram on screen, and
-nothing while that is the first the model holds. `SelectDiagram` sets it,
+nothing until one has been chosen, the first the model holds being on screen
+meanwhile. `SelectDiagram` sets it,
 clears the selection and closes the editor, since both belong to the diagram
 left, and moves neither the model nor the history. The `activeDiagram`
 selector resolves it, falling back to the first diagram while the model does

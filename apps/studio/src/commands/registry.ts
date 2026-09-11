@@ -20,6 +20,8 @@ import {
 import { selectTool, type Tool } from '../canvas/tools.js';
 import { focusThreatPanel } from '../panel/panel-focus.js';
 import { Action } from '../store/actions.js';
+import { severalDiagrams } from '../store/selectors.js';
+import type { State } from '../store/state.js';
 import { dispatch, modelStore } from '../store/store.js';
 import {
   bare,
@@ -73,7 +75,12 @@ export type CommandDispatch =
   | { readonly kind: 'runs'; readonly run: (surface: CommandSurface) => void }
   | { readonly kind: 'pending'; readonly issue: number };
 
-/** One command, before its id is bound to the table's own keys. */
+/**
+ * One command, before its id is bound to the table's own keys. A command
+ * with `available` claims its chord from the browser only while that holds
+ * of the store, so a key the studio has no use for in the current model
+ * keeps doing what the browser does with it.
+ */
 export type CommandEntry = {
   readonly id: string;
   readonly label: string;
@@ -81,6 +88,7 @@ export type CommandEntry = {
   readonly shortcuts: readonly Chord[];
   readonly when: string;
   readonly inTextFields: boolean;
+  readonly available?: (state: State) => boolean;
   readonly dispatch: CommandDispatch;
 };
 
@@ -299,6 +307,7 @@ const table = {
     shortcuts: [bare('PageDown')],
     when: 'The model holds more than one diagram and focus is outside a text field',
     inTextFields: false,
+    available: severalDiagrams,
     dispatch: runs(() => {
       stepDiagram('next');
     }),
@@ -310,6 +319,7 @@ const table = {
     shortcuts: [bare('PageUp')],
     when: 'The model holds more than one diagram and focus is outside a text field',
     inTextFields: false,
+    available: severalDiagrams,
     dispatch: runs(() => {
       stepDiagram('previous');
     }),

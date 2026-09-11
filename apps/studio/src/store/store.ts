@@ -5,6 +5,7 @@ import { createStore, type StoreApi } from 'zustand/vanilla';
 import type { Action } from './actions.js';
 import { developmentModel } from './development-model.js';
 import { reduce } from './reducer.js';
+import { holdsDiagram } from './selectors.js';
 import {
   browserRecoveryStorage,
   RecoveryStorageFailure,
@@ -121,9 +122,7 @@ function stateFromSnapshot(snapshot: RecoverySnapshot): State {
   return {
     ...initialState(present),
     saved: snapshot.dirty ? { ...present } : present,
-    activeDiagram: present.diagrams.some(
-      (diagram) => diagram.id === snapshot.activeDiagram,
-    )
+    activeDiagram: holdsDiagram(present, snapshot.activeDiagram)
       ? snapshot.activeDiagram
       : undefined,
     file: snapshot.file,
