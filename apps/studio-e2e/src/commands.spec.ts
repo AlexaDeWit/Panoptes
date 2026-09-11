@@ -258,6 +258,16 @@ test('the complete shortcut reference opens by menu or key and returns focus', a
   });
   await expect(reference).toBeVisible();
   await expect(heading).toBeFocused();
+  const categoryBoxes = async () =>
+    reference.locator('h3 > button').evaluateAll((buttons) =>
+      buttons.map((button) => {
+        const { x, width } = button.getBoundingClientRect();
+        return { x: Math.round(x), width: Math.round(width) };
+      }),
+    );
+  const initialCategoryBoxes = await categoryBoxes();
+  expect(new Set(initialCategoryBoxes.map(({ x }) => x)).size).toBe(1);
+  expect(new Set(initialCategoryBoxes.map(({ width }) => width)).size).toBe(1);
   const fileCategory = reference.getByRole('button', {
     name: 'File',
     exact: true,
@@ -280,6 +290,14 @@ test('the complete shortcut reference opens by menu or key and returns focus', a
   await expect(
     reference.locator('[data-contextual-id="edit-canvas-text"]'),
   ).toBeVisible();
+  const categoryButtons = reference.locator('h3 > button');
+  for (let index = 0; index < (await categoryButtons.count()); index += 1) {
+    const category = categoryButtons.nth(index);
+    if ((await category.getAttribute('aria-expanded')) === 'false') {
+      await category.click();
+    }
+  }
+  expect(await categoryBoxes()).toEqual(initialCategoryBoxes);
 
   const audit = await new AxeBuilder({ page })
     .include('[data-testid="shortcut-reference"]')

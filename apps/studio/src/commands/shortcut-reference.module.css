@@ -12,6 +12,7 @@
   background: var(--pn-colour-surface-raised);
   color: var(--pn-colour-text);
   overflow-y: auto;
+  scrollbar-gutter: stable;
 }
 
 .header {
@@ -66,7 +67,7 @@
 
 .groups {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--pn-space-2);
   margin-block-start: var(--pn-space-3);
 }
@@ -75,10 +76,6 @@
   border: 1px solid var(--pn-colour-border);
   border-radius: var(--pn-radius);
   overflow: clip;
-}
-
-.group[data-state='open'] {
-  grid-column: 1 / -1;
 }
 
 .disclosure {
@@ -163,10 +160,6 @@
 }
 
 @media (max-width: 45rem) {
-  .groups {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
   .panel {
     inset-block-start: auto;
     block-size: min(60dvh, 32rem);
