@@ -45,6 +45,8 @@ export const chordKeys = [
   'ArrowRight',
   'ArrowDown',
   'ArrowLeft',
+  'PageUp',
+  'PageDown',
   '?',
 ] as const;
 

@@ -10,6 +10,11 @@ import { Either } from 'effect';
 import { saerskrivenYamlCodec } from '@saerskriven/formats';
 import { Action } from '../store/actions.js';
 import { initialState, placeholderModel } from '../store/state.js';
+import {
+  actorElement,
+  secondDiagram,
+  twoDiagramModel,
+} from '../store/store.fixtures.js';
 import { dispatch, modelStore } from '../store/store.js';
 import { copySelected, duplicateSelected, pasteSelected } from './clipboard.js';
 import { currentAnnouncement, resetAnnouncements } from './announcements.js';
@@ -70,6 +75,23 @@ it('copies a flow with its endpoints, and pastes with distinct IDs on each press
   expect(elements).toHaveLength(9);
   expect(new Set(elements.map((element) => element.id)).size).toBe(9);
   expect(after.past).toHaveLength(2);
+});
+
+it('copies from and pastes into the diagram on screen', async () => {
+  recordingClipboard();
+  modelStore.setState(
+    { ...initialState(twoDiagramModel), selection: [actorElement] },
+    true,
+  );
+  await copySelected();
+  dispatch(Action.SelectDiagram({ diagramId: secondDiagram }));
+  await pasteSelected();
+  const after = modelStore.getState().present;
+  expect(after.diagrams[0].elements).toHaveLength(3);
+  expect(after.diagrams[1].elements).toHaveLength(2);
+  expect(after.diagrams[1].elements.map((element) => element.name)).toContain(
+    'Reader',
+  );
 });
 
 it('refuses unsupported clipboard data without editing or replacing it', async () => {

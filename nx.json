@@ -43,6 +43,7 @@
       "{workspaceRoot}/test-data/otm/**/*",
       "{workspaceRoot}/test-data/ecluse.json",
       "{workspaceRoot}/test-data/ecluse.model.json",
+      "{workspaceRoot}/test-data/saerskriven.model.json",
       "{workspaceRoot}/test-data/saerskriven/ecluse.yaml",
       "{workspaceRoot}/test-data/render/**/*"
     ],

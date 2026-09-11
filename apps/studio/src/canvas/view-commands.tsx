@@ -1,9 +1,9 @@
 import { drawnBounds } from '@saerskriven/canvas';
-import type { Model } from '@saerskriven/model';
+import type { DiagramId, Model } from '@saerskriven/model';
 import { useReactFlow, useStore } from '@xyflow/react';
 import { useEffect, useMemo, useRef } from 'react';
 import type { ViewCommands } from '../commands/registry.js';
-import { modelAsOpened } from '../store/selectors.js';
+import { activeDiagramId, modelAsOpened } from '../store/selectors.js';
 import { modelStore, useModelStore } from '../store/store.js';
 import { currentLayout } from './layout.js';
 import { clearOfPanel, fitViewport } from './viewport.js';
@@ -50,23 +50,25 @@ export function useViewCommands(panelCover = 0): ViewCommands {
   );
 }
 
-/** Fits each newly opened model once. */
+/** Fits each newly opened model once, and each diagram switched to. */
 export function FitOnOpen() {
   const fit = useCanvasFit();
   const opened = useModelStore(modelAsOpened);
-  const fitted = useRef<Model | undefined>(undefined);
+  const diagram = useModelStore(activeDiagramId);
+  const fitted = useRef<{
+    readonly model: Model | undefined;
+    readonly diagram: DiagramId | undefined;
+  }>({ model: undefined, diagram: undefined });
 
   useEffect(() => {
-    if (
-      fit === undefined ||
-      opened === undefined ||
-      opened === fitted.current
-    ) {
+    const newlyOpened = opened !== undefined && opened !== fitted.current.model;
+    const switched = diagram !== fitted.current.diagram;
+    if (fit === undefined || (!newlyOpened && !switched)) {
       return;
     }
-    fitted.current = opened;
+    fitted.current = { model: opened ?? fitted.current.model, diagram };
     fit();
-  }, [fit, opened]);
+  }, [fit, opened, diagram]);
 
   return null;
 }

@@ -5,6 +5,7 @@ import { createStore, type StoreApi } from 'zustand/vanilla';
 import type { Action } from './actions.js';
 import { developmentModel } from './development-model.js';
 import { reduce } from './reducer.js';
+import { holdsDiagram } from './selectors.js';
 import {
   browserRecoveryStorage,
   RecoveryStorageFailure,
@@ -52,6 +53,7 @@ export function createModelStore(
                 reduced.present,
                 reduced.present !== reduced.saved,
                 reduced.file,
+                reduced.activeDiagram,
               ),
             );
       if (Either.isLeft(stored)) {
@@ -120,6 +122,9 @@ function stateFromSnapshot(snapshot: RecoverySnapshot): State {
   return {
     ...initialState(present),
     saved: snapshot.dirty ? { ...present } : present,
+    activeDiagram: holdsDiagram(present, snapshot.activeDiagram)
+      ? snapshot.activeDiagram
+      : undefined,
     file: snapshot.file,
     recoveryCurrent: true,
   };
@@ -136,6 +141,7 @@ function recoverableChanged(before: State, after: State): boolean {
   return (
     before.present !== after.present ||
     (before.present !== before.saved) !== (after.present !== after.saved) ||
-    before.file !== after.file
+    before.file !== after.file ||
+    before.activeDiagram !== after.activeDiagram
   );
 }

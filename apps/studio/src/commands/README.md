@@ -119,7 +119,10 @@ wherever a person is. Three rules decide whether a press is the studio's:
 
 A press that is the studio's is claimed from the browser, whether or not the
 command has a dispatch yet: a chord the studio advertises must not do
-something else instead.
+something else instead. A command that says when it is available is the
+studio's only then: the diagram steps claim PageUp and PageDown while the
+model holds more than one diagram, and leave them to scroll whatever has
+focus in a model of one.
 
 ## The shortcut reference
 

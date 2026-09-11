@@ -9,7 +9,7 @@ export function isColourMode(value: string): value is ColourMode {
 export const colourModeStorageKey = 'saerskrivenColourMode';
 
 export function parseColourMode(value: string | null): ColourMode {
-  return value === 'light' || value === 'dark' ? value : 'system';
+  return value !== null && isColourMode(value) ? value : 'system';
 }
 
 type ColourModeStorage = Pick<Storage, 'getItem' | 'setItem'>;

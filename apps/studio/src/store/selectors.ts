@@ -1,4 +1,10 @@
-import type { DiagramId, Element, ElementId, Model } from '@saerskriven/model';
+import type {
+  Diagram,
+  DiagramId,
+  Element,
+  ElementId,
+  Model,
+} from '@saerskriven/model';
 import { nameOf } from '../files/session.js';
 import { FileLifecycle, placeholderModel, type State } from './state.js';
 
@@ -38,12 +44,43 @@ export function elementCount(state: State): number {
 }
 
 /**
- * The diagram an edit lands on, which is the first the model holds until the
- * studio can show more than one, and nothing at all while the model has
- * none.
+ * The diagram on screen, which every canvas edit lands on: the one
+ * `activeDiagram` names while the model holds it, the first the model holds
+ * otherwise, and nothing at all while the model has none. Falling back
+ * rather than refusing is what keeps an undo that takes the named diagram
+ * away from leaving the canvas on nothing.
  */
-export function firstDiagramId(state: State): DiagramId | undefined {
-  return state.present.diagrams.at(0)?.id;
+export function activeDiagram(
+  state: Pick<State, 'present' | 'activeDiagram'>,
+): Diagram | undefined {
+  return (
+    state.present.diagrams.find(
+      (diagram) => diagram.id === state.activeDiagram,
+    ) ?? state.present.diagrams.at(0)
+  );
+}
+
+/** Whether `model` holds a diagram of id `diagramId`. */
+export function holdsDiagram(
+  model: Model,
+  diagramId: DiagramId | undefined,
+): boolean {
+  return (
+    diagramId !== undefined &&
+    model.diagrams.some((diagram) => diagram.id === diagramId)
+  );
+}
+
+/** The id of {@link activeDiagram}. */
+export function activeDiagramId(
+  state: Pick<State, 'present' | 'activeDiagram'>,
+): DiagramId | undefined {
+  return activeDiagram(state)?.id;
+}
+
+/** Whether the model holds a diagram to switch to. */
+export function severalDiagrams(state: State): boolean {
+  return state.present.diagrams.length > 1;
 }
 
 /**

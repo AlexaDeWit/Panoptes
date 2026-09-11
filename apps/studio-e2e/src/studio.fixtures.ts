@@ -9,10 +9,6 @@ const developmentModelKey = 'saerskrivenDevelopmentModel';
 export const vendored = (path: string): string =>
   join(__dirname, '../../..', path);
 
-const ecluse: unknown = JSON.parse(
-  readFileSync(vendored('test-data/ecluse.model.json'), 'utf8'),
-);
-
 /** The box the diagram is drawn in, chrome and graph paper included. */
 export const canvasContainer = (page: Page): Locator =>
   page.getByTestId('canvas-container');
@@ -53,22 +49,54 @@ export const focusSettled = async (target: Locator): Promise<void> => {
 };
 
 /**
- * Opens the studio on Écluse's model, put on the page before the studio's own
- * modules run under the name `apps/studio/src/store/development-model.ts`
- * declares, which is how a real file reaches the canvas while the open dialog
- * is still issue #37's. `globalThis` in a page is the window the studio reads.
+ * Opens the studio on a model document of the repository, put on the page
+ * before the studio's own modules run under the name
+ * `apps/studio/src/store/development-model.ts` declares, which is how a real
+ * file reaches the canvas without a picker. `globalThis` in a page is the
+ * window the studio reads. A recovery snapshot still wins over the document,
+ * so a reload lands on the session rather than back on the file.
  */
-export const openEcluse = async (page: Page): Promise<void> => {
+export const openModel = async (page: Page, path: string): Promise<void> => {
+  const model: unknown = JSON.parse(readFileSync(vendored(path), 'utf8'));
   await page.addInitScript(
-    ({ key, model }) => {
-      Object.defineProperty(globalThis, key, { value: model });
+    ({ key, model: document }) => {
+      Object.defineProperty(globalThis, key, { value: document });
     },
-    { key: developmentModelKey, model: ecluse },
+    { key: developmentModelKey, model },
   );
   await page.goto('/');
   await expect(canvasContainer(page)).toBeVisible();
   await canvasSettled(page);
 };
+
+/** Opens the studio on Écluse's model, through {@link openModel}. */
+export const openEcluse = async (page: Page): Promise<void> => {
+  await openModel(page, 'test-data/ecluse.model.json');
+};
+
+/** The two-diagram model of Saerskriven's own threat model. */
+export const saerskrivenModel = 'test-data/saerskriven.model.json';
+
+/** The control joined to the menu button that names the diagram on screen. */
+export const diagramSwitcher = (page: Page): Locator =>
+  page.getByTestId('diagram-switcher');
+
+/** The field the switcher becomes while a diagram's title is being edited. */
+export const diagramTitleField = (page: Page): Locator =>
+  page.getByRole('textbox', { name: 'Diagram title' });
+
+/** Opens the switcher's list, and does nothing where it is already open. */
+export const openSwitcher = async (page: Page): Promise<void> => {
+  if (await page.getByRole('menu').isVisible()) {
+    return;
+  }
+  await diagramSwitcher(page).click();
+  await expect(page.getByRole('menu')).toBeVisible();
+};
+
+/** One diagram in the open menu or the open switcher, by its title. */
+export const diagramChoice = (page: Page, title: string): Locator =>
+  page.getByRole('menuitemradio', { name: title, exact: true });
 
 /** Opens the studio on the model it carries until a file can be opened. */
 export const openPlaceholder = async (page: Page): Promise<void> => {
@@ -226,12 +254,12 @@ export const toolButton = (page: Page, name: string): Locator =>
 
 /**
  * The last control on the tab path before the canvas, which is where a spec
- * that tabs into the diagram starts. The menu's button is that stop whether or
- * not anything is selected, the only control after it being the one that
- * dismisses a loss report, which is in the page only while a crossing of the
- * file boundary has cost something.
+ * that tabs into the diagram starts. The diagram switcher is that stop
+ * whether or not anything is selected, the only control after it being the
+ * one that dismisses a loss report, which is in the page only while a
+ * crossing of the file boundary has cost something.
  */
-export const beforeCanvas = (page: Page): Locator => menuButton(page);
+export const beforeCanvas = (page: Page): Locator => diagramSwitcher(page);
 
 /** The panel holding the threats of whatever the canvas has selected. */
 export const threatPanel = (page: Page): Locator =>

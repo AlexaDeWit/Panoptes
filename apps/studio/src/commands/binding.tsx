@@ -6,6 +6,7 @@ import {
   type Command,
   type CommandSurface,
 } from './registry.js';
+import { modelStore } from '../store/store.js';
 import { hostPlatform, type Platform } from './shortcuts.js';
 
 const nothing = (): void => undefined;
@@ -81,7 +82,11 @@ export function commandForKey(
     return undefined;
   }
   const command = commandFor(event, platform);
-  if (command === undefined || (owner === 'typing' && !command.inTextFields)) {
+  if (
+    command === undefined ||
+    (owner === 'typing' && !command.inTextFields) ||
+    command.available?.(modelStore.getState()) === false
+  ) {
     return undefined;
   }
   return command;

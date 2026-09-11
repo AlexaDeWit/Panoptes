@@ -1,6 +1,7 @@
 import { render, renderHook, screen } from '@testing-library/react';
 import { currentTool, resetTools, selectTool } from '../canvas/tools.js';
 import { initialState, placeholderModel } from '../store/state.js';
+import { twoDiagramModel } from '../store/store.fixtures.js';
 import { modelStore } from '../store/store.js';
 import {
   CommandSurfaceProvider,
@@ -31,6 +32,7 @@ const press = (target: Element, init: KeyboardEventInit): KeyboardEvent => {
 
 afterEach(() => {
   document.body.innerHTML = '';
+  modelStore.setState(initialState(placeholderModel), true);
 });
 
 describe('keyboardOwner', () => {
@@ -93,6 +95,19 @@ describe('commandForKey', () => {
 
     expect(commandForKey(press(holder, { key: 'a' }), 'other')?.id).toBe(
       'actor-tool',
+    );
+  });
+
+  it('claims a chord only while its command is available in the model on screen', () => {
+    const holder = markup('<div></div>');
+    modelStore.setState(initialState(placeholderModel), true);
+    expect(
+      commandForKey(press(holder, { key: 'PageDown' }), 'other'),
+    ).toBeUndefined();
+
+    modelStore.setState(initialState(twoDiagramModel), true);
+    expect(commandForKey(press(holder, { key: 'PageDown' }), 'other')?.id).toBe(
+      'next-diagram',
     );
   });
 

@@ -7,6 +7,7 @@ import type {
 import {
   emptyModel,
   parseModel,
+  type DiagramId,
   type ElementId,
   type Model,
   type OperationFailure,
@@ -61,12 +62,19 @@ export type InlineEditor = {
   readonly elementId: ElementId;
 };
 
-/** The model, history, transient view state, file, and recovery status. */
+/**
+ * The model, history, transient view state, file, and recovery status.
+ * `activeDiagram` names the diagram on screen, and nothing until one has
+ * been chosen, the first the model holds being on screen meanwhile: it stays
+ * out of the undo stacks with the rest of the view state, so an undo moves
+ * the model and never the view.
+ */
 export type State = {
   readonly present: Model;
   readonly past: readonly Model[];
   readonly future: readonly Model[];
   readonly saved: Model;
+  readonly activeDiagram: DiagramId | undefined;
   readonly selection: readonly ElementId[];
   readonly inlineEditor: InlineEditor | undefined;
   readonly file: FileLifecycle;
@@ -76,6 +84,9 @@ export type State = {
 
 /** The name of a model that has never been in a file. */
 export const untitledModel = 'Untitled';
+
+/** The title a diagram carries until it is given one. */
+export const untitledDiagram = 'Untitled diagram';
 
 const placeholderDocument = {
   metadata: {
@@ -87,7 +98,7 @@ const placeholderDocument = {
   diagrams: [
     {
       id: 'placeholder-diagram',
-      title: 'Untitled diagram',
+      title: untitledDiagram,
       elements: [
         {
           kind: 'actor',
@@ -155,6 +166,7 @@ export function initialState(model: Model): State {
     past: [],
     future: [],
     saved: model,
+    activeDiagram: undefined,
     selection: [],
     inlineEditor: undefined,
     file: FileLifecycle.NoFile(),

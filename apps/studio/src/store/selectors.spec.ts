@@ -2,14 +2,16 @@ import { emptyModel } from '@saerskriven/model';
 import { Action } from './actions.js';
 import { reduce } from './reducer.js';
 import {
+  activeDiagram,
+  activeDiagramId,
   canRedo,
   canUndo,
   elementCount,
-  firstDiagramId,
   isDirty,
   modelAsOpened,
   selectedElement,
   selectedElements,
+  severalDiagrams,
   showingPlaceholder,
   windowTitle,
 } from './selectors.js';
@@ -21,6 +23,8 @@ import {
   newProcess,
   processElement,
   sampleModel,
+  secondDiagram,
+  twoDiagramModel,
 } from './store.fixtures.js';
 
 const start = initialState(sampleModel);
@@ -81,9 +85,22 @@ describe('selectors', () => {
     expect(modelAsOpened(opened)).toBe(sampleModel);
   });
 
-  it('names no diagram in a model that holds none', () => {
-    expect(firstDiagramId(start)).toBe(mainDiagram);
-    expect(firstDiagramId(initialState(emptyModel))).toBeUndefined();
+  it('shows the first diagram until one is chosen, and none in a model that holds none', () => {
+    expect(activeDiagramId(start)).toBe(mainDiagram);
+    expect(activeDiagramId(initialState(emptyModel))).toBeUndefined();
+    expect(severalDiagrams(start)).toBe(false);
+  });
+
+  it('shows the diagram chosen while the model holds it, and the first again once it does not', () => {
+    const chosen = {
+      ...initialState(twoDiagramModel),
+      activeDiagram: secondDiagram,
+    };
+    expect(severalDiagrams(chosen)).toBe(true);
+    expect(activeDiagram(chosen)?.title).toBe('Second');
+    expect(activeDiagramId({ ...chosen, present: sampleModel })).toBe(
+      mainDiagram,
+    );
   });
 
   it('reads one selected element and keeps the full selection', () => {

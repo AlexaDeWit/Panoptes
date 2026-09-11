@@ -1,6 +1,8 @@
 import {
+  addDiagram,
   addElement,
   insertFragment,
+  renameDiagram,
   reconnectFlow,
   addThreat,
   attachThreat,
@@ -14,13 +16,16 @@ import {
   resizeElement,
   setFlowDirection,
   setFlowWaypoints,
+  OperationFailure,
+  type Diagram,
+  type DiagramId,
   type ElementId,
   type Model,
-  type OperationFailure,
 } from '@saerskriven/model';
 import { Either } from 'effect';
 import { sameSelection } from './selection.js';
 import { Action } from './actions.js';
+import { activeDiagramId, holdsDiagram } from './selectors.js';
 import {
   FileLifecycle,
   StudioFailure,
@@ -89,8 +94,12 @@ export function reduce(state: State, action: Action): State {
       edited(state, attachThreat(state.present, threatId, elementId)),
     DetachThreat: ({ threatId, elementId }) =>
       edited(state, detachThreat(state.present, threatId, elementId)),
+    AddDiagram: ({ diagram }) => addedDiagram(state, diagram),
+    RenameDiagram: ({ diagramId, title }) =>
+      edited(state, renameDiagram(state.present, diagramId, title)),
     Undo: () => undone(state),
     Redo: () => redone(state),
+    SelectDiagram: ({ diagramId }) => selectedDiagram(state, diagramId),
     Select: ({ elementIds }) => {
       const selection = [...new Set(elementIds)];
       return sameSelection(state.selection, selection)
@@ -154,6 +163,32 @@ function edited(
             lastFailure: undefined,
           },
   });
+}
+
+function addedDiagram(state: State, diagram: Diagram): State {
+  const outcome = addDiagram(state.present, diagram);
+  const next = edited(state, outcome);
+  return Either.isLeft(outcome) ? next : selectedDiagram(next, diagram.id);
+}
+
+function selectedDiagram(state: State, diagramId: DiagramId): State {
+  if (!holdsDiagram(state.present, diagramId)) {
+    return {
+      ...state,
+      lastFailure: StudioFailure.Operation({
+        failure: OperationFailure.UnknownDiagram({ diagramId }),
+      }),
+    };
+  }
+  if (diagramId === activeDiagramId(state)) {
+    return state;
+  }
+  return {
+    ...state,
+    activeDiagram: diagramId,
+    selection: state.selection.length === 0 ? state.selection : [],
+    inlineEditor: undefined,
+  };
 }
 
 function removedElement(state: State, elementId: ElementId): State {

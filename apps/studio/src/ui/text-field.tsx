@@ -1,4 +1,4 @@
-import { firstRefusedCharacter } from '@saerskriven/model';
+import { firstRefusedCharacter, isEmptyName } from '@saerskriven/model';
 import { useEffect, useId, useRef, useState, type Ref } from 'react';
 
 import styles from './text-field.module.css';
@@ -89,6 +89,18 @@ export function refusedText(
   const before = Array.from(text.slice(0, at)).length;
   const shown = `Character ${String(before + 1)} is one the model does not accept.`;
   return { shown, said: `${label} was not saved. ${shown}` };
+}
+
+const emptyRefusal = 'A name cannot be empty.';
+
+/** Refuses an empty name ahead of the characters {@link refusedText} refuses. */
+export function refusedName(
+  label: string,
+  text: string,
+): TextRefusal | undefined {
+  return isEmptyName(text)
+    ? { shown: emptyRefusal, said: `${label} was not saved. ${emptyRefusal}` }
+    : refusedText(label, text);
 }
 
 /** A controlled value, an optional refused draft, and callbacks for changes and commits. */

@@ -2,8 +2,8 @@ import type { CanvasNode, NodeBox } from '@saerskriven/canvas';
 import type { Element, ElementId, Model, Point } from '@saerskriven/model';
 import { Action } from '../store/actions.js';
 import {
+  activeDiagramId,
   elementById,
-  firstDiagramId,
   renameable,
   selectedElement,
 } from '../store/selectors.js';
@@ -24,7 +24,7 @@ export type RemovalCascade = {
 /** Places and selects one element, then opens its inline editor when asked. */
 export function placeElement(element: Element, openNameField = true): boolean {
   const state = modelStore.getState();
-  const diagramId = firstDiagramId(state);
+  const diagramId = activeDiagramId(state);
   if (diagramId === undefined) {
     return false;
   }
@@ -38,7 +38,7 @@ export function placeElement(element: Element, openNameField = true): boolean {
 /** Places a trust-boundary curve through its committed waypoints. */
 export function placeBoundaryCurve(waypoints: readonly Point[]): boolean {
   const state = modelStore.getState();
-  const diagramId = firstDiagramId(state);
+  const diagramId = activeDiagramId(state);
   if (diagramId === undefined || waypoints.length < 2) {
     return false;
   }
@@ -49,7 +49,7 @@ export function placeBoundaryCurve(waypoints: readonly Point[]): boolean {
 /** Draws a flow between two connectable elements. */
 export function connectElements(source: ElementId, target: ElementId): void {
   const state = modelStore.getState();
-  const diagramId = firstDiagramId(state);
+  const diagramId = activeDiagramId(state);
   const ends = new Set(flowEnds(currentLayout(state)).map((node) => node.id));
   if (diagramId === undefined || !ends.has(source) || !ends.has(target)) {
     return;

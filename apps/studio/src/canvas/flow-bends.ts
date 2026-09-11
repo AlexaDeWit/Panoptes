@@ -163,7 +163,7 @@ export function useFlowBends() {
     context,
     flow,
     draft,
-    layout: currentLayout({ present }),
+    layout: currentLayout({ present, activeDiagram: state.activeDiagram }),
     preview: (target: RouteTarget): void => {
       if (flow !== undefined) {
         setHeld({ ...target, state, transition: tool.transition, flow });

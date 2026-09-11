@@ -8,7 +8,6 @@ import {
   commandById,
   diagramExportCommand,
   runCommand,
-  type Command,
   type CommandId,
 } from '../commands/registry.js';
 import {
@@ -26,13 +25,12 @@ import {
 import { useModelStore } from '../store/store.js';
 import { FailureNotice } from '../ui/failure-notice.js';
 import { LiveRegion } from '../ui/live-region.js';
-import {
-  colourModes,
-  isColourMode,
-  type ColourMode,
-} from '../theme-preference.js';
+import { colourModes, type ColourMode } from '../theme-preference.js';
+import { DiagramSwitcher } from './diagram-switcher.js';
+import { MenuCommand, MenuItem, RegisteredMenuCommand } from './menu-items.js';
 import type { FileSession } from './file-commands.js';
 import styles from './menu.module.css';
+import { RadioChoices } from './radio-choices.js';
 import {
   formatFiles,
   formatOf,
@@ -42,93 +40,6 @@ import {
   reportLines,
   type LossReport,
 } from './session.js';
-
-type MenuItemProps = {
-  readonly chord?: string;
-  readonly children: ReactNode;
-  readonly disabled?: boolean;
-  readonly keepOpen?: boolean;
-  readonly keyShortcuts?: string;
-  readonly onChoose: () => void;
-};
-
-function MenuItem({
-  chord,
-  children,
-  disabled,
-  keepOpen,
-  keyShortcuts,
-  onChoose,
-}: MenuItemProps) {
-  return (
-    <DropdownMenu.Item
-      aria-keyshortcuts={keyShortcuts}
-      className={styles.item}
-      disabled={disabled}
-      onSelect={(event) => {
-        if (keepOpen === true) {
-          event.preventDefault();
-        }
-        onChoose();
-      }}
-    >
-      <span>{children}</span>
-      {chord !== undefined && (
-        <span aria-hidden="true" className={styles.chord}>
-          {chord}
-        </span>
-      )}
-    </DropdownMenu.Item>
-  );
-}
-
-type MenuCommandProps = {
-  readonly command: CommandId;
-  readonly children?: ReactNode;
-  readonly disabled?: boolean;
-};
-
-function MenuCommand({ command, children, disabled }: MenuCommandProps) {
-  return (
-    <RegisteredMenuCommand disabled={disabled} entry={commandById(command)}>
-      {children}
-    </RegisteredMenuCommand>
-  );
-}
-
-type RegisteredMenuCommandProps = {
-  readonly entry: Command;
-  readonly children?: ReactNode;
-  readonly disabled?: boolean;
-};
-
-function RegisteredMenuCommand({
-  entry,
-  children,
-  disabled,
-}: RegisteredMenuCommandProps) {
-  const surface = useCommandSurface();
-  const hasShortcut = entry.shortcuts.length > 0;
-
-  return (
-    <MenuItem
-      chord={
-        hasShortcut ? spellShortcuts(entry.shortcuts, hostPlatform) : undefined
-      }
-      disabled={disabled}
-      keyShortcuts={
-        hasShortcut
-          ? keyShortcutsAttribute(entry.shortcuts, hostPlatform)
-          : undefined
-      }
-      onChoose={() => {
-        runCommand(entry, surface);
-      }}
-    >
-      {children ?? entry.label}
-    </MenuItem>
-  );
-}
 
 type UnsavedChangesCommandProps = {
   readonly asking: boolean;
@@ -265,171 +176,166 @@ export function StudioMenu({
 
   return (
     <div className={styles.menu}>
-      <DropdownMenu.Root
-        modal={false}
-        onOpenChange={(next) => {
-          setOpen(next);
-          if (!next) {
-            cancelOpen();
-            session.cancelImport();
-            cancelClose();
-            cancelChoice();
-          }
-        }}
-        open={open}
-      >
-        <DropdownMenu.Trigger
-          aria-label={dirty ? 'Menu, unsaved changes' : 'Menu'}
-          className={styles.burger}
-          ref={triggerRef}
-        >
-          <span aria-hidden="true">☰</span>
-          {dirty && <span aria-hidden="true" className={styles.dot} />}
-        </DropdownMenu.Trigger>
-        <DropdownMenu.Content
-          tabIndex={0}
-          onCloseAutoFocus={(event) => {
-            if (focusSelectionControl()) {
-              event.preventDefault();
+      <div className={styles.bar}>
+        <DropdownMenu.Root
+          modal={false}
+          onOpenChange={(next) => {
+            setOpen(next);
+            if (!next) {
+              cancelOpen();
+              session.cancelImport();
+              cancelClose();
+              cancelChoice();
             }
           }}
-          align="start"
-          className={styles.panel}
-          sideOffset={6}
+          open={open}
         >
-          <DropdownMenu.Group>
-            <DropdownMenu.Label className={styles.heading}>
-              File
-            </DropdownMenu.Label>
-            <UnsavedChangesCommand
-              asking={askingOpen}
-              cancel={cancelOpen}
-              command="open"
-              dirty={dirty}
-              proceed={confirmOpen}
-              question="Discard changes and open"
-            />
-            <MenuCommand command="save" />
-            <MenuItem
-              chord={
-                choosing
-                  ? undefined
-                  : spellShortcuts(saveAsCommand.shortcuts, hostPlatform)
+          <DropdownMenu.Trigger
+            aria-label={dirty ? 'Menu, unsaved changes' : 'Menu'}
+            className={styles.burger}
+            ref={triggerRef}
+          >
+            <span aria-hidden="true">☰</span>
+            {dirty && <span aria-hidden="true" className={styles.dot} />}
+          </DropdownMenu.Trigger>
+          <DropdownMenu.Content
+            tabIndex={0}
+            onCloseAutoFocus={(event) => {
+              if (focusSelectionControl()) {
+                event.preventDefault();
               }
-              keepOpen={asksFormat && !choosing}
-              keyShortcuts={
-                choosing
-                  ? undefined
-                  : keyShortcutsAttribute(saveAsCommand.shortcuts, hostPlatform)
-              }
-              onChoose={
-                choosing
-                  ? () => {
-                      chooseFormat(format);
-                    }
-                  : () => {
-                      commands.saveAs();
-                    }
-              }
-            >
-              {choosing
-                ? `Save as ${formatFiles[format].label}`
-                : saveAsCommand.label}
-            </MenuItem>
-            {choosing &&
-              formatsFrom(format)
-                .slice(1)
-                .map((option) => (
-                  <MenuItem
-                    key={option}
-                    onChoose={() => {
-                      chooseFormat(option);
-                    }}
-                  >
-                    Save as {formatFiles[option].label}
-                  </MenuItem>
-                ))}
-            <UnsavedChangesCommand
-              asking={session.importing && dirty}
-              cancel={session.cancelImport}
-              command="import"
-              dirty={dirty}
-              proceed={session.confirmImport}
-              question="Discard changes and import"
-            />
-            <ExportMenu />
-            <UnsavedChangesCommand
-              asking={askingClose}
-              cancel={cancelClose}
-              command="close-file"
-              dirty={dirty}
-              proceed={confirmClose}
-              question="Discard changes and create new model"
-            />
-          </DropdownMenu.Group>
-          <DropdownMenu.Separator className={styles.rule} />
-          <DropdownMenu.Sub>
-            <SubmenuTrigger label={`Appearance ${selectedColourMode}`}>
-              <span>Appearance</span>
-              <span aria-hidden="true" className={styles.chord}>
-                {selectedColourMode[0].toUpperCase() +
-                  selectedColourMode.slice(1)}
-              </span>
-            </SubmenuTrigger>
-            <DropdownMenu.SubContent tabIndex={0} className={styles.panel}>
-              <DropdownMenu.RadioGroup
-                aria-label="Appearance"
-                onValueChange={(value) => {
-                  if (isColourMode(value)) {
-                    onColourModeChange?.(value);
-                  }
-                }}
-                value={selectedColourMode}
+            }}
+            align="start"
+            className={styles.panel}
+            sideOffset={6}
+          >
+            <DropdownMenu.Group>
+              <DropdownMenu.Label className={styles.heading}>
+                File
+              </DropdownMenu.Label>
+              <UnsavedChangesCommand
+                asking={askingOpen}
+                cancel={cancelOpen}
+                command="open"
+                dirty={dirty}
+                proceed={confirmOpen}
+                question="Discard changes and open"
+              />
+              <MenuCommand command="save" />
+              <MenuItem
+                chord={
+                  choosing
+                    ? undefined
+                    : spellShortcuts(saveAsCommand.shortcuts, hostPlatform)
+                }
+                keepOpen={asksFormat && !choosing}
+                keyShortcuts={
+                  choosing
+                    ? undefined
+                    : keyShortcutsAttribute(
+                        saveAsCommand.shortcuts,
+                        hostPlatform,
+                      )
+                }
+                onChoose={
+                  choosing
+                    ? () => {
+                        chooseFormat(format);
+                      }
+                    : () => {
+                        commands.saveAs();
+                      }
+                }
               >
-                {colourModes.map((mode) => (
-                  <DropdownMenu.RadioItem
-                    className={styles.item}
-                    key={mode}
-                    value={mode}
-                  >
-                    <span aria-hidden="true" className={styles.radioMark}>
-                      {selectedColourMode === mode ? '●' : '○'}
-                    </span>
-                    <span>{mode[0].toUpperCase() + mode.slice(1)}</span>
-                  </DropdownMenu.RadioItem>
-                ))}
-              </DropdownMenu.RadioGroup>
-            </DropdownMenu.SubContent>
-          </DropdownMenu.Sub>
-          <DropdownMenu.Separator className={styles.rule} />
-          <EditMenu />
-          <DropdownMenu.Separator className={styles.rule} />
-          <ViewMenu />
-          <DropdownMenu.Separator className={styles.rule} />
-          <DropdownMenu.Group>
-            <DropdownMenu.Label className={styles.heading}>
-              Project
-            </DropdownMenu.Label>
-            <ProjectLink href="https://github.com/AlexaDeWit/Saerskriven">
-              View source on GitHub
-            </ProjectLink>
-          </DropdownMenu.Group>
-          <DropdownMenu.Separator className={styles.rule} />
-          <DropdownMenu.Group>
-            <DropdownMenu.Label className={styles.heading}>
-              Help
-            </DropdownMenu.Label>
-            <MenuCommand command="shortcut-reference" />
-          </DropdownMenu.Group>
-          <DropdownMenu.Separator className={styles.rule} />
-          <DropdownMenu.Group className={styles.about}>
-            <p className={styles.state} data-testid="file-state">
-              {nameOf(file)}, {formatFiles[format].label},{' '}
-              {dirty ? 'unsaved changes' : 'no unsaved changes'}
-            </p>
-          </DropdownMenu.Group>
-        </DropdownMenu.Content>
-      </DropdownMenu.Root>
+                {choosing
+                  ? `Save as ${formatFiles[format].label}`
+                  : saveAsCommand.label}
+              </MenuItem>
+              {choosing &&
+                formatsFrom(format)
+                  .slice(1)
+                  .map((option) => (
+                    <MenuItem
+                      key={option}
+                      onChoose={() => {
+                        chooseFormat(option);
+                      }}
+                    >
+                      Save as {formatFiles[option].label}
+                    </MenuItem>
+                  ))}
+              <UnsavedChangesCommand
+                asking={session.importing && dirty}
+                cancel={session.cancelImport}
+                command="import"
+                dirty={dirty}
+                proceed={session.confirmImport}
+                question="Discard changes and import"
+              />
+              <ExportMenu />
+              <UnsavedChangesCommand
+                asking={askingClose}
+                cancel={cancelClose}
+                command="close-file"
+                dirty={dirty}
+                proceed={confirmClose}
+                question="Discard changes and create new model"
+              />
+            </DropdownMenu.Group>
+            <DropdownMenu.Separator className={styles.rule} />
+            <DropdownMenu.Sub>
+              <SubmenuTrigger label={`Appearance ${selectedColourMode}`}>
+                <span>Appearance</span>
+                <span aria-hidden="true" className={styles.chord}>
+                  {selectedColourMode[0].toUpperCase() +
+                    selectedColourMode.slice(1)}
+                </span>
+              </SubmenuTrigger>
+              <DropdownMenu.SubContent tabIndex={0} className={styles.panel}>
+                <RadioChoices
+                  choices={colourModes.map((mode) => ({
+                    value: mode,
+                    label: mode[0].toUpperCase() + mode.slice(1),
+                  }))}
+                  label="Appearance"
+                  onChoose={(mode) => {
+                    onColourModeChange?.(mode);
+                  }}
+                  value={selectedColourMode}
+                />
+              </DropdownMenu.SubContent>
+            </DropdownMenu.Sub>
+            <DropdownMenu.Separator className={styles.rule} />
+            <EditMenu />
+            <DropdownMenu.Separator className={styles.rule} />
+            <ViewMenu />
+            <DropdownMenu.Separator className={styles.rule} />
+            <DropdownMenu.Group>
+              <DropdownMenu.Label className={styles.heading}>
+                Project
+              </DropdownMenu.Label>
+              <ProjectLink href="https://github.com/AlexaDeWit/Saerskriven">
+                View source on GitHub
+              </ProjectLink>
+            </DropdownMenu.Group>
+            <DropdownMenu.Separator className={styles.rule} />
+            <DropdownMenu.Group>
+              <DropdownMenu.Label className={styles.heading}>
+                Help
+              </DropdownMenu.Label>
+              <MenuCommand command="shortcut-reference" />
+            </DropdownMenu.Group>
+            <DropdownMenu.Separator className={styles.rule} />
+            <DropdownMenu.Group className={styles.about}>
+              <p className={styles.state} data-testid="file-state">
+                {nameOf(file)}, {formatFiles[format].label},{' '}
+                {dirty ? 'unsaved changes' : 'no unsaved changes'}
+              </p>
+            </DropdownMenu.Group>
+          </DropdownMenu.Content>
+        </DropdownMenu.Root>
+        <DiagramSwitcher />
+      </div>
       <input
         className={styles.input}
         data-testid="file-input"

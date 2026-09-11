@@ -110,6 +110,12 @@ function describeOperation(failure: OperationFailure): string {
       `The copied graph was refused. ${issueLines(issues).join(' ')}`,
     UnknownDiagram: ({ diagramId }) =>
       `The model holds no diagram ${diagramId}.`,
+    DuplicateDiagramId: ({ diagramId }) =>
+      `The model already holds a diagram ${diagramId}.`,
+    EmptyTitle: ({ diagramId }) =>
+      `Diagram ${diagramId} cannot be left without a title.`,
+    RefusedTitleCharacter: ({ diagramId }) =>
+      `The title for diagram ${diagramId} carries a character the model does not accept.`,
     UnknownElement: ({ elementId }) =>
       `The model holds no element ${elementId}.`,
     UnknownThreat: ({ threatId }) => `The model holds no threat ${threatId}.`,
