@@ -36,6 +36,16 @@ const operationFailures: ByTag<OperationFailure> = {
       },
     ],
   }),
+  DuplicateDiagramId: OperationFailure.DuplicateDiagramId({
+    diagramId: diagramId('diagram-main'),
+  }),
+  EmptyTitle: OperationFailure.EmptyTitle({
+    diagramId: diagramId('diagram-main'),
+  }),
+  RefusedTitleCharacter: OperationFailure.RefusedTitleCharacter({
+    diagramId: diagramId('diagram-main'),
+    at: 2,
+  }),
   UnknownDiagram: OperationFailure.UnknownDiagram({
     diagramId: diagramId('diagram-missing'),
   }),

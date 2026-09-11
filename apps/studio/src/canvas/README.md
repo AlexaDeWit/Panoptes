@@ -452,8 +452,8 @@ twenty. Each press is one undo step, and the opposite edge stays fixed.
   screen reader's browse mode inside the canvas: Tab reaches every element
   but the reader's own navigation keys do not. React Flow writes the role
   after any property handed to it, so it cannot be overridden from here.
-- The canvas draws one diagram at a time. The menu's Diagram group, the name
-  beside the menu button, and the Next and Previous diagram commands switch
-  between them (`diagrams.ts`). Adding, renaming, removing and reordering
-  diagrams is not offered: a second diagram is written into the file, and
-  #316 holds the model operations that work would build on.
+- The canvas draws one diagram at a time. The switcher beside the menu
+  button and the Next and Previous diagram commands switch between them, and
+  the switcher adds and renames diagrams (`diagrams.ts`). Removing and
+  reordering diagrams is not offered: #316 holds the model operations that
+  work would build on.

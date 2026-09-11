@@ -63,6 +63,13 @@ type ActionsByTag<Tag extends Action['_tag']> = {
 };
 
 const applied: ActionsByTag<ModelActionTag> = {
+  AddDiagram: Action.AddDiagram({
+    diagram: { id: secondDiagram, title: 'Second', elements: [] },
+  }),
+  RenameDiagram: Action.RenameDiagram({
+    diagramId: mainDiagram,
+    title: 'Retitled',
+  }),
   InsertFragment: Action.InsertFragment({
     diagramId: mainDiagram,
     fragment: placeholderModel,
@@ -130,6 +137,13 @@ const applied: ActionsByTag<ModelActionTag> = {
 };
 
 const refused: ActionsByTag<ModelActionTag> = {
+  AddDiagram: Action.AddDiagram({
+    diagram: { id: mainDiagram, title: 'Again', elements: [] },
+  }),
+  RenameDiagram: Action.RenameDiagram({
+    diagramId: diagramId('diagram-missing'),
+    title: 'Retitled',
+  }),
   InsertFragment: Action.InsertFragment({
     diagramId: mainDiagram,
     fragment: sampleModel,
@@ -464,6 +478,22 @@ describe('the active diagram', () => {
     expect(activeDiagramId({ ...switched, present: sampleModel })).toBe(
       mainDiagram,
     );
+  });
+
+  it('shows the diagram it adds, and shows the first again once the add is undone', () => {
+    const selected = reduce(
+      start,
+      Action.Select({ elementIds: [actorElement] }),
+    );
+    const added = reduce(selected, applied.AddDiagram);
+    expect(activeDiagramId(added)).toBe(secondDiagram);
+    expect(added.selection).toEqual([]);
+    expect(added.past).toHaveLength(1);
+    expect(activeDiagramId(reduce(added, Action.Undo()))).toBe(mainDiagram);
+    expect(reduce(start, refused.AddDiagram)).toMatchObject({
+      present: start.present,
+      activeDiagram: undefined,
+    });
   });
 
   it('resets on a new model and on closing, with the rest of the view state', () => {

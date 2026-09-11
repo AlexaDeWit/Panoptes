@@ -4,8 +4,10 @@ import { elementSchema, type Element, type Flow } from './elements.js';
 import { validModelFixture } from './fixtures.js';
 import { OperationFailure } from './operation-failures.js';
 import {
+  addDiagram,
   addElement,
   editNote,
+  renameDiagram,
   moveElement,
   removeElement,
   renameElement,
@@ -516,6 +518,133 @@ describe('editNote', () => {
   });
 });
 
+const secondDiagram = diagramId('diagram-second');
+
+describe('addDiagram', () => {
+  it('appends a diagram after the ones the model holds', () => {
+    const next = modelOf(
+      addDiagram(base, { id: secondDiagram, title: 'Second', elements: [] }),
+    );
+    expect(next.diagrams.map((diagram) => diagram.id)).toEqual([
+      mainDiagram,
+      secondDiagram,
+    ]);
+    expect(next.diagrams[0]).toBe(base.diagrams[0]);
+  });
+
+  it('accepts a diagram of elements whose flows stay inside it', () => {
+    const next = modelOf(
+      addDiagram(base, {
+        id: secondDiagram,
+        title: 'Second',
+        elements: [
+          { ...cache, id: elementId('element-second-store') },
+          elementSchema.parse({
+            ...flowInput,
+            id: 'element-second-flow',
+            source: { kind: 'attached', element: 'element-second-store' },
+            target: { kind: 'free', position: { x: 0, y: 0 } },
+          }),
+        ],
+      }),
+    );
+    expect(next.diagrams[1].elements).toHaveLength(2);
+  });
+
+  it('refuses the id of a diagram the model holds', () => {
+    expect(
+      errorOf(
+        addDiagram(base, { id: mainDiagram, title: 'Again', elements: [] }),
+      ),
+    ).toEqual(OperationFailure.DuplicateDiagramId({ diagramId: mainDiagram }));
+  });
+
+  it('refuses an empty title and a refused character in one', () => {
+    expect(
+      errorOf(
+        addDiagram(base, { id: secondDiagram, title: ' ', elements: [] }),
+      ),
+    ).toEqual(OperationFailure.EmptyTitle({ diagramId: secondDiagram }));
+    expect(
+      errorOf(
+        addDiagram(base, {
+          id: secondDiagram,
+          title: 'Sec\u00adond',
+          elements: [],
+        }),
+      ),
+    ).toEqual(
+      OperationFailure.RefusedTitleCharacter({
+        diagramId: secondDiagram,
+        at: 3,
+      }),
+    );
+  });
+
+  it('refuses an element id the model holds already, or one the diagram repeats', () => {
+    expect(
+      errorOf(
+        addDiagram(base, {
+          id: secondDiagram,
+          title: 'Second',
+          elements: [elementIn(base, 'element-api')],
+        }),
+      ),
+    ).toEqual(
+      OperationFailure.DuplicateElementId({
+        elementId: elementId('element-api'),
+      }),
+    );
+    expect(
+      errorOf(
+        addDiagram(base, {
+          id: secondDiagram,
+          title: 'Second',
+          elements: [cache, cache],
+        }),
+      ),
+    ).toEqual(OperationFailure.DuplicateElementId({ elementId: cache.id }));
+  });
+
+  it('refuses a flow anchored outside the diagram', () => {
+    expect(
+      errorOf(
+        addDiagram(base, {
+          id: secondDiagram,
+          title: 'Second',
+          elements: [writeFlow],
+        }),
+      )?._tag,
+    ).toBe('InvalidFlowEndpoint');
+  });
+});
+
+describe('renameDiagram', () => {
+  it('retitles the diagram and leaves its elements as they were', () => {
+    const next = modelOf(renameDiagram(base, mainDiagram, 'Retitled'));
+    expect(next.diagrams[0].title).toBe('Retitled');
+    expect(next.diagrams[0].elements).toBe(base.diagrams[0].elements);
+  });
+
+  it('refuses an empty title, a whitespace title, and a refused character', () => {
+    expect(errorOf(renameDiagram(base, mainDiagram, ''))).toEqual(
+      OperationFailure.EmptyTitle({ diagramId: mainDiagram }),
+    );
+    expect(errorOf(renameDiagram(base, mainDiagram, '  '))).toEqual(
+      OperationFailure.EmptyTitle({ diagramId: mainDiagram }),
+    );
+    expect(errorOf(renameDiagram(base, mainDiagram, 'Ma\u00adin'))).toEqual(
+      OperationFailure.RefusedTitleCharacter({ diagramId: mainDiagram, at: 2 }),
+    );
+  });
+
+  it('fails on an unknown diagram', () => {
+    expect(errorOf(renameDiagram(base, secondDiagram, 'Ghost'))).toEqual(
+      OperationFailure.UnknownDiagram({ diagramId: secondDiagram }),
+    );
+  });
+});
+
 describe('operation purity', () => {
   it('leaves the input model untouched', () => {
     const pristine = structuredClone(base);
@@ -526,6 +655,8 @@ describe('operation purity', () => {
     resizeElement(base, elementId('element-api'), { width: 5, height: 5 });
     renameElement(base, elementId('element-api'), 'Renamed');
     editNote(withNote, elementId('element-note'), 'Edited');
+    addDiagram(base, { id: secondDiagram, title: 'Second', elements: [] });
+    renameDiagram(base, mainDiagram, 'Retitled');
     expect(base).toEqual(pristine);
     expect(withNote).toEqual(notePristine);
   });
@@ -551,6 +682,11 @@ describe('operation outputs re-parse through parseModel', () => {
       renameElement(base, elementId('element-api'), 'Orders API'),
     ],
     ['editNote', editNote(withNote, elementId('element-note'), 'Edited')],
+    [
+      'addDiagram',
+      addDiagram(base, { id: secondDiagram, title: 'Second', elements: [] }),
+    ],
+    ['renameDiagram', renameDiagram(base, mainDiagram, 'Retitled')],
   ];
 
   for (const [operation, result] of outputs) {

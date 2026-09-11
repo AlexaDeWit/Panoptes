@@ -10,7 +10,11 @@ import { toggleSnap } from '../canvas/snap.js';
 import { announce } from '../canvas/announcements.js';
 import { startFlow } from '../canvas/connecting.js';
 import { startBendInsertion } from '../canvas/bend-insertion.js';
-import { stepDiagram } from '../canvas/diagrams.js';
+import {
+  beginRenamingDiagram,
+  createDiagram,
+  stepDiagram,
+} from '../canvas/diagrams.js';
 import {
   removeSelected,
   renameSelected,
@@ -20,7 +24,7 @@ import {
 import { selectTool, type Tool } from '../canvas/tools.js';
 import { focusThreatPanel } from '../panel/panel-focus.js';
 import { Action } from '../store/actions.js';
-import { severalDiagrams } from '../store/selectors.js';
+import { activeDiagram, severalDiagrams } from '../store/selectors.js';
 import type { State } from '../store/state.js';
 import { dispatch, modelStore } from '../store/store.js';
 import {
@@ -325,6 +329,27 @@ const table = {
     dispatch: runs(() => {
       stepDiagram('previous');
     }),
+  },
+  'new-diagram': {
+    id: 'new-diagram',
+    label: 'New diagram',
+    group: 'Diagram',
+    shortcuts: [],
+    when: 'From the diagram switcher',
+    inTextFields: false,
+    dispatch: runs(() => {
+      createDiagram();
+    }),
+  },
+  'rename-diagram': {
+    id: 'rename-diagram',
+    label: 'Rename diagram',
+    group: 'Diagram',
+    shortcuts: [],
+    when: 'From the diagram switcher, while the model holds a diagram',
+    inTextFields: false,
+    available: (state) => activeDiagram(state) !== undefined,
+    dispatch: runs(beginRenamingDiagram),
   },
   open: {
     id: 'open',

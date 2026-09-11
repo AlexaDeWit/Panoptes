@@ -7,11 +7,14 @@ import {
   canvasSettled,
   diagramChoice,
   diagramSwitcher,
+  diagramTitleField,
+  elementNodes,
   menuItem,
   nodeNamed,
   openMenu,
   openModel,
   openPlaceholder,
+  openSwitcher,
   placeByClick,
   saerskrivenModel,
   savedFile,
@@ -23,18 +26,35 @@ const secondTitle = 'Agents and the desktop shell';
 const onFirst = /^Codec read, process/u;
 const onSecond = /^Agent and its harness, actor/u;
 
-test('a model of one diagram shows no switcher and no diagram group', async ({
+const titlesIn = (text: string): readonly string[] => {
+  const read = readAnyFormat(text);
+  expect(Either.isRight(read)).toBe(true);
+  return Either.getOrThrow(read).model.diagrams.map((diagram) => diagram.title);
+};
+
+test('the switcher names the one diagram of the placeholder, and the menu holds no diagram group', async ({
   page,
 }) => {
   await openPlaceholder(page);
 
-  await expect(diagramSwitcher(page)).toHaveCount(0);
+  await expect(diagramSwitcher(page)).toHaveAccessibleName(
+    'Diagram: Untitled diagram',
+  );
   await openMenu(page);
   await expect(menuItem(page, 'Next diagram')).toHaveCount(0);
   await expect(page.getByRole('menuitemradio')).toHaveCount(0);
+  await page.keyboard.press('Escape');
+
+  await openSwitcher(page);
+  await expect(diagramChoice(page, 'Untitled diagram')).toHaveAttribute(
+    'aria-checked',
+    'true',
+  );
+  await expect(menuItem(page, 'New diagram')).toBeVisible();
+  await expect(menuItem(page, 'Rename diagram')).toBeVisible();
 });
 
-test('the menu lists the diagrams by title, and a choice draws the one chosen', async ({
+test('the switcher lists the diagrams by title, and a choice draws the one chosen', async ({
   page,
 }) => {
   await openModel(page, saerskrivenModel);
@@ -44,7 +64,7 @@ test('the menu lists the diagrams by title, and a choice draws the one chosen', 
     `Diagram: ${firstTitle}`,
   );
 
-  await openMenu(page);
+  await openSwitcher(page);
   await expect(diagramChoice(page, firstTitle)).toHaveAttribute(
     'aria-checked',
     'true',
@@ -52,10 +72,6 @@ test('the menu lists the diagrams by title, and a choice draws the one chosen', 
   await expect(diagramChoice(page, secondTitle)).toHaveAttribute(
     'aria-checked',
     'false',
-  );
-  await expect(menuItem(page, 'Next diagram')).toHaveAttribute(
-    'aria-keyshortcuts',
-    'PageDown',
   );
   await diagramChoice(page, secondTitle).click();
 
@@ -67,20 +83,6 @@ test('the menu lists the diagrams by title, and a choice draws the one chosen', 
   );
   await expect(page.getByTestId('canvas-announcement')).toContainText(
     secondTitle,
-  );
-});
-
-test('the switcher beside the menu button offers the same choice', async ({
-  page,
-}) => {
-  await openModel(page, saerskrivenModel);
-
-  await diagramSwitcher(page).click();
-  await diagramChoice(page, secondTitle).click();
-
-  await expect(nodeNamed(page, onSecond)).toHaveCount(1);
-  await expect(diagramSwitcher(page)).toHaveAccessibleName(
-    `Diagram: ${secondTitle}`,
   );
 });
 
@@ -120,6 +122,73 @@ test('switching clears the selection and adds no history, so undo has nothing to
   await page.keyboard.press(registeredChords['previous-diagram'][0]);
   await expect(process).toHaveCount(1);
   await expect(process).not.toHaveClass(/selected/u);
+});
+
+test('a new diagram is named as it is made, drawn empty, and saved with its title', async ({
+  page,
+}) => {
+  await page.addInitScript(withoutPickers);
+  await openPlaceholder(page);
+  await expect(elementNodes(page)).toHaveCount(2);
+
+  await openSwitcher(page);
+  await menuItem(page, 'New diagram').click();
+
+  const field = diagramTitleField(page);
+  await expect(field).toBeFocused();
+  await expect(field).toHaveValue('Untitled diagram');
+  await page.keyboard.type('Request forgery');
+  await page.keyboard.press('Enter');
+
+  await expect(diagramSwitcher(page)).toHaveAccessibleName(
+    'Diagram: Request forgery',
+  );
+  await expect(elementNodes(page)).toHaveCount(0);
+  await placeByClick(page, 'Actor', /^New actor, actor/u);
+  await page.keyboard.press('Enter');
+
+  const written = await savedFile(page);
+  expect(titlesIn(written.text)).toEqual([
+    'Untitled diagram',
+    'Request forgery',
+  ]);
+
+  await page.keyboard.press(registeredChords['previous-diagram'][0]);
+  await expect(elementNodes(page)).toHaveCount(2);
+});
+
+test('a diagram is renamed in place, Escape keeps the old title, and undo takes the new one back', async ({
+  page,
+}) => {
+  await openModel(page, saerskrivenModel);
+
+  await openSwitcher(page);
+  await menuItem(page, 'Rename diagram').click();
+  await expect(diagramTitleField(page)).toBeFocused();
+  await page.keyboard.type('Abandoned');
+  await page.keyboard.press('Escape');
+  await expect(diagramSwitcher(page)).toHaveAccessibleName(
+    `Diagram: ${firstTitle}`,
+  );
+
+  await openSwitcher(page);
+  await menuItem(page, 'Rename diagram').click();
+  await page.keyboard.type('Reading and rendering');
+  await page.keyboard.press('Enter');
+  await expect(diagramSwitcher(page)).toHaveAccessibleName(
+    'Diagram: Reading and rendering',
+  );
+  await openSwitcher(page);
+  await expect(diagramChoice(page, 'Reading and rendering')).toHaveAttribute(
+    'aria-checked',
+    'true',
+  );
+  await page.keyboard.press('Escape');
+
+  await page.keyboard.press(registeredChords.undo[0]);
+  await expect(diagramSwitcher(page)).toHaveAccessibleName(
+    `Diagram: ${firstTitle}`,
+  );
 });
 
 test('an edit lands on the diagram on screen, the saved file holds it there, and a reload comes back to that diagram', async ({

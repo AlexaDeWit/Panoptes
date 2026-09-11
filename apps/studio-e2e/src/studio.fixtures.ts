@@ -77,12 +77,22 @@ export const openEcluse = async (page: Page): Promise<void> => {
 /** The two-diagram model of Saerskriven's own threat model. */
 export const saerskrivenModel = 'test-data/saerskriven.model.json';
 
-/**
- * The control naming the diagram on screen, in the page only while the model
- * holds more than one diagram.
- */
+/** The control joined to the menu button that names the diagram on screen. */
 export const diagramSwitcher = (page: Page): Locator =>
   page.getByTestId('diagram-switcher');
+
+/** The field the switcher becomes while a diagram's title is being edited. */
+export const diagramTitleField = (page: Page): Locator =>
+  page.getByRole('textbox', { name: 'Diagram title' });
+
+/** Opens the switcher's list, and does nothing where it is already open. */
+export const openSwitcher = async (page: Page): Promise<void> => {
+  if (await page.getByRole('menu').isVisible()) {
+    return;
+  }
+  await diagramSwitcher(page).click();
+  await expect(page.getByRole('menu')).toBeVisible();
+};
 
 /** One diagram in the open menu or the open switcher, by its title. */
 export const diagramChoice = (page: Page, title: string): Locator =>
@@ -244,14 +254,12 @@ export const toolButton = (page: Page, name: string): Locator =>
 
 /**
  * The last control on the tab path before the canvas, which is where a spec
- * that tabs into the diagram starts. The menu's button is that stop whether or
- * not anything is selected, the only control after it being the one that
- * dismisses a loss report, which is in the page only while a crossing of the
- * file boundary has cost something. A model of more than one diagram puts
- * the diagram switcher after the button too, so a spec on such a model
- * starts from the switcher rather than from here.
+ * that tabs into the diagram starts. The diagram switcher is that stop
+ * whether or not anything is selected, the only control after it being the
+ * one that dismisses a loss report, which is in the page only while a
+ * crossing of the file boundary has cost something.
  */
-export const beforeCanvas = (page: Page): Locator => menuButton(page);
+export const beforeCanvas = (page: Page): Locator => diagramSwitcher(page);
 
 /** The panel holding the threats of whatever the canvas has selected. */
 export const threatPanel = (page: Page): Locator =>

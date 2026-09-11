@@ -1,6 +1,8 @@
 import {
+  addDiagram,
   addElement,
   insertFragment,
+  renameDiagram,
   reconnectFlow,
   addThreat,
   attachThreat,
@@ -15,6 +17,7 @@ import {
   setFlowDirection,
   setFlowWaypoints,
   OperationFailure,
+  type Diagram,
   type DiagramId,
   type ElementId,
   type Model,
@@ -91,6 +94,9 @@ export function reduce(state: State, action: Action): State {
       edited(state, attachThreat(state.present, threatId, elementId)),
     DetachThreat: ({ threatId, elementId }) =>
       edited(state, detachThreat(state.present, threatId, elementId)),
+    AddDiagram: ({ diagram }) => addedDiagram(state, diagram),
+    RenameDiagram: ({ diagramId, title }) =>
+      edited(state, renameDiagram(state.present, diagramId, title)),
     Undo: () => undone(state),
     Redo: () => redone(state),
     SelectDiagram: ({ diagramId }) => selectedDiagram(state, diagramId),
@@ -157,6 +163,12 @@ function edited(
             lastFailure: undefined,
           },
   });
+}
+
+function addedDiagram(state: State, diagram: Diagram): State {
+  const outcome = addDiagram(state.present, diagram);
+  const next = edited(state, outcome);
+  return Either.isLeft(outcome) ? next : selectedDiagram(next, diagram.id);
 }
 
 function selectedDiagram(state: State, diagramId: DiagramId): State {

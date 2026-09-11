@@ -4,6 +4,7 @@ import type {
   ReadFailure,
 } from '@saerskriven/formats';
 import type {
+  Diagram,
   DiagramId,
   Element,
   ElementId,
@@ -60,6 +61,8 @@ export type Action = Data.TaggedEnum<{
   ReplaceThreat: { readonly threat: Threat };
   AttachThreat: { readonly threatId: ThreatId; readonly elementId: ElementId };
   DetachThreat: { readonly threatId: ThreatId; readonly elementId: ElementId };
+  AddDiagram: { readonly diagram: Diagram };
+  RenameDiagram: { readonly diagramId: DiagramId; readonly title: string };
   Undo: {};
   Redo: {};
   SelectDiagram: { readonly diagramId: DiagramId };

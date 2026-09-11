@@ -85,6 +85,9 @@ export type State = {
 /** The name of a model that has never been in a file. */
 export const untitledModel = 'Untitled';
 
+/** The title a diagram carries until it is given one. */
+export const untitledDiagram = 'Untitled diagram';
+
 const placeholderDocument = {
   metadata: {
     title: untitledModel,
@@ -95,7 +98,7 @@ const placeholderDocument = {
   diagrams: [
     {
       id: 'placeholder-diagram',
-      title: 'Untitled diagram',
+      title: untitledDiagram,
       elements: [
         {
           kind: 'actor',

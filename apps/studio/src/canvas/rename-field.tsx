@@ -10,7 +10,7 @@ import {
   type CanvasNodeKind,
   type TextPlacement,
 } from '@saerskriven/canvas';
-import { isEmptyName, type ElementId } from '@saerskriven/model';
+import type { ElementId } from '@saerskriven/model';
 import {
   EdgeLabelRenderer,
   type EdgeProps,
@@ -35,6 +35,7 @@ import type { State } from '../store/state.js';
 import { useModelStore } from '../store/store.js';
 import { VisuallyHidden } from '../ui/visually-hidden.js';
 import {
+  refusedName,
   refusedText,
   useTextDraft,
   type RefusedDraft,
@@ -59,14 +60,6 @@ type InlineFieldProps = {
   readonly onCommit: (elementId: ElementId, text: string) => void;
   readonly refuse?: (label: string, text: string) => TextRefusal | undefined;
 };
-
-const emptyRefusal = 'A name cannot be empty.';
-
-function refusedName(label: string, text: string): TextRefusal | undefined {
-  return isEmptyName(text)
-    ? { shown: emptyRefusal, said: `${label} was not saved. ${emptyRefusal}` }
-    : refusedText(label, text);
-}
 
 function placedAt(placement: TextPlacement): CSSProperties {
   return {

@@ -32,12 +32,14 @@ const chordsOn = (platform: (typeof platforms)[number]): string[] =>
   );
 
 describe('the command registry', () => {
-  it('leaves import and export commands without shortcuts', () => {
+  it('leaves the import, export and diagram-switcher commands without shortcuts', () => {
     expect(
       commands
         .filter((command) => command.shortcuts.length === 0)
         .map((command) => command.id),
     ).toEqual([
+      'new-diagram',
+      'rename-diagram',
       'import',
       'export-diagram',
       'export-register',

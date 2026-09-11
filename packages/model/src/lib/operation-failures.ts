@@ -6,6 +6,12 @@ import type { DiagramId, ElementId, ThreatId } from './ids.js';
 export type OperationFailure = Data.TaggedEnum<{
   InvalidFragment: { readonly issues: readonly ParseIssue[] };
   UnknownDiagram: { readonly diagramId: DiagramId };
+  DuplicateDiagramId: { readonly diagramId: DiagramId };
+  EmptyTitle: { readonly diagramId: DiagramId };
+  RefusedTitleCharacter: {
+    readonly diagramId: DiagramId;
+    readonly at: number;
+  };
   UnknownElement: { readonly elementId: ElementId };
   UnknownThreat: { readonly threatId: ThreatId };
   DuplicateElementId: { readonly elementId: ElementId };

@@ -1,6 +1,8 @@
-import type { DiagramId } from '@saerskriven/model';
+import { generateDiagramId, type DiagramId } from '@saerskriven/model';
+import { useSyncExternalStore } from 'react';
 import { Action } from '../store/actions.js';
 import { activeDiagram, activeDiagramId } from '../store/selectors.js';
+import { untitledDiagram } from '../store/state.js';
 import { dispatch, modelStore } from '../store/store.js';
 import { announce } from './announcements.js';
 
@@ -34,4 +36,83 @@ export function stepDiagram(direction: 'next' | 'previous'): boolean {
   const step = direction === 'next' ? 1 : diagrams.length - 1;
   const target = diagrams[(at + step) % diagrams.length];
   return target === undefined ? false : showDiagram(target.id);
+}
+
+/**
+ * Adds an empty diagram after the model's others, shows it, and opens its
+ * title for editing, so the diagram is named as it is made.
+ */
+export function createDiagram(): boolean {
+  const diagram = {
+    id: generateDiagramId(),
+    title: untitledDiagram,
+    elements: [],
+  };
+  const before = modelStore.getState().present;
+  dispatch(Action.AddDiagram({ diagram }));
+  if (modelStore.getState().present === before) {
+    return false;
+  }
+  announce(`Added ${diagram.title}.`);
+  beginRenamingDiagram();
+  return true;
+}
+
+/** Retitles the diagram on screen as one undo step, skipping an unchanged title. */
+export function renameActiveDiagram(title: string): boolean {
+  const state = modelStore.getState();
+  const diagram = activeDiagram(state);
+  if (diagram === undefined || diagram.title === title) {
+    return false;
+  }
+  dispatch(Action.RenameDiagram({ diagramId: diagram.id, title }));
+  const renamed = activeDiagram(modelStore.getState());
+  if (renamed === undefined || renamed.title !== title) {
+    return false;
+  }
+  announce(`Renamed the diagram to ${title}.`);
+  return true;
+}
+
+let renaming = false;
+
+const listeners = new Set<() => void>();
+
+function setRenaming(next: boolean): void {
+  if (renaming === next) {
+    return;
+  }
+  renaming = next;
+  for (const listener of listeners) {
+    listener();
+  }
+}
+
+/** Opens the title of the diagram on screen in the switcher's field. */
+export function beginRenamingDiagram(): void {
+  if (activeDiagram(modelStore.getState()) !== undefined) {
+    setRenaming(true);
+  }
+}
+
+/** Closes the switcher's title field, committed or not. */
+export function endRenamingDiagram(): void {
+  setRenaming(false);
+}
+
+/** Whether the switcher shows the title field, for the component that draws it. */
+export function useDiagramRenaming(): boolean {
+  return useSyncExternalStore(subscribe, () => renaming);
+}
+
+/** Puts the switcher back to its button, for specs. */
+export function resetDiagramRenaming(): void {
+  setRenaming(false);
+}
+
+function subscribe(listener: () => void): () => void {
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+  };
 }

@@ -34,8 +34,10 @@ and no immutable snapshot to push onto a stack.
 - `actions.ts` is the `Action` union, an Effect `Data.taggedEnum`. Model edits
   carry one operation and its arguments. `MoveElements` and `RemoveElements`
   fold the matching operation over one ID array before history records the
-  result. The other tags cover history, the diagram on screen, selection,
-  inline editing, files and failures. `Saved` names a file as `Opened` does, because a first
+  result. `AddDiagram` appends a diagram and shows it, the one edit that
+  moves the view as well as the model, since a diagram is added to be drawn
+  on. The other tags cover history, the diagram on screen, selection, inline
+  editing, files and failures. `Saved` names a file as `Opened` does, because a first
   save is a save-as, and folding both into `file` keeps "this model lives in
   this file" one fact. `Closed` is the third: the studio goes back to the
   state it booted in, placeholder model and all, so nothing of the file that

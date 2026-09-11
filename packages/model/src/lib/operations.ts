@@ -48,6 +48,25 @@ export type EditNoteFailure = Extract<
   { _tag: 'UnknownElement' | 'NotTextElement' | 'RefusedCharacter' }
 >;
 
+/** The failures {@link addDiagram} can produce. */
+export type AddDiagramFailure = Extract<
+  OperationFailure,
+  {
+    _tag:
+      | 'DuplicateDiagramId'
+      | 'DuplicateElementId'
+      | 'InvalidFlowEndpoint'
+      | 'EmptyTitle'
+      | 'RefusedTitleCharacter';
+  }
+>;
+
+/** The failures {@link renameDiagram} can produce. */
+export type RenameDiagramFailure = Extract<
+  OperationFailure,
+  { _tag: 'UnknownDiagram' | 'EmptyTitle' | 'RefusedTitleCharacter' }
+>;
+
 /** The failures an edit of one flow's route, anchors, or direction can produce. */
 export type FlowEditFailure = Extract<
   OperationFailure,
@@ -298,6 +317,88 @@ export function editNote(
   return Either.right(
     withElement(model, located.diagramIndex, { ...located.element, text }),
   );
+}
+
+/**
+ * Appends a diagram, screening its title as {@link renameDiagram} does and
+ * its elements as {@link addElement} does: every id new to the model, and
+ * every attached flow end inside the diagram.
+ */
+export function addDiagram(
+  model: Model,
+  diagram: Diagram,
+): Either.Either<Model, AddDiagramFailure> {
+  if (model.diagrams.some((existing) => existing.id === diagram.id)) {
+    return Either.left(
+      OperationFailure.DuplicateDiagramId({ diagramId: diagram.id }),
+    );
+  }
+  const titleRefusal = refusedTitle(diagram.id, diagram.title);
+  if (titleRefusal !== undefined) {
+    return Either.left(titleRefusal);
+  }
+  const taken = elementIdsAcross(model.diagrams);
+  const own = new Set<string>();
+  for (const element of diagram.elements) {
+    if (taken.has(element.id) || own.has(element.id)) {
+      return Either.left(
+        OperationFailure.DuplicateElementId({ elementId: element.id }),
+      );
+    }
+    own.add(element.id);
+  }
+  const ids = elementIdsIn(diagram);
+  for (const element of diagram.elements) {
+    const violation =
+      element.kind === 'flow'
+        ? endpointViolationsOf(element, ids).at(0)
+        : undefined;
+    if (violation !== undefined) {
+      return Either.left(
+        OperationFailure.InvalidFlowEndpoint({
+          side: violation.side,
+          reference: violation.reference,
+        }),
+      );
+    }
+  }
+  return Either.right({ ...model, diagrams: [...model.diagrams, diagram] });
+}
+
+/** Retitles a diagram, rejecting empty titles and characters refused by the model. */
+export function renameDiagram(
+  model: Model,
+  diagramId: DiagramId,
+  title: string,
+): Either.Either<Model, RenameDiagramFailure> {
+  const diagramIndex = model.diagrams.findIndex(
+    (diagram) => diagram.id === diagramId,
+  );
+  if (diagramIndex < 0) {
+    return Either.left(OperationFailure.UnknownDiagram({ diagramId }));
+  }
+  const refusal = refusedTitle(diagramId, title);
+  if (refusal !== undefined) {
+    return Either.left(refusal);
+  }
+  return Either.right(
+    withDiagram(model, diagramIndex, (diagram) => ({ ...diagram, title })),
+  );
+}
+
+function refusedTitle(
+  diagramId: DiagramId,
+  title: string,
+):
+  | Extract<OperationFailure, { _tag: 'EmptyTitle' | 'RefusedTitleCharacter' }>
+  | undefined {
+  if (isEmptyName(title)) {
+    return OperationFailure.EmptyTitle({ diagramId });
+  }
+  const at = firstRefusedCharacter(title);
+  return at === undefined
+    ? undefined
+    : OperationFailure.RefusedTitleCharacter({ diagramId, at });
 }
 
 function refusedCharacter(

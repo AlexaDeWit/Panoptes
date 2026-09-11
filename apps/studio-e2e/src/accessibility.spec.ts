@@ -5,6 +5,7 @@ import { savedFromMenu } from './commands.fixtures.js';
 import {
   diagramChoice,
   diagramSwitcher,
+  diagramTitleField,
   handleOn,
   menuButton,
   menuItem,
@@ -227,7 +228,7 @@ test('the studio carries no violation with the menu open', async ({ page }) => {
   await audit(page, 'showing the menu asking before it opens a file');
 });
 
-test('the studio carries no violation with the diagram switcher open', async ({
+test('the studio carries no violation with the diagram switcher open, or its title field', async ({
   page,
 }) => {
   await openModel(page, saerskrivenModel);
@@ -237,8 +238,11 @@ test('the studio carries no violation with the diagram switcher open', async ({
   await expect(
     diagramChoice(page, 'Agents and the desktop shell'),
   ).toBeVisible();
-
   await audit(page, 'showing the open diagram switcher');
+
+  await menuItem(page, 'Rename diagram').click();
+  await expect(diagramTitleField(page)).toBeFocused();
+  await audit(page, 'editing the diagram title');
 });
 
 test('the studio carries no violation with a name open in a field', async ({
