@@ -98,24 +98,26 @@ test('T hands the panel the keyboard, and the two Escapes give it back and clear
   await expect(actor).not.toHaveClass(/selected/u);
 });
 
-test('an element the panel would cover is panned clear of it', async ({
+test('an element the panel would cover stays where it was drawn', async ({
   page,
 }) => {
   await openPlaceholder(page);
   const store = nodeNamed(page, /^Store, store/u);
   const covered = await boxOf(store);
+  const before = await viewportTransform(page);
 
   await selectByKeyboard(page, /^Store, store/u);
 
   const panel = await boxOf(threatPanel(page));
   expect(
     covered.right,
-    'the element was drawn where the panel opens, so the pan has something to do',
+    'the element was drawn where the panel opens',
   ).toBeGreaterThan(panel.left);
-  expect((await boxOf(store)).right).toBeLessThanOrEqual(panel.left);
+  expect(await viewportTransform(page)).toBe(before);
+  expect(await boxOf(store)).toEqual(covered);
 });
 
-test('a node just inside the panel edge is panned clear of it too', async ({
+test('a node just inside the panel edge stays where it is when selected', async ({
   page,
 }) => {
   await openPlaceholder(page);
@@ -133,9 +135,11 @@ test('a node just inside the panel edge is panned clear of it too', async ({
     'the node ends under the panel, in the strip its padding and border draw',
   ).toBeGreaterThan(panel.left);
 
+  const before = await viewportTransform(page);
   await selectNode(page, /^Actor, actor/u);
 
-  expect((await boxOf(actor)).right).toBeLessThanOrEqual(panel.left);
+  expect(await viewportTransform(page)).toBe(before);
+  expect((await boxOf(actor)).right).toBeGreaterThan(panel.left);
 });
 
 test('a draft the model refused comes back when its element is selected again', async ({
@@ -418,11 +422,14 @@ test('keyboard width changes preserve the viewport and persist across selection 
   expect(before.right).toBeGreaterThan(wide.left);
   expect(await viewportTransform(page)).toBe(viewportBefore);
   expect(await boxOf(actor)).toEqual(before);
+  const storeBeforeSelection = await boxOf(nodeNamed(page, /^Store, store/u));
+  const viewportBeforeSelection = await viewportTransform(page);
   await selectByKeyboard(page, /^Store, store/u);
   expect((await boxOf(panel)).width).toBe(wide.width);
-  await expect
-    .poll(async () => (await boxOf(nodeNamed(page, /^Store, store/u))).right)
-    .toBeLessThanOrEqual(wide.left);
+  expect(await viewportTransform(page)).toBe(viewportBeforeSelection);
+  expect(await boxOf(nodeNamed(page, /^Store, store/u))).toEqual(
+    storeBeforeSelection,
+  );
   await panel.getByRole('button', { name: 'Close threats' }).focus();
   await page.keyboard.press('Enter');
   await expect(panel).toHaveCount(0);

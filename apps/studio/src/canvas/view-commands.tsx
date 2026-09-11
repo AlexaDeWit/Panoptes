@@ -8,7 +8,7 @@ import { modelStore, useModelStore } from '../store/store.js';
 import { currentLayout } from './layout.js';
 import { clearOfPanel, fitViewport } from './viewport.js';
 
-/** View commands share the measured pane coverage with automatic selection reveal. */
+/** View commands use the measured pane coverage for explicit fitting. */
 export function useViewCommands(panelCover = 0): ViewCommands {
   const flow = useReactFlow();
   const fit = useCanvasFit(panelCover);

@@ -1,45 +1,10 @@
-import { layoutDiagram, panelCover } from '@saerskriven/canvas';
-import { canvasModel, readerElement } from './canvas.fixtures.js';
+import { panelCover } from '@saerskriven/canvas';
 import {
   clearOfPanel,
   fitViewport,
-  nodeInView,
-  revealCentre,
   zoomLimits,
   type CanvasExtent,
 } from './viewport.js';
-
-const layout = layoutDiagram(canvasModel.diagrams[0], canvasModel);
-
-const reader = layout.nodes.find((node) => node.id === readerElement);
-
-const extent = { width: 400, height: 300 };
-
-describe('nodeInView', () => {
-  it('reads a node the canvas draws whole as in view', () => {
-    expect(reader && nodeInView(reader, { x: 0, y: 0, zoom: 1 }, extent)).toBe(
-      true,
-    );
-  });
-
-  it('reads a node the canvas has panned off its right edge as out of view', () => {
-    expect(
-      reader && nodeInView(reader, { x: 350, y: 0, zoom: 1 }, extent),
-    ).toBe(false);
-  });
-
-  it('reads a node the canvas has panned off its top as out of view', () => {
-    expect(
-      reader && nodeInView(reader, { x: 0, y: -10, zoom: 1 }, extent),
-    ).toBe(false);
-  });
-
-  it('counts the zoom, a node drawn larger than the canvas being out of view', () => {
-    expect(reader && nodeInView(reader, { x: 0, y: 0, zoom: 4 }, extent)).toBe(
-      false,
-    );
-  });
-});
 
 describe('clearOfPanel', () => {
   it('takes what the panel covers off the right of the canvas', () => {
@@ -51,33 +16,6 @@ describe('clearOfPanel', () => {
 
   it('leaves nothing clear in a canvas narrower than the panel', () => {
     expect(clearOfPanel({ width: 100, height: 600 }, panelCover).width).toBe(0);
-  });
-
-  it('reads a node the panel covers as out of view, where the whole canvas would not', () => {
-    const viewport = { x: 700, y: 0, zoom: 1 };
-    const whole = { width: 1000, height: 600 };
-    expect(reader && nodeInView(reader, viewport, whole)).toBe(true);
-    expect(
-      reader && nodeInView(reader, viewport, clearOfPanel(whole, panelCover)),
-    ).toBe(false);
-  });
-});
-
-describe('revealCentre', () => {
-  it('centres a node in what the panel leaves rather than in the canvas', () => {
-    const centred = reader && revealCentre(reader, 1, panelCover);
-    const node = reader && {
-      x: reader.position.x + reader.size.width / 2,
-      y: reader.position.y + reader.size.height / 2,
-    };
-    expect(centred?.x).toBe((node?.x ?? 0) + panelCover / 2);
-    expect(centred?.y).toBe(node?.y);
-  });
-
-  it('counts the zoom, the panel covering a fixed part of the page', () => {
-    const closer = reader && revealCentre(reader, 2, panelCover);
-    const centre = reader && reader.position.x + reader.size.width / 2;
-    expect(closer?.x).toBe((centre ?? 0) + panelCover / 4);
   });
 });
 
