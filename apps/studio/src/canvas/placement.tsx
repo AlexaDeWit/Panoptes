@@ -1,6 +1,5 @@
 import {
   canvasNodeOf,
-  canvasType,
   type CanvasFlowEdge,
   type CanvasLayout,
 } from '@saerskriven/canvas';
@@ -30,6 +29,7 @@ import {
 } from './elements.js';
 import type { DiagramNode } from './nodes.js';
 import type { PlacementDraft } from './placement-preview.js';
+import { nameFieldExtent } from './rename-field.js';
 import {
   currentTool,
   finishPlacement,
@@ -41,8 +41,6 @@ import {
 const noPoints: readonly Point[] = [];
 
 type BoxTool = Exclude<ElementTool, 'boundary-curve'>;
-
-const nodeNameFieldExtent = canvasType.widgetLabel * 1.2 + 2;
 
 type PlacementView = Pick<
   ReactFlowInstance<DiagramNode, CanvasFlowEdge>,
@@ -389,8 +387,8 @@ export function usePlacement(
     event.stopPropagation();
     const { geometry } = started;
     const fieldFits =
-      geometry.size.width >= nodeNameFieldExtent &&
-      geometry.size.height >= nodeNameFieldExtent;
+      geometry.size.width >= nameFieldExtent &&
+      geometry.size.height >= nameFieldExtent;
     if (
       placeElement(
         withPlacement(started.element, geometry.position, geometry.size),
