@@ -24,7 +24,7 @@ import {
 import { selectTool, type Tool } from '../canvas/tools.js';
 import { focusThreatPanel } from '../panel/panel-focus.js';
 import { Action } from '../store/actions.js';
-import { activeDiagram, severalDiagrams } from '../store/selectors.js';
+import { severalDiagrams } from '../store/selectors.js';
 import type { State } from '../store/state.js';
 import { dispatch, modelStore } from '../store/store.js';
 import {
@@ -348,7 +348,6 @@ const table = {
     shortcuts: [],
     when: 'From the diagram switcher, while the model holds a diagram',
     inTextFields: false,
-    available: (state) => activeDiagram(state) !== undefined,
     dispatch: runs(beginRenamingDiagram),
   },
   open: {

@@ -170,6 +170,18 @@ test('a diagram is renamed in place, Escape keeps the old title, and undo takes 
   await expect(diagramSwitcher(page)).toHaveAccessibleName(
     `Diagram: ${firstTitle}`,
   );
+  await expect(diagramSwitcher(page)).toBeFocused();
+
+  await openSwitcher(page);
+  await menuItem(page, 'Rename diagram').click();
+  await page.keyboard.press('ControlOrMeta+a');
+  await page.keyboard.press('Backspace');
+  await page.keyboard.press('Enter');
+  await expect(diagramTitleField(page)).toHaveAttribute('aria-invalid', 'true');
+  await expect(
+    page.getByText('A name cannot be empty.', { exact: true }),
+  ).toBeVisible();
+  await page.keyboard.press('Escape');
 
   await openSwitcher(page);
   await menuItem(page, 'Rename diagram').click();
@@ -178,6 +190,7 @@ test('a diagram is renamed in place, Escape keeps the old title, and undo takes 
   await expect(diagramSwitcher(page)).toHaveAccessibleName(
     'Diagram: Reading and rendering',
   );
+  await expect(diagramSwitcher(page)).toBeFocused();
   await openSwitcher(page);
   await expect(diagramChoice(page, 'Reading and rendering')).toHaveAttribute(
     'aria-checked',

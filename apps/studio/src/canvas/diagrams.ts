@@ -74,11 +74,11 @@ export function renameActiveDiagram(title: string): boolean {
   return true;
 }
 
-let renaming = false;
+let renaming: DiagramId | undefined;
 
 const listeners = new Set<() => void>();
 
-function setRenaming(next: boolean): void {
+function setRenaming(next: DiagramId | undefined): void {
   if (renaming === next) {
     return;
   }
@@ -90,24 +90,27 @@ function setRenaming(next: boolean): void {
 
 /** Opens the title of the diagram on screen in the switcher's field. */
 export function beginRenamingDiagram(): void {
-  if (activeDiagram(modelStore.getState()) !== undefined) {
-    setRenaming(true);
-  }
+  setRenaming(activeDiagramId(modelStore.getState()));
 }
 
 /** Closes the switcher's title field, committed or not. */
 export function endRenamingDiagram(): void {
-  setRenaming(false);
+  setRenaming(undefined);
 }
 
-/** Whether the switcher shows the title field, for the component that draws it. */
-export function useDiagramRenaming(): boolean {
+/**
+ * The diagram whose title the switcher's field is open on, and nothing while
+ * the switcher is its button. It names the diagram rather than answering
+ * yes or no, so an undo, an open or a close that puts another diagram on
+ * screen leaves no field open over it.
+ */
+export function useDiagramRenaming(): DiagramId | undefined {
   return useSyncExternalStore(subscribe, () => renaming);
 }
 
 /** Puts the switcher back to its button, for specs. */
 export function resetDiagramRenaming(): void {
-  setRenaming(false);
+  setRenaming(undefined);
 }
 
 function subscribe(listener: () => void): () => void {

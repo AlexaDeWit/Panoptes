@@ -75,7 +75,7 @@ describe('stepDiagram', () => {
 describe('createDiagram', () => {
   it('adds an untitled diagram after the others, shows it, and opens its title', () => {
     const { result } = renderHook(useDiagramRenaming);
-    expect(result.current).toBe(false);
+    expect(result.current).toBeUndefined();
 
     act(() => {
       expect(createDiagram()).toBe(true);
@@ -87,13 +87,13 @@ describe('createDiagram', () => {
     expect(state.present.diagrams[2].elements).toEqual([]);
     expect(shown()).toBe(state.present.diagrams[2].id);
     expect(state.past).toHaveLength(1);
-    expect(result.current).toBe(true);
+    expect(result.current).toBe(state.present.diagrams[2].id);
     expect(currentAnnouncement().message).toContain(untitledDiagram);
 
     act(() => {
       endRenamingDiagram();
     });
-    expect(result.current).toBe(false);
+    expect(result.current).toBeUndefined();
   });
 });
 
@@ -118,12 +118,13 @@ describe('renameActiveDiagram', () => {
     act(() => {
       runCommand(commandById('rename-diagram'), surface);
     });
-    expect(result.current).toBe(true);
+    expect(result.current).toBe(mainDiagram);
     act(() => {
       endRenamingDiagram();
       runCommand(commandById('new-diagram'), surface);
     });
-    expect(modelStore.getState().present.diagrams).toHaveLength(3);
-    expect(result.current).toBe(true);
+    const added = modelStore.getState().present.diagrams;
+    expect(added).toHaveLength(3);
+    expect(result.current).toBe(added[2].id);
   });
 });

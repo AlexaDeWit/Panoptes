@@ -347,19 +347,10 @@ export function addDiagram(
     }
     own.add(element.id);
   }
-  const ids = elementIdsIn(diagram);
   for (const element of diagram.elements) {
-    const violation =
-      element.kind === 'flow'
-        ? endpointViolationsOf(element, ids).at(0)
-        : undefined;
-    if (violation !== undefined) {
-      return Either.left(
-        OperationFailure.InvalidFlowEndpoint({
-          side: violation.side,
-          reference: violation.reference,
-        }),
-      );
+    const failure = flowEndpointFailure(element, diagram);
+    if (failure !== undefined) {
+      return Either.left(failure);
     }
   }
   return Either.right({ ...model, diagrams: [...model.diagrams, diagram] });
@@ -477,7 +468,7 @@ function withElement(model: Model, diagramIndex: number, next: Element): Model {
 function flowEndpointFailure(
   element: Element,
   diagram: Diagram,
-): AddElementFailure | undefined {
+): Extract<OperationFailure, { _tag: 'InvalidFlowEndpoint' }> | undefined {
   if (element.kind !== 'flow') {
     return undefined;
   }

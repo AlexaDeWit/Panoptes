@@ -14,7 +14,8 @@ import {
   secondDiagram,
   twoDiagramModel,
 } from '../store/store.fixtures.js';
-import { modelStore } from '../store/store.js';
+import { Action } from '../store/actions.js';
+import { dispatch, modelStore } from '../store/store.js';
 import { DiagramSwitcher } from './diagram-switcher.js';
 
 const mounted = (): void => {
@@ -76,7 +77,9 @@ describe('the diagram switcher', () => {
     await screen.findByRole('menu');
 
     expect(screen.queryByRole('menuitemradio')).toBeNull();
-    expect(item('Rename diagram').getAttribute('data-disabled')).not.toBeNull();
+    expect(
+      screen.queryByRole('menuitem', { name: 'Rename diagram' }),
+    ).toBeNull();
 
     await user.click(item('New diagram'));
 
@@ -124,12 +127,14 @@ describe('the diagram switcher', () => {
     await user.clear(field);
     await user.keyboard('{Enter}');
     expect(field.getAttribute('aria-invalid')).toBe('true');
+    expect(field.getAttribute('aria-describedby')).not.toBeNull();
+    expect(screen.getByText('A name cannot be empty.')).toBeDefined();
     expect(modelStore.getState().present.diagrams[0].title).toBe('Main');
 
     await user.keyboard('Core');
     await user.keyboard('{Escape}');
     expect(modelStore.getState().present.diagrams[0].title).toBe('Main');
-    expect(switcher('Diagram: Main')).toBeDefined();
+    expect(document.activeElement).toBe(switcher('Diagram: Main'));
 
     await user.click(switcher('Diagram: Main'));
     await user.click(
@@ -141,5 +146,47 @@ describe('the diagram switcher', () => {
     });
     expect(modelStore.getState().present.diagrams[0].title).toBe('Core');
     expect(modelStore.getState().past).toHaveLength(1);
+  });
+
+  it('closes the field, keeping the title, when a refused draft loses focus', async () => {
+    const user = userEvent.setup();
+    modelStore.setState(initialState(sampleModel), true);
+    mounted();
+
+    await user.click(switcher('Diagram: Main'));
+    await user.click(
+      await screen.findByRole('menuitem', { name: 'Rename diagram' }),
+    );
+    const field = screen.getByRole('textbox', { name: 'Diagram title' });
+    await user.clear(field);
+    act(() => {
+      field.blur();
+    });
+
+    expect(screen.queryByRole('textbox')).toBeNull();
+    expect(modelStore.getState().present.diagrams[0].title).toBe('Main');
+    expect(switcher('Diagram: Main')).toBeDefined();
+  });
+
+  it('closes the field when an undo takes the diagram it was open on away', async () => {
+    const user = userEvent.setup();
+    modelStore.setState(initialState(sampleModel), true);
+    mounted();
+
+    await user.click(switcher('Diagram: Main'));
+    await user.click(
+      await screen.findByRole('menuitem', { name: 'New diagram' }),
+    );
+    expect(
+      screen.getByRole('textbox', { name: 'Diagram title' }),
+    ).toBeDefined();
+
+    act(() => {
+      dispatch(Action.Undo());
+    });
+
+    expect(screen.queryByRole('textbox')).toBeNull();
+    expect(switcher('Diagram: Main')).toBeDefined();
+    expect(modelStore.getState().present.diagrams).toHaveLength(1);
   });
 });

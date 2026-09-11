@@ -520,6 +520,20 @@ describe('editNote', () => {
 
 const secondDiagram = diagramId('diagram-second');
 
+const secondOfElements = {
+  id: secondDiagram,
+  title: 'Second',
+  elements: [
+    { ...cache, id: elementId('element-second-store') },
+    elementSchema.parse({
+      ...flowInput,
+      id: 'element-second-flow',
+      source: { kind: 'attached', element: 'element-second-store' },
+      target: { kind: 'free', position: { x: 0, y: 0 } },
+    }),
+  ],
+};
+
 describe('addDiagram', () => {
   it('appends a diagram after the ones the model holds', () => {
     const next = modelOf(
@@ -533,21 +547,7 @@ describe('addDiagram', () => {
   });
 
   it('accepts a diagram of elements whose flows stay inside it', () => {
-    const next = modelOf(
-      addDiagram(base, {
-        id: secondDiagram,
-        title: 'Second',
-        elements: [
-          { ...cache, id: elementId('element-second-store') },
-          elementSchema.parse({
-            ...flowInput,
-            id: 'element-second-flow',
-            source: { kind: 'attached', element: 'element-second-store' },
-            target: { kind: 'free', position: { x: 0, y: 0 } },
-          }),
-        ],
-      }),
-    );
+    const next = modelOf(addDiagram(base, secondOfElements));
     expect(next.diagrams[1].elements).toHaveLength(2);
   });
 
@@ -686,6 +686,7 @@ describe('operation outputs re-parse through parseModel', () => {
       'addDiagram',
       addDiagram(base, { id: secondDiagram, title: 'Second', elements: [] }),
     ],
+    ['addDiagram of elements', addDiagram(base, secondOfElements)],
     ['renameDiagram', renameDiagram(base, mainDiagram, 'Retitled')],
   ];
 

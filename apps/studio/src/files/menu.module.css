@@ -50,6 +50,27 @@
   width: 16rem;
 }
 
+/* The field and its refusal stack, the refusal hanging below the bar over
+   the canvas, in words rather than the outline alone. */
+.titleEditor {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.titleRefusal {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin: var(--pn-space-1) 0 0;
+  padding: var(--pn-space-1) var(--pn-space-2);
+  border: 1px solid var(--pn-colour-border);
+  border-radius: var(--pn-radius);
+  background: var(--pn-colour-surface);
+  color: var(--pn-colour-text);
+  white-space: nowrap;
+}
+
 .titleField[aria-invalid='true'] {
   box-shadow: inset 0 0 0 1px var(--pn-colour-text);
 }
