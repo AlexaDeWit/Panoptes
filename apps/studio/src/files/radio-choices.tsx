@@ -15,8 +15,8 @@ type RadioChoicesProps<Value extends string> = {
 };
 
 /**
- * A menu group of which one item is chosen, marked in words for assistive
- * technology and with a dot for everyone else. Radix hands back the chosen
+ * A menu group of which one item is chosen, marked by its checked state for
+ * assistive technology and with a dot for everyone else. Radix hands back the chosen
  * value as a string, so a choice is looked up before it is handed on and a
  * value outside the group chooses nothing.
  */

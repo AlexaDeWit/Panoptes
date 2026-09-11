@@ -79,7 +79,9 @@ export type CommandDispatch =
  * One command, before its id is bound to the table's own keys. A command
  * with `available` claims its chord from the browser only while that holds
  * of the store, so a key the studio has no use for in the current model
- * keeps doing what the browser does with it.
+ * keeps doing what the browser does with it. Only the key binding reads it:
+ * a menu item or button for such a command is drawn only where the command
+ * is available, rather than disabled by it.
  */
 export type CommandEntry = {
   readonly id: string;

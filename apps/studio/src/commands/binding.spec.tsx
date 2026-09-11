@@ -32,6 +32,7 @@ const press = (target: Element, init: KeyboardEventInit): KeyboardEvent => {
 
 afterEach(() => {
   document.body.innerHTML = '';
+  modelStore.setState(initialState(placeholderModel), true);
 });
 
 describe('keyboardOwner', () => {
@@ -108,7 +109,6 @@ describe('commandForKey', () => {
     expect(commandForKey(press(holder, { key: 'PageDown' }), 'other')?.id).toBe(
       'next-diagram',
     );
-    modelStore.setState(initialState(placeholderModel), true);
   });
 
   it('leaves a press a control has already acted on alone', () => {
