@@ -11,7 +11,7 @@ import {
   canvasModel,
   noteElement,
   readerElement,
-  requestFlow,
+  studioElement,
 } from './canvas.fixtures.js';
 import { DiagramCanvas } from './diagram-canvas.js';
 
@@ -200,13 +200,6 @@ describe('the field standing where the text is drawn', () => {
     expect(drawnText(readerElement, canvasClassNames.label)).not.toBeNull();
   });
 
-  it('takes the place of a flow name too', () => {
-    editing(requestFlow);
-    render(<DiagramCanvas />);
-
-    expect(drawnText(requestFlow, canvasClassNames.flowLabel)).toBeNull();
-  });
-
   it('is set in the type the text is drawn in', () => {
     editing(noteElement, 'note');
     render(<DiagramCanvas />);
@@ -214,6 +207,13 @@ describe('the field standing where the text is drawn', () => {
     expect(field('Note text').style.fontSize).toBe(
       `${String(wrappedTextStyles.note.fontSize)}px`,
     );
+  });
+
+  it('stays inside the box of the element it names', () => {
+    editing(studioElement);
+    render(<DiagramCanvas />);
+
+    expect(field('Name of Studio').style.maxHeight).toBe('60px');
   });
 
   it('keeps a name on one line when pasted text carries a line break', async () => {

@@ -252,7 +252,8 @@ the region below, which speaks only for edits that landed.
   layout settled, so nothing has to be looked for. The glyph draws no text of
   its own while the field is open, so the text is read in one place, and the
   field is set in the type the text is drawn in, wraps to the same width and
-  grows to the lines it holds. F2 is an alias for names.
+  grows to the lines it holds, up to the room the element's box leaves it,
+  past which it scrolls. F2 is an alias for names.
   Enter commits a name and Escape leaves it as the model holds it. Focus goes
   back to the element on both. Leaving the field for another control commits
   as well and leaves focus where the click put it. The field is labelled

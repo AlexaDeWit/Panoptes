@@ -14,7 +14,7 @@ import {
   type TextPlacement,
   type WrappedTextStyle,
 } from '@saerskriven/canvas';
-import type { ElementId } from '@saerskriven/model';
+import type { ElementId, Size } from '@saerskriven/model';
 import {
   EdgeLabelRenderer,
   type EdgeProps,
@@ -62,6 +62,7 @@ type InlineFieldProps = {
   readonly label: string;
   readonly value: string;
   readonly textStyle: WrappedTextStyle;
+  readonly room?: number;
   readonly multiline?: boolean;
   readonly onCommit: (elementId: ElementId, text: string) => void;
   readonly refuse?: (label: string, text: string) => TextRefusal | undefined;
@@ -95,11 +96,19 @@ function placedAt(placement: TextPlacement): CSSProperties {
   };
 }
 
-function typeOf(textStyle: WrappedTextStyle): CSSProperties {
+function fieldRoom(placement: TextPlacement, size: Size): number {
+  const fontSize = wrappedTextStyles[placement.textStyle].fontSize;
+  return placement.anchor === 'top'
+    ? size.height - (placement.at.y - lineHeight(fontSize) / 2)
+    : 2 * Math.min(placement.at.y, size.height - placement.at.y);
+}
+
+function typeOf(textStyle: WrappedTextStyle, room?: number): CSSProperties {
   return {
     fontFamily: canvasType.family,
     fontSize: `${String(wrappedTextStyles[textStyle].fontSize)}px`,
     lineHeight: lineHeightRatio,
+    maxHeight: room === undefined ? undefined : `${String(room)}px`,
   };
 }
 
@@ -108,6 +117,7 @@ function InlineField({
   label,
   value,
   textStyle,
+  room,
   multiline = false,
   onCommit,
   refuse = refusedText,
@@ -166,6 +176,9 @@ function InlineField({
   };
 
   const keyDown = (event: KeyboardEvent<HTMLTextAreaElement>): void => {
+    if (!multiline && event.key === 'Enter') {
+      event.preventDefault();
+    }
     const commitsName =
       !multiline &&
       pressesContextualShortcut('commit-name', event, hostPlatform);
@@ -215,7 +228,7 @@ function InlineField({
         onKeyDown={keyDown}
         ref={field}
         rows={1}
-        style={typeOf(textStyle)}
+        style={typeOf(textStyle, room)}
         value={draft.text}
       />
       {draft.refusal !== undefined && (
@@ -269,6 +282,11 @@ function EditingNodeBody(props: NodeProps<CanvasFlowNode>) {
             label={`Name of ${nodeLabel(node)}`}
             onCommit={commitRename}
             refuse={refusedName}
+            room={
+              node.kind === 'boundary-curve'
+                ? undefined
+                : fieldRoom(placement, node.size)
+            }
             textStyle={placement.textStyle}
             value={node.name}
           />

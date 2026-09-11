@@ -123,19 +123,13 @@ test('the field stands where the name was drawn and holds the whole of it', asyn
   await expect
     .poll(() =>
       field.evaluate((element) => ({
-        lines:
-          element.clientHeight /
-          parseFloat(getComputedStyle(element).lineHeight),
+        wrapped:
+          element.clientHeight >=
+          2 * parseFloat(getComputedStyle(element).lineHeight),
         clipped: element.scrollHeight > element.clientHeight,
       })),
     )
-    .toEqual({ lines: expect.any(Number), clipped: false });
-  expect(
-    await field.evaluate(
-      (element) =>
-        element.clientHeight / parseFloat(getComputedStyle(element).lineHeight),
-    ),
-  ).toBeGreaterThanOrEqual(2);
+    .toEqual({ wrapped: true, clipped: false });
 
   await field.press('Escape');
 
@@ -148,10 +142,10 @@ test('a flow is renamed by double-clicking the label it draws', async ({
   await openPlaceholder(page);
   await drawFlow(page);
 
-  await drawnName(
-    nodeNamed(page, /^New flow, flow/u),
-    'pn-flow-label',
-  ).dblclick();
+  const flow = nodeNamed(page, /^New flow, flow/u);
+  await drawnName(flow, 'pn-flow-label').dblclick();
+  await expect(rename(page, 'New flow')).toBeFocused();
+  await expect(drawnName(flow, 'pn-flow-label')).toHaveCount(0);
   await rename(page, 'New flow').fill('Opens');
   await rename(page, 'New flow').press('Enter');
 

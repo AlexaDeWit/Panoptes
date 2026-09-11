@@ -1,7 +1,8 @@
 /* The field stands where the canvas package draws the text it edits, and
    the glyph draws none of its own while it is open. Its box is the text's
    own: the frame is an outline, so no border or padding moves the text off
-   the drawn placement, and a name field grows to the lines it wraps to. Over
+   the drawn placement, and a name field grows to the lines it wraps to, up
+   to the room its element's box leaves it, past which it scrolls. Over
    a node the coordinates are the node's own, over a flow the diagram's, in
    React Flow's edge label layer, which passes pointer events through, so the
    field takes them back. */
@@ -39,11 +40,11 @@
 }
 
 /* The refusal reads as text rather than as a colour alone, as the panel's
-   fields do: forced colours drop the outline tint, and the sentence below the
-   field is there either way. */
+   fields do: forced colours drop the shadow, and the sentence below the
+   field is there either way. It is a shadow rather than the outline so the
+   focus ring, which a refused field keeps, does not replace it. */
 .field[aria-invalid='true'] {
-  outline-width: 2px;
-  outline-color: var(--pn-colour-text);
+  box-shadow: 0 0 0 2px var(--pn-colour-text);
 }
 
 .field:focus-visible {
