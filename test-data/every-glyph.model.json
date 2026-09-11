@@ -89,7 +89,8 @@
           "reasonOutOfScope": "",
           "source": { "kind": "attached", "element": "el-client" },
           "target": { "kind": "attached", "element": "el-api" },
-          "waypoints": [{ "x": 240, "y": 100 }]
+          "waypoints": [{ "x": 240, "y": 100 }],
+          "bidirectional": true
         },
         {
           "kind": "flow",
@@ -100,7 +101,8 @@
           "reasonOutOfScope": "",
           "source": { "kind": "attached", "element": "el-api" },
           "target": { "kind": "attached", "element": "el-db" },
-          "waypoints": []
+          "waypoints": [],
+          "bidirectional": false
         },
         {
           "kind": "flow",
@@ -111,7 +113,8 @@
           "reasonOutOfScope": "",
           "source": { "kind": "free", "position": { "x": 620, "y": 320 } },
           "target": { "kind": "attached", "element": "el-db" },
-          "waypoints": []
+          "waypoints": [],
+          "bidirectional": false
         },
         {
           "kind": "flow",
@@ -122,7 +125,8 @@
           "reasonOutOfScope": "",
           "source": { "kind": "attached", "element": "el-request" },
           "target": { "kind": "attached", "element": "el-db" },
-          "waypoints": []
+          "waypoints": [],
+          "bidirectional": false
         }
       ]
     }

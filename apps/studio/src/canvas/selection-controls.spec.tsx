@@ -18,6 +18,11 @@ import { resetTools, selectTool } from './tools.js';
 import { currentAnnouncement } from './announcements.js';
 import { newProcess } from '../store/store.fixtures.js';
 
+const flowOf = () =>
+  modelStore
+    .getState()
+    .present.diagrams[0].elements.find((element) => element.kind === 'flow');
+
 const actor = placeholderModel.diagrams[0].elements[0].id;
 
 beforeEach(() => {
@@ -168,4 +173,68 @@ it('reports a flow-only geometry selection and ignores editor requests during pl
     runCommand(commandById('edit-geometry'), recordingSurface().surface);
   });
   expect(screen.queryByRole('region')).toBeNull();
+});
+
+it('pins the chosen endpoint to a side, and releases it, through the endpoint editor', () => {
+  const flow = placeholderModel.diagrams[0].elements.find(
+    (element) => element.kind === 'flow',
+  );
+  if (flow === undefined) {
+    throw new Error('The placeholder holds a flow');
+  }
+  modelStore.setState(
+    { ...initialState(placeholderModel), selection: [flow.id] },
+    true,
+  );
+  render(<SelectionControls />);
+  act(() => {
+    runCommand(commandById('reconnect-source'), recordingSurface().surface);
+  });
+  const side = screen.getByRole<HTMLSelectElement>('combobox', {
+    name: 'Side',
+  });
+  expect(side.value).toBe('');
+  fireEvent.change(side, { target: { value: 'bottom' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Apply endpoint' }));
+  expect(flowOf()).toMatchObject({
+    source: { kind: 'attached', element: actor, side: 'bottom' },
+  });
+  expect(modelStore.getState().past).toHaveLength(1);
+  act(() => {
+    runCommand(commandById('reconnect-source'), recordingSurface().surface);
+  });
+  expect(
+    screen.getByRole<HTMLSelectElement>('combobox', { name: 'Side' }).value,
+  ).toBe('bottom');
+  fireEvent.change(screen.getByRole('combobox', { name: 'Side' }), {
+    target: { value: '' },
+  });
+  fireEvent.click(screen.getByRole('button', { name: 'Apply endpoint' }));
+  expect(flowOf()?.kind === 'flow' && flowOf()?.source).toEqual({
+    kind: 'attached',
+    element: actor,
+  });
+});
+
+it('toggles a flow between one way and both ways as one undo step each', () => {
+  const flow = placeholderModel.diagrams[0].elements.find(
+    (element) => element.kind === 'flow',
+  );
+  if (flow === undefined) {
+    throw new Error('The placeholder holds a flow');
+  }
+  modelStore.setState(
+    { ...initialState(placeholderModel), selection: [flow.id] },
+    true,
+  );
+  render(<FlowEndpointCommands />);
+  fireEvent.click(
+    screen.getByRole('button', { name: /Toggle bidirectional flow/u }),
+  );
+  expect(flowOf()).toMatchObject({ bidirectional: true });
+  fireEvent.click(
+    screen.getByRole('button', { name: /Toggle bidirectional flow/u }),
+  );
+  expect(flowOf()).toMatchObject({ bidirectional: false });
+  expect(modelStore.getState().past).toHaveLength(2);
 });

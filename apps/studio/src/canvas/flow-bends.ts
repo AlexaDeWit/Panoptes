@@ -1,4 +1,12 @@
-import { setFlowWaypoints, type Flow, type Point } from '@saerskriven/model';
+import {
+  reconnectFlow,
+  setFlowWaypoints,
+  type Flow,
+  type Model,
+  type OperationFailure,
+  type Point,
+  type Side,
+} from '@saerskriven/model';
 import { Either } from 'effect';
 import { useMemo, useState } from 'react';
 import { Action } from '../store/actions.js';
@@ -16,7 +24,17 @@ export type BendTarget = {
   readonly point: Point;
 };
 
-type BendDraft = BendTarget & {
+/** One attached end of a flow, pinned to a side of its element or released to follow the route. */
+export type AnchorTarget = {
+  readonly kind: 'anchor';
+  readonly end: 'source' | 'target';
+  readonly side: Side | undefined;
+};
+
+/** One edit of a flow's route: a bend, or the side an end attaches at. */
+export type RouteTarget = BendTarget | AnchorTarget;
+
+type RouteDraft = RouteTarget & {
   readonly state: State;
   readonly transition: number;
   readonly flow: Flow;
@@ -31,7 +49,49 @@ export function editedBends(flow: Flow, target: BendTarget): Point[] {
   ];
 }
 
-function currentDraft(draft: BendDraft): boolean {
+/** The model with one route edit applied: what a preview draws and a commit dispatches. */
+export function editedRoute(
+  model: Model,
+  flow: Flow,
+  target: RouteTarget,
+): Either.Either<Model, OperationFailure> {
+  if (target.kind !== 'anchor') {
+    return setFlowWaypoints(model, flow.id, editedBends(flow, target));
+  }
+  const end = flow[target.end];
+  return end.kind === 'attached'
+    ? reconnectFlow(model, flow.id, target.end, end.element, target.side)
+    : Either.right(model);
+}
+
+function routeAction(flow: Flow, target: RouteTarget): Action | undefined {
+  if (target.kind !== 'anchor') {
+    return Action.SetFlowWaypoints({
+      elementId: flow.id,
+      waypoints: editedBends(flow, target),
+    });
+  }
+  const end = flow[target.end];
+  return end.kind === 'attached'
+    ? Action.ReconnectFlow({
+        elementId: flow.id,
+        side: target.end,
+        endpointId: end.element,
+        anchor: target.side,
+      })
+    : undefined;
+}
+
+function routeAnnouncement(flow: Flow, target: RouteTarget): string {
+  if (target.kind !== 'anchor') {
+    return `${target.kind === 'insert' ? 'Added' : 'Moved'} bend ${String(target.index + 1)} on ${flow.name}.`;
+  }
+  return target.side === undefined
+    ? `Released the ${target.end} of ${flow.name} to follow its route.`
+    : `Pinned the ${target.end} of ${flow.name} to the ${target.side} side.`;
+}
+
+function currentDraft(draft: RouteDraft): boolean {
   const state = modelStore.getState();
   const tool = currentTool();
   return (
@@ -43,11 +103,11 @@ function currentDraft(draft: BendDraft): boolean {
   );
 }
 
-/** Owns a transient bend preview and commits one route edit per gesture. */
+/** Owns a transient route preview, a bend or an end's side, and commits one edit per gesture. */
 export function useFlowBends() {
   const state = useModelStore((value) => value);
   const tool = useTool();
-  const [held, setHeld] = useState<BendDraft | undefined>();
+  const [held, setHeld] = useState<RouteDraft | undefined>();
   const selected = selectedElement(state);
   const element =
     selected === undefined ? undefined : elementById(state, selected);
@@ -69,11 +129,7 @@ export function useFlowBends() {
     () =>
       draft === undefined
         ? undefined
-        : setFlowWaypoints(
-            state.present,
-            draft.flow.id,
-            editedBends(draft.flow, draft),
-          ),
+        : editedRoute(state.present, draft.flow, draft),
     [state.present, draft],
   );
   const present =
@@ -81,7 +137,7 @@ export function useFlowBends() {
       ? outcome.right
       : state.present;
 
-  const commit = (target: BendTarget): void => {
+  const commit = (target: RouteTarget): void => {
     if (
       flow === undefined ||
       modelStore.getState().present !== state.present ||
@@ -91,18 +147,15 @@ export function useFlowBends() {
     ) {
       return;
     }
+    const action = routeAction(flow, target);
+    if (action === undefined) {
+      return;
+    }
     const before = modelStore.getState().present;
-    dispatch(
-      Action.SetFlowWaypoints({
-        elementId: flow.id,
-        waypoints: editedBends(flow, target),
-      }),
-    );
+    dispatch(action);
     setHeld(undefined);
     if (modelStore.getState().present !== before) {
-      announce(
-        `${target.kind === 'insert' ? 'Added' : 'Moved'} bend ${String(target.index + 1)} on ${flow.name}.`,
-      );
+      announce(routeAnnouncement(flow, target));
     }
   };
 
@@ -111,7 +164,7 @@ export function useFlowBends() {
     flow,
     draft,
     layout: currentLayout({ present }),
-    preview: (target: BendTarget): void => {
+    preview: (target: RouteTarget): void => {
       if (flow !== undefined) {
         setHeld({ ...target, state, transition: tool.transition, flow });
       }

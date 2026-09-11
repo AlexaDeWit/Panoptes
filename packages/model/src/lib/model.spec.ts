@@ -31,6 +31,7 @@ const flow = {
   },
   target: { kind: 'free', position: { x: 700, y: 400 } },
   waypoints: [],
+  bidirectional: false,
 };
 
 const diagram = {

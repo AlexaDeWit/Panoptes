@@ -1,5 +1,11 @@
 import { boxOfPoints } from '@saerskriven/canvas';
-import { pointSchema, sizeSchema, type ElementId } from '@saerskriven/model';
+import {
+  pointSchema,
+  sides,
+  sizeSchema,
+  type ElementId,
+  type Side,
+} from '@saerskriven/model';
 import {
   useEffect,
   useEffectEvent,
@@ -23,6 +29,7 @@ import {
   selectionControlFrom,
   type SelectionControl,
 } from './selection-control.js';
+import { sideLabels } from './side-labels.js';
 import { currentTool, useTool } from './tools.js';
 import styles from './selection-controls.module.css';
 
@@ -311,6 +318,9 @@ function EndpointEditor({
   const [target, setTarget] = useState<ElementId | undefined>(
     previous?.kind === 'attached' ? previous.element : options[0]?.id,
   );
+  const [anchor, setAnchor] = useState<Side | undefined>(
+    previous?.kind === 'attached' ? previous.side : undefined,
+  );
   return (
     <form
       onSubmit={(event) => {
@@ -321,6 +331,7 @@ function EndpointEditor({
               elementId: flow.id,
               side,
               endpointId: target,
+              anchor,
             }),
           );
           close();
@@ -353,6 +364,27 @@ function EndpointEditor({
           </select>
         </label>
       )}
+      {flow !== undefined && (
+        <label className={styles.field}>
+          Side
+          <select
+            aria-label="Side"
+            value={anchor ?? ''}
+            onChange={(event) => {
+              setAnchor(
+                sides.find((candidate) => candidate === event.target.value),
+              );
+            }}
+          >
+            <option value="">Automatic</option>
+            {sides.map((candidate) => (
+              <option key={candidate} value={candidate}>
+                {sideLabels[candidate]}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
       <div className={styles.actions}>
         <button
           disabled={flow === undefined || target === undefined}
@@ -380,6 +412,7 @@ export function FlowEndpointCommands() {
     <section aria-label="Reconnect flow" className={styles.endpoints}>
       <CommandButton command="reconnect-source" />
       <CommandButton command="reconnect-target" />
+      <CommandButton command="toggle-flow-direction" />
     </section>
   ) : null;
 }

@@ -74,6 +74,7 @@ const flowNamed = (name: string) => ({
   source: { kind: 'attached', element: 'el-left' },
   target: { kind: 'attached', element: 'el-right' },
   waypoints: [],
+  bidirectional: false,
 });
 
 const shortBoxHeight = 40;

@@ -1,6 +1,6 @@
 import { Either } from 'effect';
 import type { BoundaryShape, Element, Flow, FlowEndpoint } from './elements.js';
-import type { Point, Size } from './geometry.js';
+import type { Point, Side, Size } from './geometry.js';
 import type { DiagramId, ElementId } from './ids.js';
 import type { Diagram } from './model.js';
 import { OperationFailure } from './operation-failures.js';
@@ -48,8 +48,8 @@ export type EditNoteFailure = Extract<
   { _tag: 'UnknownElement' | 'NotTextElement' | 'RefusedCharacter' }
 >;
 
-/** The failures a flow route edit can produce. */
-export type SetFlowWaypointsFailure = Extract<
+/** The failures an edit of one flow's route, anchors, or direction can produce. */
+export type FlowEditFailure = Extract<
   OperationFailure,
   { _tag: 'UnknownElement' | 'NotFlowElement' }
 >;
@@ -59,68 +59,89 @@ export function setFlowWaypoints(
   model: Model,
   elementId: ElementId,
   waypoints: readonly Point[],
-): Either.Either<Model, SetFlowWaypointsFailure> {
-  const located = locateElement(model, elementId);
-  if (located === undefined) {
-    return Either.left(OperationFailure.UnknownElement({ elementId }));
-  }
-  const flow = located.element;
-  if (flow.kind !== 'flow') {
-    return Either.left(OperationFailure.NotFlowElement({ elementId }));
-  }
-  const unchanged =
-    flow.waypoints.length === waypoints.length &&
-    flow.waypoints.every(
-      (point, index) =>
-        point.x === waypoints[index].x && point.y === waypoints[index].y,
-    );
-  return Either.right(
-    unchanged
+): Either.Either<Model, FlowEditFailure> {
+  return Either.map(locateFlow(model, elementId), (located) => {
+    const flow = located.element;
+    const unchanged =
+      flow.waypoints.length === waypoints.length &&
+      flow.waypoints.every(
+        (point, index) =>
+          point.x === waypoints[index].x && point.y === waypoints[index].y,
+      );
+    return unchanged
       ? model
       : withElement(model, located.diagramIndex, {
           ...flow,
           waypoints: waypoints.map((point) => ({ ...point })),
-        }),
-  );
+        });
+  });
 }
 
-/** Reattaches one flow endpoint to a different actor, process, or store in its diagram. */
+/**
+ * Reattaches one flow endpoint to an actor, process, or store in its
+ * diagram, the element it already names included. `anchor` pins the end to
+ * that side of the element; none releases it to the renderer's choice. The
+ * model comes back unchanged where the end already reads so.
+ */
 export function reconnectFlow(
   model: Model,
   elementId: ElementId,
   side: 'source' | 'target',
   endpointId: ElementId,
+  anchor?: Side,
 ): Either.Either<Model, OperationFailure> {
-  const located = locateElement(model, elementId);
-  if (located === undefined) {
-    return Either.left(OperationFailure.UnknownElement({ elementId }));
-  }
-  const flow = located.element;
-  if (flow.kind !== 'flow') {
-    return Either.left(OperationFailure.NotFlowElement({ elementId }));
-  }
-  const endpoint = model.diagrams[located.diagramIndex].elements.find(
-    (element) => element.id === endpointId,
-  );
-  const other = side === 'source' ? flow.target : flow.source;
-  if (
-    endpoint === undefined ||
-    !['actor', 'process', 'store'].includes(endpoint.kind) ||
-    (other.kind === 'attached' && other.element === endpointId)
-  ) {
-    return Either.left(
-      OperationFailure.InvalidFlowEndpoint({ side, reference: endpointId }),
+  return Either.flatMap(locateFlow(model, elementId), (located) => {
+    const flow = located.element;
+    const endpoint = model.diagrams[located.diagramIndex].elements.find(
+      (element) => element.id === endpointId,
     );
-  }
-  const previous = flow[side];
-  return Either.right(
-    previous.kind === 'attached' && previous.element === endpointId
+    const other = side === 'source' ? flow.target : flow.source;
+    if (
+      endpoint === undefined ||
+      !['actor', 'process', 'store'].includes(endpoint.kind) ||
+      (other.kind === 'attached' && other.element === endpointId)
+    ) {
+      return Either.left(
+        OperationFailure.InvalidFlowEndpoint({ side, reference: endpointId }),
+      );
+    }
+    const previous = flow[side];
+    return Either.right(
+      previous.kind === 'attached' &&
+        previous.element === endpointId &&
+        previous.side === anchor
+        ? model
+        : withElement(model, located.diagramIndex, {
+            ...flow,
+            [side]: attachedEndpoint(endpointId, anchor),
+          }),
+    );
+  });
+}
+
+/** Makes a flow bidirectional or one-way, preserving the model where it already is. */
+export function setFlowDirection(
+  model: Model,
+  elementId: ElementId,
+  bidirectional: boolean,
+): Either.Either<Model, FlowEditFailure> {
+  return Either.map(locateFlow(model, elementId), (located) =>
+    located.element.bidirectional === bidirectional
       ? model
       : withElement(model, located.diagramIndex, {
-          ...flow,
-          [side]: { kind: 'attached', element: endpointId },
+          ...located.element,
+          bidirectional,
         }),
   );
+}
+
+function attachedEndpoint(
+  element: ElementId,
+  side: Side | undefined,
+): FlowEndpoint {
+  return side === undefined
+    ? { kind: 'attached', element }
+    : { kind: 'attached', element, side };
 }
 
 /** Adds an element after checking its diagram, ID, and attached endpoint references. */
@@ -293,6 +314,27 @@ type LocatedElement = {
   diagramIndex: number;
   element: Element;
 };
+
+type LocatedFlow = {
+  diagramIndex: number;
+  element: Flow;
+};
+
+function locateFlow(
+  model: Model,
+  elementId: ElementId,
+): Either.Either<LocatedFlow, FlowEditFailure> {
+  const located = locateElement(model, elementId);
+  if (located === undefined) {
+    return Either.left(OperationFailure.UnknownElement({ elementId }));
+  }
+  return located.element.kind === 'flow'
+    ? Either.right({
+        diagramIndex: located.diagramIndex,
+        element: located.element,
+      })
+    : Either.left(OperationFailure.NotFlowElement({ elementId }));
+}
 
 function locateElement(
   model: Model,

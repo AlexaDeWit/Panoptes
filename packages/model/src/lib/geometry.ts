@@ -24,6 +24,18 @@ export const sizeSchema = z.object({
 /** Canvas extent. */
 export type Size = z.infer<typeof sizeSchema>;
 
+/** The sides of a box, in the order a tie between them breaks. */
+export const sides = ['top', 'right', 'bottom', 'left'] as const;
+
+/**
+ * One side of a box, where a flow endpoint attaches and where a resize
+ * control sits.
+ */
+export const sideSchema = z.enum(sides);
+
+/** Side of a box. */
+export type Side = z.infer<typeof sideSchema>;
+
 /**
  * Intermediate points a flow or boundary curve passes through, in drawing
  * order. On a flow, an empty list leaves the routing to the renderer.

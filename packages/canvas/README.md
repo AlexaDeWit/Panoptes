@@ -77,12 +77,14 @@ itself.
 **Attachment is fixed side-midpoint handles.** Every element the canvas draws
 as a box exposes four handles, `top`, `right`, `bottom` and `left`, at the
 midpoints of its sides, computed from the model's position and size. An
-attached flow end takes the side whose midpoint lies nearest its next point:
-the first waypoint for a source, the last for a target, or the other end's
-centre where the flow has no waypoints. Ties break in the order top, right,
-bottom, left. A free end stays at its own position. Two costs come with this
-and are accepted: a flow can change sides when a waypoint moves, and several
-flows can meet at one midpoint.
+attached flow end the model pins to a side takes that side's handle wherever
+the route runs. One the model leaves unpinned takes the side whose midpoint
+lies nearest its next point: the first waypoint for a source, the last for a
+target, or the other end's centre where the flow has no waypoints. Ties
+break in the order top, right, bottom, left. A free end stays at its own
+position. Two costs come with this and are accepted: an unpinned end can
+change sides when a waypoint moves, and several flows can meet at one
+midpoint.
 
 **Badges count open threats only**, on the model's own definition of open, so
 a badge, the register and the CLI count one set of threats. The primary badge
@@ -106,7 +108,8 @@ its box, with no outline or fill. A box trust boundary is a dashed rectangle
 and a curve trust boundary a smooth dashed open curve through its waypoints,
 Catmull-Rom converted to cubic segments, with its name beside the waypoint the
 placement settles on. A flow is straight segments from its source through its
-waypoints to its target, with a filled arrowhead at the target, and its name
+waypoints to its target, with a filled arrowhead at the target, a second at
+the source where the flow is bidirectional, and its name
 and badge beside the line where `flowLabelPlacements` settled them. Each hangs
 off a unit normal rather than straight down the y axis: a name at a standoff
 plus its own extent projected onto that normal, a badge at the standoff plus

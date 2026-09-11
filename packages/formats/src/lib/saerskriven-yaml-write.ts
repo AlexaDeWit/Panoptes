@@ -123,6 +123,7 @@ function toWireElement(element: Element): SaerskrivenYamlElement {
       source: toWireEndpoint(element.source),
       target: toWireEndpoint(element.target),
       waypoints: element.waypoints,
+      bidirectional: element.bidirectional,
     };
   }
   if (element.kind === 'trust-boundary') {
@@ -160,9 +161,12 @@ function toWireCommon(element: Element) {
 }
 
 function toWireEndpoint(endpoint: FlowEndpoint): SaerskrivenYamlEndpoint {
-  return endpoint.kind === 'attached'
+  if (endpoint.kind === 'free') {
+    return { kind: 'free', position: endpoint.position };
+  }
+  return endpoint.side === undefined
     ? { kind: 'attached', element: endpoint.element }
-    : { kind: 'free', position: endpoint.position };
+    : { kind: 'attached', element: endpoint.element, side: endpoint.side };
 }
 
 function toWireBoundaryShape(

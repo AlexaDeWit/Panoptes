@@ -71,12 +71,20 @@ type CanvasEdgeGeometry = {
   readonly target: Point;
   readonly sourceSide: HandleSide | undefined;
   readonly targetSide: HandleSide | undefined;
+  readonly sourcePin: HandleSide | undefined;
+  readonly targetPin: HandleSide | undefined;
   readonly sourceElement: ElementId | undefined;
   readonly targetElement: ElementId | undefined;
   readonly waypoints: readonly Point[];
+  readonly bidirectional: boolean;
 };
 
-/** A flow with resolved endpoints and label placement shared by drawing and bounds calculations. */
+/**
+ * A flow with resolved endpoints and label placement shared by drawing and
+ * bounds calculations. `sourceSide` and `targetSide` are the sides the ends
+ * were drawn at; `sourcePin` and `targetPin` are the sides the model pins
+ * them to, which a move keeps while the other ends follow the route.
+ */
 export type CanvasEdge = CanvasEdgeGeometry & {
   readonly label: FlowLabelPlacement;
 };
@@ -349,10 +357,12 @@ function reanchoredGeometry(
   const sourceAnchor = anchorOf(
     source,
     edge.waypoints[0] ?? referenceOf(target),
+    edge.sourcePin,
   );
   const targetAnchor = anchorOf(
     target,
     edge.waypoints.at(-1) ?? referenceOf(source),
+    edge.targetPin,
   );
   return {
     ...edge,
@@ -529,13 +539,17 @@ function placeFlow(
   if (source.kind === 'unplaced' || target.kind === 'unplaced') {
     return { edge: undefined, unplaced };
   }
+  const sourcePin = pinOf(flow.source);
+  const targetPin = pinOf(flow.target);
   const sourceAnchor = anchorOf(
     source,
     flow.waypoints[0] ?? referenceOf(target),
+    sourcePin,
   );
   const targetAnchor = anchorOf(
     target,
     flow.waypoints.at(-1) ?? referenceOf(source),
+    targetPin,
   );
   return {
     edge: {
@@ -547,9 +561,12 @@ function placeFlow(
       target: targetAnchor.point,
       sourceSide: sourceAnchor.side,
       targetSide: targetAnchor.side,
+      sourcePin,
+      targetPin,
       sourceElement: sourceAnchor.element,
       targetElement: targetAnchor.element,
       waypoints: flow.waypoints,
+      bidirectional: flow.bidirectional,
     },
     unplaced,
   };
@@ -592,11 +609,19 @@ function referenceOf(endpoint: PlacedEndpoint): Point {
   return endpoint.kind === 'free' ? endpoint.point : centreOf(endpoint.box);
 }
 
-function anchorOf(endpoint: PlacedEndpoint, toward: Point): Anchor {
+function pinOf(endpoint: FlowEndpoint): HandleSide | undefined {
+  return endpoint.kind === 'attached' ? endpoint.side : undefined;
+}
+
+function anchorOf(
+  endpoint: PlacedEndpoint,
+  toward: Point,
+  pin: HandleSide | undefined,
+): Anchor {
   if (endpoint.kind === 'free') {
     return { point: endpoint.point, side: undefined, element: undefined };
   }
-  const side = nearestHandleSide(endpoint.box, toward);
+  const side = pin ?? nearestHandleSide(endpoint.box, toward);
   return {
     point: handlePositions(endpoint.box)[side],
     side,
@@ -645,6 +670,7 @@ function drawnEdgePoints(edge: CanvasEdge): Point[] {
   return [
     ...points,
     ...arrowheadPoints(edge.target, points[points.length - 2]),
+    ...(edge.bidirectional ? arrowheadPoints(edge.source, points[1]) : []),
     ...textPlacementCorners(edge.label.name),
     ...(edge.label.badge === undefined
       ? []

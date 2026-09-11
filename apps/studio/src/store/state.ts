@@ -119,6 +119,7 @@ const placeholderDocument = {
           source: { kind: 'attached', element: 'placeholder-actor' },
           target: { kind: 'attached', element: 'placeholder-store' },
           waypoints: [],
+          bidirectional: false,
         },
       ],
     },

@@ -58,6 +58,27 @@ export function connectElements(source: ElementId, target: ElementId): void {
   added(Action.AddElement({ diagramId, element: flow }), flow.id);
 }
 
+/** Makes the selected flow bidirectional, or one-way again, as one undo step. */
+export function toggleFlowDirection(): void {
+  const state = modelStore.getState();
+  const elementId = selectedElement(state);
+  const flow =
+    elementId === undefined ? undefined : elementById(state, elementId);
+  if (flow?.kind !== 'flow') {
+    return;
+  }
+  const bidirectional = !flow.bidirectional;
+  if (
+    changedModel(Action.SetFlowDirection({ elementId: flow.id, bidirectional }))
+  ) {
+    announce(
+      bidirectional
+        ? `${flow.name || 'The flow'} now runs both ways.`
+        : `${flow.name || 'The flow'} now runs one way.`,
+    );
+  }
+}
+
 /** Removes the selection and announces its combined cascade once. */
 export function removeSelected(): boolean {
   const state = modelStore.getState();

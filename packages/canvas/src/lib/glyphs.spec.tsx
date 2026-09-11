@@ -247,9 +247,12 @@ const probeFlow = (
   target: to,
   sourceSide: undefined,
   targetSide: undefined,
+  sourcePin: undefined,
+  targetPin: undefined,
   sourceElement: undefined,
   targetElement: undefined,
   waypoints: [],
+  bidirectional: false,
   label: flowLabelPlacements(
     [{ id: elementId('el-probe'), name: probeName, badge, points: [from, to] }],
     [],

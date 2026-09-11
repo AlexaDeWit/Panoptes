@@ -43,6 +43,7 @@ const flow = (id: string, target: string): Record<string, unknown> => ({
   source: { kind: 'attached', element: sampleModel.diagrams[0].elements[0].id },
   target: { kind: 'attached', element: target },
   waypoints: [],
+  bidirectional: false,
 });
 
 const unplacedModel = parsedFixture({

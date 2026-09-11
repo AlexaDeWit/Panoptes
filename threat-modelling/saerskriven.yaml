@@ -206,6 +206,7 @@ diagrams:
           kind: attached
           element: el-model-file
         waypoints: []
+        bidirectional: false
       - kind: flow
         id: fl-open
         name: A text of unknown format
@@ -219,6 +220,7 @@ diagrams:
           kind: attached
           element: el-read
         waypoints: []
+        bidirectional: false
       - kind: flow
         id: fl-mapped
         name: |-
@@ -234,6 +236,7 @@ diagrams:
           kind: attached
           element: el-model
         waypoints: []
+        bidirectional: false
       - kind: flow
         id: fl-prose
         name: Threat prose
@@ -249,6 +252,7 @@ diagrams:
         waypoints:
           - x: 1030
             y: 130
+        bidirectional: false
       - kind: flow
         id: fl-geometry
         name: |-
@@ -264,6 +268,7 @@ diagrams:
           kind: attached
           element: el-diagram
         waypoints: []
+        bidirectional: false
       - kind: flow
         id: fl-save
         name: Save
@@ -279,6 +284,7 @@ diagrams:
         waypoints:
           - x: 1030
             y: 550
+        bidirectional: false
       - kind: flow
         id: fl-markdown
         name: Register markdown
@@ -294,6 +300,7 @@ diagrams:
         waypoints:
           - x: 1550
             y: 180
+        bidirectional: false
       - kind: flow
         id: fl-svg
         name: Diagram SVG
@@ -307,6 +314,7 @@ diagrams:
           kind: attached
           element: el-output
         waypoints: []
+        bidirectional: false
       - kind: flow
         id: fl-written
         name: Saved model file
@@ -322,6 +330,7 @@ diagrams:
         waypoints:
           - x: 1550
             y: 500
+        bidirectional: false
       - kind: flow
         id: fl-publish
         name: Published register
@@ -335,6 +344,7 @@ diagrams:
           kind: attached
           element: el-site
         waypoints: []
+        bidirectional: false
   - id: agent-and-desktop
     title: Agents and the desktop shell
     elements:
@@ -466,6 +476,7 @@ diagrams:
           kind: attached
           element: el-mcp
         waypoints: []
+        bidirectional: false
       - kind: flow
         id: fl-mcp-core
         name: Parsed operations
@@ -479,6 +490,7 @@ diagrams:
           kind: attached
           element: el-core
         waypoints: []
+        bidirectional: false
       - kind: flow
         id: fl-core-fs
         name: |-
@@ -496,6 +508,7 @@ diagrams:
         waypoints:
           - x: 1130
             y: 230
+        bidirectional: false
       - kind: flow
         id: fl-renderer-bridge
         name: Open and save requests
@@ -509,6 +522,7 @@ diagrams:
           kind: attached
           element: el-bridge
         waypoints: []
+        bidirectional: false
       - kind: flow
         id: fl-bridge-main
         name: Validated IPC messages
@@ -522,6 +536,7 @@ diagrams:
           kind: attached
           element: el-main
         waypoints: []
+        bidirectional: false
       - kind: flow
         id: fl-main-fs
         name: |-
@@ -539,6 +554,7 @@ diagrams:
         waypoints:
           - x: 1530
             y: 530
+        bidirectional: false
 mitigations:
   - id: mit-read-limits
     title: Bounded reads

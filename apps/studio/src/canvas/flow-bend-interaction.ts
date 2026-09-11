@@ -1,9 +1,11 @@
 import {
   keyboardResizeStep,
+  nearestHandleSide,
   shiftedKeyboardResizeStep,
   type CanvasEdge,
+  type NodeBox,
 } from '@saerskriven/canvas';
-import type { Point } from '@saerskriven/model';
+import type { Point, Side } from '@saerskriven/model';
 import { useReactFlow } from '@xyflow/react';
 import {
   useEffect,
@@ -19,20 +21,52 @@ import { hostPlatform, type ChordEvent } from '../commands/shortcuts.js';
 import { announce } from './announcements.js';
 import { bendInsertionEvent } from './bend-insertion.js';
 import { focusElement } from './edits.js';
-import type { BendTarget, FlowBends } from './flow-bends.js';
+import type { AnchorTarget, BendTarget, FlowBends } from './flow-bends.js';
+
+/** Which end of a flow a handle stands for. */
+export type FlowEnd = AnchorTarget['end'];
 
 type BendMode =
   | { readonly kind: 'choose'; readonly index: number }
   | { readonly kind: 'place'; readonly target: BendTarget }
-  | { readonly kind: 'actions'; readonly index: number };
+  | { readonly kind: 'actions'; readonly index: number }
+  | { readonly kind: 'end-actions'; readonly end: FlowEnd };
+
+type Held =
+  | BendTarget
+  | { readonly kind: 'end'; readonly end: FlowEnd; readonly box: NodeBox };
 
 type Gesture = {
   readonly context: FlowBends['context'];
-  readonly target: BendTarget;
+  readonly held: Held;
   readonly start: Point;
   readonly pointerId: number;
   readonly moved: boolean;
 };
+
+function holdsFocus(mode: BendMode): boolean {
+  return mode.kind === 'actions' || mode.kind === 'end-actions';
+}
+
+const sideOfArrow: ReadonlyMap<string, Side> = new Map([
+  ['ArrowUp', 'top'],
+  ['ArrowRight', 'right'],
+  ['ArrowDown', 'bottom'],
+  ['ArrowLeft', 'left'],
+]);
+
+/** The box of the element one end of a flow attaches to, none for a free end. */
+export function endBox(
+  bends: FlowBends,
+  edge: CanvasEdge,
+  end: FlowEnd,
+): NodeBox | undefined {
+  const element = end === 'source' ? edge.sourceElement : edge.targetElement;
+  const node = bends.layout.nodes.find((candidate) => candidate.id === element);
+  return node === undefined
+    ? undefined
+    : { position: node.position, size: node.size };
+}
 
 type BendPointer = Pick<
   PointerEvent<HTMLButtonElement | SVGPathElement>,
@@ -123,10 +157,13 @@ export function useFlowBendInteraction(
       'Use arrow keys or click a position. Enter confirms. Escape cancels.',
     );
   };
-  const commit = (target: BendTarget): void => {
+  const commit = (target: BendTarget | AnchorTarget): void => {
     bends.commit(target);
     setMode(undefined);
     handBack();
+  };
+  const pinEnd = (end: FlowEnd, side: Side | undefined): void => {
+    commit({ kind: 'anchor', end, side });
   };
   const remove = (index: number): void => {
     bends.remove(index);
@@ -163,7 +200,7 @@ export function useFlowBendInteraction(
       cancel();
       return;
     }
-    if (event.key === 'Tab' && mode !== undefined && mode.kind !== 'actions') {
+    if (event.key === 'Tab' && mode !== undefined && !holdsFocus(mode)) {
       cancel(false);
       return;
     }
@@ -204,6 +241,26 @@ export function useFlowBendInteraction(
       } else {
         return;
       }
+    } else if (event.target.closest('[data-flow-end]') !== null) {
+      const end =
+        event.target
+          .closest('[data-flow-end]')
+          ?.getAttribute('data-flow-end') === 'target'
+          ? 'target'
+          : 'source';
+      const side = sideOfArrow.get(event.key);
+      if (
+        side !== undefined &&
+        pressesContextualShortcut('pin-flow-end', event, hostPlatform)
+      ) {
+        pinEnd(end, side);
+      } else if (
+        pressesContextualShortcut('release-flow-end', event, hostPlatform)
+      ) {
+        pinEnd(end, undefined);
+      } else {
+        return;
+      }
     } else {
       const handle = event.target.closest('[data-bend-index]');
       if (handle === null) {
@@ -233,7 +290,9 @@ export function useFlowBendInteraction(
       suppressClick.current = false;
       if (
         event.target instanceof Element &&
-        event.target.closest('[data-bend-index], [data-bend-segment]') !== null
+        event.target.closest(
+          '[data-bend-index], [data-bend-segment], [data-flow-end]',
+        ) !== null
       ) {
         event.preventDefault();
         event.stopPropagation();
@@ -311,25 +370,57 @@ export function useFlowBendInteraction(
     };
   }, []);
 
-  const movedTarget = (event: BendPointer, started: Gesture): BendTarget => {
+  const movedTarget = (
+    event: BendPointer,
+    started: Gesture,
+  ): BendTarget | AnchorTarget => {
     const from = view.screenToFlowPosition(started.start);
     const at = view.screenToFlowPosition({
       x: event.clientX,
       y: event.clientY,
     });
+    if (started.held.kind === 'end') {
+      return {
+        kind: 'anchor',
+        end: started.held.end,
+        side: nearestHandleSide(started.held.box, at),
+      };
+    }
     return {
-      ...started.target,
+      ...started.held,
       point: {
-        x: started.target.point.x + at.x - from.x,
-        y: started.target.point.y + at.y - from.y,
+        x: started.held.point.x + at.x - from.x,
+        y: started.held.point.y + at.y - from.y,
       },
     };
+  };
+  const down = (event: BendPointer, held: Held): void => {
+    if (
+      mode?.kind === 'place' ||
+      mode?.kind === 'choose' ||
+      event.button !== 0 ||
+      !event.isPrimary
+    ) {
+      return;
+    }
+    suppressClick.current = false;
+    setMode(undefined);
+    gesture.current = {
+      context: bends.context,
+      held,
+      start: { x: event.clientX, y: event.clientY },
+      pointerId: event.pointerId,
+      moved: false,
+    };
+    event.currentTarget.setPointerCapture(event.pointerId);
+    event.stopPropagation();
   };
   return {
     mode,
     cancel,
     remove,
     place,
+    pinEnd,
     actions: (index: number): void => {
       if (mode?.kind === 'place') {
         commit(mode.target);
@@ -340,26 +431,25 @@ export function useFlowBendInteraction(
       }
       setMode({ kind: 'actions', index });
     },
-    down: (event: BendPointer, target: BendTarget): void => {
-      if (
-        mode?.kind === 'place' ||
-        mode?.kind === 'choose' ||
-        event.button !== 0 ||
-        !event.isPrimary
-      ) {
+    endActions: (end: FlowEnd): void => {
+      if (mode?.kind === 'place') {
+        commit(mode.target);
         return;
       }
-      suppressClick.current = false;
-      setMode(undefined);
-      gesture.current = {
-        context: bends.context,
-        target,
-        start: { x: event.clientX, y: event.clientY },
-        pointerId: event.pointerId,
-        moved: false,
-      };
-      event.currentTarget.setPointerCapture(event.pointerId);
-      event.stopPropagation();
+      if (mode?.kind === 'choose') {
+        return;
+      }
+      setMode({ kind: 'end-actions', end });
+    },
+    down,
+    downEnd: (event: BendPointer, end: FlowEnd): void => {
+      if (edge === undefined) {
+        return;
+      }
+      const box = endBox(bends, edge, end);
+      if (box !== undefined) {
+        down(event, { kind: 'end', end, box });
+      }
     },
     move: (event: BendPointer): void => {
       const started = gesture.current;

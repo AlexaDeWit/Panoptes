@@ -52,6 +52,7 @@ map to the browser specs below. Paths are relative to `src/`.
 | Pointer and keyboard connections, handle visibility, and cancellation | `connectors.spec.ts`                                     |
 | Flow paths, labels, and badges during a drag                          | `flow-drag.spec.ts`                                      |
 | Flow bend insertion, movement, removal, and format round trips        | `flow-bends.spec.ts`                                     |
+| Pinned flow ends, bidirectional flows, and their round trips          | `flow-anchors.spec.ts`                                   |
 | Side, corner, and keyboard resizing                                   | `resize.spec.ts`                                         |
 | Hover, selection, focus, and cursor cues                              | `selection-cues.spec.ts`                                 |
 | Inline names and Note text                                            | `renaming.spec.ts`                                       |

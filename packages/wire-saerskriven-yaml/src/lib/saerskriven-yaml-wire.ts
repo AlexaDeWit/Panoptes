@@ -30,9 +30,12 @@ const processSchema = nodeBaseSchema.extend({ kind: z.literal('process') });
 
 const storeSchema = nodeBaseSchema.extend({ kind: z.literal('store') });
 
+const sideSchema = z.enum(['top', 'right', 'bottom', 'left']);
+
 const attachedEndpointSchema = z.object({
   kind: z.literal('attached'),
   element: idSchema,
+  side: sideSchema.optional(),
 });
 
 const freeEndpointSchema = z.object({
@@ -50,6 +53,7 @@ const flowSchema = elementBaseSchema.extend({
   source: endpointSchema,
   target: endpointSchema,
   waypoints: waypointsSchema,
+  bidirectional: z.boolean().optional(),
 });
 
 const boxBoundaryShapeSchema = z.object({
@@ -232,9 +236,14 @@ const metadataSchema = z.object({
  * what version 1 means, and only the mapping in `@saerskriven/formats` knows
  * both sides.
  *
- * Nothing is optional, nothing is defaulted, and nothing is transformed. An
- * id is any non-empty string, unbranded: the model brands its ids at its own
- * parse boundary, and a file is not a model.
+ * Nothing is defaulted and nothing is transformed. An id is any non-empty
+ * string, unbranded: the model brands its ids at its own parse boundary, and
+ * a file is not a model. Every key the first release of version 1 declared
+ * is required. A key a later release added is optional, so a file written
+ * before it still reads, and the mapping supplies what its absence means: a
+ * flow endpoint's `side`, absent where the renderer chooses the side, and a
+ * flow's `bidirectional`, absent where the flow runs one way. A write states
+ * `bidirectional` on every flow and `side` on every pinned end.
  *
  * `formatVersion` is a literal rather than a bounded number, so a file
  * stamped with any other release fails at that path rather than reaching the

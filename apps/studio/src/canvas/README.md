@@ -99,10 +99,17 @@ leave the document and history alone. Multiple selected nodes move together.
 Boundary curves can move but have no dimensions to resize.
 
 Change flow source and Change flow target offer the diagram's actors,
-processes, and stores in a chooser. Apply changes only the chosen endpoint.
-The flow keeps its ID, name, route, scope fields, and attached threats.
-Choosing the other endpoint's node is unavailable. Cancellation costs no
-history. Both editors return focus to the selected element when closed.
+processes, and stores in a chooser, beside a Side field that pins the end to
+the top, right, bottom or left of that element or leaves it Automatic. Apply
+changes only the chosen endpoint. The flow keeps its ID, name, route, scope
+fields, and attached threats. Choosing the other endpoint's node is
+unavailable. Cancellation costs no history. Both editors return focus to the
+selected element when closed.
+
+Toggle bidirectional flow, beside those two commands, makes the selected
+flow run both ways or one way again, as one undo step. The flow keeps its
+source and target, which is what the file formats and the register name it
+by, and the canvas draws an arrowhead at each end.
 
 Align uses the selected nodes' outer bounds. Left, centre, right, top, middle,
 and bottom each move the nodes in one action. Distribution orders nodes by
@@ -121,12 +128,19 @@ zoom to 100%. Fit selection includes selected flows, their labels, and badges,
 and uses the measured threat-pane width to keep the selection clear. View commands add no undo entries
 and do not dirty the model.
 
-### Flow bends
+### Flow route
 
-Select one flow to reveal its bend handles and the Add bend control. Pull
-any segment of the line to create a bend. Drag a handle to move a bend.
-Click a handle for Remove bend or Move bend. Move bend accepts a destination
-click, so moving does not require a held drag.
+Select one flow to reveal its bend handles, an end handle on each attached
+end, and the Add bend control. Pull any segment of the line to create a bend.
+Drag a handle to move a bend. Click a handle for Remove bend or Move bend.
+Move bend accepts a destination click, so moving does not require a held drag.
+
+An end handle sits where the flow meets its element. Drag it to another side
+of that element to pin the end there, whatever the route does afterwards, or
+click it for Follow the route, Top, Right, Bottom and Left. A focused end
+handle takes an arrow key as the side it points at, and Delete or Backspace
+returns the end to following the route. A pinned side is the model's, so it
+saves, and a Threat Dragon file carries it as the port the flow fastens to.
 
 Add bend, or `+`, highlights a segment. Left/Right chooses a segment and
 Enter starts a bend at its midpoint. Arrow keys position the preview by five
@@ -140,10 +154,11 @@ drags leave the model and history unchanged. Selection, model, tool, and inline
 editor changes invalidate previews. A window blur cancels an active gesture.
 Tab leaves insertion without saving it. Coordinates remain unsnapped.
 
-`flow-bends.ts` owns the preview and model edit. `flow-bend-interaction.ts`
-binds pointer and keyboard gestures, and `flow-bend-controls.tsx` draws their
-controls. Add bend lives in the command registry. The `bend-insertion.ts`
-event connects that command to the mounted controls.
+`flow-bends.ts` owns the preview and model edit, for a bend and for an end's
+side alike. `flow-bend-interaction.ts` binds pointer and keyboard gestures,
+and `flow-bend-controls.tsx` draws their controls. Add bend lives in the
+command registry. The `bend-insertion.ts` event connects that command to the
+mounted controls.
 
 ### Element edits
 
@@ -372,7 +387,8 @@ In Select mode, middle-button dragging pans without changing the selection.
 Every element is a tab stop, with an accessible name built out of model data:
 what the element is called, what kind of element it is, and what its badge
 says. The glyphs are hidden from assistive technology, so a badge would
-otherwise be visual alone. A flow also names the elements its ends attach to.
+otherwise be visual alone. A flow also names the elements its ends attach to,
+from one to the other, or between the two where it runs both ways.
 
 Focus and selection are drawn apart and stack: focus is the app's own ring
 (`--pn-focus-ring`) on the element the browser focused, selection the frame

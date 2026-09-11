@@ -9,6 +9,7 @@ import {
   mitigationStatusSchema,
   modelMetadataSchema,
   severitySchema,
+  sides,
   threatCategorySchema,
   threatSchema,
   threatStatusSchema,
@@ -321,13 +322,15 @@ function elementArbitrary(
         endpointArbitrary(siblings),
         endpointArbitrary(siblings),
         fc.array(pointArbitrary, { maxLength: 3 }),
+        fc.boolean(),
       )
-      .map(([common, source, target, waypoints]) => ({
+      .map(([common, source, target, waypoints, bidirectional]) => ({
         kind,
         ...common,
         source,
         target,
         waypoints,
+        bidirectional,
       }));
   }
   if (kind === 'trust-boundary') {
@@ -375,6 +378,11 @@ function endpointArbitrary(
         fc.record({
           kind: fc.constant('attached' as const),
           element: fc.constantFrom(...siblings),
+        }),
+        fc.record({
+          kind: fc.constant('attached' as const),
+          element: fc.constantFrom(...siblings),
+          side: fc.constantFrom(...sides),
         }),
       );
 }

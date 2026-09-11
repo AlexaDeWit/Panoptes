@@ -10,6 +10,7 @@ import {
   removeElement,
   renameElement,
   resizeElement,
+  setFlowDirection,
   setFlowWaypoints,
   reconnectFlow,
 } from './operations.js';
@@ -74,6 +75,7 @@ const flowInput = {
   source: { kind: 'attached', element: 'element-api' },
   target: { kind: 'attached', element: 'element-db' },
   waypoints: [],
+  bidirectional: false,
 };
 
 const noteInput = {
@@ -599,6 +601,58 @@ describe('reconnectFlow', () => {
           elementId('element-db'),
         ),
       )?._tag,
+    ).toBe('UnknownElement');
+  });
+
+  it('pins an end to a side of the element it already names, and releases it', () => {
+    const id = elementId('element-order-flow');
+    const before = flowIn(base, id);
+    const element =
+      before.source.kind === 'attached' ? before.source.element : undefined;
+    if (element === undefined) {
+      throw new Error('The fixture flow starts attached');
+    }
+    const pinned = modelOf(
+      reconnectFlow(base, id, 'source', element, 'bottom'),
+    );
+    expect(flowIn(pinned, id)).toEqual({
+      ...before,
+      source: { kind: 'attached', element, side: 'bottom' },
+    });
+    expect(
+      modelOf(reconnectFlow(pinned, id, 'source', element, 'bottom')),
+    ).toBe(pinned);
+    const released = modelOf(reconnectFlow(pinned, id, 'source', element));
+    expect(flowIn(released, id).source).toEqual({ kind: 'attached', element });
+    expect(
+      modelOf(
+        reconnectFlow(pinned, id, 'source', elementId('element-db')),
+      ).diagrams[0].elements.find((candidate) => candidate.id === id),
+    ).toMatchObject({
+      source: { kind: 'attached', element: elementId('element-db') },
+    });
+  });
+});
+
+describe('setFlowDirection', () => {
+  it('makes a flow bidirectional and one-way again, keeping the model where nothing changes', () => {
+    const id = elementId('element-order-flow');
+    const before = flowIn(base, id);
+    expect(before.bidirectional).toBe(false);
+    expect(modelOf(setFlowDirection(base, id, false))).toBe(base);
+    const both = modelOf(setFlowDirection(base, id, true));
+    expect(flowIn(both, id)).toEqual({ ...before, bidirectional: true });
+    expect(flowIn(modelOf(setFlowDirection(both, id, false)), id)).toEqual(
+      before,
+    );
+  });
+
+  it('refuses missing elements and other element kinds', () => {
+    expect(
+      errorOf(setFlowDirection(base, elementId('element-api'), true))?._tag,
+    ).toBe('NotFlowElement');
+    expect(
+      errorOf(setFlowDirection(base, elementId('missing'), true))?._tag,
     ).toBe('UnknownElement');
   });
 });

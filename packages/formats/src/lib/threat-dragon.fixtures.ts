@@ -410,6 +410,7 @@ export const richerThanFormatFixture: ModelInput = {
           source: { kind: 'attached', element: 'element-clerk' },
           target: { kind: 'free', position: { x: 300, y: 200 } },
           waypoints: [{ x: 220, y: 120 }],
+          bidirectional: false,
         },
         {
           kind: 'trust-boundary',

@@ -8,6 +8,7 @@ import type {
   FlowEndpoint,
   Point,
   Process,
+  Side,
   Size,
   Store,
   TextElement,
@@ -24,6 +25,9 @@ import type { Divergence } from './divergence.js';
 import { equivalent } from './equivalence.js';
 import {
   isAnchored,
+  portOnSide,
+  sideOfPort,
+  type PortSides,
   type ThreatDragonBoundary,
   type ThreatDragonCurve,
   type ThreatDragonNode,
@@ -37,11 +41,27 @@ import { fromThreatStatus } from './threat-dragon-vocabulary.js';
 
 const openStatus = fromThreatStatus('open');
 
-/** A cell as a merge produced it, and what producing it cost. */
+/** A port a flow's pinned end needs on a node cell that declares none on that side. */
+export type NeededPort = {
+  readonly cell: string;
+  readonly side: Side;
+};
+
+/** A cell as a merge produced it, what producing it cost, and the ports it needs on other cells. */
 export type MergedCell = {
   readonly cell: ThreatDragonCell;
   readonly divergences: readonly Divergence[];
+  readonly ports: readonly NeededPort[];
 };
+
+type ProjectedEndpoint = {
+  readonly endpoint: ThreatDragonEndpoint;
+  readonly ports: readonly NeededPort[];
+};
+
+const noPorts: readonly NeededPort[] = [];
+
+type NodePorts = NonNullable<ThreatDragonNode['ports']>;
 
 /**
  * One element of the model as the cell Threat Dragon draws it, merged onto
@@ -69,12 +89,20 @@ export type MergedCell = {
  * own files carry stale, so a cell that declares it keeps what it declared
  * and only a cell declaring none is given what the threats being written
  * say.
+ *
+ * A flow end pinned to a side is fastened to a port of the cell on that
+ * side, read off `ports`: the source's own anchor where it already sits
+ * there, else a port the cell declares on that side, else a port named for
+ * the side, which {@link MergedCell.ports} asks the diagram merge to declare
+ * on the cell. An end the model leaves to the renderer names the cell and no
+ * port, since a port would read back as a pinned side.
  */
 export function mergeCell(
   element: Element,
   held: ThreatDragonCell | undefined,
   threats: readonly ThreatDragonThreat[],
   index: number,
+  ports: PortSides,
 ): MergedCell {
   if (element.kind === 'actor') {
     const from = held?.shape === 'actor' ? held : undefined;
@@ -90,6 +118,7 @@ export function mergeCell(
         },
       },
       divergences: reshaped(element, held, from),
+      ports: noPorts,
     };
   }
   if (element.kind === 'process') {
@@ -106,6 +135,7 @@ export function mergeCell(
         },
       },
       divergences: reshaped(element, held, from),
+      ports: noPorts,
     };
   }
   if (element.kind === 'store') {
@@ -122,26 +152,34 @@ export function mergeCell(
         },
       },
       divergences: reshaped(element, held, from),
+      ports: noPorts,
     };
   }
   if (element.kind === 'flow') {
     const from = held?.shape === 'flow' ? held : undefined;
+    const source = preservedEndpoint(from?.source, element.source, ports);
+    const target = preservedEndpoint(from?.target, element.target, ports);
     return {
       cell: {
         ...from,
         id: element.id,
         zIndex: from?.zIndex ?? index + 1,
         shape: 'flow',
-        source: preservedEndpoint(from?.source, element.source),
-        target: preservedEndpoint(from?.target, element.target),
+        source: source.endpoint,
+        target: target.endpoint,
         vertices: preservedList(from?.vertices, element.waypoints),
         data: {
           ...from?.data,
           ...elementData(element, from?.data, threats),
+          isBidirectional: preservedFlag(
+            from?.data.isBidirectional,
+            element.bidirectional,
+          ),
           type: 'tm.Flow',
         },
       },
       divergences: reshaped(element, held, from),
+      ports: [...source.ports, ...target.ports],
     };
   }
   if (element.kind === 'text') {
@@ -171,6 +209,7 @@ export function mergeCell(
         ...unlabelled(element),
         ...unscoped(element),
       ],
+      ports: noPorts,
     };
   }
   return element.shape.kind === 'box'
@@ -200,6 +239,7 @@ function boxBoundary(
       },
     },
     divergences: [...reshaped(element, held, from), ...unscoped(element)],
+    ports: noPorts,
   };
 }
 
@@ -231,6 +271,7 @@ function curveBoundary(
         ? { ...from, ...body, shape: 'trust-broundary-curve' }
         : { ...from, ...body, shape: 'trust-boundary-curve' },
     divergences: [...reshaped(element, held, from), ...unscoped(element)],
+    ports: noPorts,
   };
 }
 
@@ -301,25 +342,75 @@ function boundaryData(
 function preservedEndpoint(
   from: ThreatDragonEndpoint | undefined,
   wanted: FlowEndpoint,
-): ThreatDragonEndpoint {
-  return from !== undefined && holdsEndpoint(from, wanted)
-    ? from
-    : projectEndpoint(wanted);
+  ports: PortSides,
+): ProjectedEndpoint {
+  if (wanted.kind === 'free') {
+    return {
+      endpoint:
+        from !== undefined &&
+        !isAnchored(from) &&
+        equivalent(from, wanted.position)
+          ? from
+          : { ...wanted.position },
+      ports: noPorts,
+    };
+  }
+  if (
+    from !== undefined &&
+    isAnchored(from) &&
+    from.cell === wanted.element &&
+    sideOfPort(ports, from.cell, from.port) === wanted.side
+  ) {
+    return { endpoint: from, ports: noPorts };
+  }
+  if (wanted.side === undefined) {
+    return { endpoint: { cell: wanted.element }, ports: noPorts };
+  }
+  const port = portOnSide(ports, wanted.element, wanted.side);
+  return port === undefined
+    ? {
+        endpoint: { cell: wanted.element, port: wanted.side },
+        ports: [{ cell: wanted.element, side: wanted.side }],
+      }
+    : { endpoint: { cell: wanted.element, port }, ports: noPorts };
 }
 
-function holdsEndpoint(
-  from: ThreatDragonEndpoint,
-  wanted: FlowEndpoint,
-): boolean {
-  return isAnchored(from)
-    ? wanted.kind === 'attached' && from.cell === wanted.element
-    : wanted.kind === 'free' && equivalent(from, wanted.position);
-}
-
-function projectEndpoint(wanted: FlowEndpoint): ThreatDragonEndpoint {
-  return wanted.kind === 'attached'
-    ? { cell: wanted.element }
-    : { ...wanted.position };
+/**
+ * The cells with every port {@link mergeCell} asked for declared: a group
+ * for the side where the cell declares none, and an item named for the side
+ * in it. A cell drawn as no box has no sides, so a port asked of one is
+ * left undeclared, which is a flow end the model's own parse refuses.
+ */
+export function withNeededPorts(
+  cells: readonly ThreatDragonCell[],
+  needed: readonly NeededPort[],
+): ThreatDragonCell[] {
+  const sides = new Map<string, Set<Side>>();
+  for (const port of needed) {
+    sides.set(port.cell, (sides.get(port.cell) ?? new Set()).add(port.side));
+  }
+  return cells.map((cell) => {
+    const wanted = sides.get(cell.id);
+    if (
+      wanted === undefined ||
+      (cell.shape !== 'actor' &&
+        cell.shape !== 'process' &&
+        cell.shape !== 'store')
+    ) {
+      return cell;
+    }
+    const groups: NonNullable<NodePorts['groups']> = { ...cell.ports?.groups };
+    const items: NonNullable<NodePorts['items']> = [
+      ...(cell.ports?.items ?? []),
+    ];
+    for (const side of wanted) {
+      groups[side] ??= { position: side };
+      if (!items.some((item) => item.group === side && item.id === side)) {
+        items.push({ group: side, id: side });
+      }
+    }
+    return { ...cell, ports: { ...cell.ports, groups, items } };
+  });
 }
 
 function unlabelled(element: TextElement): readonly Divergence[] {

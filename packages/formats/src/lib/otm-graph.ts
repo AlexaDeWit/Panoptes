@@ -149,6 +149,7 @@ export function otmGraph(document: OtmDocument, context: ImportContext) {
           ),
         },
         waypoints: [],
+        bidirectional: false,
       });
     }
     if (attached.length > 1)

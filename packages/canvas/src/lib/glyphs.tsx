@@ -135,6 +135,12 @@ export function FlowGlyph({
         className={canvasClassNames.flowArrow}
         d={arrowheadPath(edge.target, points[points.length - 2])}
       />
+      {edge.bidirectional ? (
+        <path
+          className={canvasClassNames.flowArrow}
+          d={arrowheadPath(edge.source, points[1])}
+        />
+      ) : null}
       <WrappedText {...edge.label.name} />
       {edge.badge === undefined || edge.label.badge === undefined ? null : (
         <ThreatBadgeGlyph badge={edge.badge} at={edge.label.badge} />

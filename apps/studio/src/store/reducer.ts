@@ -12,6 +12,7 @@ import {
   renameElement,
   replaceThreat,
   resizeElement,
+  setFlowDirection,
   setFlowWaypoints,
   type ElementId,
   type Model,
@@ -33,8 +34,13 @@ export function reduce(state: State, action: Action): State {
   return Action.$match(action, {
     InsertFragment: ({ diagramId, fragment }) =>
       edited(state, insertFragment(state.present, diagramId, fragment)),
-    ReconnectFlow: ({ elementId, side, endpointId }) =>
-      edited(state, reconnectFlow(state.present, elementId, side, endpointId)),
+    ReconnectFlow: ({ elementId, side, endpointId, anchor }) =>
+      edited(
+        state,
+        reconnectFlow(state.present, elementId, side, endpointId, anchor),
+      ),
+    SetFlowDirection: ({ elementId, bidirectional }) =>
+      edited(state, setFlowDirection(state.present, elementId, bidirectional)),
     ArrangeElements: ({ moves }) =>
       edited(
         state,

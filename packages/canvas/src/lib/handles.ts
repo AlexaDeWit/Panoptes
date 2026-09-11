@@ -1,10 +1,10 @@
-import type { Point, Size } from '@saerskriven/model';
+import { sides, type Point, type Side, type Size } from '@saerskriven/model';
 
-/** The sides of a node, in the order a tie between them breaks. */
-export const handleSides = ['top', 'right', 'bottom', 'left'] as const;
+/** The sides of a node, in the order a tie between them breaks: the model's own. */
+export const handleSides: readonly Side[] = sides;
 
 /** One side of a node, where a flow endpoint attaches. */
-export type HandleSide = (typeof handleSides)[number];
+export type HandleSide = Side;
 
 /** Where a node sits and how large it is, the pair every handle comes from. */
 export type NodeBox = {

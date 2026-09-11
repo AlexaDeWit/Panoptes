@@ -128,6 +128,35 @@ describe('reading the Écluse threat model', () => {
     ).toEqual([[{ x: 1180, y: 1065 }]]);
   });
 
+  it('pins the seven flow ends the source fastens to a port, on the side of that port', () => {
+    const pinned = ecluseElements.flatMap((element) =>
+      element.kind === 'flow'
+        ? [element.source, element.target].flatMap((end) =>
+            end.kind === 'attached' && end.side !== undefined
+              ? [`${element.name}: ${end.side}`]
+              : [],
+          )
+        : [],
+    );
+    expect(pinned).toEqual([
+      'mint token (container role): right',
+      'mint token (container role): left',
+      'OSV Dataset for Supported Registries: right',
+      'Push osv.db (SQLite): top',
+      'Push osv.db (SQLite): bottom',
+      'Download osv.db: left',
+      'Download osv.db: right',
+    ]);
+  });
+
+  it('reads every Écluse flow as one-way, which is what the file says of each', () => {
+    expect(
+      ecluseElements.every(
+        (element) => element.kind !== 'flow' || !element.bidirectional,
+      ),
+    ).toBe(true);
+  });
+
   it('lands as the expected internal model, compared as one value', () => {
     expect(ecluse.model).toStrictEqual(ecluseModel);
   });

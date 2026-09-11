@@ -29,6 +29,7 @@ type SchemaDef = {
   readonly entries?: Readonly<Record<string, string>>;
   readonly values?: readonly string[];
   readonly element?: Schema;
+  readonly innerType?: Schema;
 };
 
 type Schema = { readonly def: SchemaDef };
@@ -108,6 +109,9 @@ export function renderSchema(schema: Schema): string {
 
 function expand(schema: Schema, indent: string): string[] {
   const def = schema.def;
+  if (def.type === 'optional' && def.innerType) {
+    return expand(def.innerType, indent);
+  }
   if (def.shape) {
     return Object.entries(def.shape).flatMap(([name, field]) =>
       fieldLines(name, field, indent),
@@ -151,6 +155,9 @@ function summary(schema: Schema): string {
   const brand = brands.find(([branded]) => branded === schema);
   if (brand) {
     return `${brand[1]} (${scalar(def)})`;
+  }
+  if (def.type === 'optional' && def.innerType) {
+    return `optional, ${summary(def.innerType)}`;
   }
   if (def.shape) {
     return 'object';

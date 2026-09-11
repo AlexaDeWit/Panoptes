@@ -23,7 +23,8 @@ const freeEndWords = 'a free point';
  * keyed by the id React Flow knows it by. The glyphs are hidden from a
  * screen reader, so a name here is the only account of the element it has:
  * what the element is called, what kind it is, and what its badge says. A
- * flow also names the elements its ends attach to.
+ * flow also names the elements its ends attach to, from one to the other or
+ * between the two where it runs both ways.
  */
 export function accessibleNames(
   layout: CanvasLayout,
@@ -58,10 +59,14 @@ function edgeName(
   edge: CanvasEdge,
   nodes: ReadonlyMap<ElementId, CanvasNode>,
 ): string {
+  const source = endName(edge.sourceElement, nodes);
+  const target = endName(edge.targetElement, nodes);
   return spoken([
     edge.name,
     'flow',
-    `from ${endName(edge.sourceElement, nodes)} to ${endName(edge.targetElement, nodes)}`,
+    edge.bidirectional
+      ? `between ${source} and ${target}`
+      : `from ${source} to ${target}`,
     ...badgeWords(edge.badge),
   ]);
 }

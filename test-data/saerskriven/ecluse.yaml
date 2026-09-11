@@ -207,6 +207,7 @@ diagrams:
           kind: attached
           element: 0ec10e5e-0000-4000-8000-000000000020
         waypoints: []
+        bidirectional: false
       - kind: flow
         id: 0ec10e5e-0000-4000-8000-000000000041
         name: read packument / tarball (caller token forwarded)
@@ -220,6 +221,7 @@ diagrams:
           kind: attached
           element: 0ec10e5e-0000-4000-8000-000000000032
         waypoints: []
+        bidirectional: false
       - kind: flow
         id: 0ec10e5e-0000-4000-8000-000000000042
         name: cache public-gated metadata
@@ -233,6 +235,7 @@ diagrams:
           kind: attached
           element: 0ec10e5e-0000-4000-8000-000000000030
         waypoints: []
+        bidirectional: false
       - kind: flow
         id: 0ec10e5e-0000-4000-8000-000000000043
         name: anonymous packument / tarball fetch (caller token stripped)
@@ -246,6 +249,7 @@ diagrams:
           kind: attached
           element: 0ec10e5e-0000-4000-8000-000000000011
         waypoints: []
+        bidirectional: false
       - kind: flow
         id: 0ec10e5e-0000-4000-8000-000000000044
         name: relay npm publish (publisher token forwarded)
@@ -259,6 +263,7 @@ diagrams:
           kind: attached
           element: 0ec10e5e-0000-4000-8000-000000000033
         waypoints: []
+        bidirectional: false
       - kind: flow
         id: 0ec10e5e-0000-4000-8000-000000000045
         name: enqueue mirror job (demand-driven)
@@ -272,6 +277,7 @@ diagrams:
           kind: attached
           element: 0ec10e5e-0000-4000-8000-000000000031
         waypoints: []
+        bidirectional: false
       - kind: flow
         id: 0ec10e5e-0000-4000-8000-000000000046
         name: poll jobs
@@ -285,6 +291,7 @@ diagrams:
           kind: attached
           element: 0ec10e5e-0000-4000-8000-000000000031
         waypoints: []
+        bidirectional: false
       - kind: flow
         id: 0ec10e5e-0000-4000-8000-000000000047
         name: back-fill artifact fetch (untrusted)
@@ -298,6 +305,7 @@ diagrams:
           kind: attached
           element: 0ec10e5e-0000-4000-8000-000000000011
         waypoints: []
+        bidirectional: false
       - kind: flow
         id: 0ec10e5e-0000-4000-8000-000000000048
         name: request mirror-write token
@@ -311,6 +319,7 @@ diagrams:
           kind: attached
           element: 0ec10e5e-0000-4000-8000-000000000022
         waypoints: []
+        bidirectional: false
       - kind: flow
         id: 0ec10e5e-0000-4000-8000-000000000049
         name: mint via container role (IMDSv2 / STS)
@@ -324,6 +333,7 @@ diagrams:
           kind: attached
           element: 0ec10e5e-0000-4000-8000-000000000012
         waypoints: []
+        bidirectional: false
       - kind: flow
         id: 0ec10e5e-0000-4000-8000-00000000004a
         name: publish mirrored artifact (minted write token)
@@ -339,6 +349,7 @@ diagrams:
         waypoints:
           - x: 1180
             y: 1065
+        bidirectional: false
       - kind: flow
         id: 0ec10e5e-0000-4000-8000-00000000004b
         name: pull-through (first-party)
@@ -352,6 +363,7 @@ diagrams:
           kind: attached
           element: 0ec10e5e-0000-4000-8000-000000000033
         waypoints: []
+        bidirectional: false
       - kind: flow
         id: 0ec10e5e-0000-4000-8000-00000000004c
         name: pull-through (mirrored)
@@ -365,6 +377,7 @@ diagrams:
           kind: attached
           element: 0ec10e5e-0000-4000-8000-000000000034
         waypoints: []
+        bidirectional: false
       - kind: flow
         id: c928bb63-2ec8-44ff-b34b-39d4afb19dc6
         name: mint token (container role)
@@ -374,10 +387,13 @@ diagrams:
         source:
           kind: attached
           element: 0ec10e5e-0000-4000-8000-000000000012
+          side: right
         target:
           kind: attached
           element: f1646094-9885-422a-b7e7-7888c72905ef
+          side: left
         waypoints: []
+        bidirectional: false
       - kind: flow
         id: 4e565871-45cc-4987-abba-24859ee2cf60
         name: OSV Dataset for Supported Registries
@@ -392,7 +408,9 @@ diagrams:
         target:
           kind: attached
           element: f1646094-9885-422a-b7e7-7888c72905ef
+          side: right
         waypoints: []
+        bidirectional: false
       - kind: flow
         id: ec4bbc95-8582-4e22-ab64-3c87cff87239
         name: Push osv.db (SQLite)
@@ -402,10 +420,13 @@ diagrams:
         source:
           kind: attached
           element: f1646094-9885-422a-b7e7-7888c72905ef
+          side: top
         target:
           kind: attached
           element: c8455307-cef2-4843-a821-ff90db9643d2
+          side: bottom
         waypoints: []
+        bidirectional: false
       - kind: flow
         id: f2d6c311-b8b3-4a9f-bef7-b78e4adaa17e
         name: Download osv.db
@@ -415,10 +436,13 @@ diagrams:
         source:
           kind: attached
           element: c8455307-cef2-4843-a821-ff90db9643d2
+          side: left
         target:
           kind: attached
           element: 0ec10e5e-0000-4000-8000-000000000020
+          side: right
         waypoints: []
+        bidirectional: false
       - kind: process
         id: f1646094-9885-422a-b7e7-7888c72905ef
         name: |-
@@ -482,6 +506,7 @@ diagrams:
           kind: attached
           element: 0ec10e5e-0000-4000-8000-000000000034
         waypoints: []
+        bidirectional: false
       - kind: flow
         id: fd44cd74-341a-4185-a3f3-f58357ccf91d
         name: mint container credentials
@@ -495,6 +520,7 @@ diagrams:
           kind: attached
           element: 0ec10e5e-0000-4000-8000-000000000012
         waypoints: []
+        bidirectional: false
       - kind: flow
         id: 5dacf1eb-231a-49d3-8612-9ecf49f1839d
         name: poll & download osv.db
@@ -508,6 +534,7 @@ diagrams:
           kind: attached
           element: c8455307-cef2-4843-a821-ff90db9643d2
         waypoints: []
+        bidirectional: false
 mitigations: []
 threats:
   - id: 0ec10e5e-0000-4000-8000-000000000101

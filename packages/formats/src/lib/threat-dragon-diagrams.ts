@@ -11,8 +11,8 @@ import type {
   ThreatDragonThreat,
 } from '@saerskriven/wire-threat-dragon';
 import type { Divergence } from './divergence.js';
-import { mergeCell } from './threat-dragon-cells.js';
-import { cellsOf, indexById } from './threat-dragon-document.js';
+import { mergeCell, withNeededPorts } from './threat-dragon-cells.js';
+import { cellsOf, indexById, portSides } from './threat-dragon-document.js';
 import type { HighWaterMark } from './threat-dragon-threats.js';
 
 const genericDiagramType = 'Generic';
@@ -128,9 +128,10 @@ function claimNumber(
  * diagram the source holds keeps what it said and one an edit added takes
  * what Threat Dragon writes for a diagram of no methodology, read off the
  * Generic diagram of the corpus vendored under `test-data`. A diagram that
- * draws nothing and declared no cell list keeps declaring none. The release
- * stamp is the document's rather than the diagram's own decision, so
- * `writeThreatDragon` writes it.
+ * draws nothing and declared no cell list keeps declaring none. A node cell
+ * gains a port for each side a pinned flow end asks for and it does not
+ * declare. The release stamp is the document's rather than the diagram's
+ * own decision, so `writeThreatDragon` writes it.
  */
 export function mergeDiagram(
   diagram: Diagram,
@@ -138,13 +139,16 @@ export function mergeDiagram(
   id: number,
   byCell: ReadonlyMap<string, readonly ThreatDragonThreat[]>,
 ): MergedDiagram {
-  const cells = indexById(held ? cellsOf(held) : []);
+  const heldCells = held ? cellsOf(held) : [];
+  const cells = indexById(heldCells);
+  const ports = portSides(heldCells);
   const merged = diagram.elements.map((element, index) =>
     mergeCell(
       element,
       cells.get(element.id),
       byCell.get(element.id) ?? [],
       index,
+      ports,
     ),
   );
   const kept = new Set<string>(diagram.elements.map((element) => element.id));
@@ -158,7 +162,10 @@ export function mergeDiagram(
       cells:
         merged.length === 0 && held?.cells === undefined
           ? undefined
-          : merged.map((entry) => entry.cell),
+          : withNeededPorts(
+              merged.map((entry) => entry.cell),
+              merged.flatMap((entry) => entry.ports),
+            ),
     },
     divergences: [
       ...merged.flatMap((entry) => entry.divergences),
