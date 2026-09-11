@@ -258,6 +258,16 @@ test('the complete shortcut reference opens by menu or key and returns focus', a
   });
   await expect(reference).toBeVisible();
   await expect(heading).toBeFocused();
+  const categoryBoxes = await reference
+    .locator('h3 > button')
+    .evaluateAll((buttons) =>
+      buttons.map((button) => {
+        const { x, width } = button.getBoundingClientRect();
+        return { x: Math.round(x), width: Math.round(width) };
+      }),
+    );
+  expect(new Set(categoryBoxes.map(({ x }) => x)).size).toBe(1);
+  expect(new Set(categoryBoxes.map(({ width }) => width)).size).toBe(1);
   const fileCategory = reference.getByRole('button', {
     name: 'File',
     exact: true,
