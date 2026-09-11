@@ -201,6 +201,8 @@ test('reconnection uses keyboard controls and preserves flow identity, bends, an
   await expect(source).toBeFocused();
   await source.press('End');
   await source.press('Tab');
+  await expect(panel.getByRole('combobox', { name: 'Side' })).toBeFocused();
+  await page.keyboard.press('Tab');
   await page.keyboard.press('Enter');
   await expect(panel).toHaveCount(0);
   const after = Either.getOrThrow(

@@ -99,6 +99,10 @@ const applied: ActionsByTag<ModelActionTag> = {
     elementId: elementId('placeholder-flow'),
     waypoints: [{ x: 200, y: 100 }],
   }),
+  SetFlowDirection: Action.SetFlowDirection({
+    elementId: elementId('placeholder-flow'),
+    bidirectional: true,
+  }),
   AddThreat: Action.AddThreat({
     threat: { ...sampleThreat, id: threatId('threat-added'), number: 2 },
   }),
@@ -166,6 +170,10 @@ const refused: ActionsByTag<ModelActionTag> = {
   SetFlowWaypoints: Action.SetFlowWaypoints({
     elementId: processElement,
     waypoints: [],
+  }),
+  SetFlowDirection: Action.SetFlowDirection({
+    elementId: processElement,
+    bidirectional: true,
   }),
   AddThreat: Action.AddThreat({
     threat: { ...sampleThreat, id: threatId('threat-reused'), number: 1 },
@@ -247,7 +255,10 @@ function stateFor(action: Action): State {
       ).present,
     );
   }
-  if (Action.$is('SetFlowWaypoints')(action)) {
+  if (
+    Action.$is('SetFlowWaypoints')(action) ||
+    Action.$is('SetFlowDirection')(action)
+  ) {
     return initialState(placeholderModel);
   }
   return Action.$is('EditNote')(action) ? noteStart : start;

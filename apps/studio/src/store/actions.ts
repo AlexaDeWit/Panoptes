@@ -9,6 +9,7 @@ import type {
   ElementId,
   Model,
   Point,
+  Side,
   Size,
   Threat,
   ThreatId,
@@ -30,6 +31,11 @@ export type Action = Data.TaggedEnum<{
     readonly elementId: ElementId;
     readonly side: 'source' | 'target';
     readonly endpointId: ElementId;
+    readonly anchor?: Side;
+  };
+  SetFlowDirection: {
+    readonly elementId: ElementId;
+    readonly bidirectional: boolean;
   };
   RemoveElement: { readonly elementId: ElementId };
   RemoveElements: { readonly elementIds: readonly ElementId[] };

@@ -221,6 +221,7 @@ const flowFrom = (
   source: { kind: 'attached', element: source },
   target: { kind: 'attached', element: target },
   waypoints: [],
+  bidirectional: false,
 });
 
 const curveOf = (value: string, waypoints: readonly Point[], name: string) => ({

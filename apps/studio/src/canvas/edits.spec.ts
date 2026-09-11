@@ -374,6 +374,7 @@ describe('selectAll', () => {
       source: { kind: 'attached', element: requestFlow },
       target: { kind: 'attached', element: readerElement },
       waypoints: [],
+      bidirectional: false,
     };
     const model: Model = {
       ...canvasModel,

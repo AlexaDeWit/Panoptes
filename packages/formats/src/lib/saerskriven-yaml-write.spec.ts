@@ -128,6 +128,24 @@ describe('the Écluse model as a Saerskriven YAML file', () => {
     );
   });
 
+  it('states the direction on every flow and the side on every pinned end', () => {
+    const lines = written.output.split('\n');
+    expect(
+      lines.filter((line) => line === '        bidirectional: false'),
+    ).toHaveLength(20);
+    expect(lines.filter((line) => line.startsWith('          side: '))).toEqual(
+      [
+        '          side: right',
+        '          side: left',
+        '          side: right',
+        '          side: top',
+        '          side: bottom',
+        '          side: left',
+        '          side: right',
+      ],
+    );
+  });
+
   it('writes threats in number order, whatever order the model holds', () => {
     const numbers = ecluseModel.threats.map((threat) => threat.number);
     numbers.sort((left, right) => left - right);

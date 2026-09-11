@@ -318,7 +318,7 @@ test('shortcut alternatives stack without squeezing the action label', async ({
     'Canvas editing',
     'Canvas navigation',
     'Edit',
-    'Flow bends',
+    'Flow route',
   ]) {
     await reference.getByRole('button', { name, exact: true }).click();
   }

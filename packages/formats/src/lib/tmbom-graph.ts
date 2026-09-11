@@ -160,6 +160,7 @@ export function tmbomGraph(document: TmbomDocument, context: ImportContext) {
       source: { kind: 'attached', element: endpoint(flow.source) },
       target: { kind: 'attached', element: endpoint(flow.destination) },
       waypoints: [],
+      bidirectional: false,
     });
   }
   if (nodes.length > 0)

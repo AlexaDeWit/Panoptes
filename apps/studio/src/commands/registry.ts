@@ -10,7 +10,12 @@ import { toggleSnap } from '../canvas/snap.js';
 import { announce } from '../canvas/announcements.js';
 import { startFlow } from '../canvas/connecting.js';
 import { startBendInsertion } from '../canvas/bend-insertion.js';
-import { removeSelected, renameSelected, selectAll } from '../canvas/edits.js';
+import {
+  removeSelected,
+  renameSelected,
+  selectAll,
+  toggleFlowDirection,
+} from '../canvas/edits.js';
 import { selectTool, type Tool } from '../canvas/tools.js';
 import { focusThreatPanel } from '../panel/panel-focus.js';
 import { Action } from '../store/actions.js';
@@ -177,6 +182,12 @@ const table = {
     run: () => {
       openSelectionControl('target');
     },
+  }),
+  'toggle-flow-direction': editCommand({
+    id: 'toggle-flow-direction',
+    label: 'Toggle bidirectional flow',
+    shortcuts: [modShift('3')],
+    run: toggleFlowDirection,
   }),
   'align-left': editCommand({
     id: 'align-left',

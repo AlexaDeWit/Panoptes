@@ -108,6 +108,7 @@ function toElement(element: SaerskrivenYamlElement): ElementInput {
       source: toEndpoint(element.source),
       target: toEndpoint(element.target),
       waypoints: element.waypoints,
+      bidirectional: element.bidirectional ?? false,
     };
   }
   if (element.kind === 'trust-boundary') {
@@ -145,9 +146,12 @@ function toCommon(element: SaerskrivenYamlElement) {
 }
 
 function toEndpoint(endpoint: SaerskrivenYamlEndpoint): EndpointInput {
-  return endpoint.kind === 'attached'
+  if (endpoint.kind === 'free') {
+    return { kind: 'free', position: endpoint.position };
+  }
+  return endpoint.side === undefined
     ? { kind: 'attached', element: endpoint.element }
-    : { kind: 'free', position: endpoint.position };
+    : { kind: 'attached', element: endpoint.element, side: endpoint.side };
 }
 
 function toBoundaryShape(

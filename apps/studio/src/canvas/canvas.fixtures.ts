@@ -85,6 +85,7 @@ const document = {
           source: { kind: 'attached', element: readerElement },
           target: { kind: 'attached', element: studioElement },
           waypoints: [],
+          bidirectional: false,
         },
         {
           kind: 'flow',
@@ -96,6 +97,7 @@ const document = {
           source: { kind: 'attached', element: studioElement },
           target: { kind: 'free', position: { x: 500, y: 200 } },
           waypoints: [],
+          bidirectional: false,
         },
       ],
     },

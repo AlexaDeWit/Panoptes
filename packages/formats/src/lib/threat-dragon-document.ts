@@ -1,3 +1,4 @@
+import type { Side } from '@saerskriven/model';
 import type {
   ThreatDragonCell,
   ThreatDragonDiagram,
@@ -70,6 +71,53 @@ export function isAnchored(
   endpoint: ThreatDragonEndpoint,
 ): endpoint is Extract<ThreatDragonEndpoint, { cell: string }> {
   return Object.hasOwn(endpoint, 'cell');
+}
+
+/** The side each port of each node cell sits on, by cell id and then port id. */
+export type PortSides = ReadonlyMap<string, ReadonlyMap<string, Side>>;
+
+/**
+ * Where every port of the given cells sits. Threat Dragon fastens a flow to
+ * a port rather than to a cell, and a port belongs to one of four groups
+ * named for the sides of the cell, so a port id resolves to the side the
+ * flow attaches at. A cell declaring no ports resolves nothing.
+ */
+export function portSides(cells: readonly ThreatDragonCell[]): PortSides {
+  return new Map(
+    cells.flatMap((cell) =>
+      'ports' in cell && cell.ports?.items !== undefined
+        ? [
+            [
+              cell.id,
+              new Map(cell.ports.items.map((item) => [item.id, item.group])),
+            ] as const,
+          ]
+        : [],
+    ),
+  );
+}
+
+/** The side a port of a cell sits on, none for no port or a port the cell does not declare. */
+export function sideOfPort(
+  ports: PortSides,
+  cell: string,
+  port: string | undefined,
+): Side | undefined {
+  return port === undefined ? undefined : ports.get(cell)?.get(port);
+}
+
+/** The id of a port of a cell on the given side, none where the cell declares none there. */
+export function portOnSide(
+  ports: PortSides,
+  cell: string,
+  side: Side,
+): string | undefined {
+  for (const [port, at] of ports.get(cell) ?? []) {
+    if (at === side) {
+      return port;
+    }
+  }
+  return undefined;
 }
 
 /** The cells of one diagram, none where the diagram holds none. */

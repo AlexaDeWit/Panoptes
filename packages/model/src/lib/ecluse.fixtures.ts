@@ -292,6 +292,7 @@ export const ecluseFixture: z.input<typeof modelSchema> = {
             element: '0ec10e5e-0000-4000-8000-000000000020',
           },
           waypoints: [],
+          bidirectional: false,
         },
         {
           kind: 'flow',
@@ -310,6 +311,7 @@ export const ecluseFixture: z.input<typeof modelSchema> = {
             element: '0ec10e5e-0000-4000-8000-000000000032',
           },
           waypoints: [],
+          bidirectional: false,
         },
         {
           kind: 'flow',
@@ -328,6 +330,7 @@ export const ecluseFixture: z.input<typeof modelSchema> = {
             element: '0ec10e5e-0000-4000-8000-000000000030',
           },
           waypoints: [],
+          bidirectional: false,
         },
         {
           kind: 'flow',
@@ -346,6 +349,7 @@ export const ecluseFixture: z.input<typeof modelSchema> = {
             element: '0ec10e5e-0000-4000-8000-000000000011',
           },
           waypoints: [],
+          bidirectional: false,
         },
         {
           kind: 'flow',
@@ -364,6 +368,7 @@ export const ecluseFixture: z.input<typeof modelSchema> = {
             element: '0ec10e5e-0000-4000-8000-000000000033',
           },
           waypoints: [],
+          bidirectional: false,
         },
         {
           kind: 'flow',
@@ -382,6 +387,7 @@ export const ecluseFixture: z.input<typeof modelSchema> = {
             element: '0ec10e5e-0000-4000-8000-000000000031',
           },
           waypoints: [],
+          bidirectional: false,
         },
         {
           kind: 'flow',
@@ -400,6 +406,7 @@ export const ecluseFixture: z.input<typeof modelSchema> = {
             element: '0ec10e5e-0000-4000-8000-000000000031',
           },
           waypoints: [],
+          bidirectional: false,
         },
         {
           kind: 'flow',
@@ -418,6 +425,7 @@ export const ecluseFixture: z.input<typeof modelSchema> = {
             element: '0ec10e5e-0000-4000-8000-000000000011',
           },
           waypoints: [],
+          bidirectional: false,
         },
         {
           kind: 'flow',
@@ -436,6 +444,7 @@ export const ecluseFixture: z.input<typeof modelSchema> = {
             element: '0ec10e5e-0000-4000-8000-000000000022',
           },
           waypoints: [],
+          bidirectional: false,
         },
         {
           kind: 'flow',
@@ -454,6 +463,7 @@ export const ecluseFixture: z.input<typeof modelSchema> = {
             element: '0ec10e5e-0000-4000-8000-000000000012',
           },
           waypoints: [],
+          bidirectional: false,
         },
         {
           kind: 'flow',
@@ -477,6 +487,7 @@ export const ecluseFixture: z.input<typeof modelSchema> = {
               y: 1065,
             },
           ],
+          bidirectional: false,
         },
         {
           kind: 'flow',
@@ -495,6 +506,7 @@ export const ecluseFixture: z.input<typeof modelSchema> = {
             element: '0ec10e5e-0000-4000-8000-000000000033',
           },
           waypoints: [],
+          bidirectional: false,
         },
         {
           kind: 'flow',
@@ -513,6 +525,7 @@ export const ecluseFixture: z.input<typeof modelSchema> = {
             element: '0ec10e5e-0000-4000-8000-000000000034',
           },
           waypoints: [],
+          bidirectional: false,
         },
         {
           kind: 'flow',
@@ -524,12 +537,15 @@ export const ecluseFixture: z.input<typeof modelSchema> = {
           source: {
             kind: 'attached',
             element: '0ec10e5e-0000-4000-8000-000000000012',
+            side: 'right',
           },
           target: {
             kind: 'attached',
             element: 'f1646094-9885-422a-b7e7-7888c72905ef',
+            side: 'left',
           },
           waypoints: [],
+          bidirectional: false,
         },
         {
           kind: 'flow',
@@ -548,8 +564,10 @@ export const ecluseFixture: z.input<typeof modelSchema> = {
           target: {
             kind: 'attached',
             element: 'f1646094-9885-422a-b7e7-7888c72905ef',
+            side: 'right',
           },
           waypoints: [],
+          bidirectional: false,
         },
         {
           kind: 'flow',
@@ -561,12 +579,15 @@ export const ecluseFixture: z.input<typeof modelSchema> = {
           source: {
             kind: 'attached',
             element: 'f1646094-9885-422a-b7e7-7888c72905ef',
+            side: 'top',
           },
           target: {
             kind: 'attached',
             element: 'c8455307-cef2-4843-a821-ff90db9643d2',
+            side: 'bottom',
           },
           waypoints: [],
+          bidirectional: false,
         },
         {
           kind: 'flow',
@@ -579,12 +600,15 @@ export const ecluseFixture: z.input<typeof modelSchema> = {
           source: {
             kind: 'attached',
             element: 'c8455307-cef2-4843-a821-ff90db9643d2',
+            side: 'left',
           },
           target: {
             kind: 'attached',
             element: '0ec10e5e-0000-4000-8000-000000000020',
+            side: 'right',
           },
           waypoints: [],
+          bidirectional: false,
         },
         {
           kind: 'process',
@@ -670,6 +694,7 @@ export const ecluseFixture: z.input<typeof modelSchema> = {
             element: '0ec10e5e-0000-4000-8000-000000000034',
           },
           waypoints: [],
+          bidirectional: false,
         },
         {
           kind: 'flow',
@@ -687,6 +712,7 @@ export const ecluseFixture: z.input<typeof modelSchema> = {
             element: '0ec10e5e-0000-4000-8000-000000000012',
           },
           waypoints: [],
+          bidirectional: false,
         },
         {
           kind: 'flow',
@@ -705,6 +731,7 @@ export const ecluseFixture: z.input<typeof modelSchema> = {
             element: 'c8455307-cef2-4843-a821-ff90db9643d2',
           },
           waypoints: [],
+          bidirectional: false,
         },
       ],
     },

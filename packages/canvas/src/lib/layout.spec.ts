@@ -59,6 +59,7 @@ const flowBetween = (
   source,
   target,
   waypoints,
+  bidirectional: false,
 });
 
 const boxAt = (value: string, x: number, y: number) => ({
@@ -341,6 +342,52 @@ describe('layoutDiagram, choosing a side', () => {
       ),
     );
     expect(layoutOf(model).edges[0].sourceSide).toBe('bottom');
+  });
+
+  it('keeps a pinned end on its side whatever the route, and keeps the pin through a move', () => {
+    const model = twoBoxDiagram(
+      flowBetween(
+        { ...attached('el-left'), side: 'bottom' },
+        attached('el-right'),
+        [{ x: 50, y: -300 }],
+      ),
+    );
+    const laid = layoutOf(model);
+    const edge = laid.edges[0];
+    expect(edge.sourceSide).toBe('bottom');
+    expect(edge.sourcePin).toBe('bottom');
+    expect(edge.targetPin).toBeUndefined();
+    const leftBox = laid.nodes.find((node) => node.id === elementId('el-left'));
+    if (leftBox === undefined) {
+      throw new Error('No left box');
+    }
+    const moved = reanchoredFlow(
+      edge,
+      { position: { x: 0, y: -900 }, size: leftBox.size },
+      undefined,
+    );
+    expect(moved.sourceSide).toBe('bottom');
+    expect(moved.source).toEqual(
+      handlePositions({ position: { x: 0, y: -900 }, size: leftBox.size })
+        .bottom,
+    );
+  });
+});
+
+describe('layoutDiagram, a bidirectional flow', () => {
+  it('carries the direction and bounds the arrowhead at the source too', () => {
+    const oneWay = layoutOf(
+      twoBoxDiagram(flowBetween(attached('el-left'), attached('el-right'), [])),
+    );
+    const bothWays = layoutOf(
+      twoBoxDiagram({
+        ...flowBetween(attached('el-left'), attached('el-right'), []),
+        bidirectional: true,
+      }),
+    );
+    expect(oneWay.edges[0].bidirectional).toBe(false);
+    expect(bothWays.edges[0].bidirectional).toBe(true);
+    expect(bothWays.edges[0].source).toEqual(oneWay.edges[0].source);
   });
 });
 

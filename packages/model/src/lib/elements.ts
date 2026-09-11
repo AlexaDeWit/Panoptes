@@ -1,5 +1,10 @@
 import { z } from 'zod';
-import { pointSchema, sizeSchema, waypointsSchema } from './geometry.js';
+import {
+  pointSchema,
+  sideSchema,
+  sizeSchema,
+  waypointsSchema,
+} from './geometry.js';
 import { elementIdSchema } from './ids.js';
 import { acceptedTextSchema } from './text.js';
 
@@ -65,11 +70,14 @@ export type TextElement = z.infer<typeof textSchema>;
 /**
  * A flow endpoint fastened to an element, referenced by id. Whether the id
  * resolves to an element of the flow's own diagram is checked by parseModel,
- * not here.
+ * not here. `side` pins the end to one side of the element's box; absent, the
+ * renderer chooses the side nearest the flow's next point, and the end moves
+ * as the route does.
  */
 export const attachedEndpointSchema = z.object({
   kind: z.literal('attached'),
   element: elementIdSchema,
+  side: sideSchema.optional(),
 });
 
 /** Attached flow endpoint. */
@@ -100,15 +108,19 @@ export const flowEndpointSchema = z.discriminatedUnion('kind', [
 export type FlowEndpoint = z.infer<typeof flowEndpointSchema>;
 
 /**
- * Data in motion between a source and a target endpoint. `waypoints` is
- * required, never defaulted: an importer synthesizes an empty list when the
- * source file carries none.
+ * Data in motion between a source and a target endpoint. `waypoints` and
+ * `bidirectional` are required, never defaulted: an importer synthesizes an
+ * empty list and `false` when the source file carries neither. A
+ * bidirectional flow keeps its source and target, which is what the file
+ * formats and the threat register name it by, and is drawn with an arrowhead
+ * at each end.
  */
 export const flowSchema = elementBaseSchema.extend({
   kind: z.literal('flow'),
   source: flowEndpointSchema,
   target: flowEndpointSchema,
   waypoints: waypointsSchema,
+  bidirectional: z.boolean(),
 });
 
 /** Flow element. */

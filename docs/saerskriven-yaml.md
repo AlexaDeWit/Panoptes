@@ -28,9 +28,15 @@ order:
 | `threats`                | The threats, each attached to elements by id                 |
 | `lastIssuedThreatNumber` | The highest threat number ever issued, counting removed ones |
 
-Every key is required and every list may be empty. Nothing is optional and
-nothing is defaulted: a model saves before it is drawn, and it does so with
-empty strings and empty lists rather than with absent keys.
+Every key the first release declared is required and every list may be
+empty. Nothing is defaulted: a model saves before it is drawn, and it does so
+with empty strings and empty lists rather than with absent keys. A key a later
+release added is optional on read, so a file written before it still reads,
+and a write always states it. Two keys are of that kind: a flow's
+`bidirectional`, which a file written before it left absent and the read
+takes as `false`, and an attached endpoint's `side`, one of `top`, `right`,
+`bottom` and `left`, which pins the end to that side of its element and
+which absent leaves the side to the renderer.
 
 That order is three tiers, so a key added to the format later has an obvious
 home rather than an argued one. The header comes first, `formatVersion` and

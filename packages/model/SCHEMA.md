@@ -87,6 +87,7 @@ every test run, so it cannot fall behind them. Regenerate it with
       - `source`: one of 2, told apart by `kind`
         - when `kind` is `attached`
           - `element`: ElementId (text, at least 2 characters)
+          - `side`: optional, one of `top`, `right`, `bottom`, `left`
         - when `kind` is `free`
           - `position`: object
             - `x`: number
@@ -94,6 +95,7 @@ every test run, so it cannot fall behind them. Regenerate it with
       - `target`: one of 2, told apart by `kind`
         - when `kind` is `attached`
           - `element`: ElementId (text, at least 2 characters)
+          - `side`: optional, one of `top`, `right`, `bottom`, `left`
         - when `kind` is `free`
           - `position`: object
             - `x`: number
@@ -101,6 +103,7 @@ every test run, so it cannot fall behind them. Regenerate it with
       - `waypoints`: list of object
         - `x`: number
         - `y`: number
+      - `bidirectional`: boolean
     - when `kind` is `trust-boundary`
       - `id`: ElementId (text, at least 2 characters)
       - `name`: text

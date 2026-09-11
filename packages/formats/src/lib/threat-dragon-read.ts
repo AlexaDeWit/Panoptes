@@ -25,7 +25,10 @@ import { parseWithinLimits } from './read-limits.js';
 import {
   cellsOf,
   isAnchored,
+  portSides,
+  sideOfPort,
   threatsOf,
+  type PortSides,
   type ThreatDragonBoundary,
   type ThreatDragonCurve,
   type ThreatDragonFlow,
@@ -75,9 +78,12 @@ type ThreatEntry = {
  *
  * Everything the file leaves out takes the model's own default: an absent
  * name, description, or reason is the empty string, an absent `outOfScope`
- * is false, absent vertices are no waypoints, and an absent `threatTop` is
- * 0. Nothing is defaulted into the returned document, which keeps saying
- * what the file said.
+ * or `isBidirectional` is false, absent vertices are no waypoints, and an
+ * absent `threatTop` is 0. Nothing is defaulted into the returned document,
+ * which keeps saying what the file said. An anchor's port resolves to the
+ * side of the cell it belongs to, which the model holds as the end's pinned
+ * side; an anchor naming no port, or a port the cell does not declare, is an
+ * end the renderer sides.
  *
  * The divergences are the keys the wire schema did not declare, plus one
  * `narrowed` entry per threat value the model holds less exactly than the
@@ -180,14 +186,16 @@ function toMetadata(document: ThreatDragonDocument): MetadataInput {
 }
 
 function toDiagram(diagram: ThreatDragonDiagram): DiagramInput {
+  const cells = cellsOf(diagram);
+  const ports = portSides(cells);
   return {
     id: String(diagram.id),
     title: diagram.title,
-    elements: cellsOf(diagram).map(toElement),
+    elements: cells.map((cell) => toElement(cell, ports)),
   };
 }
 
-function toElement(cell: ThreatDragonCell): ElementInput {
+function toElement(cell: ThreatDragonCell, ports: PortSides): ElementInput {
   if (cell.shape === 'actor') {
     return { kind: 'actor', ...toNode(cell) };
   }
@@ -201,9 +209,10 @@ function toElement(cell: ThreatDragonCell): ElementInput {
     return {
       kind: 'flow',
       ...toCommon(cell),
-      source: toEndpoint(cell.source),
-      target: toEndpoint(cell.target),
+      source: toEndpoint(cell.source, ports),
+      target: toEndpoint(cell.target, ports),
       waypoints: cell.vertices ?? [],
+      bidirectional: cell.data.isBidirectional ?? false,
     };
   }
   if (cell.shape === 'td-text-block') {
@@ -264,10 +273,17 @@ function toBoundaryCommon(cell: ThreatDragonBoundary) {
   };
 }
 
-function toEndpoint(endpoint: ThreatDragonEndpoint): EndpointInput {
-  return isAnchored(endpoint)
+function toEndpoint(
+  endpoint: ThreatDragonEndpoint,
+  ports: PortSides,
+): EndpointInput {
+  if (!isAnchored(endpoint)) {
+    return { kind: 'free', position: endpoint };
+  }
+  const side = sideOfPort(ports, endpoint.cell, endpoint.port);
+  return side === undefined
     ? { kind: 'attached', element: endpoint.cell }
-    : { kind: 'free', position: endpoint };
+    : { kind: 'attached', element: endpoint.cell, side };
 }
 
 function toThreatEntries(document: ThreatDragonDocument): {

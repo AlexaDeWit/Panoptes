@@ -62,7 +62,9 @@ it('holds a drag outside history until release, then moves that bend independent
   act(() => {
     result.current.controls.move(pointer(140, 160));
   });
-  expect(result.current.bends.draft?.point).toEqual({ x: 240, y: 90 });
+  expect(result.current.bends.draft).toMatchObject({
+    point: { x: 240, y: 90 },
+  });
   expect(modelStore.getState().present).toBe(before);
   act(() => {
     result.current.controls.up(pointer(140, 160, 2));

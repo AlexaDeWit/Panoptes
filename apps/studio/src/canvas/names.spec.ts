@@ -43,6 +43,18 @@ describe('accessibleNames', () => {
     );
   });
 
+  it('says a bidirectional flow runs between its ends rather than from one to the other', () => {
+    const bothWays = accessibleNames({
+      ...layout,
+      edges: layout.edges.map((edge) =>
+        edge.id === requestFlow ? { ...edge, bidirectional: true } : edge,
+      ),
+    });
+    expect(bothWays.get(requestFlow)).toContain(
+      'Opens a model, flow, between Reader and Studio',
+    );
+  });
+
   it('names an end that belongs to no element as the free point it is', () => {
     expect(names.get(probeFlow)).toBe(
       'Reads a file, flow, from Studio to a free point',

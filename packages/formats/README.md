@@ -196,8 +196,16 @@ and the path down to a threat, which Threat Dragon nests eight levels deep at
 helpers in `threat-dragon-document.ts` rather than with casts.
 
 The merge writes over the mapped fields and leaves the document otherwise as
-it found it, which is how ports, `attrs` styling, `zIndex`, `tools`, and the
-per-type flags Saerskriven does not model survive a save. A mapped field is
+it found it, which is how `attrs` styling, `zIndex`, `tools`, and the
+per-type flags Saerskriven does not model survive a save. A port is half
+mapped: Threat Dragon fastens a flow end to a port, and a port belongs to one
+of four groups named for the sides of the cell, so the read takes the port's
+side as the end's pinned side and the write fastens a pinned end to a port on
+that side, the source's own where it already sits there, else one the cell
+declares there, else one the write declares on the cell and names for the
+side. An end the model leaves to the renderer is written with no port, since
+a port would read back as a pinned side. `isBidirectional` maps to the flow's
+`bidirectional` both ways. A mapped field is
 rewritten only where what the source says no longer reads back as what the
 model says, because the mapping is not injective in two places the corpus
 holds: Threat Dragon stores a category as the label its author saw, so a

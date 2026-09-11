@@ -123,11 +123,12 @@ something else instead.
 
 ## The shortcut reference
 
-The registry includes clipboard reuse, geometry, reconnection, arrangement,
-snapping, zoom reset, and fit selection. Their shortcuts appear in the
-reference. Copy, Cut, Paste, Reset zoom, Duplicate, Position and size,
-Change flow source, Change flow target, Focus threats, and Delete selection
-are absent from the burger menu. Their shortcuts remain available.
+The registry includes clipboard reuse, geometry, reconnection, flow
+direction, arrangement, snapping, zoom reset, and fit selection. Their
+shortcuts appear in the reference. Copy, Cut, Paste, Reset zoom, Duplicate,
+Position and size, Change flow source, Change flow target, Toggle
+bidirectional flow, Focus threats, and Delete selection are absent from the
+burger menu. Their shortcuts remain available.
 All keep text-field key ownership.
 
 The Keyboard shortcuts item in the Help menu opens a non-modal reference

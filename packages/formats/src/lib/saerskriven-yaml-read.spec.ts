@@ -59,6 +59,48 @@ const oneThreatDocument = [
   '',
 ].join('\n');
 
+const oneFlowDocument = oneThreatDocument.replace(
+  'threats:',
+  [
+    '      - kind: store',
+    '        id: element-2',
+    '        name: Ledger',
+    '        description: ""',
+    '        outOfScope: false',
+    '        reasonOutOfScope: ""',
+    '        position:',
+    '          x: 200',
+    '          y: 0',
+    '        size:',
+    '          width: 10',
+    '          height: 10',
+    '      - kind: flow',
+    '        id: element-3',
+    '        name: Posts',
+    '        description: ""',
+    '        outOfScope: false',
+    '        reasonOutOfScope: ""',
+    '        source:',
+    '          kind: attached',
+    '          element: element-1',
+    '        target:',
+    '          kind: attached',
+    '          element: element-2',
+    '        waypoints: []',
+    'threats:',
+  ].join('\n'),
+);
+
+const withPinnedBidirectionalFlow = oneFlowDocument
+  .replace(
+    '          element: element-2',
+    '          element: element-2\n          side: bottom',
+  )
+  .replace(
+    '        waypoints: []',
+    '        waypoints: []\n        bidirectional: true',
+  );
+
 const withExtras = `${oneThreatDocument.replace(
   '    number: 1',
   '    number: 1\n    likelihood: high',
@@ -135,6 +177,22 @@ describe('a Saerskriven YAML read', () => {
 
   it('reads a valid file with nothing to report', () => {
     expect(readingOf(minimalDocument)?.divergences).toEqual([]);
+  });
+
+  it('reads a flow written before it had a direction or a pinned side, and one that has both', () => {
+    const flowOf = (text: string) =>
+      readingOf(text)?.model.diagrams[0]?.elements.find(
+        (element) => element.kind === 'flow',
+      );
+    expect(readingOf(oneFlowDocument)?.divergences).toEqual([]);
+    expect(flowOf(oneFlowDocument)).toMatchObject({
+      target: { kind: 'attached', element: 'element-2' },
+      bidirectional: false,
+    });
+    expect(flowOf(withPinnedBidirectionalFlow)).toMatchObject({
+      target: { kind: 'attached', element: 'element-2', side: 'bottom' },
+      bidirectional: true,
+    });
   });
 });
 

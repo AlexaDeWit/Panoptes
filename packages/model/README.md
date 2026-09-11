@@ -94,8 +94,14 @@ every record a caller-supplied fresh prefix and translates its geometry.
 new threat numbers. An ID collision refuses the entire insertion.
 
 `reconnectFlow` changes one endpoint to an actor, process, or store in the
-same diagram. It refuses an endpoint that would connect the node to itself.
-The remaining flow fields and threat links keep their values.
+same diagram, the element it already names included, and pins the end to a
+side of that element where the caller names one or releases it to the
+renderer's choice where none is named. It refuses an endpoint that would
+connect the node to itself. The remaining flow fields and threat links keep
+their values.
+
+`setFlowDirection` makes a flow bidirectional or one-way. A bidirectional flow
+keeps its source and target and is drawn with an arrowhead at each end.
 
 `setFlowWaypoints` replaces one flow's ordered intermediate points. It
 preserves the endpoints and metadata, rejects another element kind, and

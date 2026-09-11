@@ -78,7 +78,7 @@ describe('ShortcutReference', () => {
       render(
         <ShortcutReference onClose={() => undefined} platform={platform} />,
       );
-      for (const name of ['Canvas editing', 'Flow bends', 'Edit', 'View']) {
+      for (const name of ['Canvas editing', 'Flow route', 'Edit', 'View']) {
         fireEvent.click(screen.getByRole('button', { name }));
       }
       for (const id of ['move-selection', 'resize-selection', 'move-bend']) {

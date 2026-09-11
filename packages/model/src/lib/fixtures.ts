@@ -87,6 +87,7 @@ export const validModelFixture: z.input<typeof modelSchema> = {
           source: { kind: 'attached', element: 'element-customer' },
           target: { kind: 'free', position: { x: 280, y: 160 } },
           waypoints: [{ x: 200, y: 140 }],
+          bidirectional: false,
         },
         {
           kind: 'trust-boundary',
@@ -206,6 +207,7 @@ export const threatRegisterFixture: z.input<typeof modelSchema> = {
           source: { kind: 'attached', element: 'element-shopper' },
           target: { kind: 'attached', element: 'element-checkout' },
           waypoints: [],
+          bidirectional: false,
         },
       ],
     },

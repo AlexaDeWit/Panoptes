@@ -240,6 +240,7 @@ export function freshFlow(source: ElementId, target: ElementId): Element {
     source: { kind: 'attached', element: source },
     target: { kind: 'attached', element: target },
     waypoints: [],
+    bidirectional: false,
   };
 }
 

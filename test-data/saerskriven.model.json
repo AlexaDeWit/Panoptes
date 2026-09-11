@@ -226,7 +226,8 @@
             "kind": "attached",
             "element": "el-model-file"
           },
-          "waypoints": []
+          "waypoints": [],
+          "bidirectional": false
         },
         {
           "id": "fl-open",
@@ -243,7 +244,8 @@
             "kind": "attached",
             "element": "el-read"
           },
-          "waypoints": []
+          "waypoints": [],
+          "bidirectional": false
         },
         {
           "id": "fl-mapped",
@@ -260,7 +262,8 @@
             "kind": "attached",
             "element": "el-model"
           },
-          "waypoints": []
+          "waypoints": [],
+          "bidirectional": false
         },
         {
           "id": "fl-prose",
@@ -282,7 +285,8 @@
               "x": 1030,
               "y": 130
             }
-          ]
+          ],
+          "bidirectional": false
         },
         {
           "id": "fl-geometry",
@@ -299,7 +303,8 @@
             "kind": "attached",
             "element": "el-diagram"
           },
-          "waypoints": []
+          "waypoints": [],
+          "bidirectional": false
         },
         {
           "id": "fl-save",
@@ -321,7 +326,8 @@
               "x": 1030,
               "y": 550
             }
-          ]
+          ],
+          "bidirectional": false
         },
         {
           "id": "fl-markdown",
@@ -343,7 +349,8 @@
               "x": 1550,
               "y": 180
             }
-          ]
+          ],
+          "bidirectional": false
         },
         {
           "id": "fl-svg",
@@ -360,7 +367,8 @@
             "kind": "attached",
             "element": "el-output"
           },
-          "waypoints": []
+          "waypoints": [],
+          "bidirectional": false
         },
         {
           "id": "fl-written",
@@ -382,7 +390,8 @@
               "x": 1550,
               "y": 500
             }
-          ]
+          ],
+          "bidirectional": false
         },
         {
           "id": "fl-publish",
@@ -399,7 +408,8 @@
             "kind": "attached",
             "element": "el-site"
           },
-          "waypoints": []
+          "waypoints": [],
+          "bidirectional": false
         }
       ]
     },
@@ -582,7 +592,8 @@
             "kind": "attached",
             "element": "el-mcp"
           },
-          "waypoints": []
+          "waypoints": [],
+          "bidirectional": false
         },
         {
           "id": "fl-mcp-core",
@@ -599,7 +610,8 @@
             "kind": "attached",
             "element": "el-core"
           },
-          "waypoints": []
+          "waypoints": [],
+          "bidirectional": false
         },
         {
           "id": "fl-core-fs",
@@ -621,7 +633,8 @@
               "x": 1130,
               "y": 230
             }
-          ]
+          ],
+          "bidirectional": false
         },
         {
           "id": "fl-renderer-bridge",
@@ -638,7 +651,8 @@
             "kind": "attached",
             "element": "el-bridge"
           },
-          "waypoints": []
+          "waypoints": [],
+          "bidirectional": false
         },
         {
           "id": "fl-bridge-main",
@@ -655,7 +669,8 @@
             "kind": "attached",
             "element": "el-main"
           },
-          "waypoints": []
+          "waypoints": [],
+          "bidirectional": false
         },
         {
           "id": "fl-main-fs",
@@ -677,7 +692,8 @@
               "x": 1530,
               "y": 530
             }
-          ]
+          ],
+          "bidirectional": false
         }
       ]
     }

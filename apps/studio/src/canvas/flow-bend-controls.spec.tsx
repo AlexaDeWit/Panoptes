@@ -32,6 +32,13 @@ function pointerOn(element: Element, type: string, x: number, y: number): void {
   fireEvent(element, event);
 }
 const bend = () => screen.getByRole('button', { name: 'Bend 1' });
+const sourceEnd = () => screen.getByRole('button', { name: 'Flow source end' });
+const source = () => {
+  const flow = modelStore
+    .getState()
+    .present.diagrams[0].elements.find((element) => element.id === requestFlow);
+  return flow?.kind === 'flow' ? flow.source : undefined;
+};
 
 beforeEach(() => {
   resetTools();
@@ -230,4 +237,56 @@ it('cancels on a window blur and preserves the flow rename action', () => {
     elementId: requestFlow,
   });
   expect(screen.queryByRole('button', { name: 'Add bend' })).toBeNull();
+});
+
+it('pins a flow end to a side by arrow key, by its actions, and by dragging, and releases it', () => {
+  render(<DiagramCanvas />);
+  expect(
+    screen.queryByRole('button', { name: 'Flow target end' }),
+  ).not.toBeNull();
+  sourceEnd().focus();
+  press('ArrowDown');
+  expect(source()).toEqual({
+    kind: 'attached',
+    element: readerElement,
+    side: 'bottom',
+  });
+  expect(modelStore.getState().past).toHaveLength(1);
+  press('ArrowDown');
+  expect(modelStore.getState().past).toHaveLength(1);
+  sourceEnd().focus();
+  press('Delete');
+  expect(source()).toEqual({ kind: 'attached', element: readerElement });
+  fireEvent.click(sourceEnd());
+  expect(
+    screen.getByRole('group', { name: 'Flow end actions' }),
+  ).not.toBeNull();
+  expect(screen.getByRole('button', { name: 'Follow the route' })).toBe(
+    document.activeElement,
+  );
+  fireEvent.click(screen.getByRole('button', { name: 'Top' }));
+  expect(source()).toMatchObject({ side: 'top' });
+  expect(screen.queryByRole('group', { name: 'Flow end actions' })).toBeNull();
+  const before = modelStore.getState().present;
+  const reader = currentLayout(modelStore.getState()).nodes.find(
+    (node) => node.id === readerElement,
+  );
+  if (reader === undefined) {
+    throw new Error('The reader is laid out');
+  }
+  pointerOn(sourceEnd(), 'pointerdown', 100, 100);
+  pointerOn(
+    sourceEnd(),
+    'pointermove',
+    100 + reader.position.x + reader.size.width,
+    100 + reader.position.y + reader.size.height / 2,
+  );
+  expect(modelStore.getState().present).toBe(before);
+  pointerOn(
+    sourceEnd(),
+    'pointerup',
+    100 + reader.position.x + reader.size.width,
+    100 + reader.position.y + reader.size.height / 2,
+  );
+  expect(source()).toMatchObject({ side: 'right' });
 });

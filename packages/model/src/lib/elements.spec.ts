@@ -70,6 +70,7 @@ const attachedFlow = {
     element: '0ec10e5e-0000-4000-8000-000000000020',
   },
   waypoints: [],
+  bidirectional: false,
 };
 
 const freeSourceFlow = {
@@ -85,6 +86,7 @@ const freeSourceFlow = {
     element: 'f1646094-9885-422a-b7e7-7888c72905ef',
   },
   waypoints: [{ x: 1300, y: 900 }],
+  bidirectional: false,
 };
 
 const boundaryBox = {
@@ -178,6 +180,23 @@ describe('flowEndpointSchema', () => {
       }).success,
     ).toBe(true);
   });
+
+  it('parses an attached endpoint pinned to a side, and refuses a side that is not one', () => {
+    expect(
+      flowEndpointSchema.safeParse({
+        kind: 'attached',
+        element: 'api',
+        side: 'bottom',
+      }).success,
+    ).toBe(true);
+    expect(
+      flowEndpointSchema.safeParse({
+        kind: 'attached',
+        element: 'api',
+        side: 'middle',
+      }).success,
+    ).toBe(false);
+  });
 });
 
 describe('flowSchema', () => {
@@ -192,6 +211,14 @@ describe('flowSchema', () => {
   it('rejects a flow without waypoints', () => {
     const { waypoints: _waypoints, ...rest } = attachedFlow;
     expect(flowSchema.safeParse(rest).success).toBe(false);
+  });
+
+  it('requires the direction rather than defaulting it', () => {
+    const { bidirectional: _bidirectional, ...rest } = attachedFlow;
+    expect(flowSchema.safeParse(rest).success).toBe(false);
+    expect(
+      flowSchema.safeParse({ ...attachedFlow, bidirectional: true }).success,
+    ).toBe(true);
   });
 });
 

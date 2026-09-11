@@ -177,6 +177,7 @@ describe('freshFlow', () => {
       source: { kind: 'attached', element: readerElement },
       target: { kind: 'attached', element: studioElement },
       waypoints: [],
+      bidirectional: false,
     });
   });
 
