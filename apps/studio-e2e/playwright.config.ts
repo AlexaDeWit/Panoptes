@@ -62,18 +62,22 @@ export default defineConfig({
     // The floor reads what the machine gives the page, so it is comparable
     // only where no other browser shares the host: copies of this spec run at
     // the same time all fail, where the same spec alone reads not one frame
-    // late. How far over they read is the host's, not this project's, so no
-    // figure is quoted here. Hence one worker, and a dependency on the
-    // project carrying the rest of the suite, so this one runs alone once the
-    // others are done rather than beside them, while they keep their own
-    // parallelism. Playwright skips a project whose dependency failed, so a
-    // red anywhere else in the smoke leaves the floor unreported rather than
-    // reported green. A burst of activity elsewhere on the host can still
-    // land inside the drag, so a single noisy run is retried once and a
-    // second failure is the reading; the ceilings themselves do not move.
+    // late. Hence one worker, and a dependency on the project carrying the
+    // rest of the suite, so this one runs alone once the others are done
+    // rather than beside them, while they keep their own parallelism.
+    // Playwright skips a project whose dependency failed, so a red anywhere
+    // else in the smoke leaves the floor unreported rather than reported
+    // green. A burst of activity elsewhere on the host can still land inside
+    // the drag, so a single noisy run is retried once and a second failure is
+    // the reading. The retry records no trace: tracing paces the drag with
+    // screenshots and snapshots, and a retry under more load than the first
+    // attempt is no second reading. Both ceilings in the spec are regression
+    // signals. The share ceiling does not move. The single-longest-frame
+    // ceiling sits above the band a GitHub-hosted runner produces on its own
+    // (#309) and moves only with a new reading of that band.
     {
       name: 'frame-time',
-      use: { ...devices['Desktop Chrome'] },
+      use: { ...devices['Desktop Chrome'], trace: 'off' },
       testMatch: frameTimeFloor,
       dependencies: ['pages'],
       workers: 1,
