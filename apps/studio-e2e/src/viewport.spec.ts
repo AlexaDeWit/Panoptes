@@ -1,10 +1,12 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { viewportTransform, viewportZoom } from './commands.fixtures.js';
 import {
-  nodeNamed,
+  canvasContainer,
+  canvasSettled,
   openEcluse,
   openFile,
   openPlaceholder,
+  nodeNamed,
 } from './studio.fixtures.js';
 
 const nowhere = { x: 0, y: 0, width: 0, height: 0 };
@@ -88,6 +90,36 @@ test('selecting an element at the edge does not snap the viewport to centre it',
   await node.click();
   await expect(node).toHaveClass(/selected/u);
   await expect.poll(() => viewportTransform(page)).toBe(before);
+});
+
+test('focusing an off-screen element does not pan the viewport', async ({
+  page,
+}) => {
+  await openEcluse(page);
+  const node = nodeNamed(page, furthestAcross);
+  const canvas = await canvasContainer(page).boundingBox();
+  expect(canvas).not.toBeNull();
+  const from = {
+    x: (canvas?.x ?? 0) + (canvas?.width ?? 0) / 2,
+    y: (canvas?.y ?? 0) + (canvas?.height ?? 0) / 2,
+  };
+
+  await page.keyboard.down('Space');
+  await page.mouse.move(from.x, from.y);
+  await page.mouse.down();
+  await page.mouse.move(from.x + 400, from.y, { steps: 8 });
+  await page.mouse.up();
+  await page.keyboard.up('Space');
+  await canvasSettled(page);
+  const drawn = await node.boundingBox();
+  expect(drawn).not.toBeNull();
+  expect((drawn?.x ?? 0) > (canvas?.x ?? 0) + (canvas?.width ?? 0)).toBe(true);
+  const before = await viewportTransform(page);
+
+  await node.focus();
+  await page.keyboard.press('Enter');
+  await expect(node).toHaveClass(/selected/u);
+  expect(await viewportTransform(page)).toBe(before);
 });
 
 test('a file opened over the model on screen is fitted again', async ({

@@ -419,6 +419,7 @@ export function DiagramCanvas({
         aria-label="Diagram"
         ariaLabelConfig={canvasA11y}
         attributionPosition="bottom-left"
+        autoPanOnNodeFocus={false}
         autoPanOnSelection={false}
         connectionMode={ConnectionMode.Loose}
         deleteKeyCode={null}
