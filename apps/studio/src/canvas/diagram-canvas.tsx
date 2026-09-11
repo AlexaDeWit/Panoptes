@@ -68,12 +68,7 @@ import { usePlacement } from './placement.js';
 import { Toolbox } from './toolbox.js';
 import { currentTool } from './tools.js';
 import { FitOnOpen } from './view-commands.js';
-import {
-  clearOfPanel,
-  nodeInView,
-  revealCentre,
-  zoomLimits,
-} from './viewport.js';
+import { zoomLimits } from './viewport.js';
 import { ZoomCluster } from './zoom-cluster.js';
 import {
   SelectionControls,
@@ -176,11 +171,7 @@ export function DiagramCanvas({
     null,
   );
   const localCoverage = useState(0);
-  const [panelCover, setPanelCover] = paneCoverage ?? localCoverage;
-  const revealed = useRef<
-    | { readonly selected: ElementId | undefined; readonly cover: number }
-    | undefined
-  >(undefined);
+  const [, setPanelCover] = paneCoverage ?? localCoverage;
   const placement = usePlacement(surface, view, layout);
   const { mode } = placement;
 
@@ -209,30 +200,6 @@ export function DiagramCanvas({
       globalThis.clearTimeout(timer);
     };
   }, [graph.edges, layout, moving, onScreen]);
-
-  useEffect(() => {
-    const previous = revealed.current;
-    revealed.current = { selected, cover: panelCover };
-    if (
-      previous !== undefined &&
-      previous.selected === selected &&
-      (previous.cover > 0 || panelCover === 0)
-    ) {
-      return;
-    }
-    const node = selected === undefined ? undefined : positions.get(selected);
-    const extent = surface.current?.getBoundingClientRect();
-    const instance = view.current;
-    if (node === undefined || extent === undefined || instance === null) {
-      return;
-    }
-    const viewport = instance.getViewport();
-    if (nodeInView(node, viewport, clearOfPanel(extent, panelCover))) {
-      return;
-    }
-    const centre = revealCentre(node, viewport.zoom, panelCover);
-    void instance.setCenter(centre.x, centre.y, { zoom: viewport.zoom });
-  }, [panelCover, positions, selected]);
 
   const onNodesChange = (changes: NodeChange<DiagramNode>[]): void => {
     const next = applyNodeChanges(changes, onScreen);

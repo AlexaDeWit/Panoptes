@@ -78,6 +78,18 @@ test('the placeholder opens fitted as well', async ({ page }) => {
   ).toBeGreaterThan(1);
 });
 
+test('selecting an element at the edge does not snap the viewport to centre it', async ({
+  page,
+}) => {
+  await openEcluse(page);
+  const node = nodeNamed(page, furthestAcross);
+  const before = await viewportTransform(page);
+
+  await node.click();
+  await expect(node).toHaveClass(/selected/u);
+  await expect.poll(() => viewportTransform(page)).toBe(before);
+});
+
 test('a file opened over the model on screen is fitted again', async ({
   page,
 }) => {

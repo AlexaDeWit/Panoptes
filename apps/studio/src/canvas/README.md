@@ -288,25 +288,11 @@ stacks. The next action that changes canvas or panel state clears its message.
 The empty host stays mounted, and a sequence key makes repeated words arrive
 as separate messages.
 
-The canvas pans to the selected element where the whole of it is not in view,
-which is what makes an element placed at an edge worth selecting and naming.
-React Flow pans to a focused node of its own accord, but only where
-the node is wholly outside the view and the focus came from the keyboard, and
-an edit's focus is neither. The test is the whole of the element, so clicking
-a node the edge of the canvas clips re-centres the view under the pointer. It
-is the selection moving that pans rather than the model changing under a
-selection that stays, so dragging the selected element to the edge leaves it
-where it was dropped.
-
-What counts as in view is what the threat panel is not over. The panel opens
-on the same selection this pans for ([the panel](../panel/README.md)), so an
-element under it is an element out of sight, and the pan centres what it
-reveals in the room the panel leaves rather than in the canvas.
-`clearOfPanel` and `revealCentre` in `viewport.ts` use the pane's measured
-coverage, including its outer inset. Pane and canvas resizes update that measurement. Widening or restoring an
-open pane leaves the viewport unchanged. A new selection or reopening the
-pane reveals a covered node. Explicit fit commands use the current coverage. The `panelCover` token
-sets the default width only ([the panel](../panel/README.md)).
+Selecting an element leaves the viewport where it is, even when the element is
+at the canvas edge or under the threat panel ([the panel](../panel/README.md)).
+Dragging a selected element to the edge also leaves it where it was dropped.
+Explicit fit commands use the area left of the open threat pane. The
+`panelCover` token sets the default width only ([the panel](../panel/README.md)).
 
 ## The panel over it
 
@@ -444,9 +430,8 @@ twenty. Each press is one undo step, and the opposite edge stays fixed.
   has no drawn bounds, so Select All and box selection leave it out.
 - A selection box stays inside the current viewport. Pan before drawing a box
   around elements outside it.
-- Reaching an element does not need a keyboard pan, since focusing an element
-  pans it into view. Zooming and fitting have both a chord and a control of
-  their own ([the commands](../commands/README.md)).
+- Reaching an element does not pan the canvas. Zooming and fitting have both a
+  chord and a control of their own ([the commands](../commands/README.md)).
 - Tab order follows React Flow's DOM order, with every flow before every node.
 - React Flow's container carries `role="application"`, which turns off a
   screen reader's browse mode inside the canvas: Tab reaches every element

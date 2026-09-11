@@ -459,11 +459,7 @@ export const selectNode = async (
   return node;
 };
 
-/**
- * Selects an element by focusing it and pressing Enter, then waits for the
- * canvas to stop moving: React Flow pans a node focused from the keyboard
- * into view where it is not already drawn there.
- */
+/** Selects an element by focusing it and pressing Enter, then waits for the canvas to settle. */
 export const selectByKeyboard = async (
   page: Page,
   name: RegExp,

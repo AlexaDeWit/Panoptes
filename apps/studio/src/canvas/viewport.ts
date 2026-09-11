@@ -1,9 +1,4 @@
-import {
-  centreOf,
-  type CanvasBounds,
-  type CanvasNode,
-} from '@saerskriven/canvas';
-import type { Point } from '@saerskriven/model';
+import type { CanvasBounds } from '@saerskriven/canvas';
 import type { Viewport } from '@xyflow/react';
 
 /** How much of the page the canvas has, in its own pixels. */
@@ -18,22 +13,6 @@ export const canvasPadding = 64;
 /** Zoom bounds shared with React Flow. */
 export const zoomLimits = { minimum: 0.1, maximum: 2 } as const;
 
-/** Whether the transformed node fits inside the available canvas. */
-export function nodeInView(
-  node: CanvasNode,
-  viewport: Viewport,
-  extent: CanvasExtent,
-): boolean {
-  const left = node.position.x * viewport.zoom + viewport.x;
-  const top = node.position.y * viewport.zoom + viewport.y;
-  return (
-    left >= 0 &&
-    top >= 0 &&
-    left + node.size.width * viewport.zoom <= extent.width &&
-    top + node.size.height * viewport.zoom <= extent.height
-  );
-}
-
 /** The canvas area left of the measured pane coverage. */
 export function clearOfPanel(
   extent: CanvasExtent,
@@ -43,16 +22,6 @@ export function clearOfPanel(
     width: Math.max(extent.width - panelCover, 0),
     height: extent.height,
   };
-}
-
-/** The view centre that places a node in the area left of the pane. */
-export function revealCentre(
-  node: CanvasNode,
-  zoom: number,
-  panelCover: number,
-): Point {
-  const centre = centreOf(node);
-  return { x: centre.x + panelCover / 2 / zoom, y: centre.y };
 }
 
 /** Fits the diagram inside the padded canvas, within the zoom bounds. Returns nothing when either has no area. */
