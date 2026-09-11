@@ -185,7 +185,8 @@ export type CanvasFreeEndNode = Node<CanvasFreeEndData, typeof freeEndNodeKind>;
  * boundary handle cannot start a connection. The wrapper adds nothing of
  * its own to the drawing. The drawing is hidden from assistive technology:
  * the node's accessible name says what the glyph shows, and the canvas
- * mounting it settles that name.
+ * mounting it settles that name. `textVisible` false leaves the glyph's text
+ * out, for the canvas that mounts a text editor over it.
  *
  * A selected resizable element carries four side controls and four corner
  * controls. A boundary curve carries none because the model has no extent.
@@ -199,12 +200,14 @@ export function CanvasNodeBody({
   onResizeEnd,
   resizing = false,
   selected,
+  textVisible = true,
   width,
 }: NodeProps<CanvasFlowNode> & {
   readonly controlsVisible?: boolean;
   readonly onResize?: () => void;
   readonly onResizeEnd?: (box: NodeBox) => void;
   readonly resizing?: boolean;
+  readonly textVisible?: boolean;
 }): ReactElement {
   const shownSize = resizing
     ? {
@@ -227,7 +230,7 @@ export function CanvasNodeBody({
         aria-hidden="true"
       >
         {isBoundary(shownNode) ? <BoundaryHitTarget node={shownNode} /> : null}
-        <ElementGlyph node={shownNode} />
+        <ElementGlyph node={shownNode} textVisible={textVisible} />
       </svg>
       {handleSides.map((side) => (
         <Handle
@@ -360,7 +363,8 @@ function BoundaryHitTarget({
 /**
  * One flow from the transient layout a controlled canvas supplies. During a
  * drag it follows the live endpoint boxes and translates selected flow
- * geometry by the shared group offset.
+ * geometry by the shared group offset. `textVisible` false leaves the name
+ * out, as on {@link CanvasNodeBody}.
  */
 export function CanvasEdgeBody({
   data,
@@ -368,7 +372,10 @@ export function CanvasEdgeBody({
   selected,
   source,
   target,
-}: EdgeProps<CanvasFlowEdge>): ReactElement | null {
+  textVisible = true,
+}: EdgeProps<CanvasFlowEdge> & {
+  readonly textVisible?: boolean;
+}): ReactElement | null {
   const sourceNode = useInternalNode(source);
   const targetNode = useInternalNode(target);
   const groupMovement = useStore((state) => {
@@ -408,7 +415,7 @@ export function CanvasEdgeBody({
         strokeOpacity={0}
       />
       <g aria-hidden="true">
-        <FlowGlyph edge={edge} />
+        <FlowGlyph edge={edge} textVisible={textVisible} />
       </g>
     </>
   );

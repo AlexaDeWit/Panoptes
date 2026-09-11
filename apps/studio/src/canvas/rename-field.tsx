@@ -4,11 +4,15 @@ import {
   CanvasNodeBody,
   canvasType,
   freeEndNodeKind,
+  lineHeight,
+  lineHeightRatio,
   nodeTextPlacement,
+  wrappedTextStyles,
   type CanvasFlowEdge,
   type CanvasFlowNode,
   type CanvasNodeKind,
   type TextPlacement,
+  type WrappedTextStyle,
 } from '@saerskriven/canvas';
 import type { ElementId } from '@saerskriven/model';
 import {
@@ -20,6 +24,7 @@ import {
   useCallback,
   useEffect,
   useId,
+  useLayoutEffect,
   useRef,
   useState,
   type ChangeEvent,
@@ -56,15 +61,32 @@ type InlineFieldProps = {
   readonly elementId: ElementId;
   readonly label: string;
   readonly value: string;
+  readonly textStyle: WrappedTextStyle;
   readonly multiline?: boolean;
   readonly onCommit: (elementId: ElementId, text: string) => void;
   readonly refuse?: (label: string, text: string) => TextRefusal | undefined;
 };
 
+/**
+ * The height of a name field holding one line, which is what a newly placed
+ * element has to be tall and wide enough for before its name opens in place:
+ * one line of the label type, the field carrying no frame inside its box.
+ */
+export const nameFieldExtent = lineHeight(wrappedTextStyles.label.fontSize);
+
+function withoutLineBreaks(text: string): string {
+  return text.replace(/[\r\n]+/gu, '');
+}
+
 function placedAt(placement: TextPlacement): CSSProperties {
+  const fontSize = wrappedTextStyles[placement.textStyle].fontSize;
+  const top =
+    placement.anchor === 'top'
+      ? placement.at.y - lineHeight(fontSize) / 2
+      : placement.at.y;
   return {
     left: `${String(placement.at.x)}px`,
-    top: `${String(placement.at.y)}px`,
+    top: `${String(top)}px`,
     width: `${String(placement.width)}px`,
     transform:
       placement.anchor === 'top'
@@ -73,18 +95,26 @@ function placedAt(placement: TextPlacement): CSSProperties {
   };
 }
 
+function typeOf(textStyle: WrappedTextStyle): CSSProperties {
+  return {
+    fontFamily: canvasType.family,
+    fontSize: `${String(wrappedTextStyles[textStyle].fontSize)}px`,
+    lineHeight: lineHeightRatio,
+  };
+}
+
 function InlineField({
   elementId,
   label,
   value,
+  textStyle,
   multiline = false,
   onCommit,
   refuse = refusedText,
 }: InlineFieldProps) {
   const refusalId = useId();
   const keyboardDescriptionId = useId();
-  const inputField = useRef<HTMLInputElement>(null);
-  const noteField = useRef<HTMLTextAreaElement>(null);
+  const field = useRef<HTMLTextAreaElement>(null);
   const settled = useRef(false);
   const reportRefusal = useCallback((refused: RefusedDraft | undefined) => {
     if (refused !== undefined) {
@@ -103,10 +133,20 @@ function InlineField({
   );
 
   useEffect(() => {
-    const field = multiline ? noteField.current : inputField.current;
-    field?.focus();
-    field?.select();
-  }, [multiline]);
+    field.current?.focus();
+    field.current?.select();
+  }, []);
+
+  useLayoutEffect(() => {
+    const element = field.current;
+    if (element === null || multiline) {
+      return;
+    }
+    element.style.height = '';
+    if (element.scrollHeight > 0) {
+      element.style.height = `${String(element.scrollHeight)}px`;
+    }
+  });
 
   const cancel = (): void => {
     settled.current = true;
@@ -125,9 +165,7 @@ function InlineField({
     }
   };
 
-  const keyDown = (
-    event: KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>,
-  ): void => {
+  const keyDown = (event: KeyboardEvent<HTMLTextAreaElement>): void => {
     const commitsName =
       !multiline &&
       pressesContextualShortcut('commit-name', event, hostPlatform);
@@ -143,27 +181,6 @@ function InlineField({
       cancel();
     }
   };
-  const shared = {
-    'aria-describedby':
-      draft.refusal === undefined
-        ? keyboardDescriptionId
-        : `${keyboardDescriptionId} ${refusalId}`,
-    'aria-invalid': draft.refusal !== undefined,
-    'aria-label': label,
-    className: `${styles.field}${multiline ? ` ${styles.note}` : ''}`,
-    style: { fontSize: `${String(canvasType.widgetLabel)}px` },
-    onBlur: () => {
-      if (!settled.current) {
-        commit(false);
-      }
-    },
-    onChange: (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-      resetAnnouncements();
-      draft.change(event.target.value);
-    },
-    onKeyDown: keyDown,
-    value: draft.text,
-  };
 
   return (
     <>
@@ -173,11 +190,34 @@ function InlineField({
           hostPlatform,
         )}
       </VisuallyHidden>
-      {multiline ? (
-        <textarea {...shared} ref={noteField} />
-      ) : (
-        <input {...shared} ref={inputField} type="text" />
-      )}
+      <textarea
+        aria-describedby={
+          draft.refusal === undefined
+            ? keyboardDescriptionId
+            : `${keyboardDescriptionId} ${refusalId}`
+        }
+        aria-invalid={draft.refusal !== undefined}
+        aria-label={label}
+        className={`${styles.field}${multiline ? ` ${styles.note}` : ''}`}
+        onBlur={() => {
+          if (!settled.current) {
+            commit(false);
+          }
+        }}
+        onChange={(event: ChangeEvent<HTMLTextAreaElement>) => {
+          resetAnnouncements();
+          draft.change(
+            multiline
+              ? event.target.value
+              : withoutLineBreaks(event.target.value),
+          );
+        }}
+        onKeyDown={keyDown}
+        ref={field}
+        rows={1}
+        style={typeOf(textStyle)}
+        value={draft.text}
+      />
       {draft.refusal !== undefined && (
         <p className={styles.refusal} id={refusalId}>
           {draft.refusal.shown}
@@ -202,6 +242,7 @@ function EditingNodeBody(props: NodeProps<CanvasFlowNode>) {
   const editingName = editor?.kind === 'name' && node.kind !== 'text';
   const editingNote = editor?.kind === 'note' && node.kind === 'text';
   const editing = editingName || editingNote;
+  const placement = editing ? nodeTextPlacement(node) : undefined;
 
   return (
     <>
@@ -216,28 +257,31 @@ function EditingNodeBody(props: NodeProps<CanvasFlowNode>) {
           resizeNode(node, box);
         }}
         resizing={resizing}
+        textVisible={!editing}
       />
-      {editingName && (
+      {editingName && placement !== undefined && (
         <div
-          className={`${styles.overNode} nodrag nopan`}
-          style={placedAt(nodeTextPlacement(node))}
+          className={`${styles.overText} nodrag nopan`}
+          style={placedAt(placement)}
         >
           <InlineField
             elementId={node.id}
             label={`Name of ${nodeLabel(node)}`}
             onCommit={commitRename}
             refuse={refusedName}
+            textStyle={placement.textStyle}
             value={node.name}
           />
         </div>
       )}
-      {editingNote && (
+      {editingNote && placement !== undefined && (
         <div className={`${styles.overNote} nodrag nopan`}>
           <InlineField
             elementId={node.id}
             label="Note text"
             multiline
             onCommit={commitNote}
+            textStyle={placement.textStyle}
             value={node.text}
           />
         </div>
@@ -259,11 +303,11 @@ function EditingEdgeBody(props: EdgeProps<CanvasFlowEdge>) {
 
   return (
     <>
-      <CanvasEdgeBody {...props} />
+      <CanvasEdgeBody {...props} textVisible={!editing} />
       {editing && edge !== undefined && (
         <EdgeLabelRenderer>
           <div
-            className={`${styles.overFlow} nodrag nopan`}
+            className={`${styles.overText} nodrag nopan`}
             style={placedAt(edge.label.name)}
           >
             <InlineField
@@ -271,6 +315,7 @@ function EditingEdgeBody(props: EdgeProps<CanvasFlowEdge>) {
               label={`Name of ${edgeLabel(edge)}`}
               onCommit={commitRename}
               refuse={refusedName}
+              textStyle={edge.label.name.textStyle}
               value={edge.name}
             />
           </div>
@@ -282,7 +327,9 @@ function EditingEdgeBody(props: EdgeProps<CanvasFlowEdge>) {
 
 /**
  * The canvas node types, with an inline name or Note editor when requested.
- * Each node subscribes only to its own editor state.
+ * Each node subscribes only to its own editor state, and a node or flow
+ * whose editor is open draws no text of its own, the field standing where
+ * that text was drawn.
  */
 export const editingNodeTypes = {
   actor: EditingNodeBody,

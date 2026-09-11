@@ -1,15 +1,13 @@
-/* The field is placed at the point the canvas package draws the name on,
-   which is the node's own coordinates over a node and the diagram's over a
-   flow. React Flow's edge label layer passes pointer events through, so the
+/* The field stands where the canvas package draws the text it edits, and
+   the glyph draws none of its own while it is open. Its box is the text's
+   own: the frame is an outline, so no border or padding moves the text off
+   the drawn placement, and a name field grows to the lines it wraps to. Over
+   a node the coordinates are the node's own, over a flow the diagram's, in
+   React Flow's edge label layer, which passes pointer events through, so the
    field takes them back. */
-.overNode,
-.overFlow,
+.overText,
 .overNote {
   position: absolute;
-  display: flex;
-  flex-direction: column;
-  gap: var(--pn-space-1);
-  min-width: 6rem;
   pointer-events: all;
 }
 
@@ -17,53 +15,53 @@
   inset: 0;
 }
 
-.overNode {
-  min-width: 0;
-}
-
-.overNode .field {
-  height: calc(1.2em + 2px);
-  min-height: 0;
-  padding-block: 0;
-  line-height: 1.2;
-}
-
 .field {
+  display: block;
   box-sizing: border-box;
   width: 100%;
-  padding: var(--pn-space-1) var(--pn-space-2);
-  border: 1px solid var(--pn-colour-border);
+  margin: 0;
+  padding: 0;
+  border: 0;
   border-radius: var(--pn-radius);
+  outline: 1px solid var(--pn-colour-border);
   background: var(--pn-colour-surface);
   color: var(--pn-colour-text);
-  font: inherit;
   text-align: center;
+  overflow: hidden;
+  resize: none;
 }
 
 .note {
   height: 100%;
-  min-height: 0;
-  resize: none;
+  padding: var(--pn-space-1) var(--pn-space-2);
+  overflow: auto;
   text-align: start;
 }
 
-.field:focus-visible {
-  outline: none;
-  box-shadow: inset 0 0 0 var(--pn-focus-ring-width) var(--pn-colour-accent);
-}
-
 /* The refusal reads as text rather than as a colour alone, as the panel's
-   fields do: forced colours drop the border tint, and the sentence below the
+   fields do: forced colours drop the outline tint, and the sentence below the
    field is there either way. */
 .field[aria-invalid='true'] {
-  border-color: var(--pn-colour-text);
-  border-width: 2px;
+  outline-width: 2px;
+  outline-color: var(--pn-colour-text);
 }
 
+.field:focus-visible {
+  outline: var(--pn-focus-ring);
+  outline-offset: var(--pn-focus-ring-offset);
+}
+
+/* Below the field rather than in the flow under it, so a refusal appearing
+   leaves the field where the text was. */
 .refusal {
+  position: absolute;
+  top: calc(100% + var(--pn-space-1));
+  left: 50%;
+  transform: translateX(-50%);
   margin: 0;
   padding: var(--pn-space-1) var(--pn-space-2);
   border-radius: var(--pn-radius);
   background: var(--pn-colour-surface);
   color: var(--pn-colour-text);
+  white-space: nowrap;
 }

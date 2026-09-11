@@ -48,7 +48,9 @@ that padded it for badges and labels pads what is already counted.
 
 A glyph draws its outline, then its run of text where `nodeTextPlacement` puts
 it, then its badge, and it draws in its own coordinates, its origin at the
-element's position, because React Flow places a node itself.
+element's position, because React Flow places a node itself. `textVisible`
+false leaves the run of text out, for a canvas with an editor standing where
+the text was.
 `PlacedElementGlyph` translates one to its model position and `DiagramGlyphs`
 does that for a whole layout, in painting order, with no root element of its
 own. The `<svg>` around it, its viewBox and the `<style>` inside it belong to

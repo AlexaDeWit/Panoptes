@@ -1,3 +1,4 @@
+import { canvasClassNames, wrappedTextStyles } from '@saerskriven/canvas';
 import type { ElementId } from '@saerskriven/model';
 import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -6,7 +7,12 @@ import { elementById } from '../store/selectors.js';
 import { initialState } from '../store/state.js';
 import { modelStore } from '../store/store.js';
 import { currentAnnouncement, resetAnnouncements } from './announcements.js';
-import { canvasModel, noteElement, readerElement } from './canvas.fixtures.js';
+import {
+  canvasModel,
+  noteElement,
+  readerElement,
+  requestFlow,
+} from './canvas.fixtures.js';
 import { DiagramCanvas } from './diagram-canvas.js';
 
 const softHyphen = '­';
@@ -38,6 +44,9 @@ const textOf = (elementId: ElementId): string | undefined => {
 };
 
 const state = () => modelStore.getState();
+
+const drawnText = (elementId: ElementId, run: string): Element | null =>
+  document.querySelector(`[data-id="${elementId}"] text.${run}`);
 
 describe('the inline editor', () => {
   it('labels a name field with what it renames', () => {
@@ -175,5 +184,46 @@ describe('the inline editor', () => {
 
     expect(textOf(noteElement)).toBe('Changed');
     expect(state().inlineEditor).toBeUndefined();
+  });
+});
+
+describe('the field standing where the text is drawn', () => {
+  it('takes the place of a name while it is open, and hands it back', async () => {
+    const user = userEvent.setup();
+    editing(readerElement);
+    render(<DiagramCanvas />);
+
+    expect(drawnText(readerElement, canvasClassNames.label)).toBeNull();
+
+    await user.type(field('Name of Reader'), '{Escape}');
+
+    expect(drawnText(readerElement, canvasClassNames.label)).not.toBeNull();
+  });
+
+  it('takes the place of a flow name too', () => {
+    editing(requestFlow);
+    render(<DiagramCanvas />);
+
+    expect(drawnText(requestFlow, canvasClassNames.flowLabel)).toBeNull();
+  });
+
+  it('is set in the type the text is drawn in', () => {
+    editing(noteElement, 'note');
+    render(<DiagramCanvas />);
+
+    expect(field('Note text').style.fontSize).toBe(
+      `${String(wrappedTextStyles.note.fontSize)}px`,
+    );
+  });
+
+  it('keeps a name on one line when pasted text carries a line break', async () => {
+    const user = userEvent.setup();
+    editing(readerElement);
+    render(<DiagramCanvas />);
+
+    await user.clear(field('Name of Reader'));
+    await user.paste('Audit\nor');
+
+    expect(field('Name of Reader')).toHaveProperty('value', 'Auditor');
   });
 });

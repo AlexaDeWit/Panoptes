@@ -249,7 +249,10 @@ the region below, which speaks only for edits that landed.
 - **Edit canvas text.** Double-clicking an element or flow, or pressing Enter
   with one selected, opens a field where the diagram draws its text: over the
   glyph for an element and over the label for a flow, at the placement the
-  layout settled, so nothing has to be looked for. F2 is an alias for names.
+  layout settled, so nothing has to be looked for. The glyph draws no text of
+  its own while the field is open, so the text is read in one place, and the
+  field is set in the type the text is drawn in, wraps to the same width and
+  grows to the lines it holds. F2 is an alias for names.
   Enter commits a name and Escape leaves it as the model holds it. Focus goes
   back to the element on both. Leaving the field for another control commits
   as well and leaves focus where the click put it. The field is labelled

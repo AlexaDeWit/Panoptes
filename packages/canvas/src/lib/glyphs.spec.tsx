@@ -153,6 +153,14 @@ describe('ElementGlyph, taking its extent from the model', () => {
     expect(glyphOf('el-note')).not.toContain(canvasClassNames.badge);
   });
 
+  it('leaves the text out while a field stands in for it', () => {
+    const markup = renderToStaticMarkup(
+      <ElementGlyph node={nodeNamed('el-client')} textVisible={false} />,
+    );
+    expect(markup).toContain('<rect');
+    expect(markup).not.toContain(canvasClassNames.label);
+  });
+
   it('follows the model when a size changes', () => {
     const widened: CanvasNode = {
       ...nodeNamed('el-client'),
@@ -190,6 +198,14 @@ describe('FlowGlyph', () => {
     expect(
       renderToStaticMarkup(<FlowGlyph edge={edgeNamed('el-probe')} />),
     ).toContain('Nightly backup probe');
+  });
+
+  it('leaves the name out while a field stands in for it', () => {
+    const markup = renderToStaticMarkup(
+      <FlowGlyph edge={edgeNamed('el-probe')} textVisible={false} />,
+    );
+    expect(markup).toContain(`class="${canvasClassNames.flowArrow}"`);
+    expect(markup).not.toContain('Nightly backup probe');
   });
 
   it('badges a flow the open threats name', () => {
