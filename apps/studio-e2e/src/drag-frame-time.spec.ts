@@ -19,7 +19,7 @@ const proxy = /^Écluse proxy, process/u;
 
 const longGapPeriods = 1.5;
 const longGapShare = 0.05;
-const longestPeriods = 3;
+const longestPeriods = 5;
 const framesAtLeast = 60;
 const periodFrames = 20;
 
