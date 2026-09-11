@@ -48,7 +48,8 @@ and no immutable snapshot to push onto a stack.
   fails and no view handles an error. A successful edit pushes the old present
   onto `past` and clears `future`.
 - `store.ts` creates the vanilla store, `dispatch` applies the reducer to it,
-  writes recoverable changes, and then publishes the state.
+  writes recoverable changes, publishes the state, and sends the result to
+  the other tabs ([Other tabs](#other-tabs)).
   `useModelStore(selector)` is the React half. The store opens from recovery,
   the development model, or the placeholder, in that order.
 - `selectors.ts` derives what views show. Unsaved work is `present !== saved`
@@ -112,6 +113,34 @@ Close clears the snapshot. A failed clear keeps the session open for retry.
 
 The snapshot never holds a browser file handle. A restored file keeps its name,
 format, and retained source. Its next Save uses a new bridge with no handle.
+
+### Other tabs
+
+Every studio tab in one browser profile shows the same result, so a person
+edits in whichever tab is in front of them. `sync.ts` carries it over a
+`BroadcastChannel`, which the browser delivers to every other tab of the
+origin and never back to the sender: `dispatch` publishes the result of each
+change that moved the model, a stack, the saved point or the file, and the
+other tabs fold it into `Followed`. The result is the model, both stacks, the
+saved point, the file and whether the recovery storage holds it, sent by
+structured clone, which keeps the references the stacks and the identity-based
+dirty check share. Selection and an open field stay with the tab that made
+them, trimmed to the elements the adopted model still draws. Following writes
+nothing and publishes nothing, since the result is already the other tab's.
+The file session is what watches ([the file bridge](../files/README.md)),
+because a model another tab wrote is one the handle it holds does not
+describe.
+
+A message is trusted on its build alone: it comes from this origin's own
+code, and the envelope carries the commit CI built the bundle from
+(`studioBuildId`), so a tab left open across a deploy and a tab on the new
+code ignore each other rather than exchange state neither describes. Two
+tabs editing at once each adopt the other's result, so they diverge until
+the next change in either, while the recovery storage holds whichever wrote
+last. A tab opened later starts from the recovery snapshot, without history,
+and catches up at the next change in any tab. A followed result with empty
+stacks, another tab's open or close, fits the follower's viewport as an open
+here would.
 
 ## Rules for changes
 

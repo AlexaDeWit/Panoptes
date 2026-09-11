@@ -60,3 +60,32 @@ test('reload restores the last completed edit', async ({ page }) => {
     await page.evaluate((key) => localStorage.getItem(key), handleWriteKey),
   ).toBeNull();
 });
+
+test('two tabs follow each other, so the one in view is the one that is right', async ({
+  context,
+  page,
+}) => {
+  const other = await context.newPage();
+  await openPlaceholder(page);
+  await openPlaceholder(other);
+
+  await nodeNamed(page, /^Store, store/u).dblclick();
+  await page.getByRole('textbox', { name: 'Name of Store' }).fill('Ledger');
+  await page.getByRole('textbox', { name: 'Name of Store' }).press('Enter');
+
+  await expect(nodeNamed(other, /^Ledger, store/u)).toHaveCount(1);
+
+  await nodeNamed(other, /^Actor, actor/u).dblclick();
+  await other.getByRole('textbox', { name: 'Name of Actor' }).fill('Clerk');
+  await other.getByRole('textbox', { name: 'Name of Actor' }).press('Enter');
+
+  await expect(nodeNamed(page, /^Clerk, actor/u)).toHaveCount(1);
+  await expect(nodeNamed(page, /^Ledger, store/u)).toHaveCount(1);
+
+  await runFromMenu(page, 'Undo');
+  await expect(nodeNamed(page, /^Actor, actor/u)).toHaveCount(1);
+  await expect(nodeNamed(other, /^Actor, actor/u)).toHaveCount(1);
+  await runFromMenu(other, 'Undo');
+  await expect(nodeNamed(other, /^Store, store/u)).toHaveCount(1);
+  await expect(nodeNamed(page, /^Store, store/u)).toHaveCount(1);
+});

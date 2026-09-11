@@ -9,6 +9,7 @@ import {
 } from '../store/state.js';
 import { isDirty } from '../store/selectors.js';
 import { dispatch, modelStore } from '../store/store.js';
+import type { StoreSync, SyncedState } from '../store/sync.js';
 import {
   mainDiagram,
   newProcess,
@@ -42,8 +43,28 @@ const failedFiles: readonly ChosenFile[] = [
   chosenFile('notes.txt', 'not a model'),
 ];
 
-const session = (bridge: FileBridge, pdf?: PdfExport) =>
-  renderHook(() => useFileSession(bridge, pdf)).result;
+const session = (
+  bridge: FileBridge,
+  pdf?: PdfExport,
+  sync?: Pick<StoreSync, 'watch'>,
+) => renderHook(() => useFileSession(bridge, pdf, sync)).result;
+
+function anotherTab() {
+  let follow: ((state: SyncedState) => void) | undefined;
+  return {
+    sync: {
+      watch: (next: (state: SyncedState) => void) => {
+        follow = next;
+        return () => undefined;
+      },
+    },
+    reaches: (state: SyncedState) => {
+      act(() => {
+        follow?.(state);
+      });
+    },
+  };
+}
 
 const edit = (): void => {
   act(() => {
@@ -816,6 +837,23 @@ describe('useFileSession', () => {
     });
 
     expect(bridge.releases.count).toBe(1);
+    expect(modelStore.getState().present).toBe(placeholderModel);
+  });
+
+  it('lets the bridge go of the file it was holding once another tab reaches a result, and puts its question away', () => {
+    const other = anotherTab();
+    const bridge = specBridge();
+    const result = session(bridge, undefined, other.sync);
+    edit();
+    act(() => {
+      result.current.commands.close();
+    });
+    expect(result.current.closing).toBe(true);
+
+    other.reaches({ ...initialState(placeholderModel), recoveryCurrent: true });
+
+    expect(bridge.releases.count).toBe(1);
+    expect(result.current.closing).toBe(false);
     expect(modelStore.getState().present).toBe(placeholderModel);
   });
 

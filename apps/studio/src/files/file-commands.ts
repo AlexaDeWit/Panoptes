@@ -4,12 +4,13 @@ import {
   type WriteResult,
 } from '@saerskriven/formats';
 import { Either } from 'effect';
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { FileCommands } from '../commands/registry.js';
 import { Action } from '../store/actions.js';
 import { isDirty } from '../store/selectors.js';
 import type { State } from '../store/state.js';
 import { dispatch, modelStore } from '../store/store.js';
+import { browserStoreSync, type StoreSync } from '../store/sync.js';
 import { browserFileBridge } from './browser-bridge.js';
 import {
   browserPdfExport,
@@ -69,10 +70,17 @@ export type FileSession = {
   readonly cancelChoice: () => void;
 };
 
-/** Settles handle ownership before synchronously dispatching the matching store action. */
+/**
+ * Settles handle ownership before synchronously dispatching the matching
+ * store action for an open or a save. The session is also what follows other
+ * tabs, since a model another tab wrote is one the held handle does not
+ * describe: a follow releases the handle and puts away the report and every
+ * question.
+ */
 export function useFileSession(
   bridge: FileBridge = browserFileBridge,
   pdf: PdfExport = browserPdfExport,
+  sync: Pick<StoreSync, 'watch'> = browserStoreSync,
 ): FileSession {
   const [report, setReport] = useState<LossReport | undefined>(undefined);
   const [opening, setOpening] = useState(false);
@@ -87,6 +95,20 @@ export function useFileSession(
   const attachPicker = useCallback((input: HTMLInputElement | null): void => {
     picker.current = input;
   }, []);
+
+  useEffect(
+    () =>
+      sync.watch((state) => {
+        dispatch(Action.Followed({ state }));
+        bridge.release();
+        setReport(undefined);
+        setOpening(false);
+        setImporting(false);
+        setClosing(false);
+        setChoosing(false);
+      }),
+    [bridge, sync],
+  );
 
   const closeFile = useCallback((): void => {
     setClosing(false);

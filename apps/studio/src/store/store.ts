@@ -5,12 +5,11 @@ import { createStore, type StoreApi } from 'zustand/vanilla';
 import type { Action } from './actions.js';
 import { developmentModel } from './development-model.js';
 import { reduce } from './reducer.js';
-import { holdsDiagram } from './selectors.js';
 import {
   browserRecoveryStorage,
   RecoveryStorageFailure,
   recoverySnapshot,
-  type RecoverySnapshot,
+  restoredState,
   type RecoveryStorage,
 } from './recovery-storage.js';
 import {
@@ -19,6 +18,7 @@ import {
   placeholderModel,
   type State,
 } from './state.js';
+import { browserStoreSync, type StoreSync, type SyncedState } from './sync.js';
 
 /** A store and its persistence-aware dispatcher. */
 export type ModelStoreRuntime = {
@@ -28,25 +28,28 @@ export type ModelStoreRuntime = {
   ) => Either.Either<void, RecoveryStorageFailure>;
 };
 
-/** Creates a store that restores and replaces one recovery snapshot. */
+/**
+ * Creates a store that restores and replaces one recovery snapshot and
+ * publishes every changed result to the other tabs. A followed result is
+ * theirs already, so following neither writes nor publishes.
+ */
 export function createModelStore(
   storage: RecoveryStorage,
+  sync: StoreSync,
   fallback = placeholderModel,
 ): ModelStoreRuntime {
-  const modelStore = createStore<State>(() => restoredState(storage, fallback));
+  const modelStore = createStore<State>(() => startState(storage, fallback));
 
-  return {
-    modelStore,
-    dispatch: (action) => {
-      const before = modelStore.getState();
-      const reduced = reduce(before, action);
-      if (!recoverableChanged(before, reduced)) {
-        modelStore.setState(reduced, true);
-        return Either.right(undefined);
-      }
-
-      const stored =
-        action._tag === 'Closed'
+  const dispatch = (
+    action: Action,
+  ): Either.Either<void, RecoveryStorageFailure> => {
+    const before = modelStore.getState();
+    const reduced = reduce(before, action);
+    const followed = action._tag === 'Followed';
+    const stored =
+      followed || !recoverableChanged(before, reduced)
+        ? undefined
+        : action._tag === 'Closed'
           ? storage.clear()
           : storage.replace(
               recoverySnapshot(
@@ -56,35 +59,20 @@ export function createModelStore(
                 reduced.activeDiagram,
               ),
             );
-      if (Either.isLeft(stored)) {
-        const retained = action._tag === 'Closed' ? before : reduced;
-        modelStore.setState(
-          {
-            ...retained,
-            recoveryCurrent:
-              action._tag === 'Closed' ? before.recoveryCurrent : false,
-            lastFailure: StudioFailure.RecoveryUnavailable({
-              reason: stored.left.reason,
-            }),
-          },
-          true,
-        );
-        return stored;
-      }
-      modelStore.setState(
-        {
-          ...reduced,
-          recoveryCurrent: action._tag !== 'Closed',
-        },
-        true,
-      );
-      return Either.right(undefined);
-    },
+    const next = settled(before, reduced, action, stored);
+    modelStore.setState(next, true);
+    if (!followed && resultChanged(before, next)) {
+      sync.publish(syncedState(next));
+    }
+    return stored ?? Either.right(undefined);
   };
+
+  return { modelStore, dispatch };
 }
 
 const runtime = createModelStore(
   browserRecoveryStorage,
+  browserStoreSync,
   developmentModel() ?? placeholderModel,
 );
 
@@ -101,7 +89,7 @@ export function useModelStore<Selected>(
   return useStore(modelStore, select);
 }
 
-function restoredState(storage: RecoveryStorage, fallback: Model): State {
+function startState(storage: RecoveryStorage, fallback: Model): State {
   return storage.load().pipe(
     Either.match({
       onLeft: (failure) => ({
@@ -111,22 +99,41 @@ function restoredState(storage: RecoveryStorage, fallback: Model): State {
       onRight: (snapshot) =>
         snapshot === undefined
           ? initialState(fallback)
-          : stateFromSnapshot(snapshot),
+          : restoredState(snapshot),
     }),
   );
 }
 
-function stateFromSnapshot(snapshot: RecoverySnapshot): State {
-  const present = snapshot.present;
-  // Dirty status uses identity, so dirty recovery needs a distinct saved value.
+function settled(
+  before: State,
+  reduced: State,
+  action: Action,
+  stored: Either.Either<void, RecoveryStorageFailure> | undefined,
+): State {
+  if (stored === undefined) {
+    return reduced;
+  }
+  const closing = action._tag === 'Closed';
+  if (Either.isLeft(stored)) {
+    return {
+      ...(closing ? before : reduced),
+      recoveryCurrent: closing ? before.recoveryCurrent : false,
+      lastFailure: StudioFailure.RecoveryUnavailable({
+        reason: stored.left.reason,
+      }),
+    };
+  }
+  return { ...reduced, recoveryCurrent: !closing };
+}
+
+function syncedState(state: State): SyncedState {
   return {
-    ...initialState(present),
-    saved: snapshot.dirty ? { ...present } : present,
-    activeDiagram: holdsDiagram(present, snapshot.activeDiagram)
-      ? snapshot.activeDiagram
-      : undefined,
-    file: snapshot.file,
-    recoveryCurrent: true,
+    present: state.present,
+    past: state.past,
+    future: state.future,
+    saved: state.saved,
+    file: state.file,
+    recoveryCurrent: state.recoveryCurrent,
   };
 }
 
@@ -143,5 +150,15 @@ function recoverableChanged(before: State, after: State): boolean {
     (before.present !== before.saved) !== (after.present !== after.saved) ||
     before.file !== after.file ||
     before.activeDiagram !== after.activeDiagram
+  );
+}
+
+function resultChanged(before: State, after: State): boolean {
+  return (
+    before.present !== after.present ||
+    before.past !== after.past ||
+    before.future !== after.future ||
+    before.saved !== after.saved ||
+    before.file !== after.file
   );
 }

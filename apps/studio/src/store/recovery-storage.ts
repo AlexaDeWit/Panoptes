@@ -14,7 +14,13 @@ import {
 import { Data, Either } from 'effect';
 import { z } from 'zod';
 import { reasonOf } from '../files/bridge.js';
-import { FileLifecycle, type RetainedSource } from './state.js';
+import { holdsDiagram } from './selectors.js';
+import {
+  FileLifecycle,
+  initialState,
+  type RetainedSource,
+  type State,
+} from './state.js';
 
 const recoveryVersion = 1;
 
@@ -91,6 +97,25 @@ export function recoverySnapshot(
     dirty,
     file,
     ...(activeDiagram === undefined ? {} : { activeDiagram }),
+  };
+}
+
+/**
+ * The state a snapshot restores: the model, the file, the dirty status and
+ * the active diagram where the model still holds it, with empty history and
+ * transient state. Dirty status is identity, so a dirty snapshot gets a
+ * distinct saved value.
+ */
+export function restoredState(snapshot: RecoverySnapshot): State {
+  const present = snapshot.present;
+  return {
+    ...initialState(present),
+    saved: snapshot.dirty ? { ...present } : present,
+    activeDiagram: holdsDiagram(present, snapshot.activeDiagram)
+      ? snapshot.activeDiagram
+      : undefined,
+    file: snapshot.file,
+    recoveryCurrent: true,
   };
 }
 

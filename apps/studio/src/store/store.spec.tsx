@@ -23,6 +23,7 @@ import {
   type RecoverySnapshot,
   type RecoveryStorage,
 } from './recovery-storage.js';
+import type { StoreSync, SyncedState } from './sync.js';
 import { FileLifecycle, initialState, placeholderModel } from './state.js';
 import {
   createModelStore,
@@ -85,6 +86,34 @@ const loaded = (snapshot?: RecoverySnapshot): RecoveryStorage => ({
   clear: () => Either.right(undefined),
 });
 
+const silent: StoreSync = {
+  publish: () => undefined,
+  watch: () => () => undefined,
+};
+
+function tabs(snapshot?: RecoverySnapshot) {
+  const writes = { replaced: 0, cleared: 0 };
+  const published: SyncedState[] = [];
+  const storage: RecoveryStorage = {
+    ...loaded(snapshot),
+    replace: () => {
+      writes.replaced += 1;
+      return Either.right(undefined);
+    },
+    clear: () => {
+      writes.cleared += 1;
+      return Either.right(undefined);
+    },
+  };
+  const sync: StoreSync = {
+    ...silent,
+    publish: (state) => {
+      published.push(state);
+    },
+  };
+  return { storage, sync, writes, published };
+}
+
 describe('session recovery', () => {
   it.each([false, true])(
     'restores a session whose dirty status is %s with empty transient state',
@@ -95,6 +124,7 @@ describe('session recovery', () => {
       });
       const runtime = createModelStore(
         loaded(recoverySnapshot(sampleModel, dirty, file)),
+        silent,
         placeholderModel,
       );
       const state = runtime.modelStore.getState();
@@ -121,6 +151,7 @@ describe('session recovery', () => {
           secondDiagram,
         ),
       ),
+      silent,
     ).modelStore.getState();
     expect(activeDiagramId(shown)).toBe(secondDiagram);
 
@@ -133,6 +164,7 @@ describe('session recovery', () => {
           secondDiagram,
         ),
       ),
+      silent,
     ).modelStore.getState();
     expect(stale.activeDiagram).toBeUndefined();
     expect(activeDiagramId(stale)).toBe(mainDiagram);
@@ -147,12 +179,22 @@ describe('session recovery', () => {
         return Either.right(undefined);
       },
     };
-    const runtime = createModelStore(storage, twoDiagramModel);
+    const runtime = createModelStore(storage, silent, twoDiagramModel);
 
     runtime.dispatch(Action.SelectDiagram({ diagramId: secondDiagram }));
 
     expect(stored?.activeDiagram).toBe(secondDiagram);
     expect(stored?.dirty).toBe(false);
+  });
+
+  it('keeps the diagram on screen to this tab, publishing no result for a switch', () => {
+    const tab = tabs();
+    const runtime = createModelStore(tab.storage, tab.sync, twoDiagramModel);
+
+    runtime.dispatch(Action.SelectDiagram({ diagramId: secondDiagram }));
+
+    expect(tab.writes.replaced).toBe(1);
+    expect(tab.published).toEqual([]);
   });
 
   it('opens the placeholder and reports rejected stored data', () => {
@@ -164,7 +206,7 @@ describe('session recovery', () => {
         ),
     };
 
-    const state = createModelStore(storage).modelStore.getState();
+    const state = createModelStore(storage, silent).modelStore.getState();
 
     expect(state.present).toBe(placeholderModel);
     expect(state.lastFailure?._tag).toBe('StoredRecoveryRejected');
@@ -181,7 +223,7 @@ describe('session recovery', () => {
         return Either.right(undefined);
       },
     };
-    runtime = createModelStore(storage, sampleModel);
+    runtime = createModelStore(storage, silent, sampleModel);
 
     runtime.dispatch(addProcess);
 
@@ -198,7 +240,7 @@ describe('session recovery', () => {
         return Either.right(undefined);
       },
     };
-    const runtime = createModelStore(storage, sampleModel);
+    const runtime = createModelStore(storage, silent, sampleModel);
 
     runtime.dispatch(Action.Select({ elementIds: [actorElement] }));
 
@@ -218,7 +260,7 @@ describe('session recovery', () => {
             );
       },
     };
-    const runtime = createModelStore(storage, sampleModel);
+    const runtime = createModelStore(storage, silent, sampleModel);
 
     runtime.dispatch(addProcess);
     expect(needsCloseGuard(runtime.modelStore.getState())).toBe(false);
@@ -234,6 +276,65 @@ describe('session recovery', () => {
     );
   });
 
+  it('publishes each changed result to the other tabs, and nothing for a transient change', () => {
+    const tab = tabs();
+    const runtime = createModelStore(tab.storage, tab.sync, sampleModel);
+
+    runtime.dispatch(Action.Select({ elementIds: [actorElement] }));
+    runtime.dispatch(addProcess);
+    runtime.dispatch(Action.Undo());
+
+    expect(tab.published.map((state) => state.past.length)).toEqual([1, 0]);
+    expect(tab.published[0]?.present).toBe(
+      runtime.modelStore.getState().future[0],
+    );
+    expect(tab.published[1]?.recoveryCurrent).toBe(true);
+  });
+
+  it('publishes a result whose recovery write failed, so the other tabs guard it too', () => {
+    const tab = tabs();
+    tab.storage = {
+      ...tab.storage,
+      replace: () =>
+        Either.left(
+          RecoveryStorageFailure.Unavailable({ reason: 'Quota reached.' }),
+        ),
+    };
+    const runtime = createModelStore(tab.storage, tab.sync, sampleModel);
+
+    runtime.dispatch(addProcess);
+
+    expect(tab.published).toHaveLength(1);
+    expect(tab.published[0]?.recoveryCurrent).toBe(false);
+  });
+
+  it('follows another tab without writing or publishing, since the result is already theirs', () => {
+    const tab = tabs();
+    const runtime = createModelStore(tab.storage, tab.sync, placeholderModel);
+    const file = FileLifecycle.Opened({
+      name: 'model.json',
+      source: foreignSource,
+    });
+    const theirs = {
+      ...initialState(sampleModel),
+      past: [placeholderModel],
+      saved: placeholderModel,
+      file,
+      recoveryCurrent: true,
+    };
+
+    runtime.dispatch(Action.Followed({ state: theirs }));
+
+    const state = runtime.modelStore.getState();
+    expect(state.present).toBe(sampleModel);
+    expect(state.past).toBe(theirs.past);
+    expect(isDirty(state)).toBe(true);
+    expect(state.file).toEqual(file);
+    expect(state.recoveryCurrent).toBe(true);
+    expect(tab.writes).toEqual({ replaced: 0, cleared: 0 });
+    expect(tab.published).toEqual([]);
+  });
+
   it('clears recovery when the session closes', () => {
     let clears = 0;
     const storage: RecoveryStorage = {
@@ -243,7 +344,7 @@ describe('session recovery', () => {
         return Either.right(undefined);
       },
     };
-    const runtime = createModelStore(storage);
+    const runtime = createModelStore(storage, silent);
 
     runtime.dispatch(Action.Closed());
 
@@ -268,7 +369,7 @@ describe('session recovery', () => {
           : Either.right(undefined);
       },
     };
-    const runtime = createModelStore(storage);
+    const runtime = createModelStore(storage, silent);
 
     expect(runtime.dispatch(Action.Closed())._tag).toBe('Left');
     const retained = runtime.modelStore.getState();

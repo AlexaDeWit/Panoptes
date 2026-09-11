@@ -23,9 +23,9 @@ import {
   type Model,
 } from '@saerskriven/model';
 import { Either } from 'effect';
-import { sameSelection } from './selection.js';
 import { Action } from './actions.js';
 import { activeDiagramId, holdsDiagram } from './selectors.js';
+import { sameSelection } from './selection.js';
 import {
   FileLifecycle,
   StudioFailure,
@@ -33,6 +33,7 @@ import {
   placeholderModel,
   type State,
 } from './state.js';
+import type { SyncedState } from './sync.js';
 
 /** Refused model operations preserve the model and history, and record the failure. */
 export function reduce(state: State, action: Action): State {
@@ -130,6 +131,7 @@ export function reduce(state: State, action: Action): State {
       lastFailure: undefined,
     }),
     Closed: () => initialState(placeholderModel),
+    Followed: ({ state: synced }) => followed(state, synced),
     ReadFailed: ({ name, failure }) => ({
       ...state,
       file: FileLifecycle.NoFile(),
@@ -246,6 +248,34 @@ function editElements(
       Either.flatMap(outcome, (current) => edit(current, elementId)),
     Either.right(model),
   );
+}
+
+function followed(state: State, synced: SyncedState): State {
+  const { present, past, future, saved, file, recoveryCurrent } = synced;
+  const drawn = new Set(
+    present.diagrams.flatMap((diagram) =>
+      diagram.elements.map((element) => element.id),
+    ),
+  );
+  const selection = state.selection.filter((selected) => drawn.has(selected));
+  return {
+    ...state,
+    present,
+    past,
+    future,
+    saved,
+    file,
+    recoveryCurrent,
+    selection: sameSelection(state.selection, selection)
+      ? state.selection
+      : selection,
+    inlineEditor:
+      state.inlineEditor !== undefined &&
+      drawn.has(state.inlineEditor.elementId)
+        ? state.inlineEditor
+        : undefined,
+    lastFailure: undefined,
+  };
 }
 
 function undone(state: State): State {
