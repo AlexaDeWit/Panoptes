@@ -12,6 +12,7 @@
   background: var(--pn-colour-surface-raised);
   color: var(--pn-colour-text);
   overflow-y: auto;
+  scrollbar-gutter: stable;
 }
 
 .header {
