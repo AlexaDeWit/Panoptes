@@ -405,7 +405,7 @@ export function withNeededPorts(
     ];
     for (const side of wanted) {
       groups[side] ??= { position: side };
-      if (!items.some((item) => item.id === side)) {
+      if (!items.some((item) => item.group === side && item.id === side)) {
         items.push({ group: side, id: side });
       }
     }

@@ -109,7 +109,7 @@ export function renderSchema(schema: Schema): string {
 
 function expand(schema: Schema, indent: string): string[] {
   const def = schema.def;
-  if (def.innerType) {
+  if (def.type === 'optional' && def.innerType) {
     return expand(def.innerType, indent);
   }
   if (def.shape) {
@@ -156,7 +156,7 @@ function summary(schema: Schema): string {
   if (brand) {
     return `${brand[1]} (${scalar(def)})`;
   }
-  if (def.innerType) {
+  if (def.type === 'optional' && def.innerType) {
     return `optional, ${summary(def.innerType)}`;
   }
   if (def.shape) {

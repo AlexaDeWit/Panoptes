@@ -265,7 +265,7 @@ const diagramSchema = z.object({
 /**
  * A Threat Dragon v2 file, whole, and the whole of what this package
  * declares. Every key the format carries is here, the parts Saerskriven does
- * not model included (text blocks, ports, `attrs` styling, `zIndex`,
+ * not model included (text blocks, port styling, `attrs` styling, `zIndex`,
  * `tools`, `placeholder`, `thumbnail`, `diagramTop`), because a write
  * merges onto this document and only a declared key is there to leave
  * alone. Nothing is defaulted and nothing is transformed: a key the file

@@ -264,6 +264,10 @@ it('pins a flow end to a side by arrow key, by its actions, and by dragging, and
   expect(screen.getByRole('button', { name: 'Follow the route' })).toBe(
     document.activeElement,
   );
+  press('Tab');
+  expect(
+    screen.queryByRole('group', { name: 'Flow end actions' }),
+  ).not.toBeNull();
   fireEvent.click(screen.getByRole('button', { name: 'Top' }));
   expect(source()).toMatchObject({ side: 'top' });
   expect(screen.queryByRole('group', { name: 'Flow end actions' })).toBeNull();

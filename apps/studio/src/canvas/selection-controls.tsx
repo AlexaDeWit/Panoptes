@@ -29,15 +29,9 @@ import {
   selectionControlFrom,
   type SelectionControl,
 } from './selection-control.js';
+import { sideLabels } from './side-labels.js';
 import { currentTool, useTool } from './tools.js';
 import styles from './selection-controls.module.css';
-
-const sideLabels = {
-  top: 'Top',
-  right: 'Right',
-  bottom: 'Bottom',
-  left: 'Left',
-} as const satisfies Record<Side, string>;
 
 type OpenControl = {
   readonly kind: SelectionControl;

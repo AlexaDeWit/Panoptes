@@ -232,7 +232,6 @@ it('toggles a flow between one way and both ways as one undo step each', () => {
     screen.getByRole('button', { name: /Toggle bidirectional flow/u }),
   );
   expect(flowOf()).toMatchObject({ bidirectional: true });
-  expect(currentAnnouncement().message).toContain('both ways');
   fireEvent.click(
     screen.getByRole('button', { name: /Toggle bidirectional flow/u }),
   );

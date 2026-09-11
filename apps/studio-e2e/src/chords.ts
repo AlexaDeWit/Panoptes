@@ -7,6 +7,7 @@ export const registeredChords = {
   'edit-geometry': ['ControlOrMeta+Shift+p'],
   'reconnect-source': ['ControlOrMeta+Shift+1'],
   'reconnect-target': ['ControlOrMeta+Shift+2'],
+  'toggle-flow-direction': ['ControlOrMeta+Shift+3'],
   'align-left': ['ControlOrMeta+Shift+ArrowLeft'],
   'align-centre': ['ControlOrMeta+Shift+h'],
   'align-right': ['ControlOrMeta+Shift+ArrowRight'],

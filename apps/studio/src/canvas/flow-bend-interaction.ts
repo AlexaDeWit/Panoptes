@@ -44,6 +44,10 @@ type Gesture = {
   readonly moved: boolean;
 };
 
+function holdsFocus(mode: BendMode): boolean {
+  return mode.kind === 'actions' || mode.kind === 'end-actions';
+}
+
 const sideOfArrow: ReadonlyMap<string, Side> = new Map([
   ['ArrowUp', 'top'],
   ['ArrowRight', 'right'],
@@ -196,7 +200,7 @@ export function useFlowBendInteraction(
       cancel();
       return;
     }
-    if (event.key === 'Tab' && mode !== undefined && mode.kind !== 'actions') {
+    if (event.key === 'Tab' && mode !== undefined && !holdsFocus(mode)) {
       cancel(false);
       return;
     }

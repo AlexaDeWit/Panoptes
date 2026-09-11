@@ -16,14 +16,8 @@ import {
   type FlowEnd,
 } from './flow-bend-interaction.js';
 import type { FlowBends } from './flow-bends.js';
+import { sideLabels } from './side-labels.js';
 import styles from './flow-bend-controls.module.css';
-
-const sideLabels = {
-  top: 'Top',
-  right: 'Right',
-  bottom: 'Bottom',
-  left: 'Left',
-} as const satisfies Record<Side, string>;
 
 const flowEnds: readonly FlowEnd[] = ['source', 'target'];
 
@@ -176,10 +170,7 @@ export function FlowBendControls({ bends }: { readonly bends: FlowBends }) {
         })}
         {mode?.kind === 'end-actions' && (
           <EndActions
-            pinned={
-              (mode.end === 'source' ? edge.sourcePin : edge.targetPin) ??
-              undefined
-            }
+            pinned={mode.end === 'source' ? edge.sourcePin : edge.targetPin}
             onChoose={(side) => {
               interaction.pinEnd(mode.end, side);
             }}

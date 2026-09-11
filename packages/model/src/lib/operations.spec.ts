@@ -619,9 +619,9 @@ describe('reconnectFlow', () => {
       ...before,
       source: { kind: 'attached', element, side: 'bottom' },
     });
-    expect(reconnectFlow(pinned, id, 'source', element, 'bottom')).toEqual(
-      Either.right(pinned),
-    );
+    expect(
+      modelOf(reconnectFlow(pinned, id, 'source', element, 'bottom')),
+    ).toBe(pinned);
     const released = modelOf(reconnectFlow(pinned, id, 'source', element));
     expect(flowIn(released, id).source).toEqual({ kind: 'attached', element });
     expect(
@@ -639,7 +639,7 @@ describe('setFlowDirection', () => {
     const id = elementId('element-order-flow');
     const before = flowIn(base, id);
     expect(before.bidirectional).toBe(false);
-    expect(setFlowDirection(base, id, false)).toEqual(Either.right(base));
+    expect(modelOf(setFlowDirection(base, id, false))).toBe(base);
     const both = modelOf(setFlowDirection(base, id, true));
     expect(flowIn(both, id)).toEqual({ ...before, bidirectional: true });
     expect(flowIn(modelOf(setFlowDirection(both, id, false)), id)).toEqual(

@@ -97,8 +97,8 @@ bounds reads exactly as it did before they existed.
 [`@saerskriven/wire-threat-dragon`](../wire-threat-dragon/README.md), which
 imports zod and nothing else, and this package is the only one that maps
 between it and the model. That wire schema declares the whole file, the X6
-styling, ports, text blocks, and boundary bookkeeping Saerskriven does not model
-included. What it declares it demands, and it demands nothing else, because it
+styling, port styling, text blocks, and boundary bookkeeping Saerskriven does
+not model included. What it declares it demands, and it demands nothing else, because it
 describes the file rather than the subset Saerskriven can represent: a threat's
 status, severity, category and methodology are text, since Threat Dragon
 stores each label in the author's own locale, and a threat number is optional,
