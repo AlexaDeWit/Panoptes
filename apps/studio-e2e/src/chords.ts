@@ -19,6 +19,8 @@ export const registeredChords = {
   'snap-to-grid': ['ControlOrMeta+Shift+g'],
   'reset-zoom': ['ControlOrMeta+1'],
   'fit-selection': ['ControlOrMeta+Shift+0'],
+  'next-diagram': ['PageDown'],
+  'previous-diagram': ['PageUp'],
 
   open: ['ControlOrMeta+o'],
   import: [],

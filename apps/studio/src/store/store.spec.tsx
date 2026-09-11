@@ -8,8 +8,15 @@ import {
   mainDiagram,
   newProcess,
   sampleModel,
+  secondDiagram,
+  twoDiagramModel,
 } from './store.fixtures.js';
-import { elementCount, isDirty, needsCloseGuard } from './selectors.js';
+import {
+  activeDiagramId,
+  elementCount,
+  isDirty,
+  needsCloseGuard,
+} from './selectors.js';
 import {
   RecoveryStorageFailure,
   recoverySnapshot,
@@ -103,6 +110,50 @@ describe('session recovery', () => {
       expect(state.recoveryCurrent).toBe(true);
     },
   );
+
+  it('restores the diagram on screen where the restored model holds it', () => {
+    const shown = createModelStore(
+      loaded(
+        recoverySnapshot(
+          twoDiagramModel,
+          false,
+          FileLifecycle.NoFile(),
+          secondDiagram,
+        ),
+      ),
+    ).modelStore.getState();
+    expect(activeDiagramId(shown)).toBe(secondDiagram);
+
+    const stale = createModelStore(
+      loaded(
+        recoverySnapshot(
+          sampleModel,
+          false,
+          FileLifecycle.NoFile(),
+          secondDiagram,
+        ),
+      ),
+    ).modelStore.getState();
+    expect(stale.activeDiagram).toBeUndefined();
+    expect(activeDiagramId(stale)).toBe(mainDiagram);
+  });
+
+  it('replaces recovery when the diagram on screen changes', () => {
+    let stored: RecoverySnapshot | undefined;
+    const storage: RecoveryStorage = {
+      ...loaded(),
+      replace: (snapshot) => {
+        stored = snapshot;
+        return Either.right(undefined);
+      },
+    };
+    const runtime = createModelStore(storage, twoDiagramModel);
+
+    runtime.dispatch(Action.SelectDiagram({ diagramId: secondDiagram }));
+
+    expect(stored?.activeDiagram).toBe(secondDiagram);
+    expect(stored?.dirty).toBe(false);
+  });
 
   it('opens the placeholder and reports rejected stored data', () => {
     const storage: RecoveryStorage = {

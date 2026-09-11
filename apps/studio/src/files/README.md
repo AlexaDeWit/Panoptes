@@ -131,7 +131,11 @@ the menu and open it again around an answer.
 
 `menu.tsx` mounts the rest: the burger button over the top left of the canvas,
 the file and edit commands, the Export submenu, the project link, and the
-state of the open file. The Project group links to GitHub. The app shows the
+state of the open file. `diagram-menu.tsx` adds the Diagram group, one radio
+item per diagram and the Next and Previous diagram commands, and the switcher
+beside the burger that names the diagram on screen and opens the same
+choice. Both are in the page only while the model holds more than one
+diagram. The Project group links to GitHub. The app shows the
 built version above the React Flow attribution, with `development` for builds
 without a release tag. The submenu has one SVG item per diagram when the
 model has several.

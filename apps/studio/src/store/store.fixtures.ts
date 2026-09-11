@@ -87,6 +87,12 @@ export const storeElement = elementId('store-models');
 /** The one threat the fixture register holds. */
 export const firstThreat = threatId('threat-tampering');
 
+/** The diagram {@link twoDiagramModel} holds after {@link mainDiagram}. */
+export const secondDiagram = diagramId('diagram-second');
+
+/** The one element of {@link secondDiagram}. */
+export const otherElement = elementId('actor-other');
+
 const document = {
   metadata: {
     title: 'Store fixture',
@@ -159,6 +165,33 @@ export const sampleModel: Model = parsedFixture(document);
 
 /** The fixture threat, as the register holds it. */
 export const sampleThreat: Threat = sampleModel.threats[0];
+
+/**
+ * The sample model with a second diagram of one actor after the first, for
+ * the specs that switch between diagrams.
+ */
+export const twoDiagramModel: Model = parsedFixture({
+  ...document,
+  diagrams: [
+    ...document.diagrams,
+    {
+      id: secondDiagram,
+      title: 'Second',
+      elements: [
+        {
+          kind: 'actor',
+          id: otherElement,
+          name: 'Other reader',
+          description: '',
+          outOfScope: false,
+          reasonOutOfScope: '',
+          position: { x: 0, y: 0 },
+          size: { width: 120, height: 60 },
+        },
+      ],
+    },
+  ],
+});
 
 /**
  * One fixture element as the model holds it, for a spec that has the id and

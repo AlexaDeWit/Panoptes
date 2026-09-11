@@ -52,6 +52,7 @@ export function createModelStore(
                 reduced.present,
                 reduced.present !== reduced.saved,
                 reduced.file,
+                reduced.activeDiagram,
               ),
             );
       if (Either.isLeft(stored)) {
@@ -120,6 +121,11 @@ function stateFromSnapshot(snapshot: RecoverySnapshot): State {
   return {
     ...initialState(present),
     saved: snapshot.dirty ? { ...present } : present,
+    activeDiagram: present.diagrams.some(
+      (diagram) => diagram.id === snapshot.activeDiagram,
+    )
+      ? snapshot.activeDiagram
+      : undefined,
     file: snapshot.file,
     recoveryCurrent: true,
   };
@@ -136,6 +142,7 @@ function recoverableChanged(before: State, after: State): boolean {
   return (
     before.present !== after.present ||
     (before.present !== before.saved) !== (after.present !== after.saved) ||
-    before.file !== after.file
+    before.file !== after.file ||
+    before.activeDiagram !== after.activeDiagram
   );
 }

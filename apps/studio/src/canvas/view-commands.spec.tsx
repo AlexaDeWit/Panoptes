@@ -13,7 +13,11 @@ import {
 import { Action } from '../store/actions.js';
 import { initialState, placeholderModel } from '../store/state.js';
 import { dispatch, modelStore } from '../store/store.js';
-import { nativeSource } from '../store/store.fixtures.js';
+import {
+  nativeSource,
+  secondDiagram,
+  twoDiagramModel,
+} from '../store/store.fixtures.js';
 import { canvasModel, readerElement } from './canvas.fixtures.js';
 import { FitOnOpen, useViewCommands } from './view-commands.js';
 
@@ -59,6 +63,20 @@ describe('FitOnOpen', () => {
           divergences: [],
         }),
       );
+    });
+
+    await waitFor(() => {
+      expect(transform()).not.toBe(first);
+    });
+  });
+
+  it('fits again for a diagram switched to, edited model or not', async () => {
+    modelStore.setState(initialState(twoDiagramModel), true);
+    render(<Harness />);
+    const first = await fitted();
+
+    act(() => {
+      dispatch(Action.SelectDiagram({ diagramId: secondDiagram }));
     });
 
     await waitFor(() => {

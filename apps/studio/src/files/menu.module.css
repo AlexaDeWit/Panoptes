@@ -13,6 +13,39 @@
   max-width: min(30rem, calc(100% - 2 * var(--pn-space-3)));
 }
 
+/* The menu button and, while the model holds more than one diagram, the name
+   of the one on screen sit on one row. */
+.bar {
+  display: flex;
+  gap: var(--pn-space-2);
+  align-items: stretch;
+  max-width: 100%;
+}
+
+.switcher {
+  min-width: 0;
+  max-width: 18rem;
+  padding: var(--pn-space-2) var(--pn-space-3);
+  border: 1px solid var(--pn-colour-border);
+  border-radius: var(--pn-radius);
+  background: var(--pn-colour-surface);
+  color: var(--pn-colour-text);
+  font: inherit;
+  line-height: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.switcher:focus-visible {
+  outline: var(--pn-focus-ring);
+  outline-offset: var(--pn-focus-ring-offset);
+}
+
+.grow {
+  flex: 1;
+}
+
 .burger {
   position: relative;
   padding: var(--pn-space-2) var(--pn-space-3);

@@ -1,6 +1,12 @@
 import { Either } from 'effect';
 import { FileLifecycle, type RetainedSource } from './state.js';
-import { foreignSource, nativeSource, sampleModel } from './store.fixtures.js';
+import {
+  foreignSource,
+  nativeSource,
+  sampleModel,
+  secondDiagram,
+  twoDiagramModel,
+} from './store.fixtures.js';
 import {
   localRecoveryStorage,
   recoverySnapshot,
@@ -54,6 +60,33 @@ describe('local recovery storage', () => {
     expect(raw).not.toContain('"renaming"');
     expect(raw).not.toContain('"lastFailure"');
     expect(storage.load()).toEqual(Either.right(latest));
+  });
+
+  it('keeps the diagram on screen, and loads a snapshot written before it was kept', () => {
+    const memory = memoryStorage();
+    const storage = localRecoveryStorage(() => memory.backend);
+    const shown = recoverySnapshot(
+      twoDiagramModel,
+      false,
+      opened(),
+      secondDiagram,
+    );
+
+    expect(Either.isRight(storage.replace(shown))).toBe(true);
+    expect(storage.load()).toEqual(Either.right(shown));
+
+    memory.values.set(
+      recoveryStorageKey,
+      JSON.stringify({
+        version: 1,
+        present: twoDiagramModel,
+        dirty: false,
+        file: { _tag: 'NoFile' },
+      }),
+    );
+    const earlier = storage.load();
+    expect(Either.isRight(earlier)).toBe(true);
+    expect(Either.getOrThrow(earlier)?.activeDiagram).toBeUndefined();
   });
 
   it.each([

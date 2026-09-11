@@ -10,6 +10,7 @@ import { toggleSnap } from '../canvas/snap.js';
 import { announce } from '../canvas/announcements.js';
 import { startFlow } from '../canvas/connecting.js';
 import { startBendInsertion } from '../canvas/bend-insertion.js';
+import { stepDiagram } from '../canvas/diagrams.js';
 import {
   removeSelected,
   renameSelected,
@@ -84,7 +85,14 @@ export type CommandEntry = {
 };
 
 /** The headings used to group commands in the shortcut reference. */
-export const commandGroups = ['File', 'Edit', 'View', 'Tools', 'Help'] as const;
+export const commandGroups = [
+  'File',
+  'Edit',
+  'View',
+  'Diagram',
+  'Tools',
+  'Help',
+] as const;
 
 /** One command heading in the shortcut reference. */
 export type CommandGroup = (typeof commandGroups)[number];
@@ -282,6 +290,28 @@ const table = {
     inTextFields: false,
     dispatch: runs((surface) => {
       surface.view.fitSelection();
+    }),
+  },
+  'next-diagram': {
+    id: 'next-diagram',
+    label: 'Next diagram',
+    group: 'Diagram',
+    shortcuts: [bare('PageDown')],
+    when: 'The model holds more than one diagram and focus is outside a text field',
+    inTextFields: false,
+    dispatch: runs(() => {
+      stepDiagram('next');
+    }),
+  },
+  'previous-diagram': {
+    id: 'previous-diagram',
+    label: 'Previous diagram',
+    group: 'Diagram',
+    shortcuts: [bare('PageUp')],
+    when: 'The model holds more than one diagram and focus is outside a text field',
+    inTextFields: false,
+    dispatch: runs(() => {
+      stepDiagram('previous');
     }),
   },
   open: {

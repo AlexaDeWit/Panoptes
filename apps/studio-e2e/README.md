@@ -65,6 +65,7 @@ map to the browser specs below. Paths are relative to `src/`.
 | Touch panning, scrolling, and startup overlays                        | `interaction-nits.spec.ts`                               |
 | Edit announcements                                                    | `edit-status.spec.ts`                                    |
 | Reload recovery                                                       | `recovery.spec.ts`                                       |
+| Switching between the diagrams of a model                             | `diagrams.spec.ts`                                       |
 | System and saved colour preferences                                   | `dark-mode.spec.ts`, `appearance.spec.ts`                |
 | axe-core checks of the page and open controls                         | `accessibility.spec.ts`                                  |
 | Drag frame times                                                      | `drag-frame-time.spec.ts`                                |

@@ -6,9 +6,10 @@ and the headless renderer draw one picture from one set of numbers.
 
 ## What it derives, and what it holds
 
-`layout.ts` holds the laid-out first diagram on screen. The store selectors
-provide the selection. A layout is kept against the model it came from and
-handed back while that model is the same object,
+`layout.ts` holds the laid-out diagram on screen, the one the store names as
+active or the first the model holds. The store selectors provide the
+selection. A layout is kept against the model it came from and the diagram
+it drew, and handed back while that model is the same object,
 which saves the work and, more than that, is what lets the canvas subscribe
 at all: zustand reads a store through `useSyncExternalStore`, which refuses a
 snapshot that is a new object on every call. `names.ts` says what an element
@@ -451,4 +452,8 @@ twenty. Each press is one undo step, and the opposite edge stays fixed.
   screen reader's browse mode inside the canvas: Tab reaches every element
   but the reader's own navigation keys do not. React Flow writes the role
   after any property handed to it, so it cannot be overridden from here.
-- The canvas draws the model's first diagram. There is no diagram chooser.
+- The canvas draws one diagram at a time. The menu's Diagram group, the name
+  beside the menu button, and the Next and Previous diagram commands switch
+  between them (`diagrams.ts`). Adding, renaming, removing and reordering
+  diagrams is not offered: a second diagram is written into the file, and
+  #316 holds the model operations that work would build on.

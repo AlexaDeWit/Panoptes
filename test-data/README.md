@@ -25,7 +25,7 @@ The producers are `@saerskriven/model`, `@saerskriven/formats`, and
 | File                                                | Written by         | Read by                                                                     |
 | --------------------------------------------------- | ------------------ | --------------------------------------------------------------------------- |
 | `ecluse.model.json`                                 | `packages/model`   | `packages/formats`, `packages/canvas`, `packages/render`, `apps/studio-e2e` |
-| `saerskriven.model.json`                            | `packages/formats` | `packages/canvas`, `packages/render`                                        |
+| `saerskriven.model.json`                            | `packages/formats` | `packages/canvas`, `packages/render`, `apps/studio-e2e`                     |
 | `saerskriven/ecluse.yaml`                           | `packages/formats` | `apps/cli`, `apps/studio-e2e`                                               |
 | `render/ecluse.register.snapshot.md`                | `packages/render`  | `apps/cli`, `apps/studio-e2e`                                               |
 | `render/ecluse.snapshot.svg`                        | `packages/render`  | `apps/cli`, `apps/studio-e2e`                                               |

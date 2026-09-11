@@ -3,13 +3,17 @@ import { expect, type Page, test } from '@playwright/test';
 import { registeredChords } from './chords.js';
 import { savedFromMenu } from './commands.fixtures.js';
 import {
+  diagramChoice,
+  diagramSwitcher,
   handleOn,
   menuButton,
   menuItem,
   nodeNamed,
   openMenu,
+  openModel,
   openPlaceholder,
   placeByClick,
+  saerskrivenModel,
   selectNode,
   withoutPickers,
 } from './studio.fixtures.js';
@@ -221,6 +225,20 @@ test('the studio carries no violation with the menu open', async ({ page }) => {
   await expect(menuItem(page, 'Discard changes and open')).toBeVisible();
 
   await audit(page, 'showing the menu asking before it opens a file');
+});
+
+test('the studio carries no violation with the diagram switcher open', async ({
+  page,
+}) => {
+  await openModel(page, saerskrivenModel);
+  await audit(page, 'naming the diagram on screen');
+
+  await diagramSwitcher(page).click();
+  await expect(
+    diagramChoice(page, 'Agents and the desktop shell'),
+  ).toBeVisible();
+
+  await audit(page, 'showing the open diagram switcher');
 });
 
 test('the studio carries no violation with a name open in a field', async ({

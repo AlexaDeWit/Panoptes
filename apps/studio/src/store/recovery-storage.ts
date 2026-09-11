@@ -5,7 +5,12 @@ import {
   threatDragonCodec,
   withinTextLimit,
 } from '@saerskriven/formats';
-import { parseModel, type Model } from '@saerskriven/model';
+import {
+  diagramIdSchema,
+  parseModel,
+  type DiagramId,
+  type Model,
+} from '@saerskriven/model';
 import { Data, Either } from 'effect';
 import { z } from 'zod';
 import { reasonOf } from '../files/bridge.js';
@@ -57,12 +62,17 @@ const fileLifecycleSchema = z
       : FileLifecycle.Opened({ name: file.name, source: file.source }),
   );
 
-/** The versioned value stored for recovery. */
+/**
+ * The versioned value stored for recovery. The active diagram is optional
+ * within the version: a snapshot written before it was stored still loads,
+ * on the first diagram.
+ */
 export const recoverySnapshotSchema = z.object({
   version: z.literal(recoveryVersion),
   present: modelSchema,
   dirty: z.boolean(),
   file: fileLifecycleSchema,
+  activeDiagram: diagramIdSchema.optional(),
 });
 
 /** A validated session recovery snapshot. */
@@ -73,8 +83,15 @@ export function recoverySnapshot(
   present: Model,
   dirty: boolean,
   file: FileLifecycle,
+  activeDiagram?: DiagramId,
 ): RecoverySnapshot {
-  return { version: recoveryVersion, present, dirty, file };
+  return {
+    version: recoveryVersion,
+    present,
+    dirty,
+    file,
+    ...(activeDiagram === undefined ? {} : { activeDiagram }),
+  };
 }
 
 /** Why recovery storage could not supply or keep a snapshot. */

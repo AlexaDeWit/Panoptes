@@ -14,13 +14,15 @@ import {
   resizeElement,
   setFlowDirection,
   setFlowWaypoints,
+  OperationFailure,
+  type DiagramId,
   type ElementId,
   type Model,
-  type OperationFailure,
 } from '@saerskriven/model';
 import { Either } from 'effect';
 import { sameSelection } from './selection.js';
 import { Action } from './actions.js';
+import { activeDiagramId } from './selectors.js';
 import {
   FileLifecycle,
   StudioFailure,
@@ -91,6 +93,7 @@ export function reduce(state: State, action: Action): State {
       edited(state, detachThreat(state.present, threatId, elementId)),
     Undo: () => undone(state),
     Redo: () => redone(state),
+    SelectDiagram: ({ diagramId }) => selectedDiagram(state, diagramId),
     Select: ({ elementIds }) => {
       const selection = [...new Set(elementIds)];
       return sameSelection(state.selection, selection)
@@ -154,6 +157,26 @@ function edited(
             lastFailure: undefined,
           },
   });
+}
+
+function selectedDiagram(state: State, diagramId: DiagramId): State {
+  if (!state.present.diagrams.some((diagram) => diagram.id === diagramId)) {
+    return {
+      ...state,
+      lastFailure: StudioFailure.Operation({
+        failure: OperationFailure.UnknownDiagram({ diagramId }),
+      }),
+    };
+  }
+  if (diagramId === activeDiagramId(state)) {
+    return state;
+  }
+  return {
+    ...state,
+    activeDiagram: diagramId,
+    selection: state.selection.length === 0 ? state.selection : [],
+    inlineEditor: undefined,
+  };
 }
 
 function removedElement(state: State, elementId: ElementId): State {

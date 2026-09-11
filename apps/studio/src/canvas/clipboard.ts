@@ -9,6 +9,7 @@ import {
 import { Data, Effect, Either } from 'effect';
 import { Action } from '../store/actions.js';
 import { sameSelection } from '../store/selection.js';
+import { activeDiagramId } from '../store/selectors.js';
 import { FileLifecycle, type State } from '../store/state.js';
 import { dispatch, modelStore } from '../store/store.js';
 import { announce } from './announcements.js';
@@ -29,15 +30,15 @@ function selectedCopy(
   { readonly fragment: Model; readonly text: string; readonly report: string },
   ClipboardFailure
 > {
-  const diagram = state.present.diagrams[0];
-  if (diagram === undefined || state.selection.length === 0) {
+  const diagramId = activeDiagramId(state);
+  if (diagramId === undefined || state.selection.length === 0) {
     return Either.left(
       ClipboardFailure.Refused({ reason: 'Select elements to copy.' }),
     );
   }
   return Either.flatMap(
     Either.mapLeft(
-      selectionFragment(state.present, diagram.id, state.selection),
+      selectionFragment(state.present, diagramId, state.selection),
       (failure) =>
         ClipboardFailure.Refused({ reason: `Copy refused: ${failure._tag}.` }),
     ),
@@ -220,8 +221,8 @@ function insertCopy(
   message: string,
 ): boolean {
   const state = modelStore.getState();
-  const diagram = state.present.diagrams[0];
-  if (diagram === undefined) {
+  const diagramId = activeDiagramId(state);
+  if (diagramId === undefined) {
     announce('There is no diagram to paste into.');
     return false;
   }
@@ -233,9 +234,7 @@ function insertCopy(
     announce('The copied graph could not be remapped.');
     return false;
   }
-  dispatch(
-    Action.InsertFragment({ diagramId: diagram.id, fragment: remapped.right }),
-  );
+  dispatch(Action.InsertFragment({ diagramId, fragment: remapped.right }));
   if (modelStore.getState().present === state.present) {
     return false;
   }

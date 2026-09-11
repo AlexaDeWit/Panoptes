@@ -34,8 +34,8 @@ and no immutable snapshot to push onto a stack.
 - `actions.ts` is the `Action` union, an Effect `Data.taggedEnum`. Model edits
   carry one operation and its arguments. `MoveElements` and `RemoveElements`
   fold the matching operation over one ID array before history records the
-  result. The other tags cover history, selection, inline editing, files and
-  failures. `Saved` names a file as `Opened` does, because a first
+  result. The other tags cover history, the diagram on screen, selection,
+  inline editing, files and failures. `Saved` names a file as `Opened` does, because a first
   save is a save-as, and folding both into `file` keeps "this model lives in
   this file" one fact. `Closed` is the third: the studio goes back to the
   state it booted in, placeholder model and all, so nothing of the file that
@@ -56,8 +56,15 @@ and no immutable snapshot to push onto a stack.
   the tab and the menu cannot disagree on what the model is called.
   `showingPlaceholder` identifies that opening state for the document title.
 
-Selection, the inline editor, and the file lifecycle stay out of the undo
-stacks. `selection` is a unique, ordered array of element IDs. A removal drops
+The active diagram, selection, the inline editor, and the file lifecycle stay
+out of the undo stacks. `activeDiagram` names the diagram on screen, and
+nothing while that is the first the model holds. `SelectDiagram` sets it,
+clears the selection and closes the editor, since both belong to the diagram
+left, and moves neither the model nor the history. The `activeDiagram`
+selector resolves it, falling back to the first diagram while the model does
+not hold the one named, so an open, an undo or a redo that takes the diagram
+away leaves the canvas on something rather than refusing. `selection` is a
+unique, ordered array of element IDs. A removal drops
 every removed ID from it and closes a matching editor. `inlineEditor` names
 the element and whether the field edits its name or its Note text. It is in
 the store because a command reaches it from the keyboard
@@ -80,8 +87,10 @@ format and nothing has to assert which codec owns which.
 
 `recovery-storage.ts` owns loading, replacing, and clearing one snapshot. The
 browser adapter uses `saerskriven:studio:recovery` in `localStorage`.
-Version 1 stores `present`, dirty status, and the file lifecycle. The file
-lifecycle includes the name, format, and retained wire document.
+Version 1 stores `present`, dirty status, the file lifecycle, and the active
+diagram as an optional field, so a snapshot written before the field existed
+still loads. The file lifecycle includes the name, format, and retained wire
+document. A restored active diagram the model no longer holds is dropped.
 
 `dispatch` writes each changed recoverable field before it publishes the new
 state. The reducer performs no storage work. The snapshot excludes the undo

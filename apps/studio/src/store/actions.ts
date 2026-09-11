@@ -62,6 +62,7 @@ export type Action = Data.TaggedEnum<{
   DetachThreat: { readonly threatId: ThreatId; readonly elementId: ElementId };
   Undo: {};
   Redo: {};
+  SelectDiagram: { readonly diagramId: DiagramId };
   Select: { readonly elementIds: readonly ElementId[] };
   InlineEditing: { readonly editor: InlineEditor | undefined };
   Opened: {

@@ -1,8 +1,13 @@
 import { DetectionFailure, ReadFailure } from '@saerskriven/formats';
-import { emptyModel } from '@saerskriven/model';
+import {
+  emptyModel,
+  OperationFailure,
+  type DiagramId,
+} from '@saerskriven/model';
 import { diagramId, elementId, threatId } from '@saerskriven/model/fixtures';
 import { Action } from './actions.js';
 import { reduce } from './reducer.js';
+import { activeDiagramId } from './selectors.js';
 import {
   FileLifecycle,
   StudioFailure,
@@ -18,9 +23,12 @@ import {
   nativeSource,
   newNote,
   newProcess,
+  otherElement,
   processElement,
   sampleModel,
   sampleThreat,
+  secondDiagram,
+  twoDiagramModel,
 } from './store.fixtures.js';
 
 const start = initialState(sampleModel);
@@ -37,6 +45,7 @@ const noteStart = initialState(noteModel);
 type StudioActionTag =
   | 'Undo'
   | 'Redo'
+  | 'SelectDiagram'
   | 'Select'
   | 'InlineEditing'
   | 'Imported'
@@ -202,6 +211,7 @@ const withHistory: State = {
 const studioActions: ActionsByTag<StudioActionTag> = {
   Undo: Action.Undo(),
   Redo: Action.Redo(),
+  SelectDiagram: Action.SelectDiagram({ diagramId: mainDiagram }),
   Select: Action.Select({ elementIds: [actorElement] }),
   InlineEditing: Action.InlineEditing({
     editor: { kind: 'name', elementId: actorElement },
@@ -374,6 +384,94 @@ describe('selection', () => {
       Action.Select({ elementIds: [actorElement, processElement] }),
     );
     expect(reduce(selected, applied.RemoveElements).selection).toEqual([]);
+  });
+});
+
+const show = (chosen: DiagramId): Action =>
+  Action.SelectDiagram({ diagramId: chosen });
+
+describe('the active diagram', () => {
+  const twoStart = initialState(twoDiagramModel);
+
+  it('starts unnamed, so the first diagram is on screen', () => {
+    expect(twoStart.activeDiagram).toBeUndefined();
+    expect(activeDiagramId(twoStart)).toBe(mainDiagram);
+  });
+
+  it('moves to the diagram chosen, with no history and no unsaved work', () => {
+    const switched = reduce(twoStart, show(secondDiagram));
+    expect(activeDiagramId(switched)).toBe(secondDiagram);
+    expect(switched.present).toBe(twoStart.present);
+    expect(switched.saved).toBe(twoStart.saved);
+    expect(switched.past).toEqual([]);
+    expect(switched.future).toEqual([]);
+    expect(reduce(switched, Action.Undo())).toBe(switched);
+  });
+
+  it('is the same state when the diagram chosen is the one on screen', () => {
+    expect(reduce(twoStart, show(mainDiagram))).toBe(twoStart);
+    const switched = reduce(twoStart, show(secondDiagram));
+    expect(reduce(switched, show(secondDiagram))).toBe(switched);
+  });
+
+  it('clears the selection and closes the inline editor, which belong to the diagram left', () => {
+    const editing = reduce(
+      reduce(twoStart, Action.Select({ elementIds: [actorElement] })),
+      Action.InlineEditing({
+        editor: { kind: 'name', elementId: actorElement },
+      }),
+    );
+    const switched = reduce(editing, show(secondDiagram));
+    expect(switched.selection).toEqual([]);
+    expect(switched.inlineEditor).toBeUndefined();
+  });
+
+  it('refuses a diagram the model does not hold and stays where it is', () => {
+    const unknown = reduce(twoStart, show(diagramId('diagram-missing')));
+    expect(activeDiagramId(unknown)).toBe(mainDiagram);
+    expect(unknown.lastFailure).toEqual(
+      StudioFailure.Operation({
+        failure: OperationFailure.UnknownDiagram({
+          diagramId: diagramId('diagram-missing'),
+        }),
+      }),
+    );
+  });
+
+  it('stays through an edit and its undo, an edit being the only thing the stacks hold', () => {
+    const switched = reduce(twoStart, show(secondDiagram));
+    const edited = reduce(
+      switched,
+      Action.RenameElement({ elementId: otherElement, name: 'Renamed' }),
+    );
+    expect(activeDiagramId(edited)).toBe(secondDiagram);
+    expect(activeDiagramId(reduce(edited, Action.Undo()))).toBe(secondDiagram);
+  });
+
+  it('falls back to the first diagram while the model no longer holds the one named', () => {
+    const switched = reduce(twoStart, show(secondDiagram));
+    const opened = reduce(
+      switched,
+      Action.Opened({
+        model: sampleModel,
+        name: 'one.yaml',
+        source: nativeSource,
+        divergences: [],
+      }),
+    );
+    expect(opened.activeDiagram).toBeUndefined();
+    expect(activeDiagramId(opened)).toBe(mainDiagram);
+    expect(activeDiagramId({ ...switched, present: sampleModel })).toBe(
+      mainDiagram,
+    );
+  });
+
+  it('resets on a new model and on closing, with the rest of the view state', () => {
+    const switched = reduce(twoStart, show(secondDiagram));
+    expect(
+      reduce(switched, studioActions.Imported).activeDiagram,
+    ).toBeUndefined();
+    expect(reduce(switched, Action.Closed()).activeDiagram).toBeUndefined();
   });
 });
 
