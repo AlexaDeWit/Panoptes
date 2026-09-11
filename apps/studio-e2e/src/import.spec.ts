@@ -28,13 +28,13 @@ test('imports beside Export, draws the converted model, and saves native YAML', 
   await runFromMenu(page, 'Import');
   await (await chooser).setFiles(vendored('test-data/otm/example.json'));
   await expect(page.getByTestId('failure-notice')).toBeEmpty();
-  await expect(page.locator('.react-flow__edge')).toHaveCount(4);
+  await expect(page.locator('.react-flow__edge')).toHaveCount(2);
   await expect(menuButton(page)).toHaveAccessibleName('Menu, unsaved changes');
   const source = nodeNamed(page, /^Class CustomerDatabase, process/u);
   const target = nodeNamed(page, /^Customer Database, process/u);
   await source.hover();
   await dragOnto(page, handleOn(source, 'left'), handleOn(target, 'right'));
-  await expect(page.locator('.react-flow__edge')).toHaveCount(5);
+  await expect(page.locator('.react-flow__edge')).toHaveCount(3);
   const output = await savedFile(page);
   expect(output.name).toBe('example.yaml');
   const read = Either.getOrThrow(saerskrivenYamlCodec.read(output.text));

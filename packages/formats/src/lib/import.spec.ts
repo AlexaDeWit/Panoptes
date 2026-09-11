@@ -21,7 +21,7 @@ it.each(['otm', 'tmbom'] as const)(
       imported.model.diagrams[0].elements.filter(
         (element) => element.kind === 'flow',
       ),
-    ).toHaveLength(format === 'otm' ? 4 : 9);
+    ).toHaveLength(format === 'otm' ? 2 : 9);
     expect(imported.model.threats).toHaveLength(format === 'otm' ? 2 : 27);
     expect(imported.model.mitigations.length).toBeGreaterThan(0);
     expect(imported).not.toHaveProperty('source');
@@ -38,7 +38,7 @@ it.each(['otm', 'tmbom'] as const)(
   },
 );
 
-it('keeps differing OTM occurrence states, split flows, and asset names', () => {
+it('keeps differing OTM occurrence states, bidirectional flows, and asset names', () => {
   const document = otmFixture();
   const component = document.components?.find(
     (entry) => (entry.threats?.length ?? 0) > 0,
@@ -53,7 +53,7 @@ it('keeps differing OTM occurrence states, split flows, and asset names', () => 
     'open',
   ]);
   expect(read.model.threats.map((threat) => threat.elements.length)).toEqual([
-    1, 2,
+    1, 1,
   ]);
   expect(
     read.model.mitigations.slice(0, 2).map((mitigation) => mitigation.status),
@@ -63,6 +63,11 @@ it('keeps differing OTM occurrence states, split flows, and asset names', () => 
       .filter((element) => element.kind === 'flow')
       .some((flow) => flow.description.includes('Credit')),
   ).toBe(true);
+  expect(
+    read.model.diagrams[0].elements.flatMap((element) =>
+      element.kind === 'flow' ? [element.bidirectional] : [],
+    ),
+  ).toEqual([true, true]);
   expect(read.divergences.some((entry) => entry.reason === 'split')).toBe(true);
 });
 

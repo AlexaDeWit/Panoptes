@@ -134,14 +134,8 @@ export function otmRegister(document: OtmDocument, context: ImportContext) {
     occurrences(component.threats ?? [], id, [id]);
   }
   for (const flow of document.dataflows ?? []) {
-    const attached =
-      flow.bidirectional === true
-        ? [
-            context.id('otm-flow', flow.id, 'forward'),
-            context.id('otm-flow', flow.id, 'reverse'),
-          ]
-        : [context.id('otm-flow', flow.id, 'forward')];
-    occurrences(flow.threats ?? [], context.id('otm-flow', flow.id), attached);
+    const id = context.id('otm-flow', flow.id);
+    occurrences(flow.threats ?? [], id, [id]);
   }
   for (const definition of definitions.values()) {
     if (!referencedThreats.has(definition.id))
