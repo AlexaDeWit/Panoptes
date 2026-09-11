@@ -3,6 +3,7 @@ import { Position, ReactFlowProvider, type EdgeProps } from '@xyflow/react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { everyGlyphModel } from './canvas.fixtures.js';
 import { handleSides } from './handles.js';
+import { canvasClassNames } from './stylesheet.js';
 import { layoutDiagram, type CanvasNode } from './layout.js';
 import {
   canvasEdgeTypes,
@@ -70,6 +71,7 @@ const bodyMarkup = (
   controlsVisible = true,
   size?: { readonly width: number; readonly height: number },
   resizing = false,
+  textVisible = true,
 ): string =>
   renderToStaticMarkup(
     <ReactFlowProvider>
@@ -81,6 +83,7 @@ const bodyMarkup = (
         width={size?.width}
         height={size?.height}
         resizing={resizing}
+        textVisible={textVisible}
       />
     </ReactFlowProvider>,
   );
@@ -89,10 +92,14 @@ const edgeMarkup = (
   data: CanvasEdgeData | undefined,
   nodes: CanvasFlowNode[] = [],
   selected = false,
+  textVisible = true,
 ): string =>
   renderToStaticMarkup(
     <ReactFlowProvider initialNodes={nodes}>
-      <CanvasEdgeBody {...edgeProps(data, selected)} />
+      <CanvasEdgeBody
+        {...edgeProps(data, selected)}
+        textVisible={textVisible}
+      />
     </ReactFlowProvider>,
   );
 
@@ -182,6 +189,14 @@ describe('CanvasNodeBody', () => {
     expect(markup.match(/visibility:hidden/gu)).toHaveLength(12);
   });
 
+  it('draws no text while a text field is open over it', () => {
+    const node = nodeNamed('el-client');
+    expect(bodyMarkup(node)).toContain(canvasClassNames.label);
+    expect(
+      bodyMarkup(node, true, true, false, undefined, false, false),
+    ).not.toContain(canvasClassNames.label);
+  });
+
   it('offers none while the element is not selected', () => {
     expect(bodyMarkup(nodeNamed('el-client'))).not.toContain(
       'react-flow__resize-control',
@@ -213,6 +228,16 @@ describe('CanvasEdgeBody', () => {
   it('draws the flow from the geometry the layout resolved', () => {
     const data = toReactFlowEdges(layout)[0].data;
     expect(edgeMarkup(data, nodesWith('el-client', 0))).toContain(settled);
+  });
+
+  it('draws no name while a name field is open over it', () => {
+    const data = toReactFlowEdges(layout)[0].data;
+    expect(edgeMarkup(data, nodesWith('el-client', 0))).toContain(
+      canvasClassNames.flowLabel,
+    );
+    expect(
+      edgeMarkup(data, nodesWith('el-client', 0), false, false),
+    ).not.toContain(canvasClassNames.flowLabel);
   });
 
   it("adds React Flow's wider interaction path around the flow", () => {

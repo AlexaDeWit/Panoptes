@@ -104,16 +104,48 @@ test('leaving the field for another control keeps the click that took focus', as
   await expect(page.getByRole('menu')).toBeVisible();
 });
 
+test('the field stands where the name was drawn and holds the whole of it', async ({
+  page,
+}) => {
+  await openPlaceholder(page);
+  const longName = 'Ledger of every transaction the studio records';
+  await nodeNamed(page, /^Store, store/u).dblclick();
+  await rename(page, 'Store').fill(longName);
+  await rename(page, 'Store').press('Enter');
+  const renamed = nodeNamed(page, new RegExp(`^${longName}, store`, 'u'));
+  await expect(renamed).toBeFocused();
+
+  await renamed.dblclick();
+
+  const field = rename(page, longName);
+  await expect(field).toBeFocused();
+  await expect(drawnName(renamed, 'pn-label')).toHaveCount(0);
+  await expect
+    .poll(() =>
+      field.evaluate((element) => ({
+        wrapped:
+          element.clientHeight >=
+          2 * parseFloat(getComputedStyle(element).lineHeight),
+        clipped: element.scrollHeight > element.clientHeight,
+      })),
+    )
+    .toEqual({ wrapped: true, clipped: false });
+
+  await field.press('Escape');
+
+  await expect(drawnName(renamed, 'pn-label')).toContainText('Ledger');
+});
+
 test('a flow is renamed by double-clicking the label it draws', async ({
   page,
 }) => {
   await openPlaceholder(page);
   await drawFlow(page);
 
-  await drawnName(
-    nodeNamed(page, /^New flow, flow/u),
-    'pn-flow-label',
-  ).dblclick();
+  const flow = nodeNamed(page, /^New flow, flow/u);
+  await drawnName(flow, 'pn-flow-label').dblclick();
+  await expect(rename(page, 'New flow')).toBeFocused();
+  await expect(drawnName(flow, 'pn-flow-label')).toHaveCount(0);
   await rename(page, 'New flow').fill('Opens');
   await rename(page, 'New flow').press('Enter');
 

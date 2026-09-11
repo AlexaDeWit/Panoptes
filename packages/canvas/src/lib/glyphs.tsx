@@ -79,17 +79,20 @@ function boxStrokeStyle(
  * One element's glyph in the element's own coordinates, its origin at the
  * element's position: its outline, its run of text, and its badge, in that
  * order. React Flow places a node itself; the headless render places it with
- * {@link PlacedElementGlyph}.
+ * {@link PlacedElementGlyph}. `textVisible` false leaves the run of text out,
+ * for a canvas with an editor open where that text is drawn.
  */
 export function ElementGlyph({
   node,
+  textVisible = true,
 }: {
   readonly node: CanvasNode;
+  readonly textVisible?: boolean;
 }): ReactElement {
   return (
     <g className={groupClass(node.outOfScope)}>
       {outlineOf(node)}
-      <WrappedText {...nodeTextPlacement(node)} />
+      {textVisible ? <WrappedText {...nodeTextPlacement(node)} /> : null}
       {node.badge === undefined ? null : (
         <ThreatBadgeGlyph badge={node.badge} at={badgeAnchor(node.size)} />
       )}
@@ -117,12 +120,15 @@ export function PlacedElementGlyph({
  * One flow, in the diagram's own coordinates rather than a node's: straight
  * segments from its source through its waypoints to its target, an arrowhead
  * at the target, and its name and badge where the layout settled them, which
- * is also where a caller sizing a picture bounds them.
+ * is also where a caller sizing a picture bounds them. `textVisible` false
+ * leaves the name out, as it does on {@link ElementGlyph}.
  */
 export function FlowGlyph({
   edge,
+  textVisible = true,
 }: {
   readonly edge: CanvasEdge;
+  readonly textVisible?: boolean;
 }): ReactElement {
   const points = [edge.source, ...edge.waypoints, edge.target];
   return (
@@ -141,7 +147,7 @@ export function FlowGlyph({
           d={arrowheadPath(edge.source, points[1])}
         />
       ) : null}
-      <WrappedText {...edge.label.name} />
+      {textVisible ? <WrappedText {...edge.label.name} /> : null}
       {edge.badge === undefined || edge.label.badge === undefined ? null : (
         <ThreatBadgeGlyph badge={edge.badge} at={edge.label.badge} />
       )}
