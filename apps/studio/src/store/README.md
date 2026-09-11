@@ -124,9 +124,13 @@ change that moved the model, a stack, the saved point or the file, and the
 other tabs fold it into `Followed`. The result is the model, both stacks, the
 saved point, the file and whether the recovery storage holds it, sent by
 structured clone, which keeps the references the stacks and the identity-based
-dirty check share. Selection and an open field stay with the tab that made
-them, trimmed to the elements the adopted model still draws. Following writes
-nothing and publishes nothing, since the result is already the other tab's.
+dirty check share. Selection, an open field and the diagram on screen stay
+with the tab that made them, the first two trimmed to the elements the adopted
+model still draws and the last falling back to the first diagram where the
+adopted model lacks it. A diagram switch writes the shared snapshot, so a
+reload restores the diagram whichever tab switched last, but publishes no
+result. Following writes nothing and publishes nothing, since the result is
+already the other tab's.
 The file session is what watches ([the file bridge](../files/README.md)),
 because a model another tab wrote is one the handle it holds does not
 describe.

@@ -5,6 +5,7 @@ import { Action } from './actions.js';
 import {
   actorElement,
   foreignSource,
+  nativeSource,
   mainDiagram,
   newProcess,
   sampleModel,
@@ -306,6 +307,28 @@ describe('session recovery', () => {
 
     expect(tab.published).toHaveLength(1);
     expect(tab.published[0]?.recoveryCurrent).toBe(false);
+  });
+
+  it('publishes a save, which moves the saved point and the file, and a close', () => {
+    const tab = tabs();
+    const runtime = createModelStore(tab.storage, tab.sync, sampleModel);
+    runtime.dispatch(addProcess);
+    const file = FileLifecycle.Opened({
+      name: 'model.yaml',
+      source: nativeSource,
+    });
+
+    runtime.dispatch(
+      Action.Saved({ name: 'model.yaml', source: nativeSource }),
+    );
+    runtime.dispatch(Action.Closed());
+
+    const [, saved, closed] = tab.published;
+    expect(saved?.saved).toBe(saved?.present);
+    expect(saved?.file).toEqual(file);
+    expect(closed?.present).toBe(placeholderModel);
+    expect(closed?.file).toEqual(FileLifecycle.NoFile());
+    expect(tab.published).toHaveLength(3);
   });
 
   it('follows another tab without writing or publishing, since the result is already theirs', () => {

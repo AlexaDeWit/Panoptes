@@ -688,6 +688,26 @@ describe('following another tab', () => {
     expect(followed.selection).toEqual([]);
     expect(followed.inlineEditor).toBeUndefined();
   });
+
+  it('keeps the diagram on screen to this tab, falling back where the adopted model lacks it', () => {
+    const shown = reduce(
+      initialState(twoDiagramModel),
+      Action.SelectDiagram({ diagramId: secondDiagram }),
+    );
+
+    const same = reduce(
+      shown,
+      Action.Followed({ state: result(initialState(twoDiagramModel)) }),
+    );
+    const without = reduce(
+      shown,
+      Action.Followed({ state: result(initialState(sampleModel)) }),
+    );
+
+    expect(same.activeDiagram).toBe(secondDiagram);
+    expect(activeDiagramId(same)).toBe(secondDiagram);
+    expect(activeDiagramId(without)).toBe(mainDiagram);
+  });
 });
 
 describe('a refusal outside the model', () => {
