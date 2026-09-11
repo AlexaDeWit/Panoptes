@@ -47,6 +47,10 @@ it('keeps differing OTM occurrence states, bidirectional flows, and asset names'
   expect(occurrence).toBeDefined();
   if (occurrence === undefined) return;
   occurrence.state = 'mitigated';
+  const oneWay = document.dataflows?.[0];
+  expect(oneWay).toBeDefined();
+  if (oneWay === undefined) return;
+  delete oneWay.bidirectional;
   const read = Either.getOrThrow(importModel(JSON.stringify(document)));
   expect(read.model.threats.map((threat) => threat.status)).toEqual([
     'mitigated',
@@ -67,8 +71,10 @@ it('keeps differing OTM occurrence states, bidirectional flows, and asset names'
     read.model.diagrams[0].elements.flatMap((element) =>
       element.kind === 'flow' ? [element.bidirectional] : [],
     ),
-  ).toEqual([true, true]);
-  expect(read.divergences.some((entry) => entry.reason === 'split')).toBe(true);
+  ).toEqual([false, true]);
+  expect(
+    read.divergences.filter((entry) => entry.reason === 'split'),
+  ).toHaveLength(2);
 });
 
 it('reports undeclared fields and does not turn OTM numeric impact into a severity score', () => {
