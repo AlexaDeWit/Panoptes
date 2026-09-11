@@ -130,7 +130,8 @@ describe('the diagram switcher', () => {
     const described = document.getElementById(
       field.getAttribute('aria-describedby') ?? '',
     );
-    expect(described?.textContent).not.toBe('');
+    expect(described).not.toBeNull();
+    expect(described?.textContent ?? '').not.toBe('');
     expect(modelStore.getState().present.diagrams[0].title).toBe('Main');
 
     await user.keyboard('Core');

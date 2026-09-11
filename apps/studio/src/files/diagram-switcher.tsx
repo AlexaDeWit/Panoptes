@@ -136,8 +136,12 @@ function TitleField({ title, onClose }: TitleFieldProps) {
   );
 
   useEffect(() => {
+    settled.current = false;
     field.current?.focus();
     field.current?.select();
+    return () => {
+      settled.current = true;
+    };
   }, []);
 
   const close = (by: 'keyboard' | 'blur'): void => {
