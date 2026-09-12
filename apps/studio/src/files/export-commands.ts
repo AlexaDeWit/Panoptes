@@ -39,7 +39,7 @@ type ExportFile = {
   readonly type: SaveFileType;
 };
 
-type Drawn = {
+type Produced = {
   readonly content: Uint8Array;
   readonly unplaced: readonly UnplacedFlow[];
 };
@@ -164,7 +164,7 @@ export function useExportCommands(
       file: ExportFile,
       make: (
         state: State,
-      ) => Promise<Either.Either<Drawn, ExportNotice> | undefined>,
+      ) => Promise<Either.Either<Produced, ExportNotice> | undefined>,
     ): void => {
       const run = async (): Promise<void> => {
         setNotice(undefined);
@@ -258,7 +258,7 @@ export function useExportCommands(
 async function compiled(
   state: State,
   renders: RenderExports,
-): Promise<Either.Either<Drawn, ExportNotice>> {
+): Promise<Either.Either<Produced, ExportNotice>> {
   const projection = renderTypst(state.present);
   const assets = await renders.pdfAssets();
   if (Either.isLeft(assets)) {
@@ -276,7 +276,7 @@ async function compiled(
 async function drawn(
   state: State,
   renders: RenderExports,
-): Promise<Either.Either<Drawn, ExportNotice> | undefined> {
+): Promise<Either.Either<Produced, ExportNotice> | undefined> {
   const diagram = activeDiagram(state);
   if (diagram === undefined) {
     return undefined;

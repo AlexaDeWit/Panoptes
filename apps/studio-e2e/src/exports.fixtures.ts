@@ -12,8 +12,13 @@ export const expectedPdfDigest = readFileSync(
   'utf8',
 ).trim();
 
-/** The SHA-256 digest of exported bytes. */
-export const pdfDigest = (bytes: Uint8Array): string =>
+/**
+ * The SHA-256 digest of exported bytes, which is how a binary golden is
+ * compared: a failed comparison of the buffers themselves is pretty-printed
+ * and diffed element by element, which takes minutes on a picture and
+ * reports nothing while it runs.
+ */
+export const digestOf = (bytes: Uint8Array): string =>
   createHash('sha256').update(bytes).digest('hex');
 
 const pageTree = /\/Type\s*\/Pages[\s\S]*?\/Count\s+(\d+)/u;

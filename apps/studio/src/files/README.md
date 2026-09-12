@@ -158,12 +158,13 @@ built version above the React Flow attribution, with `development` for builds
 without a release tag. The submenu has one SVG item per diagram when the
 model has several.
 The other items export the diagram on screen as a PNG, the register as
-markdown, or the whole model as Typst or PDF. Every proposed name replaces the open file's extension, or starts
-with `Untitled` when no file is open. The menu also holds the fallback
-picker's input and the guard on closing the tab. The guard stands only while
-the model is dirty and the latest recovery write is unconfirmed. Open and
-New model still ask before they replace or clear a dirty recovered session. New model
-releases the native handle only after the recovery snapshot clears.
+markdown, or the whole model as Typst or PDF. Every proposed name replaces
+the open file's extension, or starts with `Untitled` when no file is open.
+The menu also holds the fallback picker's input and the guard on closing the
+tab. The guard stands only while the model is dirty and the latest recovery
+write is unconfirmed. Open and New model still ask before they replace or
+clear a dirty recovered session. New model releases the native handle only
+after the recovery snapshot clears.
 
 `FileReports` is the report of the last crossing, an export report, and the
 failure notice, which the shell hangs under the chrome card

@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { exportGolden } from './exports.fixtures.js';
+import { digestOf, exportGolden } from './exports.fixtures.js';
 import { exportedFile, openFile } from './studio.fixtures.js';
 
 test.beforeEach(async ({ page }) => {
@@ -14,12 +14,12 @@ test('exports the CLI drawing byte for byte', async ({ page }) => {
 });
 
 test('exports the CLI picture byte for byte', async ({ page }) => {
-  test.setTimeout(60_000);
-
   const output = await exportedFile(page, 'Diagram as PNG');
 
   expect(output.name).toBe('ecluse.png');
-  expect(output.bytes).toEqual(exportGolden('ecluse.snapshot.png'));
+  expect(digestOf(output.bytes)).toBe(
+    digestOf(exportGolden('ecluse.snapshot.png')),
+  );
 });
 
 test('exports the CLI register byte for byte', async ({ page }) => {

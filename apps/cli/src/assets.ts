@@ -35,7 +35,8 @@ export type WasmAssets = {
  * the first face it was offered needs that, and a compiler that resolves
  * families by name does not, so only the caller that needs it asks. Whether a
  * directory holding no such face is refused or reordered as far as it can be
- * is `ledBy` on the `png` subpath's to decide, here and in the studio alike.
+ * is for `ledBy` on the `png` subpath to decide, here and in the studio
+ * alike.
  *
  * A directory holding no face at all is refused for the same reason, since a
  * compiler and a renderer both accept an empty list and both then write a
