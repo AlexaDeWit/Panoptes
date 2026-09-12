@@ -240,18 +240,23 @@ parsed model in the order given, and the first one the model refuses stops the
 batch, so nothing is written and the result names the index that was refused
 and what the model said. Every call quotes the `revision` a read returned, and
 a file that changed before the call is refused rather than overwritten. The
-handle is compared against the bytes the call itself read rather than held as
-a lock, so it catches an agent editing a model it has moved past and not
-another writer saving in the window between that read and the rename, whose
-save is replaced with neither side told. The file is replaced through a
-temporary file beside it and a rename onto it, so a reader of the path sees
-the file it had or the file the edit wrote. A process killed between the two,
-or a removal the system refuses, leaves a `.<name>.<uuid>.saer` copy in the
-directory that no listing shows and nothing reports, and deleting it is safe.
-What the
-format cannot hold comes back in the result's divergences rather than as a
-refusal, which is how a write to a Threat Dragon file reports a mitigation
-that format keeps no record of.
+file is replaced through a temporary file beside it and a rename onto it, so a
+reader of the path sees the file it had or the file the edit wrote. A process
+killed between the two, or a removal the system refuses, leaves a
+`.<name>.<uuid>.saer` copy in the directory that no listing shows and nothing
+reports, and deleting it is safe.
+
+The handle is checked twice rather than held as a lock: against the bytes the
+call itself read, which catches an agent editing a model it has moved past,
+and again by hashing the file immediately before the rename, which catches
+another writer saving while the call reads, edits and serializes. What the
+second check leaves open is the interval from that hash to the rename, a read
+and a rename of one file rather than the whole call: a save landing inside it
+is still replaced with neither side told. There is no exclusive hold across a
+browser and a process that keeps no session, so read the file in the same turn
+you edit it. What the format cannot hold comes back in the result's
+divergences rather than as a refusal, which is how a write to a Threat Dragon
+file reports a mitigation that format keeps no record of.
 
 `saer_create` writes a new model in the native YAML format, and `saer_import`
 converts an OTM or TM-BOM file into one. Both refuse a path that is already
