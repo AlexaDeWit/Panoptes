@@ -118,6 +118,7 @@ function programFor(state: ParseState): Command {
     .name('saer')
     .description('Threat models on the command line.')
     .version(cliVersion)
+    .enablePositionalOptions()
     .exitOverride((error) => {
       state.exitCode = error.exitCode;
       throw error;

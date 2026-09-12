@@ -104,17 +104,20 @@ describe('the arguments as the outcome they ask for', () => {
     });
   });
 
-  it('hands mcp install the options it was given', async () => {
+  it('hands mcp install the options it was given, --file included', async () => {
     const outcome = await runCli([
       'mcp',
       'install',
       '--host',
       'claude-code',
+      '--file',
+      'threat-model.yaml',
       '--print',
     ]);
     expect(outcome.code).toEqual(0);
     expect(outcome.out).toContain('host: claude-code\n');
     expect(outcome.out).toContain('status: shown\n');
+    expect(outcome.out).toContain('"threat-model.yaml"');
   });
 
   it("refuses an install naming both of a host's files", async () => {
