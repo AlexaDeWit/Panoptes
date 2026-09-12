@@ -1,4 +1,9 @@
-import { answerOf, ecluseWorkspace, refusalOf } from './read-tools.fixtures.js';
+import {
+  answerOf,
+  ecluseWorkspace,
+  everyRecordTree,
+  refusalOf,
+} from './read-tools.fixtures.js';
 import { renderElementSearch, searchElements } from './search-elements.js';
 import { searchLimits } from './search.js';
 
@@ -79,5 +84,71 @@ describe('what saer_search_elements finds', () => {
         }),
       )[0],
     ).toContain('holds no diagram named "Nothing"');
+  });
+});
+
+describe('what a detailed element row carries per kind', () => {
+  const rich = everyRecordTree();
+
+  const detailed = (kind: Parameters<typeof searchElements>[1]['kind']) =>
+    answerOf(searchElements(rich, { kind, response_format: 'detailed' }))
+      .elements;
+
+  it('carries the text of a canvas note beside its box', () => {
+    const [note] = detailed('text');
+    expect({ text: note?.text, size: note?.size }).toEqual({
+      text: 'Checked against the deployment diagram.',
+      size: { width: 200, height: 80 },
+    });
+  });
+
+  it('carries the shape of a trust boundary and no box', () => {
+    expect(
+      detailed('trust-boundary').map((row) => [row.shape?.kind, row.position]),
+    ).toEqual([
+      ['box', undefined],
+      ['curve', undefined],
+    ]);
+  });
+
+  it('renders a free flow endpoint as the position it sits at', () => {
+    expect(
+      renderElementSearch(
+        answerOf(
+          searchElements(rich, { kind: 'flow', response_format: 'detailed' }),
+        ),
+      ).join('\n'),
+    ).toContain('target: free at 280,160');
+  });
+
+  it('says why an out-of-scope element is out of scope', () => {
+    const rendered = renderElementSearch(
+      answerOf(
+        searchElements(rich, { kind: 'store', response_format: 'detailed' }),
+      ),
+    ).join('\n');
+    expect(rendered).toContain('out of scope');
+    expect(rendered).toContain('reason out of scope:');
+  });
+
+  it('matches a query against the text of a canvas note', () => {
+    expect(
+      answerOf(
+        searchElements(rich, {
+          query: 'deployment diagram',
+          response_format: 'concise',
+        }),
+      ).elements.map((row) => row.kind),
+    ).toEqual(['text']);
+  });
+
+  it('keeps one diagram of a model holding several', () => {
+    const found = answerOf(
+      searchElements(rich, {
+        diagram: 'diagram-empty',
+        response_format: 'concise',
+      }),
+    );
+    expect(found.counts.matched).toBe(0);
   });
 });

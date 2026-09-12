@@ -7,11 +7,12 @@ import {
   openWorkspace,
   renderWorkspaceFailure,
   type ModelWorkspace,
+  type RasterizerAssets,
 } from '@saerskriven/mcp';
 import { Either } from 'effect';
 import type { Readable, Writable } from 'node:stream';
 import { z } from 'zod';
-import { runtimeAssets } from './assets.js';
+import { runtimeAssets, type WasmAssets } from './assets.js';
 import { pngAssets } from './png.js';
 import {
   lines,
@@ -33,6 +34,27 @@ export const mcpOptionsSchema = z.object({
 
 /** The options an `mcp` invocation was given. */
 export type McpOptions = z.infer<typeof mcpOptionsSchema>;
+
+/**
+ * The rasterizer bytes for one server, read on the first render and held for
+ * the rest of the session. A refusal is not held: `assets.ts` re-reads a
+ * directory it could not read, since nothing about that refusal is worth
+ * remembering, and holding it here would outlive an install being repaired
+ * under a long-lived host.
+ */
+export function rasterizerIn(assets: string): RasterizerAssets {
+  let found: WasmAssets | undefined;
+  return () => {
+    if (found !== undefined) {
+      return Either.right(found);
+    }
+    const read = pngAssets(assets);
+    if (Either.isRight(read)) {
+      found = read.right;
+    }
+    return read;
+  };
+}
 
 /** Which streams carry the protocol, so a spec can serve over a pair of pipes. */
 export type McpStreams = {
@@ -68,12 +90,13 @@ async function served(
   assets: string,
 ): Promise<CommandOutcome> {
   const reported: string[] = [];
+  const rasterizer = rasterizerIn(assets);
   const handle = serveStdio(
     () =>
       createSaerskrivenServer({
         workspace,
         version: cliVersion,
-        rasterizer: () => pngAssets(assets),
+        rasterizer,
       }),
     {
       transport: new StdioServerTransport(streams.input, streams.output),

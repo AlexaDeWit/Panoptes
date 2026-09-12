@@ -1,3 +1,5 @@
+import { saerskrivenYamlCodec } from '@saerskriven/formats';
+import { parseModel, type Model } from '@saerskriven/model';
 import { Either } from 'effect';
 import {
   copyFileSync,
@@ -7,6 +9,7 @@ import {
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { editableModel } from './edit.fixtures.js';
 import { openWorkspace, type ModelWorkspace } from './workspace.js';
 
 /** The checkout, which is the root the read tools are exercised against. */
@@ -100,4 +103,127 @@ export function answerOf<Answer>(
     throw new Error(outcome.left.join('\n'));
   }
   return outcome.right;
+}
+
+/**
+ * A model of every record kind: the editable fixture, which already holds a
+ * canvas note, an out-of-scope store, a flow free at one end, both boundary
+ * shapes, a mitigation and an assumption, with one threat added under a
+ * methodology of its own carrying no prose. The committed Écluse fixture
+ * holds none of the last four, so the branches that render them need this.
+ */
+const everyRecordModel: Model = parsed({
+  ...editableModel,
+  threats: [
+    ...editableModel.threats,
+    {
+      id: 'threat-house-rule',
+      number: editableModel.lastIssuedThreatNumber + 1,
+      title: 'Unwritten house rule',
+      category: {
+        methodology: 'custom',
+        methodologyName: 'House',
+        category: 'process gap',
+      },
+      severity: 'undecided',
+      status: 'accepted-risk',
+      description: '',
+      mitigation: '',
+      elements: [],
+    },
+  ],
+  lastIssuedThreatNumber: editableModel.lastIssuedThreatNumber + 1,
+});
+
+/** A disposable root holding {@link everyRecordModel} as its default. */
+export function everyRecordTree(): ModelWorkspace {
+  return treeHolding(saerskrivenYamlCodec.write(everyRecordModel).output);
+}
+
+/**
+ * A disposable root holding a model of more threats than a concise listing
+ * carries. Every committed fixture holds fewer records than the limit, so
+ * nothing else reaches the line a cut listing ends with.
+ */
+export function crowdedTree(): ModelWorkspace {
+  const crowded = parsed({
+    ...editableModel,
+    mitigations: [],
+    assumptions: [],
+    threats: Array.from({ length: crowdedThreats }, (unused, index) => ({
+      ...everyRecordModel.threats[0],
+      id: `threat-${String(index + 1)}`,
+      number: index + 1,
+      title: `Crowded threat ${String(index + 1)}`,
+    })),
+    lastIssuedThreatNumber: crowdedThreats,
+  });
+  return treeHolding(saerskrivenYamlCodec.write(crowded).output);
+}
+
+/** How many threats {@link crowdedTree} holds, past every search limit. */
+export const crowdedThreats = 60;
+
+/**
+ * A disposable root whose default model holds a flow ending on another flow.
+ * The model permits an endpoint on any element and the canvas draws a flow as
+ * no box, so the layout reports the endpoint and leaves that flow undrawn.
+ */
+export function unplacedTree(): ModelWorkspace {
+  return treeHolding(unplacedFlowYaml);
+}
+
+const unplacedFlowYaml = `formatVersion: 1
+metadata:
+  title: Unplaced
+  owner: Owner
+  description: ''
+  contributors: []
+assumptions: []
+mitigations: []
+diagrams:
+  - id: only
+    title: Only
+    elements:
+      - kind: process
+        id: element-1
+        name: element-1
+        description: ''
+        outOfScope: false
+        reasonOutOfScope: ''
+        position: { x: 0, y: 0 }
+        size: { width: 10, height: 10 }
+      - kind: flow
+        id: flow-1
+        name: flow-1
+        description: ''
+        outOfScope: false
+        reasonOutOfScope: ''
+        source: { kind: attached, element: element-1 }
+        target: { kind: free, position: { x: 80, y: 0 } }
+        waypoints: []
+      - kind: flow
+        id: flow-2
+        name: flow-2
+        description: ''
+        outOfScope: false
+        reasonOutOfScope: ''
+        source: { kind: attached, element: element-1 }
+        target: { kind: attached, element: flow-1 }
+        waypoints: []
+threats: []
+lastIssuedThreatNumber: 0
+`;
+
+function treeHolding(yaml: string): ModelWorkspace {
+  const root = mkdtempSync(join(tmpdir(), 'saerskriven-mcp-model-'));
+  writeFileSync(join(root, 'model.yaml'), yaml);
+  return Either.getOrThrow(openWorkspace({ root, file: 'model.yaml' }));
+}
+
+function parsed(input: unknown): Model {
+  return Either.getOrThrowWith(
+    parseModel(input),
+    () => new Error('A read-tool fixture does not parse.'),
+  );
 }

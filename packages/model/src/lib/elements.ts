@@ -215,6 +215,3 @@ export const elementKindSchema = z.enum([
   'trust-boundary',
   'text',
 ]);
-
-/** Any element's kind. */
-export type ElementKind = z.infer<typeof elementKindSchema>;

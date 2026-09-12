@@ -85,6 +85,7 @@ export {
   type RegisterResult,
 } from './lib/register.js';
 export {
+  imageLinkDescription,
   imageMediaType,
   renderDiagram,
   renderDiagramArgumentsSchema,

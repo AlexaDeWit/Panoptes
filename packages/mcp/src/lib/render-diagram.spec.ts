@@ -1,14 +1,23 @@
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { builtRasterizer, rasterizerUnbuilt } from './rasterizer.fixtures.js';
+import {
+  brokenRasterizer,
+  builtRasterizer,
+  rasterizerUnbuilt,
+} from './rasterizer.fixtures.js';
 import {
   answerOf,
   drawableTree,
   ecluseWorkspace,
   refusalOf,
   rootWorkspace,
+  unplacedTree,
 } from './read-tools.fixtures.js';
-import { renderDiagram } from './render-diagram.js';
+import {
+  renderDiagram,
+  renderDiagramResultSchema,
+  renderDrawing,
+} from './render-diagram.js';
 import { noRasterizer } from './server.fixtures.js';
 
 const pngMagic = Buffer.from([0x89, 0x50, 0x4e, 0x47]);
@@ -40,6 +49,12 @@ describe('what saer_render_diagram refuses', () => {
         await renderDiagram(ecluse, noRasterizer, { diagram: 'Nothing' }),
       )[0],
     ).toContain('holds no diagram named "Nothing"');
+  });
+
+  it('words what the rasterizer refused where the module will not start', async () => {
+    expect(
+      refusalOf(await renderDiagram(ecluse, brokenRasterizer, {}))[0],
+    ).toContain('cannot draw a PNG');
   });
 
   it('refuses an out path that leaves the root before it draws', async () => {
@@ -137,5 +152,68 @@ describe.skipIf(rasterizerUnbuilt)('what saer_render_diagram draws', () => {
     const workspace = drawableTree();
     await renderDiagram(workspace, builtRasterizer, { width: 320 });
     expect(existsSync(join(workspace.root, 'diagram.png'))).toBe(false);
+  });
+});
+
+const oneDrawing = (given: Record<string, unknown>) =>
+  renderDiagramResultSchema.parse({
+    file: 'model.yaml',
+    format: 'saerskriven-yaml',
+    revision: `sha256:${'0'.repeat(64)}`,
+    diagram: { id: 'only', title: 'Only' },
+    image: { mimeType: 'image/png', width: 320, height: 240, bytes: 4096 },
+    unplaced: [],
+    ...given,
+  });
+
+describe('what the text of a render says', () => {
+  it('states the file, the diagram and the picture it drew', () => {
+    expect(renderDrawing(oneDrawing({}))).toEqual([
+      'file: model.yaml',
+      'format: saerskriven-yaml',
+      `revision: sha256:${'0'.repeat(64)}`,
+      'diagram: only (Only)',
+      'image: image/png, 320 by 240 pixels, 4096 bytes',
+    ]);
+  });
+
+  it('names the file it wrote where a call asked for one', () => {
+    expect(
+      renderDrawing(
+        oneDrawing({
+          written: {
+            file: 'diagram.png',
+            uri: 'file:///root/diagram.png',
+            revision: `sha256:${'1'.repeat(64)}`,
+          },
+        }),
+      ),
+    ).toContain('written: diagram.png');
+  });
+
+  it('names every flow endpoint the drawing left out', () => {
+    const lines = renderDrawing(
+      oneDrawing({
+        unplaced: [{ flow: 'flow-2', side: 'target', element: 'flow-1' }],
+      }),
+    );
+    expect(lines.at(-2)).toContain(
+      'a flow endpoint names an element the canvas draws as no box',
+    );
+    expect(lines.at(-1)).toEqual('  flow "flow-2" target names "flow-1"');
+  });
+});
+
+describe.skipIf(rasterizerUnbuilt)('a diagram the drawing cannot hold', () => {
+  it('reports the endpoint a flow on a flow leaves unplaced', async () => {
+    const drawn = answerOf(
+      await renderDiagram(unplacedTree(), builtRasterizer, { width: 320 }),
+    );
+    expect(drawn.answer.unplaced).toEqual([
+      { flow: 'flow-2', side: 'target', element: 'flow-1' },
+    ]);
+    expect(renderDrawing(drawn.answer).at(-1)).toEqual(
+      '  flow "flow-2" target names "flow-1"',
+    );
   });
 });

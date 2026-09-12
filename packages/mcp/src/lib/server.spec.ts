@@ -8,6 +8,7 @@ import {
   proseOf,
   readingOf,
   registeredTools,
+  structuredOf,
   textOf,
   type ResultProse,
 } from '../fixtures.js';
@@ -21,6 +22,11 @@ import {
 } from './edit.fixtures.js';
 import { editOps } from './edits.js';
 import { dataNotInstructions } from './preface.js';
+import { builtRasterizer, rasterizerUnbuilt } from './rasterizer.fixtures.js';
+import {
+  imageLinkDescription,
+  renderDiagramResultSchema,
+} from './render-diagram.js';
 import { revisionOf } from './revision.js';
 import { session, type Session } from './server.fixtures.js';
 import { workspaceTree } from './workspace.fixtures.js';
@@ -30,6 +36,8 @@ const repositoryRoot = realpathSync(join(import.meta.dirname, '../../../..'));
 const ecluse = 'test-data/ecluse.json';
 
 const tree = workspaceTree();
+
+const rasterizer = rasterizerUnbuilt ? undefined : builtRasterizer;
 
 const staleRevision = `sha256:${'0'.repeat(64)}`;
 
@@ -109,7 +117,13 @@ const callArguments = (
         { file: modelFile, ref: '9999' },
       ],
     ],
-    ['saer_render_diagram', [{ file: modelFile }]],
+    [
+      'saer_render_diagram',
+      [
+        { file: modelFile },
+        { file: modelFile, diagram: 'diagram-main', out: 'drawn.png' },
+      ],
+    ],
   ]);
 
 for (const era of eras) {
@@ -117,7 +131,12 @@ for (const era of eras) {
     let fixture: Session;
 
     beforeAll(async () => {
-      fixture = await session({ root: repositoryRoot, file: ecluse, era });
+      fixture = await session({
+        root: repositoryRoot,
+        file: ecluse,
+        era,
+        rasterizer,
+      });
     });
 
     afterAll(async () => {
@@ -217,6 +236,7 @@ for (const era of eras) {
           prose: read.flatMap((result) =>
             result.prose.map((text) => text.split('\n')[0] ?? ''),
           ),
+          links: read.flatMap((result) => result.links),
           unread: read.flatMap((result) => result.unread),
         };
       };
@@ -238,8 +258,13 @@ for (const era of eras) {
           root: writable.root,
           file: modelFile,
           era,
+          rasterizer,
         });
-        const listing = await session({ root: workspaceTree().root, era });
+        const listing = await session({
+          root: workspaceTree().root,
+          era,
+          rasterizer,
+        });
         const read = [
           await readingsOf(defaulted.client, revision),
           await readingsOf(listing.client, revision),
@@ -250,6 +275,43 @@ for (const era of eras) {
         expect(read.flatMap((one) => one.unread)).toEqual([]);
         expect(prose.length).toBeGreaterThan(0);
         expect(prose).toEqual(prose.map(() => dataNotInstructions));
+      });
+    });
+
+    describe.skipIf(rasterizerUnbuilt)('a drawing through a client', () => {
+      it('carries the picture as a block beside the text and the answer', async () => {
+        const writable = editableTree();
+        const run = await session({ root: writable.root, era, rasterizer });
+        const result = await run.client.callTool({
+          name: 'saer_render_diagram',
+          arguments: { file: modelFile, diagram: 'diagram-main' },
+        });
+        await run.end();
+        const drawn = structuredOf(result, renderDiagramResultSchema);
+        expect(result.isError).toBeFalsy();
+        expect(
+          proseOf(result).prose.map((text) => text.split('\n')[0]),
+        ).toEqual([dataNotInstructions]);
+        expect(drawn.image.mimeType).toEqual('image/png');
+      });
+
+      it('names only the path and the picture in the text of a link', async () => {
+        const writable = editableTree();
+        const run = await session({ root: writable.root, era, rasterizer });
+        const result = await run.client.callTool({
+          name: 'saer_render_diagram',
+          arguments: {
+            file: modelFile,
+            diagram: 'diagram-main',
+            out: 'drawn.png',
+          },
+        });
+        await run.end();
+        const drawn = structuredOf(result, renderDiagramResultSchema);
+        expect(proseOf(result).links).toEqual([
+          'drawn.png',
+          imageLinkDescription(drawn.image.width, drawn.image.height),
+        ]);
       });
     });
 

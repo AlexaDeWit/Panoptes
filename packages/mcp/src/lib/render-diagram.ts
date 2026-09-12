@@ -109,6 +109,15 @@ export const renderDiagramResultSchema = readingSchema.extend({
 /** What `saer_render_diagram` answers with. */
 export type RenderDiagramResult = z.infer<typeof renderDiagramResultSchema>;
 
+/**
+ * What a resource link says about the picture it points at. It is built out
+ * of the image's own numbers and carries no text out of the model file, so a
+ * suite comparing a link against this catches a tool that starts quoting one.
+ */
+export function imageLinkDescription(width: number, height: number): string {
+  return `One diagram of a Saerskriven threat model, drawn as a PNG ${String(width)} by ${String(height)} pixels.`;
+}
+
 /** What a render produced: the answer a client validates, and the blocks it carries. */
 export type DrawnDiagram = WithBlocks<RenderDiagramResult>;
 
@@ -275,7 +284,10 @@ function blocksOf(
             uri: answer.written.uri,
             name: answer.written.file,
             mimeType: answer.image.mimeType,
-            description: `One diagram of ${answer.file} drawn as a PNG, ${String(answer.image.width)} by ${String(answer.image.height)} pixels.`,
+            description: imageLinkDescription(
+              answer.image.width,
+              answer.image.height,
+            ),
           },
         ]),
   ];

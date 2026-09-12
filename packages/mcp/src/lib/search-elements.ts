@@ -92,7 +92,7 @@ export function renderElementSearch(
 ): readonly string[] {
   return [
     ...renderReading(result),
-    ...renderCounts(result.counts, narrowing),
+    ...renderCounts(result.counts, result.response_format, narrowing),
     'elements:',
     ...result.elements.flatMap(renderElement),
   ];

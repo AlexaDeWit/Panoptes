@@ -39,3 +39,14 @@ export const builtRasterizer: RasterizerAssets = () => {
 function refuse(sentence: string): never {
   throw new Error(sentence);
 }
+
+/**
+ * Assets a render cannot start: bytes that are no WebAssembly module. It is
+ * how a suite reaches the wording of what the rasterizer refused without a
+ * built module of its own to break.
+ */
+export const brokenRasterizer: RasterizerAssets = () =>
+  Either.right({
+    wasm: new Uint8Array([0, 1, 2, 3]),
+    fonts: [new Uint8Array([0])],
+  });

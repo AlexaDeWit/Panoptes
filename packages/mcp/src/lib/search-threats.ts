@@ -93,7 +93,7 @@ export function renderThreatSearch(
 ): readonly string[] {
   return [
     ...renderReading(result),
-    ...renderCounts(result.counts, narrowing),
+    ...renderCounts(result.counts, result.response_format, narrowing),
     'threats:',
     ...result.threats.flatMap(renderThreat),
   ];

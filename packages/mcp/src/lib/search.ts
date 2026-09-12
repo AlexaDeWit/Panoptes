@@ -74,16 +74,18 @@ export function limitedRows<Row>(
  * What a search matched, as the lines its text result states it in. A cut
  * listing says so and names the arguments that narrow this search, since a
  * caller reading the first twenty of two hundred as the whole answer is what
- * the line is against.
+ * the line is against. The concise form is offered only to a detailed search,
+ * which is the only one that has it left to ask for.
  */
 export function renderCounts(
   counts: SearchCounts,
+  format: ResponseFormat,
   narrowing: readonly string[],
 ): readonly string[] {
   return counts.truncated
     ? [
         `matches: ${String(counts.matched)}, of which this result carries ${String(counts.returned)}`,
-        `The listing stopped at its limit, so it is not the whole answer. Narrow it with ${narrowing.join(', ')}, or ask for the concise form.`,
+        `The listing stopped at its limit, so it is not the whole answer. Narrow it with ${narrowing.join(', ')}${format === 'detailed' ? ', or ask for the concise form' : ''}.`,
       ]
     : [`matches: ${String(counts.matched)}`];
 }

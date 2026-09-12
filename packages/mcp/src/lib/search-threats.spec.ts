@@ -1,4 +1,10 @@
-import { answerOf, ecluseWorkspace } from './read-tools.fixtures.js';
+import {
+  answerOf,
+  crowdedThreats,
+  crowdedTree,
+  ecluseWorkspace,
+  everyRecordTree,
+} from './read-tools.fixtures.js';
 import { renderThreatSearch, searchThreats } from './search-threats.js';
 import { searchLimits } from './search.js';
 
@@ -66,5 +72,64 @@ describe('what saer_search_threats finds', () => {
       search({ severity: 'high', response_format: 'concise' }),
     );
     expect(rendered.join('\n')).toContain('category STRIDE/');
+  });
+});
+
+describe('a threat under a methodology of its own', () => {
+  const rich = everyRecordTree();
+
+  const found = answerOf(
+    searchThreats(rich, {
+      status: 'accepted-risk',
+      response_format: 'detailed',
+    }),
+  );
+
+  it('keeps only the status a call names', () => {
+    expect(found.threats.map((row) => row.status)).toEqual(['accepted-risk']);
+  });
+
+  it('names the methodology the model gave it rather than a label', () => {
+    expect(renderThreatSearch(found).join('\n')).toContain(
+      'category House/process gap',
+    );
+  });
+
+  it('leaves the prose lines out where the record carries none', () => {
+    const rendered = renderThreatSearch(found).join('\n');
+    expect(rendered).not.toContain('description:');
+    expect(rendered).not.toContain('mitigation:');
+  });
+});
+
+describe('a concise listing past its limit', () => {
+  const crowded = answerOf(
+    searchThreats(crowdedTree(), { response_format: 'concise' }),
+  );
+
+  it('carries the concise limit and says what it matched', () => {
+    expect({
+      returned: crowded.threats.length,
+      matched: crowded.counts.matched,
+      truncated: crowded.counts.truncated,
+    }).toEqual({
+      returned: searchLimits.concise,
+      matched: crowdedThreats,
+      truncated: true,
+    });
+  });
+
+  it('offers a narrower query and not the form it is already in', () => {
+    const steering = renderThreatSearch(crowded).join('\n');
+    expect(steering).toContain('Narrow it with `status`');
+    expect(steering).not.toContain('concise form');
+  });
+
+  it('offers the concise form to a detailed listing that was cut', () => {
+    expect(
+      renderThreatSearch(
+        answerOf(searchThreats(crowdedTree(), { response_format: 'detailed' })),
+      ).join('\n'),
+    ).toContain('or ask for the concise form');
   });
 });

@@ -48,7 +48,8 @@
           "{workspaceRoot}/test-data/ecluse.json",
           "{workspaceRoot}/test-data/saerskriven/ecluse.yaml",
           "{workspaceRoot}/test-data/otm/**/*",
-          "{workspaceRoot}/test-data/tmbom/**/*"
+          "{workspaceRoot}/test-data/tmbom/**/*",
+          "{workspaceRoot}/threat-modelling/saerskriven.yaml"
         ]
       }
     }

@@ -42,32 +42,38 @@ export function textOf(result: CallToolResult): string {
 
 /**
  * What a tool result says, and what this reader could not read: `prose` is
- * every string a client would show a model, in the order the result carries
- * them, and `unread` names the type of every content block this does not
- * know how to look inside.
+ * every string a client would show a model as the body of a result, `links`
+ * is the free text a resource link carries beside the file it points at, and
+ * `unread` names the type of every content block this does not know how to
+ * look inside.
  *
- * The second field is what keeps the first honest. A reader that passed over
- * a block type it did not recognize would report no prose for it and a
- * caller checking the prose would see nothing wrong, so a block type added
- * to the protocol, or reached for the first time by a new tool, comes back
- * named here and fails the spec that reads it rather than going unchecked.
+ * The last two fields are what keep the first honest. A reader that passed
+ * over a block type it did not recognize would report no prose for it and a
+ * caller checking the prose would see nothing wrong, so a block type added to
+ * the protocol, or reached for the first time by a new tool, comes back named
+ * in `unread` rather than going unchecked. A resource link is recognized, and
+ * its `name` and `description` are free text a model reads, so they come back
+ * in `links` rather than being skipped: they are not the body of a result and
+ * do not open with the data-not-instructions line, so a caller checks instead
+ * that nothing out of a model file reaches them.
  */
 export type ResultProse = {
   readonly prose: readonly string[];
+  readonly links: readonly string[];
   readonly unread: readonly string[];
 };
 
 /**
  * Every string a tool result would put in front of a model, from each block
- * type this reader knows: a `text` block's own text, and the text of a
- * `resource` block's embedded document, which carries none when the resource
- * is a blob. An `image` block and a `resource_link` block are known and carry
- * no prose: the one is bytes, and the other names a file this server wrote
- * rather than quoting anything out of a model. Any other block type is named
- * in `unread` rather than skipped.
+ * type this reader knows: a `text` block's own text, the text of a `resource`
+ * block's embedded document, which carries none when the resource is a blob,
+ * and the `name` and `description` of a `resource_link`, which come back
+ * under `links`. An `image` block is recognized and carries no text of its
+ * own. Any other block type is named in `unread` rather than skipped.
  */
 export function proseOf(result: CallToolResult): ResultProse {
   const prose: string[] = [];
+  const links: string[] = [];
   const unread: string[] = [];
   for (const block of result.content) {
     if (block.type === 'text') {
@@ -76,11 +82,13 @@ export function proseOf(result: CallToolResult): ResultProse {
       if ('text' in block.resource) {
         prose.push(block.resource.text);
       }
-    } else if (block.type !== 'image' && block.type !== 'resource_link') {
+    } else if (block.type === 'resource_link') {
+      links.push(block.name, block.description ?? '');
+    } else if (block.type !== 'image') {
       unread.push(block.type);
     }
   }
-  return { prose, unread };
+  return { prose, links, unread };
 }
 
 /**
