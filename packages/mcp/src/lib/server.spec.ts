@@ -1,5 +1,8 @@
 import type { Client } from '@modelcontextprotocol/client';
-import type { CallToolResult } from '@modelcontextprotocol/server';
+import {
+  ProtocolError,
+  type CallToolResult,
+} from '@modelcontextprotocol/server';
 import { readFileSync, realpathSync } from 'node:fs';
 import { join } from 'node:path';
 import {
@@ -7,9 +10,12 @@ import {
   eras,
   inspectionOf,
   ownLinkTextOf,
+  promptProseOf,
   proseOf,
   readingOf,
+  registeredPrompts,
   registeredTools,
+  resourceProseOf,
   structuredOf,
   textOf,
   type ResultProse,
@@ -27,8 +33,9 @@ import { dataNotInstructions } from './preface.js';
 import { builtRasterizer, rasterizerUnbuilt } from './rasterizer.fixtures.js';
 import { renderDiagramResultSchema } from './render-diagram.js';
 import { revisionOf } from './revision.js';
-import { session, type Session } from './server.fixtures.js';
+import { noRasterizer, session, type Session } from './server.fixtures.js';
 import { workspaceTree } from './workspace.fixtures.js';
+import { saerskrivenYaml, treeHolding } from './read-tools.fixtures.js';
 
 const repositoryRoot = realpathSync(join(import.meta.dirname, '../../../..'));
 
@@ -37,6 +44,28 @@ const ecluse = 'test-data/ecluse.json';
 const tree = workspaceTree();
 
 const rasterizer = rasterizerUnbuilt ? undefined : builtRasterizer;
+
+const cacheFields = (result: object) => ({
+  ttlMs: 'ttlMs' in result ? result.ttlMs : undefined,
+  cacheScope: 'cacheScope' in result ? result.cacheScope : undefined,
+});
+
+const unheardOf = 'Unheard-of-name-Qx7';
+
+const rejectionOf = async (call: Promise<unknown>, named: string) => {
+  try {
+    await call;
+    return 'the call was answered';
+  } catch (error) {
+    return error instanceof ProtocolError
+      ? {
+          code: error.code,
+          data: error.data,
+          quotesName: error.message.includes(named),
+        }
+      : error;
+  }
+};
 
 const staleRevision = `sha256:${'0'.repeat(64)}`;
 
@@ -217,6 +246,215 @@ for (const era of eras) {
             destructiveHint: false,
             idempotentHint: false,
           },
+        ]);
+      });
+    });
+
+    describe('the resources and prompts a client discovers', () => {
+      it('offers the prompts this release registers', async () => {
+        const listed = await fixture.client.listPrompts();
+        expect(
+          listed.prompts.map((prompt) => [
+            prompt.name,
+            prompt.arguments?.map((argument) => [
+              argument.name,
+              argument.required,
+            ]),
+          ]),
+        ).toEqual([
+          [
+            registeredPrompts[0],
+            [
+              ['file', false],
+              ['element', true],
+            ],
+          ],
+          [registeredPrompts[1], [['file', false]]],
+        ]);
+      });
+
+      it('lists the register, every diagram and the diagram template', async () => {
+        const resources = await fixture.client.listResources();
+        const templates = await fixture.client.listResourceTemplates();
+        expect(resources.resources.map((resource) => resource.uri)).toEqual([
+          'saer://register',
+          'saer://diagram/0',
+        ]);
+        expect(
+          templates.resourceTemplates.map((template) => template.uriTemplate),
+        ).toEqual(['saer://diagram/{diagram}']);
+      });
+
+      it(`carries the cache fields a ${era} client is owed on every list and read`, async () => {
+        const lists = [
+          await fixture.client.listTools(),
+          await fixture.client.listPrompts(),
+          await fixture.client.listResources(),
+          await fixture.client.listResourceTemplates(),
+          await fixture.client.readResource({ uri: 'saer://register' }),
+        ];
+        const owed =
+          era === 'modern'
+            ? { ttlMs: 0, cacheScope: 'private' }
+            : { ttlMs: undefined, cacheScope: undefined };
+        expect(lists.map(cacheFields)).toEqual(lists.map(() => owed));
+      });
+
+      it('completes the diagram argument with the ids of the model', async () => {
+        const completed = await fixture.client.complete({
+          ref: { type: 'ref/resource', uri: 'saer://diagram/{diagram}' },
+          argument: { name: 'diagram', value: '' },
+        });
+        expect(completed.completion.values).toEqual(['0']);
+      });
+
+      it('opens every resource read and every prompt with the data line', async () => {
+        const uris = rasterizerUnbuilt
+          ? ['saer://register']
+          : ['saer://register', 'saer://diagram/0'];
+        const reads = await Promise.all(
+          uris.map((uri) => fixture.client.readResource({ uri })),
+        );
+        const prompts = await Promise.all([
+          fixture.client.getPrompt({
+            name: 'stride_pass',
+            arguments: { element: 'Écluse proxy' },
+          }),
+          fixture.client.getPrompt({ name: 'review_model' }),
+        ]);
+        const read = reads.map(resourceProseOf);
+        const opened = [
+          ...read.flatMap((one) => one.prose),
+          ...prompts.map((one) => promptProseOf(one).prose[0] ?? ''),
+        ].map((text) => text.split('\n')[0]);
+        expect(read.flatMap((one) => one.unread)).toEqual([]);
+        expect(opened.length).toBe(uris.length + prompts.length);
+        expect(opened).toEqual(opened.map(() => dataNotInstructions));
+      });
+
+      describe.skipIf(rasterizerUnbuilt)('a diagram read by its URI', () => {
+        it('draws the diagram its id names, past URI syntax and a colliding title', async () => {
+          const odd = treeHolding(
+            saerskrivenYaml()
+              .replace('id: read-and-render', "id: '../a b/c?d#e'")
+              .replace(
+                'title: Reading a file and rendering it',
+                'title: agent-and-desktop',
+              ),
+          );
+          const run = await session({
+            root: odd.root,
+            file: 'model.yaml',
+            era,
+            rasterizer,
+          });
+          const listed = await run.client.listResources();
+          const drawn = await Promise.all(
+            listed.resources.slice(1).map(async ({ uri }) => {
+              const read = await run.client.readResource({ uri });
+              return [
+                uri,
+                resourceProseOf(read)
+                  .prose.flatMap((text) => text.split('\n'))
+                  .find((line) => line.startsWith('diagram: ')),
+              ];
+            }),
+          );
+          await run.end();
+          expect(drawn).toEqual([
+            [
+              'saer://diagram/..%2Fa%20b%2Fc%3Fd%23e',
+              'diagram: ../a b/c?d#e (agent-and-desktop)',
+            ],
+            [
+              'saer://diagram/agent-and-desktop',
+              'diagram: agent-and-desktop (Agents and the desktop shell)',
+            ],
+          ]);
+        });
+      });
+    });
+
+    describe('what a client is refused with', () => {
+      it('answers a resource read with nothing to read as resource not found', async () => {
+        const listing = await session({ root: repositoryRoot, era });
+        const refused = await Promise.all([
+          rejectionOf(
+            fixture.client.readResource({
+              uri: `saer://diagram/${unheardOf}`,
+            }),
+            unheardOf,
+          ),
+          rejectionOf(
+            fixture.client.readResource({ uri: 'saer://diagram/%E0' }),
+            '%E0',
+          ),
+          rejectionOf(
+            listing.client.readResource({ uri: 'saer://register' }),
+            'saer://register',
+          ),
+        ]);
+        await listing.end();
+        expect(refused).toEqual([
+          {
+            code: -32602,
+            data: { uri: `saer://diagram/${unheardOf}` },
+            quotesName: false,
+          },
+          {
+            code: -32602,
+            data: { uri: 'saer://diagram/%E0' },
+            quotesName: false,
+          },
+          {
+            code: -32602,
+            data: { uri: 'saer://register' },
+            quotesName: false,
+          },
+        ]);
+      });
+
+      it('answers a diagram this install cannot draw as an internal error', async () => {
+        const undrawn = await session({
+          root: repositoryRoot,
+          file: ecluse,
+          era,
+          rasterizer: noRasterizer,
+        });
+        const refused = await rejectionOf(
+          undrawn.client.readResource({ uri: 'saer://diagram/High%20Level' }),
+          'High Level',
+        );
+        await undrawn.end();
+        expect(refused).toEqual({
+          code: -32603,
+          data: undefined,
+          quotesName: false,
+        });
+      });
+
+      it('answers a prompt argument naming nothing usable as invalid params', async () => {
+        const listing = await session({ root: repositoryRoot, era });
+        const refused = await Promise.all([
+          rejectionOf(
+            fixture.client.getPrompt({
+              name: 'stride_pass',
+              arguments: { element: unheardOf },
+            }),
+            unheardOf,
+          ),
+          rejectionOf(
+            listing.client.getPrompt({
+              name: 'review_model',
+              arguments: { file: unheardOf },
+            }),
+            unheardOf,
+          ),
+        ]);
+        await listing.end();
+        expect(refused).toEqual([
+          { code: -32602, data: undefined, quotesName: false },
+          { code: -32602, data: undefined, quotesName: false },
         ]);
       });
     });

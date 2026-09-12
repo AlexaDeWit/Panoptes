@@ -4,6 +4,7 @@ import { Either } from 'effect';
 import {
   copyFileSync,
   mkdtempSync,
+  readFileSync,
   realpathSync,
   writeFileSync,
 } from 'node:fs';
@@ -60,6 +61,21 @@ export function ecluseWorkspace(): ModelWorkspace {
   return Either.getOrThrow(
     openWorkspace({ root: repositoryRoot, file: ecluseFile }),
   );
+}
+
+/** Saerskriven's own threat model, in the native format. */
+export const saerskrivenFile = 'threat-modelling/saerskriven.yaml';
+
+/** A workspace over the checkout with Saerskriven's own model as its default. */
+export function saerskrivenWorkspace(): ModelWorkspace {
+  return Either.getOrThrow(
+    openWorkspace({ root: repositoryRoot, file: saerskrivenFile }),
+  );
+}
+
+/** Saerskriven's own model as text, for a fixture that rewrites part of it. */
+export function saerskrivenYaml(): string {
+  return readFileSync(join(repositoryRoot, saerskrivenFile), 'utf8');
 }
 
 /** A workspace over the checkout carrying no default model. */
@@ -215,7 +231,8 @@ threats: []
 lastIssuedThreatNumber: 0
 `;
 
-function treeHolding(yaml: string): ModelWorkspace {
+/** A disposable root whose default model is the given text, as `model.yaml`. */
+export function treeHolding(yaml: string): ModelWorkspace {
   const root = mkdtempSync(join(tmpdir(), 'saerskriven-mcp-model-'));
   writeFileSync(join(root, 'model.yaml'), yaml);
   return Either.getOrThrow(openWorkspace({ root, file: 'model.yaml' }));

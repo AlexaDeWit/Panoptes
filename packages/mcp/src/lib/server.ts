@@ -1,4 +1,14 @@
-import { McpServer } from '@modelcontextprotocol/server';
+import {
+  McpServer,
+  ProtocolError,
+  ProtocolErrorCode,
+  ResourceNotFoundError,
+  ResourceTemplate,
+  type CacheHint,
+  type GetPromptResult,
+  type ReadResourceResult,
+} from '@modelcontextprotocol/server';
+import { Either } from 'effect';
 import {
   coverage,
   coverageDescription,
@@ -53,6 +63,27 @@ import {
   type RasterizerAssets,
 } from './render-diagram.js';
 import {
+  PromptFailure,
+  promptMessages,
+  type PromptParts,
+} from './prompt-result.js';
+import {
+  completedDiagrams,
+  diagramResourceDescription,
+  diagramResources,
+  diagramUriTemplate,
+  readDiagramResource,
+  readRegisterResource,
+  registerResourceDescription,
+  registerUri,
+  ResourceFailure,
+} from './resources.js';
+import {
+  reviewModel,
+  reviewModelArgumentsSchema,
+  reviewModelDescription,
+} from './review-model.js';
+import {
   renderElementSearch,
   searchElements,
   searchElementsArgumentsSchema,
@@ -66,6 +97,11 @@ import {
   searchThreatsDescription,
   searchThreatsResultSchema,
 } from './search-threats.js';
+import {
+  stridePass,
+  stridePassArgumentsSchema,
+  stridePassDescription,
+} from './stride-pass.js';
 import { attachedToolResult, toolResult } from './tool-result.js';
 import {
   renderValidation,
@@ -101,27 +137,39 @@ const writes = {
 } as const;
 
 /**
- * The MCP server object, with no transport of its own: a caller connects it
- * to stdio, to an in-memory pair, or to whatever else the SDK offers. It
- * holds no model and no session, so every call reads the file it names from
- * disk again. Every tool builds its result in `tool-result.ts`, through
- * `toolResult` or, where the result carries blocks past its text,
- * `attachedToolResult`, which is what puts the data-not-instructions line on
- * each one.
+ * The MCP server object, with no transport of its own. It holds no model and
+ * no session, so every call reads the file it names from disk again. Any
+ * process can change that file between two calls, so every cacheable result
+ * tells a 2026-07-28 client to keep it for no time and to share it with no
+ * other client.
  */
 export function createSaerskrivenServer(
   options: SaerskrivenServerOptions,
 ): McpServer {
   const server = new McpServer(
     { name: serverName, title: 'Saerskriven', version: options.version },
-    { capabilities: { tools: {} } },
+    {
+      capabilities: { tools: {} },
+      cacheHints: {
+        'server/discover': uncached,
+        'tools/list': uncached,
+        'prompts/list': uncached,
+        'resources/list': uncached,
+        'resources/templates/list': uncached,
+        'resources/read': uncached,
+      },
+    },
   );
   readTools(server, options);
   queryTools(server, options);
   drawingTools(server, options);
   writeTools(server, options);
+  resources(server, options);
+  prompts(server, options);
   return server;
 }
+
+const uncached: CacheHint = { ttlMs: 0, cacheScope: 'private' };
 
 function readTools(server: McpServer, options: SaerskrivenServerOptions): void {
   server.registerTool(
@@ -272,5 +320,110 @@ function writeTools(
     },
     (args) =>
       toolResult(importIntoModel(options.workspace, args), renderImport),
+  );
+}
+
+function resources(server: McpServer, options: SaerskrivenServerOptions): void {
+  server.registerResource(
+    'register',
+    registerUri,
+    {
+      title: 'Threat register',
+      description: registerResourceDescription,
+      mimeType: 'text/markdown',
+    },
+    () => resourceOrThrow(registerUri, readRegisterResource(options.workspace)),
+  );
+  server.registerResource(
+    'diagram',
+    new ResourceTemplate(diagramUriTemplate, {
+      list: () => diagramResources(options.workspace),
+      complete: {
+        diagram: (typed) => completedDiagrams(options.workspace, typed),
+      },
+    }),
+    {
+      title: 'Diagram picture',
+      description: diagramResourceDescription,
+      mimeType: 'image/png',
+    },
+    async (uri, variables) =>
+      resourceOrThrow(
+        uri.href,
+        await readDiagramResource(
+          options.workspace,
+          options.rasterizer,
+          uri,
+          variables,
+        ),
+      ),
+  );
+}
+
+function prompts(server: McpServer, options: SaerskrivenServerOptions): void {
+  server.registerPrompt(
+    'stride_pass',
+    {
+      title: 'STRIDE pass over one element',
+      description: stridePassDescription,
+      argsSchema: stridePassArgumentsSchema,
+    },
+    (args) => promptOrThrow(stridePass(options.workspace, args)),
+  );
+  server.registerPrompt(
+    'review_model',
+    {
+      title: 'Review a threat model',
+      description: reviewModelDescription,
+      argsSchema: reviewModelArgumentsSchema,
+    },
+    (args) => promptOrThrow(reviewModel(options.workspace, args)),
+  );
+}
+
+function resourceOrThrow(
+  uri: string,
+  outcome: Either.Either<ReadResourceResult, ResourceFailure>,
+): ReadResourceResult {
+  return Either.getOrThrowWith(outcome, (failure) =>
+    ResourceFailure.$match(failure, {
+      NoModel: () => notFound(uri),
+      NoSuchDiagram: () => notFound(uri),
+      UndecodableName: () => notFound(uri),
+      RasterizerFailed: () =>
+        new ProtocolError(
+          ProtocolErrorCode.InternalError,
+          'This install could not draw the diagram as a PNG. Call saer_render_diagram for the reason.',
+        ),
+    }),
+  );
+}
+
+function promptOrThrow(
+  outcome: Either.Either<PromptParts, PromptFailure>,
+): GetPromptResult {
+  return Either.getOrThrowWith(
+    Either.map(outcome, promptMessages),
+    (failure) =>
+      new ProtocolError(
+        ProtocolErrorCode.InvalidParams,
+        PromptFailure.$match(failure, {
+          NoModel: () =>
+            'There is no model to read. Name a readable model file under the server root in `file`, or start the server with --file.',
+          NoSuchElement: () =>
+            'The model holds no element with that id or name. Call saer_search_elements for the ids of its elements.',
+          SharedName: () =>
+            'Several elements carry that name. Name the element by its id, which saer_search_elements reports.',
+          UncoveredKind: () =>
+            'A STRIDE pass runs over an actor, a process, a store or a flow, and that element is none of these.',
+        }),
+      ),
+  );
+}
+
+function notFound(uri: string): ResourceNotFoundError {
+  return new ResourceNotFoundError(
+    uri,
+    'This server has no resource to answer that URI with. The listing names every diagram it can draw.',
   );
 }

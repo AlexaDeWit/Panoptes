@@ -21,6 +21,12 @@ handled early, and that boundary differs per app: `apps/cli/src/outcome.ts`
 and `runCli` in the CLI, the refused tool result `renderWriteFailure`
 writes in the MCP server, and the notice on screen in the studio.
 
+A resource read and a prompt have no refused result in the MCP protocol, so
+the MCP server has a second boundary: the resource-read and prompt handlers
+in `packages/mcp/src/lib/server.ts` turn the failure they are handed into the
+protocol error the SDK contract requires, and they are the only place in the
+server that throws. The functions they call still return `Either`.
+
 An operation with no value to return is typed `Either<void, E>`, never a
 bare `void`, which is the shape at 16 sites across `packages` and `apps`.
 Narrowing such a parameter to `void` is not the simplification it looks

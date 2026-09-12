@@ -27,6 +27,22 @@ describe('diagramsNamed', () => {
     ).toEqual(['diagram-main', 'diagram-second']);
   });
 
+  it('puts the diagram whose id the name is before one titled with it', () => {
+    const titledFirst = Either.getOrThrowWith(
+      parseModel({
+        ...validModelFixture,
+        diagrams: [
+          { id: 'diagram-titled', title: 'diagram-main', elements: [] },
+          ...validModelFixture.diagrams,
+        ],
+      }),
+      () => new Error('The collision fixture does not parse.'),
+    );
+    expect(
+      diagramsNamed(titledFirst.diagrams, 'diagram-main').map((one) => one.id),
+    ).toEqual(['diagram-main', 'diagram-titled']);
+  });
+
   it('selects nothing where the name is neither an id nor a title', () => {
     expect(diagramsNamed(model.diagrams, 'Main data')).toEqual([]);
   });

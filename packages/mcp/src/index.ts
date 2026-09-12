@@ -1,6 +1,7 @@
 export {
   coverage,
   coverageDescription,
+  coverageOf,
   coverageResultSchema,
   renderCoverage,
   type CoverageArguments,
@@ -69,6 +70,11 @@ export {
 } from './lib/inspect.js';
 export { dataNotInstructions, prefaced } from './lib/preface.js';
 export {
+  PromptFailure,
+  promptMessages,
+  type PromptParts,
+} from './lib/prompt-result.js';
+export {
   readNamed,
   readingSchema,
   renderReading,
@@ -85,9 +91,31 @@ export {
   type RegisterResult,
 } from './lib/register.js';
 export {
+  completedDiagrams,
+  diagramResourceDescription,
+  diagramResourceName,
+  diagramResources,
+  diagramUri,
+  diagramUriTemplate,
+  readDiagramResource,
+  readRegisterResource,
+  registerResourceDescription,
+  registerUri,
+  ResourceFailure,
+} from './lib/resources.js';
+export {
+  reviewBrief,
+  reviewModel,
+  reviewModelArgumentsSchema,
+  reviewModelDescription,
+  type ReviewModelArguments,
+} from './lib/review-model.js';
+export {
+  drawnOf,
   imageExtension,
   imageLinkDescription,
   imageMediaType,
+  rasterized,
   renderDiagram,
   renderDiagramArgumentsSchema,
   renderDiagramDescription,
@@ -128,6 +156,14 @@ export {
   type SearchThreatsArguments,
   type SearchThreatsResult,
 } from './lib/search-threats.js';
+export {
+  strideBrief,
+  strideByKind,
+  stridePass,
+  stridePassArgumentsSchema,
+  stridePassDescription,
+  type StridePassArguments,
+} from './lib/stride-pass.js';
 export {
   renderCategory,
   renderThreat,

@@ -362,6 +362,53 @@ What the server does not do:
   and nothing carries from one call to the next but the `revision` a read
   returned.
 
+#### Resources and prompts
+
+The server also offers the model named by `--file` as resources, for a host
+that attaches documents rather than calling tools. Without `--file` it lists
+`saer://register` alone, and reading it fails as resource not found.
+
+| URI                        | What it holds                                                                               |
+| -------------------------- | ------------------------------------------------------------------------------------------- |
+| `saer://register`          | The register as `text/markdown`: the text `saer_register` answers with                      |
+| `saer://diagram/{diagram}` | One diagram as an `image/png` blob, drawn as `saer_render_diagram` draws it, then that text |
+
+`{diagram}` is a diagram's id or exact title, percent-encoded. The listing
+names one URI per diagram by its id, and a host completing `{diagram}` is
+offered the ids. A diagram whose id is `.` or `..` is neither listed nor
+offered, and `saer_render_diagram` still draws it. A name is tried as an id
+before a title. It is only compared against the diagrams of the model,
+so no spelling of it reaches a path. A read with no model, no such diagram
+or a name that does not percent-decode fails with error `-32602` and
+`data.uri` naming the URI, which is resource not found in both protocol
+generations. A diagram this install cannot draw fails with `-32603`, and
+`saer_render_diagram` names the reason.
+
+Two prompts build a request for the agent out of a model. Both take `file`,
+which falls back to `--file` as a tool's does.
+
+- `stride_pass` takes `element`, an id or an exact name, and lays out that
+  element, its flows, the stores those flows reach and the threats already
+  recorded against it, then asks the STRIDE questions that apply to its kind.
+  An actor, a process, a store and a flow each have a pass. A trust boundary
+  and a canvas note do not, and a name several elements share is refused with
+  their ids.
+- `review_model` lays out the coverage summary and the whole register, then
+  asks for a review of the gaps, the open threats and the records that do not
+  hold together.
+
+A prompt whose arguments name no readable model, no element, a name several
+elements share or a kind the pass does not cover fails with error `-32602`,
+whose message carries no text out of the model file.
+
+Each prompt is two messages: the model data, which opens with the
+data-not-instructions line above, and the brief, which carries no text out of
+the model file. Resource text opens with the same line.
+
+On the 2026-07-28 revision every list, every resource read and the discovery
+result carry `ttlMs: 0` and `cacheScope: "private"`, since another process can
+change the file between two calls. A 2025-era client receives neither field.
+
 #### Serving over Streamable HTTP
 
 `saer mcp --http` serves the same tools over Streamable HTTP instead of

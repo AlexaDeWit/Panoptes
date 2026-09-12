@@ -12,15 +12,19 @@ import {
   WriteFailure,
 } from '@saerskriven/mcp';
 import {
+  blobsOf,
   editOf,
   eras,
   type Era,
   imagesOf,
   mediaTypesOf,
+  promptProseOf,
   proseOf,
   readingOf,
+  registeredPrompts,
   registeredTools,
   resourceLinksOf,
+  resourceProseOf,
   structuredOf,
   textOf,
 } from '@saerskriven/mcp/fixtures';
@@ -504,6 +508,78 @@ for (const runner of runners) {
             'is outside the root this server may read',
           );
         });
+      },
+      spawnTimeout,
+    );
+    register(
+      titleOf(
+        runner,
+        `the resources and prompts of saer mcp over ${opener.name}`,
+      ),
+      () => {
+        for (const era of eras) {
+          it(`reads the register and a diagram, completes it, and renders both prompts in the ${era} era`, async () => {
+            const session = await opener.open(runner, ecluse, era);
+            try {
+              const listed = await session.client.listResources();
+              const registerRead = await session.client.readResource({
+                uri: 'saer://register',
+              });
+              const diagram = await session.client.readResource({
+                uri: 'saer://diagram/0',
+              });
+              const completed = await session.client.complete({
+                ref: { type: 'ref/resource', uri: 'saer://diagram/{diagram}' },
+                argument: { name: 'diagram', value: '' },
+              });
+              const prompts = await session.client.listPrompts();
+              const stride = await session.client.getPrompt({
+                name: 'stride_pass',
+                arguments: { element: 'Écluse proxy' },
+              });
+              const review = await session.client.getPrompt({
+                name: 'review_model',
+              });
+              const [image] = blobsOf(diagram);
+              const opening = [
+                ...resourceProseOf(registerRead).prose,
+                ...resourceProseOf(diagram).prose,
+                promptProseOf(stride).prose[0] ?? '',
+                promptProseOf(review).prose[0] ?? '',
+              ].map((text) => text.split('\n')[0]);
+
+              expect(session.client.getProtocolEra()).toEqual(era);
+              expect(listed.resources.map((resource) => resource.uri)).toEqual([
+                'saer://register',
+                'saer://diagram/0',
+              ]);
+              expect({
+                ttlMs: listed.ttlMs,
+                cacheScope: listed.cacheScope,
+              }).toEqual(
+                era === 'modern'
+                  ? { ttlMs: 0, cacheScope: 'private' }
+                  : { ttlMs: undefined, cacheScope: undefined },
+              );
+              expect(opening).toEqual(opening.map(() => dataNotInstructions));
+              expect(opening.length).toBe(4);
+              expect(resourceProseOf(registerRead).prose[0]).toContain(
+                '# Écluse threat register',
+              );
+              expect(image?.mimeType).toEqual('image/png');
+              expect(image?.bytes.subarray(0, 4)).toEqual(pngMagic);
+              expect(completed.completion.values).toEqual(['0']);
+              expect(prompts.prompts.map((prompt) => prompt.name)).toEqual(
+                registeredPrompts,
+              );
+              expect([stride.messages.length, review.messages.length]).toEqual([
+                2, 2,
+              ]);
+            } finally {
+              await session.end();
+            }
+          });
+        }
       },
       spawnTimeout,
     );
