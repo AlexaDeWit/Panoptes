@@ -8,7 +8,7 @@ import type {
   ThreatId,
 } from './ids.js';
 
-/** Why an operation refused to produce a model: `_tag` discriminates the violation, following Effect's own convention, and the remaining fields carry the offending id or reference. */
+/** Why an operation refused to produce a model: `_tag` names the violation and the other fields say where it is. */
 export type OperationFailure = Data.TaggedEnum<{
   InvalidElementProperties: {
     readonly elementId: ElementId;
@@ -55,11 +55,15 @@ export type OperationFailure = Data.TaggedEnum<{
     readonly elementId: ElementId;
     readonly at: number;
   };
+  RefusedMetadataCharacter: {
+    readonly field: 'title' | 'owner' | 'description';
+    readonly at: number;
+  };
+  RefusedContributorCharacter: {
+    readonly contributor: number;
+    readonly at: number;
+  };
 }>;
 
-/**
- * Constructors for {@link OperationFailure}, one per variant, plus
- * Effect's `$is` and `$match` helpers. Values compare structurally under
- * Effect's Equal and serialize to their plain tagged shape.
- */
+/** Constructors for {@link OperationFailure}, with Effect's `$is` and `$match`. */
 export const OperationFailure = Data.taggedEnum<OperationFailure>();

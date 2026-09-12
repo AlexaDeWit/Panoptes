@@ -12,9 +12,11 @@ export * from './lib/mitigations.js';
 export * from './lib/assumptions.js';
 export {
   diagramSchema,
+  modelMetadataChangeSchema,
   modelMetadataSchema,
   type Diagram,
   type ModelMetadata,
+  type ModelMetadataChange,
 } from './lib/model.js';
 export * from './lib/parse.js';
 export { diagramsNamed, elementIdsIn } from './lib/references.js';
@@ -24,6 +26,7 @@ export * from './lib/operations.js';
 export * from './lib/threat-operations.js';
 export * from './lib/mitigation-operations.js';
 export * from './lib/assumption-operations.js';
+export * from './lib/metadata-operations.js';
 export * from './lib/coverage.js';
 
 export * from './lib/fragment.js';

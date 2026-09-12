@@ -140,6 +140,14 @@ const operationFailures: ByTag<OperationFailure> = {
     elementId: elementId('element-unnamed'),
     at: 3,
   }),
+  RefusedMetadataCharacter: OperationFailure.RefusedMetadataCharacter({
+    field: 'title',
+    at: 3,
+  }),
+  RefusedContributorCharacter: OperationFailure.RefusedContributorCharacter({
+    contributor: 0,
+    at: 3,
+  }),
 };
 
 const studioFailures: ByTag<StudioFailure> = {
