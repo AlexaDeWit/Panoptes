@@ -13,6 +13,7 @@ import { randomUUID } from 'node:crypto';
 import {
   chmodSync,
   linkSync,
+  readFileSync,
   renameSync,
   rmSync,
   statSync,
@@ -33,8 +34,8 @@ import {
  * `NoFile` is a call naming no file against a server carrying no default.
  * `StaleRevision` is the file having changed since the read whose handle the
  * call quoted, which is the case an agent answers by reading again rather
- * than by retrying. `Occupied` is a tool that creates a file finding a path
- * already taken. `Unwritten` is the write not happening for a reason outside
+ * than by retrying, and which a write that replaces a file checks twice.
+ * `Occupied` is a tool that creates a file finding a path already taken. `Unwritten` is the write not happening for a reason outside
  * this server's reach: the system refusing it, or the codec throwing on the
  * model it was handed, each with its own sentence.
  */
@@ -69,7 +70,7 @@ export const revisionArgumentSchema = fileArgumentSchema.extend({
   revision: z
     .string()
     .describe(
-      'The revision handle the last read of this file returned. The write is refused when the file no longer hashes to it, which means something else wrote the file and the edit has to be reconsidered against what it holds now.',
+      'The revision handle the last read of this file returned. The write is refused when the file no longer hashes to it, checked when this call reads the file and again immediately before the file is replaced, which means something else wrote the file and the edit has to be reconsidered against what it holds now.',
     ),
 });
 
@@ -128,13 +129,10 @@ export function namedFile(
 
 /**
  * The read a write may go on from, refused where the file no longer hashes
- * to the revision the call quoted. The comparison is between whole handles
- * over the bytes this call read, which is what it catches and what it does
- * not: a save that landed before this read is refused, and a save landing
- * between this read and the rename that follows it is not seen, so that
- * writer's work is replaced with neither side told. The window is the read,
- * the edits and the serialization, milliseconds on a large model. The handle
- * refuses an agent editing a model it has moved past; it is not a lock on
+ * to the revision the call quoted. This is the first of the two places the
+ * handle is checked, over the bytes this call read, so what it refuses is an
+ * agent editing a model it has moved past. A save landing after this read is
+ * the other check's to catch, in {@link replacedFile}. Neither is a lock on
  * the file.
  */
 export function unchangedSince(
@@ -142,15 +140,7 @@ export function unchangedSince(
   revision: string,
   read: ReadModelFile,
 ): Either.Either<ReadModelFile, WriteFailure> {
-  return read.revision === revision
-    ? Either.right(read)
-    : Either.left(
-        WriteFailure.StaleRevision({
-          file,
-          quoted: revision,
-          found: read.revision,
-        }),
-      );
+  return Either.map(staleUnless(file, revision, read.revision), () => read);
 }
 
 /**
@@ -160,18 +150,29 @@ export function unchangedSince(
  * mode the target carried is put on the temporary first, since the rename
  * replaces the file's permissions along with its content. The handle over
  * the bytes written comes back, which is the revision the next write quotes.
+ *
+ * `quoted` is the handle over the bytes the caller read, and the target is
+ * hashed again immediately before the rename: one that no longer matches
+ * refuses as `StaleRevision` and renames nothing, which is how a save that
+ * landed while this call was working is reported rather than replaced. The
+ * unguarded interval left runs from that hash to the rename rather than from
+ * the caller's read to it, and a save landing inside it is still replaced
+ * with neither writer told.
  */
 export function replacedFile(
   target: WriteTarget,
   text: string,
+  quoted: string,
 ): Either.Either<string, WriteFailure> {
-  return throughTemporary(
-    target,
-    text,
-    (temporary) => {
-      renameSync(temporary, target.path);
-    },
-    unwritten,
+  return throughTemporary(target, text, (temporary) =>
+    Either.flatMap(unmovedSince(target, quoted), () =>
+      Either.try({
+        try: () => {
+          renameSync(temporary, target.path);
+        },
+        catch: (error) => unwritten(target.file, error),
+      }),
+    ),
   );
 }
 
@@ -185,13 +186,13 @@ export function createdFile(
   target: WriteTarget,
   text: string,
 ): Either.Either<string, WriteFailure> {
-  return throughTemporary(
-    target,
-    text,
-    (temporary) => {
-      linkSync(temporary, target.path);
-    },
-    occupiedOrUnwritten,
+  return throughTemporary(target, text, (temporary) =>
+    Either.try({
+      try: () => {
+        linkSync(temporary, target.path);
+      },
+      catch: (error) => occupiedOrUnwritten(target.file, error),
+    }),
   );
 }
 
@@ -230,16 +231,29 @@ const errnoSchema = z.object({ code: z.string() });
 function throughTemporary(
   target: WriteTarget,
   text: string,
-  commit: (temporary: string) => void,
-  refusal: (file: string, error: unknown) => WriteFailure,
+  commit: (temporary: string) => Either.Either<void, WriteFailure>,
 ): Either.Either<string, WriteFailure> {
   const bytes = Buffer.from(text, 'utf8');
   const temporary = join(
     dirname(target.path),
     `.${basename(target.path)}.${randomUUID()}.saer`,
   );
+  return discarding(
+    temporary,
+    Either.map(
+      Either.flatMap(staged(target, temporary, bytes), () => commit(temporary)),
+      () => revisionOf(bytes),
+    ),
+  );
+}
+
+function staged(
+  target: WriteTarget,
+  temporary: string,
+  bytes: Uint8Array,
+): Either.Either<void, WriteFailure> {
   const mode = modeOf(target.path);
-  const written = Either.try({
+  return Either.try({
     try: () => {
       writeFileSync(
         temporary,
@@ -249,12 +263,38 @@ function throughTemporary(
       if (mode !== undefined) {
         chmodSync(temporary, mode);
       }
-      commit(temporary);
-      return revisionOf(bytes);
     },
-    catch: (error) => refusal(target.file, error),
+    catch: (error) => unwritten(target.file, error),
   });
-  return discarding(temporary, written);
+}
+
+/**
+ * The target still hashing to `quoted`, or the refusal naming both handles.
+ * A target this cannot read refuses as `Unwritten` carrying the system's own
+ * reason rather than as `StaleRevision`, since what the path holds now is
+ * not known.
+ */
+function unmovedSince(
+  target: WriteTarget,
+  quoted: string,
+): Either.Either<void, WriteFailure> {
+  return Either.flatMap(
+    Either.try({
+      try: () => revisionOf(readFileSync(target.path)),
+      catch: (error) => unwritten(target.file, error),
+    }),
+    (found) => staleUnless(target.file, quoted, found),
+  );
+}
+
+function staleUnless(
+  file: string,
+  quoted: string,
+  found: string,
+): Either.Either<void, WriteFailure> {
+  return quoted === found
+    ? Either.right(undefined)
+    : Either.left(WriteFailure.StaleRevision({ file, quoted, found }));
 }
 
 /**

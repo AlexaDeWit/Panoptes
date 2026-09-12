@@ -1,5 +1,11 @@
 import { Either } from 'effect';
-import { chmodSync, readFileSync, readdirSync, statSync } from 'node:fs';
+import {
+  chmodSync,
+  readFileSync,
+  readdirSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs';
 import { join } from 'node:path';
 import { editableTree, modelFile } from './edit.fixtures.js';
 import { revisionOf } from './revision.js';
@@ -19,6 +25,11 @@ const target = (root: string, file: string) => ({
   path: join(root, file),
 });
 
+const revisionIn = (root: string, file: string): string =>
+  revisionOf(readFileSync(join(root, file)));
+
+const staleRevision = `sha256:${'0'.repeat(64)}`;
+
 const failureOf = <Value>(
   outcome: Either.Either<Value, WriteFailure>,
 ): WriteFailure => {
@@ -34,23 +45,32 @@ describe('replacing a file', () => {
     const written = replacedFile(
       target(tree.root, modelFile),
       'formatVersion: 1\n',
+      revisionIn(tree.root, modelFile),
     );
     expect(Either.getOrUndefined(written)).toEqual(
-      revisionOf(readFileSync(join(tree.root, modelFile))),
+      revisionIn(tree.root, modelFile),
     );
   });
 
   it('keeps the permissions the file carried', () => {
     const tree = editableTree();
     chmodSync(join(tree.root, modelFile), 0o640);
-    replacedFile(target(tree.root, modelFile), 'replaced\n');
+    replacedFile(
+      target(tree.root, modelFile),
+      'replaced\n',
+      revisionIn(tree.root, modelFile),
+    );
     expect(statSync(join(tree.root, modelFile)).mode & 0o777).toEqual(0o640);
   });
 
   it('leaves no temporary file behind', () => {
     const tree = editableTree();
     const before = new Set(readdirSync(tree.root));
-    replacedFile(target(tree.root, modelFile), 'replaced\n');
+    replacedFile(
+      target(tree.root, modelFile),
+      'replaced\n',
+      revisionIn(tree.root, modelFile),
+    );
     expect(new Set(readdirSync(tree.root))).toEqual(before);
   });
 
@@ -59,10 +79,34 @@ describe('replacing a file', () => {
     const refused = replacedFile(
       target(tree.root, join('absent', 'model.yaml')),
       'replaced\n',
+      staleRevision,
     );
     expect(renderWriteFailure(failureOf(refused)).join('\n')).toContain(
       'was not written: ENOENT',
     );
+  });
+});
+
+describe('a save that lands while a replacement is being prepared', () => {
+  it('is refused by the hash taken before the rename, leaving the file alone', () => {
+    const tree = editableTree();
+    const quoted = revisionIn(tree.root, modelFile);
+    writeFileSync(join(tree.root, modelFile), 'the other writer saved\n');
+    const before = new Set(readdirSync(tree.root));
+    const refused = replacedFile(
+      target(tree.root, modelFile),
+      'formatVersion: 1\n',
+      quoted,
+    );
+    expect(readFileSync(join(tree.root, modelFile)).toString('utf8')).toEqual(
+      'the other writer saved\n',
+    );
+    expect(new Set(readdirSync(tree.root))).toEqual(before);
+    expect(renderWriteFailure(failureOf(refused))).toEqual([
+      `The file "${modelFile}" changed since the read this call quoted, so nothing was written.`,
+      `The call quoted ${quoted}, and the file on disk is ${revisionIn(tree.root, modelFile)}.`,
+      'Read the file again and reconsider the edit against what it holds now.',
+    ]);
   });
 });
 
