@@ -171,7 +171,7 @@ function describeOperation(failure: OperationFailure): string {
     RefusedMetadataCharacter: ({ field }) =>
       `The model ${field} carries a character the model does not accept.`,
     RefusedContributorCharacter: ({ contributor }) =>
-      `Entry ${String(contributor)} of the contributors carries a character the model does not accept.`,
+      `Entry ${String(contributor + 1)} of the contributors carries a character the model does not accept.`,
   });
 }
 
