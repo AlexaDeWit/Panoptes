@@ -60,19 +60,27 @@ what each importer carries over and reports.
 `export-commands.ts` projects the current model through `@saerskriven/render`.
 It writes a diagram as SVG, the register as markdown, and the whole model as
 Typst. The PDF path compiles that Typst source through the render package's
-`pdf` subpath. An export uses the bridge's picker or download path but never
-replaces the file handle that Save writes back to.
+`pdf` subpath, and the PNG path draws the diagram on screen through its `png`
+subpath. Both read bytes rather than files, so both go through the loader
+below first, and a refusal from either reports as a notice and writes nothing.
+An export uses the bridge's picker or download path but never replaces the
+file handle that Save writes back to.
 
-`pdf-assets.ts` fetches the WebAssembly module and the five Liberation faces
-that the Vite build emits. Vite's `?url` import owns the module. The face list
-and compiler order come from the same render-owned build module as the CLI.
-The loader caches the bytes after the first successful read and returns a
-typed failure when an asset is not available.
+`render-assets.ts` fetches the two WebAssembly modules and the five Liberation
+faces that the Vite build emits, the faces once for both readers. Vite's
+`?url` import owns each module. The face list and the compiler's order come
+from the same render-owned build module as the CLI, and the PNG loader leads
+that list with `drawingFace`, because the rasterizer letters a family no
+loaded face carries in the family of the first face it was offered and the
+drawings name Helvetica and Arial. A build carrying no such face is refused,
+which is the one rule `@saerskriven/render/png` holds for the CLI and the
+studio alike. The loader caches the bytes after the first successful read and
+returns a typed failure when an asset is not available.
 
 The render subpath loads the compiler JavaScript on the first PDF export.
 Vite keeps that code in a separate hashed chunk.
 
-The WebAssembly module and fonts load only after the PDF item runs. Other
+A module and the faces load only after the PDF or PNG item runs. The other
 exports load none of those runtime assets.
 
 `formatFiles` is the one table saying how a format appears as a file: the
@@ -149,8 +157,8 @@ step through the list without opening it. The Project group links to GitHub. The
 built version above the React Flow attribution, with `development` for builds
 without a release tag. The submenu has one SVG item per diagram when the
 model has several.
-The other items export the register as markdown, or the whole model as Typst
-or PDF. Every proposed name replaces the open file's extension, or starts
+The other items export the diagram on screen as a PNG, the register as
+markdown, or the whole model as Typst or PDF. Every proposed name replaces the open file's extension, or starts
 with `Untitled` when no file is open. The menu also holds the fallback
 picker's input and the guard on closing the tab. The guard stands only while
 the model is dirty and the latest recovery write is unconfirmed. Open and
@@ -164,7 +172,8 @@ been refused or has cost the model a key, and each can run to several lines,
 which is why they are under the card rather than in it. The crossing report and
 export report share one live region. An export reports every endpoint its
 projection could not place after it writes the file. A PDF compile refusal
-reports the compiler's sentences and writes nothing. Every export report
+reports the compiler's sentences and writes nothing, as a rasterizer refusal
+reports the rasterizer's. Every export report
 carries a Dismiss button, and `refusal` on the report decides what else ends
 it. An export that was written reports informationally, so it goes at the
 next action that moves canvas or panel state, the transient lifetime the

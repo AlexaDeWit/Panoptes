@@ -251,6 +251,10 @@ jobs:
     timeout-minutes: 30
     permissions:
       contents: read
+    env:
+      # The studio build refuses without it, because the PNG export reads it,
+      # so both the development server and the Pages preview need it here.
+      SAERSKRIVEN_RESVG_WASM: ${{ github.workspace }}/result/lib/saerskriven_resvg.wasm
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -262,6 +266,12 @@ jobs:
         with:
           install-dependencies: 'true'
           save-nix-store: 'false'
+
+      # The restored store already holds the output on any run after the
+      # first, so this validates the path rather than rebuilding the crate.
+      # sandbox true gives the builder no network, as in the rasterizer job.
+      - name: Build the rasterizer module the studio carries
+        run: nix build --print-build-logs --option sandbox true .#resvg-wasm
 
       - name: Run the smoke suite
         run: nix develop .#ci --command pnpm nx e2e @saerskriven/studio-e2e
@@ -426,11 +436,17 @@ jobs:
       - name: Configure GitHub Pages
         id: pages
         uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
+      # The website carries the module as a hashed asset, so its build reads
+      # the same variable the CLI build does. sandbox true gives the builder
+      # no network, as in the rasterizer job.
+      - name: Build the rasterizer module the website carries
+        run: nix build --print-build-logs --option sandbox true .#resvg-wasm
       - name: Build and package the website
         env:
           PAGES_BASE_PATH: ${{ steps.pages.outputs.base_path }}
           PAGES_SITE_URL: ${{ steps.pages.outputs.base_url }}
           SAERSKRIVEN_RELEASE_TAG: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || '' }}
+          SAERSKRIVEN_RESVG_WASM: ${{ github.workspace }}/result/lib/saerskriven_resvg.wasm
           GH_REPO: ${{ github.repository }}
         run: |
           if [ -z "$SAERSKRIVEN_RELEASE_TAG" ]; then

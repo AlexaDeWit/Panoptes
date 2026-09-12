@@ -43,6 +43,9 @@
             "env": "SAERSKRIVEN_FONTS_DIR"
           },
           {
+            "env": "SAERSKRIVEN_RESVG_WASM"
+          },
+          {
             "env": "PAGES_BASE_PATH"
           },
           {
@@ -85,6 +88,9 @@
           "studioTestFixtures",
           {
             "env": "SAERSKRIVEN_FONTS_DIR"
+          },
+          {
+            "env": "SAERSKRIVEN_RESVG_WASM"
           },
           {
             "env": "PAGES_BASE_PATH"

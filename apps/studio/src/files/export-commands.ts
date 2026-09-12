@@ -11,17 +11,25 @@ import {
   PdfFailure,
   type PdfAssets,
 } from '@saerskriven/render/pdf';
+import {
+  renderPng,
+  ResvgFailure,
+  type PngImage,
+} from '@saerskriven/render/png';
+import type { ResvgAssets } from '@saerskriven/render/resvg';
 import { Either } from 'effect';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import type { FileLifecycle } from '../store/state.js';
+import { activeDiagram } from '../store/selectors.js';
+import type { FileLifecycle, State } from '../store/state.js';
 import { modelStore, onCanvasOrPanelChange } from '../store/store.js';
 import { SaveOutcome, type FileBridge, type SaveFileType } from './bridge.js';
 import { browserFileBridge } from './browser-bridge.js';
 import {
   loadPdfAssets,
-  PdfAssetFailure,
-  type PdfAssetFailure as PdfAssetFailureType,
-} from './pdf-assets.js';
+  loadPngAssets,
+  RenderAssetFailure,
+  type RenderAssetFailure as RenderAssetFailureType,
+} from './render-assets.js';
 import { proposedExportName } from './session.js';
 
 type UnplacedFlow = SvgDocument['unplaced'][number];
@@ -31,12 +39,24 @@ type ExportFile = {
   readonly type: SaveFileType;
 };
 
+type Drawn = {
+  readonly content: Uint8Array;
+  readonly unplaced: readonly UnplacedFlow[];
+};
+
 const exportFiles = {
   svg: {
     extension: '.svg',
     type: {
       description: 'SVG image',
       accept: { 'image/svg+xml': ['.svg'] },
+    },
+  },
+  png: {
+    extension: '.png',
+    type: {
+      description: 'PNG image',
+      accept: { 'image/png': ['.png'] },
     },
   },
   markdown: {
@@ -68,6 +88,7 @@ export type ExportCommands = {
   register(): void;
   typst(): void;
   pdf(): void;
+  png(): void;
 };
 
 /**
@@ -82,16 +103,28 @@ export type ExportNotice = {
   readonly refusal: boolean;
 };
 
-/** Browser services the PDF export needs, replaceable by a focused spec. */
-export type PdfExport = {
-  readonly assets: () => Promise<Either.Either<PdfAssets, PdfAssetFailureType>>;
+/**
+ * Browser services the two exports that read WebAssembly need, replaceable by
+ * a focused spec: the bytes each one runs on, and the projection that reads
+ * them.
+ */
+export type RenderExports = {
+  readonly pdfAssets: () => Promise<
+    Either.Either<PdfAssets, RenderAssetFailureType>
+  >;
   readonly compile: typeof compilePdf;
+  readonly pngAssets: () => Promise<
+    Either.Either<ResvgAssets, RenderAssetFailureType>
+  >;
+  readonly draw: typeof renderPng;
 };
 
-/** The PDF services used by the browser application. */
-export const browserPdfExport: PdfExport = {
-  assets: loadPdfAssets,
+/** The PDF and PNG services used by the browser application. */
+export const browserRenderExports: RenderExports = {
+  pdfAssets: loadPdfAssets,
   compile: compilePdf,
+  pngAssets: loadPngAssets,
+  draw: renderPng,
 };
 
 /**
@@ -101,7 +134,7 @@ export const browserPdfExport: PdfExport = {
  */
 export function useExportCommands(
   bridge: FileBridge = browserFileBridge,
-  pdf: PdfExport = browserPdfExport,
+  renders: RenderExports = browserRenderExports,
 ): {
   readonly commands: ExportCommands;
   readonly notice: ExportNotice | undefined;
@@ -124,6 +157,31 @@ export function useExportCommands(
       setNotice(noticeFrom(outcome, unplaced));
     },
     [bridge],
+  );
+
+  const produce = useCallback(
+    (
+      file: ExportFile,
+      make: (
+        state: State,
+      ) => Promise<Either.Either<Drawn, ExportNotice> | undefined>,
+    ): void => {
+      const run = async (): Promise<void> => {
+        setNotice(undefined);
+        const state = modelStore.getState();
+        const made = await make(state);
+        if (made === undefined) {
+          return;
+        }
+        if (Either.isLeft(made)) {
+          setNotice(made.left);
+          return;
+        }
+        await place(state.file, file, made.right.content, made.right.unplaced);
+      };
+      void run();
+    },
+    [place],
   );
 
   const commands = useMemo<ExportCommands>(
@@ -168,31 +226,13 @@ export function useExportCommands(
         );
       },
       pdf: () => {
-        const run = async (): Promise<void> => {
-          setNotice(undefined);
-          const state = modelStore.getState();
-          const projection = renderTypst(state.present);
-          const assets = await pdf.assets();
-          if (Either.isLeft(assets)) {
-            setNotice(assetNotice(assets.left));
-            return;
-          }
-          const compiled = await pdf.compile(projection.typst, assets.right);
-          if (Either.isLeft(compiled)) {
-            setNotice(compileNotice(compiled.left));
-            return;
-          }
-          await place(
-            state.file,
-            exportFiles.pdf,
-            new Uint8Array(compiled.right),
-            projection.unplaced,
-          );
-        };
-        void run();
+        produce(exportFiles.pdf, (state) => compiled(state, renders));
+      },
+      png: () => {
+        produce(exportFiles.png, (state) => drawn(state, renders));
       },
     }),
-    [pdf, place],
+    [place, produce, renders],
   );
 
   const dismissNotice = useCallback((): void => {
@@ -212,6 +252,48 @@ export function useExportCommands(
   return useMemo(
     () => ({ commands, notice, dismissNotice }),
     [commands, dismissNotice, notice],
+  );
+}
+
+async function compiled(
+  state: State,
+  renders: RenderExports,
+): Promise<Either.Either<Drawn, ExportNotice>> {
+  const projection = renderTypst(state.present);
+  const assets = await renders.pdfAssets();
+  if (Either.isLeft(assets)) {
+    return Either.left(assetNotice(assets.left, 'PDF compiler'));
+  }
+  return Either.mapBoth(await renders.compile(projection.typst, assets.right), {
+    onLeft: compileNotice,
+    onRight: (pdf) => ({
+      content: new Uint8Array(pdf),
+      unplaced: projection.unplaced,
+    }),
+  });
+}
+
+async function drawn(
+  state: State,
+  renders: RenderExports,
+): Promise<Either.Either<Drawn, ExportNotice> | undefined> {
+  const diagram = activeDiagram(state);
+  if (diagram === undefined) {
+    return undefined;
+  }
+  const assets = await renders.pngAssets();
+  if (Either.isLeft(assets)) {
+    return Either.left(assetNotice(assets.left, 'SVG rasterizer'));
+  }
+  return Either.mapBoth(
+    await renders.draw(diagram, state.present, { assets: assets.right }),
+    {
+      onLeft: rasterNotice,
+      onRight: (image: PngImage) => ({
+        content: image.png,
+        unplaced: image.unplaced,
+      }),
+    },
   );
 }
 
@@ -245,10 +327,13 @@ function unplacedNotice(
       };
 }
 
-function assetNotice(failure: PdfAssetFailureType): ExportNotice {
-  return PdfAssetFailure.$match(failure, {
+function assetNotice(
+  failure: RenderAssetFailureType,
+  reader: string,
+): ExportNotice {
+  return RenderAssetFailure.$match(failure, {
     Unavailable: ({ reason }) => ({
-      headline: 'Saerskriven could not load the PDF compiler.',
+      headline: `Saerskriven could not load the ${reader}.`,
       details: [reason],
       refusal: true,
     }),
@@ -268,4 +353,16 @@ function compileNotice(failure: PdfFailure): ExportNotice {
       refusal: true,
     }),
   });
+}
+
+function rasterNotice(failure: ResvgFailure): ExportNotice {
+  const said = ResvgFailure.$match(failure, {
+    Refused: ({ sentence }) => sentence,
+    Unusable: ({ sentence }) => sentence,
+  });
+  return {
+    headline: 'Saerskriven could not draw the PNG.',
+    details: [said],
+    refusal: true,
+  };
 }

@@ -32,6 +32,7 @@ export const registeredChords = {
   'export-register': [],
   'export-typst': [],
   'export-pdf': [],
+  'export-png': [],
   'close-file': ['ControlOrMeta+Shift+x'],
   undo: ['ControlOrMeta+z'],
   redo: ['ControlOrMeta+Shift+z', 'Control+y'],

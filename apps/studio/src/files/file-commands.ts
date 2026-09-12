@@ -13,10 +13,10 @@ import { dispatch, modelStore } from '../store/store.js';
 import { browserStoreSync, type StoreSync } from '../store/sync.js';
 import { browserFileBridge } from './browser-bridge.js';
 import {
-  browserPdfExport,
+  browserRenderExports,
   useExportCommands,
   type ExportNotice,
-  type PdfExport,
+  type RenderExports,
 } from './export-commands.js';
 import {
   OpenOutcome,
@@ -79,7 +79,7 @@ export type FileSession = {
  */
 export function useFileSession(
   bridge: FileBridge = browserFileBridge,
-  pdf: PdfExport = browserPdfExport,
+  renders: RenderExports = browserRenderExports,
   sync: Pick<StoreSync, 'watch'> = browserStoreSync,
 ): FileSession {
   const [report, setReport] = useState<LossReport | undefined>(undefined);
@@ -89,7 +89,7 @@ export function useFileSession(
   const [closing, setClosing] = useState(false);
   const [choosing, setChoosing] = useState(false);
   const picker = useRef<HTMLInputElement | null>(null);
-  const exporter = useExportCommands(bridge, pdf);
+  const exporter = useExportCommands(bridge, renders);
   const exportCommands = exporter.commands;
 
   const attachPicker = useCallback((input: HTMLInputElement | null): void => {
@@ -255,6 +255,9 @@ export function useFileSession(
       },
       exportPdf: () => {
         exportCommands.pdf();
+      },
+      exportPng: () => {
+        exportCommands.png();
       },
       close: () => {
         if (isDirty(modelStore.getState())) {

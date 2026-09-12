@@ -9,15 +9,19 @@ import {
 } from './build-assets.js';
 import {
   diagramOf,
-  drawingFace,
   ecluseModel,
   everyGlyphModel,
   goldenDocuments,
-  ledBy,
   repositoryRoot,
   type GoldenDocument,
 } from './goldens.fixtures.js';
-import { defaultLongEdge, renderPng, type PngImage } from './png.js';
+import {
+  defaultLongEdge,
+  drawingFace,
+  ledBy,
+  renderPng,
+  type PngImage,
+} from './png.js';
 import type { ResvgAssets } from './resvg.js';
 
 const stop = (sentence: string): never => {
@@ -29,6 +33,8 @@ const unbuilt =
 
 const monoFace = 'LiberationMono-Regular.ttf';
 
+const named = (face: string): string => face;
+
 let loaded: ResvgAssets | undefined;
 
 const assetsLedBy = (leading: string): ResvgAssets => {
@@ -38,9 +44,14 @@ const assetsLedBy = (leading: string): ResvgAssets => {
   };
   return {
     wasm: loaded.wasm,
-    fonts: ledBy(typstFontAssets(stop), (face) => face.name, leading).map(
-      (face) => new Uint8Array(readFileSync(face.from)),
-    ),
+    fonts: Either.getOrThrow(
+      ledBy(
+        typstFontAssets(stop),
+        (face) => face.name,
+        leading,
+        'the pinned font directory',
+      ),
+    ).map((face) => new Uint8Array(readFileSync(face.from))),
   };
 };
 
@@ -70,6 +81,20 @@ const committed = (entry: GoldenDocument, drawn: Uint8Array): Buffer => {
   }
   return readFileSync(path);
 };
+
+describe('the faces a rasterization is offered', () => {
+  it('leads with the face the caller names, keeping the rest in order', () => {
+    expect(
+      ledBy(['a.ttf', drawingFace, 'b.ttf'], named, drawingFace, 'a build'),
+    ).toEqual(Either.right([drawingFace, 'a.ttf', 'b.ttf']));
+  });
+
+  it('refuses a caller holding no such face, naming it', () => {
+    expect(ledBy(['a.ttf'], named, drawingFace, 'a build')).toEqual(
+      Either.left(`a build holds no ${drawingFace}, which text is set in`),
+    );
+  });
+});
 
 describe.skipIf(unbuilt)('a diagram rasterized as a PNG', () => {
   it.each(goldenDocuments)(

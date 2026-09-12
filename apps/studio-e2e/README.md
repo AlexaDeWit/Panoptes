@@ -48,7 +48,7 @@ map to the browser specs below. Paths are relative to `src/`.
 | Boot and initial diagram                                              | `smoke.spec.ts`, `empty-state.spec.ts`                   |
 | Threat Dragon and native YAML open/save                               | `files.spec.ts`, `round-trip.spec.ts`                    |
 | Lossless open/edit/save, geometry, and threat data                    | `round-trip.spec.ts`                                     |
-| SVG, markdown, Typst, and PDF export parity                           | `exports.spec.ts`, `pages-export.spec.ts`                |
+| SVG, PNG, markdown, Typst, and PDF export parity                      | `exports.spec.ts`, `pages-export.spec.ts`                |
 | Selection, tab order, node movement, and boundary hit targets         | `canvas.spec.ts`                                         |
 | Group selection, movement, and deletion                               | `multi-selection.spec.ts`                                |
 | Toolbox placement, curve drawing, deletion, and Hand mode             | `editing.spec.ts`                                        |

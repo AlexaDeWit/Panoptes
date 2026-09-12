@@ -1,3 +1,5 @@
+import { renderSvg } from '@saerskriven/render';
+import { Either } from 'effect';
 import { readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import {
@@ -11,6 +13,38 @@ import {
   type FileResult,
   type SaveFileType,
 } from './bridge.js';
+import type { RenderExports } from './export-commands.js';
+
+/**
+ * The bytes a PNG file opens with, so a spec can tell one from other content
+ * without reading the whole file.
+ */
+export const pngSignature = new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10]);
+
+/**
+ * Render services that answer without WebAssembly, one field at a time
+ * replaceable by the spec that is about that field.
+ */
+export function specRenders(
+  overrides: Partial<RenderExports> = {},
+): RenderExports {
+  const assets = { wasm: new Uint8Array(), fonts: [] };
+  return {
+    pdfAssets: () => Promise.resolve(Either.right(assets)),
+    compile: () => Promise.resolve(Either.right(new Uint8Array([37, 80]))),
+    pngAssets: () => Promise.resolve(Either.right(assets)),
+    draw: (diagram, model) =>
+      Promise.resolve(
+        Either.right({
+          png: pngSignature,
+          width: 2,
+          height: 1,
+          unplaced: renderSvg(diagram, model).unplaced,
+        }),
+      ),
+    ...overrides,
+  };
+}
 
 /** A file a spec hands to a bridge, standing in for a browser `File`. */
 export function chosenFile(name: string, text: string): ChosenFile {

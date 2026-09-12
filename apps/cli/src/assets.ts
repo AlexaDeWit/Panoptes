@@ -1,3 +1,4 @@
+import { ledBy } from '@saerskriven/render/png';
 import { Either } from 'effect';
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -32,11 +33,9 @@ export type WasmAssets = {
  * The faces come back in name order, except that `leading` names one to put
  * first. A renderer that falls a family no face carries back to the family of
  * the first face it was offered needs that, and a compiler that resolves
- * families by name does not, so only the caller that needs it asks. A
- * directory that does not hold the named face is refused rather than
- * reordered as far as it can be: the render would come out in whichever
- * family happened to be first, which a reader cannot tell from the one that
- * was asked for.
+ * families by name does not, so only the caller that needs it asks. Whether a
+ * directory holding no such face is refused or reordered as far as it can be
+ * is `ledBy` on the `png` subpath's to decide, here and in the studio alike.
  *
  * A directory holding no face at all is refused for the same reason, since a
  * compiler and a renderer both accept an empty list and both then write a
@@ -108,12 +107,9 @@ function offered(
   if (faces.length === 0) {
     return Either.left(`${directory} holds no .ttf font face`);
   }
-  if (leading === undefined) {
-    return Either.right(faces);
-  }
-  return faces.includes(leading)
-    ? Either.right([leading, ...faces.filter((face) => face !== leading)])
-    : Either.left(`${directory} holds no ${leading}, which text is set in`);
+  return leading === undefined
+    ? Either.right(faces)
+    : ledBy(faces, (face) => face, leading, directory);
 }
 
 function facesIn(directory: string): readonly string[] {

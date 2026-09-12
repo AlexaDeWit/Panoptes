@@ -13,6 +13,15 @@ test('exports the CLI drawing byte for byte', async ({ page }) => {
   expect(output.bytes).toEqual(exportGolden('ecluse.snapshot.svg'));
 });
 
+test('exports the CLI picture byte for byte', async ({ page }) => {
+  test.setTimeout(60_000);
+
+  const output = await exportedFile(page, 'Diagram as PNG');
+
+  expect(output.name).toBe('ecluse.png');
+  expect(output.bytes).toEqual(exportGolden('ecluse.snapshot.png'));
+});
+
 test('exports the CLI register byte for byte', async ({ page }) => {
   const output = await exportedFile(page, 'Register as Markdown');
 
