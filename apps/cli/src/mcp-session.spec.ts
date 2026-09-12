@@ -32,6 +32,8 @@ import {
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
+import { readAnyFormat } from '@saerskriven/formats';
+import { Either } from 'effect';
 import { join } from 'node:path';
 import {
   httpProcess,
@@ -228,6 +230,148 @@ for (const runner of runners) {
     register(
       titleOf(runner, `a client against saer mcp over ${opener.name}`),
       () => {
+        it(
+          'creates, reads, patches and clears security properties through the transport',
+          async () => {
+            const root = mkdtempSync(
+              join(tmpdir(), 'saerskriven-mcp-properties-'),
+            );
+            const file = 'model.yaml';
+            const session = await opener.open(runner, ['mcp', '--root', root]);
+            try {
+              const created = await session.client.callTool({
+                name: 'saer_create',
+                arguments: { file, title: 'Security properties' },
+              });
+              expect(created.isError).toBeFalsy();
+              const revision = readingOf(
+                await session.client.callTool({
+                  name: 'saer_inspect',
+                  arguments: { file },
+                }),
+              ).revision;
+              const added = await session.client.callTool({
+                name: 'saer_edit',
+                arguments: {
+                  file,
+                  revision,
+                  edits: [
+                    { op: 'add_diagram', diagram: 'diagram', title: 'System' },
+                    {
+                      op: 'add_element',
+                      diagram: 'diagram',
+                      element: {
+                        kind: 'actor',
+                        id: 'caller',
+                        name: 'Caller',
+                        placement: 'auto',
+                        providesAuthentication: false,
+                      },
+                    },
+                    {
+                      op: 'add_element',
+                      diagram: 'diagram',
+                      element: {
+                        kind: 'trust-boundary',
+                        id: 'boundary',
+                        name: 'Boundary',
+                        shape: {
+                          kind: 'box',
+                          position: { x: 0, y: 0 },
+                          size: { width: 200, height: 200 },
+                        },
+                        containedElements: ['caller'],
+                        crossingFlows: [],
+                      },
+                    },
+                    {
+                      op: 'add_element',
+                      diagram: 'diagram',
+                      element: {
+                        kind: 'flow',
+                        id: 'flow',
+                        name: 'Traffic',
+                        source: { kind: 'attached', element: 'caller' },
+                        target: { kind: 'attached', element: 'caller' },
+                        bidirectional: true,
+                        protocol: '',
+                        isEncrypted: false,
+                        trustBoundaryIds: ['boundary'],
+                      },
+                    },
+                  ],
+                },
+              });
+              expect(added.isError).toBeFalsy();
+              const found = await session.client.callTool({
+                name: 'saer_search_elements',
+                arguments: {
+                  file,
+                  element: 'flow',
+                  response_format: 'detailed',
+                },
+              });
+              expect(
+                structuredOf(found, searchElementsResultSchema).elements,
+              ).toMatchObject([
+                {
+                  id: 'flow',
+                  protocol: '',
+                  isEncrypted: false,
+                  bidirectional: true,
+                  trustBoundaryIds: ['boundary'],
+                },
+              ]);
+              expect(textOf(found)).toContain('isEncrypted: false');
+              const changed = await session.client.callTool({
+                name: 'saer_edit',
+                arguments: {
+                  file,
+                  revision: editOf(added).revision,
+                  edits: [
+                    {
+                      op: 'set_element_properties',
+                      element: 'flow',
+                      properties: { kind: 'flow', protocol: 'HTTPS' },
+                      unset: ['isEncrypted'],
+                    },
+                  ],
+                },
+              });
+              expect(changed.isError).toBeFalsy();
+              const saved = readFileSync(join(root, file), 'utf8');
+              const model = Either.getOrThrow(readAnyFormat(saved)).model;
+              const flow = model.diagrams[0].elements.find(
+                (element) => element.id === 'flow',
+              );
+              expect(flow).toMatchObject({
+                protocol: 'HTTPS',
+                bidirectional: true,
+                trustBoundaryIds: ['boundary'],
+              });
+              expect(flow).not.toHaveProperty('isEncrypted');
+              const reread = await session.client.callTool({
+                name: 'saer_search_elements',
+                arguments: {
+                  file,
+                  element: 'flow',
+                  response_format: 'detailed',
+                },
+              });
+              expect(
+                structuredOf(reread, searchElementsResultSchema).elements[0],
+              ).toMatchObject({ protocol: 'HTTPS' });
+              expect(
+                structuredOf(reread, searchElementsResultSchema).elements[0],
+              ).not.toHaveProperty('isEncrypted');
+            } finally {
+              await session.end();
+              rmSync(root, { recursive: true, force: true });
+            }
+          },
+          spawnTimeout,
+        );
+
         it('completes discovery on the revision the split SDK negotiates', async () => {
           const session = await opener.open(runner, ecluse);
           const listed = await session.client.listTools();

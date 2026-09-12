@@ -14,6 +14,10 @@ import {
 import { parseModel, type Model } from './lib/parse.js';
 
 export { validModelFixture } from './lib/fixtures.js';
+export {
+  securityModelFixture,
+  securityPropertyFixtures,
+} from './lib/security.fixtures.js';
 
 /** Parses a spec's literal string into a branded element id. */
 export const elementId = (value: string): ElementId =>
@@ -35,14 +39,7 @@ export const mitigationId = (value: string): MitigationId =>
 export const assumptionId = (value: string): AssumptionId =>
   assumptionIdSchema.parse(value);
 
-/**
- * The parsed form of a fixture, for a spec that needs a Model. The input is
- * unknown because a fixture is as often a file read off disk as a literal
- * written in the spec. Throws where the fixture stops parsing: a fixture
- * that no longer parses is a broken suite, not a case under test. The
- * message carries parseModel's issues, so the failure names the construct
- * the fixture lost.
- */
+/** A broken fixture throws with the model's path-bearing issues. */
 export function parsedFixture(input: unknown): Model {
   return Either.getOrThrowWith(
     parseModel(input),

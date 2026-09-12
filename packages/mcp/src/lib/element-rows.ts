@@ -1,54 +1,50 @@
 import { escapedForTerminal } from '@saerskriven/formats';
 import {
   acceptedTextSchema,
-  boundaryShapeSchema,
   diagramIdSchema,
   elementIdSchema,
   elementKindSchema,
-  flowEndpointSchema,
-  pointSchema,
-  sizeSchema,
-  waypointsSchema,
+  elementSchema,
   type Diagram,
   type Element,
   type FlowEndpoint,
 } from '@saerskriven/model';
 import { z } from 'zod';
 
-/**
- * What every element row names: the id a further call passes, the diagram it
- * is drawn on, its kind, its name, whether it is in scope, and how many
- * threats reference it. Scope is on the row rather than in the detail because
- * a listing that hides it reads an out-of-scope element as an unanalyzed one.
- */
-export const elementRowSchema = z.object({
-  id: elementIdSchema,
+const elementContextSchema = z.object({
   diagram: diagramIdSchema,
-  kind: elementKindSchema,
-  name: acceptedTextSchema,
-  outOfScope: z.boolean(),
   threats: z.int().nonnegative(),
 });
 
-/**
- * An element row with the rest of the record, every added field optional
- * because each belongs to some kinds and not others: a flow carries endpoints
- * and no box, a trust boundary a shape, a note its text.
- */
-export const elementDetailSchema = elementRowSchema.extend({
-  description: acceptedTextSchema.optional(),
-  reasonOutOfScope: acceptedTextSchema.optional(),
-  position: pointSchema.optional(),
-  size: sizeSchema.optional(),
-  source: flowEndpointSchema.optional(),
-  target: flowEndpointSchema.optional(),
-  waypoints: waypointsSchema.optional(),
-  shape: boundaryShapeSchema.optional(),
-  text: acceptedTextSchema.optional(),
+/** A concise identity, scope and threat count for an element. */
+export const elementRowSchema = elementContextSchema.extend({
+  id: elementIdSchema,
+  kind: elementKindSchema,
+  name: acceptedTextSchema,
+  outOfScope: z.boolean(),
 });
 
-/** One element as a search or a coverage report carries it. */
+const [firstElementSchema, ...otherElementSchemas] = elementSchema.options;
+
+/** Detailed reads carry the complete model variant, including future model fields. */
+export const elementDetailSchema = z.discriminatedUnion('kind', [
+  firstElementSchema.extend(elementContextSchema.shape),
+  ...otherElementSchemas.map((variant) =>
+    variant.extend(elementContextSchema.shape),
+  ),
+]);
+
+/** A full element with its diagram and threat count. */
 export type ElementDetail = z.infer<typeof elementDetailSchema>;
+
+/** The concise fields used by search summaries and coverage reports. */
+export type ElementRow = z.infer<typeof elementRowSchema>;
+
+/** Search returns either a complete element or the concise row. */
+export const elementResultSchema = z.union([
+  elementDetailSchema,
+  elementRowSchema,
+]);
 
 /** One element of a diagram, paired with the diagram that owns it. */
 export type ElementOnDiagram = {
@@ -69,7 +65,7 @@ export function elementsOnDiagrams(
 export function elementRow(
   { element, diagram }: ElementOnDiagram,
   threats: number,
-): ElementDetail {
+): ElementRow {
   return {
     id: element.id,
     diagram: diagram.id,
@@ -87,71 +83,68 @@ export function elementDetail(
 ): ElementDetail {
   const { element } = placed;
   return {
-    ...elementRow(placed, threats),
-    description: element.description,
-    reasonOutOfScope: element.reasonOutOfScope,
-    ...geometryOf(element),
+    ...element,
+    diagram: placed.diagram.id,
+    threats,
   };
 }
 
-/**
- * One element as the lines a text result carries: a heading line naming it,
- * and one indented line per field the row carries past the heading.
- */
-export function renderElement(row: ElementDetail): readonly string[] {
+/** Text results retain explicit false, empty text and empty relationship lists. */
+export function renderElement(
+  row: ElementDetail | ElementRow,
+): readonly string[] {
   return [
-    `  ${row.id} (${row.kind}, diagram ${row.diagram}, threats ${String(row.threats)}${row.outOfScope ? ', out of scope' : ''}): ${escapedForTerminal(row.name)}`,
-    ...detailLines(row).map((line) => `    ${line}`),
+    escapedForTerminal(
+      `  ${row.id} (${row.kind}, diagram ${row.diagram}, threats ${String(row.threats)}${row.outOfScope ? ', out of scope' : ''}): ${row.name}`,
+    ),
+    ...('description' in row
+      ? detailLines(row).map((line) => `    ${escapedForTerminal(line)}`)
+      : []),
   ];
 }
 
-function geometryOf(element: Element): Partial<ElementDetail> {
-  if (element.kind === 'flow') {
-    return {
-      source: element.source,
-      target: element.target,
-      waypoints: element.waypoints,
-    };
-  }
-  if (element.kind === 'trust-boundary') {
-    return { shape: element.shape };
-  }
-  if (element.kind === 'text') {
-    return {
-      position: element.position,
-      size: element.size,
-      text: element.text,
-    };
-  }
-  return { position: element.position, size: element.size };
-}
+const formattedFields = new Set<string>([
+  ...elementRowSchema.keyof().options,
+  'description',
+  'reasonOutOfScope',
+  'position',
+  'size',
+  'source',
+  'target',
+  'waypoints',
+  'shape',
+  'text',
+]);
 
 function detailLines(row: ElementDetail): readonly string[] {
   return [
-    ...(row.description === undefined || row.description.length === 0
+    ...(row.description.length === 0
       ? []
-      : [`description: ${escapedForTerminal(row.description)}`]),
-    ...(row.outOfScope && row.reasonOutOfScope !== undefined
-      ? [`reason out of scope: ${escapedForTerminal(row.reasonOutOfScope)}`]
+      : [`description: ${row.description}`]),
+    ...(row.outOfScope ? [`reason out of scope: ${row.reasonOutOfScope}`] : []),
+    ...(row.kind === 'text' && row.text.length > 0
+      ? [`text: ${row.text}`]
       : []),
-    ...(row.text === undefined || row.text.length === 0
-      ? []
-      : [`text: ${escapedForTerminal(row.text)}`]),
-    ...(row.position === undefined || row.size === undefined
-      ? []
-      : [
+    ...('position' in row
+      ? [
           `box: ${String(row.position.x)},${String(row.position.y)} sized ${String(row.size.width)} by ${String(row.size.height)}`,
-        ]),
-    ...(row.source === undefined
-      ? []
-      : [`source: ${renderEndpoint(row.source)}`]),
-    ...(row.target === undefined
-      ? []
-      : [`target: ${renderEndpoint(row.target)}`]),
-    ...(row.waypoints === undefined || row.waypoints.length === 0
-      ? []
-      : [`waypoints: ${String(row.waypoints.length)}`]),
-    ...(row.shape === undefined ? [] : [`shape: ${row.shape.kind}`]),
+        ]
+      : []),
+    ...(row.kind === 'flow'
+      ? [
+          `source: ${renderEndpoint(row.source)}`,
+          `target: ${renderEndpoint(row.target)}`,
+          ...(row.waypoints.length === 0
+            ? []
+            : [`waypoints: ${String(row.waypoints.length)}`]),
+        ]
+      : []),
+    ...(row.kind === 'trust-boundary' ? [`shape: ${row.shape.kind}`] : []),
+    ...Object.entries(row)
+      .filter(
+        ([key, value]) => !formattedFields.has(key) && value !== undefined,
+      )
+      .map(([key, value]) => `${key}: ${JSON.stringify(value)}`),
   ];
 }
 

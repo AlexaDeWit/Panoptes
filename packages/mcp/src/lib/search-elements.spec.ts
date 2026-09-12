@@ -38,8 +38,8 @@ describe('what saer_search_elements finds', () => {
       kind: 'flow',
       response_format: 'detailed',
     }).elements;
-    expect(flow?.source).toBeDefined();
-    expect(flow?.target).toBeDefined();
+    expect(flow).toHaveProperty('source');
+    expect(flow).toHaveProperty('target');
   });
 
   it('leaves the geometry out of a concise row', () => {
@@ -47,7 +47,7 @@ describe('what saer_search_elements finds', () => {
       kind: 'flow',
       response_format: 'concise',
     }).elements;
-    expect(flow?.source).toBeUndefined();
+    expect(flow).not.toHaveProperty('source');
   });
 
   it('matches a query without case against the name', () => {
@@ -96,19 +96,19 @@ describe('what a detailed element row carries per kind', () => {
 
   it('carries the text of a canvas note beside its box', () => {
     const [note] = detailed('text');
-    expect({ text: note?.text, size: note?.size }).toEqual({
+    expect(note).toMatchObject({
       text: 'Checked against the deployment diagram.',
       size: { width: 200, height: 80 },
     });
   });
 
   it('carries the shape of a trust boundary and no box', () => {
-    expect(
-      detailed('trust-boundary').map((row) => [row.shape?.kind, row.position]),
-    ).toEqual([
-      ['box', undefined],
-      ['curve', undefined],
+    const rows = detailed('trust-boundary');
+    expect(rows).toMatchObject([
+      { shape: { kind: 'box' } },
+      { shape: { kind: 'curve' } },
     ]);
+    for (const row of rows) expect(row).not.toHaveProperty('position');
   });
 
   it('renders a free flow endpoint as the position it sits at', () => {

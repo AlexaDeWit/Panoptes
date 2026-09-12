@@ -1,6 +1,7 @@
 import { quotedForTerminal } from '@saerskriven/formats';
 import {
   diagramsNamed,
+  elementIdSchema,
   elementKindSchema,
   threatCountByElement,
   type Model,
@@ -9,7 +10,7 @@ import { Either } from 'effect';
 import { z } from 'zod';
 import {
   elementDetail,
-  elementDetailSchema,
+  elementResultSchema,
   elementRow,
   elementsOnDiagrams,
   renderElement,
@@ -35,6 +36,11 @@ import type { ModelWorkspace } from './workspace.js';
 
 /** What `saer_search_elements` takes. */
 export const searchElementsArgumentsSchema = searchArgumentsSchema.extend({
+  element: elementIdSchema
+    .optional()
+    .describe(
+      'Keep only this exact element id, including when other elements refer to it.',
+    ),
   diagram: z
     .string()
     .optional()
@@ -57,7 +63,7 @@ export type SearchElementsArguments = z.infer<
 export const searchElementsResultSchema = readingSchema.extend({
   counts: searchCountsSchema,
   response_format: responseFormatSchema,
-  elements: z.array(elementDetailSchema),
+  elements: z.array(elementResultSchema),
 });
 
 /** What `saer_search_elements` answers with. */
@@ -67,8 +73,8 @@ export type SearchElementsResult = z.infer<typeof searchElementsResultSchema>;
 export const searchElementsDescription = [
   'Find the elements of one Saerskriven threat model: the actors, processes, stores, data flows, trust boundaries and canvas notes its diagrams are drawn from. Each match carries the element id, the diagram it is drawn on, its kind, its name, and how many threats reference it.',
   'Use this to find the id of an element you mean to read threats about or attach a threat to, and to see which parts of a model carry no analysis. Use saer_coverage instead for the whole picture of what is analyzed and what is not, and saer_search_threats to search the threats rather than the elements they hang off.',
-  'Pass `file` as a path relative to the server root, or leave it out where the server was started with a default model. `diagram` keeps one diagram, named by id or exact title. `kind` keeps one element kind. `query` is text looked for, without case, in the name, the description and the text of a note.',
-  '`response_format` is `concise` by default. `detailed` adds the description, the scoping fields, and the geometry of each kind: the box of a node, the endpoints and waypoints of a flow, the shape of a trust boundary, and the text of a note.',
+  'Pass `file` as a path relative to the server root, or leave it out where the server was started with a default model. `diagram` keeps one diagram, named by id or exact title. `kind` keeps one element kind. `query` searches without case through element ids, names, descriptions, note text, protocol, privilege level and declared relationship ids.',
+  '`response_format` is `concise` by default. `detailed` carries the complete model element, including geometry, flow direction, optional security facts and declared boundary relationships. Missing optional fields mean not recorded, distinct from false, empty text and empty lists. Pass `element` for an exact id lookup.',
   'This tool never writes, and the counts it reports are of threats recorded rather than threats outstanding.',
 ].join(' ');
 
@@ -98,7 +104,7 @@ export function renderElementSearch(
   ];
 }
 
-const narrowing = ['`diagram`', '`kind`', '`query`'];
+const narrowing = ['`element`', '`diagram`', '`kind`', '`query`'];
 
 function found(
   reading: ModelReading,
@@ -151,11 +157,22 @@ function keeps(
   args: SearchElementsArguments,
 ): boolean {
   return (
+    (args.element === undefined || element.id === args.element) &&
     (args.kind === undefined || element.kind === args.kind) &&
     matchesQuery(args.query, [
+      element.id,
       element.name,
       element.description,
       element.kind === 'text' ? element.text : '',
+      element.kind === 'process' ? (element.privilegeLevel ?? '') : '',
+      element.kind === 'flow' ? (element.protocol ?? '') : '',
+      ...(element.kind === 'flow' ? (element.trustBoundaryIds ?? []) : []),
+      ...(element.kind === 'trust-boundary'
+        ? [
+            ...(element.containedElements ?? []),
+            ...(element.crossingFlows ?? []),
+          ]
+        : []),
     ])
   );
 }
@@ -164,7 +181,7 @@ function rowOf(
   placed: ElementOnDiagram,
   threats: number,
   format: ResponseFormat,
-): z.infer<typeof elementDetailSchema> {
+): z.infer<typeof elementResultSchema> {
   return format === 'detailed'
     ? elementDetail(placed, threats)
     : elementRow(placed, threats);

@@ -10,14 +10,10 @@ import {
   assumptionIdSchema,
   assumptionSchema,
   attachThreat,
-  autoExtent,
-  autoPlacement,
-  boundaryShapeSchema,
   detachThreat,
   diagramIdSchema,
   editNote,
   elementIdSchema,
-  flowEndpointSchema,
   mitigationIdSchema,
   mitigationSchema,
   modelMetadataChangeSchema,
@@ -39,6 +35,7 @@ import {
   setFlowDirection,
   setFlowWaypoints,
   setModelMetadata,
+  setElementProperties,
   severitySchema,
   sideSchema,
   sizeSchema,
@@ -47,55 +44,19 @@ import {
   threatSchema,
   threatStatusSchema,
   waypointsSchema,
-  type Element,
   type Model,
   type ParseIssue,
-  type Point,
-  type Size,
   type ThreatId,
 } from '@saerskriven/model';
 import { Either } from 'effect';
 import { z } from 'zod';
-
-const placementSchema = z.union([
-  z.literal('auto'),
-  z.object({ position: pointSchema, size: sizeSchema }),
-]);
-
-const addedElementSchema = z.object({
-  id: elementIdSchema,
-  name: acceptedTextSchema,
-  description: acceptedTextSchema.default(''),
-  outOfScope: z.boolean().default(false),
-  reasonOutOfScope: acceptedTextSchema.default(''),
-});
-
-const placedElementSchema = addedElementSchema.extend({
-  placement: placementSchema.describe(
-    'Where the element goes: an object carrying `position` and `size` in canvas units, or "auto" to take the next place on the shared grid at a nominal extent. Pass "auto" unless the layout matters, and move or resize the element afterwards where it does.',
-  ),
-});
-
-const addedElementUnionSchema = z.discriminatedUnion('kind', [
-  placedElementSchema.extend({ kind: z.literal('actor') }),
-  placedElementSchema.extend({ kind: z.literal('process') }),
-  placedElementSchema.extend({ kind: z.literal('store') }),
-  placedElementSchema.extend({
-    kind: z.literal('text'),
-    text: acceptedTextSchema,
-  }),
-  addedElementSchema.extend({
-    kind: z.literal('trust-boundary'),
-    shape: boundaryShapeSchema,
-  }),
-  addedElementSchema.extend({
-    kind: z.literal('flow'),
-    source: flowEndpointSchema,
-    target: flowEndpointSchema,
-    waypoints: waypointsSchema.default([]),
-    bidirectional: z.boolean().default(false),
-  }),
-]);
+import {
+  addedElement,
+  addedElementSchema,
+  consistentPropertyEdit,
+  editedProperties,
+  propertyEditSchema,
+} from './element-edits.js';
 
 const elementEditSchema = z.object({
   element: elementIdSchema.describe('The id of the element to edit.'),
@@ -111,13 +72,22 @@ const diagramEditSchema = z.object({
 
 const threatFieldsSchema = threatSchema.omit({ number: true });
 
-/** An edit supplies a whole record, except the threat number owned by the model. */
+/** Record edits replace records. Property edits patch only the supplied fields. */
 export const modelEditSchema = z.discriminatedUnion('op', [
   z.object({
     op: z.literal('add_element'),
     diagram: diagramIdSchema.describe('The diagram the element joins.'),
-    element: addedElementUnionSchema,
+    element: addedElementSchema,
   }),
+  elementEditSchema
+    .extend(propertyEditSchema.shape)
+    .extend({
+      op: z.literal('set_element_properties'),
+    })
+    .refine(consistentPropertyEdit, {
+      message:
+        'Unset fields must belong to the element kind and cannot also have a value.',
+    }),
   elementEditSchema.extend({ op: z.literal('remove_element') }),
   elementEditSchema.extend({
     op: z.literal('move_element'),
@@ -264,8 +234,10 @@ function applyEdit(
       return addElement(
         model,
         edit.diagram,
-        elementOf(edit.element, placementIndex(model, edit.diagram)),
+        addedElement(edit.element, placementIndex(model, edit.diagram)),
       );
+    case 'set_element_properties':
+      return setElementProperties(model, edit.element, editedProperties(edit));
     case 'remove_element':
       return removeElement(model, edit.element);
     case 'move_element':
@@ -378,50 +350,6 @@ function placementIndex(model: Model, diagramId: string): number {
     model.diagrams.find((diagram) => diagram.id === diagramId)?.elements
       .length ?? 0
   );
-}
-
-function elementOf(
-  added: z.infer<typeof addedElementUnionSchema>,
-  index: number,
-): Element {
-  const named = {
-    id: added.id,
-    name: added.name,
-    description: added.description,
-    outOfScope: added.outOfScope,
-    reasonOutOfScope: added.reasonOutOfScope,
-  };
-  if (added.kind === 'trust-boundary') {
-    return { ...named, kind: 'trust-boundary', shape: added.shape };
-  }
-  if (added.kind === 'flow') {
-    return {
-      ...named,
-      kind: 'flow',
-      source: added.source,
-      target: added.target,
-      waypoints: added.waypoints,
-      bidirectional: added.bidirectional,
-    };
-  }
-  if (added.kind === 'text') {
-    return {
-      ...named,
-      kind: 'text',
-      text: added.text,
-      ...placed(added.placement, index),
-    };
-  }
-  return { ...named, kind: added.kind, ...placed(added.placement, index) };
-}
-
-function placed(
-  placement: z.infer<typeof placementSchema>,
-  index: number,
-): { readonly position: Point; readonly size: Size } {
-  return placement === 'auto'
-    ? { position: autoPlacement(index), size: autoExtent }
-    : { position: placement.position, size: placement.size };
 }
 
 function describeOperationFailure(failure: OperationFailure): string {
