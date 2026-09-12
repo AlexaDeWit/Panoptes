@@ -61,10 +61,19 @@
       "boundaries": {},
       "lint": {},
       "test": {
+        "dependsOn": [
+          {
+            "projects": [
+              "resvg-wasm"
+            ],
+            "target": "build"
+          }
+        ],
         "inputs": [
           "...",
           {
-            "env": "SAERSKRIVEN_RESVG_WASM"
+            "dependentTasksOutputFiles": "dist/resvg-wasm/lib/**/*",
+            "transitive": false
           },
           "{workspaceRoot}/test-data/ecluse.model.json",
           "{workspaceRoot}/test-data/every-glyph.model.json",

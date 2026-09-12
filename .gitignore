@@ -17,7 +17,8 @@ test-output/
 .nx/self-healing
 .nx/migrate-runs
 
-# The default out-link of `nix build`, which writes the rasterizer module
+# The default out-link of `nix build` run by hand. The rasterizer module's
+# out-link and the copy nx caches go under dist/, which is ignored above.
 /result
 
 # Toolchain caches

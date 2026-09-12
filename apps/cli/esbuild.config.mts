@@ -52,6 +52,14 @@ const refuse = (sentence: string): never => {
   process.exit(1);
 };
 
+// Inside the flake shell the variable is always set, so the sentence
+// build-assets returns for the rasterizer names a missing file and no command.
+// The studio's build configuration appends the same recovery.
+const refuseRasterizer = (sentence: string): never =>
+  refuse(
+    `${sentence} Run pnpm nx build resvg-wasm, which every target carrying the module depends on.`,
+  );
+
 const fontsDirectory = (): string => {
   const configured = process.env[fontsVariable];
   return configured === undefined || configured === ''
@@ -102,7 +110,7 @@ const runtimeAssets = (): readonly RuntimeAsset[] => {
     })),
     { from: licenceIn(fonts), to: licenceName },
     { from: typstWasmModule, to: basename(typstWasmModule) },
-    { from: resvgWasmAsset(refuse), to: resvgWasmFile },
+    { from: resvgWasmAsset(refuseRasterizer), to: resvgWasmFile },
   ];
 };
 

@@ -39,9 +39,9 @@ The producers are `@saerskriven/model`, `@saerskriven/formats`, and
 | `render/every-glyph.snapshot.svg`                   | `packages/render`  | no other suite                                                              |
 | `render/ecluse.snapshot.typ`                        | `packages/render`  | `apps/studio-e2e`                                                           |
 
-The `.snapshot.png` rasters are written only where
-[`SAERSKRIVEN_RESVG_WASM`](../README.md#the-svg-rasterizer) is set, since the
-rasterizer's suite skips without it.
+The `.snapshot.png` rasters are written only where the rasterizer module
+[`SAERSKRIVEN_RESVG_WASM`](../README.md#the-svg-rasterizer) names has been
+built, which that section describes.
 
 The remaining files are maintained inputs. `render/ecluse.snapshot.pdf.sha256`
 is the expected PDF digest for the CLI and studio browser suites.

@@ -61,10 +61,12 @@ export function typstFontAssets(
 /**
  * The rasterizer module a host build must carry.
  *
- * No dev shell exports the variable, because the module is built from Rust
- * and no shell should pay for that toolchain: `nix build .#resvg-wasm` writes
- * it and the caller points the variable at the file. The caller supplies its
- * own refusal, as it does for the fonts.
+ * Both dev shells export the variable, and what it names is the path the
+ * `resvg-wasm` project's build writes the module to rather than a store path,
+ * so a target that carries the module declares a dependency on that build
+ * instead of a caller pointing the variable somewhere. No shell carries the
+ * module or the Rust toolchain that builds it. The caller supplies its own
+ * refusal, as it does for the fonts, and names the recovery in it.
  */
 export function resvgWasmAsset(refuse: (sentence: string) => never): string {
   const module = process.env[resvgVariable];

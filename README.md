@@ -197,8 +197,8 @@ The PDF is compiled by Typst and the PNG is rasterized by resvg, both of
 which the executable carries as WebAssembly modules together with the fonts
 they set text in. Nothing is fetched and no browser is involved, so both
 formats work with no network and on a machine that has neither Typst nor a
-browser installed. Building the executable needs the rasterizer module built
-first, which [The SVG rasterizer](#the-svg-rasterizer) below describes.
+browser installed. Building the executable builds the rasterizer module first,
+which [The SVG rasterizer](#the-svg-rasterizer) below describes.
 
 | Exit code | What it means                                                                                                                                                                                                                                                                                                                                                                                             |
 | --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -522,36 +522,59 @@ nothing and the `%PDF-` test fails on it.
 
 ### The SVG rasterizer
 
-`nix build .#resvg-wasm` builds a WebAssembly module out of the `resvg` crate,
+The `resvg-wasm` project builds a WebAssembly module out of the `resvg` crate,
 which draws an SVG document into the bytes of a PNG. That crate and every crate
 under it are pinned by [`nix/resvg-wasm/Cargo.lock`](nix/resvg-wasm/Cargo.lock)
 and its checksums, fetched before the build and compiled with no network, so
 two builds of one commit write one module.
 
-No dev shell exports the module or the Rust toolchain that builds it: entering
-`nix develop` to work on the TypeScript pays for neither, and the one build
-serves every target that carries it. Nothing saves that
-closure to CI's Nix-store cache either: the `Rasterizer module` job restores
-the shared entry and writes none, so the 2.7G of Rust toolchain cannot evict
-what every other job restores from, and it pays the build each run instead.
+Nix keeps the compilation and nx owns the dependency: the project's one target
+runs `nix build .#resvg-wasm` to a fixed out-link under `dist/resvg-wasm`, and
+every target that carries the module depends on it, so nothing has to be built
+first by hand. That is what a cold build looks like:
+
+```sh
+pnpm nx build @saerskriven/studio   # builds the module on the way
+pnpm nx test @saerskriven/render    # so does this, and pnpm check
+```
+
+The flake names the path in `SAERSKRIVEN_RESVG_WASM`, which
+[`nix/resvg-wasm/project.json`](nix/resvg-wasm/project.json) writes the module
+to. The variable names where the module will be rather than a store path, so
+it is the graph edge and not the variable that puts a file there, and a target
+that carries the module without declaring the edge fails on the first build
+rather than on a later machine. Declaring it is two lines: `dependsOn` on
+`resvg-wasm:build`, and that build's output among the target's inputs.
+
+No dev shell carries the module or the Rust toolchain that builds it: entering
+`nix develop` to work on the TypeScript pays for neither. A cold build pays the
+Rust compile once, which is around a minute, and then replays it until
+`flake.lock`, `flake.nix` or `nix/resvg-wasm` changes. Nothing keeps that
+toolchain in CI's Nix-store cache either. The out-link the build writes is a
+Nix garbage-collection root for the 2 MiB module and for nothing else, and
+`cache-nix-action` collects the store before it saves, so the entry carries the
+module while the 2 GiB of Rust build inputs are collected and the 5G ceiling
+holds. The `Rasterizer module` job writes no entry of its own, `build-test`
+being that prefix's one writer, and the entry it restores already holds the
+module's output path, so its build validates that path rather than compiling
+the crate. What makes a job pay the compile is a change to the derivation
+under `nix/resvg-wasm`, or a `flake.lock` bump that moves the Rust toolchain
+it builds with.
 
 `@saerskriven/render/resvg` reads the bytes back, on the terms the `pdf`
 subpath reads the Typst module on: the module and the faces are the caller's to
 hand over and nothing is read from a file. `resvgWasmAsset` on the
-`build-assets` subpath locates the module through `SAERSKRIVEN_RESVG_WASM`,
-which names the built file, and the rasterizer's spec skips where that variable
-is unset:
-
-```sh
-export SAERSKRIVEN_RESVG_WASM="$(nix build --no-link --print-out-paths .#resvg-wasm)/lib/saerskriven_resvg.wasm"
-pnpm nx test @saerskriven/render
-```
+`build-assets` subpath locates the module through `SAERSKRIVEN_RESVG_WASM`. The
+rasterizer's spec skips on an unset or empty variable, which is what running
+outside the flake shell looks like. Inside it the variable is always set, so
+the suite cannot skip: a module the build failed to write fails the spec on the
+missing file instead, which is why no job checks for that file before running
+the suite.
 
 The CLI build copies the module into `apps/cli/dist/assets`, beside the Typst
 module and the fonts, and the studio build emits it as a hashed asset of the
-website. Both read `SAERSKRIVEN_RESVG_WASM` and both refuse a build without
-it, rather than shipping a PNG export that cannot draw, so `pnpm check` and
-`pnpm nx serve studio` need the variable set as the commands above set it.
+website. Both refuse a build that has no module, rather than shipping a PNG
+export that cannot draw.
 
 [`docs/release.md`](docs/release.md) is the release procedure.
 
