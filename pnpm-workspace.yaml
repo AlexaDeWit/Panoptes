@@ -94,8 +94,8 @@ catalog:
   # same Renovate wave as the typescript pin when TS 7.1 lands (#57).
   '@typescript-eslint/parser': ^8.0.0
   '@vitejs/plugin-react': ^6.0.0
-  '@vitest/coverage-v8': ~4.1.0
-  '@vitest/ui': ~4.1.0
+  '@vitest/coverage-v8': ~5.0.0
+  '@vitest/ui': ~5.0.0
   # React Flow, the interactive canvas M4 mounts. The floor is 12.11.5: the
   # 12.11.6 released on 2026-09-01 was younger than minimumReleaseAge when
   # the canvas primitives adopted it, so the caret resolves to the newest
@@ -150,7 +150,7 @@ catalog:
   unified: ^11.0.5
   unist-util-visit: ^5.1.0
   vite: ^8.0.0
-  vitest: ~4.1.0
+  vitest: ~5.0.0
   yaml: ^2.9.0
   # Floor below the 4.5 line: it was younger than minimumReleaseAge when
   # adopted (2026-08-29), so the caret resolves to the newest aged release
