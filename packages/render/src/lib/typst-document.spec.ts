@@ -72,6 +72,12 @@ describe('the Typst document', () => {
     await expect(sourceOf(ecluseModel)).toMatchFileSnapshot(goldenPath);
   });
 
+  it('keeps Markdown navigation out of the PDF text', () => {
+    const source = sourceOf(modelOf([threatOf({ number: 7 })]));
+    expect(source).not.toContain('<a name="threat-7">');
+    expect(source).not.toContain('(#threat-7)');
+  });
+
   it('draws every diagram of the model, ahead of the register', () => {
     const source = sourceOf(saerskrivenModel);
     const images = source.split('#image(bytes(').length - 1;

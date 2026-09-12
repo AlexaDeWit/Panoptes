@@ -9,10 +9,13 @@ import type {
 } from '@saerskriven/model';
 import type {
   Heading,
+  Html,
+  Link,
   List,
   Nodes,
   Paragraph,
   Parents,
+  PhrasingContent,
   Root,
   RootContent,
   Table,
@@ -31,23 +34,18 @@ const sectionDepth = 2;
 
 const proseDepths = [3, 4, 5, 6, 6, 6] as const;
 
-/**
- * How deeply prose may nest before the register renders it as one paragraph
- * of the author's own bytes instead, counted from the root of the parsed
- * tree. It is the smaller of the two writers' limits, and the smaller is the
- * Typst one, so a model inside this bound renders as markdown and compiles as
- * a PDF rather than doing the first and failing the second.
- *
- * The blockquote is the construct that binds: Typst refuses a document
- * nesting its own show rules past sixteen, so seventeen nested blockquotes
- * are refused where twenty nested strong or emphasis are not. A tree of n
- * nested blockquotes measures n + 2, the paragraph and the text under the
- * innermost being the other two levels, so 18 is the exact bound and this is
- * two levels under it. That margin is deliberate: the limit is the compiler's
- * rather than this package's, a Typst release may lower it, and two levels
- * buy a version bump without prose that has always rendered starting to fail.
- */
+/** The largest prose depth accepted by both register writers. */
 export const deepestProse = 16;
+
+declare module 'mdast' {
+  interface HtmlData {
+    readonly registerTarget?: true;
+  }
+
+  interface LinkData {
+    readonly registerTarget?: true;
+  }
+}
 
 const lineBreaks = /\s*[\r\n]+\s*/gu;
 
@@ -136,38 +134,7 @@ const categoryLabels = {
   },
 } satisfies CategoryLabels;
 
-/**
- * The threat register as an mdast tree: the model's title, an overview table
- * of every threat (number, title, elements, category, severity, status), then
- * one section per threat carrying the same fields as a list and the threat's
- * prose. It is what the register is, ahead of any decision about how it is
- * written out, so the markdown and the Typst projections say the same thing.
- *
- * Threats come out in number order whatever order the model holds them in,
- * and the same model always gives the same tree: nothing here reads a clock
- * or a random source.
- *
- * A section heading is `Threat <number>: <title>`, so the anchor a renderer
- * derives from it is a function of that threat alone. Threat numbers are
- * issued once and never reissued, so adding, removing, or reordering threats
- * moves no other threat's anchor.
- *
- * Line breaks are collapsed to single spaces in heading text alone. An ATX
- * heading holds one line, and a serializer handed a heading of two writes
- * something else instead: a title ending in a newline loses its heading
- * altogether, and a title carrying a line that reads like another threat's
- * heading would take that threat's anchor. The table and the field list carry
- * the title as written.
- *
- * A threat's description and mitigation are user-authored markdown. Each is
- * parsed and spliced into its section as nodes, and a heading inside prose is
- * demoted below the section heading so it cannot break the register's
- * structure. Raw HTML in prose is parsed as an `html` node and passed on as
- * written: what to do about it belongs to whatever writes the tree out.
- * Prose nested deeper than {@link deepestProse} becomes one paragraph of the
- * author's own bytes instead, which is what keeps a register that renders as
- * markdown from failing to compile as a PDF.
- */
+/** Builds the shared register tree in threat-number order. */
 export function registerDocument(model: Model): Root {
   const threats = [...model.threats];
   threats.sort((left, right) => left.number - right.number);
@@ -213,7 +180,7 @@ function overviewTable(
       tableRow(overviewColumns),
       ...threats.map((threat) =>
         tableRow([
-          String(threat.number),
+          threatLink(threat.number),
           threat.title,
           elementNames(threat, elements),
           categoryLabel(threat.category),
@@ -225,12 +192,12 @@ function overviewTable(
   };
 }
 
-function tableRow(cells: readonly string[]): TableRow {
+function tableRow(cells: readonly (PhrasingContent | string)[]): TableRow {
   return {
     type: 'tableRow',
     children: cells.map((cell): TableCell => ({
       type: 'tableCell',
-      children: [text(cell)],
+      children: [typeof cell === 'string' ? text(cell) : cell],
     })),
   };
 }
@@ -240,6 +207,7 @@ function threatSection(
   elements: ReadonlyMap<string, Element>,
 ): RootContent[] {
   return [
+    threatAnchor(threat.number),
     heading(
       sectionDepth,
       headingText(`Threat ${threat.number}: ${threat.title}`),
@@ -248,6 +216,28 @@ function threatSection(
     ...proseSection('Description', threat.description),
     ...proseSection('Mitigation', threat.mitigation),
   ];
+}
+
+function threatAnchor(number: number): Html {
+  return {
+    type: 'html',
+    value: `<a name="${threatTarget(number)}"></a>`,
+    data: { registerTarget: true },
+  };
+}
+
+function threatLink(number: number): Link {
+  const target = threatTarget(number);
+  return {
+    type: 'link',
+    url: `#${target}`,
+    children: [text(String(number))],
+    data: { registerTarget: true },
+  };
+}
+
+function threatTarget(number: number): string {
+  return `threat-${String(number)}`;
 }
 
 function fieldList(
