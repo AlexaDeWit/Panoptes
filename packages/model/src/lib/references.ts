@@ -40,6 +40,21 @@ export function endpointViolationsOf(
   );
 }
 
+/**
+ * The diagrams a name selects: the one whose id it is, and every one whose
+ * title it is exactly. A name selecting none selects nothing, and what to
+ * say about that belongs to the caller, whose wording is a command line's or
+ * a tool result's rather than the model's.
+ */
+export function diagramsNamed(
+  diagrams: readonly Diagram[],
+  name: string,
+): Diagram[] {
+  return diagrams.filter(
+    (diagram) => diagram.id === name || diagram.title === name,
+  );
+}
+
 /** Ids of the elements one diagram owns. */
 export function elementIdsIn(diagram: Diagram): Set<string> {
   return new Set(diagram.elements.map((element) => element.id));

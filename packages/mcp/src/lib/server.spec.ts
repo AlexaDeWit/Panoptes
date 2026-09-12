@@ -7,6 +7,7 @@ import {
   inspectionOf,
   proseOf,
   readingOf,
+  registeredTools,
   textOf,
   type ResultProse,
 } from '../fixtures.js';
@@ -83,6 +84,32 @@ const callArguments = (
         { file: otmFile, target: modelFile },
       ],
     ],
+    ['saer_validate', [{ file: modelFile }, { file: 'unclaimed.yaml' }, {}]],
+    ['saer_coverage', [{ file: modelFile }, {}]],
+    ['saer_register', [{ file: modelFile }, {}]],
+    [
+      'saer_search_elements',
+      [
+        { file: modelFile },
+        { file: modelFile, response_format: 'detailed' },
+        { file: modelFile, diagram: 'Nothing' },
+      ],
+    ],
+    [
+      'saer_search_threats',
+      [
+        { file: modelFile },
+        { file: modelFile, response_format: 'detailed', severity: 'high' },
+      ],
+    ],
+    [
+      'saer_get_threat',
+      [
+        { file: modelFile, ref: '1' },
+        { file: modelFile, ref: '9999' },
+      ],
+    ],
+    ['saer_render_diagram', [{ file: modelFile }]],
   ]);
 
 for (const era of eras) {
@@ -107,12 +134,9 @@ for (const era of eras) {
       });
 
       it('offers the tools this release registers', async () => {
-        expect((await everyTool()).map((tool) => tool.name)).toEqual([
-          'saer_inspect',
-          'saer_edit',
-          'saer_create',
-          'saer_import',
-        ]);
+        expect((await everyTool()).map((tool) => tool.name)).toEqual(
+          registeredTools,
+        );
       });
 
       it('prefixes every tool name with saer_', async () => {
@@ -152,6 +176,11 @@ for (const era of eras) {
               idempotentHint: tool.annotations?.idempotentHint,
             })),
         ).toEqual([
+          {
+            name: 'saer_render_diagram',
+            destructiveHint: false,
+            idempotentHint: false,
+          },
           { name: 'saer_edit', destructiveHint: true, idempotentHint: false },
           {
             name: 'saer_create',

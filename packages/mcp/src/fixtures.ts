@@ -1,6 +1,28 @@
 import type { CallToolResult } from '@modelcontextprotocol/server';
+import type { z } from 'zod';
 import { editResultSchema, type EditResult } from './lib/edit.js';
 import { inspectResultSchema, type InspectResult } from './lib/inspect.js';
+
+/**
+ * The tools a release registers, in the order the server registers them: the
+ * reads, then the queries, then the drawing, then the writes. Both the suite
+ * over the server object and the one over the packaged executable hold
+ * `tools/list` to this, so a tool added without a place in the order fails
+ * them rather than appearing unannounced.
+ */
+export const registeredTools: readonly string[] = [
+  'saer_inspect',
+  'saer_validate',
+  'saer_coverage',
+  'saer_register',
+  'saer_search_elements',
+  'saer_search_threats',
+  'saer_get_threat',
+  'saer_render_diagram',
+  'saer_edit',
+  'saer_create',
+  'saer_import',
+];
 
 /**
  * Which era a client opens a connection in. The SDK's client defaults to
@@ -39,7 +61,10 @@ export type ResultProse = {
  * Every string a tool result would put in front of a model, from each block
  * type this reader knows: a `text` block's own text, and the text of a
  * `resource` block's embedded document, which carries none when the resource
- * is a blob. Any other block type is named in `unread` rather than skipped.
+ * is a blob. An `image` block and a `resource_link` block are known and carry
+ * no prose: the one is bytes, and the other names a file this server wrote
+ * rather than quoting anything out of a model. Any other block type is named
+ * in `unread` rather than skipped.
  */
 export function proseOf(result: CallToolResult): ResultProse {
   const prose: string[] = [];
@@ -51,7 +76,7 @@ export function proseOf(result: CallToolResult): ResultProse {
       if ('text' in block.resource) {
         prose.push(block.resource.text);
       }
-    } else {
+    } else if (block.type !== 'image' && block.type !== 'resource_link') {
       unread.push(block.type);
     }
   }
@@ -63,8 +88,52 @@ export function proseOf(result: CallToolResult): ResultProse {
  * advertises, so a spec reasons about typed data and the result is held to
  * the shape a client would validate it against.
  */
+export function structuredOf<Schema extends z.ZodType>(
+  result: CallToolResult,
+  schema: Schema,
+): z.infer<Schema> {
+  return schema.parse(result.structuredContent);
+}
+
+/** What `saer_inspect` reported, read back through the schema it advertises. */
 export function inspectionOf(result: CallToolResult): InspectResult {
-  return inspectResultSchema.parse(result.structuredContent);
+  return structuredOf(result, inspectResultSchema);
+}
+
+/** Every image block of a tool result, as its media type and its bytes. */
+export function imagesOf(
+  result: CallToolResult,
+): readonly { readonly mimeType: string; readonly bytes: Uint8Array }[] {
+  return result.content.flatMap((block) =>
+    block.type === 'image'
+      ? [
+          {
+            mimeType: block.mimeType,
+            bytes: Buffer.from(block.data, 'base64'),
+          },
+        ]
+      : [],
+  );
+}
+
+/** Every media type a tool result's blocks declare, image blocks included. */
+export function mediaTypesOf(result: CallToolResult): readonly string[] {
+  return result.content.flatMap((block) =>
+    block.type === 'image' || block.type === 'resource_link'
+      ? [block.mimeType ?? '']
+      : [],
+  );
+}
+
+/** Every resource link of a tool result, as the file it names. */
+export function resourceLinksOf(
+  result: CallToolResult,
+): readonly { readonly uri: string; readonly name: string }[] {
+  return result.content.flatMap((block) =>
+    block.type === 'resource_link'
+      ? [{ uri: block.uri, name: block.name }]
+      : [],
+  );
 }
 
 /** The reading inside an inspection, where the call was to read a file. */
@@ -83,5 +152,5 @@ export function readingOf(
  * advertises, so a spec reasons about typed data as it does for a reading.
  */
 export function editOf(result: CallToolResult): EditResult {
-  return editResultSchema.parse(result.structuredContent);
+  return structuredOf(result, editResultSchema);
 }

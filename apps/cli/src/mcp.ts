@@ -11,6 +11,8 @@ import {
 import { Either } from 'effect';
 import type { Readable, Writable } from 'node:stream';
 import { z } from 'zod';
+import { runtimeAssets } from './assets.js';
+import { pngAssets } from './png.js';
 import {
   lines,
   succeeded,
@@ -44,25 +46,35 @@ export type McpStreams = {
  * outcome writes nothing there and whatever the transport reported goes to
  * standard error once the connection is over. A 2025-era client is served as
  * well as a 2026-07-28 one.
+ *
+ * `assets` is where a render tool reads the rasterizer module and its faces,
+ * which is the directory beside the bundle unless a spec names another.
  */
 export function serveMcp(
   options: McpOptions,
   streams: McpStreams = { input: process.stdin, output: process.stdout },
+  assets: string = runtimeAssets,
 ): Promise<CommandOutcome> {
   return Either.match(openWorkspace(options), {
     onLeft: (failure) =>
       Promise.resolve(usageError(lines(...renderWorkspaceFailure(failure)))),
-    onRight: (workspace) => served(workspace, streams),
+    onRight: (workspace) => served(workspace, streams, assets),
   });
 }
 
 async function served(
   workspace: ModelWorkspace,
   streams: McpStreams,
+  assets: string,
 ): Promise<CommandOutcome> {
   const reported: string[] = [];
   const handle = serveStdio(
-    () => createSaerskrivenServer({ workspace, version: cliVersion }),
+    () =>
+      createSaerskrivenServer({
+        workspace,
+        version: cliVersion,
+        rasterizer: () => pngAssets(assets),
+      }),
     {
       transport: new StdioServerTransport(streams.input, streams.output),
       legacy: 'serve',

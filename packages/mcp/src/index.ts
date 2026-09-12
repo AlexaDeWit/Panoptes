@@ -1,4 +1,12 @@
 export {
+  coverage,
+  coverageDescription,
+  coverageResultSchema,
+  renderCoverage,
+  type CoverageArguments,
+  type CoverageResult,
+} from './lib/coverage.js';
+export {
   createArgumentsSchema,
   createDescription,
   createModel,
@@ -23,6 +31,25 @@ export {
   type RefusedEdit,
 } from './lib/edits.js';
 export {
+  elementDetail,
+  elementDetailSchema,
+  elementRow,
+  elementRowSchema,
+  elementsOnDiagrams,
+  renderElement,
+  type ElementDetail,
+  type ElementOnDiagram,
+} from './lib/element-rows.js';
+export {
+  getThreat,
+  getThreatArgumentsSchema,
+  getThreatDescription,
+  getThreatResultSchema,
+  renderThreatRecord,
+  type GetThreatArguments,
+  type GetThreatResult,
+} from './lib/get-threat.js';
+export {
   importArgumentsSchema,
   importDescription,
   importIntoModel,
@@ -41,7 +68,78 @@ export {
   type InspectResult,
 } from './lib/inspect.js';
 export { dataNotInstructions, prefaced } from './lib/preface.js';
-export { toolResult } from './lib/tool-result.js';
+export {
+  readNamed,
+  readingSchema,
+  renderReading,
+  reportedReading,
+  type ModelReading,
+  type Reading,
+} from './lib/reading.js';
+export {
+  register,
+  registerDescription,
+  registerResultSchema,
+  renderRegisterResult,
+  type RegisterArguments,
+  type RegisterResult,
+} from './lib/register.js';
+export {
+  imageMediaType,
+  renderDiagram,
+  renderDiagramArgumentsSchema,
+  renderDiagramDescription,
+  renderDiagramResultSchema,
+  renderDrawing,
+  type DrawnDiagram,
+  type RasterizerAssets,
+  type RenderDiagramArguments,
+  type RenderDiagramResult,
+} from './lib/render-diagram.js';
+export {
+  limitedRows,
+  matchesQuery,
+  renderCounts,
+  responseFormatSchema,
+  searchArgumentsSchema,
+  searchCountsSchema,
+  searchLimits,
+  type LimitedRows,
+  type ResponseFormat,
+  type SearchCounts,
+} from './lib/search.js';
+export {
+  renderElementSearch,
+  searchElements,
+  searchElementsArgumentsSchema,
+  searchElementsDescription,
+  searchElementsResultSchema,
+  type SearchElementsArguments,
+  type SearchElementsResult,
+} from './lib/search-elements.js';
+export {
+  renderThreatSearch,
+  searchThreats,
+  searchThreatsArgumentsSchema,
+  searchThreatsDescription,
+  searchThreatsResultSchema,
+  type SearchThreatsArguments,
+  type SearchThreatsResult,
+} from './lib/search-threats.js';
+export {
+  renderCategory,
+  renderThreat,
+  threatDetail,
+  threatDetailSchema,
+  threatRow,
+  threatRowSchema,
+  type ThreatDetail,
+} from './lib/threat-rows.js';
+export {
+  attachedToolResult,
+  toolResult,
+  type WithBlocks,
+} from './lib/tool-result.js';
 export { revisionOf } from './lib/revision.js';
 export {
   createSaerskrivenServer,
@@ -49,7 +147,16 @@ export {
   type SaerskrivenServerOptions,
 } from './lib/server.js';
 export {
+  renderValidation,
+  validate,
+  validateDescription,
+  validateResultSchema,
+  type ValidateArguments,
+  type ValidateResult,
+} from './lib/validate.js';
+export {
   WriteFailure,
+  createdBytes,
   createdFile,
   namedFile,
   renderWriteFailure,

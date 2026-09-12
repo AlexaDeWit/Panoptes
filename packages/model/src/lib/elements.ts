@@ -200,3 +200,21 @@ export const elementSchema = z.discriminatedUnion('kind', [
 
 /** Any diagram element. */
 export type Element = z.infer<typeof elementSchema>;
+
+/**
+ * The `kind` an element carries, as the value a filter or a picker takes.
+ * The names are {@link elementSchema}'s own discriminators, and a spec holds
+ * the two lists equal, so a kind added to that union without being named here
+ * fails rather than becoming a kind nothing can select.
+ */
+export const elementKindSchema = z.enum([
+  'actor',
+  'process',
+  'store',
+  'flow',
+  'trust-boundary',
+  'text',
+]);
+
+/** Any element's kind. */
+export type ElementKind = z.infer<typeof elementKindSchema>;

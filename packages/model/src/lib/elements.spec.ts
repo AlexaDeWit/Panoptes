@@ -1,12 +1,14 @@
 import {
   actorSchema,
   boundaryShapeSchema,
+  elementKindSchema,
   elementSchema,
   flowEndpointSchema,
   flowSchema,
   processSchema,
   storeSchema,
   trustBoundarySchema,
+  type Element,
 } from './elements.js';
 
 const actor = {
@@ -264,5 +266,14 @@ describe('elementSchema', () => {
     for (const sample of samples) {
       expect(elementSchema.parse(sample).kind).toBe(sample.kind);
     }
+  });
+});
+
+describe('elementKindSchema', () => {
+  it('names every kind the element union discriminates on', () => {
+    const named: readonly Element['kind'][] = elementKindSchema.options;
+    expect(new Set(named)).toEqual(
+      new Set(elementSchema.options.map((option) => option.shape.kind.value)),
+    );
   });
 });
