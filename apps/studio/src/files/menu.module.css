@@ -114,6 +114,14 @@
   color: var(--pn-colour-text);
 }
 
+/* A submenu opens over the menu panel, so it takes the raised ground the card
+   and the other overlays use, to stand apart from the panel under it. Its
+   border box is what has to fit the height Radix reports as available. */
+.submenu {
+  box-sizing: border-box;
+  background: var(--pn-colour-surface-raised);
+}
+
 .heading {
   padding: var(--pn-space-2) var(--pn-space-3) var(--pn-space-1);
   color: var(--pn-colour-text-muted);

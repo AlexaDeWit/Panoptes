@@ -33,16 +33,11 @@ import { FailureNotice } from '../ui/failure-notice.js';
 import { LiveRegion } from '../ui/live-region.js';
 import { colourModes, type ColourMode } from '../theme-preference.js';
 import { DiagramSwitcher } from './diagram-switcher.js';
-import {
-  MenuCommand,
-  MenuItem,
-  RegisteredMenuCommand,
-  Submenu,
-  SubmenuEdge,
-} from './menu-items.js';
+import { MenuCommand, MenuItem, RegisteredMenuCommand } from './menu-items.js';
 import type { FileSession } from './file-commands.js';
 import styles from './menu.module.css';
 import { RadioChoices } from './radio-choices.js';
+import { Submenu, SubmenuEdge } from './submenu.js';
 import {
   formatFiles,
   formatOf,

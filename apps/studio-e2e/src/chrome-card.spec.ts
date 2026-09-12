@@ -1,8 +1,9 @@
-import { expect, test, type Locator } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '@playwright/test';
 import type { Box } from './canvas-geometry.fixtures.js';
 import { registeredChords } from './chords.js';
 import {
   cardControlsClear,
+  centreOf,
   chromeCard,
   closeMenu,
   diagramChoice,
@@ -117,34 +118,92 @@ test('a refused read and a loss report hang under the card', async ({
   await cardControlsClear(page);
 });
 
-test('every submenu opens on screen at the card edge, and an export downloads from one', async ({
+const opensWhole = async (
+  page: Page,
+  name: string | RegExp,
+): Promise<{ readonly row: Box; readonly drawn: Box }> => {
+  const card = await screenBoxOf(chromeCard(page));
+  const viewport = page.viewportSize();
+  const trigger = page.getByRole('menuitem', { name });
+  await trigger.click();
+  const submenu = page.getByRole('menu', { name });
+  await expect(submenu).toBeVisible();
+
+  const row = await screenBoxOf(trigger);
+  const drawn = await screenBoxOf(submenu);
+  const top = Math.round(drawn.y);
+  const bottom = Math.round(drawn.y + drawn.height);
+  expect(Math.round(drawn.x - card.x)).toBeGreaterThanOrEqual(0);
+  expect(Math.round(drawn.x - card.x)).toBeLessThanOrEqual(1);
+  expect(Math.round(drawn.x + drawn.width)).toBeLessThanOrEqual(
+    viewport?.width ?? 0,
+  );
+  expect(top).toBeGreaterThanOrEqual(0);
+  expect(bottom).toBeLessThanOrEqual(viewport?.height ?? 0);
+  expect(
+    top >= Math.round(row.y + row.height) || bottom <= Math.round(row.y),
+  ).toBe(true);
+  expect(
+    await submenu.evaluate(
+      (element) => element.scrollHeight <= element.clientHeight,
+    ),
+  ).toBe(true);
+  return { row, drawn };
+};
+
+test('every submenu opens whole at the card edge, and an export downloads from one', async ({
   page,
 }) => {
   await openFile(page, 'test-data/ecluse.json');
-  const card = await screenBoxOf(chromeCard(page));
-  const viewport = page.viewportSize();
 
   for (const name of ['Export', 'Arrange', /^Appearance /u]) {
     await openMenu(page);
-    const trigger = page.getByRole('menuitem', { name });
-    await trigger.click();
-    const submenu = page.getByRole('menu', { name });
-    await expect(submenu).toBeVisible();
-
-    const row = await screenBoxOf(trigger);
-    const drawn = await screenBoxOf(submenu);
-    expect(Math.round(drawn.x - card.x)).toBeGreaterThanOrEqual(0);
-    expect(Math.round(drawn.x - card.x)).toBeLessThanOrEqual(1);
-    expect(Math.round(drawn.x + drawn.width)).toBeLessThanOrEqual(
-      viewport?.width ?? 0,
-    );
-    expect(Math.round(drawn.y)).toBeGreaterThanOrEqual(
-      Math.round(row.y + row.height),
-    );
+    await opensWhole(page, name);
     await closeMenu(page);
   }
 
   const output = await exportedFile(page, 'Diagram as SVG');
   expect(output.name).toBe('ecluse.svg');
   expect(output.bytes.length).toBeGreaterThan(0);
+});
+
+test('a submenu with no room under its row opens whole over it', async ({
+  page,
+}) => {
+  const width = page.viewportSize()?.width ?? 0;
+  await page.setViewportSize({ width, height: 480 });
+  await openFile(page, 'test-data/ecluse.json');
+  await openMenu(page);
+  await menuItem(page, 'Arrange').evaluate((element) => {
+    element.scrollIntoView({ block: 'end' });
+  });
+
+  const { row, drawn } = await opensWhole(page, 'Arrange');
+
+  expect(Math.round(drawn.y + drawn.height)).toBeLessThanOrEqual(
+    Math.round(row.y),
+  );
+});
+
+test('a pointer heading down and left from Export into its submenu reaches an export', async ({
+  page,
+}) => {
+  await openFile(page, 'test-data/ecluse.json');
+  await openMenu(page);
+  const start = await centreOf(menuItem(page, 'Export'));
+  await page.mouse.move(start.x - 60, start.y);
+  await page.mouse.move(start.x, start.y, { steps: 5 });
+  const svg = menuItem(page, 'Diagram as SVG');
+  await expect(svg).toBeVisible();
+
+  const target = await centreOf(svg);
+  expect(target.x).toBeLessThan(start.x);
+  await page.mouse.move(target.x, target.y, { steps: 10 });
+  await expect(page.getByRole('menu', { name: 'Export' })).toBeVisible();
+
+  const [download] = await Promise.all([
+    page.waitForEvent('download'),
+    page.mouse.click(target.x, target.y),
+  ]);
+  expect(download.suggestedFilename()).toBe('ecluse.svg');
 });
