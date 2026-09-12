@@ -1,12 +1,14 @@
-import type { UnplacedEndpoint } from '@saerskriven/canvas';
+import {
+  badgeTextColour,
+  badgeColour,
+  defaultRenderTheme,
+  type RenderTheme,
+  type UnplacedEndpoint,
+} from '@saerskriven/canvas';
 import type { Model } from '@saerskriven/model';
 import type { RootContent } from 'mdast';
 import { registerDocument } from './register-tree.js';
 import { renderSvg } from './svg-document.js';
-
-const bodyFont = 'Liberation Sans';
-
-const monospaceFont = 'Liberation Mono';
 
 const escapable = /["\\]|\p{Cc}/gu;
 
@@ -19,27 +21,33 @@ export type TypstDocument = {
 };
 
 /** Renders every diagram and the shared register as one Typst document. */
-export function renderTypst(model: Model): TypstDocument {
-  const drawings = model.diagrams.map((diagram) => renderSvg(diagram, model));
+export function renderTypst(
+  model: Model,
+  theme: RenderTheme = defaultRenderTheme,
+): TypstDocument {
+  const drawings = model.diagrams.map((diagram) =>
+    renderSvg(diagram, model, theme),
+  );
   return {
     typst: [
-      preamble(model),
+      preamble(model, theme),
       ...model.diagrams.map((diagram, index) =>
         diagramPage(diagram.title, drawings[index].svg),
       ),
-      blocksOf(registerDocument(model).children),
+      blocksOf(registerDocument(model).children, theme),
     ].join('\n\n'),
     unplaced: drawings.flatMap((drawing) => drawing.unplaced),
   };
 }
 
-function preamble(model: Model): string {
+function preamble(model: Model, theme: RenderTheme): string {
   return [
     `#set document(title: ${literal(model.metadata.title)}, date: none)`,
-    '#set page(paper: "a4", margin: 2cm, numbering: "1")',
-    `#set text(font: ${literal(bodyFont)}, size: 10pt)`,
-    `#show raw: set text(font: ${literal(monospaceFont)}, size: 9pt)`,
+    `#set page(paper: "a4", margin: 2cm, numbering: "1", fill: rgb(${literal(theme.colours.background)}))`,
+    `#set text(font: ${literal(theme.fonts.body)}, size: 10pt, fill: rgb(${literal(theme.colours.text)}))`,
+    `#show raw: set text(font: ${literal(theme.fonts.code)}, size: 9pt)`,
     '#set table(inset: 5pt)',
+    badgeDefinition(theme),
     '#show table: set text(size: 8pt)',
   ].join('\n');
 }
@@ -57,21 +65,21 @@ function diagramPage(title: string, svg: string): string {
   ].join('\n');
 }
 
-function blocksOf(nodes: readonly RootContent[]): string {
+function blocksOf(nodes: readonly RootContent[], theme: RenderTheme): string {
   return nodes
-    .map((node) => typstOf(node))
+    .map((node) => typstOf(node, theme))
     .filter((block) => block.length > 0)
     .join('\n\n');
 }
 
-function inlineOf(nodes: readonly RootContent[]): string {
-  return nodes.map((node) => typstOf(node)).join('');
+function inlineOf(nodes: readonly RootContent[], theme: RenderTheme): string {
+  return nodes.map((node) => typstOf(node, theme)).join('');
 }
 
-function typstOf(node: RootContent): string {
+function typstOf(node: RootContent, theme: RenderTheme): string {
   switch (node.type) {
     case 'blockquote':
-      return `#quote(block: true)[\n${blocksOf(node.children)}\n]`;
+      return `#quote(block: true)[\n${blocksOf(node.children, theme)}\n]`;
     case 'break':
       return '#linebreak()';
     case 'code':
@@ -79,15 +87,15 @@ function typstOf(node: RootContent): string {
     case 'definition':
       return shown(`[${node.label ?? node.identifier}]: ${node.url}`);
     case 'delete':
-      return `#strike[${inlineOf(node.children)}]`;
+      return `#strike[${inlineOf(node.children, theme)}]`;
     case 'emphasis':
-      return `#emph[${inlineOf(node.children)}]`;
+      return `#emph[${inlineOf(node.children, theme)}]`;
     case 'footnoteDefinition':
-      return blocksOf(node.children);
+      return blocksOf(node.children, theme);
     case 'footnoteReference':
       return shown(`[${node.label ?? node.identifier}]`);
     case 'heading':
-      return `#heading(level: ${String(node.depth)})[${inlineOf(node.children)}]`;
+      return `#heading(level: ${String(node.depth)})[${inlineOf(node.children, theme)}]`;
     case 'html':
       return node.data?.registerTarget === true ? '' : shown(node.value);
     case 'image':
@@ -98,30 +106,32 @@ function typstOf(node: RootContent): string {
       return `#raw(${literal(node.value)})`;
     case 'link':
       return node.data?.registerTarget === true
-        ? inlineOf(node.children)
+        ? inlineOf(node.children, theme)
         : addressed(
-            inlineOf(node.children),
+            inlineOf(node.children, theme),
             plainTextOf(node.children),
             node.url,
           );
     case 'linkReference':
-      return inlineOf(node.children);
+      return inlineOf(node.children, theme);
     case 'list':
-      return listOf(node.ordered === true, node.start, node.children);
+      return listOf(node.ordered === true, node.start, node.children, theme);
     case 'listItem':
-      return `[${blocksOf(node.children)}]`;
+      return `[${blocksOf(node.children, theme)}]`;
     case 'paragraph':
-      return inlineOf(node.children);
+      return inlineOf(node.children, theme);
     case 'strong':
-      return `#strong[${inlineOf(node.children)}]`;
+      return `#strong[${inlineOf(node.children, theme)}]`;
     case 'table':
-      return tableOf(node.children);
+      return tableOf(node.children, theme);
     case 'tableCell':
-      return `[${inlineOf(node.children)}]`;
+      return `[${inlineOf(node.children, theme)}]`;
     case 'tableRow':
-      return node.children.map((cell) => typstOf(cell)).join(', ');
+      return node.children.map((cell) => typstOf(cell, theme)).join(', ');
     case 'text':
-      return shown(node.value.replace(softBreaks, ' '));
+      return node.data?.registerBadge === undefined
+        ? shown(node.value.replace(softBreaks, ' '))
+        : `#saer-badge(${literal(node.value)}, rgb(${literal(badgeColour(theme, node.data.registerBadge))}))`;
     case 'thematicBreak':
       return '#line(length: 100%)';
     case 'yaml':
@@ -153,22 +163,23 @@ function listOf(
   ordered: boolean,
   start: number | null | undefined,
   items: readonly RootContent[],
+  theme: RenderTheme,
 ): string {
   const call = ordered ? '#enum' : '#list';
   const from =
     ordered && typeof start === 'number' && start !== 1
       ? `start: ${String(start)}, `
       : '';
-  return `${call}(${from}${items.map((item) => typstOf(item)).join(', ')})`;
+  return `${call}(${from}${items.map((item) => typstOf(item, theme)).join(', ')})`;
 }
 
-function tableOf(rows: readonly RootContent[]): string {
+function tableOf(rows: readonly RootContent[], theme: RenderTheme): string {
   const [header] = rows;
   const columns =
     header !== undefined && header.type === 'tableRow'
       ? header.children.length
       : 1;
-  const cells = rows.map((row) => typstOf(row)).join(',\n');
+  const cells = rows.map((row) => typstOf(row, theme)).join(',\n');
   return `#table(columns: ${String(columns)},\n${cells},\n)`;
 }
 
@@ -188,4 +199,13 @@ function escapeOf(character: string): string {
     return character;
   }
   return `\\u{${character.charCodeAt(0).toString(16)}}`;
+}
+
+function badgeDefinition(theme: RenderTheme): string {
+  const fill = theme.badges.style === 'outline' ? 'none' : 'tone';
+  const lettering =
+    theme.badges.text === 'auto' && theme.badges.style === 'outline'
+      ? 'tone'
+      : `rgb(${literal(badgeTextColour(theme, theme.colours.text))})`;
+  return `#let saer-badge(label, tone) = box(inset: (x: 3pt, y: 1pt), radius: 2pt, fill: ${fill}, stroke: (paint: tone, thickness: ${String(theme.badges.borderWidth)}pt), text(fill: ${lettering}, label))`;
 }

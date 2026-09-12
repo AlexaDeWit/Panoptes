@@ -13,3 +13,4 @@ export * from './lib/scene.js';
 export * from './lib/stylesheet.js';
 export * from './lib/tokens.js';
 export * from './lib/typography.js';
+export * from './lib/render-theme.js';

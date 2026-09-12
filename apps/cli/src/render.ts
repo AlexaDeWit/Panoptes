@@ -2,6 +2,8 @@ import { escapedForTerminal } from '@saerskriven/formats';
 import { diagramsNamed, type Diagram, type Model } from '@saerskriven/model';
 import {
   renderRegister,
+  registerOptionsSchema,
+  type RenderTheme,
   renderSvg,
   renderTypst,
   renderUnplacedWarning,
@@ -20,14 +22,17 @@ import {
 } from './outcome.js';
 import { compilePdf } from './pdf.js';
 import { drawPng } from './png.js';
+import { commandTheme, themeWarnings } from './theme.js';
 
-/**
- * What `render` needs, and the one gate on the option bag the parser hands
- * over. Commander tokenizes argv and says nothing about what a command
- * requires, so the requirement is stated once, here, and its messages are
- * what a user reads.
- */
-export const renderOptionsSchema = z.object({
+/** Validated arguments for the render command. */
+export const renderOptionsSchema = registerOptionsSchema.extend({
+  theme: z.string().optional(),
+  styled: z.boolean().optional(),
+  stylesheet: z.boolean().optional(),
+  headingLevel: z.coerce
+    .number()
+    .pipe(registerOptionsSchema.shape.headingLevel.unwrap())
+    .optional(),
   format: z.enum(['svg', 'png', 'md', 'pdf'], {
     error: 'must be svg, png, md or pdf',
   }),
@@ -55,7 +60,45 @@ export function render(
 ): Promise<CommandOutcome> {
   return Either.match(readModel(file), {
     onLeft: (outcome) => Promise.resolve(outcome),
-    onRight: (read) => projection(read.model, options, assets),
+    onRight: async (read) => {
+      const selected = commandTheme(
+        options.theme,
+        options.format,
+        options.styled === true,
+      );
+      if (
+        options.format === 'md' &&
+        options.styled === true &&
+        options.stylesheet === false &&
+        options.theme !== undefined
+      )
+        selected.diagnostics.push({
+          key: '',
+          message:
+            'the stylesheet is omitted, so the host CSS controls appearance',
+        });
+      if (
+        options.format !== 'md' &&
+        (options.title === false ||
+          options.headingLevel !== undefined ||
+          options.styled === true ||
+          options.stylesheet === false)
+      )
+        selected.diagnostics.push({
+          key: '',
+          message: 'Markdown embedding options do not apply to this output',
+        });
+      const outcome = await projection(
+        read.model,
+        options,
+        assets,
+        selected.theme,
+      );
+      return {
+        ...outcome,
+        err: themeWarnings(options.theme, selected.diagnostics) + outcome.err,
+      };
+    },
   });
 }
 
@@ -63,10 +106,11 @@ function projection(
   model: Model,
   options: RenderOptions,
   assets: string,
+  theme: RenderTheme,
 ): Promise<CommandOutcome> {
   return options.format === 'svg' || options.format === 'png'
-    ? drawing(model, options.format, options, assets)
-    : wholeModel(model, options.format, options, assets);
+    ? drawing(model, options.format, options, assets, theme)
+    : wholeModel(model, options.format, options, assets, theme);
 }
 
 function wholeModel(
@@ -74,9 +118,10 @@ function wholeModel(
   format: WholeModelFormat,
   options: RenderOptions,
   assets: string,
+  theme: RenderTheme,
 ): Promise<CommandOutcome> {
   return options.diagram === undefined
-    ? document(model, format, options.out, assets)
+    ? document(model, format, options, assets, theme)
     : Promise.resolve(usageError(lines(refusedDiagram(format))));
 }
 
@@ -87,20 +132,34 @@ function refusedDiagram(format: WholeModelFormat): string {
 function document(
   model: Model,
   format: WholeModelFormat,
-  out: string,
+  options: RenderOptions,
   assets: string,
+  theme: RenderTheme,
 ): Promise<CommandOutcome> {
   return format === 'md'
-    ? Promise.resolve(written(out, renderRegister(model), ''))
-    : compiled(model, out, assets);
+    ? Promise.resolve(
+        written(
+          options.out,
+          renderRegister(model, {
+            title: options.title,
+            headingLevel: options.headingLevel,
+            styled: options.styled,
+            stylesheet: options.stylesheet,
+            theme,
+          }),
+          '',
+        ),
+      )
+    : compiled(model, options.out, assets, theme);
 }
 
 async function compiled(
   model: Model,
   out: string,
   assets: string,
+  theme: RenderTheme,
 ): Promise<CommandOutcome> {
-  const source = renderTypst(model);
+  const source = renderTypst(model, theme);
   return Either.match(await compilePdf(source.typst, assets), {
     onLeft: (reason) => usageError(lines(`error: ${reason}`)),
     onRight: (pdf) => written(out, pdf, renderUnplacedWarning(source.unplaced)),
@@ -112,10 +171,12 @@ function drawing(
   format: DiagramFormat,
   options: RenderOptions,
   assets: string,
+  theme: RenderTheme,
 ): Promise<CommandOutcome> {
   return Either.match(chosenDiagram(model, options.diagram), {
     onLeft: (reason) => Promise.resolve(usageError(reason)),
-    onRight: (diagram) => drawn(diagram, model, format, options.out, assets),
+    onRight: (diagram) =>
+      drawn(diagram, model, format, options.out, assets, theme),
   });
 }
 
@@ -125,14 +186,20 @@ function drawn(
   format: DiagramFormat,
   out: string,
   assets: string,
+  theme: RenderTheme,
 ): Promise<CommandOutcome> {
   return format === 'svg'
-    ? Promise.resolve(vector(diagram, model, out))
-    : raster(diagram, model, out, assets);
+    ? Promise.resolve(vector(diagram, model, out, theme))
+    : raster(diagram, model, out, assets, theme);
 }
 
-function vector(diagram: Diagram, model: Model, out: string): CommandOutcome {
-  const rendered = renderSvg(diagram, model);
+function vector(
+  diagram: Diagram,
+  model: Model,
+  out: string,
+  theme: RenderTheme,
+): CommandOutcome {
+  const rendered = renderSvg(diagram, model, theme);
   return written(out, rendered.svg, renderUnplacedWarning(rendered.unplaced));
 }
 
@@ -141,8 +208,9 @@ async function raster(
   model: Model,
   out: string,
   assets: string,
+  theme: RenderTheme,
 ): Promise<CommandOutcome> {
-  return Either.match(await drawPng(diagram, model, assets), {
+  return Either.match(await drawPng(diagram, model, assets, theme), {
     onLeft: (reason) => usageError(lines(`error: ${reason}`)),
     onRight: (image) =>
       written(out, image.png, renderUnplacedWarning(image.unplaced)),

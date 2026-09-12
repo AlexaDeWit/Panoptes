@@ -23,3 +23,4 @@ export {
   type ImportFormat,
   type ImportResult,
 } from './lib/import.js';
+export { parseYaml } from './lib/parse-yaml.js';

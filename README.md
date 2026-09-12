@@ -209,6 +209,9 @@ which [The SVG rasterizer](#the-svg-rasterizer) below describes.
 Errors go to standard error, path-precise where a schema refused something,
 and no failure prints a stack trace.
 
+For appearance overrides, website badges, and heading controls, see
+[Render themes and embedded registers](docs/render-themes.md).
+
 ### The MCP server
 
 `saer mcp` speaks the Model Context Protocol over standard input and output,

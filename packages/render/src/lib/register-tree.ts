@@ -1,3 +1,5 @@
+import type { RegisterBadge } from '@saerskriven/canvas';
+import type { RegisterOptions } from './register-options.js';
 import type {
   CustomCategory,
   Element,
@@ -30,14 +32,16 @@ import { visit } from 'unist-util-visit';
 
 const prose = unified().use(remarkParse).use(remarkGfm);
 
-const sectionDepth = 2;
-
-const proseDepths = [3, 4, 5, 6, 6, 6] as const;
+const headingDepths = [1, 2, 3, 4, 5, 6] as const;
 
 /** The largest prose depth accepted by both register writers. */
 export const deepestProse = 16;
 
 declare module 'mdast' {
+  interface TextData {
+    readonly registerBadge?: RegisterBadge;
+  }
+
   interface HtmlData {
     readonly registerTarget?: true;
   }
@@ -135,19 +139,28 @@ const categoryLabels = {
 } satisfies CategoryLabels;
 
 /** Builds the shared register tree in threat-number order. */
-export function registerDocument(model: Model): Root {
+export function registerDocument(
+  model: Model,
+  options: RegisterOptions = {},
+): Root {
+  const first = options.headingLevel ?? 1;
+  const sectionDepth = boundedDepth(first + (options.title === false ? 0 : 1));
   const threats = [...model.threats];
   threats.sort((left, right) => left.number - right.number);
   const elements = elementsById(model);
   return {
     type: 'root',
     children: [
-      heading(1, registerTitle(model)),
+      ...(options.title === false
+        ? []
+        : [heading(first, registerTitle(model))]),
       ...(threats.length === 0
         ? [paragraph(noThreats)]
         : [
             overviewTable(threats, elements),
-            ...threats.flatMap((threat) => threatSection(threat, elements)),
+            ...threats.flatMap((threat) =>
+              threatSection(threat, elements, sectionDepth),
+            ),
           ]),
     ],
   };
@@ -184,8 +197,8 @@ function overviewTable(
           threat.title,
           elementNames(threat, elements),
           categoryLabel(threat.category),
-          severityLabels[threat.severity],
-          statusLabels[threat.status],
+          severityText(threat),
+          statusText(threat),
         ]),
       ),
     ],
@@ -205,6 +218,7 @@ function tableRow(cells: readonly (PhrasingContent | string)[]): TableRow {
 function threatSection(
   threat: Threat,
   elements: ReadonlyMap<string, Element>,
+  sectionDepth: Heading['depth'],
 ): RootContent[] {
   return [
     threatAnchor(threat.number),
@@ -213,8 +227,8 @@ function threatSection(
       headingText(`Threat ${threat.number}: ${threat.title}`),
     ),
     fieldList(threat, elements),
-    ...proseSection('Description', threat.description),
-    ...proseSection('Mitigation', threat.mitigation),
+    ...proseSection('Description', threat.description, sectionDepth),
+    ...proseSection('Mitigation', threat.mitigation, sectionDepth),
   ];
 }
 
@@ -244,11 +258,11 @@ function fieldList(
   threat: Threat,
   elements: ReadonlyMap<string, Element>,
 ): List {
-  const fields = [
-    ['Elements', elementNames(threat, elements)],
-    ['Category', categoryLabel(threat.category)],
-    ['Severity', severityLabels[threat.severity]],
-    ['Status', statusLabels[threat.status]],
+  const fields: readonly (readonly [string, Text])[] = [
+    ['Elements', text(elementNames(threat, elements))],
+    ['Category', text(categoryLabel(threat.category))],
+    ['Severity', severityText(threat)],
+    ['Status', statusText(threat)],
   ];
   return {
     type: 'list',
@@ -262,7 +276,8 @@ function fieldList(
           type: 'paragraph',
           children: [
             { type: 'strong', children: [text(label)] },
-            text(`: ${value}`),
+            text(': '),
+            value,
           ],
         },
       ],
@@ -270,17 +285,24 @@ function fieldList(
   };
 }
 
-function proseSection(label: string, written: string): RootContent[] {
+function proseSection(
+  label: string,
+  written: string,
+  sectionDepth: Heading['depth'],
+): RootContent[] {
   return [
     {
       type: 'paragraph',
       children: [{ type: 'strong', children: [text(label)] }],
     },
-    ...proseContent(written),
+    ...proseContent(written, sectionDepth),
   ];
 }
 
-function proseContent(written: string): RootContent[] {
+function proseContent(
+  written: string,
+  sectionDepth: Heading['depth'],
+): RootContent[] {
   const parsed = prose.parse(written);
   if (parsed.children.length === 0) {
     return [paragraph(noProse)];
@@ -289,7 +311,7 @@ function proseContent(written: string): RootContent[] {
     return [paragraph(written)];
   }
   visit(parsed, 'heading', (node) => {
-    node.depth = proseDepths[node.depth - 1];
+    node.depth = boundedDepth(sectionDepth + node.depth);
   });
   return parsed.children;
 }
@@ -370,4 +392,24 @@ function paragraph(value: string): Paragraph {
 
 function text(value: string): Text {
   return { type: 'text', value };
+}
+
+function boundedDepth(depth: number): Heading['depth'] {
+  return headingDepths[Math.min(6, Math.max(1, depth)) - 1];
+}
+
+function severityText(threat: Threat): Text {
+  return {
+    type: 'text',
+    value: severityLabels[threat.severity],
+    data: { registerBadge: { kind: 'severity', value: threat.severity } },
+  };
+}
+
+function statusText(threat: Threat): Text {
+  return {
+    type: 'text',
+    value: statusLabels[threat.status],
+    data: { registerBadge: { kind: 'status', value: threat.status } },
+  };
 }

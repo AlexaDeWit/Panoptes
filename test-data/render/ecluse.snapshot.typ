@@ -1,16 +1,17 @@
 #set document(title: "Écluse", date: none)
-#set page(paper: "a4", margin: 2cm, numbering: "1")
-#set text(font: "Liberation Sans", size: 10pt)
+#set page(paper: "a4", margin: 2cm, numbering: "1", fill: rgb("#F9F6F0"))
+#set text(font: "Liberation Sans", size: 10pt, fill: rgb("#38342E"))
 #show raw: set text(font: "Liberation Mono", size: 9pt)
 #set table(inset: 5pt)
+#let saer-badge(label, tone) = box(inset: (x: 3pt, y: 1pt), radius: 2pt, fill: tone, stroke: (paint: tone, thickness: 3pt), text(fill: rgb("#FAF8F2"), label))
 #show table: set text(size: 8pt)
 
 #page(flipped: true)[
 #grid(rows: (auto, 1fr), row-gutter: 1em,
 heading(level: 1)[#"High Level"],
 align(center + horizon)[
-#image(bytes("<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"-98 2 1798 1236\" width=\"1798\" height=\"1236\"><title>High Level</title><style>.pn-element {
-  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+#image(bytes("<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"-98 2 1798 1236\" width=\"1798\" height=\"1236\"><title>High Level</title><rect x=\"-98\" y=\"2\" width=\"1798\" height=\"1236\" fill=\"#F9F6F0\"></rect><style>.pn-element {
+  font-family: \"Liberation Sans\";
 }
 .pn-shape {
   fill: #FAF8F2;
@@ -110,7 +111,17 @@ align(center + horizon)[
 .pn-tone-neutral {
   fill: #756E63;
 }
-</style><g transform=\"translate(240, 10)\"><g class=\"pn-element\"><rect class=\"pn-shape pn-boundary-box\" width=\"1180\" height=\"1180\"></rect><text class=\"pn-label\" x=\"590\" y=\"11\"><tspan x=\"590\" dy=\"0\">Operator trust zone (VPC / mesh): access edge enforced here</tspan></text></g></g><g transform=\"translate(-90, 640)\"><g class=\"pn-element\"><rect class=\"pn-shape pn-boundary-box\" width=\"240\" height=\"200\"></rect><text class=\"pn-label\" x=\"120\" y=\"11\"><tspan x=\"120\" dy=\"0\">Public internet (untrusted)</tspan></text></g></g><g transform=\"translate(1452, 755)\"><g class=\"pn-element\"><rect class=\"pn-shape pn-boundary-box\" width=\"240\" height=\"200\"></rect><text class=\"pn-label\" x=\"120\" y=\"11\"><tspan x=\"120\" dy=\"0\">Public internet (untrusted)</tspan></text></g></g><g transform=\"translate(10, 350)\"><g class=\"pn-element\"><rect class=\"pn-shape pn-actor\" width=\"170\" height=\"90\"></rect><text class=\"pn-label\" x=\"85\" y=\"38.75\"><tspan x=\"85\" dy=\"0\">npm client</tspan><tspan x=\"85\" dy=\"12.5\">(developer / CI)</tspan></text></g></g><g transform=\"translate(-60, 695)\"><g class=\"pn-element\"><rect class=\"pn-shape pn-actor\" width=\"180\" height=\"90\"></rect><text class=\"pn-label\" x=\"90\" y=\"45\"><tspan x=\"90\" dy=\"0\">Public npm registry</tspan></text></g></g><g transform=\"translate(635, 740)\"><g class=\"pn-element\"><rect class=\"pn-shape pn-actor\" width=\"190\" height=\"90\"></rect><text class=\"pn-label\" x=\"95\" y=\"45\"><tspan x=\"95\" dy=\"0\">AWS IMDS + STS</tspan></text></g></g><g transform=\"translate(530, 475)\"><g class=\"pn-element\"><circle class=\"pn-shape pn-process\" cx=\"65\" cy=\"65\" r=\"65\"></circle><text class=\"pn-label\" x=\"65\" y=\"65\"><tspan x=\"65\" dy=\"0\">Écluse proxy</tspan></text></g></g><g transform=\"translate(350, 990)\"><g class=\"pn-element\"><circle class=\"pn-shape pn-process\" cx=\"65\" cy=\"65\" r=\"65\"></circle><text class=\"pn-label\" x=\"65\" y=\"65\"><tspan x=\"65\" dy=\"0\">Mirror worker</tspan></text></g></g><g transform=\"translate(635, 910)\"><g class=\"pn-element\"><circle class=\"pn-shape pn-process\" cx=\"70\" cy=\"70\" r=\"70\"></circle><text class=\"pn-label\" x=\"70\" y=\"63.75\"><tspan x=\"70\" dy=\"0\">Credential</tspan><tspan x=\"70\" dy=\"12.5\">provider</tspan></text></g></g><g transform=\"translate(360, 110)\"><g class=\"pn-element\"><line class=\"pn-shape pn-store\" x1=\"0\" y1=\"0\" x2=\"180\" y2=\"0\"></line><line class=\"pn-shape pn-store\" x1=\"0\" y1=\"90\" x2=\"180\" y2=\"90\"></line><text class=\"pn-label\" x=\"90\" y=\"38.75\"><tspan x=\"90\" dy=\"0\">Metadata cache</tspan><tspan x=\"90\" dy=\"12.5\">(public-gated only)</tspan></text></g></g><g transform=\"translate(325, 810)\"><g class=\"pn-element\"><line class=\"pn-shape pn-store\" x1=\"0\" y1=\"0\" x2=\"180\" y2=\"0\"></line><line class=\"pn-shape pn-store\" x1=\"0\" y1=\"90\" x2=\"180\" y2=\"90\"></line><text class=\"pn-label\" x=\"90\" y=\"45\"><tspan x=\"90\" dy=\"0\">Mirror queue (SQS)</tspan></text></g></g><g transform=\"translate(910, 475)\"><g class=\"pn-element\"><line class=\"pn-shape pn-store\" x1=\"0\" y1=\"0\" x2=\"200\" y2=\"0\"></line><line class=\"pn-shape pn-store\" x1=\"0\" y1=\"90\" x2=\"200\" y2=\"90\"></line><text class=\"pn-label\" x=\"100\" y=\"38.75\"><tspan x=\"100\" dy=\"0\">Registry C:</tspan><tspan x=\"100\" dy=\"12.5\">pull-through read endpoint</tspan></text></g></g><g transform=\"translate(1150, 140)\"><g class=\"pn-element\"><line class=\"pn-shape pn-store\" x1=\"0\" y1=\"0\" x2=\"200\" y2=\"0\"></line><line class=\"pn-shape pn-store\" x1=\"0\" y1=\"90\" x2=\"200\" y2=\"90\"></line><text class=\"pn-label\" x=\"100\" y=\"38.75\"><tspan x=\"100\" dy=\"0\">Registry A:</tspan><tspan x=\"100\" dy=\"12.5\">private store (first-party)</tspan></text></g></g><g transform=\"translate(1190, 665)\"><g class=\"pn-element\"><line class=\"pn-shape pn-store\" x1=\"0\" y1=\"0\" x2=\"200\" y2=\"0\"></line><line class=\"pn-shape pn-store\" x1=\"0\" y1=\"90\" x2=\"200\" y2=\"90\"></line><text class=\"pn-label\" x=\"100\" y=\"38.75\"><tspan x=\"100\" dy=\"0\">Registry B:</tspan><tspan x=\"100\" dy=\"12.5\">mirror store (public-derived)</tspan></text><g class=\"pn-badge\" transform=\"translate(200, 0)\"><g class=\"pn-badge-primary\"><circle class=\"pn-tone-medium\" r=\"13\"></circle><text class=\"pn-badge-count\" y=\"-3\">1</text><text class=\"pn-badge-mark\" y=\"6\">M</text></g></g></g></g><g transform=\"translate(920, 915)\"><g class=\"pn-element\"><circle class=\"pn-shape pn-process\" cx=\"65\" cy=\"65\" r=\"65\"></circle><text class=\"pn-label\" x=\"65\" y=\"52.5\"><tspan x=\"65\" dy=\"0\">Écluse Pilot</tspan><tspan x=\"65\" dy=\"12.5\">(Ingestion</tspan><tspan x=\"65\" dy=\"12.5\">Pipeline)</tspan></text></g></g><g transform=\"translate(1477, 810)\"><g class=\"pn-element\"><rect class=\"pn-shape pn-actor\" width=\"170\" height=\"110\"></rect><text class=\"pn-label\" x=\"85\" y=\"55\"><tspan x=\"85\" dy=\"0\">OSV.dev</tspan></text></g></g><g transform=\"translate(920, 640)\"><g class=\"pn-element\"><line class=\"pn-shape pn-store\" x1=\"0\" y1=\"0\" x2=\"180\" y2=\"0\"></line><line class=\"pn-shape pn-store\" x1=\"0\" y1=\"130\" x2=\"180\" y2=\"130\"></line><text class=\"pn-label\" x=\"90\" y=\"65\"><tspan x=\"90\" dy=\"0\">S3 (OSV Datasets)</tspan></text></g></g><g transform=\"translate(400, 1100)\"><g class=\"pn-element\"><circle class=\"pn-shape pn-process\" cx=\"65\" cy=\"65\" r=\"65\"></circle><text class=\"pn-label\" x=\"65\" y=\"65\"><tspan x=\"65\" dy=\"0\">Écluse Dredger</tspan></text><g class=\"pn-badge\" transform=\"translate(130, 0)\"><g class=\"pn-badge-primary\"><circle class=\"pn-tone-critical\" r=\"13\"></circle><text class=\"pn-badge-count\" y=\"-3\">5</text><text class=\"pn-badge-mark\" y=\"6\">C</text></g></g></g></g><g class=\"pn-element\"><path class=\"pn-shape pn-flow\" d=\"M 180 395 L 530 540\"></path><path class=\"pn-flow-arrow\" d=\"M 530 540 L 510.691 539.578 L 516.05 526.644 Z\"></path><text class=\"pn-flow-label\" x=\"333.382\" y=\"507.18\"><tspan x=\"333.382\" dy=\"0\">npm read / publish</tspan><tspan x=\"333.382\" dy=\"12.5\">(passthrough CodeArtifact</tspan><tspan x=\"333.382\" dy=\"12.5\">token)</tspan></text><g class=\"pn-badge\" transform=\"translate(366.859, 438.874)\"><g class=\"pn-badge-primary\"><circle class=\"pn-tone-medium\" r=\"13\"></circle><text class=\"pn-badge-count\" y=\"-3\">1</text><text class=\"pn-badge-mark\" y=\"6\">M</text></g></g></g><g class=\"pn-element\"><path class=\"pn-shape pn-flow\" d=\"M 660 540 L 910 520\"></path><path class=\"pn-flow-arrow\" d=\"M 910 520 L 892.616 528.413 L 891.499 514.458 Z\"></path><text class=\"pn-flow-label\" x=\"787.43\" y=\"554.13\"><tspan x=\"787.43\" dy=\"0\">read packument / tarball</tspan><tspan x=\"787.43\" dy=\"12.5\">(caller token forwarded)</tspan></text></g><g class=\"pn-element\"><path class=\"pn-shape pn-flow\" d=\"M 595 475 L 450 200\"></path><path class=\"pn-flow-arrow\" d=\"M 450 200 L 464.587 212.657 L 452.203 219.187 Z\"></path><text class=\"pn-flow-label\" x=\"466.743\" y=\"360.649\"><tspan x=\"466.743\" dy=\"0\">cache public-gated</tspan><tspan x=\"466.743\" dy=\"12.5\">metadata</tspan></text></g><g class=\"pn-element\"><path class=\"pn-shape pn-flow\" d=\"M 530 540 L 120 740\"></path><path class=\"pn-flow-arrow\" d=\"M 120 740 L 133.109 725.817 L 139.247 738.4 Z\"></path><text class=\"pn-flow-label\" x=\"349.134\" y=\"676.975\"><tspan x=\"349.134\" dy=\"0\">anonymous packument /</tspan><tspan x=\"349.134\" dy=\"12.5\">tarball fetch (caller</tspan><tspan x=\"349.134\" dy=\"12.5\">token stripped)</tspan></text></g><g class=\"pn-element\"><path class=\"pn-shape pn-flow\" d=\"M 660 540 L 1150 185\"></path><path class=\"pn-flow-arrow\" d=\"M 1150 185 L 1139.53 201.229 L 1131.317 189.892 Z\"></path><text class=\"pn-flow-label\" x=\"937.62\" y=\"395.025\"><tspan x=\"937.62\" dy=\"0\">relay npm publish</tspan><tspan x=\"937.62\" dy=\"12.5\">(publisher token</tspan><tspan x=\"937.62\" dy=\"12.5\">forwarded)</tspan></text></g><g class=\"pn-element\"><path class=\"pn-shape pn-flow\" d=\"M 595 605 L 415 810\"></path><path class=\"pn-flow-arrow\" d=\"M 415 810 L 421.616 791.855 L 432.137 801.093 Z\"></path><text class=\"pn-flow-label\" x=\"460.951\" y=\"662.573\"><tspan x=\"460.951\" dy=\"0\">enqueue mirror job</tspan><tspan x=\"460.951\" dy=\"12.5\">(demand-driven)</tspan></text></g><g class=\"pn-element\"><path class=\"pn-shape pn-flow\" d=\"M 415 990 L 415 900\"></path><path class=\"pn-flow-arrow\" d=\"M 415 900 L 422 918 L 408 918 Z\"></path><text class=\"pn-flow-label\" x=\"453.75\" y=\"945\"><tspan x=\"453.75\" dy=\"0\">poll jobs</tspan></text></g><g class=\"pn-element\"><path class=\"pn-shape pn-flow\" d=\"M 350 1055 L 120 740\"></path><path class=\"pn-flow-arrow\" d=\"M 120 740 L 136.268 750.409 L 124.961 758.665 Z\"></path><text class=\"pn-flow-label\" x=\"163.979\" y=\"943.106\"><tspan x=\"163.979\" dy=\"0\">back-fill artifact fetch</tspan><tspan x=\"163.979\" dy=\"12.5\">(untrusted)</tspan></text></g><g class=\"pn-element\"><path class=\"pn-shape pn-flow\" d=\"M 480 1055 L 635 980\"></path><path class=\"pn-flow-arrow\" d=\"M 635 980 L 621.846 994.141 L 615.748 981.539 Z\"></path><text class=\"pn-flow-label\" x=\"536.557\" y=\"967.968\"><tspan x=\"536.557\" dy=\"0\">request mirror-write</tspan><tspan x=\"536.557\" dy=\"12.5\">token</tspan></text></g><g class=\"pn-element\"><path class=\"pn-shape pn-flow\" d=\"M 705 910 L 730 830\"></path><path class=\"pn-flow-arrow\" d=\"M 730 830 L 731.312 849.269 L 717.95 845.093 Z\"></path><text class=\"pn-flow-label\" x=\"791.688\" y=\"886.934\"><tspan x=\"791.688\" dy=\"0\">mint via container role</tspan><tspan x=\"791.688\" dy=\"12.5\">(IMDSv2 / STS)</tspan></text></g><g class=\"pn-element\"><path class=\"pn-shape pn-flow\" d=\"M 480 1055 L 1180 1065 L 1290 755\"></path><path class=\"pn-flow-arrow\" d=\"M 1290 755 L 1290.578 774.305 L 1277.384 769.623 Z\"></path><text class=\"pn-flow-label\" x=\"829.625\" y=\"1079.978\"><tspan x=\"829.625\" dy=\"0\">publish mirrored artifact</tspan><tspan x=\"829.625\" dy=\"12.5\">(minted write token)</tspan></text></g><g class=\"pn-element\"><path class=\"pn-shape pn-flow\" d=\"M 1110 520 L 1150 185\"></path><path class=\"pn-flow-arrow\" d=\"M 1150 185 L 1154.817 203.703 L 1140.915 202.043 Z\"></path><text class=\"pn-flow-label\" x=\"1180.473\" y=\"352.277\"><tspan x=\"1180.473\" dy=\"0\">pull-through</tspan><tspan x=\"1180.473\" dy=\"12.5\">(first-party)</tspan></text></g><g class=\"pn-element\"><path class=\"pn-shape pn-flow\" d=\"M 1110 520 L 1190 710\"></path><path class=\"pn-flow-arrow\" d=\"M 1190 710 L 1176.564 696.127 L 1189.466 690.694 Z\"></path><text class=\"pn-flow-label\" x=\"1218.416\" y=\"586.193\"><tspan x=\"1218.416\" dy=\"0\">pull-through (mirrored)</tspan></text></g><g class=\"pn-element\"><path class=\"pn-shape pn-flow\" d=\"M 825 785 L 920 980\"></path><path class=\"pn-flow-arrow\" d=\"M 920 980 L 905.824 966.884 L 918.409 960.752 Z\"></path><text class=\"pn-flow-label\" x=\"785.062\" y=\"858.527\"><tspan x=\"785.062\" dy=\"0\">mint token (container</tspan><tspan x=\"785.062\" dy=\"12.5\">role)</tspan></text></g><g class=\"pn-element\"><path class=\"pn-shape pn-flow\" d=\"M 1480 860 L 1050 980\"></path><path class=\"pn-flow-arrow\" d=\"M 1050 980 L 1065.456 968.419 L 1069.219 981.904 Z\"></path><text class=\"pn-flow-label\" x=\"1284.17\" y=\"982.441\"><tspan x=\"1284.17\" dy=\"0\">OSV Dataset for Supported</tspan><tspan x=\"1284.17\" dy=\"12.5\">Registries</tspan></text></g><g class=\"pn-element\"><path class=\"pn-shape pn-flow\" d=\"M 985 915 L 1010 770\"></path><path class=\"pn-flow-arrow\" d=\"M 1010 770 L 1013.84 788.928 L 1000.043 786.549 Z\"></path><text class=\"pn-flow-label\" x=\"1065.546\" y=\"854.232\"><tspan x=\"1065.546\" dy=\"0\">Push osv.db (SQLite)</tspan></text></g><g class=\"pn-element\"><path class=\"pn-shape pn-flow\" d=\"M 920 705 L 660 540\"></path><path class=\"pn-flow-arrow\" d=\"M 660 540 L 678.949 543.735 L 671.447 555.555 Z\"></path><text class=\"pn-flow-label\" x=\"811.607\" y=\"588.453\"><tspan x=\"811.607\" dy=\"0\">Download osv.db</tspan></text></g><g class=\"pn-element\"><path class=\"pn-shape pn-flow\" d=\"M 530 1165 L 1190 710\"></path><path class=\"pn-flow-arrow\" d=\"M 1190 710 L 1179.153 725.98 L 1171.207 714.453 Z\"></path><text class=\"pn-flow-label\" x=\"1054.773\" y=\"866.937\"><tspan x=\"1054.773\" dy=\"0\">delete pruned versions</tspan></text></g><g class=\"pn-element\"><path class=\"pn-shape pn-flow\" d=\"M 920 980 L 825 785\"></path><path class=\"pn-flow-arrow\" d=\"M 825 785 L 839.176 798.116 L 826.591 804.248 Z\"></path><text class=\"pn-flow-label\" x=\"896.88\" y=\"804.052\"><tspan x=\"896.88\" dy=\"0\">mint container</tspan><tspan x=\"896.88\" dy=\"12.5\">credentials</tspan></text></g><g class=\"pn-element\"><path class=\"pn-shape pn-flow\" d=\"M 660 540 L 920 705\"></path><path class=\"pn-flow-arrow\" d=\"M 920 705 L 901.051 701.265 L 908.553 689.445 Z\"></path><text class=\"pn-flow-label\" x=\"762.866\" y=\"665.256\"><tspan x=\"762.866\" dy=\"0\">poll &amp; download osv.db</tspan></text></g></svg>
+
+.pn-tone-low { fill: #4B6B50; stroke: #4B6B50; stroke-width: 3; }
+.pn-tone-low ~ .pn-badge-count, .pn-tone-low ~ .pn-badge-mark { fill: #FAF8F2; }
+.pn-tone-medium { fill: #46788A; stroke: #46788A; stroke-width: 3; }
+.pn-tone-medium ~ .pn-badge-count, .pn-tone-medium ~ .pn-badge-mark { fill: #FAF8F2; }
+.pn-tone-high { fill: #A85E1D; stroke: #A85E1D; stroke-width: 3; }
+.pn-tone-high ~ .pn-badge-count, .pn-tone-high ~ .pn-badge-mark { fill: #FAF8F2; }
+.pn-tone-critical { fill: #C14339; stroke: #C14339; stroke-width: 3; }
+.pn-tone-critical ~ .pn-badge-count, .pn-tone-critical ~ .pn-badge-mark { fill: #FAF8F2; }
+.pn-tone-neutral { fill: #756E63; stroke: #756E63; stroke-width: 3; }
+.pn-tone-neutral ~ .pn-badge-count, .pn-tone-neutral ~ .pn-badge-mark { fill: #FAF8F2; }</style><g transform=\"translate(240, 10)\"><g class=\"pn-element\"><rect class=\"pn-shape pn-boundary-box\" width=\"1180\" height=\"1180\"></rect><text class=\"pn-label\" x=\"590\" y=\"11\"><tspan x=\"590\" dy=\"0\">Operator trust zone (VPC / mesh): access edge enforced here</tspan></text></g></g><g transform=\"translate(-90, 640)\"><g class=\"pn-element\"><rect class=\"pn-shape pn-boundary-box\" width=\"240\" height=\"200\"></rect><text class=\"pn-label\" x=\"120\" y=\"11\"><tspan x=\"120\" dy=\"0\">Public internet (untrusted)</tspan></text></g></g><g transform=\"translate(1452, 755)\"><g class=\"pn-element\"><rect class=\"pn-shape pn-boundary-box\" width=\"240\" height=\"200\"></rect><text class=\"pn-label\" x=\"120\" y=\"11\"><tspan x=\"120\" dy=\"0\">Public internet (untrusted)</tspan></text></g></g><g transform=\"translate(10, 350)\"><g class=\"pn-element\"><rect class=\"pn-shape pn-actor\" width=\"170\" height=\"90\"></rect><text class=\"pn-label\" x=\"85\" y=\"38.75\"><tspan x=\"85\" dy=\"0\">npm client</tspan><tspan x=\"85\" dy=\"12.5\">(developer / CI)</tspan></text></g></g><g transform=\"translate(-60, 695)\"><g class=\"pn-element\"><rect class=\"pn-shape pn-actor\" width=\"180\" height=\"90\"></rect><text class=\"pn-label\" x=\"90\" y=\"45\"><tspan x=\"90\" dy=\"0\">Public npm registry</tspan></text></g></g><g transform=\"translate(635, 740)\"><g class=\"pn-element\"><rect class=\"pn-shape pn-actor\" width=\"190\" height=\"90\"></rect><text class=\"pn-label\" x=\"95\" y=\"45\"><tspan x=\"95\" dy=\"0\">AWS IMDS + STS</tspan></text></g></g><g transform=\"translate(530, 475)\"><g class=\"pn-element\"><circle class=\"pn-shape pn-process\" cx=\"65\" cy=\"65\" r=\"65\"></circle><text class=\"pn-label\" x=\"65\" y=\"65\"><tspan x=\"65\" dy=\"0\">Écluse proxy</tspan></text></g></g><g transform=\"translate(350, 990)\"><g class=\"pn-element\"><circle class=\"pn-shape pn-process\" cx=\"65\" cy=\"65\" r=\"65\"></circle><text class=\"pn-label\" x=\"65\" y=\"65\"><tspan x=\"65\" dy=\"0\">Mirror worker</tspan></text></g></g><g transform=\"translate(635, 910)\"><g class=\"pn-element\"><circle class=\"pn-shape pn-process\" cx=\"70\" cy=\"70\" r=\"70\"></circle><text class=\"pn-label\" x=\"70\" y=\"63.75\"><tspan x=\"70\" dy=\"0\">Credential</tspan><tspan x=\"70\" dy=\"12.5\">provider</tspan></text></g></g><g transform=\"translate(360, 110)\"><g class=\"pn-element\"><line class=\"pn-shape pn-store\" x1=\"0\" y1=\"0\" x2=\"180\" y2=\"0\"></line><line class=\"pn-shape pn-store\" x1=\"0\" y1=\"90\" x2=\"180\" y2=\"90\"></line><text class=\"pn-label\" x=\"90\" y=\"38.75\"><tspan x=\"90\" dy=\"0\">Metadata cache</tspan><tspan x=\"90\" dy=\"12.5\">(public-gated only)</tspan></text></g></g><g transform=\"translate(325, 810)\"><g class=\"pn-element\"><line class=\"pn-shape pn-store\" x1=\"0\" y1=\"0\" x2=\"180\" y2=\"0\"></line><line class=\"pn-shape pn-store\" x1=\"0\" y1=\"90\" x2=\"180\" y2=\"90\"></line><text class=\"pn-label\" x=\"90\" y=\"45\"><tspan x=\"90\" dy=\"0\">Mirror queue (SQS)</tspan></text></g></g><g transform=\"translate(910, 475)\"><g class=\"pn-element\"><line class=\"pn-shape pn-store\" x1=\"0\" y1=\"0\" x2=\"200\" y2=\"0\"></line><line class=\"pn-shape pn-store\" x1=\"0\" y1=\"90\" x2=\"200\" y2=\"90\"></line><text class=\"pn-label\" x=\"100\" y=\"38.75\"><tspan x=\"100\" dy=\"0\">Registry C:</tspan><tspan x=\"100\" dy=\"12.5\">pull-through read endpoint</tspan></text></g></g><g transform=\"translate(1150, 140)\"><g class=\"pn-element\"><line class=\"pn-shape pn-store\" x1=\"0\" y1=\"0\" x2=\"200\" y2=\"0\"></line><line class=\"pn-shape pn-store\" x1=\"0\" y1=\"90\" x2=\"200\" y2=\"90\"></line><text class=\"pn-label\" x=\"100\" y=\"38.75\"><tspan x=\"100\" dy=\"0\">Registry A:</tspan><tspan x=\"100\" dy=\"12.5\">private store (first-party)</tspan></text></g></g><g transform=\"translate(1190, 665)\"><g class=\"pn-element\"><line class=\"pn-shape pn-store\" x1=\"0\" y1=\"0\" x2=\"200\" y2=\"0\"></line><line class=\"pn-shape pn-store\" x1=\"0\" y1=\"90\" x2=\"200\" y2=\"90\"></line><text class=\"pn-label\" x=\"100\" y=\"38.75\"><tspan x=\"100\" dy=\"0\">Registry B:</tspan><tspan x=\"100\" dy=\"12.5\">mirror store (public-derived)</tspan></text><g class=\"pn-badge\" transform=\"translate(200, 0)\"><g class=\"pn-badge-primary\"><circle class=\"pn-tone-medium\" r=\"13\"></circle><text class=\"pn-badge-count\" y=\"-3\">1</text><text class=\"pn-badge-mark\" y=\"6\">M</text></g></g></g></g><g transform=\"translate(920, 915)\"><g class=\"pn-element\"><circle class=\"pn-shape pn-process\" cx=\"65\" cy=\"65\" r=\"65\"></circle><text class=\"pn-label\" x=\"65\" y=\"52.5\"><tspan x=\"65\" dy=\"0\">Écluse Pilot</tspan><tspan x=\"65\" dy=\"12.5\">(Ingestion</tspan><tspan x=\"65\" dy=\"12.5\">Pipeline)</tspan></text></g></g><g transform=\"translate(1477, 810)\"><g class=\"pn-element\"><rect class=\"pn-shape pn-actor\" width=\"170\" height=\"110\"></rect><text class=\"pn-label\" x=\"85\" y=\"55\"><tspan x=\"85\" dy=\"0\">OSV.dev</tspan></text></g></g><g transform=\"translate(920, 640)\"><g class=\"pn-element\"><line class=\"pn-shape pn-store\" x1=\"0\" y1=\"0\" x2=\"180\" y2=\"0\"></line><line class=\"pn-shape pn-store\" x1=\"0\" y1=\"130\" x2=\"180\" y2=\"130\"></line><text class=\"pn-label\" x=\"90\" y=\"65\"><tspan x=\"90\" dy=\"0\">S3 (OSV Datasets)</tspan></text></g></g><g transform=\"translate(400, 1100)\"><g class=\"pn-element\"><circle class=\"pn-shape pn-process\" cx=\"65\" cy=\"65\" r=\"65\"></circle><text class=\"pn-label\" x=\"65\" y=\"65\"><tspan x=\"65\" dy=\"0\">Écluse Dredger</tspan></text><g class=\"pn-badge\" transform=\"translate(130, 0)\"><g class=\"pn-badge-primary\"><circle class=\"pn-tone-critical\" r=\"13\"></circle><text class=\"pn-badge-count\" y=\"-3\">5</text><text class=\"pn-badge-mark\" y=\"6\">C</text></g></g></g></g><g class=\"pn-element\"><path class=\"pn-shape pn-flow\" d=\"M 180 395 L 530 540\"></path><path class=\"pn-flow-arrow\" d=\"M 530 540 L 510.691 539.578 L 516.05 526.644 Z\"></path><text class=\"pn-flow-label\" x=\"333.382\" y=\"507.18\"><tspan x=\"333.382\" dy=\"0\">npm read / publish</tspan><tspan x=\"333.382\" dy=\"12.5\">(passthrough CodeArtifact</tspan><tspan x=\"333.382\" dy=\"12.5\">token)</tspan></text><g class=\"pn-badge\" transform=\"translate(366.859, 438.874)\"><g class=\"pn-badge-primary\"><circle class=\"pn-tone-medium\" r=\"13\"></circle><text class=\"pn-badge-count\" y=\"-3\">1</text><text class=\"pn-badge-mark\" y=\"6\">M</text></g></g></g><g class=\"pn-element\"><path class=\"pn-shape pn-flow\" d=\"M 660 540 L 910 520\"></path><path class=\"pn-flow-arrow\" d=\"M 910 520 L 892.616 528.413 L 891.499 514.458 Z\"></path><text class=\"pn-flow-label\" x=\"787.43\" y=\"554.13\"><tspan x=\"787.43\" dy=\"0\">read packument / tarball</tspan><tspan x=\"787.43\" dy=\"12.5\">(caller token forwarded)</tspan></text></g><g class=\"pn-element\"><path class=\"pn-shape pn-flow\" d=\"M 595 475 L 450 200\"></path><path class=\"pn-flow-arrow\" d=\"M 450 200 L 464.587 212.657 L 452.203 219.187 Z\"></path><text class=\"pn-flow-label\" x=\"466.743\" y=\"360.649\"><tspan x=\"466.743\" dy=\"0\">cache public-gated</tspan><tspan x=\"466.743\" dy=\"12.5\">metadata</tspan></text></g><g class=\"pn-element\"><path class=\"pn-shape pn-flow\" d=\"M 530 540 L 120 740\"></path><path class=\"pn-flow-arrow\" d=\"M 120 740 L 133.109 725.817 L 139.247 738.4 Z\"></path><text class=\"pn-flow-label\" x=\"349.134\" y=\"676.975\"><tspan x=\"349.134\" dy=\"0\">anonymous packument /</tspan><tspan x=\"349.134\" dy=\"12.5\">tarball fetch (caller</tspan><tspan x=\"349.134\" dy=\"12.5\">token stripped)</tspan></text></g><g class=\"pn-element\"><path class=\"pn-shape pn-flow\" d=\"M 660 540 L 1150 185\"></path><path class=\"pn-flow-arrow\" d=\"M 1150 185 L 1139.53 201.229 L 1131.317 189.892 Z\"></path><text class=\"pn-flow-label\" x=\"937.62\" y=\"395.025\"><tspan x=\"937.62\" dy=\"0\">relay npm publish</tspan><tspan x=\"937.62\" dy=\"12.5\">(publisher token</tspan><tspan x=\"937.62\" dy=\"12.5\">forwarded)</tspan></text></g><g class=\"pn-element\"><path class=\"pn-shape pn-flow\" d=\"M 595 605 L 415 810\"></path><path class=\"pn-flow-arrow\" d=\"M 415 810 L 421.616 791.855 L 432.137 801.093 Z\"></path><text class=\"pn-flow-label\" x=\"460.951\" y=\"662.573\"><tspan x=\"460.951\" dy=\"0\">enqueue mirror job</tspan><tspan x=\"460.951\" dy=\"12.5\">(demand-driven)</tspan></text></g><g class=\"pn-element\"><path class=\"pn-shape pn-flow\" d=\"M 415 990 L 415 900\"></path><path class=\"pn-flow-arrow\" d=\"M 415 900 L 422 918 L 408 918 Z\"></path><text class=\"pn-flow-label\" x=\"453.75\" y=\"945\"><tspan x=\"453.75\" dy=\"0\">poll jobs</tspan></text></g><g class=\"pn-element\"><path class=\"pn-shape pn-flow\" d=\"M 350 1055 L 120 740\"></path><path class=\"pn-flow-arrow\" d=\"M 120 740 L 136.268 750.409 L 124.961 758.665 Z\"></path><text class=\"pn-flow-label\" x=\"163.979\" y=\"943.106\"><tspan x=\"163.979\" dy=\"0\">back-fill artifact fetch</tspan><tspan x=\"163.979\" dy=\"12.5\">(untrusted)</tspan></text></g><g class=\"pn-element\"><path class=\"pn-shape pn-flow\" d=\"M 480 1055 L 635 980\"></path><path class=\"pn-flow-arrow\" d=\"M 635 980 L 621.846 994.141 L 615.748 981.539 Z\"></path><text class=\"pn-flow-label\" x=\"536.557\" y=\"967.968\"><tspan x=\"536.557\" dy=\"0\">request mirror-write</tspan><tspan x=\"536.557\" dy=\"12.5\">token</tspan></text></g><g class=\"pn-element\"><path class=\"pn-shape pn-flow\" d=\"M 705 910 L 730 830\"></path><path class=\"pn-flow-arrow\" d=\"M 730 830 L 731.312 849.269 L 717.95 845.093 Z\"></path><text class=\"pn-flow-label\" x=\"791.688\" y=\"886.934\"><tspan x=\"791.688\" dy=\"0\">mint via container role</tspan><tspan x=\"791.688\" dy=\"12.5\">(IMDSv2 / STS)</tspan></text></g><g class=\"pn-element\"><path class=\"pn-shape pn-flow\" d=\"M 480 1055 L 1180 1065 L 1290 755\"></path><path class=\"pn-flow-arrow\" d=\"M 1290 755 L 1290.578 774.305 L 1277.384 769.623 Z\"></path><text class=\"pn-flow-label\" x=\"829.625\" y=\"1079.978\"><tspan x=\"829.625\" dy=\"0\">publish mirrored artifact</tspan><tspan x=\"829.625\" dy=\"12.5\">(minted write token)</tspan></text></g><g class=\"pn-element\"><path class=\"pn-shape pn-flow\" d=\"M 1110 520 L 1150 185\"></path><path class=\"pn-flow-arrow\" d=\"M 1150 185 L 1154.817 203.703 L 1140.915 202.043 Z\"></path><text class=\"pn-flow-label\" x=\"1180.473\" y=\"352.277\"><tspan x=\"1180.473\" dy=\"0\">pull-through</tspan><tspan x=\"1180.473\" dy=\"12.5\">(first-party)</tspan></text></g><g class=\"pn-element\"><path class=\"pn-shape pn-flow\" d=\"M 1110 520 L 1190 710\"></path><path class=\"pn-flow-arrow\" d=\"M 1190 710 L 1176.564 696.127 L 1189.466 690.694 Z\"></path><text class=\"pn-flow-label\" x=\"1218.416\" y=\"586.193\"><tspan x=\"1218.416\" dy=\"0\">pull-through (mirrored)</tspan></text></g><g class=\"pn-element\"><path class=\"pn-shape pn-flow\" d=\"M 825 785 L 920 980\"></path><path class=\"pn-flow-arrow\" d=\"M 920 980 L 905.824 966.884 L 918.409 960.752 Z\"></path><text class=\"pn-flow-label\" x=\"785.062\" y=\"858.527\"><tspan x=\"785.062\" dy=\"0\">mint token (container</tspan><tspan x=\"785.062\" dy=\"12.5\">role)</tspan></text></g><g class=\"pn-element\"><path class=\"pn-shape pn-flow\" d=\"M 1480 860 L 1050 980\"></path><path class=\"pn-flow-arrow\" d=\"M 1050 980 L 1065.456 968.419 L 1069.219 981.904 Z\"></path><text class=\"pn-flow-label\" x=\"1284.17\" y=\"982.441\"><tspan x=\"1284.17\" dy=\"0\">OSV Dataset for Supported</tspan><tspan x=\"1284.17\" dy=\"12.5\">Registries</tspan></text></g><g class=\"pn-element\"><path class=\"pn-shape pn-flow\" d=\"M 985 915 L 1010 770\"></path><path class=\"pn-flow-arrow\" d=\"M 1010 770 L 1013.84 788.928 L 1000.043 786.549 Z\"></path><text class=\"pn-flow-label\" x=\"1065.546\" y=\"854.232\"><tspan x=\"1065.546\" dy=\"0\">Push osv.db (SQLite)</tspan></text></g><g class=\"pn-element\"><path class=\"pn-shape pn-flow\" d=\"M 920 705 L 660 540\"></path><path class=\"pn-flow-arrow\" d=\"M 660 540 L 678.949 543.735 L 671.447 555.555 Z\"></path><text class=\"pn-flow-label\" x=\"811.607\" y=\"588.453\"><tspan x=\"811.607\" dy=\"0\">Download osv.db</tspan></text></g><g class=\"pn-element\"><path class=\"pn-shape pn-flow\" d=\"M 530 1165 L 1190 710\"></path><path class=\"pn-flow-arrow\" d=\"M 1190 710 L 1179.153 725.98 L 1171.207 714.453 Z\"></path><text class=\"pn-flow-label\" x=\"1054.773\" y=\"866.937\"><tspan x=\"1054.773\" dy=\"0\">delete pruned versions</tspan></text></g><g class=\"pn-element\"><path class=\"pn-shape pn-flow\" d=\"M 920 980 L 825 785\"></path><path class=\"pn-flow-arrow\" d=\"M 825 785 L 839.176 798.116 L 826.591 804.248 Z\"></path><text class=\"pn-flow-label\" x=\"896.88\" y=\"804.052\"><tspan x=\"896.88\" dy=\"0\">mint container</tspan><tspan x=\"896.88\" dy=\"12.5\">credentials</tspan></text></g><g class=\"pn-element\"><path class=\"pn-shape pn-flow\" d=\"M 660 540 L 920 705\"></path><path class=\"pn-flow-arrow\" d=\"M 920 705 L 901.051 701.265 L 908.553 689.445 Z\"></path><text class=\"pn-flow-label\" x=\"762.866\" y=\"665.256\"><tspan x=\"762.866\" dy=\"0\">poll &amp; download osv.db</tspan></text></g></svg>
 "), format: "svg", fit: "contain", width: 100%, height: 100%)
 ],
 )
@@ -120,40 +131,40 @@ align(center + horizon)[
 
 #table(columns: 6,
 [#"Number"], [#"Title"], [#"Elements"], [#"Category"], [#"Severity"], [#"Status"],
-[#"1"], [#"Forwarded caller credentials aggregated in proxy memory"], [#"Écluse proxy"], [#"Information disclosure (STRIDE)"], [#"High"], [#"Mitigated"],
-[#"2"], [#"Chokepoint exhaustion via pathological upstream payload"], [#"Écluse proxy"], [#"Denial of service (STRIDE)"], [#"Medium"], [#"Mitigated"],
-[#"3"], [#"Off-by-default edge auth assumes a sound network boundary"], [#"npm read / publish (passthrough CodeArtifact token)"], [#"Spoofing (STRIDE)"], [#"Medium"], [#"Mitigated"],
-[#"4"], [#"Caller credential leak to the public upstream"], [#"anonymous packument / tarball fetch (caller token stripped)"], [#"Information disclosure (STRIDE)"], [#"High"], [#"Mitigated"],
-[#"5"], [#"SSRF via crafted identifier or upstream-declared dist.tarball"], [#"anonymous packument / tarball fetch (caller token stripped)"], [#"Elevation of privilege (STRIDE)"], [#"High"], [#"Mitigated"],
-[#"6"], [#"Package shadowing via first-party publish"], [#"relay npm publish (publisher token forwarded)"], [#"Tampering (STRIDE)"], [#"High"], [#"Mitigated"],
-[#"7"], [#"Mirror-write credential is a standing privilege over the trusted store"], [#"publish mirrored artifact (minted write token)"], [#"Elevation of privilege (STRIDE)"], [#"High"], [#"Mitigated"],
-[#"8"], [#"SSRF to the instance-metadata credential endpoint"], [#"mint via container role (IMDSv2 / STS)"], [#"Elevation of privilege (STRIDE)"], [#"Medium"], [#"Mitigated"],
-[#"9"], [#"Cross-client disclosure of a private package via shared cache (#115)"], [#"Metadata cache (public-gated only)"], [#"Information disclosure (STRIDE)"], [#"High"], [#"Mitigated"],
-[#"10"], [#"Registry collapse erases provenance and per-store policy"], [#"Registry B: mirror store (public-derived)"], [#"Repudiation (STRIDE)"], [#"Medium"], [#"Mitigated"],
-[#"11"], [#"Undetected artifact substitution across upstreams"], [#"Registry C: pull-through read endpoint"], [#"Tampering (STRIDE)"], [#"High"], [#"Mitigated"],
-[#"12"], [#"Upstream registry forges its own server-asserted metadata (e.g. a backdated publish time)"], [#"Public npm registry"], [#"Tampering (STRIDE)"], [#"High"], [#"Accepted risk"],
-[#"13"], [#"Malicious mirrored version persists and is served as trusted (no automatic post-ingestion revocation)"], [#"Registry B: mirror store (public-derived)"], [#"Tampering (STRIDE)"], [#"Medium"], [#"Open"],
-[#"14"], [#"SSRF via the worker back-fill fetch (a blind sink)"], [#"back-fill artifact fetch (untrusted)"], [#"Elevation of privilege (STRIDE)"], [#"Low"], [#"Mitigated"],
-[#"15"], [#"Private-upstream aggregation admits the public registry, bypassing the gate"], [#"Registry C: pull-through read endpoint"], [#"Tampering (STRIDE)"], [#"High"], [#"Mitigated"],
-[#"16"], [#"Connect-time reachability/timing oracle for an attacker-controlled allowlisted DNS"], [#"anonymous packument / tarball fetch (caller token stripped)"], [#"Information disclosure (STRIDE)"], [#"Low"], [#"Accepted risk"],
-[#"17"], [#"Pilot container-role privilege escalation"], [#"Écluse Pilot (Ingestion Pipeline)"], [#"Elevation of privilege (STRIDE)"], [#"High"], [#"Mitigated"],
-[#"18"], [#"Proxy compromised via tampered OSV database"], [#"Écluse proxy"], [#"Tampering (STRIDE)"], [#"High"], [#"Mitigated"],
-[#"20"], [#"Pathological OSV Payload (DoS)"], [#"Écluse Pilot (Ingestion Pipeline)"], [#"Denial of service (STRIDE)"], [#"Medium"], [#"Mitigated"],
-[#"21"], [#"Massive Purge DoS"], [#"Écluse Dredger"], [#"Denial of service (STRIDE)"], [#"Medium"], [#"Open"],
-[#"22"], [#"Mirror-write credential can be sent to a misconfigured registry target"], [#"publish mirrored artifact (minted write token)"], [#"Information disclosure (STRIDE)"], [#"Medium"], [#"Mitigated"],
-[#"23"], [#"Package-name spoofing via invisible characters"], [#"npm read / publish (passthrough CodeArtifact token)"], [#"Spoofing (STRIDE)"], [#"Medium"], [#"Mitigated"],
-[#"24"], [#"Package-name typosquatting within the permitted character set"], [#"npm read / publish (passthrough CodeArtifact token)"], [#"Spoofing (STRIDE)"], [#"Medium"], [#"Open"],
-[#"25"], [#"Dredger inappropriately purges valid packages"], [#"Écluse Dredger"], [#"Denial of service (STRIDE)"], [#"Medium"], [#"Open"],
-[#"26"], [#"Dredger container-role privilege escalation"], [#"Écluse Dredger"], [#"Elevation of privilege (STRIDE)"], [#"High"], [#"Open"],
-[#"27"], [#"Poisoned OSV payload exploits parser"], [#"Écluse Pilot (Ingestion Pipeline)"], [#"Denial of service (STRIDE)"], [#"Medium"], [#"Mitigated"],
-[#"28"], [#"First-party data loss from collapsed registries"], [#"Écluse Dredger"], [#"Denial of service (STRIDE)"], [#"High"], [#"Open"],
-[#"101"], [#"Oracle Blackout / Supply Chain DoS via OSV.dev compromise"], [#"Écluse Pilot (Ingestion Pipeline)"], [#"Spoofing (STRIDE)"], [#"High"], [#"Accepted risk"],
-[#"102"], [#"Accidental permanent deletion of registry data"], [#"Écluse Dredger"], [#"Elevation of privilege (STRIDE)"], [#"Critical"], [#"Open"],
+[#"1"], [#"Forwarded caller credentials aggregated in proxy memory"], [#"Écluse proxy"], [#"Information disclosure (STRIDE)"], [#saer-badge("High", rgb("#A85E1D"))], [#saer-badge("Mitigated", rgb("#4B6B50"))],
+[#"2"], [#"Chokepoint exhaustion via pathological upstream payload"], [#"Écluse proxy"], [#"Denial of service (STRIDE)"], [#saer-badge("Medium", rgb("#46788A"))], [#saer-badge("Mitigated", rgb("#4B6B50"))],
+[#"3"], [#"Off-by-default edge auth assumes a sound network boundary"], [#"npm read / publish (passthrough CodeArtifact token)"], [#"Spoofing (STRIDE)"], [#saer-badge("Medium", rgb("#46788A"))], [#saer-badge("Mitigated", rgb("#4B6B50"))],
+[#"4"], [#"Caller credential leak to the public upstream"], [#"anonymous packument / tarball fetch (caller token stripped)"], [#"Information disclosure (STRIDE)"], [#saer-badge("High", rgb("#A85E1D"))], [#saer-badge("Mitigated", rgb("#4B6B50"))],
+[#"5"], [#"SSRF via crafted identifier or upstream-declared dist.tarball"], [#"anonymous packument / tarball fetch (caller token stripped)"], [#"Elevation of privilege (STRIDE)"], [#saer-badge("High", rgb("#A85E1D"))], [#saer-badge("Mitigated", rgb("#4B6B50"))],
+[#"6"], [#"Package shadowing via first-party publish"], [#"relay npm publish (publisher token forwarded)"], [#"Tampering (STRIDE)"], [#saer-badge("High", rgb("#A85E1D"))], [#saer-badge("Mitigated", rgb("#4B6B50"))],
+[#"7"], [#"Mirror-write credential is a standing privilege over the trusted store"], [#"publish mirrored artifact (minted write token)"], [#"Elevation of privilege (STRIDE)"], [#saer-badge("High", rgb("#A85E1D"))], [#saer-badge("Mitigated", rgb("#4B6B50"))],
+[#"8"], [#"SSRF to the instance-metadata credential endpoint"], [#"mint via container role (IMDSv2 / STS)"], [#"Elevation of privilege (STRIDE)"], [#saer-badge("Medium", rgb("#46788A"))], [#saer-badge("Mitigated", rgb("#4B6B50"))],
+[#"9"], [#"Cross-client disclosure of a private package via shared cache (#115)"], [#"Metadata cache (public-gated only)"], [#"Information disclosure (STRIDE)"], [#saer-badge("High", rgb("#A85E1D"))], [#saer-badge("Mitigated", rgb("#4B6B50"))],
+[#"10"], [#"Registry collapse erases provenance and per-store policy"], [#"Registry B: mirror store (public-derived)"], [#"Repudiation (STRIDE)"], [#saer-badge("Medium", rgb("#46788A"))], [#saer-badge("Mitigated", rgb("#4B6B50"))],
+[#"11"], [#"Undetected artifact substitution across upstreams"], [#"Registry C: pull-through read endpoint"], [#"Tampering (STRIDE)"], [#saer-badge("High", rgb("#A85E1D"))], [#saer-badge("Mitigated", rgb("#4B6B50"))],
+[#"12"], [#"Upstream registry forges its own server-asserted metadata (e.g. a backdated publish time)"], [#"Public npm registry"], [#"Tampering (STRIDE)"], [#saer-badge("High", rgb("#A85E1D"))], [#saer-badge("Accepted risk", rgb("#A85E1D"))],
+[#"13"], [#"Malicious mirrored version persists and is served as trusted (no automatic post-ingestion revocation)"], [#"Registry B: mirror store (public-derived)"], [#"Tampering (STRIDE)"], [#saer-badge("Medium", rgb("#46788A"))], [#saer-badge("Open", rgb("#C14339"))],
+[#"14"], [#"SSRF via the worker back-fill fetch (a blind sink)"], [#"back-fill artifact fetch (untrusted)"], [#"Elevation of privilege (STRIDE)"], [#saer-badge("Low", rgb("#4B6B50"))], [#saer-badge("Mitigated", rgb("#4B6B50"))],
+[#"15"], [#"Private-upstream aggregation admits the public registry, bypassing the gate"], [#"Registry C: pull-through read endpoint"], [#"Tampering (STRIDE)"], [#saer-badge("High", rgb("#A85E1D"))], [#saer-badge("Mitigated", rgb("#4B6B50"))],
+[#"16"], [#"Connect-time reachability/timing oracle for an attacker-controlled allowlisted DNS"], [#"anonymous packument / tarball fetch (caller token stripped)"], [#"Information disclosure (STRIDE)"], [#saer-badge("Low", rgb("#4B6B50"))], [#saer-badge("Accepted risk", rgb("#A85E1D"))],
+[#"17"], [#"Pilot container-role privilege escalation"], [#"Écluse Pilot (Ingestion Pipeline)"], [#"Elevation of privilege (STRIDE)"], [#saer-badge("High", rgb("#A85E1D"))], [#saer-badge("Mitigated", rgb("#4B6B50"))],
+[#"18"], [#"Proxy compromised via tampered OSV database"], [#"Écluse proxy"], [#"Tampering (STRIDE)"], [#saer-badge("High", rgb("#A85E1D"))], [#saer-badge("Mitigated", rgb("#4B6B50"))],
+[#"20"], [#"Pathological OSV Payload (DoS)"], [#"Écluse Pilot (Ingestion Pipeline)"], [#"Denial of service (STRIDE)"], [#saer-badge("Medium", rgb("#46788A"))], [#saer-badge("Mitigated", rgb("#4B6B50"))],
+[#"21"], [#"Massive Purge DoS"], [#"Écluse Dredger"], [#"Denial of service (STRIDE)"], [#saer-badge("Medium", rgb("#46788A"))], [#saer-badge("Open", rgb("#C14339"))],
+[#"22"], [#"Mirror-write credential can be sent to a misconfigured registry target"], [#"publish mirrored artifact (minted write token)"], [#"Information disclosure (STRIDE)"], [#saer-badge("Medium", rgb("#46788A"))], [#saer-badge("Mitigated", rgb("#4B6B50"))],
+[#"23"], [#"Package-name spoofing via invisible characters"], [#"npm read / publish (passthrough CodeArtifact token)"], [#"Spoofing (STRIDE)"], [#saer-badge("Medium", rgb("#46788A"))], [#saer-badge("Mitigated", rgb("#4B6B50"))],
+[#"24"], [#"Package-name typosquatting within the permitted character set"], [#"npm read / publish (passthrough CodeArtifact token)"], [#"Spoofing (STRIDE)"], [#saer-badge("Medium", rgb("#46788A"))], [#saer-badge("Open", rgb("#C14339"))],
+[#"25"], [#"Dredger inappropriately purges valid packages"], [#"Écluse Dredger"], [#"Denial of service (STRIDE)"], [#saer-badge("Medium", rgb("#46788A"))], [#saer-badge("Open", rgb("#C14339"))],
+[#"26"], [#"Dredger container-role privilege escalation"], [#"Écluse Dredger"], [#"Elevation of privilege (STRIDE)"], [#saer-badge("High", rgb("#A85E1D"))], [#saer-badge("Open", rgb("#C14339"))],
+[#"27"], [#"Poisoned OSV payload exploits parser"], [#"Écluse Pilot (Ingestion Pipeline)"], [#"Denial of service (STRIDE)"], [#saer-badge("Medium", rgb("#46788A"))], [#saer-badge("Mitigated", rgb("#4B6B50"))],
+[#"28"], [#"First-party data loss from collapsed registries"], [#"Écluse Dredger"], [#"Denial of service (STRIDE)"], [#saer-badge("High", rgb("#A85E1D"))], [#saer-badge("Open", rgb("#C14339"))],
+[#"101"], [#"Oracle Blackout / Supply Chain DoS via OSV.dev compromise"], [#"Écluse Pilot (Ingestion Pipeline)"], [#"Spoofing (STRIDE)"], [#saer-badge("High", rgb("#A85E1D"))], [#saer-badge("Accepted risk", rgb("#A85E1D"))],
+[#"102"], [#"Accidental permanent deletion of registry data"], [#"Écluse Dredger"], [#"Elevation of privilege (STRIDE)"], [#saer-badge("Critical", rgb("#C14339"))], [#saer-badge("Open", rgb("#C14339"))],
 )
 
 #heading(level: 2)[#"Threat 1: Forwarded caller credentials aggregated in proxy memory"]
 
-#list([#strong[#"Elements"]#": Écluse proxy"], [#strong[#"Category"]#": Information disclosure (STRIDE)"], [#strong[#"Severity"]#": High"], [#strong[#"Status"]#": Mitigated"])
+#list([#strong[#"Elements"]#": "#"Écluse proxy"], [#strong[#"Category"]#": "#"Information disclosure (STRIDE)"], [#strong[#"Severity"]#": "#saer-badge("High", rgb("#A85E1D"))], [#strong[#"Status"]#": "#saer-badge("Mitigated", rgb("#4B6B50"))])
 
 #strong[#"Description"]
 
@@ -165,7 +176,7 @@ align(center + horizon)[
 
 #heading(level: 2)[#"Threat 2: Chokepoint exhaustion via pathological upstream payload"]
 
-#list([#strong[#"Elements"]#": Écluse proxy"], [#strong[#"Category"]#": Denial of service (STRIDE)"], [#strong[#"Severity"]#": Medium"], [#strong[#"Status"]#": Mitigated"])
+#list([#strong[#"Elements"]#": "#"Écluse proxy"], [#strong[#"Category"]#": "#"Denial of service (STRIDE)"], [#strong[#"Severity"]#": "#saer-badge("Medium", rgb("#46788A"))], [#strong[#"Status"]#": "#saer-badge("Mitigated", rgb("#4B6B50"))])
 
 #strong[#"Description"]
 
@@ -177,7 +188,7 @@ align(center + horizon)[
 
 #heading(level: 2)[#"Threat 3: Off-by-default edge auth assumes a sound network boundary"]
 
-#list([#strong[#"Elements"]#": npm read / publish (passthrough CodeArtifact token)"], [#strong[#"Category"]#": Spoofing (STRIDE)"], [#strong[#"Severity"]#": Medium"], [#strong[#"Status"]#": Mitigated"])
+#list([#strong[#"Elements"]#": "#"npm read / publish (passthrough CodeArtifact token)"], [#strong[#"Category"]#": "#"Spoofing (STRIDE)"], [#strong[#"Severity"]#": "#saer-badge("Medium", rgb("#46788A"))], [#strong[#"Status"]#": "#saer-badge("Mitigated", rgb("#4B6B50"))])
 
 #strong[#"Description"]
 
@@ -189,7 +200,7 @@ align(center + horizon)[
 
 #heading(level: 2)[#"Threat 4: Caller credential leak to the public upstream"]
 
-#list([#strong[#"Elements"]#": anonymous packument / tarball fetch (caller token stripped)"], [#strong[#"Category"]#": Information disclosure (STRIDE)"], [#strong[#"Severity"]#": High"], [#strong[#"Status"]#": Mitigated"])
+#list([#strong[#"Elements"]#": "#"anonymous packument / tarball fetch (caller token stripped)"], [#strong[#"Category"]#": "#"Information disclosure (STRIDE)"], [#strong[#"Severity"]#": "#saer-badge("High", rgb("#A85E1D"))], [#strong[#"Status"]#": "#saer-badge("Mitigated", rgb("#4B6B50"))])
 
 #strong[#"Description"]
 
@@ -201,7 +212,7 @@ align(center + horizon)[
 
 #heading(level: 2)[#"Threat 5: SSRF via crafted identifier or upstream-declared dist.tarball"]
 
-#list([#strong[#"Elements"]#": anonymous packument / tarball fetch (caller token stripped)"], [#strong[#"Category"]#": Elevation of privilege (STRIDE)"], [#strong[#"Severity"]#": High"], [#strong[#"Status"]#": Mitigated"])
+#list([#strong[#"Elements"]#": "#"anonymous packument / tarball fetch (caller token stripped)"], [#strong[#"Category"]#": "#"Elevation of privilege (STRIDE)"], [#strong[#"Severity"]#": "#saer-badge("High", rgb("#A85E1D"))], [#strong[#"Status"]#": "#saer-badge("Mitigated", rgb("#4B6B50"))])
 
 #strong[#"Description"]
 
@@ -213,7 +224,7 @@ align(center + horizon)[
 
 #heading(level: 2)[#"Threat 6: Package shadowing via first-party publish"]
 
-#list([#strong[#"Elements"]#": relay npm publish (publisher token forwarded)"], [#strong[#"Category"]#": Tampering (STRIDE)"], [#strong[#"Severity"]#": High"], [#strong[#"Status"]#": Mitigated"])
+#list([#strong[#"Elements"]#": "#"relay npm publish (publisher token forwarded)"], [#strong[#"Category"]#": "#"Tampering (STRIDE)"], [#strong[#"Severity"]#": "#saer-badge("High", rgb("#A85E1D"))], [#strong[#"Status"]#": "#saer-badge("Mitigated", rgb("#4B6B50"))])
 
 #strong[#"Description"]
 
@@ -225,7 +236,7 @@ align(center + horizon)[
 
 #heading(level: 2)[#"Threat 7: Mirror-write credential is a standing privilege over the trusted store"]
 
-#list([#strong[#"Elements"]#": publish mirrored artifact (minted write token)"], [#strong[#"Category"]#": Elevation of privilege (STRIDE)"], [#strong[#"Severity"]#": High"], [#strong[#"Status"]#": Mitigated"])
+#list([#strong[#"Elements"]#": "#"publish mirrored artifact (minted write token)"], [#strong[#"Category"]#": "#"Elevation of privilege (STRIDE)"], [#strong[#"Severity"]#": "#saer-badge("High", rgb("#A85E1D"))], [#strong[#"Status"]#": "#saer-badge("Mitigated", rgb("#4B6B50"))])
 
 #strong[#"Description"]
 
@@ -237,7 +248,7 @@ align(center + horizon)[
 
 #heading(level: 2)[#"Threat 8: SSRF to the instance-metadata credential endpoint"]
 
-#list([#strong[#"Elements"]#": mint via container role (IMDSv2 / STS)"], [#strong[#"Category"]#": Elevation of privilege (STRIDE)"], [#strong[#"Severity"]#": Medium"], [#strong[#"Status"]#": Mitigated"])
+#list([#strong[#"Elements"]#": "#"mint via container role (IMDSv2 / STS)"], [#strong[#"Category"]#": "#"Elevation of privilege (STRIDE)"], [#strong[#"Severity"]#": "#saer-badge("Medium", rgb("#46788A"))], [#strong[#"Status"]#": "#saer-badge("Mitigated", rgb("#4B6B50"))])
 
 #strong[#"Description"]
 
@@ -249,7 +260,7 @@ align(center + horizon)[
 
 #heading(level: 2)[#"Threat 9: Cross-client disclosure of a private package via shared cache (#115)"]
 
-#list([#strong[#"Elements"]#": Metadata cache (public-gated only)"], [#strong[#"Category"]#": Information disclosure (STRIDE)"], [#strong[#"Severity"]#": High"], [#strong[#"Status"]#": Mitigated"])
+#list([#strong[#"Elements"]#": "#"Metadata cache (public-gated only)"], [#strong[#"Category"]#": "#"Information disclosure (STRIDE)"], [#strong[#"Severity"]#": "#saer-badge("High", rgb("#A85E1D"))], [#strong[#"Status"]#": "#saer-badge("Mitigated", rgb("#4B6B50"))])
 
 #strong[#"Description"]
 
@@ -261,7 +272,7 @@ align(center + horizon)[
 
 #heading(level: 2)[#"Threat 10: Registry collapse erases provenance and per-store policy"]
 
-#list([#strong[#"Elements"]#": Registry B: mirror store (public-derived)"], [#strong[#"Category"]#": Repudiation (STRIDE)"], [#strong[#"Severity"]#": Medium"], [#strong[#"Status"]#": Mitigated"])
+#list([#strong[#"Elements"]#": "#"Registry B: mirror store (public-derived)"], [#strong[#"Category"]#": "#"Repudiation (STRIDE)"], [#strong[#"Severity"]#": "#saer-badge("Medium", rgb("#46788A"))], [#strong[#"Status"]#": "#saer-badge("Mitigated", rgb("#4B6B50"))])
 
 #strong[#"Description"]
 
@@ -273,7 +284,7 @@ align(center + horizon)[
 
 #heading(level: 2)[#"Threat 11: Undetected artifact substitution across upstreams"]
 
-#list([#strong[#"Elements"]#": Registry C: pull-through read endpoint"], [#strong[#"Category"]#": Tampering (STRIDE)"], [#strong[#"Severity"]#": High"], [#strong[#"Status"]#": Mitigated"])
+#list([#strong[#"Elements"]#": "#"Registry C: pull-through read endpoint"], [#strong[#"Category"]#": "#"Tampering (STRIDE)"], [#strong[#"Severity"]#": "#saer-badge("High", rgb("#A85E1D"))], [#strong[#"Status"]#": "#saer-badge("Mitigated", rgb("#4B6B50"))])
 
 #strong[#"Description"]
 
@@ -285,7 +296,7 @@ align(center + horizon)[
 
 #heading(level: 2)[#"Threat 12: Upstream registry forges its own server-asserted metadata (e.g. a backdated publish time)"]
 
-#list([#strong[#"Elements"]#": Public npm registry"], [#strong[#"Category"]#": Tampering (STRIDE)"], [#strong[#"Severity"]#": High"], [#strong[#"Status"]#": Accepted risk"])
+#list([#strong[#"Elements"]#": "#"Public npm registry"], [#strong[#"Category"]#": "#"Tampering (STRIDE)"], [#strong[#"Severity"]#": "#saer-badge("High", rgb("#A85E1D"))], [#strong[#"Status"]#": "#saer-badge("Accepted risk", rgb("#A85E1D"))])
 
 #strong[#"Description"]
 
@@ -297,7 +308,7 @@ align(center + horizon)[
 
 #heading(level: 2)[#"Threat 13: Malicious mirrored version persists and is served as trusted (no automatic post-ingestion revocation)"]
 
-#list([#strong[#"Elements"]#": Registry B: mirror store (public-derived)"], [#strong[#"Category"]#": Tampering (STRIDE)"], [#strong[#"Severity"]#": Medium"], [#strong[#"Status"]#": Open"])
+#list([#strong[#"Elements"]#": "#"Registry B: mirror store (public-derived)"], [#strong[#"Category"]#": "#"Tampering (STRIDE)"], [#strong[#"Severity"]#": "#saer-badge("Medium", rgb("#46788A"))], [#strong[#"Status"]#": "#saer-badge("Open", rgb("#C14339"))])
 
 #strong[#"Description"]
 
@@ -309,7 +320,7 @@ align(center + horizon)[
 
 #heading(level: 2)[#"Threat 14: SSRF via the worker back-fill fetch (a blind sink)"]
 
-#list([#strong[#"Elements"]#": back-fill artifact fetch (untrusted)"], [#strong[#"Category"]#": Elevation of privilege (STRIDE)"], [#strong[#"Severity"]#": Low"], [#strong[#"Status"]#": Mitigated"])
+#list([#strong[#"Elements"]#": "#"back-fill artifact fetch (untrusted)"], [#strong[#"Category"]#": "#"Elevation of privilege (STRIDE)"], [#strong[#"Severity"]#": "#saer-badge("Low", rgb("#4B6B50"))], [#strong[#"Status"]#": "#saer-badge("Mitigated", rgb("#4B6B50"))])
 
 #strong[#"Description"]
 
@@ -321,7 +332,7 @@ align(center + horizon)[
 
 #heading(level: 2)[#"Threat 15: Private-upstream aggregation admits the public registry, bypassing the gate"]
 
-#list([#strong[#"Elements"]#": Registry C: pull-through read endpoint"], [#strong[#"Category"]#": Tampering (STRIDE)"], [#strong[#"Severity"]#": High"], [#strong[#"Status"]#": Mitigated"])
+#list([#strong[#"Elements"]#": "#"Registry C: pull-through read endpoint"], [#strong[#"Category"]#": "#"Tampering (STRIDE)"], [#strong[#"Severity"]#": "#saer-badge("High", rgb("#A85E1D"))], [#strong[#"Status"]#": "#saer-badge("Mitigated", rgb("#4B6B50"))])
 
 #strong[#"Description"]
 
@@ -333,7 +344,7 @@ align(center + horizon)[
 
 #heading(level: 2)[#"Threat 16: Connect-time reachability/timing oracle for an attacker-controlled allowlisted DNS"]
 
-#list([#strong[#"Elements"]#": anonymous packument / tarball fetch (caller token stripped)"], [#strong[#"Category"]#": Information disclosure (STRIDE)"], [#strong[#"Severity"]#": Low"], [#strong[#"Status"]#": Accepted risk"])
+#list([#strong[#"Elements"]#": "#"anonymous packument / tarball fetch (caller token stripped)"], [#strong[#"Category"]#": "#"Information disclosure (STRIDE)"], [#strong[#"Severity"]#": "#saer-badge("Low", rgb("#4B6B50"))], [#strong[#"Status"]#": "#saer-badge("Accepted risk", rgb("#A85E1D"))])
 
 #strong[#"Description"]
 
@@ -345,7 +356,7 @@ align(center + horizon)[
 
 #heading(level: 2)[#"Threat 17: Pilot container-role privilege escalation"]
 
-#list([#strong[#"Elements"]#": Écluse Pilot (Ingestion Pipeline)"], [#strong[#"Category"]#": Elevation of privilege (STRIDE)"], [#strong[#"Severity"]#": High"], [#strong[#"Status"]#": Mitigated"])
+#list([#strong[#"Elements"]#": "#"Écluse Pilot (Ingestion Pipeline)"], [#strong[#"Category"]#": "#"Elevation of privilege (STRIDE)"], [#strong[#"Severity"]#": "#saer-badge("High", rgb("#A85E1D"))], [#strong[#"Status"]#": "#saer-badge("Mitigated", rgb("#4B6B50"))])
 
 #strong[#"Description"]
 
@@ -357,7 +368,7 @@ align(center + horizon)[
 
 #heading(level: 2)[#"Threat 18: Proxy compromised via tampered OSV database"]
 
-#list([#strong[#"Elements"]#": Écluse proxy"], [#strong[#"Category"]#": Tampering (STRIDE)"], [#strong[#"Severity"]#": High"], [#strong[#"Status"]#": Mitigated"])
+#list([#strong[#"Elements"]#": "#"Écluse proxy"], [#strong[#"Category"]#": "#"Tampering (STRIDE)"], [#strong[#"Severity"]#": "#saer-badge("High", rgb("#A85E1D"))], [#strong[#"Status"]#": "#saer-badge("Mitigated", rgb("#4B6B50"))])
 
 #strong[#"Description"]
 
@@ -369,7 +380,7 @@ align(center + horizon)[
 
 #heading(level: 2)[#"Threat 20: Pathological OSV Payload (DoS)"]
 
-#list([#strong[#"Elements"]#": Écluse Pilot (Ingestion Pipeline)"], [#strong[#"Category"]#": Denial of service (STRIDE)"], [#strong[#"Severity"]#": Medium"], [#strong[#"Status"]#": Mitigated"])
+#list([#strong[#"Elements"]#": "#"Écluse Pilot (Ingestion Pipeline)"], [#strong[#"Category"]#": "#"Denial of service (STRIDE)"], [#strong[#"Severity"]#": "#saer-badge("Medium", rgb("#46788A"))], [#strong[#"Status"]#": "#saer-badge("Mitigated", rgb("#4B6B50"))])
 
 #strong[#"Description"]
 
@@ -381,7 +392,7 @@ align(center + horizon)[
 
 #heading(level: 2)[#"Threat 21: Massive Purge DoS"]
 
-#list([#strong[#"Elements"]#": Écluse Dredger"], [#strong[#"Category"]#": Denial of service (STRIDE)"], [#strong[#"Severity"]#": Medium"], [#strong[#"Status"]#": Open"])
+#list([#strong[#"Elements"]#": "#"Écluse Dredger"], [#strong[#"Category"]#": "#"Denial of service (STRIDE)"], [#strong[#"Severity"]#": "#saer-badge("Medium", rgb("#46788A"))], [#strong[#"Status"]#": "#saer-badge("Open", rgb("#C14339"))])
 
 #strong[#"Description"]
 
@@ -393,7 +404,7 @@ align(center + horizon)[
 
 #heading(level: 2)[#"Threat 22: Mirror-write credential can be sent to a misconfigured registry target"]
 
-#list([#strong[#"Elements"]#": publish mirrored artifact (minted write token)"], [#strong[#"Category"]#": Information disclosure (STRIDE)"], [#strong[#"Severity"]#": Medium"], [#strong[#"Status"]#": Mitigated"])
+#list([#strong[#"Elements"]#": "#"publish mirrored artifact (minted write token)"], [#strong[#"Category"]#": "#"Information disclosure (STRIDE)"], [#strong[#"Severity"]#": "#saer-badge("Medium", rgb("#46788A"))], [#strong[#"Status"]#": "#saer-badge("Mitigated", rgb("#4B6B50"))])
 
 #strong[#"Description"]
 
@@ -405,7 +416,7 @@ align(center + horizon)[
 
 #heading(level: 2)[#"Threat 23: Package-name spoofing via invisible characters"]
 
-#list([#strong[#"Elements"]#": npm read / publish (passthrough CodeArtifact token)"], [#strong[#"Category"]#": Spoofing (STRIDE)"], [#strong[#"Severity"]#": Medium"], [#strong[#"Status"]#": Mitigated"])
+#list([#strong[#"Elements"]#": "#"npm read / publish (passthrough CodeArtifact token)"], [#strong[#"Category"]#": "#"Spoofing (STRIDE)"], [#strong[#"Severity"]#": "#saer-badge("Medium", rgb("#46788A"))], [#strong[#"Status"]#": "#saer-badge("Mitigated", rgb("#4B6B50"))])
 
 #strong[#"Description"]
 
@@ -417,7 +428,7 @@ align(center + horizon)[
 
 #heading(level: 2)[#"Threat 24: Package-name typosquatting within the permitted character set"]
 
-#list([#strong[#"Elements"]#": npm read / publish (passthrough CodeArtifact token)"], [#strong[#"Category"]#": Spoofing (STRIDE)"], [#strong[#"Severity"]#": Medium"], [#strong[#"Status"]#": Open"])
+#list([#strong[#"Elements"]#": "#"npm read / publish (passthrough CodeArtifact token)"], [#strong[#"Category"]#": "#"Spoofing (STRIDE)"], [#strong[#"Severity"]#": "#saer-badge("Medium", rgb("#46788A"))], [#strong[#"Status"]#": "#saer-badge("Open", rgb("#C14339"))])
 
 #strong[#"Description"]
 
@@ -429,7 +440,7 @@ align(center + horizon)[
 
 #heading(level: 2)[#"Threat 25: Dredger inappropriately purges valid packages"]
 
-#list([#strong[#"Elements"]#": Écluse Dredger"], [#strong[#"Category"]#": Denial of service (STRIDE)"], [#strong[#"Severity"]#": Medium"], [#strong[#"Status"]#": Open"])
+#list([#strong[#"Elements"]#": "#"Écluse Dredger"], [#strong[#"Category"]#": "#"Denial of service (STRIDE)"], [#strong[#"Severity"]#": "#saer-badge("Medium", rgb("#46788A"))], [#strong[#"Status"]#": "#saer-badge("Open", rgb("#C14339"))])
 
 #strong[#"Description"]
 
@@ -441,7 +452,7 @@ align(center + horizon)[
 
 #heading(level: 2)[#"Threat 26: Dredger container-role privilege escalation"]
 
-#list([#strong[#"Elements"]#": Écluse Dredger"], [#strong[#"Category"]#": Elevation of privilege (STRIDE)"], [#strong[#"Severity"]#": High"], [#strong[#"Status"]#": Open"])
+#list([#strong[#"Elements"]#": "#"Écluse Dredger"], [#strong[#"Category"]#": "#"Elevation of privilege (STRIDE)"], [#strong[#"Severity"]#": "#saer-badge("High", rgb("#A85E1D"))], [#strong[#"Status"]#": "#saer-badge("Open", rgb("#C14339"))])
 
 #strong[#"Description"]
 
@@ -453,7 +464,7 @@ align(center + horizon)[
 
 #heading(level: 2)[#"Threat 27: Poisoned OSV payload exploits parser"]
 
-#list([#strong[#"Elements"]#": Écluse Pilot (Ingestion Pipeline)"], [#strong[#"Category"]#": Denial of service (STRIDE)"], [#strong[#"Severity"]#": Medium"], [#strong[#"Status"]#": Mitigated"])
+#list([#strong[#"Elements"]#": "#"Écluse Pilot (Ingestion Pipeline)"], [#strong[#"Category"]#": "#"Denial of service (STRIDE)"], [#strong[#"Severity"]#": "#saer-badge("Medium", rgb("#46788A"))], [#strong[#"Status"]#": "#saer-badge("Mitigated", rgb("#4B6B50"))])
 
 #strong[#"Description"]
 
@@ -465,7 +476,7 @@ align(center + horizon)[
 
 #heading(level: 2)[#"Threat 28: First-party data loss from collapsed registries"]
 
-#list([#strong[#"Elements"]#": Écluse Dredger"], [#strong[#"Category"]#": Denial of service (STRIDE)"], [#strong[#"Severity"]#": High"], [#strong[#"Status"]#": Open"])
+#list([#strong[#"Elements"]#": "#"Écluse Dredger"], [#strong[#"Category"]#": "#"Denial of service (STRIDE)"], [#strong[#"Severity"]#": "#saer-badge("High", rgb("#A85E1D"))], [#strong[#"Status"]#": "#saer-badge("Open", rgb("#C14339"))])
 
 #strong[#"Description"]
 
@@ -477,7 +488,7 @@ align(center + horizon)[
 
 #heading(level: 2)[#"Threat 101: Oracle Blackout / Supply Chain DoS via OSV.dev compromise"]
 
-#list([#strong[#"Elements"]#": Écluse Pilot (Ingestion Pipeline)"], [#strong[#"Category"]#": Spoofing (STRIDE)"], [#strong[#"Severity"]#": High"], [#strong[#"Status"]#": Accepted risk"])
+#list([#strong[#"Elements"]#": "#"Écluse Pilot (Ingestion Pipeline)"], [#strong[#"Category"]#": "#"Spoofing (STRIDE)"], [#strong[#"Severity"]#": "#saer-badge("High", rgb("#A85E1D"))], [#strong[#"Status"]#": "#saer-badge("Accepted risk", rgb("#A85E1D"))])
 
 #strong[#"Description"]
 
@@ -489,7 +500,7 @@ align(center + horizon)[
 
 #heading(level: 2)[#"Threat 102: Accidental permanent deletion of registry data"]
 
-#list([#strong[#"Elements"]#": Écluse Dredger"], [#strong[#"Category"]#": Elevation of privilege (STRIDE)"], [#strong[#"Severity"]#": Critical"], [#strong[#"Status"]#": Open"])
+#list([#strong[#"Elements"]#": "#"Écluse Dredger"], [#strong[#"Category"]#": "#"Elevation of privilege (STRIDE)"], [#strong[#"Severity"]#": "#saer-badge("Critical", rgb("#C14339"))], [#strong[#"Status"]#": "#saer-badge("Open", rgb("#C14339"))])
 
 #strong[#"Description"]
 

@@ -394,6 +394,9 @@ importers:
       react:
         specifier: 'catalog:'
         version: 19.2.8
+      zod:
+        specifier: 'catalog:'
+        version: 4.5.4
     devDependencies:
       '@types/react':
         specifier: 'catalog:'
@@ -511,6 +514,9 @@ importers:
       unist-util-visit:
         specifier: 'catalog:'
         version: 5.1.0
+      zod:
+        specifier: 'catalog:'
+        version: 4.5.4
     devDependencies:
       '@types/jsdom':
         specifier: 'catalog:'

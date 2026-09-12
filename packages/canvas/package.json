@@ -21,6 +21,7 @@
   "dependencies": {
     "@saerskriven/model": "workspace:*",
     "@xyflow/react": "catalog:",
+    "zod": "catalog:",
     "react": "catalog:"
   },
   "devDependencies": {
