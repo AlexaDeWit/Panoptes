@@ -1,3 +1,4 @@
+import { attachedThreats } from './threats.js';
 import type { ElementId } from '@saerskriven/model';
 import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -126,7 +127,8 @@ describe(
     it('lists nothing for an element no threat names, and still offers an add', () => {
       showPanel(processElement);
 
-      expect(screen.getByText(/Nothing is recorded/u)).toBeDefined();
+      expect(attachedThreats(modelStore.getState())).toEqual([]);
+      expect(screen.queryByText(sampleModel.threats[0].title)).toBeNull();
       expect(addControl()).toBeDefined();
     });
 

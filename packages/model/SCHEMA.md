@@ -54,6 +54,7 @@ every test run, so it cannot fall behind them. Regenerate it with
       - `size`: object
         - `width`: number, greater than 0
         - `height`: number, greater than 0
+      - `providesAuthentication`: optional, boolean
     - when `kind` is `process`
       - `id`: ElementId (text, at least 2 characters)
       - `name`: text
@@ -66,6 +67,10 @@ every test run, so it cannot fall behind them. Regenerate it with
       - `size`: object
         - `width`: number, greater than 0
         - `height`: number, greater than 0
+      - `handlesCardPayment`: optional, boolean
+      - `handlesGoodsOrServices`: optional, boolean
+      - `isWebApplication`: optional, boolean
+      - `privilegeLevel`: optional, text
     - when `kind` is `store`
       - `id`: ElementId (text, at least 2 characters)
       - `name`: text
@@ -78,12 +83,21 @@ every test run, so it cannot fall behind them. Regenerate it with
       - `size`: object
         - `width`: number, greater than 0
         - `height`: number, greater than 0
+      - `isALog`: optional, boolean
+      - `isEncrypted`: optional, boolean
+      - `isSigned`: optional, boolean
+      - `storesCredentials`: optional, boolean
+      - `storesInventory`: optional, boolean
     - when `kind` is `flow`
       - `id`: ElementId (text, at least 2 characters)
       - `name`: text
       - `description`: text
       - `outOfScope`: boolean
       - `reasonOutOfScope`: text
+      - `protocol`: optional, text
+      - `isEncrypted`: optional, boolean
+      - `isPublicNetwork`: optional, boolean
+      - `trustBoundaryIds`: optional, list of ElementId (text, at least 2 characters)
       - `source`: one of 2, told apart by `kind`
         - when `kind` is `attached`
           - `element`: ElementId (text, at least 2 characters)
@@ -110,6 +124,8 @@ every test run, so it cannot fall behind them. Regenerate it with
       - `description`: text
       - `outOfScope`: boolean
       - `reasonOutOfScope`: text
+      - `containedElements`: optional, list of ElementId (text, at least 2 characters)
+      - `crossingFlows`: optional, list of ElementId (text, at least 2 characters)
       - `shape`: one of 2, told apart by `kind`
         - when `kind` is `box`
           - `position`: object

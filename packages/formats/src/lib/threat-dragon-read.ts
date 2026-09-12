@@ -1,4 +1,11 @@
 import {
+  actorProperties,
+  processProperties,
+  storeProperties,
+  flowProperties,
+  boundaryProperties,
+} from './security-properties.js';
+import {
   diagramSchema,
   elementSchema,
   flowEndpointSchema,
@@ -53,54 +60,7 @@ type ThreatEntry = {
   readonly number: number;
 };
 
-/**
- * A Threat Dragon v2 file as the internal model, the document it was mapped
- * from, and where the two do not correspond. The document comes back so the
- * write codec can merge onto it, which is how the parts of the file
- * Saerskriven does not model reach the output.
- *
- * Threat Dragon nests each threat under one cell, so a threat found under
- * several cells is one record here, attached to each of them and carrying
- * what its first appearance said. That is the inverse of the write, which
- * splits a threat across the cells it names.
- *
- * Five places the file and the model do not line up, and what the read does
- * about each. `lastIssuedThreatNumber` is the greater of the file's
- * `threatTop` and the highest number the file holds, because Threat Dragon
- * does not enforce the invariant the model does, and the Écluse file holds
- * threats numbered above its own mark. A threat with no number at all, and
- * most threats in Threat Dragon's own demo models have none, is issued the
- * next number above that mark, so no number is reused. A trust boundary
- * takes its name from the label Threat Dragon draws on it where `data`
- * holds none, which is where the Écluse file keeps every boundary name. A
- * contributor is an object of one name, which flattens to the name. And a
- * diagram is numbered rather than named, so its number becomes its id.
- *
- * Everything the file leaves out takes the model's own default: an absent
- * name, description, or reason is the empty string, an absent `outOfScope`
- * or `isBidirectional` is false, absent vertices are no waypoints, and an
- * absent `threatTop` is 0. Nothing is defaulted into the returned document,
- * which keeps saying what the file said. An anchor's port resolves to the
- * side of the cell it belongs to, which the model holds as the end's pinned
- * side; an anchor naming no port, or a port the cell does not declare, is an
- * end the renderer sides.
- *
- * The divergences are the keys the wire schema did not declare, plus one
- * `narrowed` entry per threat value the model holds less exactly than the
- * file stated it: a status or severity from no vocabulary this codec knows,
- * a category label from no language Threat Dragon ships, and an Elevation
- * of Privilege card, of which only the suit has a home.
- *
- * Nothing throws. A text past a bound in `readLimits` is
- * `ExceededReadLimit`, which for nesting is the read's own walk rather
- * than the parser: `JSON.parse` builds a value of any depth without
- * recursing, so a document nested past any stack parses without complaint
- * and is stopped by the walk after. Text that is not JSON is
- * `MalformedText`, a document the wire schema refuses is
- * `InvalidWireDocument` with paths into the file, and a mapping
- * `parseModel` refuses, an unresolved flow endpoint or a repeated threat
- * number among them, is `InvalidModel` with paths into the model.
- */
+/** Reads Threat Dragon and retains its source for merging. Security facts preserve absence. */
 export function readThreatDragon(
   text: string,
 ): Either.Either<ReadResult<typeof threatDragonWireSchema>, ReadFailure> {
@@ -197,17 +157,22 @@ function toDiagram(diagram: ThreatDragonDiagram): DiagramInput {
 
 function toElement(cell: ThreatDragonCell, ports: PortSides): ElementInput {
   if (cell.shape === 'actor') {
-    return { kind: 'actor', ...toNode(cell) };
+    return { kind: 'actor', ...toNode(cell), ...actorProperties(cell.data) };
   }
   if (cell.shape === 'process') {
-    return { kind: 'process', ...toNode(cell) };
+    return {
+      kind: 'process',
+      ...toNode(cell),
+      ...processProperties(cell.data),
+    };
   }
   if (cell.shape === 'store') {
-    return { kind: 'store', ...toNode(cell) };
+    return { kind: 'store', ...toNode(cell), ...storeProperties(cell.data) };
   }
   if (cell.shape === 'flow') {
     return {
       kind: 'flow',
+      ...flowProperties(cell.data),
       ...toCommon(cell),
       source: toEndpoint(cell.source, ports),
       target: toEndpoint(cell.target, ports),
@@ -232,6 +197,7 @@ function toElement(cell: ThreatDragonCell, ports: PortSides): ElementInput {
     return {
       kind: 'trust-boundary',
       ...toBoundaryCommon(cell),
+      ...boundaryProperties(cell.data),
       shape: { kind: 'box', position: cell.position, size: cell.size },
     };
   }
@@ -242,6 +208,7 @@ function toCurveBoundary(cell: ThreatDragonCurve): ElementInput {
   return {
     kind: 'trust-boundary',
     ...toBoundaryCommon(cell),
+    ...boundaryProperties(cell.data),
     shape: {
       kind: 'curve',
       waypoints: [cell.source, ...(cell.vertices ?? []), cell.target],

@@ -1,23 +1,7 @@
 import type { z } from 'zod';
 import type { modelSchema } from './model.js';
 
-/**
- * Écluse's real threat model in the internal form, transcribed from the
- * Threat Dragon 2.6.2 file vendored at `test-data/ecluse.json`. It is the
- * representability gate's evidence that the model core holds a whole
- * production threat model: one diagram of 38 elements, 29 threats numbered
- * with the gaps the source carries, and the STRIDE vocabulary the analysis
- * uses. Threat Dragon's own cell and threat ids are kept verbatim, so the
- * import codec (M2) reproduces this fixture without an id mapping.
- * `lastIssuedThreatNumber` is 102 while the source file's own `threatTop`
- * is 28, below two of the threats it holds, so an import takes the greater
- * of `threatTop` and the highest number in the file. Neither half alone is
- * enough: `threatTop` alone breaks on this file, and the highest number
- * alone drops the gap left by a removed highest-numbered threat, which is
- * the record the field exists to keep. Mitigations and assumptions are
- * empty because Threat Dragon has no such record. Typed as the schema's
- * input, not as a Model: specs feed it through parseModel.
- */
+/** Vendored Écluse model transcription. The last issued number preserves gaps and exceeds stale source bookkeeping. */
 export const ecluseFixture: z.input<typeof modelSchema> = {
   metadata: {
     title: 'Écluse',
@@ -34,6 +18,27 @@ export const ecluseFixture: z.input<typeof modelSchema> = {
         {
           kind: 'trust-boundary',
           id: '0ec10e5e-0000-4000-8000-000000000001',
+          containedElements: [
+            '0ec10e5e-0000-4000-8000-000000000012',
+            '0ec10e5e-0000-4000-8000-000000000020',
+            '0ec10e5e-0000-4000-8000-000000000021',
+            '0ec10e5e-0000-4000-8000-000000000022',
+            '0ec10e5e-0000-4000-8000-000000000030',
+            '0ec10e5e-0000-4000-8000-000000000031',
+            '0ec10e5e-0000-4000-8000-000000000032',
+            '0ec10e5e-0000-4000-8000-000000000033',
+            '0ec10e5e-0000-4000-8000-000000000034',
+            'f1646094-9885-422a-b7e7-7888c72905ef',
+            'c8455307-cef2-4843-a821-ff90db9643d2',
+            'f66e2ffa-c6bf-4b45-8aad-a23ced3a97ff',
+            'd5da865d-6e80-44da-a2ee-841f6bebd567',
+          ],
+          crossingFlows: [
+            '0ec10e5e-0000-4000-8000-000000000040',
+            '0ec10e5e-0000-4000-8000-000000000043',
+            '0ec10e5e-0000-4000-8000-000000000047',
+            '4e565871-45cc-4987-abba-24859ee2cf60',
+          ],
           name: 'Operator trust zone (VPC / mesh): access edge enforced here',
           description: '',
           outOfScope: false,
@@ -53,6 +58,11 @@ export const ecluseFixture: z.input<typeof modelSchema> = {
         {
           kind: 'trust-boundary',
           id: '0ec10e5e-0000-4000-8000-000000000002',
+          containedElements: ['0ec10e5e-0000-4000-8000-000000000011'],
+          crossingFlows: [
+            '0ec10e5e-0000-4000-8000-000000000043',
+            '0ec10e5e-0000-4000-8000-000000000047',
+          ],
           name: 'Public internet (untrusted)',
           description: '',
           outOfScope: false,
@@ -72,6 +82,8 @@ export const ecluseFixture: z.input<typeof modelSchema> = {
         {
           kind: 'trust-boundary',
           id: 'bdf95436-cb02-4248-99a2-4e50b0d286fa',
+          containedElements: ['7528590e-7392-46c4-9b8c-7ca872d63590'],
+          crossingFlows: [],
           name: 'Public internet (untrusted)',
           description: '',
           outOfScope: false,
@@ -91,6 +103,7 @@ export const ecluseFixture: z.input<typeof modelSchema> = {
         {
           kind: 'actor',
           id: '0ec10e5e-0000-4000-8000-000000000010',
+          providesAuthentication: true,
           name: 'npm client\n(developer / CI)',
           description:
             "The caller. It presents its own CodeArtifact bearer token. The operator's access edge authenticates it to the proxy, not Écluse.",
@@ -108,6 +121,7 @@ export const ecluseFixture: z.input<typeof modelSchema> = {
         {
           kind: 'actor',
           id: '0ec10e5e-0000-4000-8000-000000000011',
+          providesAuthentication: false,
           name: 'Public npm registry',
           description:
             'The upstream registry. Its tarball bytes and author-supplied manifest fields are untrusted. The rules engine and the integrity floor gate them, and Écluse never serves them blindly. Écluse trusts the fields the registry itself asserts only to the floor that the registry operator is honest. The per-version publish time is server-stamped, and so is server-side integrity. npm, PyPI, and RubyGems record the publish time server-side, and it is absent from the publish document, so a publisher cannot backdate it. A compromised or malicious registry operator that forged those fields sits below this necessary trust floor and is out of scope. Écluse queries the registry anonymously, with the caller credential stripped.',
@@ -125,6 +139,7 @@ export const ecluseFixture: z.input<typeof modelSchema> = {
         {
           kind: 'actor',
           id: '0ec10e5e-0000-4000-8000-000000000012',
+          providesAuthentication: true,
           name: 'AWS IMDS + STS',
           description:
             "Instance-metadata and token endpoint. It sources the container-role credentials the worker exchanges for a CodeArtifact write token. Écluse reaches it over amazonka's own client, off the guarded data-plane manager.",
@@ -193,6 +208,10 @@ export const ecluseFixture: z.input<typeof modelSchema> = {
         {
           kind: 'store',
           id: '0ec10e5e-0000-4000-8000-000000000030',
+          isALog: false,
+          storesCredentials: false,
+          isEncrypted: false,
+          isSigned: false,
           name: 'Metadata cache\n(public-gated only)',
           description:
             'The shared in-proxy cache. It holds only the anonymous public gated origin. Écluse never enters the per-caller private origin, under any strategy.',
@@ -210,6 +229,10 @@ export const ecluseFixture: z.input<typeof modelSchema> = {
         {
           kind: 'store',
           id: '0ec10e5e-0000-4000-8000-000000000031',
+          isALog: false,
+          storesCredentials: false,
+          isEncrypted: false,
+          isSigned: false,
           name: 'Mirror queue (SQS)',
           description:
             "The demand-driven mirror job queue. Écluse enqueues a job when it accepts an artifact on the tarball path. The queue is a trusted, operator-declared destination, reached over amazonka's own client.",
@@ -227,6 +250,10 @@ export const ecluseFixture: z.input<typeof modelSchema> = {
         {
           kind: 'store',
           id: '0ec10e5e-0000-4000-8000-000000000032',
+          isALog: false,
+          storesCredentials: false,
+          isEncrypted: false,
+          isSigned: false,
           name: 'Registry C:\npull-through read endpoint',
           description:
             'The trusted private-upstream read view (ECLUSE_MOUNTS__NPM__PRIVATE_UPSTREAM). It is a pull-through aggregator over the first-party store (A) and the mirror store (B), and it is what the proxy reads.',
@@ -244,6 +271,10 @@ export const ecluseFixture: z.input<typeof modelSchema> = {
         {
           kind: 'store',
           id: '0ec10e5e-0000-4000-8000-000000000033',
+          isALog: false,
+          storesCredentials: false,
+          isEncrypted: false,
+          isSigned: false,
           name: 'Registry A:\nprivate store (first-party)',
           description:
             'First-party and internal packages, written by a client npm publish under passthrough. Écluse trusts this store and serves it unfiltered. It is the publication target.',
@@ -261,6 +292,10 @@ export const ecluseFixture: z.input<typeof modelSchema> = {
         {
           kind: 'store',
           id: '0ec10e5e-0000-4000-8000-000000000034',
+          isALog: false,
+          storesCredentials: false,
+          isEncrypted: false,
+          isSigned: false,
           name: 'Registry B:\nmirror store (public-derived)',
           description:
             'Public packages that the rules approved and the worker replicated. It is the mirror target. It stays distinct from A so first-party and public-derived inventory remain separable.',
@@ -278,6 +313,10 @@ export const ecluseFixture: z.input<typeof modelSchema> = {
         {
           kind: 'flow',
           id: '0ec10e5e-0000-4000-8000-000000000040',
+          isEncrypted: true,
+          isPublicNetwork: false,
+          protocol: 'HTTPS',
+          trustBoundaryIds: ['0ec10e5e-0000-4000-8000-000000000001'],
           name: 'npm read / publish (passthrough CodeArtifact token)',
           description:
             "The caller's request, carrying its own CodeArtifact bearer token. It crosses the operator access edge.",
@@ -297,6 +336,10 @@ export const ecluseFixture: z.input<typeof modelSchema> = {
         {
           kind: 'flow',
           id: '0ec10e5e-0000-4000-8000-000000000041',
+          isEncrypted: true,
+          isPublicNetwork: false,
+          protocol: 'HTTPS',
+          trustBoundaryIds: [],
           name: 'read packument / tarball (caller token forwarded)',
           description:
             "A per-request private read with the caller's own token. The upstream re-authorises each request. Écluse never shared-caches this read under passthrough.",
@@ -316,6 +359,10 @@ export const ecluseFixture: z.input<typeof modelSchema> = {
         {
           kind: 'flow',
           id: '0ec10e5e-0000-4000-8000-000000000042',
+          isEncrypted: false,
+          isPublicNetwork: false,
+          protocol: 'in-process',
+          trustBoundaryIds: [],
           name: 'cache public-gated metadata',
           description:
             'Reads and writes of the anonymous public gated origin only.',
@@ -335,6 +382,13 @@ export const ecluseFixture: z.input<typeof modelSchema> = {
         {
           kind: 'flow',
           id: '0ec10e5e-0000-4000-8000-000000000043',
+          isEncrypted: true,
+          isPublicNetwork: true,
+          protocol: 'HTTPS',
+          trustBoundaryIds: [
+            '0ec10e5e-0000-4000-8000-000000000001',
+            '0ec10e5e-0000-4000-8000-000000000002',
+          ],
           name: 'anonymous packument / tarball fetch (caller token stripped)',
           description:
             'Untrusted egress to the upstream registry. The target is attacker-influenceable, so Écluse strips the caller credential. The flow crosses to the public internet and is forced HTTPS-only.',
@@ -354,6 +408,10 @@ export const ecluseFixture: z.input<typeof modelSchema> = {
         {
           kind: 'flow',
           id: '0ec10e5e-0000-4000-8000-000000000044',
+          isEncrypted: true,
+          isPublicNetwork: false,
+          protocol: 'HTTPS',
+          trustBoundaryIds: [],
           name: 'relay npm publish (publisher token forwarded)',
           description:
             "A first-party publish relayed to the private store with the publisher's own token. The publish-scope allow-list gates it before any write.",
@@ -373,6 +431,10 @@ export const ecluseFixture: z.input<typeof modelSchema> = {
         {
           kind: 'flow',
           id: '0ec10e5e-0000-4000-8000-000000000045',
+          isEncrypted: true,
+          isPublicNetwork: false,
+          protocol: 'AWS SQS',
+          trustBoundaryIds: [],
           name: 'enqueue mirror job (demand-driven)',
           description:
             'On tarball-path acceptance, Écluse enqueues a mirror job without blocking.',
@@ -392,6 +454,10 @@ export const ecluseFixture: z.input<typeof modelSchema> = {
         {
           kind: 'flow',
           id: '0ec10e5e-0000-4000-8000-000000000046',
+          isEncrypted: true,
+          isPublicNetwork: false,
+          protocol: 'AWS SQS',
+          trustBoundaryIds: [],
           name: 'poll jobs',
           description:
             'The worker polls the mirror queue for demand-driven jobs.',
@@ -411,6 +477,13 @@ export const ecluseFixture: z.input<typeof modelSchema> = {
         {
           kind: 'flow',
           id: '0ec10e5e-0000-4000-8000-000000000047',
+          isEncrypted: true,
+          isPublicNetwork: true,
+          protocol: 'HTTPS',
+          trustBoundaryIds: [
+            '0ec10e5e-0000-4000-8000-000000000001',
+            '0ec10e5e-0000-4000-8000-000000000002',
+          ],
           name: 'back-fill artifact fetch (untrusted)',
           description:
             'The worker fetches the approved artifact from the upstream registry to mirror it. This is untrusted egress, forced HTTPS-only. The worker verifies the bytes against dist.integrity before it publishes.',
@@ -430,6 +503,10 @@ export const ecluseFixture: z.input<typeof modelSchema> = {
         {
           kind: 'flow',
           id: '0ec10e5e-0000-4000-8000-000000000048',
+          isEncrypted: false,
+          isPublicNetwork: false,
+          protocol: 'in-process',
+          trustBoundaryIds: [],
           name: 'request mirror-write token',
           description:
             'The worker asks the credential provider for a mirror-target write token.',
@@ -449,6 +526,10 @@ export const ecluseFixture: z.input<typeof modelSchema> = {
         {
           kind: 'flow',
           id: '0ec10e5e-0000-4000-8000-000000000049',
+          isEncrypted: true,
+          isPublicNetwork: false,
+          protocol: 'HTTPS',
+          trustBoundaryIds: [],
           name: 'mint via container role (IMDSv2 / STS)',
           description:
             'The credential provider exchanges container-role credentials for a CodeArtifact write token. It reaches an internal address by design.',
@@ -468,6 +549,10 @@ export const ecluseFixture: z.input<typeof modelSchema> = {
         {
           kind: 'flow',
           id: '0ec10e5e-0000-4000-8000-00000000004a',
+          isEncrypted: true,
+          isPublicNetwork: false,
+          protocol: 'HTTPS',
+          trustBoundaryIds: [],
           name: 'publish mirrored artifact (minted write token)',
           description:
             "The worker writes the verified, approved artifact to the mirror store with Écluse's own minted token.",
@@ -492,6 +577,10 @@ export const ecluseFixture: z.input<typeof modelSchema> = {
         {
           kind: 'flow',
           id: '0ec10e5e-0000-4000-8000-00000000004b',
+          isEncrypted: true,
+          isPublicNetwork: false,
+          protocol: 'HTTPS',
+          trustBoundaryIds: [],
           name: 'pull-through (first-party)',
           description:
             'Registry C aggregates the first-party store A on read. This is trusted, registry-level composition.',
@@ -511,6 +600,10 @@ export const ecluseFixture: z.input<typeof modelSchema> = {
         {
           kind: 'flow',
           id: '0ec10e5e-0000-4000-8000-00000000004c',
+          isEncrypted: true,
+          isPublicNetwork: false,
+          protocol: 'HTTPS',
+          trustBoundaryIds: [],
           name: 'pull-through (mirrored)',
           description:
             'Registry C aggregates the mirror store B on read. This is trusted, registry-level composition.',
@@ -530,6 +623,10 @@ export const ecluseFixture: z.input<typeof modelSchema> = {
         {
           kind: 'flow',
           id: 'c928bb63-2ec8-44ff-b34b-39d4afb19dc6',
+          isEncrypted: false,
+          isPublicNetwork: false,
+          protocol: 'https',
+          trustBoundaryIds: [],
           name: 'mint token (container role)',
           description: '',
           outOfScope: false,
@@ -550,6 +647,10 @@ export const ecluseFixture: z.input<typeof modelSchema> = {
         {
           kind: 'flow',
           id: '4e565871-45cc-4987-abba-24859ee2cf60',
+          isEncrypted: true,
+          isPublicNetwork: false,
+          protocol: 'https',
+          trustBoundaryIds: ['0ec10e5e-0000-4000-8000-000000000001'],
           name: 'OSV Dataset for Supported Registries',
           description: '',
           outOfScope: false,
@@ -572,6 +673,10 @@ export const ecluseFixture: z.input<typeof modelSchema> = {
         {
           kind: 'flow',
           id: 'ec4bbc95-8582-4e22-ab64-3c87cff87239',
+          isEncrypted: true,
+          isPublicNetwork: false,
+          protocol: 'https',
+          trustBoundaryIds: [],
           name: 'Push osv.db (SQLite)',
           description: 'Pilot pushes the optimised osv.db to S3.',
           outOfScope: false,
@@ -592,6 +697,10 @@ export const ecluseFixture: z.input<typeof modelSchema> = {
         {
           kind: 'flow',
           id: 'f2d6c311-b8b3-4a9f-bef7-b78e4adaa17e',
+          isEncrypted: true,
+          isPublicNetwork: false,
+          protocol: 'https',
+          trustBoundaryIds: [],
           name: 'Download osv.db',
           description:
             'The proxy polls S3 and downloads osv.db with GetObject.',
@@ -613,6 +722,10 @@ export const ecluseFixture: z.input<typeof modelSchema> = {
         {
           kind: 'process',
           id: 'f1646094-9885-422a-b7e7-7888c72905ef',
+          handlesCardPayment: false,
+          handlesGoodsOrServices: false,
+          isWebApplication: false,
+          privilegeLevel: '',
           name: 'Écluse Pilot\n(Ingestion Pipeline)',
           description:
             "Pilot is an unopinionated data ingestion pipeline. It fetches vulnerability data and delivers an optimised osv.db to S3. The proxy therefore never queries osv.dev on the critical path and never meets its rate limits. Pilot makes no security or blocking decision. The proxy's rules engine is the sole opinionated enforcement point. Only the rules engine evaluates that data, for example to block on CVE severity or an EPSS score, or to fast-lane a remediation package.",
@@ -630,6 +743,7 @@ export const ecluseFixture: z.input<typeof modelSchema> = {
         {
           kind: 'actor',
           id: '7528590e-7392-46c4-9b8c-7ca872d63590',
+          providesAuthentication: false,
           name: 'OSV.dev',
           description: 'The Open Source Vulnerability dataset, served as JSON.',
           outOfScope: false,
@@ -646,6 +760,11 @@ export const ecluseFixture: z.input<typeof modelSchema> = {
         {
           kind: 'store',
           id: 'c8455307-cef2-4843-a821-ff90db9643d2',
+          isALog: false,
+          isEncrypted: false,
+          isSigned: false,
+          storesCredentials: false,
+          storesInventory: false,
           name: 'S3 (OSV Datasets)',
           description:
             'Pre-compiled SQLite data files for querying against live CVEs.',
@@ -680,6 +799,8 @@ export const ecluseFixture: z.input<typeof modelSchema> = {
         {
           kind: 'flow',
           id: 'd5da865d-6e80-44da-a2ee-841f6bebd567',
+          isEncrypted: true,
+          isPublicNetwork: false,
           name: 'delete pruned versions',
           description:
             'Dredger issues delete requests to Registry B based on CVE advisories or age.',
@@ -699,6 +820,8 @@ export const ecluseFixture: z.input<typeof modelSchema> = {
         {
           kind: 'flow',
           id: 'fd44cd74-341a-4185-a3f3-f58357ccf91d',
+          isEncrypted: true,
+          isPublicNetwork: false,
           name: 'mint container credentials',
           description: 'Pilot requests IAM credentials to push to S3.',
           outOfScope: false,
@@ -717,6 +840,8 @@ export const ecluseFixture: z.input<typeof modelSchema> = {
         {
           kind: 'flow',
           id: '5dacf1eb-231a-49d3-8612-9ecf49f1839d',
+          isEncrypted: true,
+          isPublicNetwork: false,
           name: 'poll & download osv.db',
           description:
             'The proxy polls S3 for ETag changes and downloads the osv.db snapshot with the GetObject permission.',

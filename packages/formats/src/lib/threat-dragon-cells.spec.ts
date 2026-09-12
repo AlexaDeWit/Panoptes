@@ -126,8 +126,9 @@ describe('drawing an element over the cell the source document holds', () => {
     },
   };
 
-  it('leaves the plane, the tools, the ports and the flags it never held', () => {
-    expect(cellOf(store, held)).toEqual(held);
+  it('preserves source styling and bookkeeping when the model retains its security facts', () => {
+    const unchanged = elementOf({ ...store, isEncrypted: true });
+    expect(cellOf(unchanged, held)).toEqual(held);
   });
 
   it('draws the cell again where the element is no longer that shape', () => {
@@ -155,6 +156,104 @@ describe('drawing an element over the cell the source document holds', () => {
       'element "cell-1": what the source held on the store cell of this id, which now draws a actor (removed by an edit)',
     );
   });
+});
+
+describe('merging security facts owned by the model', () => {
+  it.each([
+    {
+      kind: 'actor',
+      present: { providesAuthentication: true },
+      edited: { providesAuthentication: false },
+    },
+    {
+      kind: 'process',
+      present: {
+        handlesCardPayment: true,
+        handlesGoodsOrServices: true,
+        isWebApplication: true,
+        privilegeLevel: 'administrator',
+      },
+      edited: {
+        handlesCardPayment: false,
+        handlesGoodsOrServices: false,
+        isWebApplication: false,
+        privilegeLevel: '',
+      },
+    },
+    {
+      kind: 'store',
+      present: {
+        isALog: true,
+        isEncrypted: true,
+        isSigned: true,
+        storesCredentials: true,
+        storesInventory: true,
+      },
+      edited: {
+        isALog: false,
+        isEncrypted: false,
+        isSigned: false,
+        storesCredentials: false,
+        storesInventory: false,
+      },
+    },
+    {
+      kind: 'flow',
+      present: {
+        protocol: 'HTTPS',
+        isEncrypted: true,
+        isPublicNetwork: true,
+        trustBoundaryIds: ['boundary-1'],
+      },
+      edited: {
+        protocol: '',
+        isEncrypted: false,
+        isPublicNetwork: false,
+        trustBoundaryIds: [],
+      },
+    },
+    {
+      kind: 'trust-boundary',
+      present: {
+        containedElements: ['cell-2'],
+        crossingFlows: ['flow-1'],
+      },
+      edited: { containedElements: [], crossingFlows: [] },
+    },
+  ])(
+    'preserves unchanged $kind facts and writes explicit edits or absence',
+    ({ kind, present, edited }) => {
+      const original = elementOf({
+        kind,
+        id: 'cell-1',
+        ...named,
+        ...box,
+        ...present,
+        shape: { kind: 'box', ...box },
+        source: { kind: 'free', position: { x: 0, y: 0 } },
+        target: { kind: 'free', position: { x: 10, y: 10 } },
+        waypoints: [],
+        bidirectional: false,
+      });
+      const held = cellOf(original);
+      expect(held.data).toMatchObject(present);
+      expect(cellOf(original, held)).toEqual(held);
+      expect(
+        cellOf(elementOf({ ...original, ...edited }), held).data,
+      ).toMatchObject(edited);
+      const absent = elementOf(
+        Object.fromEntries(
+          Object.entries(original).filter(
+            ([key]) => !Object.hasOwn(present, key),
+          ),
+        ),
+      );
+      const output = JSON.stringify(cellOf(absent, held));
+      for (const field of Object.keys(present)) {
+        expect(output).not.toContain(`"${field}":`);
+      }
+    },
+  );
 });
 
 describe('an element carrying what the format has no place for', () => {

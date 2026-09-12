@@ -1,3 +1,4 @@
+import { chooseFrom } from './panel.fixtures.js';
 import type { Threat } from '@saerskriven/model';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -53,12 +54,6 @@ const disclosure = (): HTMLElement =>
 
 const textbox = (name: string): HTMLElement =>
   screen.getByRole('textbox', { name });
-
-const chooseFrom = async (field: string, option: string): Promise<void> => {
-  const user = userEvent.setup();
-  await user.click(screen.getByRole('combobox', { name: field }));
-  await user.click(screen.getByRole('option', { name: option }));
-};
 
 const typeInto = async (field: string, text: string): Promise<void> => {
   const user = userEvent.setup();

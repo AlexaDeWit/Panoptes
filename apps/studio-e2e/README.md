@@ -43,37 +43,38 @@ The fixture polls the viewport transform until consecutive readings match.
 The studio requirements from [M4](https://github.com/AlexaDeWit/Saerskriven/milestone/5)
 map to the browser specs below. Paths are relative to `src/`.
 
-| Behaviour                                                             | Specs                                                    |
-| --------------------------------------------------------------------- | -------------------------------------------------------- |
-| Boot and initial diagram                                              | `smoke.spec.ts`, `empty-state.spec.ts`                   |
-| Threat Dragon and native YAML open/save                               | `files.spec.ts`, `round-trip.spec.ts`                    |
-| Lossless open/edit/save, geometry, and threat data                    | `round-trip.spec.ts`                                     |
-| SVG, PNG, markdown, Typst, and PDF export parity                      | `exports.spec.ts`, `pages-export.spec.ts`                |
-| Selection, tab order, node movement, and boundary hit targets         | `canvas.spec.ts`                                         |
-| Group selection, movement, and deletion                               | `multi-selection.spec.ts`                                |
-| Toolbox placement, curve drawing, deletion, and Hand mode             | `editing.spec.ts`                                        |
-| Pointer and keyboard connections, handle visibility, and cancellation | `connectors.spec.ts`                                     |
-| Flow paths, labels, and badges during a drag                          | `flow-drag.spec.ts`                                      |
-| Flow bend insertion, movement, removal, and format round trips        | `flow-bends.spec.ts`                                     |
-| Pinned flow ends, bidirectional flows, and their round trips          | `flow-anchors.spec.ts`                                   |
-| Side, corner, and keyboard resizing                                   | `resize.spec.ts`                                         |
-| Hover, selection, focus, and cursor cues                              | `selection-cues.spec.ts`                                 |
-| Inline names and Note text                                            | `renaming.spec.ts`                                       |
-| Threat fields, badges, pane layout, focus, and draft retention        | `panel.spec.ts`                                          |
-| Undo and redo across canvas and panel edits                           | `commands.spec.ts`, `redo.spec.ts`, `round-trip.spec.ts` |
-| Menu navigation, dirty state, open/close guards, and loss reports     | `menu.spec.ts`                                           |
-| Shortcuts and their reference                                         | `commands.spec.ts`                                       |
-| Fit, zoom, and viewport placement                                     | `viewport.spec.ts`                                       |
-| Clipboard, geometry fields, reconnection, arrangement, and snapping   | `interaction-controls.spec.ts`                           |
-| Touch panning, scrolling, and startup overlays                        | `interaction-nits.spec.ts`                               |
-| Edit announcements                                                    | `edit-status.spec.ts`                                    |
-| Folding and dismissing a refusal notice                               | `notices.spec.ts`                                        |
-| Reload recovery, and tabs staying in sync                             | `recovery.spec.ts`                                       |
-| Switching between, adding, and renaming the diagrams of a model       | `diagrams.spec.ts`                                       |
-| The chrome card at desktop and phone width                            | `chrome-card.spec.ts`                                    |
-| System and saved colour preferences                                   | `dark-mode.spec.ts`, `appearance.spec.ts`                |
-| axe-core checks of the page and open controls                         | `accessibility.spec.ts`                                  |
-| Drag frame times                                                      | `drag-frame-time.spec.ts`                                |
+| Behaviour                                                                          | Specs                                                    |
+| ---------------------------------------------------------------------------------- | -------------------------------------------------------- |
+| Boot and initial diagram                                                           | `smoke.spec.ts`, `empty-state.spec.ts`                   |
+| Threat Dragon and native YAML open/save                                            | `files.spec.ts`, `round-trip.spec.ts`                    |
+| Lossless open/edit/save, geometry, and threat data                                 | `round-trip.spec.ts`                                     |
+| SVG, PNG, markdown, Typst, and PDF export parity                                   | `exports.spec.ts`, `pages-export.spec.ts`                |
+| Selection, tab order, node movement, and boundary hit targets                      | `canvas.spec.ts`                                         |
+| Group selection, movement, and deletion                                            | `multi-selection.spec.ts`                                |
+| Toolbox placement, curve drawing, deletion, and Hand mode                          | `editing.spec.ts`                                        |
+| Pointer and keyboard connections, handle visibility, and cancellation              | `connectors.spec.ts`                                     |
+| Flow paths, labels, and badges during a drag                                       | `flow-drag.spec.ts`                                      |
+| Flow bend insertion, movement, removal, and format round trips                     | `flow-bends.spec.ts`                                     |
+| Pinned flow ends, bidirectional flows, and their round trips                       | `flow-anchors.spec.ts`                                   |
+| Side, corner, and keyboard resizing                                                | `resize.spec.ts`                                         |
+| Hover, selection, focus, and cursor cues                                           | `selection-cues.spec.ts`                                 |
+| Inline names and Note text                                                         | `renaming.spec.ts`                                       |
+| Element security fields, declared relationships, save/reload and responsive layout | `element-properties.spec.ts`                             |
+| Threat fields, badges, pane layout, focus, and draft retention                     | `panel.spec.ts`                                          |
+| Undo and redo across canvas and panel edits                                        | `commands.spec.ts`, `redo.spec.ts`, `round-trip.spec.ts` |
+| Menu navigation, dirty state, open/close guards, and loss reports                  | `menu.spec.ts`                                           |
+| Shortcuts and their reference                                                      | `commands.spec.ts`                                       |
+| Fit, zoom, and viewport placement                                                  | `viewport.spec.ts`                                       |
+| Clipboard, geometry fields, reconnection, arrangement, and snapping                | `interaction-controls.spec.ts`                           |
+| Touch panning, scrolling, and startup overlays                                     | `interaction-nits.spec.ts`                               |
+| Edit announcements                                                                 | `edit-status.spec.ts`                                    |
+| Folding and dismissing a refusal notice                                            | `notices.spec.ts`                                        |
+| Reload recovery, and tabs staying in sync                                          | `recovery.spec.ts`                                       |
+| Switching between, adding, and renaming the diagrams of a model                    | `diagrams.spec.ts`                                       |
+| The chrome card at desktop and phone width                                         | `chrome-card.spec.ts`                                    |
+| System and saved colour preferences                                                | `dark-mode.spec.ts`, `appearance.spec.ts`                |
+| axe-core checks of the page and open controls                                      | `accessibility.spec.ts`                                  |
+| Drag frame times                                                                   | `drag-frame-time.spec.ts`                                |
 
 `tests/` holds unit specs for shared browser helpers: shortcut chords against
 the command registry, and the path comparison used by the round-trip test.

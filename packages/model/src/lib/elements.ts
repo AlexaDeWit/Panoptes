@@ -21,44 +21,41 @@ const nodeBaseSchema = elementBaseSchema.extend({
   size: sizeSchema,
 });
 
-/**
- * An external entity: a person or system outside the modelled system that
- * exchanges data with it.
- */
+/** External actor. Security facts remain unknown when absent. */
 export const actorSchema = nodeBaseSchema.extend({
   kind: z.literal('actor'),
+  providesAuthentication: z.boolean().optional(),
 });
 
 /** Actor element. */
 export type Actor = z.infer<typeof actorSchema>;
 
-/**
- * A part of the modelled system that receives, transforms, or routes data.
- */
+/** Process security facts remain unknown when absent. */
 export const processSchema = nodeBaseSchema.extend({
   kind: z.literal('process'),
+  handlesCardPayment: z.boolean().optional(),
+  handlesGoodsOrServices: z.boolean().optional(),
+  isWebApplication: z.boolean().optional(),
+  privilegeLevel: acceptedTextSchema.optional(),
 });
 
 /** Process element. */
 export type Process = z.infer<typeof processSchema>;
 
-/**
- * Data at rest: a database, cache, queue, or file store.
- */
+/** Data at rest. Security facts remain unknown when absent. */
 export const storeSchema = nodeBaseSchema.extend({
   kind: z.literal('store'),
+  isALog: z.boolean().optional(),
+  isEncrypted: z.boolean().optional(),
+  isSigned: z.boolean().optional(),
+  storesCredentials: z.boolean().optional(),
+  storesInventory: z.boolean().optional(),
 });
 
 /** Store element. */
 export type Store = z.infer<typeof storeSchema>;
 
-/**
- * A note placed on the canvas, belonging to no other element and carrying
- * no threats. `text` is the note itself, `name` is what an outline or a
- * picker shows for it, and the two are separate because a long note makes a
- * poor label. An import leaves `name` empty where the source file has one
- * field for both.
- */
+/** Canvas note with separate content and outline name. */
 export const textSchema = nodeBaseSchema.extend({
   kind: z.literal('text'),
   text: acceptedTextSchema,
@@ -67,13 +64,7 @@ export const textSchema = nodeBaseSchema.extend({
 /** Canvas text element. */
 export type TextElement = z.infer<typeof textSchema>;
 
-/**
- * A flow endpoint fastened to an element, referenced by id. Whether the id
- * resolves to an element of the flow's own diagram is checked by parseModel,
- * not here. `side` pins the end to one side of the element's box; absent, the
- * renderer chooses the side nearest the flow's next point, and the end moves
- * as the route does.
- */
+/** An attached endpoint uses the renderer's choice when no side is set. */
 export const attachedEndpointSchema = z.object({
   kind: z.literal('attached'),
   element: elementIdSchema,
@@ -83,11 +74,7 @@ export const attachedEndpointSchema = z.object({
 /** Attached flow endpoint. */
 export type AttachedEndpoint = z.infer<typeof attachedEndpointSchema>;
 
-/**
- * A flow endpoint at a bare canvas position, connected to no element.
- * Imported diagrams contain these: Threat Dragon lets a flow start or end on
- * empty canvas.
- */
+/** A flow endpoint at a free canvas position. */
 export const freeEndpointSchema = z.object({
   kind: z.literal('free'),
   position: pointSchema,
@@ -96,9 +83,7 @@ export const freeEndpointSchema = z.object({
 /** Free flow endpoint. */
 export type FreeEndpoint = z.infer<typeof freeEndpointSchema>;
 
-/**
- * Where a flow starts or ends: on an element, or at a free canvas position.
- */
+/** An attached or free flow endpoint. */
 export const flowEndpointSchema = z.discriminatedUnion('kind', [
   attachedEndpointSchema,
   freeEndpointSchema,
@@ -107,16 +92,13 @@ export const flowEndpointSchema = z.discriminatedUnion('kind', [
 /** Flow endpoint. */
 export type FlowEndpoint = z.infer<typeof flowEndpointSchema>;
 
-/**
- * Data in motion between a source and a target endpoint. `waypoints` and
- * `bidirectional` are required, never defaulted: an importer synthesizes an
- * empty list and `false` when the source file carries neither. A
- * bidirectional flow keeps its source and target, which is what the file
- * formats and the threat register name it by, and is drawn with an arrowhead
- * at each end.
- */
+/** Flow direction is required. Absent security facts and relationship lists remain unknown. */
 export const flowSchema = elementBaseSchema.extend({
   kind: z.literal('flow'),
+  protocol: acceptedTextSchema.optional(),
+  isEncrypted: z.boolean().optional(),
+  isPublicNetwork: z.boolean().optional(),
+  trustBoundaryIds: z.array(elementIdSchema).optional(),
   source: flowEndpointSchema,
   target: flowEndpointSchema,
   waypoints: waypointsSchema,
@@ -126,9 +108,7 @@ export const flowSchema = elementBaseSchema.extend({
 /** Flow element. */
 export type Flow = z.infer<typeof flowSchema>;
 
-/**
- * Rectangular trust boundary shape. Size extents are strictly positive.
- */
+/** Rectangular trust boundary with positive extents. */
 export const boxBoundaryShapeSchema = z.object({
   kind: z.literal('box'),
   position: pointSchema,
@@ -138,11 +118,7 @@ export const boxBoundaryShapeSchema = z.object({
 /** Box boundary shape. */
 export type BoxBoundaryShape = z.infer<typeof boxBoundaryShapeSchema>;
 
-/**
- * Freehand trust boundary shape: an open curve through at least two
- * waypoints (a curve through fewer cannot be drawn). Threat Dragon draws
- * boundary curves as well as boxes, so both variants are part of the model.
- */
+/** Open boundary curve through at least two points. */
 export const curveBoundaryShapeSchema = z.object({
   kind: z.literal('curve'),
   waypoints: waypointsSchema.min(2),
@@ -151,9 +127,7 @@ export const curveBoundaryShapeSchema = z.object({
 /** Curve boundary shape. */
 export type CurveBoundaryShape = z.infer<typeof curveBoundaryShapeSchema>;
 
-/**
- * Geometry of a trust boundary: a box or a freehand curve.
- */
+/** Trust boundary geometry. */
 export const boundaryShapeSchema = z.discriminatedUnion('kind', [
   boxBoundaryShapeSchema,
   curveBoundaryShapeSchema,
@@ -162,33 +136,18 @@ export const boundaryShapeSchema = z.discriminatedUnion('kind', [
 /** Trust boundary shape. */
 export type BoundaryShape = z.infer<typeof boundaryShapeSchema>;
 
-/**
- * A line across which the level of trust changes. Elements are not
- * containment-linked to a boundary; membership is visual.
- */
+/** Declared relationships are independent of geometry and remain unknown when absent. */
 export const trustBoundarySchema = elementBaseSchema.extend({
   kind: z.literal('trust-boundary'),
+  containedElements: z.array(elementIdSchema).optional(),
+  crossingFlows: z.array(elementIdSchema).optional(),
   shape: boundaryShapeSchema,
 });
 
 /** Trust boundary element. */
 export type TrustBoundary = z.infer<typeof trustBoundarySchema>;
 
-/**
- * Any element a diagram can hold, discriminated on `kind`. Every kind
- * carries a name, a description, and the scoping pair `outOfScope` and
- * `reasonOutOfScope`; the empty string is allowed throughout because
- * imported diagrams may hold unnamed or undescribed cells, and
- * `reasonOutOfScope` is by convention empty while the element is in scope
- * (no schema refinement ties the pair together). Threat Dragon's per-type
- * flags (isEncrypted, isPublicNetwork, protocol, privilegeLevel,
- * storesCredentials, and kin) and its persisted boundary membership
- * (trustBoundaryIds, containedElements, crossingFlows) are deliberately not
- * modelled; M2's wire schema declares them, so they live in the wire
- * document rather than here. A threat attaches to any element kind but
- * `text`, which is a note about the diagram rather than a part of the
- * system.
- */
+/** Element-specific security facts are optional. A canvas note carries no threats. */
 export const elementSchema = z.discriminatedUnion('kind', [
   actorSchema,
   processSchema,

@@ -1,3 +1,4 @@
+import { relationshipIssues } from './relationships.js';
 import { Data, Either } from 'effect';
 import { z } from 'zod';
 import { modelSchema } from './model.js';
@@ -20,12 +21,7 @@ const refinedModelSchema = modelSchema.superRefine((model, ctx) => {
   }
 });
 
-/**
- * Threat model root. The cross-entity refinements run in {@link parseModel},
- * the only exported way to obtain a Model; the type itself carries no brand
- * and is structurally the schema's inference, so it is not proof that a
- * value passed the refinements.
- */
+/** A parsed model remains structurally typed. Its type alone does not prove reference validity. */
 export type Model = z.infer<typeof refinedModelSchema>;
 
 /**
@@ -83,20 +79,7 @@ export type ParseFailure = Data.TaggedEnum<{
  */
 export const ParseFailure = Data.taggedEnum<ParseFailure>();
 
-/**
- * The only way a Model value comes into existence: the structural schema
- * composed with the cross-entity refinements. Enforced: element ids, diagram
- * ids, and threat numbers unique model-wide; threat, mitigation, and
- * assumption ids each unique among their kind; no threat number above
- * `lastIssuedThreatNumber`; attached flow endpoints anchored to an element
- * of the flow's own diagram and never to the flow itself; every element and
- * threat reference resolving. Fallible APIs in this project return Effect's
- * Either, so this carries the Model on the success channel and a
- * {@link ParseFailure} on the error channel, and does not throw. Each
- * violation is one issue whose path names the offending entry. The
- * refinements run only after a clean structural parse, so a structurally
- * invalid input reports structural issues alone.
- */
+/** Parses model structure, unique identities, issuance bookkeeping and diagram-local references. */
 export function parseModel(input: unknown): Either.Either<Model, ParseFailure> {
   const result = refinedModelSchema.safeParse(input);
   return result.success
@@ -117,6 +100,7 @@ function collectViolations(model: StructuralModel): Violation[] {
     ...recordIdViolations(model),
     ...flowEndpointViolations(model),
     ...referenceViolations(model),
+    ...relationshipViolations(model),
   ];
 }
 
@@ -312,4 +296,24 @@ function referenceViolations(model: StructuralModel): Violation[] {
         ),
       ),
   );
+}
+
+function relationshipViolations(model: StructuralModel): Violation[] {
+  return model.diagrams.flatMap((diagram, diagramIndex) => {
+    const known = new Map(
+      diagram.elements.map((element) => [element.id, element]),
+    );
+    return diagram.elements.flatMap((element, elementIndex) =>
+      relationshipIssues(element, known).map((issue) => ({
+        path: [
+          'diagrams',
+          diagramIndex,
+          'elements',
+          elementIndex,
+          ...issue.path,
+        ],
+        message: issue.message,
+      })),
+    );
+  });
 }

@@ -65,6 +65,10 @@ type ActionsByTag<Tag extends Action['_tag']> = {
 };
 
 const applied: ActionsByTag<ModelActionTag> = {
+  SetElementProperties: Action.SetElementProperties({
+    elementId: processElement,
+    properties: { kind: 'process', isWebApplication: true },
+  }),
   AddDiagram: Action.AddDiagram({
     diagram: { id: secondDiagram, title: 'Second', elements: [] },
   }),
@@ -139,6 +143,10 @@ const applied: ActionsByTag<ModelActionTag> = {
 };
 
 const refused: ActionsByTag<ModelActionTag> = {
+  SetElementProperties: Action.SetElementProperties({
+    elementId: processElement,
+    properties: { kind: 'actor', providesAuthentication: true },
+  }),
   AddDiagram: Action.AddDiagram({
     diagram: { id: mainDiagram, title: 'Again', elements: [] },
   }),

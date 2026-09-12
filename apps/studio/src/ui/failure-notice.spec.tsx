@@ -49,6 +49,22 @@ const readFailures: ByTag<ReadFailure> = {
 };
 
 const operationFailures: ByTag<OperationFailure> = {
+  InvalidElementProperties: OperationFailure.InvalidElementProperties({
+    elementId: elementId('element-api'),
+    issues: [
+      { path: ['kind'], code: 'custom', message: 'Element kind changed.' },
+    ],
+  }),
+  InvalidElementRelationship: OperationFailure.InvalidElementRelationship({
+    elementId: elementId('element-api'),
+    issues: [
+      {
+        path: ['trustBoundaryIds', 0],
+        code: 'custom',
+        message: 'Unknown boundary.',
+      },
+    ],
+  }),
   InvalidFragment: OperationFailure.InvalidFragment({
     issues: [
       {

@@ -8,6 +8,7 @@ import type {
   DiagramId,
   Element,
   ElementId,
+  ElementProperties,
   Model,
   Point,
   Side,
@@ -21,6 +22,10 @@ import type { SyncedState } from './sync.js';
 
 /** Every state change the reducer accepts. */
 export type Action = Data.TaggedEnum<{
+  SetElementProperties: {
+    readonly elementId: ElementId;
+    readonly properties: ElementProperties;
+  };
   AddElement: { readonly diagramId: DiagramId; readonly element: Element };
   InsertFragment: { readonly diagramId: DiagramId; readonly fragment: Model };
   ArrangeElements: {

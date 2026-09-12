@@ -12,11 +12,7 @@ export type FailureDescription = {
   readonly details: readonly string[];
 };
 
-/**
- * A refusal in words. Every variant is worded, so nothing reaches a person
- * as a tag, and a refusal a codec produced keeps its paths: they are what
- * says which line of a file was refused rather than that the file was.
- */
+/** Formats every failure variant and retains schema paths. */
 export function describeFailure(failure: StudioFailure): FailureDescription {
   return StudioFailure.$match(failure, {
     Operation: ({ failure: refusal }) => ({
@@ -44,13 +40,7 @@ export type FailureNoticeProps = {
   readonly failure: StudioFailure | undefined;
 };
 
-/**
- * The last refusal, wherever it arose, in the studio's own live region, so a
- * refusal that arrives while the person is elsewhere is announced rather than
- * appearing in silence. It stands until the person dismisses it or the state
- * it describes resolves, never on a clock, and it dismisses itself so the
- * view holding it passes nothing but the refusal.
- */
+/** Announces the last failure in a live region until dismissal or resolution. */
 export function FailureNotice({ failure }: FailureNoticeProps) {
   const described =
     failure === undefined ? undefined : describeFailure(failure);
@@ -133,6 +123,10 @@ function describeRead(
 
 function describeOperation(failure: OperationFailure): string {
   return OperationFailure.$match(failure, {
+    InvalidElementProperties: ({ issues }) =>
+      `The element properties were refused: ${issueLines(issues).join(' ')}`,
+    InvalidElementRelationship: ({ issues }) =>
+      `The element has invalid boundary relationships: ${issueLines(issues).join(' ')}`,
     InvalidFragment: ({ issues }) =>
       `The copied graph was refused. ${issueLines(issues).join(' ')}`,
     UnknownDiagram: ({ diagramId }) =>

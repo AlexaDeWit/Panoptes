@@ -108,9 +108,35 @@ describe('the document shape v0.2.1 wrote', () => {
   it('reads as the model it describes, with nothing diverging', () => {
     const reading = readOrThrow(frozenV021);
     expect(reading.divergences).toEqual([]);
-    expect(reading.model).toEqual(
-      withoutPinnedSides(inNumberOrder(ecluseModel)),
-    );
+    const legacy = withoutPinnedSides(inNumberOrder(ecluseModel));
+    const diagrams = legacy.diagrams.map((diagram) => ({
+      ...diagram,
+      elements: diagram.elements.map((element) =>
+        Object.fromEntries(
+          Object.entries(element).filter(
+            ([key]) =>
+              ![
+                'providesAuthentication',
+                'handlesCardPayment',
+                'handlesGoodsOrServices',
+                'isWebApplication',
+                'privilegeLevel',
+                'isALog',
+                'isEncrypted',
+                'isSigned',
+                'storesCredentials',
+                'storesInventory',
+                'protocol',
+                'isPublicNetwork',
+                'trustBoundaryIds',
+                'containedElements',
+                'crossingFlows',
+              ].includes(key),
+          ),
+        ),
+      ),
+    }));
+    expect(reading.model).toEqual({ ...legacy, diagrams });
   });
 
   it('takes every flow as one-way and every attached end as unpinned', () => {

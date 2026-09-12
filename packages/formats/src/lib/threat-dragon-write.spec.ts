@@ -181,7 +181,7 @@ describe('merging a model onto the document it is written over', () => {
         body: { stroke: '#333333', strokeWidth: 1.5, strokeDasharray: null },
       },
       ports: { items: [{ group: 'top', id: 'port-1' }] },
-      data: { providesAuthentication: true, hasOpenThreats: true },
+      data: { hasOpenThreats: true },
     });
     expect(
       mergedCell?.shape === 'actor' && mergedCell.data.threats?.[0]?.score,

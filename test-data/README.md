@@ -69,6 +69,16 @@ The file's `threatTop` is 28, but it contains threats numbered 101 and 102.
 The import uses `lastIssuedThreatNumber = max(threatTop, highest threat number in the file)`.
 The maximum preserves both existing numbers and the gap from a deleted highest-numbered threat.
 
+## `ecluse-security.json`
+
+The current Écluse migration fixture, copied without changes from
+`AlexaDeWit/Ecluse`, `threat-modelling/ecluse.json`, on 2026-09-12.
+The source commit is `5d7a1072833149119a5a809931511f6dcefd1a62` (2026-09-09).
+It retains the same MIT licence and author as `ecluse.json`.
+The formats security-property spec compares all declared facts and relationships,
+threat attachments, threat numbers, and issuance bookkeeping across both codecs.
+This maintained input supplements the older rendering fixtures.
+
 ## `saerskriven/ecluse.yaml`
 
 The native YAML encoding of `ecluse.json`, produced through both codecs.

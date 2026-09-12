@@ -1,6 +1,7 @@
 import {
   addDiagram,
   addElement,
+  setElementProperties,
   insertFragment,
   renameDiagram,
   reconnectFlow,
@@ -38,6 +39,8 @@ import type { SyncedState } from './sync.js';
 /** Refused model operations preserve the model and history, and record the failure. */
 export function reduce(state: State, action: Action): State {
   return Action.$match(action, {
+    SetElementProperties: ({ elementId, properties }) =>
+      edited(state, setElementProperties(state.present, elementId, properties)),
     InsertFragment: ({ diagramId, fragment }) =>
       edited(state, insertFragment(state.present, diagramId, fragment)),
     ReconnectFlow: ({ elementId, side, endpointId, anchor }) =>

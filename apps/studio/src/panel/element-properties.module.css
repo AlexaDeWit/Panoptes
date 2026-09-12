@@ -1,0 +1,72 @@
+.properties {
+  border: 1px solid var(--pn-colour-border);
+  border-radius: var(--pn-radius);
+  background: var(--pn-colour-surface);
+  min-inline-size: 0;
+}
+.trigger {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--pn-space-2);
+  inline-size: 100%;
+  padding: var(--pn-space-2) var(--pn-space-3);
+  border: 0;
+  background: none;
+  color: var(--pn-colour-text);
+  font: inherit;
+  font-weight: 600;
+  text-align: start;
+}
+.content,
+.group,
+.relationship {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pn-space-3);
+  min-inline-size: 0;
+}
+.content {
+  padding: var(--pn-space-3);
+  border-top: 1px solid var(--pn-colour-border);
+}
+.content[hidden] {
+  display: none;
+}
+.relationship {
+  margin: 0;
+  padding: var(--pn-space-2);
+  border: 1px solid var(--pn-colour-border);
+  border-radius: var(--pn-radius);
+}
+.relationship legend {
+  font-weight: 600;
+  padding-inline: var(--pn-space-1);
+}
+.relationshipRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: var(--pn-space-2);
+}
+.relationship button {
+  padding: var(--pn-space-2);
+  border: 1px solid var(--pn-colour-border);
+  border-radius: var(--pn-radius);
+  background: var(--pn-colour-surface-raised);
+  color: var(--pn-colour-text);
+  font: inherit;
+}
+.properties button:focus-visible {
+  outline: var(--pn-focus-ring);
+  outline-offset: var(--pn-focus-ring-offset);
+}
+.hint {
+  margin: 0;
+  color: var(--pn-colour-text-muted);
+  overflow-wrap: anywhere;
+}
+
+.properties [role='combobox'],
+.properties [role='option'] {
+  text-transform: none;
+}

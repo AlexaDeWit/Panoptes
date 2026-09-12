@@ -10,6 +10,14 @@ import type {
 
 /** Why an operation refused to produce a model: `_tag` discriminates the violation, following Effect's own convention, and the remaining fields carry the offending id or reference. */
 export type OperationFailure = Data.TaggedEnum<{
+  InvalidElementProperties: {
+    readonly elementId: ElementId;
+    readonly issues: readonly ParseIssue[];
+  };
+  InvalidElementRelationship: {
+    readonly elementId: ElementId;
+    readonly issues: readonly ParseIssue[];
+  };
   InvalidFragment: { readonly issues: readonly ParseIssue[] };
   UnknownDiagram: { readonly diagramId: DiagramId };
   DuplicateDiagramId: { readonly diagramId: DiagramId };

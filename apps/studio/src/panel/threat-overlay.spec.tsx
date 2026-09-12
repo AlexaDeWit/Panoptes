@@ -1,3 +1,4 @@
+import * as panelSelectors from './threats.js';
 import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Action } from '../store/actions.js';
@@ -191,5 +192,30 @@ describe('ThreatOverlay', () => {
     expect(modelStore.getState().present.threats[0].description).toBe(
       'Pasted prose',
     );
+  });
+  it('skips field rendering for canvas-only parent updates and still follows model edits', async () => {
+    const user = userEvent.setup();
+    const shown = render(<ThreatOverlay />);
+    select(processElement);
+    await user.click(
+      screen.getByRole('button', { name: 'Security properties' }),
+    );
+    const labels = vi.spyOn(panelSelectors, 'elementLabel');
+    for (let frame = 0; frame < 20; frame += 1)
+      shown.rerender(<ThreatOverlay />);
+    expect(labels).not.toHaveBeenCalled();
+    act(() => {
+      dispatch(
+        Action.SetElementProperties({
+          elementId: processElement,
+          properties: { kind: 'process', isWebApplication: true },
+        }),
+      );
+    });
+    expect(
+      screen.getByRole('combobox', { name: 'Web application' }).textContent,
+    ).toContain('Yes');
+    expect(labels).toHaveBeenCalled();
+    labels.mockRestore();
   });
 });
