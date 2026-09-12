@@ -1,0 +1,97 @@
+name: Cache cleanup
+
+# Keep the Actions cache under the repository quota. setup-toolchain keys the Nix store
+# on the flake pair, so every flake change mints a 1.4 GB entry and ci.yml's main-only
+# save rule cannot reach the epoch it supersedes. This is the reaper for what that rule
+# leaves behind: off-main stragglers, superseded epochs, and keys no workflow writes.
+# scripts/prune-caches.sh owns the retention rules and the allow-list.
+#
+# A plain `push` on the dependency-plan files, not `workflow_run` or
+# pull_request_target, keeps the privileged `actions: write` token in this
+# single-purpose workflow. The daily schedule is the only reaper of off-main entries.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - flake.lock
+      - flake.nix
+      - pnpm-lock.yaml
+  schedule:
+    - cron: '42 3 * * *' # daily, 03:42 UTC
+  workflow_dispatch:
+
+concurrency:
+  group: cache-cleanup
+  cancel-in-progress: false
+
+permissions: {}
+
+jobs:
+  prune:
+    name: Prune Actions cache
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read # checkout, to run scripts/prune-caches.sh
+      actions: write # delete caches via the REST API
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: ${{ github.repository }}
+      KEEP_PER_PREFIX: '2' # newest N per key prefix to retain on main
+      KEEP_NIX: '1' # a `nix-*` epoch is 1.4 GB, so that prefix retains the current one alone
+      # One DELETE per cache, so an unbounded backlog would outrun both the job timeout
+      # and GitHub's mutation rate limit. The daily run drains the rest.
+      MAX_DELETES: '1200'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Prune superseded, off-main, and unwritten caches
+        run: |
+          set -euo pipefail
+
+          gh api --paginate "repos/$REPO/actions/caches?per_page=100" \
+            --jq '.actions_caches[] | [.id, .ref, .key, .created_at, .size_in_bytes] | @tsv' \
+            > caches.tsv || true
+
+          if [ ! -s caches.tsv ]; then
+            echo "No caches found; nothing to prune."
+            exit 0
+          fi
+
+          # The script reasons about each id on stderr, so the log names every key it
+          # reaps. Its stdout is the id list, most urgent first.
+          bash scripts/prune-caches.sh < caches.tsv > all-to-delete.txt
+          head -n "$MAX_DELETES" all-to-delete.txt > to-delete.txt
+
+          total=$(wc -l < all-to-delete.txt | tr -d ' ')
+          count=$(wc -l < to-delete.txt | tr -d ' ')
+          echo "Caches selected: $total, deleting this run: $count"
+          if [ "$count" -eq 0 ]; then
+            echo "Cache already within retention policy."
+            exit 0
+          fi
+
+          while read -r id; do
+            [ -n "$id" ] || continue
+            gh api -X DELETE "repos/$REPO/actions/caches/$id" >/dev/null \
+              && echo "deleted $id" \
+              || echo "$id (already gone)"
+          done < to-delete.txt
+
+          if [ "$total" -gt "$count" ]; then
+            echo "$((total - count)) selected caches remain for the next run."
+          fi
+
+      # The usage API reports the size, not the quota, so the ceiling is stated here.
+      # The owner raised it from GitHub's 10 GB default on 2026-09-12.
+      - name: Report remaining usage
+        if: ${{ always() }}
+        run: |
+          set -euo pipefail
+          gh api "repos/$REPO/actions/cache/usage" \
+            --jq '"Active caches: \(.active_caches_count), \(.active_caches_size_in_bytes / 1073741824 | (.*100|floor)/100) GiB of the 15 GiB quota"' \
+            >> "$GITHUB_STEP_SUMMARY"

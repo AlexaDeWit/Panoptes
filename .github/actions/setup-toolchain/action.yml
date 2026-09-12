@@ -7,7 +7,8 @@ description: >-
 
   Caching policy, following Écluse: restore everywhere, save only on main, one
   writer per key. A PR restores main's entries through GitHub's base-branch
-  fallback and never saves.
+  fallback and never saves. Nothing here reaps the entry a new key supersedes,
+  so .github/workflows/cache-cleanup.yml does.
 
 inputs:
   install-dependencies:
@@ -25,7 +26,9 @@ inputs:
     description: >-
       The Nix-store cache key prefix, one entry per distinct closure. "nix" is
       the shared `.#ci` dev-shell store. A job that realises a different
-      closure needs its own prefix and must be its sole writer.
+      closure needs its own prefix and must be its sole writer. A prefix
+      outside `nix-*` also needs an allow-list entry in
+      scripts/prune-caches.sh, which reaps a key no workflow writes.
     default: 'nix'
   nix-gc-max-store-size:
     description: >-
