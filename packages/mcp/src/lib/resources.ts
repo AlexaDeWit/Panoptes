@@ -3,16 +3,19 @@ import type {
   ReadResourceResult,
   Variables,
 } from '@modelcontextprotocol/server';
-import { quotedForTerminal } from '@saerskriven/formats';
+import type { Diagram } from '@saerskriven/model';
 import { defaultLongEdge } from '@saerskriven/render/png';
-import { Either } from 'effect';
+import { Data, Either } from 'effect';
 import { prefaced } from './preface.js';
 import { readNamed } from './reading.js';
 import { register, renderRegisterResult } from './register.js';
 import {
+  drawnOf,
   imageMediaType,
-  renderDiagram,
+  namedDiagram,
+  rasterized,
   renderDrawing,
+  type DrawnDiagram,
   type RasterizerAssets,
 } from './render-diagram.js';
 import type { ModelWorkspace } from './workspace.js';
@@ -48,14 +51,30 @@ export function diagramUri(id: string): string {
 }
 
 /**
- * The register resource: the register of the default model, or its refusal
- * as text, since a resource read has no error result to put it in.
+ * Why a resource read has nothing to answer with: no model to read, no
+ * diagram of the name the URI carries, a name that does not percent-decode, or
+ * a rasterizer that drew nothing. None of them carries text, so nothing out of
+ * a model file reaches the error a client receives.
  */
+export type ResourceFailure = Data.TaggedEnum<{
+  NoModel: {};
+  NoSuchDiagram: {};
+  UndecodableName: {};
+  RasterizerFailed: {};
+}>;
+
+/**
+ * Constructor for {@link ResourceFailure}, plus Effect's `$is` and `$match`
+ * helpers.
+ */
+export const ResourceFailure = Data.taggedEnum<ResourceFailure>();
+
+/** The register resource: the register of the default model. */
 export function readRegisterResource(
   workspace: ModelWorkspace,
-): ReadResourceResult {
-  return Either.match(register(workspace, {}), {
-    onLeft: (lines) => refusedResource(registerUri, lines),
+): Either.Either<ReadResourceResult, ResourceFailure> {
+  return Either.mapBoth(register(workspace, {}), {
+    onLeft: () => ResourceFailure.NoModel(),
     onRight: (answer) => ({
       contents: [
         {
@@ -70,44 +89,51 @@ export function readRegisterResource(
 
 /**
  * One diagram resource: the PNG `saer_render_diagram` draws, and the text of
- * that render, or the refusal as text. The name is only ever compared against
- * the ids and titles of the model, so it reaches no path.
+ * that render. The name is only ever compared against the ids and titles of
+ * the model, so it reaches no path.
  */
 export async function readDiagramResource(
   workspace: ModelWorkspace,
   assets: RasterizerAssets,
   uri: URL,
   variables: Variables,
-): Promise<ReadResourceResult> {
-  const named = decodedName(variables['diagram']);
-  if (Either.isLeft(named)) {
-    return refusedResource(uri.href, named.left);
-  }
-  const drawn = await renderDiagram(workspace, assets, {
-    diagram: named.right,
-  });
-  return Either.match(drawn, {
-    onLeft: (lines) => refusedResource(uri.href, lines),
-    onRight: ({ answer, blocks }) => ({
-      contents: [
-        ...blocks.flatMap((block) =>
-          block.type === 'image'
-            ? [{ uri: uri.href, mimeType: imageMediaType, blob: block.data }]
-            : [],
+): Promise<Either.Either<ReadResourceResult, ResourceFailure>> {
+  const chosen = Either.flatMap(decodedName(variables['diagram']), (named) =>
+    Either.flatMap(
+      Either.mapLeft(readNamed(workspace, undefined), () =>
+        ResourceFailure.NoModel(),
+      ),
+      (reading) =>
+        Either.map(
+          Either.fromNullable(namedDiagram(reading.model, named), () =>
+            ResourceFailure.NoSuchDiagram(),
+          ),
+          (diagram) => ({ reading, diagram }),
         ),
-        {
-          uri: uri.href,
-          mimeType: 'text/plain',
-          text: prefaced(renderDrawing(answer)),
-        },
-      ],
-    }),
+    ),
+  );
+  if (Either.isLeft(chosen)) {
+    return Either.left(chosen.left);
+  }
+  const { reading, diagram } = chosen.right;
+  const image = await rasterized(
+    diagram,
+    reading.model,
+    assets,
+    defaultLongEdge,
+  );
+  return Either.mapBoth(image, {
+    onLeft: () => ResourceFailure.RasterizerFailed(),
+    onRight: (drawing) =>
+      diagramContents(uri, drawnOf(reading, diagram, drawing)),
   });
 }
 
 /**
  * One resource per diagram of the default model, and none where there is no
- * default or it cannot be read: the refusal belongs to a read of the URI.
+ * default or it cannot be read: the refusal belongs to a read of the URI. A
+ * diagram whose id is `.` or `..` is left out, since a URL parser removes that
+ * segment and the URI would name no diagram.
  */
 export function diagramResources(
   workspace: ModelWorkspace,
@@ -116,7 +142,7 @@ export function diagramResources(
     resources: Either.match(readNamed(workspace, undefined), {
       onLeft: () => [],
       onRight: ({ model }) =>
-        model.diagrams.map((diagram, index) => ({
+        model.diagrams.filter(addressable).map((diagram, index) => ({
           uri: diagramUri(diagram.id),
           name: diagramResourceName(index + 1),
           mimeType: imageMediaType,
@@ -127,8 +153,8 @@ export function diagramResources(
 }
 
 /**
- * The ids of the default model's diagrams that start with what was typed, and
- * none where the model cannot be read.
+ * The ids of the default model's listed diagrams that start with what was
+ * typed, and none where the model cannot be read.
  */
 export function completedDiagrams(
   workspace: ModelWorkspace,
@@ -138,30 +164,43 @@ export function completedDiagrams(
     onLeft: () => [],
     onRight: ({ model }) =>
       model.diagrams
+        .filter(addressable)
         .map((diagram) => diagram.id)
         .filter((id) => id.startsWith(typed)),
   });
 }
 
-function decodedName(
-  value: string | string[] | undefined,
-): Either.Either<string, readonly string[]> {
-  if (typeof value !== 'string') {
-    return Either.left(['The URI names no single diagram.']);
-  }
-  return Either.try({
-    try: () => decodeURIComponent(value),
-    catch: () => [
-      `The diagram name ${quotedForTerminal(value)} is not percent-encoded text.`,
-    ],
-  });
+function addressable(diagram: Diagram): boolean {
+  return diagram.id !== '.' && diagram.id !== '..';
 }
 
-function refusedResource(
-  uri: string,
-  lines: readonly string[],
+function decodedName(
+  value: string | string[] | undefined,
+): Either.Either<string, ResourceFailure> {
+  return typeof value === 'string'
+    ? Either.try({
+        try: () => decodeURIComponent(value),
+        catch: () => ResourceFailure.UndecodableName(),
+      })
+    : Either.left(ResourceFailure.NoSuchDiagram());
+}
+
+function diagramContents(
+  uri: URL,
+  { answer, blocks }: DrawnDiagram,
 ): ReadResourceResult {
   return {
-    contents: [{ uri, mimeType: 'text/plain', text: prefaced(lines) }],
+    contents: [
+      ...blocks.flatMap((block) =>
+        block.type === 'image'
+          ? [{ uri: uri.href, mimeType: imageMediaType, blob: block.data }]
+          : [],
+      ),
+      {
+        uri: uri.href,
+        mimeType: 'text/plain',
+        text: prefaced(renderDrawing(answer)),
+      },
+    ],
   };
 }

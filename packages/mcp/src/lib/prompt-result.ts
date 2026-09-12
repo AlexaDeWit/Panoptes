@@ -1,5 +1,5 @@
 import type { GetPromptResult } from '@modelcontextprotocol/server';
-import { Either } from 'effect';
+import { Data } from 'effect';
 import { prefaced } from './preface.js';
 
 /**
@@ -12,20 +12,32 @@ export type PromptParts = {
 };
 
 /**
- * One prompt's outcome as the messages a host sends: the data in a message of
- * its own opened by the data-not-instructions line, then the brief. A refusal
- * is one message of its lines under the same opening line, since a prompt has
- * no error result to carry it.
+ * Why a prompt could not be built from its arguments: no model to read, no
+ * element of that id or name, a name several elements share, or an element
+ * of a kind the pass does not cover. None of them carries text, so nothing
+ * out of a model file reaches the error a client receives.
  */
-export function promptResult(
-  outcome: Either.Either<PromptParts, readonly string[]>,
-): GetPromptResult {
-  return Either.match(outcome, {
-    onLeft: (lines) => ({ messages: [userMessage(prefaced(lines))] }),
-    onRight: ({ data, brief }) => ({
-      messages: [userMessage(prefaced(data)), userMessage(brief.join('\n'))],
-    }),
-  });
+export type PromptFailure = Data.TaggedEnum<{
+  NoModel: {};
+  NoSuchElement: {};
+  SharedName: {};
+  UncoveredKind: {};
+}>;
+
+/**
+ * Constructor for {@link PromptFailure}, plus Effect's `$is` and `$match`
+ * helpers.
+ */
+export const PromptFailure = Data.taggedEnum<PromptFailure>();
+
+/**
+ * A prompt as the messages a host sends: the data in a message of its own
+ * opened by the data-not-instructions line, then the brief.
+ */
+export function promptMessages({ data, brief }: PromptParts): GetPromptResult {
+  return {
+    messages: [userMessage(prefaced(data)), userMessage(brief.join('\n'))],
+  };
 }
 
 function userMessage(text: string): GetPromptResult['messages'][number] {

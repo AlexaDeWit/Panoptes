@@ -1,4 +1,3 @@
-import { quotedForTerminal } from '@saerskriven/formats';
 import {
   strideCategorySchema,
   threatCountByElement,
@@ -14,7 +13,7 @@ import {
   type ElementOnDiagram,
 } from './element-rows.js';
 import { fileArgumentSchema } from './inspect.js';
-import type { PromptParts } from './prompt-result.js';
+import { PromptFailure, type PromptParts } from './prompt-result.js';
 import {
   readNamed,
   renderReading,
@@ -83,15 +82,17 @@ const questions: Readonly<Record<StrideName, string>> = {
 };
 
 /**
- * The data and brief of a STRIDE pass over one element, or the lines saying
- * why there is none: no model, no element of that id or name, a name several
- * elements share, or a kind STRIDE per element does not cover.
+ * The data and brief of a STRIDE pass over one element, or why there is
+ * none.
  */
 export function stridePass(
   workspace: ModelWorkspace,
   args: StridePassArguments,
-): Either.Either<PromptParts, readonly string[]> {
-  return Either.flatMap(readNamed(workspace, args.file), (reading) =>
+): Either.Either<PromptParts, PromptFailure> {
+  const read = Either.mapLeft(readNamed(workspace, args.file), () =>
+    PromptFailure.NoModel(),
+  );
+  return Either.flatMap(read, (reading) =>
     Either.flatMap(
       namedElement(elementsOnDiagrams(reading.model.diagrams), args.element),
       (chosen) =>
@@ -145,7 +146,7 @@ function passData(
 function namedElement(
   placed: readonly ElementOnDiagram[],
   named: string,
-): Either.Either<ElementOnDiagram, readonly string[]> {
+): Either.Either<ElementOnDiagram, PromptFailure> {
   const byId = placed.find((one) => one.element.id === named);
   if (byId !== undefined) {
     return Either.right(byId);
@@ -157,27 +158,16 @@ function namedElement(
   }
   return Either.left(
     byName.length === 0
-      ? [
-          `The model holds no element ${quotedForTerminal(named)}, by id or by name.`,
-          'Call saer_search_elements for the ids of its elements.',
-        ]
-      : [
-          `Several elements are named ${quotedForTerminal(named)}, so name one by its id:`,
-          ...byName.map(
-            (one) =>
-              `  ${quotedForTerminal(one.element.id)} (${one.element.kind}, diagram ${quotedForTerminal(one.diagram.id)})`,
-          ),
-        ],
+      ? PromptFailure.NoSuchElement()
+      : PromptFailure.SharedName(),
   );
 }
 
 function analyzedKind(
   element: Element,
-): Either.Either<AnalyzedKind, readonly string[]> {
+): Either.Either<AnalyzedKind, PromptFailure> {
   return element.kind === 'trust-boundary' || element.kind === 'text'
-    ? Either.left([
-        `The element ${quotedForTerminal(element.id)} is a ${element.kind}, and a STRIDE pass runs over an actor, a process, a store or a flow.`,
-      ])
+    ? Either.left(PromptFailure.UncoveredKind())
     : Either.right(element.kind);
 }
 

@@ -562,7 +562,7 @@ for (const runner of runners) {
                   : { ttlMs: undefined, cacheScope: undefined },
               );
               expect(opening).toEqual(opening.map(() => dataNotInstructions));
-              expect(opening.length).toBe(5);
+              expect(opening.length).toBe(4);
               expect(resourceProseOf(registerRead).prose[0]).toContain(
                 '# Écluse threat register',
               );

@@ -3,7 +3,6 @@ import { escapedForTerminal, quotedForTerminal } from '@saerskriven/formats';
 import {
   acceptedTextSchema,
   diagramIdSchema,
-  diagramsNamed,
   elementIdSchema,
   type Diagram,
   type Model,
@@ -63,7 +62,7 @@ export const renderDiagramArgumentsSchema = fileArgumentSchema.extend({
     .string()
     .optional()
     .describe(
-      'Which diagram to draw, named by its id or its exact title. A model holding one diagram does not have to name it; a model holding several is refused until this names one.',
+      'Which diagram to draw, named by its id or its exact title. An id is tried first. A model holding one diagram does not have to name it; a model holding several is refused until this names one.',
     ),
   width: z
     .int()
@@ -195,19 +194,49 @@ async function drawn(
   if (Either.isLeft(target)) {
     return Either.left(target.left);
   }
+  const image = await rasterized(
+    chosen.diagram,
+    chosen.reading.model,
+    assets,
+    args.width ?? defaultLongEdge,
+  );
+  return Either.flatMap(image, (drawing) =>
+    answered(chosen, drawing, target.right),
+  );
+}
+
+/**
+ * One diagram as PNG bytes, or the lines saying why this install drew
+ * nothing: a rasterizer it cannot find or start, or one that refused the
+ * drawing.
+ */
+export async function rasterized(
+  diagram: Diagram,
+  model: Model,
+  assets: RasterizerAssets,
+  longEdge: number,
+): Promise<Either.Either<PngImage, readonly string[]>> {
   const found = assets();
   if (Either.isLeft(found)) {
     return Either.left([
       `This install cannot draw a PNG: ${escapedForTerminal(found.left)}.`,
     ]);
   }
-  const image = await renderPng(chosen.diagram, chosen.reading.model, {
+  const image = await renderPng(diagram, model, {
     assets: found.right,
-    longEdge: args.width ?? defaultLongEdge,
+    longEdge,
   });
-  return Either.flatMap(Either.mapLeft(image, refused), (drawing) =>
-    answered(chosen, drawing, target.right),
-  );
+  return Either.mapLeft(image, refused);
+}
+
+/** A drawing written nowhere, as the answer and the image block it carries. */
+export function drawnOf(
+  reading: ModelReading,
+  diagram: Diagram,
+  drawing: PngImage,
+): DrawnDiagram {
+  const answer = resultOf({ reading, diagram }, drawing, undefined);
+  return { answer, blocks: blocksOf(answer, drawing.png) };
 }
 
 function writeTarget(
@@ -357,13 +386,25 @@ function theNamedDiagram(
   model: Model,
   named: string,
 ): Either.Either<Diagram, readonly string[]> {
-  const [found] = diagramsNamed(model.diagrams, named);
+  const found = namedDiagram(model, named);
   return found === undefined
     ? Either.left([
         `The model holds no diagram named ${quotedForTerminal(named)}.`,
         ...diagramList(model),
       ])
     : Either.right(found);
+}
+
+/**
+ * The diagram a name selects: the one whose id it is, and otherwise the first
+ * whose title it is exactly. An id is tried first, so a URI built from an id
+ * never selects another diagram titled with it.
+ */
+export function namedDiagram(model: Model, named: string): Diagram | undefined {
+  return (
+    model.diagrams.find((diagram) => diagram.id === named) ??
+    model.diagrams.find((diagram) => diagram.title === named)
+  );
 }
 
 function diagramList(model: Model): readonly string[] {

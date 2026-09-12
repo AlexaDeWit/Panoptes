@@ -1,5 +1,8 @@
 import type { Client } from '@modelcontextprotocol/client';
-import type { CallToolResult } from '@modelcontextprotocol/server';
+import {
+  ProtocolError,
+  type CallToolResult,
+} from '@modelcontextprotocol/server';
 import { readFileSync, realpathSync } from 'node:fs';
 import { join } from 'node:path';
 import {
@@ -30,7 +33,7 @@ import { dataNotInstructions } from './preface.js';
 import { builtRasterizer, rasterizerUnbuilt } from './rasterizer.fixtures.js';
 import { renderDiagramResultSchema } from './render-diagram.js';
 import { revisionOf } from './revision.js';
-import { session, type Session } from './server.fixtures.js';
+import { noRasterizer, session, type Session } from './server.fixtures.js';
 import { workspaceTree } from './workspace.fixtures.js';
 import { saerskrivenYaml, treeHolding } from './read-tools.fixtures.js';
 
@@ -46,6 +49,17 @@ const cacheFields = (result: object) => ({
   ttlMs: 'ttlMs' in result ? result.ttlMs : undefined,
   cacheScope: 'cacheScope' in result ? result.cacheScope : undefined,
 });
+
+const rejectionOf = async (call: Promise<unknown>) => {
+  try {
+    await call;
+    return 'the call was answered';
+  } catch (error) {
+    return error instanceof ProtocolError
+      ? { code: error.code, data: error.data }
+      : error;
+  }
+};
 
 const staleRevision = `sha256:${'0'.repeat(64)}`;
 
@@ -289,10 +303,11 @@ for (const era of eras) {
       });
 
       it('opens every resource read and every prompt with the data line', async () => {
+        const uris = rasterizerUnbuilt
+          ? ['saer://register']
+          : ['saer://register', 'saer://diagram/0'];
         const reads = await Promise.all(
-          ['saer://register', 'saer://diagram/0', 'saer://diagram/Nothing'].map(
-            (uri) => fixture.client.readResource({ uri }),
-          ),
+          uris.map((uri) => fixture.client.readResource({ uri })),
         );
         const prompts = await Promise.all([
           fixture.client.getPrompt({
@@ -300,10 +315,6 @@ for (const era of eras) {
             arguments: { element: 'Écluse proxy' },
           }),
           fixture.client.getPrompt({ name: 'review_model' }),
-          fixture.client.getPrompt({
-            name: 'stride_pass',
-            arguments: { element: 'Nothing' },
-          }),
         ]);
         const read = reads.map(resourceProseOf);
         const opened = [
@@ -311,24 +322,103 @@ for (const era of eras) {
           ...prompts.map((one) => promptProseOf(one).prose[0] ?? ''),
         ].map((text) => text.split('\n')[0]);
         expect(read.flatMap((one) => one.unread)).toEqual([]);
-        expect(opened.length).toBeGreaterThanOrEqual(6);
+        expect(opened.length).toBe(uris.length + prompts.length);
         expect(opened).toEqual(opened.map(() => dataNotInstructions));
       });
 
-      it('reads a diagram whose id carries URI syntax back to that diagram', async () => {
-        const odd = treeHolding(
-          saerskrivenYaml().replace(
-            'id: read-and-render',
-            "id: '../a b/c?d#e'",
+      describe.skipIf(rasterizerUnbuilt)('a diagram read by its URI', () => {
+        it('draws the diagram its id names, past URI syntax and a colliding title', async () => {
+          const odd = treeHolding(
+            saerskrivenYaml()
+              .replace('id: read-and-render', "id: '../a b/c?d#e'")
+              .replace(
+                'title: Reading a file and rendering it',
+                'title: agent-and-desktop',
+              ),
+          );
+          const run = await session({
+            root: odd.root,
+            file: 'model.yaml',
+            era,
+            rasterizer,
+          });
+          const listed = await run.client.listResources();
+          const drawn = await Promise.all(
+            listed.resources.slice(1).map(async ({ uri }) => {
+              const read = await run.client.readResource({ uri });
+              return [
+                uri,
+                resourceProseOf(read)
+                  .prose.flatMap((text) => text.split('\n'))
+                  .find((line) => line.startsWith('diagram: ')),
+              ];
+            }),
+          );
+          await run.end();
+          expect(drawn).toEqual([
+            [
+              'saer://diagram/..%2Fa%20b%2Fc%3Fd%23e',
+              'diagram: ../a b/c?d#e (agent-and-desktop)',
+            ],
+            [
+              'saer://diagram/agent-and-desktop',
+              'diagram: agent-and-desktop (Agents and the desktop shell)',
+            ],
+          ]);
+        });
+      });
+    });
+
+    describe('what a client is refused with', () => {
+      it('answers a resource read with nothing to read as resource not found', async () => {
+        const listing = await session({ root: repositoryRoot, era });
+        const refused = await Promise.all([
+          rejectionOf(
+            fixture.client.readResource({ uri: 'saer://diagram/Nothing' }),
           ),
+          rejectionOf(
+            fixture.client.readResource({ uri: 'saer://diagram/%E0' }),
+          ),
+          rejectionOf(listing.client.readResource({ uri: 'saer://register' })),
+        ]);
+        await listing.end();
+        expect(refused).toEqual([
+          { code: -32602, data: { uri: 'saer://diagram/Nothing' } },
+          { code: -32602, data: { uri: 'saer://diagram/%E0' } },
+          { code: -32602, data: { uri: 'saer://register' } },
+        ]);
+      });
+
+      it('answers a diagram this install cannot draw as an internal error', async () => {
+        const undrawn = await session({
+          root: repositoryRoot,
+          file: ecluse,
+          era,
+          rasterizer: noRasterizer,
+        });
+        const refused = await rejectionOf(
+          undrawn.client.readResource({ uri: 'saer://diagram/0' }),
         );
-        const run = await session({ root: odd.root, file: 'model.yaml', era });
-        const listed = await run.client.listResources();
-        const uri = listed.resources[1]?.uri ?? '';
-        const read = await run.client.readResource({ uri });
-        await run.end();
-        expect(uri).toEqual('saer://diagram/..%2Fa%20b%2Fc%3Fd%23e');
-        expect(resourceProseOf(read).prose[0]).toContain('cannot draw a PNG');
+        await undrawn.end();
+        expect(refused).toEqual({ code: -32603, data: undefined });
+      });
+
+      it('answers a prompt argument naming nothing usable as invalid params', async () => {
+        const listing = await session({ root: repositoryRoot, era });
+        const refused = await Promise.all([
+          rejectionOf(
+            fixture.client.getPrompt({
+              name: 'stride_pass',
+              arguments: { element: 'Nothing' },
+            }),
+          ),
+          rejectionOf(listing.client.getPrompt({ name: 'review_model' })),
+        ]);
+        await listing.end();
+        expect(refused).toEqual([
+          { code: -32602, data: undefined },
+          { code: -32602, data: undefined },
+        ]);
       });
     });
 

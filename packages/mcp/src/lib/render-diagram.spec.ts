@@ -11,6 +11,8 @@ import {
   ecluseWorkspace,
   refusalOf,
   rootWorkspace,
+  saerskrivenYaml,
+  treeHolding,
   unplacedTree,
 } from './read-tools.fixtures.js';
 import {
@@ -128,6 +130,22 @@ describe.skipIf(rasterizerUnbuilt)('what saer_render_diagram draws', () => {
     expect(Math.max(drawn.answer.image.width, drawn.answer.image.height)).toBe(
       640,
     );
+  });
+
+  it('draws the diagram whose id a name is before one whose title it is', async () => {
+    const colliding = treeHolding(
+      saerskrivenYaml().replace(
+        'title: Reading a file and rendering it',
+        'title: agent-and-desktop',
+      ),
+    );
+    const drawn = answerOf(
+      await renderDiagram(colliding, builtRasterizer, {
+        diagram: 'agent-and-desktop',
+        width: 320,
+      }),
+    );
+    expect(drawn.answer.diagram.id).toEqual('agent-and-desktop');
   });
 
   it('draws the diagram a call names out of a model holding several', async () => {

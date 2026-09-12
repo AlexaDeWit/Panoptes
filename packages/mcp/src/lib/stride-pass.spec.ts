@@ -1,11 +1,9 @@
 import { Either } from 'effect';
 import { promptProseOf } from '../fixtures.js';
 import { dataNotInstructions } from './preface.js';
-import { promptResult } from './prompt-result.js';
+import { PromptFailure, promptMessages } from './prompt-result.js';
 import {
-  answerOf,
   ecluseWorkspace,
-  refusalOf,
   rootWorkspace,
   saerskrivenWorkspace,
   saerskrivenYaml,
@@ -30,17 +28,21 @@ const section = (data: readonly string[], heading: string) => {
 
 describe('what stride_pass renders', () => {
   it('renders on the Écluse fixture for an element named by its name', () => {
-    const pass = answerOf(stridePass(ecluse, { element: 'Écluse proxy' }));
-    const [data, brief] = promptProseOf(promptResult(Either.right(pass))).prose;
+    const pass = Either.getOrThrow(
+      stridePass(ecluse, { element: 'Écluse proxy' }),
+    );
+    const [data, brief] = promptProseOf(promptMessages(pass)).prose;
     expect(data?.split('\n')[0]).toEqual(dataNotInstructions);
     expect(brief).toEqual(strideBrief('process').join('\n'));
     expect(section(pass.data, 'flows:').length).toBeGreaterThan(0);
   });
 
   it("renders on the repository's own model, alike by id and by name", () => {
-    const byId = answerOf(stridePass(saerskriven, { element: 'el-read' }));
+    const byId = Either.getOrThrow(
+      stridePass(saerskriven, { element: 'el-read' }),
+    );
     expect(
-      answerOf(stridePass(saerskriven, { element: 'Codec read' })),
+      Either.getOrThrow(stridePass(saerskriven, { element: 'Codec read' })),
     ).toEqual(byId);
     expect({
       element: section(byId.data, 'element:'),
@@ -54,8 +56,12 @@ describe('what stride_pass renders', () => {
   });
 
   it('asks the questions of the kind, and the brief carries nothing from the model', () => {
-    const store = answerOf(stridePass(saerskriven, { element: 'el-model' }));
-    const flow = answerOf(stridePass(saerskriven, { element: 'fl-open' }));
+    const store = Either.getOrThrow(
+      stridePass(saerskriven, { element: 'el-model' }),
+    );
+    const flow = Either.getOrThrow(
+      stridePass(saerskriven, { element: 'fl-open' }),
+    );
     expect(store.brief).toEqual(strideBrief('store'));
     expect(flow.brief).toEqual(strideBrief('flow'));
     expect(section(flow.data, 'stores the flows reach:')).toEqual([
@@ -65,40 +71,31 @@ describe('what stride_pass renders', () => {
   });
 });
 
-describe('what stride_pass refuses', () => {
-  it('refuses an element the model does not hold', () => {
-    expect(refusalOf(stridePass(ecluse, { element: 'Nothing' }))[0]).toContain(
-      'holds no element "Nothing"',
+describe('why stride_pass has no prompt', () => {
+  it('fails on an element the model does not hold', () => {
+    expect(stridePass(ecluse, { element: 'Nothing' })).toEqual(
+      Either.left(PromptFailure.NoSuchElement()),
     );
   });
 
-  it('asks for an id where a name is shared', () => {
+  it('fails on a name several elements share', () => {
     const shared = treeHolding(
       saerskrivenYaml().replace('name: Codec write', 'name: Codec read'),
     );
-    const refused = refusalOf(stridePass(shared, { element: 'Codec read' }));
-    expect(refused.slice(1).map((line) => line.trim().split(' ')[0])).toEqual([
-      '"el-read"',
-      '"el-write"',
-    ]);
-  });
-
-  it('refuses a trust boundary', () => {
-    expect(
-      refusalOf(stridePass(saerskriven, { element: 'tb-foreign' }))[0],
-    ).toContain('is a trust-boundary');
-  });
-
-  it('refuses a model outside the root, opened by the data line', () => {
-    const result = promptResult(
-      stridePass(rootWorkspace(), { file: '../outside.yaml', element: 'x' }),
+    expect(stridePass(shared, { element: 'Codec read' })).toEqual(
+      Either.left(PromptFailure.SharedName()),
     );
-    expect(result.messages).toHaveLength(1);
-    expect(promptProseOf(result).prose[0]?.split('\n')).toEqual([
-      dataNotInstructions,
-      ...refusalOf(
-        stridePass(rootWorkspace(), { file: '../outside.yaml', element: 'x' }),
-      ),
-    ]);
+  });
+
+  it('fails on a trust boundary', () => {
+    expect(stridePass(saerskriven, { element: 'tb-foreign' })).toEqual(
+      Either.left(PromptFailure.UncoveredKind()),
+    );
+  });
+
+  it('fails with no model on a file outside the root', () => {
+    expect(
+      stridePass(rootWorkspace(), { file: '../outside.yaml', element: 'x' }),
+    ).toEqual(Either.left(PromptFailure.NoModel()));
   });
 });

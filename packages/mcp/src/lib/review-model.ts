@@ -3,7 +3,7 @@ import { Either } from 'effect';
 import type { z } from 'zod';
 import { coverageOf, renderCoverage } from './coverage.js';
 import { fileArgumentSchema } from './inspect.js';
-import type { PromptParts } from './prompt-result.js';
+import { PromptFailure, type PromptParts } from './prompt-result.js';
 import { readNamed } from './reading.js';
 import type { ModelWorkspace } from './workspace.js';
 
@@ -35,20 +35,23 @@ export const reviewBrief: readonly string[] = [
 
 /**
  * The coverage summary and the register of one reading of the model, or the
- * lines saying why there is no model to review. Both come from the one read,
- * so they describe the same revision.
+ * failure saying there is no model to review. Both come from the one read, so
+ * they describe the same revision.
  */
 export function reviewModel(
   workspace: ModelWorkspace,
   args: ReviewModelArguments,
-): Either.Either<PromptParts, readonly string[]> {
-  return Either.map(readNamed(workspace, args.file), (reading) => ({
-    data: [
-      ...renderCoverage(coverageOf(reading)),
-      'register:',
-      '',
-      renderRegister(reading.model),
-    ],
-    brief: reviewBrief,
-  }));
+): Either.Either<PromptParts, PromptFailure> {
+  return Either.mapBoth(readNamed(workspace, args.file), {
+    onLeft: () => PromptFailure.NoModel(),
+    onRight: (reading) => ({
+      data: [
+        ...renderCoverage(coverageOf(reading)),
+        'register:',
+        '',
+        renderRegister(reading.model),
+      ],
+      brief: reviewBrief,
+    }),
+  });
 }

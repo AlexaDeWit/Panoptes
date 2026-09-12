@@ -1,3 +1,4 @@
+import { Either } from 'effect';
 import { blobsOf, resourceProseOf } from '../fixtures.js';
 import { dataNotInstructions, prefaced } from './preface.js';
 import { builtRasterizer, rasterizerUnbuilt } from './rasterizer.fixtures.js';
@@ -6,6 +7,8 @@ import {
   ecluseWorkspace,
   rootWorkspace,
   saerskrivenWorkspace,
+  saerskrivenYaml,
+  treeHolding,
 } from './read-tools.fixtures.js';
 import { register, renderRegisterResult } from './register.js';
 import {
@@ -16,6 +19,7 @@ import {
   diagramUri,
   readDiagramResource,
   readRegisterResource,
+  ResourceFailure,
 } from './resources.js';
 import { noRasterizer } from './server.fixtures.js';
 
@@ -27,7 +31,7 @@ const opening = (text: string | undefined) => text?.split('\n')[0];
 
 describe('the register resource', () => {
   it('carries the text saer_register answers with', () => {
-    expect(readRegisterResource(ecluse).contents).toEqual([
+    expect(Either.getOrThrow(readRegisterResource(ecluse)).contents).toEqual([
       {
         uri: 'saer://register',
         mimeType: 'text/markdown',
@@ -36,14 +40,10 @@ describe('the register resource', () => {
     ]);
   });
 
-  it('refuses as text where the server carries no default model', () => {
-    const read = readRegisterResource(rootWorkspace());
-    expect(read.contents.map((entry) => entry.mimeType)).toEqual([
-      'text/plain',
-    ]);
-    expect(resourceProseOf(read).prose.map(opening)).toEqual([
-      dataNotInstructions,
-    ]);
+  it('fails with no model where the server carries no default model', () => {
+    expect(readRegisterResource(rootWorkspace())).toEqual(
+      Either.left(ResourceFailure.NoModel()),
+    );
   });
 });
 
@@ -65,6 +65,21 @@ describe('the diagram resources', () => {
     ]);
   });
 
+  it('leaves out a diagram whose id a URL parser would remove', () => {
+    const dotted = treeHolding(
+      saerskrivenYaml().replace('id: read-and-render', "id: '.'"),
+    );
+    expect({
+      listed: diagramResources(dotted).resources.map(
+        (resource) => resource.uri,
+      ),
+      completed: completedDiagrams(dotted, ''),
+    }).toEqual({
+      listed: ['saer://diagram/agent-and-desktop'],
+      completed: ['agent-and-desktop'],
+    });
+  });
+
   it('lists none where the server carries no default model', () => {
     expect(diagramResources(rootWorkspace()).resources).toEqual([]);
   });
@@ -83,35 +98,54 @@ describe('the diagram resources', () => {
   });
 
   it('looks a decoded name up among the diagrams and reaches no path', async () => {
-    const uri = new URL('saer://diagram/..%2F..%2Fetc%2Fpasswd');
-    const read = await readDiagramResource(ecluse, noRasterizer, uri, {
-      diagram: '..%2F..%2Fetc%2Fpasswd',
-    });
-    expect(resourceProseOf(read).prose[0]).toContain(
-      'holds no diagram named "../../etc/passwd"',
+    const read = await readDiagramResource(
+      ecluse,
+      noRasterizer,
+      new URL('saer://diagram/..%2F..%2Fetc%2Fpasswd'),
+      { diagram: '..%2F..%2Fetc%2Fpasswd' },
     );
+    expect(read).toEqual(Either.left(ResourceFailure.NoSuchDiagram()));
   });
 
-  it('refuses a name that is not percent-encoded text', async () => {
+  it('fails on a name that is not percent-encoded text', async () => {
     const read = await readDiagramResource(
       ecluse,
       noRasterizer,
       new URL('saer://diagram/%E0'),
       { diagram: '%E0' },
     );
-    expect(read.contents.map((entry) => entry.mimeType)).toEqual([
-      'text/plain',
-    ]);
-    expect(resourceProseOf(read).prose[0]).toContain('not percent-encoded');
+    expect(read).toEqual(Either.left(ResourceFailure.UndecodableName()));
+  });
+
+  it('fails apart from a missing diagram where the rasterizer draws nothing', async () => {
+    const read = await readDiagramResource(
+      ecluse,
+      noRasterizer,
+      new URL('saer://diagram/0'),
+      { diagram: '0' },
+    );
+    expect(read).toEqual(Either.left(ResourceFailure.RasterizerFailed()));
+  });
+
+  it('fails with no model where the server carries no default model', async () => {
+    const read = await readDiagramResource(
+      rootWorkspace(),
+      noRasterizer,
+      new URL('saer://diagram/0'),
+      { diagram: '0' },
+    );
+    expect(read).toEqual(Either.left(ResourceFailure.NoModel()));
   });
 
   describe.skipIf(rasterizerUnbuilt)('a diagram drawn', () => {
     it('carries the PNG blob and the text of the render', async () => {
-      const read = await readDiagramResource(
-        ecluse,
-        builtRasterizer,
-        new URL('saer://diagram/0'),
-        { diagram: '0' },
+      const read = Either.getOrThrow(
+        await readDiagramResource(
+          ecluse,
+          builtRasterizer,
+          new URL('saer://diagram/0'),
+          { diagram: '0' },
+        ),
       );
       const [image] = blobsOf(read);
       const prose = resourceProseOf(read);

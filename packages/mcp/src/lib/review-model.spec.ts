@@ -3,11 +3,10 @@ import { Either } from 'effect';
 import { promptProseOf } from '../fixtures.js';
 import { coverageOf, renderCoverage } from './coverage.js';
 import { dataNotInstructions } from './preface.js';
-import { promptResult } from './prompt-result.js';
+import { PromptFailure, promptMessages } from './prompt-result.js';
 import {
   answerOf,
   ecluseWorkspace,
-  refusalOf,
   rootWorkspace,
   saerskrivenWorkspace,
 } from './read-tools.fixtures.js';
@@ -21,7 +20,7 @@ describe('what review_model renders', () => {
   ])('renders the coverage and the register of %s', (_name, workspace) => {
     const reading = answerOf(readNamed(workspace, undefined));
     const [data, brief] = promptProseOf(
-      promptResult(Either.right(answerOf(reviewModel(workspace, {})))),
+      promptMessages(Either.getOrThrow(reviewModel(workspace, {}))),
     ).prose;
     expect(data?.split('\n')[0]).toEqual(dataNotInstructions);
     expect(data).toContain(renderCoverage(coverageOf(reading)).join('\n'));
@@ -29,9 +28,9 @@ describe('what review_model renders', () => {
     expect(brief).toEqual(reviewBrief.join('\n'));
   });
 
-  it('refuses where there is no model to review', () => {
-    expect(refusalOf(reviewModel(rootWorkspace(), {}))[0]).toContain(
-      'No file was named',
+  it('fails with no model where there is none to review', () => {
+    expect(reviewModel(rootWorkspace(), {})).toEqual(
+      Either.left(PromptFailure.NoModel()),
     );
   });
 });

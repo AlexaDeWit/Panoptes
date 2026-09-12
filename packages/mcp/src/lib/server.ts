@@ -1,8 +1,14 @@
 import {
   McpServer,
+  ProtocolError,
+  ProtocolErrorCode,
+  ResourceNotFoundError,
   ResourceTemplate,
   type CacheHint,
+  type GetPromptResult,
+  type ReadResourceResult,
 } from '@modelcontextprotocol/server';
+import { Either } from 'effect';
 import {
   coverage,
   coverageDescription,
@@ -56,7 +62,11 @@ import {
   renderDrawing,
   type RasterizerAssets,
 } from './render-diagram.js';
-import { promptResult } from './prompt-result.js';
+import {
+  PromptFailure,
+  promptMessages,
+  type PromptParts,
+} from './prompt-result.js';
 import {
   completedDiagrams,
   diagramResourceDescription,
@@ -66,6 +76,7 @@ import {
   readRegisterResource,
   registerResourceDescription,
   registerUri,
+  ResourceFailure,
 } from './resources.js';
 import {
   reviewModel,
@@ -321,7 +332,7 @@ function resources(server: McpServer, options: SaerskrivenServerOptions): void {
       description: registerResourceDescription,
       mimeType: 'text/markdown',
     },
-    () => readRegisterResource(options.workspace),
+    () => resourceOrThrow(registerUri, readRegisterResource(options.workspace)),
   );
   server.registerResource(
     'diagram',
@@ -336,12 +347,15 @@ function resources(server: McpServer, options: SaerskrivenServerOptions): void {
       description: diagramResourceDescription,
       mimeType: 'image/png',
     },
-    (uri, variables) =>
-      readDiagramResource(
-        options.workspace,
-        options.rasterizer,
-        uri,
-        variables,
+    async (uri, variables) =>
+      resourceOrThrow(
+        uri.href,
+        await readDiagramResource(
+          options.workspace,
+          options.rasterizer,
+          uri,
+          variables,
+        ),
       ),
   );
 }
@@ -354,7 +368,7 @@ function prompts(server: McpServer, options: SaerskrivenServerOptions): void {
       description: stridePassDescription,
       argsSchema: stridePassArgumentsSchema,
     },
-    (args) => promptResult(stridePass(options.workspace, args)),
+    (args) => promptOrThrow(stridePass(options.workspace, args)),
   );
   server.registerPrompt(
     'review_model',
@@ -363,6 +377,46 @@ function prompts(server: McpServer, options: SaerskrivenServerOptions): void {
       description: reviewModelDescription,
       argsSchema: reviewModelArgumentsSchema,
     },
-    (args) => promptResult(reviewModel(options.workspace, args)),
+    (args) => promptOrThrow(reviewModel(options.workspace, args)),
+  );
+}
+
+function resourceOrThrow(
+  uri: string,
+  outcome: Either.Either<ReadResourceResult, ResourceFailure>,
+): ReadResourceResult {
+  return Either.getOrThrowWith(outcome, (failure) =>
+    ResourceFailure.$match(failure, {
+      NoModel: () => new ResourceNotFoundError(uri),
+      NoSuchDiagram: () => new ResourceNotFoundError(uri),
+      UndecodableName: () => new ResourceNotFoundError(uri),
+      RasterizerFailed: () =>
+        new ProtocolError(
+          ProtocolErrorCode.InternalError,
+          'This install could not draw the diagram as a PNG. Call saer_render_diagram for the reason.',
+        ),
+    }),
+  );
+}
+
+function promptOrThrow(
+  outcome: Either.Either<PromptParts, PromptFailure>,
+): GetPromptResult {
+  return Either.getOrThrowWith(
+    Either.map(outcome, promptMessages),
+    (failure) =>
+      new ProtocolError(
+        ProtocolErrorCode.InvalidParams,
+        PromptFailure.$match(failure, {
+          NoModel: () =>
+            'There is no model to read. Name a readable model file under the server root in `file`, or start the server with --file.',
+          NoSuchElement: () =>
+            'The model holds no element with that id or name. Call saer_search_elements for the ids of its elements.',
+          SharedName: () =>
+            'Several elements carry that name. Name the element by its id, which saer_search_elements reports.',
+          UncoveredKind: () =>
+            'A STRIDE pass runs over an actor, a process, a store or a flow, and that element is none of these.',
+        }),
+      ),
   );
 }

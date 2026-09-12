@@ -69,7 +69,11 @@ export {
   type InspectResult,
 } from './lib/inspect.js';
 export { dataNotInstructions, prefaced } from './lib/preface.js';
-export { promptResult, type PromptParts } from './lib/prompt-result.js';
+export {
+  PromptFailure,
+  promptMessages,
+  type PromptParts,
+} from './lib/prompt-result.js';
 export {
   readNamed,
   readingSchema,
@@ -97,6 +101,7 @@ export {
   readRegisterResource,
   registerResourceDescription,
   registerUri,
+  ResourceFailure,
 } from './lib/resources.js';
 export {
   reviewBrief,
@@ -106,9 +111,12 @@ export {
   type ReviewModelArguments,
 } from './lib/review-model.js';
 export {
+  drawnOf,
   imageExtension,
   imageLinkDescription,
   imageMediaType,
+  namedDiagram,
+  rasterized,
   renderDiagram,
   renderDiagramArgumentsSchema,
   renderDiagramDescription,
