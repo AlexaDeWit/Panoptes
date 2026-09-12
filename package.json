@@ -2,7 +2,7 @@
   "name": "@saerskriven/source",
   "version": "0.3.0",
   "private": true,
-  "packageManager": "pnpm@11.23.0",
+  "packageManager": "pnpm@11.25.0",
   "//": [
     "check runs the Nx sync check, lint, boundaries, format check, build, typecheck, and unit tests with coverage. CI separately runs workflow lint, Semgrep, browser tests, dependency provenance, compiled CLI tests, the full CLI matrix, website packaging, and artifact attestation verification.",
     "Coverage stays enabled in check so the local run and CI's Codecov upload are the same command.",
