@@ -17,14 +17,21 @@ export const refuseStudioBuild = (sentence: string): never => {
   );
 };
 
-// The flake shell exports the fonts and not the rasterizer module, so this
-// build's recovery is to build the module and name it, which README.md's
-// SVG rasterizer section shows. Pointing at the shell alone would not fix it.
+// The flake names the module's path and the `resvg-wasm` project builds it
+// there, so this build's recovery is that one task rather than a shell.
 const refuseRasterizer = (sentence: string): never => {
   throw new Error(
-    `${sentence} No dev shell exports it: build it and name it as README.md's SVG rasterizer section shows.`,
+    `${sentence} Run pnpm nx build resvg-wasm, which every target carrying the module depends on.`,
   );
 };
+
+// Read when the build asks for the module, not when this configuration is
+// loaded. Nx loads it to build its project graph, before any task has run, so
+// on a cold checkout the module is not there yet and an eager read would
+// refuse every nx command in the workspace, the `resvg-wasm` build included.
+let located: string | undefined;
+const rasterizerModule = (): string =>
+  (located ??= resvgWasmAsset(refuseRasterizer));
 
 const faceId = (index: number): string =>
   `virtual:saerskriven-render-face-${String(index)}?url`;
@@ -53,7 +60,6 @@ export const renderFaces = [${faces.join(', ')}];\n`;
  */
 export function buildAssets() {
   const assets = typstFontAssets(refuseStudioBuild);
-  const resvgWasm = resvgWasmAsset(refuseRasterizer);
   const faces = new Map(
     assets.map((asset, index) => [faceId(index), `${asset.from}?url`]),
   );
@@ -66,7 +72,7 @@ export function buildAssets() {
         : id === typstId
           ? `${typstWasmModule}?url`
           : id === resvgId
-            ? `${resvgWasm}?url`
+            ? `${rasterizerModule()}?url`
             : faces.get(id);
     },
     load(id: string): string | undefined {
@@ -80,7 +86,6 @@ export function buildAssets() {
           fs: {
             allow: [
               resolve(import.meta.dirname, '../..'),
-              dirname(resvgWasm),
               ...new Set(assets.map((asset) => dirname(asset.from))),
             ],
           },

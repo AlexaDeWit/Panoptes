@@ -33,8 +33,10 @@ inputs:
   nix-gc-max-store-size:
     description: >-
       The size cache-nix-action trims the Nix store to before saving. The trim
-      is a `nix store gc`, so root what the entry must carry (the job roots the
-      .#ci shell profile before saving).
+      is a `nix store gc`, so root what the entry must carry: the job roots the
+      .#ci shell profile before saving, and the out-link the `resvg-wasm` nx
+      project writes roots the rasterizer module
+      (nix/resvg-wasm/project.json).
     default: '5G'
 
 runs:

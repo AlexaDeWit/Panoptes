@@ -36,6 +36,15 @@
     ],
     "targets": {
       "build": {
+        "dependsOn": [
+          "^build",
+          {
+            "projects": [
+              "resvg-wasm"
+            ],
+            "target": "build"
+          }
+        ],
         "inputs": [
           "production",
           "^production",
@@ -43,7 +52,8 @@
             "env": "SAERSKRIVEN_FONTS_DIR"
           },
           {
-            "env": "SAERSKRIVEN_RESVG_WASM"
+            "dependentTasksOutputFiles": "dist/resvg-wasm/lib/**/*",
+            "transitive": false
           },
           {
             "env": "PAGES_BASE_PATH"
@@ -75,7 +85,25 @@
       },
       "boundaries": {},
       "lint": {},
+      "serve": {
+        "dependsOn": [
+          {
+            "projects": [
+              "resvg-wasm"
+            ],
+            "target": "build"
+          }
+        ]
+      },
       "test": {
+        "dependsOn": [
+          {
+            "projects": [
+              "resvg-wasm"
+            ],
+            "target": "build"
+          }
+        ],
         "inputs": [
           "...",
           "viteGlobals",
@@ -90,7 +118,8 @@
             "env": "SAERSKRIVEN_FONTS_DIR"
           },
           {
-            "env": "SAERSKRIVEN_RESVG_WASM"
+            "dependentTasksOutputFiles": "dist/resvg-wasm/lib/**/*",
+            "transitive": false
           },
           {
             "env": "PAGES_BASE_PATH"

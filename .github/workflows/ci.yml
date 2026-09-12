@@ -36,11 +36,6 @@ jobs:
     permissions:
       contents: read
       id-token: write # OIDC for tokenless Codecov upload (no stored token)
-    env:
-      # Where the step below writes the module. Every step after it that
-      # builds or compiles the CLI reads this, because the CLI build copies
-      # the module into dist/assets and refuses without it.
-      SAERSKRIVEN_RESVG_WASM: ${{ github.workspace }}/result/lib/saerskriven_resvg.wasm
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -55,19 +50,10 @@ jobs:
       - name: Check the installed Nix CLI without runtime network access
         run: nix build --no-link --print-build-logs --option sandbox true .#checks.x86_64-linux.saerskriven
 
-      # Built here rather than taken from the rasterizer job, which saves no
-      # Nix-store entry: this job is the one that writes the shared `nix`
-      # prefix on main, so the module lands in the store it already saves and
-      # a later run finds the output path valid and skips the Rust build.
-      # What the entry has to carry for that is the 2 MiB output alone, which
-      # `./result` roots. The 2.7 GiB of Rust build inputs are rooted by
-      # nothing, so the `nix store gc` before the save collects them and the
-      # 5G ceiling holds: the rooted closure measures 3.45 GiB for the `.#ci`
-      # shell plus 2 MiB for the module.
-      # sandbox true gives the builder no network, as in the rasterizer job.
-      - name: Build the rasterizer module the CLI carries
-        run: nix build --print-build-logs --option sandbox true .#resvg-wasm
-
+      # `pnpm check` builds the rasterizer module on the way to the targets
+      # that carry it, so the module lands in the store this job saves and a
+      # later run finds the output path valid and skips the Rust build
+      # (nix/resvg-wasm/project.json says what its out-link roots and why).
       - name: Check
         run: nix develop .#ci --command pnpm check
 
@@ -179,21 +165,15 @@ jobs:
           # build of about a minute on a job nothing waits for.
           save-nix-store: 'false'
 
-      # sandbox true gives the builder no network: a crate the vendored
-      # registry does not hold fails here rather than being fetched.
-      - name: Build the rasterizer module offline
-        run: nix build --print-build-logs --option sandbox true .#resvg-wasm
-
-      # The rasterizer's spec skips where the variable is unset, so the run is
-      # gated on the module being there, rather than on a green suite that may
-      # have skipped. An unset key, an empty value and a path naming no file
-      # all fail here.
+      # The test target depends on the `resvg-wasm` build, so the module is
+      # built here rather than by a step of this job's own. The rasterizer's
+      # spec skips where the variable is unset, which the flake no longer
+      # leaves it, so a green suite can no longer be a skipped one: a module
+      # the build failed to write fails the spec instead.
       - name: Rasterize a fixture through the module
-        env:
-          SAERSKRIVEN_RESVG_WASM: ${{ github.workspace }}/result/lib/saerskriven_resvg.wasm
-        run: |
-          nix develop .#ci --command test -f "$SAERSKRIVEN_RESVG_WASM"
-          nix develop .#ci --command pnpm nx test @saerskriven/render -- --coverage.enabled=true
+        run: >-
+          nix develop .#ci --command
+          pnpm nx test @saerskriven/render -- --coverage.enabled=true
 
       - name: Upload coverage to Codecov
         continue-on-error: ${{ github.event_name != 'pull_request' }}
@@ -251,10 +231,6 @@ jobs:
     timeout-minutes: 30
     permissions:
       contents: read
-    env:
-      # The studio build refuses without it, because the PNG export reads it,
-      # so both the development server and the Pages preview need it here.
-      SAERSKRIVEN_RESVG_WASM: ${{ github.workspace }}/result/lib/saerskriven_resvg.wasm
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -267,12 +243,9 @@ jobs:
           install-dependencies: 'true'
           save-nix-store: 'false'
 
-      # The restored store already holds the output on any run after the
-      # first, so this validates the path rather than rebuilding the crate.
-      # sandbox true gives the builder no network, as in the rasterizer job.
-      - name: Build the rasterizer module the studio carries
-        run: nix build --print-build-logs --option sandbox true .#resvg-wasm
-
+      # The suite reaches the studio's development server and the Pages
+      # preview, both of which carry the module, through the `resvg-wasm`
+      # build the studio's serve target depends on.
       - name: Run the smoke suite
         run: nix develop .#ci --command pnpm nx e2e @saerskriven/studio-e2e
 
@@ -436,17 +409,13 @@ jobs:
       - name: Configure GitHub Pages
         id: pages
         uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
-      # The website carries the module as a hashed asset, so its build reads
-      # the same variable the CLI build does. sandbox true gives the builder
-      # no network, as in the rasterizer job.
-      - name: Build the rasterizer module the website carries
-        run: nix build --print-build-logs --option sandbox true .#resvg-wasm
+      # The website carries the module as a hashed asset, which the studio's
+      # build target depends on the `resvg-wasm` build for.
       - name: Build and package the website
         env:
           PAGES_BASE_PATH: ${{ steps.pages.outputs.base_path }}
           PAGES_SITE_URL: ${{ steps.pages.outputs.base_url }}
           SAERSKRIVEN_RELEASE_TAG: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || '' }}
-          SAERSKRIVEN_RESVG_WASM: ${{ github.workspace }}/result/lib/saerskriven_resvg.wasm
           GH_REPO: ${{ github.repository }}
         run: |
           if [ -z "$SAERSKRIVEN_RELEASE_TAG" ]; then

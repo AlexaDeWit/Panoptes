@@ -246,7 +246,7 @@ for the reason the `pdf` one does: it pulls in 2 MB of WebAssembly, which a
 caller writing a register has no use for.
 
 `assets` is where the bytes come from, since this package holds none: `wasm` is
-the module `nix build .#resvg-wasm` writes out of the `resvg` crate, and
+the module the `resvg-wasm` project builds out of the `resvg` crate, and
 `fonts` are the faces, offered in the order they are listed. A family the
 document names that no face carries falls back to the first face offered,
 which is what puts a Liberation face behind the Helvetica and Arial the canvas
@@ -285,8 +285,9 @@ and `ResvgFailure.Unusable` the one a module that would not start reported.
 
 The `build-assets` subpath names the variable a build reads the module's path
 from and the name it is carried under beside a bundle. Its spec skips where
-that variable is unset, since no dev shell exports it: `nix build
-.#resvg-wasm` writes the module and the caller points the variable at it, as
+that variable is unset, which is what running outside the flake shell looks
+like: inside it the `resvg-wasm` build every carrying target depends on is
+what writes the module the variable names, as
 [the repository README](../../README.md#the-svg-rasterizer) describes.
 
 ## A diagram as a PNG
@@ -367,9 +368,10 @@ being added there. The registers keep their own list in their own spec. The
 suites compare every golden on every run and red where a file and the output
 differ. Cached tests write no snapshot, so a missing golden fails. Regenerate
 them with `pnpm snapshots:update @saerskriven/render` in the commit that moved
-them, and read the diff. The raster goldens need
-[`SAERSKRIVEN_RESVG_WASM`](../../README.md#the-svg-rasterizer) set, and their
-suite skips where it is not.
+them, and read the diff. That command runs Vitest directly rather than through
+nx, so the raster goldens need the rasterizer module built first, which
+[`SAERSKRIVEN_RESVG_WASM`](../../README.md#the-svg-rasterizer) names: their
+suite skips where that variable is unset.
 
 The CLI's suites read several of them as fixtures, and the Saerskriven ones
 use the model `@saerskriven/formats` maintains under `test-data`.
