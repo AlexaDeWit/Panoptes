@@ -1,4 +1,9 @@
-import { parseModel, type Model } from '@saerskriven/model';
+import {
+  parseModel,
+  type Flow,
+  type FlowEndpoint,
+  type Model,
+} from '@saerskriven/model';
 import { saerskrivenYamlWireSchema } from '@saerskriven/wire-saerskriven-yaml';
 import { Either } from 'effect';
 import fc from 'fast-check';
@@ -8,6 +13,7 @@ import { saerskrivenYamlCodec } from './saerskriven-yaml.js';
 import {
   ecluseModel,
   emittedModels,
+  frozenV021Path,
   goldenPath,
   modelInputArbitrary,
   nativeFixtures,
@@ -15,6 +21,8 @@ import {
 } from './saerskriven-yaml.fixtures.js';
 
 const golden = readFileSync(goldenPath, 'utf8');
+
+const frozenV021 = readFileSync(frozenV021Path, 'utf8');
 
 const description = readFileSync(
   join(import.meta.dirname, '../../../../docs/saerskriven-yaml.md'),
@@ -40,6 +48,38 @@ function readOrThrow(text: string) {
   return Either.getOrThrow(saerskrivenYamlCodec.read(text));
 }
 
+function withoutPinnedSides(model: Model): Model {
+  return {
+    ...model,
+    diagrams: model.diagrams.map((diagram) => ({
+      ...diagram,
+      elements: diagram.elements.map((element) =>
+        element.kind === 'flow'
+          ? {
+              ...element,
+              source: unpinned(element.source),
+              target: unpinned(element.target),
+            }
+          : element,
+      ),
+    })),
+  };
+}
+
+function unpinned(endpoint: FlowEndpoint): FlowEndpoint {
+  return endpoint.kind === 'attached'
+    ? { kind: 'attached', element: endpoint.element }
+    : endpoint;
+}
+
+function flowsOf(model: Model): readonly Flow[] {
+  return model.diagrams.flatMap((diagram) =>
+    diagram.elements.flatMap((element) =>
+      element.kind === 'flow' ? [element] : [],
+    ),
+  );
+}
+
 describe('the Saerskriven YAML codec', () => {
   it('pairs the read and the write with the schema they share', () => {
     expect(saerskrivenYamlCodec.wire).toBe(saerskrivenYamlWireSchema);
@@ -61,6 +101,30 @@ describe('the Saerskriven YAML codec', () => {
 
   it('hands back the document it read, for a write to merge onto', () => {
     expect(readOrThrow(golden).source.formatVersion).toBe(1);
+  });
+});
+
+describe('the document shape v0.2.1 wrote', () => {
+  it('reads as the model it describes, with nothing diverging', () => {
+    const reading = readOrThrow(frozenV021);
+    expect(reading.divergences).toEqual([]);
+    expect(reading.model).toEqual(
+      withoutPinnedSides(inNumberOrder(ecluseModel)),
+    );
+  });
+
+  it('takes every flow as one-way and every attached end as unpinned', () => {
+    const flows = flowsOf(readOrThrow(frozenV021).model);
+    expect(flows).toHaveLength(20);
+    expect(flows.filter((flow) => flow.bidirectional)).toEqual([]);
+    expect(
+      flows
+        .flatMap((flow) => [flow.source, flow.target])
+        .filter(
+          (endpoint) =>
+            endpoint.kind === 'attached' && endpoint.side !== undefined,
+        ),
+    ).toEqual([]);
   });
 });
 

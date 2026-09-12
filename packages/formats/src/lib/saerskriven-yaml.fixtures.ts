@@ -46,6 +46,16 @@ export const goldenPath: string = join(
   'test-data/saerskriven/ecluse.yaml',
 );
 
+/**
+ * The Écluse model in the document shape v0.2.1 wrote, committed as data and
+ * never regenerated, so a file from before a flow's `bidirectional` and an
+ * attached endpoint's `side` still has a reader to answer to.
+ */
+export const frozenV021Path: string = join(
+  repositoryRoot,
+  'test-data/saerskriven/ecluse-v0.2.1.yaml',
+);
+
 const saerskrivenModelPath = join(
   repositoryRoot,
   'threat-modelling/saerskriven.yaml',
@@ -76,10 +86,12 @@ export type EmittedModel = {
 };
 
 /**
- * Every Saerskriven YAML file this repository commits. Each is a fixed point of
- * the codec: what a read of the committed bytes writes back is those bytes
+ * Every Saerskriven YAML file this repository commits as a fixed point of the
+ * codec: what a read of the committed bytes writes back is those bytes
  * again. The suites that gate a native file read this list rather than a
- * path, so a third file joins all of them by being added here.
+ * path, so a third file joins all of them by being added here. The frozen
+ * fixture at {@link frozenV021Path} is not one of them, because a write of
+ * its model states the keys its shape predates.
  *
  * `modelJsonPath` is where a file's internal model is written out for
  * `packages/render` and `packages/canvas`, which gate on a model and cannot

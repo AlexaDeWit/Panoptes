@@ -30,13 +30,12 @@ order:
 
 Every key the first release declared is required and every list may be
 empty. Nothing is defaulted: a model saves before it is drawn, and it does so
-with empty strings and empty lists rather than with absent keys. A key a later
-release added is optional on read, so a file written before it still reads,
-and a write always states it. Two keys are of that kind: a flow's
-`bidirectional`, which a file written before it left absent and the read
-takes as `false`, and an attached endpoint's `side`, one of `top`, `right`,
-`bottom` and `left`, which pins the end to that side of its element and
-which absent leaves the side to the renderer.
+with empty strings and empty lists rather than with absent keys. Two keys a
+later release added are optional on read: a flow's `bidirectional`, absent
+where the read takes the flow as one way, and an attached endpoint's `side`,
+one of `top`, `right`, `bottom` and `left`, which pins the end to that side
+of its element and absent leaves the side to the renderer. What a key added
+later costs the format is under `formatVersion` below.
 
 That order is three tiers, so a key added to the format later has an obvious
 home rather than an argued one. The header comes first, `formatVersion` and
@@ -57,8 +56,32 @@ tells a Saerskriven file apart from a JSON format without consulting the file
 extension.
 
 - **Missing**: the read fails, with the issue at path `formatVersion`.
-- **Any value but `1`**: the read fails, with the issue at path
-  `formatVersion`. A later version is refused rather than read in part.
+- **A version this release does not know**: the read fails, with the issue at
+  path `formatVersion`, and the file is refused whole rather than read in
+  part.
+
+A change to the format is additive when the absence of what it adds means
+something. A new key is then optional on read, the mapping in
+`@saerskriven/formats` supplies what its absence means, a write states it
+wherever the model holds a value for it, and `formatVersion` stays where it
+is. A flow's `bidirectional` and an attached endpoint's `side` are the two
+added that way so far: a write states `bidirectional` on every flow and
+`side` on every pinned end.
+
+Everything else is breaking: a rename, a type change, a removal, or a new key
+whose absence means nothing. That takes a new `formatVersion`, and a new
+version arrives as a wire package of its own beside the one before it, so
+`@saerskriven/wire-saerskriven-yaml` goes on declaring version 1 unchanged and
+a file of that version keeps the reading it has. The migration from one
+version to the next lives in `@saerskriven/formats`, which the layer matrix
+makes the only place allowed to know two wire packages. A write emits the
+version this release is current on.
+
+Every released version reads, for good. A read dispatches on the version the
+file states and chains the migrations from there to the current one, so a
+file Saerskriven has ever written opens in every later release of it. Nothing
+past version 1 exists yet, so there is no dispatch and no migration to read:
+this says what the first bump has to build.
 
 The internal model cannot change this. The wire schema declares its own ids,
 its own vocabularies, and its own record shapes, and the layer matrix forbids
