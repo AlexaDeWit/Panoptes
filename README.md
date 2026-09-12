@@ -306,9 +306,14 @@ one modification time and one mode, the assets as well as the entry point, so
 the bytes stay a function of the inputs rather than of the machine. The
 packaging script then renders the vendored fixture to a PDF through the
 compiled executable, so an executable compiled without the compiler module
-fails there rather than in a user's hands. A missing face is not that check's
-to catch, since a document typeset without one is still a PDF: the build's own
-refusal is what keeps a fontless executable from being made at all.
+fails there rather than in a user's hands. The build's own refusal, one font
+file at a time, is the first defence against a fontless executable: `fontIn`
+in `apps/cli/esbuild.config.mts` stops a build whose `SAERSKRIVEN_FONTS_DIR`
+is missing one of the five pinned faces. The packaging script's render is a
+second: an assets directory that reaches it holding the module and no `.ttf`
+now fails the check too, because `apps/cli/src/pdf.ts` refuses that install
+rather than typesetting a document with no text, so the render writes
+nothing and the `%PDF-` test fails on it.
 
 [`docs/release.md`](docs/release.md) is the release procedure.
 

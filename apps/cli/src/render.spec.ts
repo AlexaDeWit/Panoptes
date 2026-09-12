@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { mkdtempSync, readFileSync } from 'node:fs';
+import { copyFileSync, mkdtempSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
@@ -222,6 +222,30 @@ describe('render', () => {
       expect(outcome.code).toBe(2);
       expect(outcome.out).toBe('');
       expect(outcome.err).toContain('error: cannot compile the PDF');
+    },
+    compileTimeout,
+  );
+
+  it(
+    'refuses an install with the module and no font face, and writes nothing',
+    async () => {
+      const bareAssets = mkdtempSync(
+        join(tmpdir(), 'saerskriven-cli-render-no-font-'),
+      );
+      copyFileSync(
+        join(assets, 'typst_ts_web_compiler_bg.wasm'),
+        join(bareAssets, 'typst_ts_web_compiler_bg.wasm'),
+      );
+      const outcome = await render(
+        ecluse,
+        options({ format: 'pdf', out: '-' }),
+        bareAssets,
+      );
+      expect(outcome).toEqual({
+        code: 2,
+        out: '',
+        err: `error: cannot compile the PDF: ${bareAssets} holds no .ttf font face\n`,
+      });
     },
     compileTimeout,
   );
