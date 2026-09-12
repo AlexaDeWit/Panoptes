@@ -1,7 +1,15 @@
-import { escapedForTerminal, quotedForTerminal } from '@saerskriven/formats';
-import { WriteFailure, renderWriteFailure, serverName } from '@saerskriven/mcp';
+import {
+  escapedForTerminal,
+  quotedForTerminal,
+  readLimits,
+} from '@saerskriven/formats';
+import {
+  WriteFailure,
+  renderWriteFailure,
+  serialized,
+  serverName,
+} from '@saerskriven/mcp';
 import { Data, Either } from 'effect';
-import { homedir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { parse as parseToml, stringify as stringifyToml } from 'smol-toml';
 import { z } from 'zod';
@@ -24,40 +32,60 @@ export type HostScope = 'project' | 'user';
 
 /**
  * Which documented layout a host's user-level file follows. `other` is every
- * platform that is neither, which for a host documenting macOS and Windows
- * alone is a file this command will not name.
+ * platform that is neither, which for a host documenting the macOS and
+ * Windows paths alone is a file this command will not name.
  */
 export type HostPlatform = 'macos' | 'windows' | 'other';
 
 /**
  * What resolving a host's file needs: the directory a project file is
- * written under, and where this user's own configuration lives. A spec hands
- * over a temporary directory for both, so no test reads or writes the
- * machine's real configuration.
+ * written under, and where this user's own configuration lives. `home` is
+ * whatever the environment names, which is nothing where it names neither
+ * variable, and only a user-level scope reads it. A spec hands over a
+ * temporary directory for both, so no test reads or writes the machine's own
+ * configuration.
  */
 export type InstallEnvironment = {
   readonly directory: string;
-  readonly home: string;
+  readonly home: string | undefined;
   readonly platform: HostPlatform;
   readonly appData: string | undefined;
 };
 
-/** The environment this process runs in. */
+/**
+ * An environment whose home directory the process could name, which is what
+ * a user-level file resolves against.
+ */
+export type UserEnvironment = InstallEnvironment & { readonly home: string };
+
+/**
+ * The environment this process runs in. The home directory is read off the
+ * environment rather than out of `os.homedir()`: the released executable is
+ * granted the environment and not the system access that call needs, so
+ * reading it there stops the command before it parses an argument.
+ */
 export function installEnvironment(): InstallEnvironment {
   return {
     directory: process.cwd(),
-    home: homedir(),
+    home: nonEmpty(process.env['HOME']) ?? nonEmpty(process.env['USERPROFILE']),
     platform: platformOf(process.platform),
-    appData: process.env['APPDATA'],
+    appData: nonEmpty(process.env['APPDATA']),
   };
 }
+
+/** A host file this command can name, and so can write. */
+export type NamedHostFile = {
+  readonly kind: 'file';
+  readonly file: string;
+  readonly path: string;
+};
 
 /**
  * Where a host reads a registration: a file, or the sentence naming where a
  * host keeps one whose path its documentation does not give.
  */
 export type HostFile =
-  | { readonly kind: 'file'; readonly file: string; readonly path: string }
+  | NamedHostFile
   | { readonly kind: 'undocumented'; readonly where: string };
 
 /** Which syntax a host's configuration file is written in. */
@@ -73,27 +101,13 @@ export type HostRegistration = {
   readonly serversKey: string;
   readonly declaresType: boolean;
   readonly project: string | undefined;
-  readonly user: (environment: InstallEnvironment) => HostFile;
+  readonly user: (environment: UserEnvironment) => HostFile;
 };
-
-const registeredCommand = 'saer';
 
 /**
  * Where each host keeps a registration and under which key, read off each
- * host's own published documentation on 2026-09-12:
- *
- * - `claude-code`: `.mcp.json` in the project, `~/.claude.json` for the
- *   user, both under `mcpServers`. An entry naming no `type` is read as a
- *   stdio server.
- * - `claude-desktop`: no project file, and `claude_desktop_config.json` in
- *   the application's own directory, under `mcpServers`. That directory is
- *   documented for macOS and Windows alone.
- * - `cursor`: `.cursor/mcp.json` and `~/.cursor/mcp.json`, under
- *   `mcpServers`, with `type` declared.
- * - `vscode`: `.vscode/mcp.json` and `mcp.json` in the user profile
- *   directory, under `servers`, with `type` declared.
- * - `codex`: `.codex/config.toml`, which Codex reads for a trusted project
- *   only, and `~/.codex/config.toml`, as the TOML table `mcp_servers`.
+ * host's own published documentation on 2026-09-12. The README tabulates the
+ * same files for a reader.
  */
 export const hostRegistrations: Record<HostName, HostRegistration> = {
   'claude-code': {
@@ -153,13 +167,16 @@ export const hostRegistrations: Record<HostName, HostRegistration> = {
  * Why a registration was not written. `NoProjectForm` and `Undocumented` are
  * about the host: one keeps nothing a project commits, and the other keeps a
  * user-level file whose path its documentation does not name on this
- * platform. `Malformed` is a file this command will not parse, which it
- * leaves as it is rather than replacing with a document that would drop
- * whatever the parse could not read.
+ * platform. `NoHome` is an environment that names no home directory for a
+ * user-level file to sit under. `TooLarge` and `Malformed` are the file: one
+ * past the shared read bound, and one no parser will read, and neither is
+ * replaced with a document that would drop what the read could not take.
  */
 export type InstallFailure = Data.TaggedEnum<{
   NoProjectForm: { readonly host: HostName };
+  NoHome: { readonly host: HostName };
   Undocumented: { readonly host: HostName; readonly where: string };
+  TooLarge: { readonly path: string; readonly observed: number };
   Unreadable: { readonly path: string; readonly reason: string };
   Malformed: { readonly path: string; readonly reason: string };
   Unwritten: { readonly failure: WriteFailure };
@@ -180,9 +197,16 @@ export function renderInstallFailure(
       `${host} keeps no registration a project commits, so there is no project file to write.`,
       'Pass --user to write its user-level file, or --print to read the entry.',
     ],
+    NoHome: ({ host }) => [
+      `The user-level file for ${host} sits under a home directory, and this environment names none.`,
+      'Set HOME, or USERPROFILE on Windows, or pass --print to read the entry.',
+    ],
     Undocumented: ({ host, where }) => [
       `The user-level file for ${host} is ${where}, and its documentation does not name that path on this platform.`,
       'Pass --print and paste the entry into the file the host opens.',
+    ],
+    TooLarge: ({ path, observed }) => [
+      `The file ${quotedForTerminal(path)} is ${String(observed)} bytes, past the ${String(readLimits.maxTextBytes)} a read is bounded to, so nothing was written.`,
     ],
     Unreadable: ({ path, reason }) => [
       `The file ${quotedForTerminal(path)} cannot be read: ${escapedForTerminal(reason)}.`,
@@ -197,8 +221,9 @@ export function renderInstallFailure(
 
 /**
  * The file a host reads at this scope, refused where the host commits
- * nothing. A project file is named as the relative path a repository holds
- * and written under the invocation's own directory.
+ * nothing and where a user-level file has no home directory to sit under. A
+ * project file is named as the relative path a repository holds and written
+ * under the invocation's own directory.
  */
 export function hostFile(
   host: HostName,
@@ -207,7 +232,7 @@ export function hostFile(
 ): Either.Either<HostFile, InstallFailure> {
   const registration = hostRegistrations[host];
   return scope === 'user'
-    ? Either.right(registration.user(environment))
+    ? Either.map(locatedHome(host, environment), registration.user)
     : registration.project === undefined
       ? Either.left(InstallFailure.NoProjectForm({ host }))
       : Either.right({
@@ -318,26 +343,51 @@ export function withRegistration(
   );
 }
 
-/** A document as the text a host file holds, ending in one newline. */
+/**
+ * A document as the text a host file holds, ending in one newline, or the
+ * refusal where the writer threw. Neither serializer promises a result
+ * union, and the TOML one is a third party, so both are contained the way a
+ * codec is.
+ */
 export function hostText(
   registration: HostRegistration,
+  file: string,
   document: HostDocument,
-): string {
-  const text =
-    registration.syntax === 'json'
-      ? JSON.stringify(document, null, 2)
-      : stringifyToml(document);
-  return `${text.trimEnd()}\n`;
+): Either.Either<string, InstallFailure> {
+  return Either.mapLeft(
+    Either.map(
+      serialized(file, () =>
+        registration.syntax === 'json'
+          ? JSON.stringify(document, null, 2)
+          : stringifyToml(document),
+      ),
+      (text) => `${text.trimEnd()}\n`,
+    ),
+    (failure) => InstallFailure.Unwritten({ failure }),
+  );
 }
 
 /** The text a host file would hold for this server and nothing else. */
 export function entryText(
   registration: HostRegistration,
+  file: string,
   entry: HostEntry,
-): string {
-  return hostText(registration, {
+): Either.Either<string, InstallFailure> {
+  return hostText(registration, file, {
     [registration.serversKey]: { [serverName]: entry },
   });
+}
+
+const registeredCommand = 'saer';
+
+function locatedHome(
+  host: HostName,
+  environment: InstallEnvironment,
+): Either.Either<UserEnvironment, InstallFailure> {
+  const home = environment.home;
+  return home === undefined
+    ? Either.left(InstallFailure.NoHome({ host }))
+    : Either.right({ ...environment, home });
 }
 
 function tableOf(
@@ -360,7 +410,7 @@ function platformOf(platform: typeof process.platform): HostPlatform {
 }
 
 function applicationDirectory(
-  environment: InstallEnvironment,
+  environment: UserEnvironment,
   application: string,
 ): string {
   return environment.platform === 'macos'
@@ -373,8 +423,12 @@ function applicationDirectory(
       : join(environment.home, '.config', application);
 }
 
-function fileAt(path: string): HostFile {
+function fileAt(path: string): NamedHostFile {
   return { kind: 'file', file: path, path };
+}
+
+function nonEmpty(value: string | undefined): string | undefined {
+  return value === undefined || value === '' ? undefined : value;
 }
 
 function firstLine(text: string): string {

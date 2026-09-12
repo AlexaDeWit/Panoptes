@@ -1,3 +1,4 @@
+import { readLimits } from '@saerskriven/formats';
 import { Either } from 'effect';
 import { readFileSync, statSync, writeFileSync } from 'node:fs';
 
@@ -28,6 +29,23 @@ export function readTextFile(path: string): Either.Either<string, string> {
  */
 export function sizeOf(path: string): number | undefined {
   return Either.getOrUndefined(Either.try(() => statSync(path).size));
+}
+
+/**
+ * Nothing where the path is inside the shared read bound, or the caller's own
+ * refusal carrying the size measured where it is past it. A size that cannot
+ * be measured passes, since the read that follows says why the path was no
+ * good. The refusal is the caller's to build: a model file and a host's
+ * configuration are refused with different values.
+ */
+export function withinReadBound<Failure>(
+  path: string,
+  refusal: (observed: number) => Failure,
+): Either.Either<void, Failure> {
+  const size = sizeOf(path);
+  return size === undefined || size <= readLimits.maxTextBytes
+    ? Either.right(undefined)
+    : Either.left(refusal(size));
 }
 
 /**

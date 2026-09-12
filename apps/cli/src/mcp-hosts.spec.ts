@@ -9,13 +9,20 @@ import {
   hostFile,
   hostNameSchema,
   hostRegistrations,
+  installEnvironment,
   renderInstallFailure,
   type HostName,
   type HostPlatform,
 } from './mcp-hosts.js';
 
 const entryOf = (host: HostName, file?: string): string =>
-  entryText(hostRegistrations[host], hostEntry(hostRegistrations[host], file));
+  Either.getOrThrow(
+    entryText(
+      hostRegistrations[host],
+      'entry',
+      hostEntry(hostRegistrations[host], file),
+    ),
+  );
 
 const parsedEntry = (host: HostName, text: string): unknown =>
   hostRegistrations[host].syntax === 'json'
@@ -159,6 +166,24 @@ describe('where a host reads its registration', () => {
     );
   });
 
+  it('refuses a user-level file where no home directory is named', () => {
+    const nowhere = {
+      directory: '/work',
+      home: undefined,
+      platform: 'other' as HostPlatform,
+      appData: undefined,
+    };
+    expect(hostFile('cursor', 'user', nowhere)).toEqual(
+      Either.left(InstallFailure.NoHome({ host: 'cursor' })),
+    );
+    expect(
+      renderInstallFailure(InstallFailure.NoHome({ host: 'cursor' })),
+    ).toEqual([
+      'The user-level file for cursor sits under a home directory, and this environment names none.',
+      'Set HOME, or USERPROFILE on Windows, or pass --print to read the entry.',
+    ]);
+  });
+
   it('says claude-desktop commits nothing, and what to pass instead', () => {
     const refusal = hostFile('claude-desktop', 'project', installedIn('/work'));
     expect(refusal).toEqual(
@@ -172,5 +197,33 @@ describe('where a host reads its registration', () => {
       'claude-desktop keeps no registration a project commits, so there is no project file to write.',
       'Pass --user to write its user-level file, or --print to read the entry.',
     ]);
+  });
+});
+
+describe('the environment the process runs in', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it('reads the home directory off the environment, not off the system', () => {
+    vi.stubEnv('HOME', '/home/alexa');
+    const environment = installEnvironment();
+    expect(environment.home).toEqual('/home/alexa');
+    expect(environment.directory).toEqual(process.cwd());
+  });
+
+  it('falls back to the variable Windows sets', () => {
+    vi.stubEnv('HOME', '');
+    vi.stubEnv('USERPROFILE', 'C:\\Users\\alexa');
+    expect(installEnvironment().home).toEqual('C:\\Users\\alexa');
+  });
+
+  it('takes a variable set to nothing for one that is not set', () => {
+    vi.stubEnv('HOME', '');
+    vi.stubEnv('USERPROFILE', '');
+    vi.stubEnv('APPDATA', '');
+    const environment = installEnvironment();
+    expect(environment.home).toBeUndefined();
+    expect(environment.appData).toBeUndefined();
   });
 });

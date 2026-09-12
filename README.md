@@ -335,18 +335,24 @@ What the command will not do:
   and every unrelated setting stay where they were, and running it again with
   the same arguments writes nothing. Its own `saerskriven` entry is replaced
   whole, so a field added to that entry by hand does not survive a re-run.
-- **It refuses a file it cannot parse**, naming the path and leaving the file
-  exactly as it is. A `.vscode/mcp.json` carrying comments is such a file,
-  since what this writes back is JSON.
+- **It creates a file at mode 0600 and leaves an existing file's mode alone.**
+  A host's configuration can hold a sign-in session or a token. A file it
+  writes through a symbolic link keeps the link.
+- **It refuses a file it cannot parse**, or one past the bound every foreign
+  text here is read within, naming the path and leaving the file exactly as
+  it is. A `.vscode/mcp.json` carrying comments is such a file, since what
+  this writes back is JSON.
 - **It rewrites a file from what it parsed.** Comments elsewhere in a
-  `config.toml`, and the spacing of a file somebody formatted by hand, are
-  not kept. `--print` is there for a file worth protecting.
+  `config.toml`, the spacing of a file somebody formatted by hand, and a
+  TOML multi-line or literal string, are not kept as they were written.
+  `--print` is there for a file worth protecting.
 - **It writes the default VS Code profile's file.** On another profile, the
   `MCP: Open User Configuration` command opens the file that profile reads.
-- **It will not name Claude Desktop's file outside macOS and Windows**, which
-  are the platforms its documentation covers. Elsewhere it refuses, and the
-  Settings, Developer, Edit Config button in the application opens the file to
-  paste into.
+- **It will not name Claude Desktop's file outside macOS and Windows**, the
+  two paths its documentation gives. The application also runs on Linux,
+  where the path is undocumented rather than absent, so there the command
+  refuses and the Settings, Developer, Edit Config button in the application
+  opens the file to paste into.
 - **Codex reads `.codex/config.toml` for a trusted project only**, which is
   Codex's own condition rather than this command's.
 

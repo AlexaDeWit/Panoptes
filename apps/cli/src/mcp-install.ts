@@ -1,9 +1,15 @@
-import { WriteFailure, replacedFile, type WriteTarget } from '@saerskriven/mcp';
+import {
+  createdFile,
+  replacedFile,
+  revisionOf,
+  WriteFailure,
+  type WriteTarget,
+} from '@saerskriven/mcp';
 import { Either } from 'effect';
-import { existsSync, mkdirSync, readFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, realpathSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { z } from 'zod';
-import { reasonOf } from './files.js';
+import { reasonOf, withinReadBound } from './files.js';
 import {
   InstallFailure,
   entryText,
@@ -23,6 +29,7 @@ import {
   type HostRegistration,
   type HostScope,
   type InstallEnvironment,
+  type NamedHostFile,
 } from './mcp-hosts.js';
 import {
   lines,
@@ -92,8 +99,22 @@ export function renderInstallReport(report: InstallReport): readonly string[] {
 /**
  * `saer mcp install`: the host's registration for `saer mcp`, written once
  * and a no-op on every run after that. What the file already holds is
- * carried over, a file this command cannot parse is refused with its path
- * rather than replaced, and `--print` writes nothing at all.
+ * carried over, a file this command cannot parse or cannot read inside the
+ * shared read bound is refused with its path rather than replaced, and
+ * `--print` writes nothing at all.
+ *
+ * A target that is a symbolic link is resolved before it is written, so a
+ * configuration file linked into a dotfiles repository keeps its link and
+ * the write lands on the file it points at. A file this creates is written
+ * `0600`, since a host's configuration can hold a sign-in session or a
+ * token in an entry's environment, and a file that is already there keeps
+ * the mode it carried.
+ *
+ * A file that is not there is created by a link, which refuses the path
+ * another process took while this one was working rather than replacing it.
+ * A file that is there is replaced against the handle over the bytes this
+ * call read, so a second `saer mcp install` landing inside the same window
+ * is reported rather than overwritten.
  */
 export function installMcp(
   options: InstallOptions,
@@ -105,6 +126,15 @@ export function installMcp(
   });
 }
 
+type Requested = {
+  readonly options: InstallOptions;
+  readonly registration: HostRegistration;
+  readonly scope: HostScope;
+  readonly file: HostFile;
+  readonly entry: HostEntry;
+  readonly snippet: string;
+};
+
 function reported(
   options: InstallOptions,
   environment: InstallEnvironment,
@@ -112,29 +142,40 @@ function reported(
   const registration = hostRegistrations[options.host];
   const scope = scopeOf(registration, options);
   const entry = hostEntry(registration, options.file);
-  const snippet = entryText(registration, entry);
-  const reporting = (file: string, status: InstallStatus): InstallReport => ({
-    host: options.host,
-    scope,
-    file,
-    status,
-    entry: snippet,
-  });
   return Either.flatMap(hostFile(options.host, scope, environment), (file) =>
-    options.print === true
-      ? Either.right(reporting(named(file), 'shown'))
-      : file.kind === 'undocumented'
-        ? Either.left(
-            InstallFailure.Undocumented({
-              host: options.host,
-              where: file.where,
-            }),
-          )
-        : Either.map(
-            written(registration, { file: file.file, path: file.path }, entry),
-            (status) => reporting(file.file, status),
-          ),
+    Either.flatMap(entryText(registration, named(file), entry), (snippet) =>
+      installed({ options, registration, scope, file, entry, snippet }),
+    ),
   );
+}
+
+function installed(
+  requested: Requested,
+): Either.Either<InstallReport, InstallFailure> {
+  const reporting = (status: InstallStatus): InstallReport => ({
+    host: requested.options.host,
+    scope: requested.scope,
+    file: named(requested.file),
+    status,
+    entry: requested.snippet,
+  });
+  return requested.options.print === true
+    ? Either.right(reporting('shown'))
+    : requested.file.kind === 'undocumented'
+      ? Either.left(
+          InstallFailure.Undocumented({
+            host: requested.options.host,
+            where: requested.file.where,
+          }),
+        )
+      : Either.map(
+          written(
+            requested.registration,
+            resolved(requested.file),
+            requested.entry,
+          ),
+          reporting,
+        );
 }
 
 function named(file: HostFile): string {
@@ -151,20 +192,41 @@ function scopeOf(
     : 'project';
 }
 
+function resolved(file: NamedHostFile): WriteTarget {
+  return {
+    file: file.file,
+    path: Either.getOrElse(
+      Either.try(() => realpathSync(file.path)),
+      () => file.path,
+    ),
+  };
+}
+
+type HeldFile =
+  | { readonly kind: 'absent' }
+  | {
+      readonly kind: 'held';
+      readonly text: string;
+      readonly revision: string;
+    };
+
 function written(
   registration: HostRegistration,
   target: WriteTarget,
   entry: HostEntry,
 ): Either.Either<InstallStatus, InstallFailure> {
-  return Either.flatMap(heldText(target.path), (held) =>
+  return Either.flatMap(heldFile(target), (held) =>
     Either.flatMap(
-      document(registration, target.file, held, entry),
-      (merged) => {
-        const text = hostText(registration, merged);
-        return text === held
-          ? Either.right<InstallStatus>('unchanged')
-          : Either.map(saved(target, text), (): InstallStatus => 'written');
-      },
+      document(registration, target.file, textOf(held), entry),
+      (merged) =>
+        Either.flatMap(hostText(registration, target.file, merged), (text) =>
+          text === textOf(held)
+            ? Either.right<InstallStatus>('unchanged')
+            : Either.map(
+                saved(target, text, held),
+                (): InstallStatus => 'written',
+              ),
+        ),
     ),
   );
 }
@@ -180,25 +242,59 @@ function document(
   );
 }
 
-function heldText(path: string): Either.Either<string, InstallFailure> {
-  return existsSync(path)
-    ? Either.try({
-        try: () => readFileSync(path, 'utf8'),
-        catch: (error) =>
-          InstallFailure.Unreadable({ path, reason: reasonOf(error) }),
-      })
-    : Either.right('');
+function textOf(held: HeldFile): string {
+  return held.kind === 'held' ? held.text : '';
+}
+
+function heldFile(
+  target: WriteTarget,
+): Either.Either<HeldFile, InstallFailure> {
+  return existsSync(target.path)
+    ? Either.flatMap(
+        withinReadBound(target.path, (observed) =>
+          InstallFailure.TooLarge({ path: target.file, observed }),
+        ),
+        () => readHeld(target),
+      )
+    : Either.right({ kind: 'absent' });
+}
+
+function readHeld(
+  target: WriteTarget,
+): Either.Either<HeldFile, InstallFailure> {
+  return Either.try({
+    try: () => {
+      const bytes = readFileSync(target.path);
+      return {
+        kind: 'held',
+        text: bytes.toString('utf8'),
+        revision: revisionOf(bytes),
+      };
+    },
+    catch: (error) =>
+      InstallFailure.Unreadable({
+        path: target.file,
+        reason: reasonOf(error),
+      }),
+  });
 }
 
 function saved(
   target: WriteTarget,
   text: string,
+  held: HeldFile,
 ): Either.Either<string, InstallFailure> {
   return Either.mapLeft(
-    Either.flatMap(directoryFor(target), () => replacedFile(target, text)),
+    Either.flatMap(directoryFor(target), () =>
+      held.kind === 'held'
+        ? replacedFile(target, text, held.revision, ownerOnly)
+        : createdFile(target, text, ownerOnly),
+    ),
     (failure) => InstallFailure.Unwritten({ failure }),
   );
 }
+
+const ownerOnly = 0o600;
 
 function directoryFor(target: WriteTarget): Either.Either<void, WriteFailure> {
   return Either.try({

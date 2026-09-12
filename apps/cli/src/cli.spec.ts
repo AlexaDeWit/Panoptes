@@ -127,6 +127,19 @@ describe('the arguments as the outcome they ask for', () => {
     });
   });
 
+  it('reports a command that threw rather than letting it escape', async () => {
+    vi.spyOn(process, 'cwd').mockImplementation(() => {
+      throw new Error('the working directory is gone');
+    });
+    await expect(
+      runCli(['mcp', 'install', '--host', 'claude-code', '--print']),
+    ).resolves.toEqual({
+      code: 2,
+      out: '',
+      err: 'error: the working directory is gone\n',
+    });
+  });
+
   it('says why a command threw where the parser wrote nothing', async () => {
     vi.spyOn(renderOptionsSchema, 'safeParse').mockImplementation(() => {
       throw new Error('the option schema gave out');

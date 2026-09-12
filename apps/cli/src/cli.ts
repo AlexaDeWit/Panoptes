@@ -44,7 +44,12 @@ export type CliStreams = {
   readonly err: (text: string) => Either.Either<void, string>;
 };
 
-/** Parse arguments and run a command, returning parser errors as outcomes. */
+/**
+ * Parse arguments and run a command, as the outcome to write. Nothing here
+ * throws at the process: a parser that stopped, and a command that threw or
+ * rejected where this codebase says it answers with a refusal, both come
+ * back as an outcome rather than as a stack trace on the host's terminal.
+ */
 export function runCli(argv: readonly string[]): Promise<CommandOutcome> {
   const state: ParseState = {
     out: '',
@@ -57,9 +62,7 @@ export function runCli(argv: readonly string[]): Promise<CommandOutcome> {
   } catch (error) {
     return Promise.resolve(parseStopped(state, error));
   }
-  return state.request === undefined
-    ? Promise.resolve(usageError(state.err))
-    : outcomeOf(state.request);
+  return carriedOut(state);
 }
 
 /** Write output unchanged and return exit code 2 if either stream fails. */
@@ -82,12 +85,31 @@ function lostOutput(streams: CliStreams, reason: string): ExitCode {
   return 2;
 }
 
+function carriedOut(state: ParseState): Promise<CommandOutcome> {
+  const request = state.request;
+  return request === undefined
+    ? Promise.resolve(usageError(state.err))
+    : contained(request);
+}
+
+function contained(request: Request): Promise<CommandOutcome> {
+  try {
+    return outcomeOf(request).catch(threw);
+  } catch (error) {
+    return Promise.resolve(threw(error));
+  }
+}
+
 function parseStopped(state: ParseState, error: unknown): CommandOutcome {
   return state.exitCode === 0
     ? succeeded(state.out, state.err)
-    : usageError(
-        state.err === '' ? lines(`error: ${reasonOf(error)}`) : state.err,
-      );
+    : state.err === ''
+      ? threw(error)
+      : usageError(state.err);
+}
+
+function threw(error: unknown): CommandOutcome {
+  return usageError(lines(`error: ${reasonOf(error)}`));
 }
 
 function programFor(state: ParseState): Command {
