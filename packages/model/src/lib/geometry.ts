@@ -52,9 +52,10 @@ const placementStep = { x: 260, y: 160 };
 /**
  * Where to put the element at `index` among a run of elements the caller
  * has no position for: a row-major grid of four columns, laid out from a
- * fixed margin so the same index always lands on the same spot. Import
- * mappings place a record whose source file carries no geometry with it,
- * and so does an editor asked to choose a position.
+ * fixed margin so the same index always lands on the same spot. The import
+ * mappings in `@saerskriven/formats` place a record whose source file
+ * carries no geometry with it; it is exported for any other caller that has
+ * to choose a position rather than read one.
  */
 export function autoPlacement(index: number): Point {
   return {

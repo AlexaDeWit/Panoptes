@@ -128,6 +128,6 @@ pointed at untouched, neither of them carrying a link back.
 
 `autoPlacement` gives the position for the element at an index in a run the
 caller has no geometry for: a row-major grid of four columns from a fixed
-margin. The import mappings in `@saerskriven/formats` place a record whose
-source file carries no geometry with it, and an editor asked to choose a
-position uses the same grid, so the two agree.
+margin. The OTM and TM-BOM mappings in `@saerskriven/formats` place a record
+whose source file carries no geometry with it, and it is exported for any
+other caller that has to choose a position rather than read one.

@@ -8,7 +8,7 @@ import {
 } from './mitigation-operations.js';
 import { mitigationSchema, type Mitigation } from './mitigations.js';
 import { OperationFailure } from './operation-failures.js';
-import type { Model } from './parse.js';
+import { parseModel, type Model } from './parse.js';
 
 const base = parsedFixture(threatRegisterFixture);
 
@@ -58,12 +58,6 @@ describe('addMitigation', () => {
     expect(modelOf(addMitigation(base, unlinked)).mitigations.at(-1)).toEqual(
       unlinked,
     );
-  });
-
-  it('leaves the input model alone', () => {
-    const before = mitigationIds(base);
-    modelOf(addMitigation(base, rateLimit));
-    expect(mitigationIds(base)).toEqual(before);
   });
 
   it('fails on an id the register already holds', () => {
@@ -132,4 +126,28 @@ describe('removeMitigation', () => {
       OperationFailure.UnknownMitigation({ mitigationId: ghost }),
     );
   });
+});
+
+describe('mitigation operation purity', () => {
+  it('leaves the input model untouched', () => {
+    const pristine = structuredClone(base);
+    addMitigation(base, rateLimit);
+    replaceMitigation(base, editedBinding);
+    removeMitigation(base, bindSession);
+    expect(base).toEqual(pristine);
+  });
+});
+
+describe('mitigation operation outputs re-parse through parseModel', () => {
+  const outputs: [string, Model][] = [
+    ['addMitigation', modelOf(addMitigation(base, rateLimit))],
+    ['replaceMitigation', modelOf(replaceMitigation(base, editedBinding))],
+    ['removeMitigation', modelOf(removeMitigation(base, bindSession))],
+  ];
+
+  for (const [operation, model] of outputs) {
+    it(`${operation} returns a model parseModel accepts`, () => {
+      expect(Either.isRight(parseModel(model))).toBe(true);
+    });
+  }
 });

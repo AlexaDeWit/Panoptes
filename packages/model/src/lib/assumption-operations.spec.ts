@@ -13,7 +13,7 @@ import {
 import { assumptionSchema, type Assumption } from './assumptions.js';
 import { threatRegisterFixture } from './fixtures.js';
 import { OperationFailure } from './operation-failures.js';
-import type { Model } from './parse.js';
+import { parseModel, type Model } from './parse.js';
 
 const base = parsedFixture(threatRegisterFixture);
 
@@ -70,12 +70,6 @@ describe('addAssumption', () => {
     expect(modelOf(addAssumption(base, unlinked)).assumptions.at(-1)).toEqual(
       unlinked,
     );
-  });
-
-  it('leaves the input model alone', () => {
-    const before = assumptionIds(base);
-    modelOf(addAssumption(base, tlsEverywhere));
-    expect(assumptionIds(base)).toEqual(before);
   });
 
   it('fails on an id the register already holds', () => {
@@ -168,4 +162,28 @@ describe('removeAssumption', () => {
       OperationFailure.UnknownAssumption({ assumptionId: ghost }),
     );
   });
+});
+
+describe('assumption operation purity', () => {
+  it('leaves the input model untouched', () => {
+    const pristine = structuredClone(base);
+    addAssumption(base, tlsEverywhere);
+    replaceAssumption(base, invalidatedScope);
+    removeAssumption(base, pciScope);
+    expect(base).toEqual(pristine);
+  });
+});
+
+describe('assumption operation outputs re-parse through parseModel', () => {
+  const outputs: [string, Model][] = [
+    ['addAssumption', modelOf(addAssumption(base, tlsEverywhere))],
+    ['replaceAssumption', modelOf(replaceAssumption(base, invalidatedScope))],
+    ['removeAssumption', modelOf(removeAssumption(base, pciScope))],
+  ];
+
+  for (const [operation, model] of outputs) {
+    it(`${operation} returns a model parseModel accepts`, () => {
+      expect(Either.isRight(parseModel(model))).toBe(true);
+    });
+  }
 });
