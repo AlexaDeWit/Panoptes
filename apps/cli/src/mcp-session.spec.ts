@@ -4,38 +4,227 @@ import {
   getThreatResultSchema,
   registerResultSchema,
   renderDiagramResultSchema,
+  renderWriteFailure,
   revisionOf,
   searchElementsResultSchema,
   searchThreatsResultSchema,
   validateResultSchema,
+  WriteFailure,
 } from '@saerskriven/mcp';
 import {
+  editOf,
+  eras,
+  type Era,
   imagesOf,
   mediaTypesOf,
+  proseOf,
   readingOf,
   registeredTools,
   resourceLinksOf,
   structuredOf,
   textOf,
 } from '@saerskriven/mcp/fixtures';
-import { readFileSync, statSync } from 'node:fs';
+import {
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { httpProcess, sessionOpeners } from './mcp-session.fixtures.js';
+import {
+  httpProcess,
+  sessionOpeners,
+  type McpSession,
+  type SessionOpener,
+} from './mcp-session.fixtures.js';
 import {
   ran,
   repositoryRoot,
   runners,
   spawnTimeout,
   titleOf,
+  type Runner,
 } from './runners.fixtures.js';
 
 const ecluse = ['mcp', '--file', 'test-data/ecluse.json'];
 
+const ecluseBytes = readFileSync(join(repositoryRoot, 'test-data/ecluse.json'));
+
 const pngMagic = Buffer.from([0x89, 0x50, 0x4e, 0x47]);
+
+const retitled = 'Écluse gate: a title written through saer_edit';
+
+const scripted = async (opener: SessionOpener, runner: Runner, era: Era) => {
+  const root = mkdtempSync(join(tmpdir(), 'saerskriven-cli-session-'));
+  try {
+    writeFileSync(join(root, 'ecluse.json'), ecluseBytes);
+    const session = await opener.open(
+      runner,
+      ['mcp', '--root', root, '--file', 'ecluse.json'],
+      era,
+    );
+    try {
+      const run = await calls(session);
+      return { ...run, onDisk: readFileSync(join(root, 'ecluse.json')) };
+    } finally {
+      await session.end();
+    }
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+};
+
+const calls = async (session: McpSession) => {
+  const call = (name: string, args: Record<string, unknown> = {}) =>
+    session.client.callTool({ name, arguments: args });
+  const inspected = await call('saer_inspect');
+  const drawn = await call('saer_render_diagram');
+  const searched = await call('saer_search_threats', {
+    status: 'open',
+    severity: 'high',
+    response_format: 'detailed',
+  });
+  const found = structuredOf(searched, searchThreatsResultSchema).threats[0];
+  const target = found?.id ?? '';
+  const ref = String(found?.number ?? 0);
+  const held = await call('saer_get_threat', { ref });
+  const threat = structuredOf(held, getThreatResultSchema).threat;
+  const revision = readingOf(inspected).revision;
+  const edited = await call('saer_edit', {
+    revision,
+    edits: [
+      {
+        op: 'replace_threat',
+        threat: {
+          id: threat.id,
+          title: retitled,
+          category: threat.category,
+          severity: threat.severity,
+          status: 'mitigated',
+          description: threat.description,
+          mitigation: threat.mitigation,
+          elements: threat.elements,
+        },
+      },
+    ],
+  });
+  const stale = await call('saer_edit', {
+    revision,
+    edits: [{ op: 'set_threat_severity', threat: target, severity: 'low' }],
+  });
+  const reread = await call('saer_get_threat', { ref });
+  const reinspected = await call('saer_inspect');
+  return {
+    era: session.client.getProtocolEra(),
+    results: [
+      inspected,
+      drawn,
+      searched,
+      held,
+      edited,
+      stale,
+      reread,
+      reinspected,
+    ],
+    inspected: readingOf(inspected),
+    drawn,
+    searched: structuredOf(searched, searchThreatsResultSchema),
+    held: threat,
+    edited,
+    stale,
+    reread: structuredOf(reread, getThreatResultSchema).threat,
+    reinspected: readingOf(reinspected),
+  };
+};
 
 for (const runner of runners) {
   const register = runner.absence === undefined ? describe : describe.skip;
   for (const opener of sessionOpeners) {
+    register(
+      titleOf(
+        runner,
+        `the scripted session against saer mcp over ${opener.name}`,
+      ),
+      () => {
+        for (const era of eras) {
+          it(`inspects, draws, searches, edits a threat and reads it back in the ${era} era`, async () => {
+            const run = await scripted(opener, runner, era);
+            const written = editOf(run.edited);
+            const [image] = imagesOf(run.drawn);
+            const drawn = structuredOf(run.drawn, renderDiagramResultSchema);
+            const opening = run.results.flatMap((result) =>
+              proseOf(result).prose.map((text) => text.split('\n')[0]),
+            );
+
+            expect(run.era).toEqual(era);
+            expect(opening.length).toBeGreaterThanOrEqual(run.results.length);
+            expect(opening).toEqual(opening.map(() => dataNotInstructions));
+            expect({
+              file: run.inspected.file,
+              format: run.inspected.format,
+              revision: run.inspected.revision,
+              totals: run.inspected.totals,
+            }).toEqual({
+              file: 'ecluse.json',
+              format: 'threat-dragon',
+              revision: revisionOf(ecluseBytes),
+              totals: {
+                diagrams: 1,
+                elements: 38,
+                threats: 29,
+                mitigations: 0,
+                assumptions: 0,
+              },
+            });
+            expect(mediaTypesOf(run.drawn)).toEqual(['image/png']);
+            expect(image?.bytes.subarray(0, 4)).toEqual(pngMagic);
+            expect(Math.max(drawn.image.width, drawn.image.height)).toBe(1568);
+            expect(run.searched.threats.length).toBeGreaterThan(0);
+            expect(run.searched.response_format).toEqual('detailed');
+            expect(
+              run.searched.threats.map((row) => [row.status, row.severity]),
+            ).toEqual(run.searched.threats.map(() => ['open', 'high']));
+            expect(run.edited.isError).toBeFalsy();
+            expect({
+              file: written.file,
+              format: written.format,
+              applied: written.applied,
+              revision: written.revision,
+            }).toEqual({
+              file: 'ecluse.json',
+              format: 'threat-dragon',
+              applied: 1,
+              revision: revisionOf(run.onDisk),
+            });
+            expect(run.stale.isError).toBe(true);
+            expect(textOf(run.stale)).toContain(
+              renderWriteFailure(
+                WriteFailure.StaleRevision({
+                  file: 'ecluse.json',
+                  quoted: run.inspected.revision,
+                  found: written.revision,
+                }),
+              ).join('\n'),
+            );
+            expect(run.reread).toEqual({
+              ...run.held,
+              title: retitled,
+              status: 'mitigated',
+            });
+            expect({
+              revision: run.reinspected.revision,
+              totals: run.reinspected.totals,
+            }).toEqual({
+              revision: written.revision,
+              totals: run.inspected.totals,
+            });
+          });
+        }
+      },
+      spawnTimeout,
+    );
     register(
       titleOf(runner, `a client against saer mcp over ${opener.name}`),
       () => {
@@ -59,36 +248,6 @@ for (const runner of runners) {
           expect(listed.tools.map((tool) => tool.name)).toEqual(
             registeredTools,
           );
-        });
-
-        it('calls saer_inspect on the Écluse fixture', async () => {
-          const session = await opener.open(runner, ecluse);
-          const result = await session.client.callTool({
-            name: 'saer_inspect',
-          });
-          await session.end();
-          const reading = readingOf(result);
-          expect(result.isError).toBeFalsy();
-          expect({
-            file: reading.file,
-            format: reading.format,
-            revision: reading.revision,
-            totals: reading.totals,
-          }).toEqual({
-            file: 'test-data/ecluse.json',
-            format: 'threat-dragon',
-            revision: revisionOf(
-              readFileSync(join(repositoryRoot, 'test-data/ecluse.json')),
-            ),
-            totals: {
-              diagrams: 1,
-              elements: 38,
-              threats: 29,
-              mitigations: 0,
-              assumptions: 0,
-            },
-          });
-          expect(textOf(result).split('\n')[0]).toEqual(dataNotInstructions);
         });
 
         it('checks the Écluse fixture through saer_validate', async () => {
@@ -143,49 +302,6 @@ for (const runner of runners) {
           expect(found.elements.map((row) => row.kind)).toEqual(
             found.elements.map(() => 'store'),
           );
-        });
-
-        it('searches the threats of the Écluse fixture', async () => {
-          const session = await opener.open(runner, ecluse);
-          const result = await session.client.callTool({
-            name: 'saer_search_threats',
-            arguments: { severity: 'high', response_format: 'detailed' },
-          });
-          await session.end();
-          const found = structuredOf(result, searchThreatsResultSchema);
-          expect(found.counts.matched).toBeGreaterThan(0);
-          expect(found.threats.every((row) => row.severity === 'high')).toBe(
-            true,
-          );
-        });
-
-        it('reads one threat of the Écluse fixture in full', async () => {
-          const session = await opener.open(runner, ecluse);
-          const result = await session.client.callTool({
-            name: 'saer_get_threat',
-            arguments: { ref: '1' },
-          });
-          await session.end();
-          const read = structuredOf(result, getThreatResultSchema);
-          expect(read.threat.number).toBe(1);
-          expect(read.elements.map((element) => element.id)).toEqual(
-            read.threat.elements,
-          );
-        });
-
-        it('draws the Écluse diagram as a PNG image block and no SVG', async () => {
-          const session = await opener.open(runner, ecluse);
-          const result = await session.client.callTool({
-            name: 'saer_render_diagram',
-          });
-          await session.end();
-          const drawn = structuredOf(result, renderDiagramResultSchema);
-          const [image] = imagesOf(result);
-          expect(result.isError).toBeFalsy();
-          expect(drawn.image.mimeType).toEqual('image/png');
-          expect(mediaTypesOf(result)).toEqual(['image/png']);
-          expect(image?.bytes.subarray(0, 4)).toEqual(pngMagic);
-          expect(Math.max(drawn.image.width, drawn.image.height)).toBe(1568);
         });
 
         it('refuses to draw over a file the root already holds', async () => {
