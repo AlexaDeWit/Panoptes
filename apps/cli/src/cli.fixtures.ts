@@ -1,5 +1,5 @@
-import { writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { mkdirSync, writeFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
 
 const heading = `formatVersion: 1
 metadata:
@@ -139,13 +139,18 @@ lastIssuedThreatNumber: 1
 /** A YAML text no registered codec claims. */
 export const unclaimedYaml = 'hello: world\n';
 
-/** One fixture on disk, at the path it was written to. */
+/**
+ * One fixture on disk, at the path it was written to. A name holding a
+ * directory of its own has it made first, which is what a host
+ * configuration file nested under the project needs.
+ */
 export function fixtureFile(
   directory: string,
   name: string,
   text: string,
 ): string {
   const path = join(directory, name);
+  mkdirSync(dirname(path), { recursive: true });
   writeFileSync(path, text);
   return path;
 }

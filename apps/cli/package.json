@@ -155,6 +155,7 @@
     "@saerskriven/render": "workspace:*",
     "commander": "catalog:",
     "effect": "catalog:",
+    "smol-toml": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {
