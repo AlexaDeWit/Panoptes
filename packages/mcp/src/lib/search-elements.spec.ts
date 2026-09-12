@@ -1,0 +1,154 @@
+import {
+  answerOf,
+  ecluseWorkspace,
+  everyRecordTree,
+  refusalOf,
+} from './read-tools.fixtures.js';
+import { renderElementSearch, searchElements } from './search-elements.js';
+import { searchLimits } from './search.js';
+
+const ecluse = ecluseWorkspace();
+
+const search = (args: Parameters<typeof searchElements>[1]) =>
+  answerOf(searchElements(ecluse, args));
+
+describe('what saer_search_elements finds', () => {
+  it('matches every element of the fixture where nothing narrows it', () => {
+    const found = search({ response_format: 'concise' });
+    expect(found.counts.matched).toBe(38);
+  });
+
+  it('keeps only the kind a call names', () => {
+    const found = search({ kind: 'store', response_format: 'concise' });
+    expect(found.elements.map((row) => row.kind)).toEqual(
+      found.elements.map(() => 'store'),
+    );
+  });
+
+  it('counts the threats recorded against each element', () => {
+    const found = search({ response_format: 'concise' });
+    expect(
+      found.elements.some((row) => row.threats > 0) &&
+        found.elements.every((row) => row.threats >= 0),
+    ).toBe(true);
+  });
+
+  it('adds the geometry of each kind where detail is asked for', () => {
+    const [flow] = search({
+      kind: 'flow',
+      response_format: 'detailed',
+    }).elements;
+    expect(flow?.source).toBeDefined();
+    expect(flow?.target).toBeDefined();
+  });
+
+  it('leaves the geometry out of a concise row', () => {
+    const [flow] = search({
+      kind: 'flow',
+      response_format: 'concise',
+    }).elements;
+    expect(flow?.source).toBeUndefined();
+  });
+
+  it('matches a query without case against the name', () => {
+    const found = search({ query: 'PROXY', response_format: 'concise' });
+    expect(found.counts.matched).toBeGreaterThan(0);
+  });
+
+  it('cuts a detailed listing at its limit and says the count it matched', () => {
+    const found = search({ response_format: 'detailed' });
+    expect({
+      returned: found.elements.length,
+      matched: found.counts.matched,
+      truncated: found.counts.truncated,
+    }).toEqual({
+      returned: searchLimits.detailed,
+      matched: 38,
+      truncated: true,
+    });
+  });
+
+  it('steers a cut listing toward a narrower query', () => {
+    const rendered = renderElementSearch(
+      search({ response_format: 'detailed' }),
+    );
+    expect(rendered.join('\n')).toContain('Narrow it with');
+  });
+
+  it('refuses a diagram the model does not hold', () => {
+    expect(
+      refusalOf(
+        searchElements(ecluse, {
+          diagram: 'Nothing',
+          response_format: 'concise',
+        }),
+      )[0],
+    ).toContain('holds no diagram named "Nothing"');
+  });
+});
+
+describe('what a detailed element row carries per kind', () => {
+  const rich = everyRecordTree();
+
+  const detailed = (kind: Parameters<typeof searchElements>[1]['kind']) =>
+    answerOf(searchElements(rich, { kind, response_format: 'detailed' }))
+      .elements;
+
+  it('carries the text of a canvas note beside its box', () => {
+    const [note] = detailed('text');
+    expect({ text: note?.text, size: note?.size }).toEqual({
+      text: 'Checked against the deployment diagram.',
+      size: { width: 200, height: 80 },
+    });
+  });
+
+  it('carries the shape of a trust boundary and no box', () => {
+    expect(
+      detailed('trust-boundary').map((row) => [row.shape?.kind, row.position]),
+    ).toEqual([
+      ['box', undefined],
+      ['curve', undefined],
+    ]);
+  });
+
+  it('renders a free flow endpoint as the position it sits at', () => {
+    expect(
+      renderElementSearch(
+        answerOf(
+          searchElements(rich, { kind: 'flow', response_format: 'detailed' }),
+        ),
+      ).join('\n'),
+    ).toContain('target: free at 280,160');
+  });
+
+  it('says why an out-of-scope element is out of scope', () => {
+    const rendered = renderElementSearch(
+      answerOf(
+        searchElements(rich, { kind: 'store', response_format: 'detailed' }),
+      ),
+    ).join('\n');
+    expect(rendered).toContain('out of scope');
+    expect(rendered).toContain('reason out of scope:');
+  });
+
+  it('matches a query against the text of a canvas note', () => {
+    expect(
+      answerOf(
+        searchElements(rich, {
+          query: 'deployment diagram',
+          response_format: 'concise',
+        }),
+      ).elements.map((row) => row.kind),
+    ).toEqual(['text']);
+  });
+
+  it('keeps one diagram of a model holding several', () => {
+    const found = answerOf(
+      searchElements(rich, {
+        diagram: 'diagram-empty',
+        response_format: 'concise',
+      }),
+    );
+    expect(found.counts.matched).toBe(0);
+  });
+});

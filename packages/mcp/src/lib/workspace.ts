@@ -364,7 +364,14 @@ function entriesOf(directory: string) {
   );
 }
 
-function extensionOf(path: string): string {
+/**
+ * The extension a path ends in, lowercase and with its dot, and the empty
+ * string where it ends in none. A name of nothing but an extension is a
+ * hidden file rather than one, so `.png` answers empty, a name ending in a
+ * dot answers that dot alone, and a name carrying several answers the last,
+ * which is what a reader of the path would go by.
+ */
+export function extensionOf(path: string): string {
   const name = basename(path);
   const dot = name.lastIndexOf('.');
   return dot <= 0 ? '' : name.slice(dot).toLowerCase();

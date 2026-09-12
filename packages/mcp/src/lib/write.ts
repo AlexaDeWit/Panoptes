@@ -174,7 +174,7 @@ export function replacedFile(
 ): Either.Either<string, WriteFailure> {
   return throughTemporary(
     target,
-    text,
+    Buffer.from(text, 'utf8'),
     (temporary) =>
       Either.flatMap(unmovedSince(target, quoted), () =>
         Either.try({
@@ -188,22 +188,38 @@ export function replacedFile(
   );
 }
 
-/**
- * `text` as a file at `target`, refused where the path is taken. The
- * temporary file is linked onto the target rather than renamed onto it,
- * which is what makes the refusal and the write one step: a rename replaces
- * whatever the path holds, where a link fails on a path that holds anything.
- * `created` is the mode the file is given, since a path that is free carries
- * none of its own.
- */
+/** {@link createdBytes} for a text, which is what a codec produces. */
 export function createdFile(
   target: WriteTarget,
   text: string,
   created?: number,
 ): Either.Either<string, WriteFailure> {
+  return createdBytes(target, Buffer.from(text, 'utf8'), created);
+}
+
+/**
+ * `bytes` as a file at `target`, refused where the path is taken. The
+ * temporary file is linked onto the target rather than renamed onto it,
+ * which is what makes the refusal and the write one step: a rename replaces
+ * whatever the path holds, where a link fails on a path that holds anything.
+ *
+ * That is also why it needs no second hash of the target where
+ * {@link replacedFile} does, since there is no interval between a check and
+ * the write for another writer to land in.
+ *
+ * A projection is bytes rather than text, and a picture written over a model
+ * would be a loss nothing reports, so the path has to be free here as well.
+ * `created` is the mode the file is given, since a path that is free carries
+ * none of its own.
+ */
+export function createdBytes(
+  target: WriteTarget,
+  bytes: Uint8Array,
+  created?: number,
+): Either.Either<string, WriteFailure> {
   return throughTemporary(
     target,
-    text,
+    bytes,
     (temporary) =>
       Either.try({
         try: () => {
@@ -250,11 +266,10 @@ const errnoSchema = z.object({ code: z.string() });
 
 function throughTemporary(
   target: WriteTarget,
-  text: string,
+  bytes: Uint8Array,
   commit: (temporary: string) => Either.Either<void, WriteFailure>,
   created?: number,
 ): Either.Either<string, WriteFailure> {
-  const bytes = Buffer.from(text, 'utf8');
   const temporary = join(
     dirname(target.path),
     `.${basename(target.path)}.${randomUUID()}.saer`,

@@ -1,6 +1,12 @@
+import { typstFontFiles } from '@saerskriven/render/build-assets';
+import { drawingFace } from '@saerskriven/render/png';
+import { Either } from 'effect';
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { PassThrough } from 'node:stream';
-import { mcpOptionsSchema, serveMcp } from './mcp.js';
+import { mcpOptionsSchema, rasterizerIn, serveMcp } from './mcp.js';
+import { resvgWasmFile } from './png.js';
 
 const repositoryRoot = join(import.meta.dirname, '../../..');
 
@@ -17,6 +23,45 @@ describe('what the mcp subcommand is given', () => {
       root: process.cwd(),
       file: undefined,
     });
+  });
+});
+
+const assetsIn = (directory: string): string => {
+  writeFileSync(join(directory, resvgWasmFile), 'module');
+  for (const name of typstFontFiles) {
+    writeFileSync(join(directory, name), `face:${name}`);
+  }
+  return directory;
+};
+
+const disposable = (): string =>
+  assetsIn(mkdtempSync(join(tmpdir(), 'saerskriven-cli-mcp-')));
+
+describe('the rasterizer one server reads', () => {
+  it('answers every render from bytes read once, the directory gone', () => {
+    const directory = disposable();
+    const rasterizer = rasterizerIn(directory);
+    const first = rasterizer();
+    rmSync(directory, { recursive: true, force: true });
+    expect(Either.isRight(first)).toBe(true);
+    expect(rasterizer()).toEqual(first);
+  });
+
+  it('leads with the face the drawings are lettered in', () => {
+    const rasterizer = rasterizerIn(disposable());
+    expect(
+      Either.map(rasterizer(), (assets) =>
+        Buffer.from(assets.fonts[0] ?? []).toString('utf8'),
+      ),
+    ).toEqual(Either.right(`face:${drawingFace}`));
+  });
+
+  it('re-reads a directory it could not read rather than holding the refusal', () => {
+    const directory = mkdtempSync(join(tmpdir(), 'saerskriven-cli-mcp-bare-'));
+    const rasterizer = rasterizerIn(directory);
+    expect(Either.isLeft(rasterizer())).toBe(true);
+    assetsIn(directory);
+    expect(Either.isRight(rasterizer())).toBe(true);
   });
 });
 

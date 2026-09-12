@@ -450,6 +450,9 @@ importers:
       '@saerskriven/model':
         specifier: workspace:*
         version: link:../model
+      '@saerskriven/render':
+        specifier: workspace:*
+        version: link:../render
       effect:
         specifier: 'catalog:'
         version: 3.22.1

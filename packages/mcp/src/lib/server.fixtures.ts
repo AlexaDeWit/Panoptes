@@ -3,6 +3,7 @@ import { InMemoryTransport } from '@modelcontextprotocol/server';
 import { serveStdio } from '@modelcontextprotocol/server/stdio';
 import { Either } from 'effect';
 import type { Era } from '../fixtures.js';
+import type { RasterizerAssets } from './render-diagram.js';
 import { createSaerskrivenServer } from './server.js';
 import { openWorkspace, renderWorkspaceFailure } from './workspace.js';
 
@@ -12,12 +13,26 @@ export type Session = {
   readonly end: () => Promise<void>;
 };
 
-/** What a session is over: its root, its default model, and the era it opens in. */
+/**
+ * What a session is over: its root, its default model, the era it opens in,
+ * and where a render finds its rasterizer. The rasterizer defaults to
+ * {@link noRasterizer}, since the module is built from Rust and no dev shell
+ * exports it, so a session that does not mean to draw gets the refusal rather
+ * than a skipped suite.
+ */
 export type SessionRequest = {
   readonly root: string;
   readonly file?: string;
   readonly era?: Era;
+  readonly rasterizer?: RasterizerAssets;
 };
+
+/**
+ * A rasterizer an install does not have, which is what a render answers a
+ * host with where the module was never built.
+ */
+export const noRasterizer: RasterizerAssets = () =>
+  Either.left('this fixture carries no rasterizer module');
 
 /**
  * A session against a server confined to `root`, with `file` as its default
@@ -42,6 +57,7 @@ export async function session(request: SessionRequest): Promise<Session> {
       createSaerskrivenServer({
         workspace: workspace.right,
         version: '0.0.0-spec',
+        rasterizer: request.rasterizer ?? noRasterizer,
       }),
     { transport: serverSide, legacy: 'serve' },
   );

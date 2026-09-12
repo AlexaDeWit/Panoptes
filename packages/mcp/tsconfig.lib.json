@@ -11,10 +11,13 @@
   "include": ["src/**/*.ts"],
   "references": [
     {
-      "path": "../formats/tsconfig.lib.json"
+      "path": "../render/tsconfig.lib.json"
     },
     {
       "path": "../model/tsconfig.lib.json"
+    },
+    {
+      "path": "../formats/tsconfig.lib.json"
     }
   ],
   "exclude": [

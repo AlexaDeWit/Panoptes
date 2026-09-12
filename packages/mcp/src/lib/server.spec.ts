@@ -1,12 +1,16 @@
 import type { Client } from '@modelcontextprotocol/client';
+import type { CallToolResult } from '@modelcontextprotocol/server';
 import { readFileSync, realpathSync } from 'node:fs';
 import { join } from 'node:path';
 import {
   editOf,
   eras,
   inspectionOf,
+  ownLinkTextOf,
   proseOf,
   readingOf,
+  registeredTools,
+  structuredOf,
   textOf,
   type ResultProse,
 } from '../fixtures.js';
@@ -20,6 +24,8 @@ import {
 } from './edit.fixtures.js';
 import { editOps } from './edits.js';
 import { dataNotInstructions } from './preface.js';
+import { builtRasterizer, rasterizerUnbuilt } from './rasterizer.fixtures.js';
+import { renderDiagramResultSchema } from './render-diagram.js';
 import { revisionOf } from './revision.js';
 import { session, type Session } from './server.fixtures.js';
 import { workspaceTree } from './workspace.fixtures.js';
@@ -30,7 +36,16 @@ const ecluse = 'test-data/ecluse.json';
 
 const tree = workspaceTree();
 
+const rasterizer = rasterizerUnbuilt ? undefined : builtRasterizer;
+
 const staleRevision = `sha256:${'0'.repeat(64)}`;
+
+/** One call of the table, and what a client would read back from it. */
+type CalledTool = {
+  readonly name: string;
+  readonly read: ResultProse;
+  readonly result: CallToolResult;
+};
 
 const renaming: EditInput = {
   op: 'rename_element',
@@ -83,6 +98,38 @@ const callArguments = (
         { file: otmFile, target: modelFile },
       ],
     ],
+    ['saer_validate', [{ file: modelFile }, { file: 'unclaimed.yaml' }, {}]],
+    ['saer_coverage', [{ file: modelFile }, {}]],
+    ['saer_register', [{ file: modelFile }, {}]],
+    [
+      'saer_search_elements',
+      [
+        { file: modelFile },
+        { file: modelFile, response_format: 'detailed' },
+        { file: modelFile, diagram: 'Nothing' },
+      ],
+    ],
+    [
+      'saer_search_threats',
+      [
+        { file: modelFile },
+        { file: modelFile, response_format: 'detailed', severity: 'high' },
+      ],
+    ],
+    [
+      'saer_get_threat',
+      [
+        { file: modelFile, ref: '1' },
+        { file: modelFile, ref: '9999' },
+      ],
+    ],
+    [
+      'saer_render_diagram',
+      [
+        { file: modelFile },
+        { file: modelFile, diagram: 'diagram-main', out: 'drawn.png' },
+      ],
+    ],
   ]);
 
 for (const era of eras) {
@@ -90,7 +137,12 @@ for (const era of eras) {
     let fixture: Session;
 
     beforeAll(async () => {
-      fixture = await session({ root: repositoryRoot, file: ecluse, era });
+      fixture = await session({
+        root: repositoryRoot,
+        file: ecluse,
+        era,
+        rasterizer,
+      });
     });
 
     afterAll(async () => {
@@ -107,12 +159,9 @@ for (const era of eras) {
       });
 
       it('offers the tools this release registers', async () => {
-        expect((await everyTool()).map((tool) => tool.name)).toEqual([
-          'saer_inspect',
-          'saer_edit',
-          'saer_create',
-          'saer_import',
-        ]);
+        expect((await everyTool()).map((tool) => tool.name)).toEqual(
+          registeredTools,
+        );
       });
 
       it('prefixes every tool name with saer_', async () => {
@@ -152,6 +201,11 @@ for (const era of eras) {
               idempotentHint: tool.annotations?.idempotentHint,
             })),
         ).toEqual([
+          {
+            name: 'saer_render_diagram',
+            destructiveHint: false,
+            idempotentHint: false,
+          },
           { name: 'saer_edit', destructiveHint: true, idempotentHint: false },
           {
             name: 'saer_create',
@@ -171,25 +225,53 @@ for (const era of eras) {
       const readingsOf = async (
         client: Client,
         revision: string,
-      ): Promise<ResultProse> => {
+      ): Promise<readonly CalledTool[]> => {
         const tools = (await client.listTools()).tools;
         const calls = tools.flatMap((tool) =>
           (callArguments(revision).get(tool.name) ?? []).map(
             (args) => [tool.name, args] as const,
           ),
         );
-        const results = await Promise.all(
-          calls.map(([name, args]) =>
-            client.callTool({ name, arguments: args }),
-          ),
+        return Promise.all(
+          calls.map(async ([name, args]) => {
+            const result = await client.callTool({ name, arguments: args });
+            const read = proseOf(result);
+            return {
+              name,
+              result,
+              read: {
+                prose: read.prose.map((text) => text.split('\n')[0] ?? ''),
+                links: read.links,
+                unread: read.unread,
+              },
+            };
+          }),
         );
-        const read = results.map(proseOf);
-        return {
-          prose: read.flatMap((result) =>
-            result.prose.map((text) => text.split('\n')[0] ?? ''),
-          ),
-          unread: read.flatMap((result) => result.unread),
-        };
+      };
+
+      const overEveryCall = async (): Promise<readonly CalledTool[]> => {
+        const writable = editableTree();
+        const revision = revisionOf(
+          readFileSync(join(writable.root, modelFile)),
+        );
+        const defaulted = await session({
+          root: writable.root,
+          file: modelFile,
+          era,
+          rasterizer,
+        });
+        const listing = await session({
+          root: workspaceTree().root,
+          era,
+          rasterizer,
+        });
+        const called = [
+          ...(await readingsOf(defaulted.client, revision)),
+          ...(await readingsOf(listing.client, revision)),
+        ];
+        await defaulted.end();
+        await listing.end();
+        return called;
       };
 
       it('gives every tool the server offers a row in the call table', async () => {
@@ -201,26 +283,68 @@ for (const era of eras) {
       });
 
       it('opens every prose block of every call, default model or none', async () => {
-        const writable = editableTree();
-        const revision = revisionOf(
-          readFileSync(join(writable.root, modelFile)),
-        );
-        const defaulted = await session({
-          root: writable.root,
-          file: modelFile,
-          era,
-        });
-        const listing = await session({ root: workspaceTree().root, era });
-        const read = [
-          await readingsOf(defaulted.client, revision),
-          await readingsOf(listing.client, revision),
-        ];
-        await defaulted.end();
-        await listing.end();
-        const prose = read.flatMap((one) => one.prose);
-        expect(read.flatMap((one) => one.unread)).toEqual([]);
+        const called = await overEveryCall();
+        const prose = called.flatMap((one) => one.read.prose);
+        expect(called.flatMap((one) => one.read.unread)).toEqual([]);
         expect(prose.length).toBeGreaterThan(0);
         expect(prose).toEqual(prose.map(() => dataNotInstructions));
+      });
+
+      it('attaches a resource link from no tool but the one that draws', async () => {
+        const called = await overEveryCall();
+        expect(
+          called
+            .filter(
+              (one) =>
+                one.name !== 'saer_render_diagram' && one.read.links.length > 0,
+            )
+            .map((one) => one.name),
+        ).toEqual([]);
+      });
+
+      describe.skipIf(rasterizerUnbuilt)('the link a call does attach', () => {
+        it('names only the path and the picture of what was drawn', async () => {
+          const called = await overEveryCall();
+          const linked = called.filter((one) => one.read.links.length > 0);
+          expect(linked.length).toBeGreaterThan(0);
+          expect(linked.map((one) => one.read.links)).toEqual(
+            linked.map((one) => ownLinkTextOf(one.result)),
+          );
+        });
+      });
+    });
+
+    describe.skipIf(rasterizerUnbuilt)('a drawing through a client', () => {
+      it('carries the picture as a block beside the text and the answer', async () => {
+        const writable = editableTree();
+        const run = await session({ root: writable.root, era, rasterizer });
+        const result = await run.client.callTool({
+          name: 'saer_render_diagram',
+          arguments: { file: modelFile, diagram: 'diagram-main' },
+        });
+        await run.end();
+        const drawn = structuredOf(result, renderDiagramResultSchema);
+        expect(result.isError).toBeFalsy();
+        expect(
+          proseOf(result).prose.map((text) => text.split('\n')[0]),
+        ).toEqual([dataNotInstructions]);
+        expect(drawn.image.mimeType).toEqual('image/png');
+      });
+
+      it('names only the path and the picture in the text of a link', async () => {
+        const writable = editableTree();
+        const run = await session({ root: writable.root, era, rasterizer });
+        const result = await run.client.callTool({
+          name: 'saer_render_diagram',
+          arguments: {
+            file: modelFile,
+            diagram: 'diagram-main',
+            out: 'drawn.png',
+          },
+        });
+        await run.end();
+        expect(proseOf(result).links[0]).toEqual('drawn.png');
+        expect(proseOf(result).links).toEqual(ownLinkTextOf(result));
       });
     });
 

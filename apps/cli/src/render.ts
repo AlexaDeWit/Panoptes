@@ -1,5 +1,5 @@
 import { escapedForTerminal } from '@saerskriven/formats';
-import type { Diagram, Model } from '@saerskriven/model';
+import { diagramsNamed, type Diagram, type Model } from '@saerskriven/model';
 import {
   renderRegister,
   renderSvg,
@@ -191,9 +191,7 @@ function theNamedDiagram(
   model: Model,
   name: string,
 ): Either.Either<Diagram, string> {
-  const found = model.diagrams.find(
-    (diagram) => diagram.id === name || diagram.title === name,
-  );
+  const [found] = diagramsNamed(model.diagrams, name);
   return found === undefined
     ? Either.left(
         lines(

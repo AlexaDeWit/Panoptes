@@ -7,10 +7,13 @@ import {
   openWorkspace,
   renderWorkspaceFailure,
   type ModelWorkspace,
+  type RasterizerAssets,
 } from '@saerskriven/mcp';
 import { Either } from 'effect';
 import type { Readable, Writable } from 'node:stream';
 import { z } from 'zod';
+import { runtimeAssets, type WasmAssets } from './assets.js';
+import { pngAssets } from './png.js';
 import {
   lines,
   succeeded,
@@ -32,6 +35,32 @@ export const mcpOptionsSchema = z.object({
 /** The options an `mcp` invocation was given. */
 export type McpOptions = z.infer<typeof mcpOptionsSchema>;
 
+/**
+ * Where one server gets its rasterizer: the injection point that hands
+ * `packages/mcp` bytes it reads no file for, since a browser and an
+ * executable carry them differently.
+ *
+ * It holds what it read, though `assets.ts` already holds a directory that
+ * reads clean for the life of the process, so what this saves a render is a
+ * map lookup rather than the several MiB. A refusal it does not hold, which
+ * is the part that matters: `assets.ts` re-reads a directory it could not
+ * read, and remembering that here would outlive an install repaired under a
+ * long-lived host.
+ */
+export function rasterizerIn(assets: string): RasterizerAssets {
+  let found: WasmAssets | undefined;
+  return () => {
+    if (found !== undefined) {
+      return Either.right(found);
+    }
+    const read = pngAssets(assets);
+    if (Either.isRight(read)) {
+      found = read.right;
+    }
+    return read;
+  };
+}
+
 /** Which streams carry the protocol, so a spec can serve over a pair of pipes. */
 export type McpStreams = {
   readonly input: Readable;
@@ -44,25 +73,36 @@ export type McpStreams = {
  * outcome writes nothing there and whatever the transport reported goes to
  * standard error once the connection is over. A 2025-era client is served as
  * well as a 2026-07-28 one.
+ *
+ * `assets` is where a render tool reads the rasterizer module and its faces,
+ * which is the directory beside the bundle unless a spec names another.
  */
 export function serveMcp(
   options: McpOptions,
   streams: McpStreams = { input: process.stdin, output: process.stdout },
+  assets: string = runtimeAssets,
 ): Promise<CommandOutcome> {
   return Either.match(openWorkspace(options), {
     onLeft: (failure) =>
       Promise.resolve(usageError(lines(...renderWorkspaceFailure(failure)))),
-    onRight: (workspace) => served(workspace, streams),
+    onRight: (workspace) => served(workspace, streams, assets),
   });
 }
 
 async function served(
   workspace: ModelWorkspace,
   streams: McpStreams,
+  assets: string,
 ): Promise<CommandOutcome> {
   const reported: string[] = [];
+  const rasterizer = rasterizerIn(assets);
   const handle = serveStdio(
-    () => createSaerskrivenServer({ workspace, version: cliVersion }),
+    () =>
+      createSaerskrivenServer({
+        workspace,
+        version: cliVersion,
+        rasterizer,
+      }),
     {
       transport: new StdioServerTransport(streams.input, streams.output),
       legacy: 'serve',

@@ -227,12 +227,53 @@ tool call reads when it names none.
 Standard output carries the protocol and nothing else, so anything the server
 has to report goes to standard error, where a host shows it.
 
-Four tools are registered. `saer_inspect` reports the format a file was read as,
+Eleven tools are registered: seven that read a model, one that draws one, and
+three that write one. Every one of them takes `file` as a path relative to the
+root, or reads the `--file` default where a call names none, and every result
+carries `revision`.
+
+`saer_inspect` reports the format a file was read as,
 its metadata, one line per diagram with its element and threat counts, the
 totals, every place the file and the model do not correspond exactly, and
 `revision`, a SHA-256 over the file's bytes that a later write will have to
 quote back. Called with neither a `file` argument nor a `--file` default, it
 lists the model files under the root instead.
+
+`saer_validate` answers whether a file reads at all, and reports every place
+the file and the model do not correspond exactly. A file no format claims comes
+back as an error result naming the formats that were tried, and a file a format
+claims and refuses comes back naming the path inside the document of every
+issue the schema raised, down to the field.
+
+`saer_search_elements` and `saer_search_threats` find the records of a model.
+The first takes `diagram`, `kind` and `query` and carries the element id, its
+diagram, its kind, its name, whether it is in scope, and how many threats
+reference it. The second takes `status`, `severity`, `element` and `query` and
+carries the threat number and id, its title, status, severity, category and
+attached elements. Both take `response_format`: `concise` is those fields, and
+`detailed` adds the rest of the record, which for an element is the geometry of
+its kind and for a threat is its prose. A listing is cut at fifty concise
+matches or twenty detailed ones, and a cut result says what it matched and
+names the arguments that narrow it, so the first twenty of two hundred is never
+read as the whole answer.
+
+`saer_get_threat` reads one threat by number or id, with the elements it
+attaches to, the mitigations addressing it and the assumptions its analysis
+rests on. `saer_coverage` reports the elements no threat references, the open
+threats grouped by severity, and the count of threats recorded against every
+element, all three from the model package's own coverage queries.
+`saer_register` carries the whole markdown register, which is the document
+`render --format md` writes.
+
+`saer_render_diagram` draws one diagram as a PNG image block, 1568 pixels on
+its longer edge unless `width` asks for fewer, with the text of the result
+naming every flow endpoint the drawing left out. The image is always PNG and
+never SVG, which is what MCP hosts take. It rasterizes through the same module
+and the same faces `render --format png` uses, so an install missing either
+refuses with the reason named rather than drawing a textless picture. Given
+`out`, it also writes the PNG to a path under the root and returns it as a
+resource link; that path has to be free, so this tool replaces no file and
+writes no model.
 
 `saer_edit` applies a batch of edits to one model and saves the file in the
 format it is already in. The batch is all or nothing: the edits go onto one
@@ -270,8 +311,8 @@ consuming these results is reading a file somebody else wrote.
 
 The protocol revision is 2026-07-28, and a 2025-era client is served as well,
 so a host on either generation connects. The server holds no session and no
-parsed model: every call names its file and reads it again. Streamable HTTP
-and the read and query tools are not built yet.
+parsed model: every call names its file and reads it again. Streamable HTTP is
+not built yet.
 
 #### Registering the server with a host
 

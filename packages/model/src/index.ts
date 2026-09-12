@@ -17,7 +17,7 @@ export {
   type ModelMetadata,
 } from './lib/model.js';
 export * from './lib/parse.js';
-export { elementIdsIn } from './lib/references.js';
+export { diagramsNamed, elementIdsIn } from './lib/references.js';
 export * from './lib/empty.js';
 export * from './lib/operation-failures.js';
 export * from './lib/operations.js';
