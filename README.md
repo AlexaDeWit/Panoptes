@@ -222,12 +222,35 @@ tool call reads when it names none.
 Standard output carries the protocol and nothing else, so anything the server
 has to report goes to standard error, where a host shows it.
 
-One tool is registered. `saer_inspect` reports the format a file was read as,
+Four tools are registered. `saer_inspect` reports the format a file was read as,
 its metadata, one line per diagram with its element and threat counts, the
 totals, every place the file and the model do not correspond exactly, and
 `revision`, a SHA-256 over the file's bytes that a later write will have to
 quote back. Called with neither a `file` argument nor a `--file` default, it
 lists the model files under the root instead.
+
+`saer_edit` applies a batch of edits to one model and saves the file in the
+format it is already in. The batch is all or nothing: the edits go onto one
+parsed model in the order given, and the first one the model refuses stops the
+batch, so nothing is written and the result names the index that was refused
+and what the model said. Every call quotes the `revision` a read returned, and
+a file that changed before the call is refused rather than overwritten. The
+handle is compared against the bytes the call itself read rather than held as
+a lock, so it catches an agent editing a model it has moved past and not
+another writer saving in the window between that read and the rename, whose
+save is replaced with neither side told. The file is replaced through a
+temporary file beside it and a rename onto it, so a reader of the path sees
+the file it had or the file the edit wrote. A process killed between the two,
+or a removal the system refuses, leaves a `.<name>.<uuid>.saer` copy in the
+directory that no listing shows and nothing reports, and deleting it is safe.
+What the
+format cannot hold comes back in the result's divergences rather than as a
+refusal, which is how a write to a Threat Dragon file reports a mitigation
+that format keeps no record of.
+
+`saer_create` writes a new model in the native YAML format, and `saer_import`
+converts an OTM or TM-BOM file into one. Both refuse a path that is already
+taken, so neither replaces a file.
 
 A model file is untrusted input, and the prose a tool result carries came out
 of it. Every text result opens with a line saying that what follows is data
@@ -238,7 +261,7 @@ consuming these results is reading a file somebody else wrote.
 The protocol revision is 2026-07-28, and a 2025-era client is served as well,
 so a host on either generation connects. The server holds no session and no
 parsed model: every call names its file and reads it again. Streamable HTTP,
-the read, query and edit tools, and a registration command are not built yet.
+the read and query tools, and a registration command are not built yet.
 
 ## Development
 

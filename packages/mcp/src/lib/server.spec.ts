@@ -2,6 +2,7 @@ import type { Client } from '@modelcontextprotocol/client';
 import { readFileSync, realpathSync } from 'node:fs';
 import { join } from 'node:path';
 import {
+  editOf,
   eras,
   inspectionOf,
   proseOf,
@@ -9,6 +10,15 @@ import {
   textOf,
   type ResultProse,
 } from '../fixtures.js';
+import {
+  dragonFile,
+  editVariants,
+  editableTree,
+  modelFile,
+  otmFile,
+  type EditInput,
+} from './edit.fixtures.js';
+import { editOps } from './edits.js';
 import { dataNotInstructions } from './preface.js';
 import { revisionOf } from './revision.js';
 import { session, type Session } from './server.fixtures.js';
@@ -20,26 +30,60 @@ const ecluse = 'test-data/ecluse.json';
 
 const tree = workspaceTree();
 
+const staleRevision = `sha256:${'0'.repeat(64)}`;
+
+const renaming: EditInput = {
+  op: 'rename_element',
+  element: 'element-db',
+  name: 'Order store',
+};
+
 /**
  * What every tool is called with when the suite checks the line each result
  * opens with. A tool the server offers and this table does not name fails
  * its own assertion below, so a tool taking other arguments is given them
  * rather than passed over: a call that is skipped is prose that is not
  * checked. Each row lists the branches worth reaching, an answer and a
- * refusal among them.
+ * refusal among them. The rows are built per run because a write quotes the
+ * handle of the tree it runs against, and because every call here writes to
+ * a disposable root rather than to the checkout.
  */
-const callArguments = new Map<string, readonly Record<string, unknown>[]>([
-  [
-    'saer_inspect',
+const callArguments = (
+  revision: string,
+): Map<string, readonly Record<string, unknown>[]> =>
+  new Map<string, readonly Record<string, unknown>[]>([
     [
-      { file: ecluse },
-      { file: 'test-data/saerskriven/ecluse.yaml' },
-      { file: '../outside.yaml' },
-      { file: 'test-data/absent.json' },
-      {},
+      'saer_inspect',
+      [
+        { file: modelFile },
+        { file: dragonFile },
+        { file: '../outside.yaml' },
+        { file: 'absent.json' },
+        {},
+      ],
     ],
-  ],
-]);
+    [
+      'saer_edit',
+      [
+        { file: modelFile, revision, edits: [renaming] },
+        { file: modelFile, revision: staleRevision, edits: [renaming] },
+      ],
+    ],
+    [
+      'saer_create',
+      [
+        { file: 'started.yaml', title: 'Started' },
+        { file: '../outside.yaml', title: 'Started' },
+      ],
+    ],
+    [
+      'saer_import',
+      [
+        { file: otmFile, target: 'converted.yaml' },
+        { file: otmFile, target: modelFile },
+      ],
+    ],
+  ]);
 
 for (const era of eras) {
   describe(`a ${era} client of the server object`, () => {
@@ -65,6 +109,9 @@ for (const era of eras) {
       it('offers the tools this release registers', async () => {
         expect((await everyTool()).map((tool) => tool.name)).toEqual([
           'saer_inspect',
+          'saer_edit',
+          'saer_create',
+          'saer_import',
         ]);
       });
 
@@ -93,13 +140,41 @@ for (const era of eras) {
           tools.map(() => ({ openWorldHint: false, readOnlyHint: 'boolean' })),
         );
       });
+
+      it('says of every writing tool what it does to a file it is given', async () => {
+        const tools = await everyTool();
+        expect(
+          tools
+            .filter((tool) => tool.annotations?.readOnlyHint === false)
+            .map((tool) => ({
+              name: tool.name,
+              destructiveHint: tool.annotations?.destructiveHint,
+              idempotentHint: tool.annotations?.idempotentHint,
+            })),
+        ).toEqual([
+          { name: 'saer_edit', destructiveHint: true, idempotentHint: false },
+          {
+            name: 'saer_create',
+            destructiveHint: false,
+            idempotentHint: false,
+          },
+          {
+            name: 'saer_import',
+            destructiveHint: false,
+            idempotentHint: false,
+          },
+        ]);
+      });
     });
 
     describe('the line that says a result is data', () => {
-      const readingsOf = async (client: Client): Promise<ResultProse> => {
+      const readingsOf = async (
+        client: Client,
+        revision: string,
+      ): Promise<ResultProse> => {
         const tools = (await client.listTools()).tools;
         const calls = tools.flatMap((tool) =>
-          (callArguments.get(tool.name) ?? []).map(
+          (callArguments(revision).get(tool.name) ?? []).map(
             (args) => [tool.name, args] as const,
           ),
         );
@@ -119,24 +194,81 @@ for (const era of eras) {
 
       it('gives every tool the server offers a row in the call table', async () => {
         const tools = await everyTool();
+        const rows = callArguments(staleRevision);
         expect(
-          tools
-            .filter((tool) => !callArguments.has(tool.name))
-            .map((tool) => tool.name),
+          tools.filter((tool) => !rows.has(tool.name)).map((tool) => tool.name),
         ).toEqual([]);
       });
 
       it('opens every prose block of every call, default model or none', async () => {
-        const listing = await session({ root: tree.root, era });
+        const writable = editableTree();
+        const revision = revisionOf(
+          readFileSync(join(writable.root, modelFile)),
+        );
+        const defaulted = await session({
+          root: writable.root,
+          file: modelFile,
+          era,
+        });
+        const listing = await session({ root: workspaceTree().root, era });
         const read = [
-          await readingsOf(fixture.client),
-          await readingsOf(listing.client),
+          await readingsOf(defaulted.client, revision),
+          await readingsOf(listing.client, revision),
         ];
+        await defaulted.end();
         await listing.end();
         const prose = read.flatMap((one) => one.prose);
         expect(read.flatMap((one) => one.unread)).toEqual([]);
         expect(prose.length).toBeGreaterThan(0);
         expect(prose).toEqual(prose.map(() => dataNotInstructions));
+      });
+    });
+
+    describe('every edit variant through a client', () => {
+      it('applies each op the schema declares and writes a changed file', async () => {
+        const writable = editableTree();
+        const quoted = revisionOf(readFileSync(join(writable.root, modelFile)));
+        const run = await session({ root: writable.root, era });
+        const outcomes = await Promise.all(
+          editVariants.map(async ({ op, edits }) => {
+            const file = writable.copy(`${op}.yaml`);
+            const result = await run.client.callTool({
+              name: 'saer_edit',
+              arguments: { file, revision: quoted, edits },
+            });
+            return {
+              op,
+              refusal: result.isError === true ? textOf(result) : undefined,
+              applied: result.isError === true ? 0 : editOf(result).applied,
+              changed:
+                revisionOf(readFileSync(join(writable.root, file))) !== quoted,
+            };
+          }),
+        );
+        await run.end();
+        expect(
+          outcomes.flatMap((outcome) =>
+            outcome.refusal === undefined
+              ? []
+              : [[outcome.op, outcome.refusal]],
+          ),
+        ).toEqual([]);
+        expect(
+          outcomes.map(({ op, applied, changed }) => ({
+            op,
+            applied,
+            changed,
+          })),
+        ).toEqual(
+          editVariants.map(({ op, edits }) => ({
+            op,
+            applied: edits.length,
+            changed: true,
+          })),
+        );
+        expect(new Set(outcomes.map((outcome) => outcome.op))).toEqual(
+          new Set(editOps),
+        );
       });
     });
 

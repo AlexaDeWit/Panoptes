@@ -1,4 +1,4 @@
-import { autoPlacement } from '@saerskriven/model';
+import { autoExtent, autoPlacement } from '@saerskriven/model';
 import type { TmbomDocument } from '@saerskriven/wire-tmbom';
 import {
   importElement,
@@ -107,7 +107,7 @@ export function tmbomGraph(document: TmbomDocument, context: ImportContext) {
         ),
         kind,
         position: { x: placed.x, y: top + placed.y },
-        size: { width: 180, height: 80 },
+        size: autoExtent,
       });
     }
     top += height + 80;

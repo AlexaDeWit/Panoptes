@@ -1,4 +1,5 @@
 import type { CallToolResult } from '@modelcontextprotocol/server';
+import { editResultSchema, type EditResult } from './lib/edit.js';
 import { inspectResultSchema, type InspectResult } from './lib/inspect.js';
 
 /**
@@ -75,4 +76,12 @@ export function readingOf(
     throw new Error('the call listed candidates where it was to read a file');
   }
   return inspection.result;
+}
+
+/**
+ * What `saer_edit` reported, read back through the schema the tool
+ * advertises, so a spec reasons about typed data as it does for a reading.
+ */
+export function editOf(result: CallToolResult): EditResult {
+  return editResultSchema.parse(result.structuredContent);
 }

@@ -1,4 +1,4 @@
-import { autoPlacement } from '@saerskriven/model';
+import { autoExtent, autoPlacement } from '@saerskriven/model';
 import type { OtmDocument } from '@saerskriven/wire-otm';
 import {
   importElement,
@@ -166,6 +166,6 @@ function otmGeometry(
     );
   return {
     position: appearance?.position ?? autoPlacement(index),
-    size: appearance?.size ?? { width: 180, height: 80 },
+    size: appearance?.size ?? autoExtent,
   };
 }

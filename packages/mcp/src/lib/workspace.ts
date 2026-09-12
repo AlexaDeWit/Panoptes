@@ -58,6 +58,13 @@ export type WorkspaceFailure = Data.TaggedEnum<{
  */
 export const WorkspaceFailure = Data.taggedEnum<WorkspaceFailure>();
 
+/** One file's bytes as the server read them, and the text they decode to. */
+export type ReadTextFile = {
+  readonly path: string;
+  readonly bytes: Uint8Array;
+  readonly text: string;
+};
+
 /** One model file as the server read it, with the handle a write quotes back. */
 export type ReadModelFile = {
   readonly path: string;
@@ -86,22 +93,47 @@ export function openWorkspace(
 }
 
 /**
+ * The text of a file a tool call names. The path is confined to the root
+ * first, and the entry is measured before its bytes are read: anything that
+ * is not a regular file is refused there, so a FIFO or a device inside the
+ * root cannot block the synchronous read forever, and a regular file past
+ * the shared text bound costs a `stat` rather than its own length in memory.
+ * A `stat` that fails refuses too, since a bound that cannot be measured is
+ * no bound.
+ */
+export function readTextFile(
+  workspace: ModelWorkspace,
+  requested: string,
+): Either.Either<ReadTextFile, WorkspaceFailure> {
+  return Either.flatMap(confined(workspace, requested), (path) =>
+    Either.flatMap(readableFile(path, requested), () =>
+      Either.map(bytesOf(path, requested), (bytes) => ({
+        path,
+        bytes,
+        text: Buffer.from(bytes).toString('utf8'),
+      })),
+    ),
+  );
+}
+
+/**
  * The model a tool call names, read through the format detection every other
- * reader goes through. The path is confined to the root first, and the entry
- * is measured before its bytes are read: anything that is not a regular file
- * is refused there, so a FIFO or a device inside the root cannot block the
- * synchronous read forever, and a regular file past the shared text bound
- * costs a `stat` rather than its own length in memory. A `stat` that fails
- * refuses too, since a bound that cannot be measured is no bound.
+ * reader goes through, on the bounds {@link readTextFile} applies.
  */
 export function readModelFile(
   workspace: ModelWorkspace,
   requested: string,
 ): Either.Either<ReadModelFile, WorkspaceFailure> {
-  return Either.flatMap(confined(workspace, requested), (path) =>
-    Either.flatMap(readableFile(path, requested), () =>
-      parsed(path, requested),
-    ),
+  return Either.flatMap(readTextFile(workspace, requested), (file) =>
+    Either.mapBoth(readAnyFormat(file.text), {
+      onLeft: (failure) =>
+        WorkspaceFailure.Unread({ path: requested, failure }),
+      onRight: (read) => ({
+        path: file.path,
+        revision: revisionOf(file.bytes),
+        read,
+      }),
+    }),
   );
 }
 
@@ -212,7 +244,13 @@ function rootOf(root: string): Either.Either<string, WorkspaceFailure> {
   });
 }
 
-function confined(
+/**
+ * A requested path as the absolute path it resolves to inside the root, or
+ * the refusal naming where it landed. Every path this server reads or writes
+ * passes through here, including one whose last segments do not exist yet,
+ * which is the path a write that creates a file names.
+ */
+export function confined(
   workspace: ModelWorkspace,
   requested: string,
 ): Either.Either<string, WorkspaceFailure> {
@@ -302,19 +340,6 @@ function withinSizeBound(
       );
 }
 
-function parsed(
-  path: string,
-  requested: string,
-): Either.Either<ReadModelFile, WorkspaceFailure> {
-  return Either.flatMap(bytesOf(path, requested), (bytes) =>
-    Either.mapBoth(readAnyFormat(Buffer.from(bytes).toString('utf8')), {
-      onLeft: (failure) =>
-        WorkspaceFailure.Unread({ path: requested, failure }),
-      onRight: (read) => ({ path, revision: revisionOf(bytes), read }),
-    }),
-  );
-}
-
 function bytesOf(
   path: string,
   requested: string,
@@ -345,6 +370,7 @@ function extensionOf(path: string): string {
   return dot <= 0 ? '' : name.slice(dot).toLowerCase();
 }
 
-function reasonOf(error: unknown): string {
+/** What a thrown value says, for the system's own sentence on a failure. */
+export function reasonOf(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }

@@ -13,6 +13,9 @@ import {
 
 const ecluse = ['mcp', '--file', 'test-data/ecluse.json'];
 
+/** What `saer mcp` registers, which a client of the packaged binary lists. */
+const registered = ['saer_inspect', 'saer_edit', 'saer_create', 'saer_import'];
+
 for (const runner of runners) {
   const register = runner.absence === undefined ? describe : describe.skip;
   register(
@@ -24,7 +27,7 @@ for (const runner of runners) {
         const era = session.client.getProtocolEra();
         await session.end();
         expect(era).toEqual('modern');
-        expect(listed.tools.map((tool) => tool.name)).toEqual(['saer_inspect']);
+        expect(listed.tools.map((tool) => tool.name)).toEqual(registered);
       });
 
       it('serves a 2025-era client the same tool list', async () => {
@@ -33,7 +36,7 @@ for (const runner of runners) {
         const era = session.client.getProtocolEra();
         await session.end();
         expect(era).toEqual('legacy');
-        expect(listed.tools.map((tool) => tool.name)).toEqual(['saer_inspect']);
+        expect(listed.tools.map((tool) => tool.name)).toEqual(registered);
       });
 
       it('calls saer_inspect on the Écluse fixture', async () => {
