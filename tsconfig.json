@@ -13,6 +13,9 @@
       "path": "./packages/wire-saerskriven-yaml"
     },
     {
+      "path": "./packages/wire-saerskriven-yaml-v2"
+    },
+    {
       "path": "./packages/wire-threat-dragon"
     },
     {

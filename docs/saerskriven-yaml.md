@@ -78,9 +78,10 @@ version this release is current on.
 
 Every released version reads, for good. A read dispatches on the version the
 file states and chains the migrations from there to the current one, so a
-file Saerskriven has ever written opens in every later release of it. Nothing
-past version 1 exists yet, so there is no dispatch and no migration to read:
-this says what the first bump has to build.
+file Saerskriven has ever written opens in every later release of it.
+Version 2 is declared by `@saerskriven/wire-saerskriven-yaml-v2`, but nothing
+reads it yet, so there is no dispatch and no migration to read: this says what
+the first bump has to build.
 
 The internal model cannot change this. The wire schema declares its own ids,
 its own vocabularies, and its own record shapes, and the layer matrix forbids

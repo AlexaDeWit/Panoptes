@@ -262,11 +262,11 @@
   // (docs/release.md).
   "release": {
     // Named explicitly, because nx release versions only the non-private
-    // projects by default. With every package private that set is empty;
-    // with one package not private it versions that one alone and the other
+    // projects by default. With every package private that set is empty.
+    // With one package not private it versions that one alone and the other
     // manifests keep the old number with nothing said. The list versions all
-    // nine and excludes the operator tooling under scripts. Nothing is
-    // published; the version is what a release needs.
+    // thirteen and excludes the operator tooling under scripts. Nothing is
+    // published: the version is what a release needs.
     "projects": ["@saerskriven/*"],
     "projectsRelationship": "fixed",
     "releaseTag": {
