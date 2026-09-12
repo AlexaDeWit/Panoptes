@@ -2,11 +2,12 @@ import { Data } from 'effect';
 
 /**
  * Why a rasterization produced no PNG: `_tag` discriminates the refusal,
- * following Effect's own convention. `Refused` carries the sentence the
- * module reported about the document it was given, and `Unusable` the one a
- * module that would not start, or stopped partway, reported. The wording
- * around them belongs to whoever calls: a command prints them and a browser
- * shows them.
+ * following Effect's own convention. `Refused` is about what was asked for,
+ * carrying the sentence the renderer reported about the document or this
+ * package's own about a long edge it will not pass on, and `Unusable` is
+ * about the assets, a module that would not start or stopped partway and a
+ * buffer holding no face the renderer reads. The wording around them belongs
+ * to whoever calls: a command prints them and a browser shows them.
  */
 export type ResvgFailure = Data.TaggedEnum<{
   Refused: { readonly sentence: string };

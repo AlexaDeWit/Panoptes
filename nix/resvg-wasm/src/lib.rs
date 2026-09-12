@@ -9,6 +9,7 @@
 //! frees. Status 0 means the payload is a PNG, status 1 that it is a UTF-8
 //! sentence naming what was refused.
 
+use std::alloc::{self, Layout};
 use std::cell::RefCell;
 use std::sync::Arc;
 
@@ -18,9 +19,19 @@ use resvg::usvg;
 const RENDERED: u32 = 0;
 const REFUSED: u32 = 1;
 
+// Bytes cross the boundary as bytes, so one-byte alignment is the whole
+// contract, and `dealloc` rebuilds the same layout from the same length.
+const ALIGNMENT: usize = 1;
+
+// Four bytes a pixel, so a 268 MB image. An allocation this module cannot
+// satisfy aborts it rather than unwinding, and a pixel count fitting in a
+// 32-bit usize reaches that band long before it overflows, so what is
+// drawable is decided before the pixmap is asked for.
+const MOST_PIXELS: u64 = 1 << 26;
+
 thread_local! {
-    static FONTS: RefCell<usvg::fontdb::Database> =
-        RefCell::new(usvg::fontdb::Database::new());
+    static FONTS: RefCell<Arc<usvg::fontdb::Database>> =
+        RefCell::new(Arc::new(usvg::fontdb::Database::new()));
 }
 
 /// What `render` answers with, read by the caller and freed by `release`.
@@ -33,13 +44,17 @@ pub struct Outcome {
     length: usize,
 }
 
-/// Reserves `length` bytes of the module's memory for the caller to write into.
+/// Reserves `length` bytes of the module's memory for the caller to write
+/// into, or answers null where it has no such run to give.
 #[unsafe(no_mangle)]
 pub extern "C" fn alloc(length: usize) -> *mut u8 {
-    let mut buffer = Vec::<u8>::with_capacity(length);
-    let pointer = buffer.as_mut_ptr();
-    std::mem::forget(buffer);
-    pointer
+    if length == 0 {
+        return std::ptr::dangling_mut();
+    }
+    match Layout::from_size_align(length, ALIGNMENT) {
+        Ok(layout) => unsafe { alloc::alloc(layout) },
+        Err(_) => std::ptr::null_mut(),
+    }
 }
 
 /// Returns a buffer `alloc` handed out, at the length it was asked for.
@@ -49,23 +64,30 @@ pub extern "C" fn alloc(length: usize) -> *mut u8 {
 /// `pointer` and `length` are one `alloc` call's answer and its argument.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn dealloc(pointer: *mut u8, length: usize) {
-    drop(unsafe { Vec::from_raw_parts(pointer, length, length) });
+    if let (true, Ok(layout)) = (length > 0, Layout::from_size_align(length, ALIGNMENT)) {
+        unsafe { alloc::dealloc(pointer, layout) };
+    }
 }
 
-/// Adds a font the next `render` may typeset with. Faces stack in call order,
-/// and a family the document names that no face carries falls back to the
-/// first face offered.
+/// Adds a font the next `render` may typeset with, and answers with the number
+/// of faces the database gained by it: 0 is a buffer holding no face this
+/// renderer reads, which would otherwise draw text in another caller's font or
+/// in none. Faces stack in call order, and a family the document names that no
+/// face carries falls back to the first face offered.
 ///
 /// # Safety
 ///
 /// `pointer` and `length` name a buffer the caller owns for the call.
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn add_font(pointer: *const u8, length: usize) {
+pub unsafe extern "C" fn add_font(pointer: *const u8, length: usize) -> usize {
     let face = unsafe { std::slice::from_raw_parts(pointer, length) }.to_vec();
-    FONTS.with_borrow_mut(|fonts| {
+    FONTS.with_borrow_mut(|held| {
+        let known = held.len();
+        let fonts = Arc::make_mut(held);
         fonts.load_font_data(face);
         fall_back_to_first(fonts);
-    });
+        fonts.len() - known
+    })
 }
 
 /// Rasterizes an SVG, scaled so its longer side is `long_edge` pixels, or at
@@ -91,7 +113,8 @@ pub unsafe extern "C" fn render(pointer: *const u8, length: usize, long_edge: u3
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn release(outcome: *mut Outcome) {
     let held = unsafe { Box::from_raw(outcome) };
-    drop(unsafe { Vec::from_raw_parts(held.payload, held.length, held.length) });
+    let payload = std::ptr::slice_from_raw_parts_mut(held.payload, held.length);
+    drop(unsafe { Box::from_raw(payload) });
 }
 
 // usvg answers an unmatched family with its serif generic, which resolves
@@ -137,8 +160,13 @@ fn rasterize(svg: &[u8], long_edge: u32) -> Result<Raster, String> {
     let scale = scale_of(tree.size(), long_edge);
     let width = pixels(tree.size().width() * scale);
     let height = pixels(tree.size().height() * scale);
+    if u64::from(width) * u64::from(height) > MOST_PIXELS {
+        return Err(format!(
+            "a {width} by {height} pixel image is past the {MOST_PIXELS} pixels drawn at most"
+        ));
+    }
     let mut pixmap = tiny_skia::Pixmap::new(width, height)
-        .ok_or_else(|| format!("a {width} by {height} pixel image is past what can be drawn"))?;
+        .ok_or_else(|| format!("a {width} by {height} pixel image is not one to draw"))?;
     resvg::render(
         &tree,
         tiny_skia::Transform::from_scale(scale, scale),
@@ -155,7 +183,7 @@ fn rasterize(svg: &[u8], long_edge: u32) -> Result<Raster, String> {
 // no syscall to reach one with.
 fn options<'a>() -> usvg::Options<'a> {
     let mut options = usvg::Options {
-        fontdb: FONTS.with_borrow(|fonts| Arc::new(fonts.clone())),
+        fontdb: FONTS.with_borrow(Arc::clone),
         ..usvg::Options::default()
     };
     options.image_href_resolver.resolve_string = Box::new(|_href, _options| None);

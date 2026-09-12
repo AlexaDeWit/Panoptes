@@ -248,8 +248,19 @@ document names that no face carries falls back to the first face offered,
 which is what puts a Liberation face behind the Helvetica and Arial the canvas
 stylesheet asks for. Without that fallback the renderer draws no text at all.
 
+A buffer holding no face the renderer reads is refused, named by its index,
+rather than passed over. The font database drops a face it cannot parse
+without a word, so a truncated file, a wrong file, or an empty one would
+otherwise rasterize as a picture with no text in it, which is this package's
+worst way to be wrong.
+
 `longEdge` scales the drawing so its longer side is that many pixels, and 0
-draws it at the size the document names.
+draws it at the size the document names. A long edge that is not a whole
+number of pixels from 0 to 4294967295 is refused rather than truncated or
+wrapped: a caller sizing a diagram is asking for that size, and the size it
+would get instead is the document's own. An image past 67108864 pixels is
+refused as well, because an allocation the module cannot satisfy aborts it
+where a refusal it can report costs nothing.
 
 The renderer reads no file. It is compiled for `wasm32-unknown-unknown`, which
 has no syscall to reach one with, out of a crate built without the features
@@ -258,7 +269,10 @@ nothing rather than to a file the host holds.
 
 Each call runs its own instance of the module, so the faces one call offers
 reach no other. The compiled module is held per `wasm` array, so a second call
-on the same bytes does not compile it again.
+on the same bytes does not compile it again. An instance that stopped partway
+is dropped rather than called again to free what it held: it is that call's
+alone, and calling back into it would fail a second time over the failure
+that reaches the caller.
 
 A refusal is a value rather than a throw, and a tagged one this package owns
 ([`CODING.md`](../../CODING.md), Error handling). `ResvgFailure.Refused`

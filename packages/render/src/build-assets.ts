@@ -11,7 +11,12 @@ export const resvgVariable = 'SAERSKRIVEN_RESVG_WASM';
 /** The name the rasterizer module is carried under beside a bundle. */
 export const resvgWasmFile = 'saerskriven_resvg.wasm';
 
-/** The faces every Saerskriven PDF uses, in compiler order. */
+/**
+ * The faces every Saerskriven PDF uses, in compiler order. That order is the
+ * Typst compiler's and not the rasterizer's: `@saerskriven/render/resvg` falls
+ * an unmatched family back to the first face it is offered, so a caller of
+ * that subpath leads with the face it wants text drawn in.
+ */
 export const typstFontFiles: readonly string[] = [
   'LiberationMono-Regular.ttf',
   'LiberationSans-Bold.ttf',

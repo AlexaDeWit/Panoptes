@@ -361,9 +361,10 @@ and its checksums, fetched before the build and compiled with no network, so
 two builds of one commit write one module.
 
 No dev shell exports the module or the Rust toolchain that builds it: entering
-`nix develop` to work on the TypeScript pays for neither. The toolchain's
-closure has its own Nix-store cache key in CI, which the `Rasterizer module`
-job is the only writer of.
+`nix develop` to work on the TypeScript pays for neither. Nothing saves that
+closure to CI's Nix-store cache either: the `Rasterizer module` job restores
+the shared entry and writes none, so the 2.7G of Rust toolchain cannot evict
+what every other job restores from, and it pays the build each run instead.
 
 `@saerskriven/render/resvg` reads the bytes back, on the terms the `pdf`
 subpath reads the Typst module on: the module and the faces are the caller's to
