@@ -362,6 +362,44 @@ What the server does not do:
   and nothing carries from one call to the next but the `revision` a read
   returned.
 
+#### Resources and prompts
+
+The server also offers the model named by `--file` as resources, for a host
+that attaches documents rather than calling tools. Without `--file` it lists
+none, and a read answers with the reason.
+
+| URI                        | What it holds                                                                               |
+| -------------------------- | ------------------------------------------------------------------------------------------- |
+| `saer://register`          | The register as `text/markdown`: the text `saer_register` answers with                      |
+| `saer://diagram/{diagram}` | One diagram as an `image/png` blob, drawn as `saer_render_diagram` draws it, then that text |
+
+`{diagram}` is a diagram's id or exact title, percent-encoded. The listing
+names one URI per diagram by its id, and a host completing `{diagram}` is
+offered the ids. The name is only compared against the diagrams of the model,
+so no spelling of it reaches a path. A read the server refuses answers with
+one `text/plain` entry saying why, since a resource has no error result.
+
+Two prompts build a request for the agent out of a model. Both take `file`,
+which falls back to `--file` as a tool's does.
+
+- `stride_pass` takes `element`, an id or an exact name, and lays out that
+  element, its flows, the stores those flows reach and the threats already
+  recorded against it, then asks the STRIDE questions that apply to its kind.
+  An actor, a process, a store and a flow each have a pass. A trust boundary
+  and a canvas note do not, and a name several elements share is refused with
+  their ids.
+- `review_model` lays out the coverage summary and the whole register, then
+  asks for a review of the gaps, the open threats and the records that do not
+  hold together.
+
+Each prompt is two messages: the model data, which opens with the
+data-not-instructions line above, and the brief, which carries no text out of
+the model file. Resource text opens with the same line.
+
+On the 2026-07-28 revision every list, every resource read and the discovery
+result carry `ttlMs: 0` and `cacheScope: "private"`, since another process can
+change the file between two calls. A 2025-era client receives neither field.
+
 #### Serving over Streamable HTTP
 
 `saer mcp --http` serves the same tools over Streamable HTTP instead of

@@ -57,7 +57,7 @@ export function coverage(
   workspace: ModelWorkspace,
   args: CoverageArguments,
 ): Either.Either<CoverageResult, readonly string[]> {
-  return Either.map(readNamed(workspace, args.file), reported);
+  return Either.map(readNamed(workspace, args.file), coverageOf);
 }
 
 /** The coverage as the lines its text result carries. */
@@ -76,7 +76,8 @@ export function renderCoverage(result: CoverageResult): readonly string[] {
   ];
 }
 
-function reported(reading: ModelReading): CoverageResult {
+/** What one model reading covers, for a caller that has read the model already. */
+export function coverageOf(reading: ModelReading): CoverageResult {
   const { model } = reading;
   const counts = threatCountByElement(model);
   const placed = elementsOnDiagrams(model.diagrams);

@@ -1,4 +1,8 @@
-import type { CallToolResult } from '@modelcontextprotocol/server';
+import type {
+  CallToolResult,
+  GetPromptResult,
+  ReadResourceResult,
+} from '@modelcontextprotocol/server';
 import type { z } from 'zod';
 import { editResultSchema, type EditResult } from './lib/edit.js';
 import { inspectResultSchema, type InspectResult } from './lib/inspect.js';
@@ -26,6 +30,12 @@ export const registeredTools: readonly string[] = [
   'saer_edit',
   'saer_create',
   'saer_import',
+];
+
+/** The prompts a release registers, in the order the server registers them. */
+export const registeredPrompts: readonly string[] = [
+  'stride_pass',
+  'review_model',
 ];
 
 /**
@@ -69,11 +79,11 @@ export type ResultProse = {
 
 /**
  * Every string a tool result would put in front of a model, from each block
- * type this reader knows: a `text` block's own text, the text of a `resource`
- * block's embedded document, which carries none when the resource is a blob,
- * and the `name` and `description` of a `resource_link`, which come back
- * under `links`. An `image` block is recognized and carries no text of its
- * own. Any other block type is named in `unread` rather than skipped.
+ * type this reader knows: a `text` block's own text, a `resource` block's
+ * embedded document as {@link resourceProseOf} reads it, and the `name` and
+ * `description` of a `resource_link`, which come back under `links`. An
+ * `image` block is recognized and carries no text of its own. Any other block
+ * type is named in `unread` rather than skipped.
  */
 export function proseOf(result: CallToolResult): ResultProse {
   const prose: string[] = [];
@@ -83,9 +93,9 @@ export function proseOf(result: CallToolResult): ResultProse {
     if (block.type === 'text') {
       prose.push(block.text);
     } else if (block.type === 'resource') {
-      if ('text' in block.resource) {
-        prose.push(block.resource.text);
-      }
+      const read = resourceProseOf({ contents: [block.resource] });
+      prose.push(...read.prose);
+      unread.push(...read.unread);
     } else if (block.type === 'resource_link') {
       links.push(block.name, block.description ?? '');
     } else if (block.type !== 'image') {
@@ -93,6 +103,58 @@ export function proseOf(result: CallToolResult): ResultProse {
     }
   }
   return { prose, links, unread };
+}
+
+/**
+ * Every string a resource read would put in front of a model: the text of a
+ * text entry. A blob is recognized where its media type is an image, and any
+ * other blob is named in `unread` by its media type, so a textual blob fails a
+ * caller's check rather than passing with its content unread.
+ */
+export function resourceProseOf(result: ReadResourceResult): ResultProse {
+  const prose: string[] = [];
+  const unread: string[] = [];
+  for (const entry of result.contents) {
+    if ('text' in entry) {
+      prose.push(entry.text);
+    } else if (!(entry.mimeType ?? '').startsWith('image/')) {
+      unread.push(`blob ${entry.mimeType ?? 'without a media type'}`);
+    }
+  }
+  return { prose, links: [], unread };
+}
+
+/**
+ * The text of every message of a prompt, in order, with the type of any
+ * content that is not text named in `unread`.
+ */
+export function promptProseOf(result: GetPromptResult): ResultProse {
+  const prose: string[] = [];
+  const unread: string[] = [];
+  for (const message of result.messages) {
+    if (message.content.type === 'text') {
+      prose.push(message.content.text);
+    } else {
+      unread.push(message.content.type);
+    }
+  }
+  return { prose, links: [], unread };
+}
+
+/** Every image blob of a resource read, as its media type and its bytes. */
+export function blobsOf(
+  result: ReadResourceResult,
+): readonly { readonly mimeType: string; readonly bytes: Uint8Array }[] {
+  return result.contents.flatMap((entry) =>
+    'blob' in entry
+      ? [
+          {
+            mimeType: entry.mimeType ?? '',
+            bytes: Buffer.from(entry.blob, 'base64'),
+          },
+        ]
+      : [],
+  );
 }
 
 /**

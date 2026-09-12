@@ -7,9 +7,12 @@ import {
   eras,
   inspectionOf,
   ownLinkTextOf,
+  promptProseOf,
   proseOf,
   readingOf,
+  registeredPrompts,
   registeredTools,
+  resourceProseOf,
   structuredOf,
   textOf,
   type ResultProse,
@@ -29,6 +32,7 @@ import { renderDiagramResultSchema } from './render-diagram.js';
 import { revisionOf } from './revision.js';
 import { session, type Session } from './server.fixtures.js';
 import { workspaceTree } from './workspace.fixtures.js';
+import { saerskrivenYaml, treeHolding } from './read-tools.fixtures.js';
 
 const repositoryRoot = realpathSync(join(import.meta.dirname, '../../../..'));
 
@@ -37,6 +41,11 @@ const ecluse = 'test-data/ecluse.json';
 const tree = workspaceTree();
 
 const rasterizer = rasterizerUnbuilt ? undefined : builtRasterizer;
+
+const cacheFields = (result: object) => ({
+  ttlMs: 'ttlMs' in result ? result.ttlMs : undefined,
+  cacheScope: 'cacheScope' in result ? result.cacheScope : undefined,
+});
 
 const staleRevision = `sha256:${'0'.repeat(64)}`;
 
@@ -218,6 +227,108 @@ for (const era of eras) {
             idempotentHint: false,
           },
         ]);
+      });
+    });
+
+    describe('the resources and prompts a client discovers', () => {
+      it('offers the prompts this release registers', async () => {
+        const listed = await fixture.client.listPrompts();
+        expect(
+          listed.prompts.map((prompt) => [
+            prompt.name,
+            prompt.arguments?.map((argument) => [
+              argument.name,
+              argument.required,
+            ]),
+          ]),
+        ).toEqual([
+          [
+            registeredPrompts[0],
+            [
+              ['file', false],
+              ['element', true],
+            ],
+          ],
+          [registeredPrompts[1], [['file', false]]],
+        ]);
+      });
+
+      it('lists the register, every diagram and the diagram template', async () => {
+        const resources = await fixture.client.listResources();
+        const templates = await fixture.client.listResourceTemplates();
+        expect(resources.resources.map((resource) => resource.uri)).toEqual([
+          'saer://register',
+          'saer://diagram/0',
+        ]);
+        expect(
+          templates.resourceTemplates.map((template) => template.uriTemplate),
+        ).toEqual(['saer://diagram/{diagram}']);
+      });
+
+      it(`carries the cache fields a ${era} client is owed on every list and read`, async () => {
+        const lists = [
+          await fixture.client.listTools(),
+          await fixture.client.listPrompts(),
+          await fixture.client.listResources(),
+          await fixture.client.listResourceTemplates(),
+          await fixture.client.readResource({ uri: 'saer://register' }),
+        ];
+        const owed =
+          era === 'modern'
+            ? { ttlMs: 0, cacheScope: 'private' }
+            : { ttlMs: undefined, cacheScope: undefined };
+        expect(lists.map(cacheFields)).toEqual(lists.map(() => owed));
+      });
+
+      it('completes the diagram argument with the ids of the model', async () => {
+        const completed = await fixture.client.complete({
+          ref: { type: 'ref/resource', uri: 'saer://diagram/{diagram}' },
+          argument: { name: 'diagram', value: '' },
+        });
+        expect(completed.completion.values).toEqual(['0']);
+      });
+
+      it('opens every resource read and every prompt with the data line', async () => {
+        const reads = await Promise.all(
+          ['saer://register', 'saer://diagram/0', 'saer://diagram/Nothing'].map(
+            (uri) => fixture.client.readResource({ uri }),
+          ),
+        );
+        const prompts = await Promise.all([
+          fixture.client.getPrompt({
+            name: 'stride_pass',
+            arguments: { element: 'Écluse proxy' },
+          }),
+          fixture.client.getPrompt({ name: 'review_model' }),
+          fixture.client.getPrompt({
+            name: 'stride_pass',
+            arguments: { element: 'Nothing' },
+          }),
+        ]);
+        const read = reads.map(resourceProseOf);
+        const opened = [
+          ...read.flatMap((one) => one.prose),
+          ...prompts.map((one) => promptProseOf(one).prose[0] ?? ''),
+        ].map((text) => text.split('\n')[0]);
+        expect(read.flatMap((one) => one.unread)).toEqual([]);
+        expect(opened.length).toBeGreaterThanOrEqual(6);
+        expect(opened).toEqual(opened.map(() => dataNotInstructions));
+      });
+
+      it('reads a diagram whose id carries URI syntax back to that diagram', async () => {
+        const odd = treeHolding(
+          saerskrivenYaml().replace(
+            'id: read-and-render',
+            "id: '../a b/c?d#e'",
+          ),
+        );
+        const run = await session({ root: odd.root, file: 'model.yaml', era });
+        const listed = await run.client.listResources();
+        const uri = listed.resources[1]?.uri ?? '';
+        const read = await run.client.readResource({ uri });
+        await run.end();
+        expect(uri).toEqual('saer://diagram/..%2Fa%20b%2Fc%3Fd%23e');
+        expect(resourceProseOf(read).prose[0]).toContain('cannot draw a PNG');
       });
     });
 
