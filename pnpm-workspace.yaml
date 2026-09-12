@@ -19,13 +19,6 @@ allowBuilds:
 # and the tree carries the js-yaml 3 line that only @istanbuljs/load-nyc-config
 # still wants. @nx/eslint is not excluded beside it: @nx/playwright depends on
 # it outright, so a peer rule would not move it.
-
-# @nx/vitest declares @nx/jest as an optional peer, and pnpm resolves an
-# optional peer when it can, so the whole Jest 30 runtime arrives behind it
-# whether or not a target runs jest. Every project here tests under Vitest,
-# and the tree carries the js-yaml 3 line that only @istanbuljs/load-nyc-config
-# still wants. @nx/eslint is not excluded beside it: @nx/playwright depends on
-# it outright, so a peer rule would not move it.
 peerDependencyRules:
   ignoreMissing:
     - '@nx/jest'
