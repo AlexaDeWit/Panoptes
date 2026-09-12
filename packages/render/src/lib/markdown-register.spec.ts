@@ -172,7 +172,15 @@ function modelOf(
 }
 
 function textOf(nodes: readonly PhrasingContent[]): string {
-  return nodes.map((node) => (node.type === 'text' ? node.value : '')).join('');
+  return nodes
+    .map((node) =>
+      node.type === 'text'
+        ? node.value
+        : 'children' in node
+          ? textOf(node.children)
+          : '',
+    )
+    .join('');
 }
 
 function headingsOf(
@@ -199,8 +207,31 @@ function tableRowsOf(document: string): string[][] {
     );
 }
 
+function threatTargetsOf(document: string): string[] {
+  return [...document.matchAll(/^<a name="([^"]+)"><\/a>$/gmu)].map(
+    (match) => match[1],
+  );
+}
+
+function overviewLinksOf(
+  document: string,
+): { readonly number: string; readonly target: string }[] {
+  return reader.parse(document).children.flatMap((node) =>
+    node.type === 'table'
+      ? node.children.slice(1).flatMap((row) => {
+          const link = row.children[0]?.children[0];
+          return link?.type === 'link'
+            ? [{ number: textOf(link.children), target: link.url }]
+            : [];
+        })
+      : [],
+  );
+}
+
 function sectionsOf(document: string): string[] {
-  return document.split(/^(?=## Threat )/m).slice(1);
+  return document
+    .split(/^(?=<a name="threat-\d+"><\/a>\n\n## Threat )/m)
+    .slice(1);
 }
 
 describe.each(registers)('the $name register', ({ model, golden }) => {
@@ -236,6 +267,19 @@ describe.each(registers)('the $name register', ({ model, golden }) => {
       'Status',
     ]);
     expect(rows.length).toBe(model.threats.length + 1);
+  });
+
+  it('links every overview number to its explicit detail target', () => {
+    const numbers = model.threats.map((threat) => threat.number);
+    numbers.sort((left, right) => left - right);
+    const targets = numbers.map((number) => `threat-${String(number)}`);
+    expect(threatTargetsOf(renderRegister(model))).toEqual(targets);
+    expect(overviewLinksOf(renderRegister(model))).toEqual(
+      numbers.map((number) => ({
+        number: String(number),
+        target: `#threat-${String(number)}`,
+      })),
+    );
   });
 });
 
@@ -498,6 +542,17 @@ describe('a register render', () => {
     );
   });
 
+  it('keeps a target when its threat title changes', () => {
+    const before = renderRegister(
+      modelOf([threatOf({ number: 7, title: 'Token replay' })]),
+    );
+    const after = renderRegister(
+      modelOf([threatOf({ number: 7, title: 'Replay of a token' })]),
+    );
+    expect(threatTargetsOf(after)).toEqual(threatTargetsOf(before));
+    expect(overviewLinksOf(after)).toEqual(overviewLinksOf(before));
+  });
+
   it('leaves every existing section byte-identical when a higher-numbered threat is added', () => {
     const existing = [threatOf({ number: 1 }), threatOf({ number: 2 })];
     const before = sectionsOf(renderRegister(modelOf(existing)));
@@ -510,18 +565,16 @@ describe('a register render', () => {
     expect(after.length).toBe(before.length + 1);
   });
 
-  it('leaves the heading of every surviving threat unmoved when one is removed', () => {
+  it('leaves every surviving target unmoved when one threat is removed', () => {
     const existing = [
       threatOf({ number: 1 }),
       threatOf({ number: 2 }),
       threatOf({ number: 3 }),
     ];
-    const headingsBefore = headingsOf(renderRegister(modelOf(existing))).filter(
-      (entry) => entry.depth === 2,
-    );
-    const headingsAfter = headingsOf(
+    const targetsBefore = threatTargetsOf(renderRegister(modelOf(existing)));
+    const targetsAfter = threatTargetsOf(
       renderRegister(modelOf([existing[0], existing[2]])),
-    ).filter((entry) => entry.depth === 2);
-    expect(headingsAfter).toEqual([headingsBefore[0], headingsBefore[2]]);
+    );
+    expect(targetsAfter).toEqual([targetsBefore[0], targetsBefore[2]]);
   });
 });

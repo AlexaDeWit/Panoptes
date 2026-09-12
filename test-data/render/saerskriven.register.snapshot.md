@@ -1,32 +1,34 @@
 # Saerskriven threat register
 
-| Number | Title                                                              | Elements                                     | Category                            | Severity  | Status      |
-| ------ | ------------------------------------------------------------------ | -------------------------------------------- | ----------------------------------- | --------- | ----------- |
-| 1      | An oversized file exhausts the reader                              | Threat model file, Codec read                | Denial of service (STRIDE)          | Medium    | Mitigated   |
-| 2      | A deeply nested document exhausts the stack                        | Codec read                                   | Denial of service (STRIDE)          | Medium    | Mitigated   |
-| 3      | A few hundred bytes of aliases expand into gigabytes               | Codec read                                   | Denial of service (STRIDE)          | Medium    | Mitigated   |
-| 4      | A cyclic anchor gives the reader no bottom to reach                | Codec read                                   | Denial of service (STRIDE)          | Medium    | Mitigated   |
-| 5      | A read throws instead of returning a failure                       | Codec read                                   | Denial of service (STRIDE)          | Medium    | Mitigated   |
-| 6      | A key the schema does not declare disappears in silence            | Codec read                                   | Tampering (STRIDE)                  | Low       | Mitigated   |
-| 7      | A file builds a model whose references do not resolve              | Codec read, Internal model                   | Tampering (STRIDE)                  | Medium    | Mitigated   |
-| 8      | A file from a release Saerskriven does not model is read in part   | Codec read                                   | Tampering (STRIDE)                  | Medium    | Mitigated   |
-| 9      | A save drops what the file carried                                 | Codec write                                  | Tampering (STRIDE)                  | High      | Mitigated   |
-| 10     | Threat prose forges the register's own structure                   | Markdown register                            | Tampering (STRIDE)                  | High      | Mitigated   |
-| 11     | Raw HTML in threat prose reaches a published page                  | Markdown register, Downstream site generator | Tampering (STRIDE)                  | High      | Transferred |
-| 12     | Prose nested past the serializer's depth stops the render          | Markdown register                            | Denial of service (STRIDE)          | Low       | Mitigated   |
-| 13     | An element name reaches an SVG document as markup                  | Canvas glyphs and SVG                        | Tampering (STRIDE)                  | High      | Mitigated   |
-| 14     | The PDF path carries prose and fonts from a file nobody vetted     | Markdown register, Canvas glyphs and SVG     | Tampering (STRIDE)                  | Medium    | Open        |
-| 15     | The diagram and the register disagree about what is open           | Canvas glyphs and SVG, Markdown register     | Integrity (CIA)                     | Low       | Mitigated   |
-| 16     | The renderer reaches the filesystem directly                       | Studio renderer, Preload and IPC bridge      | Elevation of privilege (STRIDE)     | High      | Open        |
-| 17     | An unvalidated IPC message reaches the main process                | Preload and IPC bridge, Electron main        | Tampering (STRIDE)                  | High      | Open        |
-| 18     | A save writes a path the person never chose                        | Electron main, Local filesystem              | Tampering (STRIDE)                  | Medium    | Open        |
-| 19     | An edit tool writes an invalid model over a good file              | MCP server and tools, Local filesystem       | Tampering (STRIDE)                  | High      | Open        |
-| 20     | A lossy save through an agent tool drops records without saying so | MCP server and tools, Model core and codecs  | Tampering (STRIDE)                  | Medium    | Open        |
-| 21     | Prose in a model file steers the agent that read it                | MCP server and tools, Model core and codecs  | Prompt injection (OWASP LLM Top 10) | Undecided | Open        |
-| 22     | A substituted dependency or action reaches the build               | None                                         | Tampering (STRIDE)                  | High      | Mitigated   |
-| 23     | Raw HTML in prose reaches Saerskriven's own PDF composition        | Markdown register, Canvas glyphs and SVG     | Tampering (STRIDE)                  | Medium    | Open        |
-| 24     | A text is claimed by the wrong codec, or declined by its own       | Codec read                                   | Tampering (STRIDE)                  | Medium    | Mitigated   |
-| 25     | A compromised upstream release is pinned as it stands              | None                                         | Tampering (STRIDE)                  | High      | Open        |
+| Number           | Title                                                              | Elements                                     | Category                            | Severity  | Status      |
+| ---------------- | ------------------------------------------------------------------ | -------------------------------------------- | ----------------------------------- | --------- | ----------- |
+| [1](#threat-1)   | An oversized file exhausts the reader                              | Threat model file, Codec read                | Denial of service (STRIDE)          | Medium    | Mitigated   |
+| [2](#threat-2)   | A deeply nested document exhausts the stack                        | Codec read                                   | Denial of service (STRIDE)          | Medium    | Mitigated   |
+| [3](#threat-3)   | A few hundred bytes of aliases expand into gigabytes               | Codec read                                   | Denial of service (STRIDE)          | Medium    | Mitigated   |
+| [4](#threat-4)   | A cyclic anchor gives the reader no bottom to reach                | Codec read                                   | Denial of service (STRIDE)          | Medium    | Mitigated   |
+| [5](#threat-5)   | A read throws instead of returning a failure                       | Codec read                                   | Denial of service (STRIDE)          | Medium    | Mitigated   |
+| [6](#threat-6)   | A key the schema does not declare disappears in silence            | Codec read                                   | Tampering (STRIDE)                  | Low       | Mitigated   |
+| [7](#threat-7)   | A file builds a model whose references do not resolve              | Codec read, Internal model                   | Tampering (STRIDE)                  | Medium    | Mitigated   |
+| [8](#threat-8)   | A file from a release Saerskriven does not model is read in part   | Codec read                                   | Tampering (STRIDE)                  | Medium    | Mitigated   |
+| [9](#threat-9)   | A save drops what the file carried                                 | Codec write                                  | Tampering (STRIDE)                  | High      | Mitigated   |
+| [10](#threat-10) | Threat prose forges the register's own structure                   | Markdown register                            | Tampering (STRIDE)                  | High      | Mitigated   |
+| [11](#threat-11) | Raw HTML in threat prose reaches a published page                  | Markdown register, Downstream site generator | Tampering (STRIDE)                  | High      | Transferred |
+| [12](#threat-12) | Prose nested past the serializer's depth stops the render          | Markdown register                            | Denial of service (STRIDE)          | Low       | Mitigated   |
+| [13](#threat-13) | An element name reaches an SVG document as markup                  | Canvas glyphs and SVG                        | Tampering (STRIDE)                  | High      | Mitigated   |
+| [14](#threat-14) | The PDF path carries prose and fonts from a file nobody vetted     | Markdown register, Canvas glyphs and SVG     | Tampering (STRIDE)                  | Medium    | Open        |
+| [15](#threat-15) | The diagram and the register disagree about what is open           | Canvas glyphs and SVG, Markdown register     | Integrity (CIA)                     | Low       | Mitigated   |
+| [16](#threat-16) | The renderer reaches the filesystem directly                       | Studio renderer, Preload and IPC bridge      | Elevation of privilege (STRIDE)     | High      | Open        |
+| [17](#threat-17) | An unvalidated IPC message reaches the main process                | Preload and IPC bridge, Electron main        | Tampering (STRIDE)                  | High      | Open        |
+| [18](#threat-18) | A save writes a path the person never chose                        | Electron main, Local filesystem              | Tampering (STRIDE)                  | Medium    | Open        |
+| [19](#threat-19) | An edit tool writes an invalid model over a good file              | MCP server and tools, Local filesystem       | Tampering (STRIDE)                  | High      | Open        |
+| [20](#threat-20) | A lossy save through an agent tool drops records without saying so | MCP server and tools, Model core and codecs  | Tampering (STRIDE)                  | Medium    | Open        |
+| [21](#threat-21) | Prose in a model file steers the agent that read it                | MCP server and tools, Model core and codecs  | Prompt injection (OWASP LLM Top 10) | Undecided | Open        |
+| [22](#threat-22) | A substituted dependency or action reaches the build               | None                                         | Tampering (STRIDE)                  | High      | Mitigated   |
+| [23](#threat-23) | Raw HTML in prose reaches Saerskriven's own PDF composition        | Markdown register, Canvas glyphs and SVG     | Tampering (STRIDE)                  | Medium    | Open        |
+| [24](#threat-24) | A text is claimed by the wrong codec, or declined by its own       | Codec read                                   | Tampering (STRIDE)                  | Medium    | Mitigated   |
+| [25](#threat-25) | A compromised upstream release is pinned as it stands              | None                                         | Tampering (STRIDE)                  | High      | Open        |
+
+<a name="threat-1"></a>
 
 ## Threat 1: An oversized file exhausts the reader
 
@@ -43,6 +45,8 @@ A file large enough to fill memory is handed to Saerskriven, and the parse itsel
 
 The size is measured in UTF-8 bytes before a parser sees the text, against `readLimits.maxTextBytes`, which is 4 MiB and about thirty times the largest file this repository vendors. Past it the read comes back as `ExceededReadLimit` naming the bound and what it had measured. A generated text one byte over the bound gates it in `read-limits.spec.ts`, since committing megabytes to prove a size bound would be the wrong trade.
 
+<a name="threat-2"></a>
+
 ## Threat 2: A deeply nested document exhausts the stack
 
 - **Elements**: Codec read
@@ -57,6 +61,8 @@ The size is measured in UTF-8 bytes before a parser sees the text, against `read
 **Mitigation**
 
 The nesting of the parsed value is measured by a walk carrying its own stack, which stops one level past `readLimits.maxNestingDepth` of 64. The walk goes level by level and expands a node only when it reaches that node deeper than it has before, so a value reachable along many paths costs its own size rather than the number of paths through it. `test-data/adversarial/deep-nesting.json` and `deep-block.yaml` gate it, one per kind of nesting.
+
+<a name="threat-3"></a>
 
 ## Threat 3: A few hundred bytes of aliases expand into gigabytes
 
@@ -73,6 +79,8 @@ The billion laughs attack in the form YAML gives it. A seed scalar and a handful
 
 Aliases are counted on the composed document before any of them is resolved, against `readLimits.maxAliasCount` of 50, because resolving is where the cost is and a cycle expands without end. The count is this package's own rather than the parser's: `toJS` is handed `maxAliasCount: -1` and the expansion is measured here, since the parser's own accounting resolves an alias by scanning the whole document once per anchor and so costs more than the thing it bounds. A fourth bound, `maxAliasExpansion` of 100,000, holds how much of a document its aliases may reach, because the count alone bounds the cost only where anchors are alike, and a one-node anchor is as cheap to alias as a two-million-node one. Four fixtures gate the four shapes: `alias-expansion.yaml`, `wide-cycle.yaml`, `nested-anchors.yaml` and `shared-anchor.yaml`. The first is refused here and admitted by the parser's own default, which is what makes it proof that the bound is this project's.
 
+<a name="threat-4"></a>
+
 ## Threat 4: A cyclic anchor gives the reader no bottom to reach
 
 - **Elements**: Codec read
@@ -87,6 +95,8 @@ An anchor on a mapping and an alias to it underneath is a cycle in three lines a
 **Mitigation**
 
 The depth walk climbs a cycle to the bound and refuses it there rather than following it. Because it holds every node it has already expanded, a branching cycle costs its width rather than a multiple of that width per level. `cyclic-anchor.yaml`, `branching-cycle.yaml` at fifteen bytes, and `wide-cycle.yaml` gate the three shapes.
+
+<a name="threat-5"></a>
 
 ## Threat 5: A read throws instead of returning a failure
 
@@ -103,6 +113,8 @@ A hostile file that makes a library throw takes down whatever called the read. I
 
 Throwing is not an error channel in this project's TypeScript. Every read returns `Either` with a `ReadFailure` on the error channel, and the adversarial corpus is asserted to read to a failure through both reads and to throw out of neither.
 
+<a name="threat-6"></a>
+
 ## Threat 6: A key the schema does not declare disappears in silence
 
 - **Elements**: Codec read
@@ -117,6 +129,8 @@ A file written by a later release of a format, or by another tool, carries a key
 **Mitigation**
 
 A wire schema is a `z.object`, so it strips what it does not declare rather than refusing the payload, and the read reports every stripped key as an `undeclared` divergence naming its path. A schema that has fallen behind its format therefore announces itself rather than quietly shortening files.
+
+<a name="threat-7"></a>
 
 ## Threat 7: A file builds a model whose references do not resolve
 
@@ -133,6 +147,8 @@ A threat naming an element no diagram holds, a duplicate id, a threat numbered a
 
 `parseModel` is the only way a model value comes into existence, and it enforces more than the shapes: ids unique where they must be, threat numbers unique and never above `lastIssuedThreatNumber`, flow endpoints anchored inside their own diagram and never to the flow itself, and every element and threat reference resolving. A refusal comes back with a path into the model, and `detect.spec.ts` pins the dangling case.
 
+<a name="threat-8"></a>
+
 ## Threat 8: A file from a release Saerskriven does not model is read in part
 
 - **Elements**: Codec read
@@ -147,6 +163,8 @@ A file stamped with a later format version is read by a reader that understands 
 **Mitigation**
 
 `formatVersion` is a zod literal, so a Saerskriven file stamped anything but 1 fails at that path rather than reaching the mapping, and a Threat Dragon file outside major 2 is refused whole. Where no codec claims a text the failure names every format tried, in the order tried, so the person holding the file is told what was attempted rather than handed a partial read.
+
+<a name="threat-9"></a>
 
 ## Threat 9: A save drops what the file carried
 
@@ -163,6 +181,8 @@ Threat Dragon's format holds styling, ports, and per-type flags the internal mod
 
 A format is adopted completely or not at all. The wire schema declares everything the format carries, the parts Saerskriven does not model included, and a write merges onto the document the read returned, so what it does not map is left as the file had it. Where the model does hold something less exactly than the file stated it, the write reports that rather than overwriting. Three oracles gate this over the vendored corpus, among them a comparison of raw parsed input against raw parsed output in which no scalar may move unclaimed.
 
+<a name="threat-10"></a>
+
 ## Threat 10: Threat prose forges the register's own structure
 
 - **Elements**: Markdown register
@@ -177,6 +197,8 @@ A threat title carrying a line that reads like another threat's heading takes th
 **Mitigation**
 
 The tree is built out of mdast nodes and serialized by remark, never concatenated, so a pipe, a backtick or a leading hash in a title lands in the table and in the heading as that text. Line breaks are collapsed in a heading, since an ATX heading holds one line, and a heading inside prose is demoted below the section heading. The register spec pins the forging case directly.
+
+<a name="threat-11"></a>
 
 ## Threat 11: Raw HTML in threat prose reaches a published page
 
@@ -193,6 +215,8 @@ A threat description carrying a script tag or an event handler renders as markup
 
 Risk treatment: transferred to whatever consumes the register. Raw HTML passes through as written, because what to do about it depends on where the markdown is published and by what. The register's promises name this rather than implying a sanitizer that is not there. A site generator publishing a register from a file it did not write sanitizes it.
 
+<a name="threat-12"></a>
+
 ## Threat 12: Prose nested past the serializer's depth stops the render
 
 - **Elements**: Markdown register
@@ -207,6 +231,8 @@ A description that opens four thousand block quotes recurses the markdown serial
 **Mitigation**
 
 Prose nested deeper than 32 levels is rendered as one paragraph of the author's own bytes. The text still reaches the reader, the structure does not, and the package reports no failure and does not throw.
+
+<a name="threat-13"></a>
 
 ## Threat 13: An element name reaches an SVG document as markup
 
@@ -223,6 +249,8 @@ A name, a text element, or a threat title written into an SVG that a browser the
 
 Issue #31 landed, so the standalone document exists and is gated. The glyphs are React elements rendered to static markup, so their text is escaped by the renderer, and every number reaching an attribute goes through `svgNumber`, which is locale-free and free of exponents. `renderSvg` puts every run of free text through `xmlSafeText`, the diagram title included, which replaces each character XML 1.0 forbids rather than dropping it, since a document holding one is refused whole by every XML parser. A spec opens each committed document as XML and holds it to one `svg` root in the SVG namespace, no `script`, `image`, `use` or `foreignObject`, no `href` reaching outside the document, no `url(` and no `@import`. The severity stays high: that is what the mechanism holds off.
 
+<a name="threat-14"></a>
+
 ## Threat 14: The PDF path carries prose and fonts from a file nobody vetted
 
 - **Elements**: Markdown register, Canvas glyphs and SVG
@@ -237,6 +265,8 @@ A PDF of the diagram and the register has to turn foreign prose into glyphs, and
 **Mitigation**
 
 Nothing is built. Issue #34 carries the work and requires the landing pull request to record the pipeline and how it reaches end users. The severity is medium rather than undecided because the ruling removed the browser, and with it the scripting context that would have made it worse; what is left is foreign text reaching a compiler inside the caller's own process.
+
+<a name="threat-15"></a>
 
 ## Threat 15: The diagram and the register disagree about what is open
 
@@ -253,6 +283,8 @@ A reader who counts badges on the diagram and rows in the register and gets two 
 
 Badges count open threats on the model's own definition of open, and the register and the coverage queries read that same definition, so one model gives one count on every surface.
 
+<a name="threat-16"></a>
+
 ## Threat 16: The renderer reaches the filesystem directly
 
 - **Elements**: Studio renderer, Preload and IPC bridge
@@ -267,6 +299,8 @@ An Electron renderer with node integration on, or with a preload that hands it a
 **Mitigation**
 
 Nothing is built. Issue #42 asks for context isolation on, node integration off, the sandbox, and a content security policy, with Electron's own security checklist asserted by a test, and for a boundary rule that keeps the shell importing nothing from packages/. Issue #43 keeps file access behind one adapter rather than in the renderer.
+
+<a name="threat-17"></a>
 
 ## Threat 17: An unvalidated IPC message reaches the main process
 
@@ -283,6 +317,8 @@ An open channel that forwards whatever the renderer sends makes the main process
 
 Nothing is built. Issue #43 treats the IPC surface as a wire like any other, with bounded channel definitions, zod-validated messages, and a closed surface. The renderer is untrusted there by design rather than by exception.
 
+<a name="threat-18"></a>
+
 ## Threat 18: A save writes a path the person never chose
 
 - **Elements**: Electron main, Local filesystem
@@ -297,6 +333,8 @@ A save that takes its destination from the model, or from a message, rather than
 **Mitigation**
 
 Nothing is built. The milestone requires open and save to go through native dialogs on real local files, and the shell to hold window, menu and file plumbing alone. What a save may be handed, and what it must be asked, is settled when issue #43 lands.
+
+<a name="threat-19"></a>
 
 ## Threat 19: An edit tool writes an invalid model over a good file
 
@@ -313,6 +351,8 @@ An agent calling an edit tool with an operation that does not hold leaves a file
 
 Nothing is built. Issue #48 requires every mutation to go through `parseModel` and the model operations, and requires proof in tests that an invalid operation cannot modify the file. The mechanism it rests on, a parse that is the only way a model comes into existence, is on main already.
 
+<a name="threat-20"></a>
+
 ## Threat 20: A lossy save through an agent tool drops records without saying so
 
 - **Elements**: MCP server and tools, Model core and codecs
@@ -328,6 +368,8 @@ An agent saving a model with mitigations and assumptions into Threat Dragon's fo
 
 Nothing is built. The divergence list that names every such loss is on main, and `renderDivergences` already turns it into lines for a person. Issue #48 requires that report to reach the tool result on a lossy write, which is what remains.
 
+<a name="threat-21"></a>
+
 ## Threat 21: Prose in a model file steers the agent that read it
 
 - **Elements**: MCP server and tools, Model core and codecs
@@ -342,6 +384,8 @@ A threat description is free text that an agent reads as part of its context. A 
 **Mitigation**
 
 Every text result the server returns opens with a fixed line saying that what follows is data read from a file rather than instructions. A spec derives that check from the tool list the server advertises rather than naming the tools it knows, so a tool registered without the line reds it. That line is what Saerskriven owns on the inbound side: the harness that decides what an agent does with what it reads is out of scope. On the return path issue #48 puts every write through the model operations. The severity stays undecided until the tool surface is whole.
+
+<a name="threat-22"></a>
 
 ## Threat 22: A substituted dependency or action reaches the build
 
@@ -362,6 +406,8 @@ Three mechanisms, all of them on main.
 - `pnpm install --frozen-lockfile` installs the lockfile rather than resolving against a registry, and external versions live only in the `pnpm-workspace.yaml` catalog.
 - Every GitHub Action is pinned to a full commit SHA with the version in a trailing comment. zizmor's hash-pin policy fails an unpinned one, and Renovate bumps them.
 
+<a name="threat-23"></a>
+
 ## Threat 23: Raw HTML in prose reaches Saerskriven's own PDF composition
 
 - **Elements**: Markdown register, Canvas glyphs and SVG
@@ -377,6 +423,8 @@ Threat prose is markdown, and markdown carries raw HTML. The register hands the 
 
 Nothing is built. Issue #34 carries a criterion of its own for this: a hostile fixture holding a script tag and event-handler HTML in threat prose has to come out of the PDF path inert. This one is owned rather than transferred, because here Saerskriven is the composer rather than the author of an intermediate. Medium for the reason threat 14 is medium: the ruled pipeline is Typst compiled to WebAssembly with no browser, so the markup reaches a typesetter rather than a scripting engine.
 
+<a name="threat-24"></a>
+
 ## Threat 24: A text is claimed by the wrong codec, or declined by its own
 
 - **Elements**: Codec read
@@ -391,6 +439,8 @@ Two codecs are offered every text, and exactly one should own it. Claim on the w
 **Mitigation**
 
 The claim rule is the discriminator lists in `detect.ts`, and `detect.spec.ts` pins both halves of it. Seven texts that no codec may claim, three of them stamping a version inside major 2 and one of those carrying a detail but no summary. A document broken one level below a naming key, which is claimed and then refused with a path into the file. A Saerskriven model saved as JSON, which opens as a Saerskriven model because no file name is consulted. And the smallest file of each release the codecs do model, against a Threat Dragon major above 2 and a `formatVersion` other than 1, which are claimed by nobody.
+
+<a name="threat-25"></a>
 
 ## Threat 25: A compromised upstream release is pinned as it stands
 

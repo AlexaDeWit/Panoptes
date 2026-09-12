@@ -93,24 +93,24 @@ observe.
 
 ## What the register promises
 
-- **Stable anchors.** A section heading is `Threat <number>: <title>`, so the
-  anchor a renderer derives from it is a function of that threat alone. Threat
-  numbers are issued once and never reissued, so adding, removing, or
-  reordering threats moves no other threat's anchor. Line breaks in a title
-  are collapsed to single spaces in the heading text alone, because an ATX
-  heading holds one line: handed two, a serializer writes something else, and
-  a title carrying a line that reads like another threat's heading would take
-  that threat's anchor. Nothing links to those anchors from the overview
-  table: the slug belongs to whatever renders the markdown, and spelling one
-  here would bind the register to one renderer's rules.
+- **Stable anchors.** Each detail heading follows an empty named anchor such
+  as `<a name="threat-7"></a>`. The overview number links to that target as
+  `[7](#threat-7)`. A threat number is permanent, so title edits and changes
+  to other threats preserve the target. Zola preserves the named anchor and
+  resolves the overview link against the page URL. Its heading also receives
+  a title-based id, which is outside this contract. GitHub supports named HTML
+  anchors and links to their source names. Its Markdown API prefixes the
+  sanitized `name` with `user-content-`, while the source link remains
+  `#threat-7`. The generated anchor and link target do not enter Typst output,
+  so a PDF keeps the overview number without showing HTML or a fragment URL.
+  Line breaks in a title are collapsed to spaces in the heading text alone.
 - **Prose is markdown.** A threat's description and mitigation are parsed and
   spliced into the section as nodes, so a list or a table an author wrote
   stays one. A heading inside prose is demoted below the section heading, so
   it cannot break the register's structure. Raw HTML passes through as
   written: what to do about it belongs to whatever consumes the register.
-  Prose nested deeper than 32 levels is rendered as one paragraph of the
-  author's own bytes, because the serializer recurses per level and this
-  package reports no failure and must not throw.
+  Prose nested deeper than `deepestProse` is rendered as one paragraph of the
+  author's own bytes so both register writers stay within their depth bounds.
 - **Escaping is the library's.** The tree is built out of mdast nodes and
   serialized by remark, never concatenated, so a title carrying a pipe, a
   backtick, or a leading hash lands in the table and the heading as that text
