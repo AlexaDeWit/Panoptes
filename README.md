@@ -41,7 +41,7 @@ Dragon and license it under the same Apache License 2.0. See
 | `packages/wire-threat-dragon`    | The Threat Dragon v2 format as a schema and nothing else                                                                                                                                                                                                                                                                         |
 | `packages/formats`               | File-format codecs, and the mappings between a file and the model                                                                                                                                                                                                                                                                |
 | `packages/canvas`                | React canvas components, shared by the UI and headless rendering                                                                                                                                                                                                                                                                 |
-| `packages/render`                | Projections of a model: SVG, markdown, Typst source, the `pdf` subpath that compiles that source, and the `resvg` subpath that rasterizes a drawing                                                                                                                                                                              |
+| `packages/render`                | Projections of a model: SVG, markdown, Typst source, the `pdf` subpath that compiles that source, the `resvg` subpath that rasterizes a drawing, and the `png` subpath that draws one diagram through it                                                                                                                         |
 | `packages/mcp`                   | The MCP server object: tools over the model and the codecs, with no transport of its own                                                                                                                                                                                                                                         |
 | `apps/studio`                    | The drawing UI: its [canvas](apps/studio/src/canvas/README.md), its [threat panel](apps/studio/src/panel/README.md), its [model store](apps/studio/src/store/README.md), its [file bridge](apps/studio/src/files/README.md), its [commands](apps/studio/src/commands/README.md) and its [controls](apps/studio/src/ui/README.md) |
 | `apps/cli`                       | The command-line interface                                                                                                                                                                                                                                                                                                       |
@@ -170,6 +170,7 @@ same arguments and runs the same executable.
 saer validate threat-model.yaml
 saer render threat-model.yaml --format md --out register.md
 saer render threat-model.yaml --format svg --out diagram.svg
+saer render threat-model.yaml --format png --out diagram.png
 saer render threat-model.yaml --format pdf --out threat-model.pdf
 saer render threat-model.yaml --format svg --out -
 ```
@@ -186,20 +187,24 @@ stated it.
 `render` writes a projection. `--format md` writes the whole threat
 register. `--format svg` draws one diagram, which `--diagram <id or title>`
 chooses where the model holds more than one, and which a model of one does
-not have to name. `--format pdf` writes one document holding every diagram,
-one to a landscape page, then that same register, so it takes no `--diagram`
-either. `--out -` writes to standard output, the PDF's bytes included.
+not have to name. `--format png` draws that same diagram as a picture,
+1568 pixels on its longer edge, for a reader that takes an image and not an
+SVG. `--format pdf` writes one document holding every diagram, one to a
+landscape page, then that same register, so it takes no `--diagram` either.
+`--out -` writes to standard output, the PDF's and the PNG's bytes included.
 
-The PDF is compiled by Typst, which the executable carries as a WebAssembly
-module together with the fonts it typesets with. Nothing is fetched and no
-browser is involved, so `--format pdf` works with no network and on a machine
-that has neither Typst nor a browser installed.
+The PDF is compiled by Typst and the PNG is rasterized by resvg, both of
+which the executable carries as WebAssembly modules together with the fonts
+they set text in. Nothing is fetched and no browser is involved, so both
+formats work with no network and on a machine that has neither Typst nor a
+browser installed. Building the executable needs the rasterizer module built
+first, which [The SVG rasterizer](#the-svg-rasterizer) below describes.
 
-| Exit code | What it means                                                                                                                                                                                                                                                                                                                                                                              |
-| --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 0         | The command did what it was asked.                                                                                                                                                                                                                                                                                                                                                         |
-| 1         | Saerskriven read the file and refused it: no format claimed it, or one did and either the document or the model it maps to is not valid.                                                                                                                                                                                                                                                   |
-| 2         | The invocation cannot be carried out: the parser or the option schema refused it, a file cannot be read or written, a choice names no diagram, a stream refused the output, a pipe whose reader closed aside, or a projection could not be produced from a model Saerskriven accepted, which is the PDF typesetter refusing the document or an install missing the files it typesets with. |
+| Exit code | What it means                                                                                                                                                                                                                                                                                                                                                                                             |
+| --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0         | The command did what it was asked.                                                                                                                                                                                                                                                                                                                                                                        |
+| 1         | Saerskriven read the file and refused it: no format claimed it, or one did and either the document or the model it maps to is not valid.                                                                                                                                                                                                                                                                  |
+| 2         | The invocation cannot be carried out: the parser or the option schema refused it, a file cannot be read or written, a choice names no diagram, a stream refused the output, a pipe whose reader closed aside, or a projection could not be produced from a model Saerskriven accepted, which is the PDF typesetter or the PNG rasterizer refusing the document or an install missing the files they read. |
 
 Errors go to standard error, path-precise where a schema refused something,
 and no failure prints a stack trace.

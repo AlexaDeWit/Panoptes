@@ -16,6 +16,11 @@
       "import": "./src/pdf.ts",
       "default": "./src/pdf.ts"
     },
+    "./png": {
+      "types": "./src/png.ts",
+      "import": "./src/png.ts",
+      "default": "./src/png.ts"
+    },
     "./resvg": {
       "types": "./src/resvg.ts",
       "import": "./src/resvg.ts",
@@ -64,7 +69,10 @@
           "{workspaceRoot}/test-data/ecluse.model.json",
           "{workspaceRoot}/test-data/every-glyph.model.json",
           "{workspaceRoot}/test-data/saerskriven.model.json",
-          "{workspaceRoot}/test-data/render/**/*"
+          "{workspaceRoot}/test-data/render/**/*",
+          {
+            "env": "SAERSKRIVEN_FONTS_DIR"
+          }
         ]
       }
     }

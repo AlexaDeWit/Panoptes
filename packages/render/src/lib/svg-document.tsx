@@ -14,11 +14,15 @@ const margin = 8;
 
 /**
  * One diagram drawn, and what the layout could not draw: `svg` is a whole
- * SVG document as text, and `unplaced` names every flow endpoint left out of
- * it, so a caller reports the gap rather than discovering a missing flow.
+ * SVG document as text, `width` and `height` are the document's own, in the
+ * user units its viewBox is stated in, and `unplaced` names every flow
+ * endpoint left out of it, so a caller reports the gap rather than
+ * discovering a missing flow.
  */
 export type SvgDocument = {
   readonly svg: string;
+  readonly width: number;
+  readonly height: number;
   readonly unplaced: readonly UnplacedEndpoint[];
 };
 
@@ -70,7 +74,12 @@ export function renderSvg(diagram: Diagram, model: Model): SvgDocument {
       <DiagramGlyphs layout={layout} />
     </svg>,
   );
-  return { svg: `${drawn}\n`, unplaced: layout.unplaced };
+  return {
+    svg: `${drawn}\n`,
+    width: box.width,
+    height: box.height,
+    unplaced: layout.unplaced,
+  };
 }
 
 function grown(bounds: CanvasBounds): CanvasBounds {

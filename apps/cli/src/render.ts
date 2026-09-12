@@ -8,6 +8,7 @@ import {
 } from '@saerskriven/render';
 import { Either } from 'effect';
 import { z } from 'zod';
+import { runtimeAssets } from './assets.js';
 import { writeFile } from './files.js';
 import { readModel } from './input.js';
 import {
@@ -17,7 +18,8 @@ import {
   type CommandOutcome,
   type CommandOutput,
 } from './outcome.js';
-import { compilePdf, typstAssets } from './pdf.js';
+import { compilePdf } from './pdf.js';
+import { drawPng } from './png.js';
 
 /**
  * What `render` needs, and the one gate on the option bag the parser hands
@@ -26,7 +28,9 @@ import { compilePdf, typstAssets } from './pdf.js';
  * what a user reads.
  */
 export const renderOptionsSchema = z.object({
-  format: z.enum(['svg', 'md', 'pdf'], { error: 'must be svg, md or pdf' }),
+  format: z.enum(['svg', 'png', 'md', 'pdf'], {
+    error: 'must be svg, png, md or pdf',
+  }),
   out: z.string({ error: 'must be a path, or - for standard output' }),
   diagram: z.string().optional(),
 });
@@ -34,18 +38,20 @@ export const renderOptionsSchema = z.object({
 /** The options a render was asked for. */
 export type RenderOptions = z.infer<typeof renderOptionsSchema>;
 
-type WholeModelFormat = Exclude<RenderOptions['format'], 'svg'>;
+type DiagramFormat = 'svg' | 'png';
+
+type WholeModelFormat = Exclude<RenderOptions['format'], DiagramFormat>;
 
 const wholeModelFormats = {
   md: 'writes the whole register',
   pdf: 'writes every diagram and the register',
 } satisfies Record<WholeModelFormat, string>;
 
-/** Runs the CLI render command, with PDF assets beside the built bundle. */
+/** Runs the CLI render command, with the assets beside the built bundle. */
 export function render(
   file: string,
   options: RenderOptions,
-  assets: string = typstAssets,
+  assets: string = runtimeAssets,
 ): Promise<CommandOutcome> {
   return Either.match(readModel(file), {
     onLeft: (outcome) => Promise.resolve(outcome),
@@ -58,8 +64,8 @@ function projection(
   options: RenderOptions,
   assets: string,
 ): Promise<CommandOutcome> {
-  return options.format === 'svg'
-    ? Promise.resolve(drawing(model, options))
+  return options.format === 'svg' || options.format === 'png'
+    ? drawing(model, options.format, options, assets)
     : wholeModel(model, options.format, options, assets);
 }
 
@@ -101,20 +107,46 @@ async function compiled(
   });
 }
 
-function drawing(model: Model, options: RenderOptions): CommandOutcome {
+function drawing(
+  model: Model,
+  format: DiagramFormat,
+  options: RenderOptions,
+  assets: string,
+): Promise<CommandOutcome> {
   return Either.match(chosenDiagram(model, options.diagram), {
-    onLeft: (reason) => usageError(reason),
-    onRight: (diagram) => drawn(diagram, model, options.out),
+    onLeft: (reason) => Promise.resolve(usageError(reason)),
+    onRight: (diagram) => drawn(diagram, model, format, options.out, assets),
   });
 }
 
-function drawn(diagram: Diagram, model: Model, out: string): CommandOutcome {
-  const drawnDiagram = renderSvg(diagram, model);
-  return written(
-    out,
-    drawnDiagram.svg,
-    renderUnplacedWarning(drawnDiagram.unplaced),
-  );
+function drawn(
+  diagram: Diagram,
+  model: Model,
+  format: DiagramFormat,
+  out: string,
+  assets: string,
+): Promise<CommandOutcome> {
+  return format === 'svg'
+    ? Promise.resolve(vector(diagram, model, out))
+    : raster(diagram, model, out, assets);
+}
+
+function vector(diagram: Diagram, model: Model, out: string): CommandOutcome {
+  const rendered = renderSvg(diagram, model);
+  return written(out, rendered.svg, renderUnplacedWarning(rendered.unplaced));
+}
+
+async function raster(
+  diagram: Diagram,
+  model: Model,
+  out: string,
+  assets: string,
+): Promise<CommandOutcome> {
+  return Either.match(await drawPng(diagram, model, assets), {
+    onLeft: (reason) => usageError(lines(`error: ${reason}`)),
+    onRight: (image) =>
+      written(out, image.png, renderUnplacedWarning(image.unplaced)),
+  });
 }
 
 function written(

@@ -26,6 +26,9 @@ const golden = (name: string): string =>
 
 const pdfDigest = golden('ecluse.snapshot.pdf.sha256').trim();
 
+const raster = (name: string): Buffer =>
+  readFileSync(join(repositoryRoot, 'test-data/render', name));
+
 const options = (given: Partial<RenderOptions>): RenderOptions => ({
   format: 'svg',
   out: '-',
@@ -98,6 +101,68 @@ describe('render', () => {
       out: golden('ecluse.snapshot.svg'),
       err: '',
     });
+  });
+
+  it('rasterizes the Écluse fixture as the golden picture', async () => {
+    const run = await written('ecluse.png', ecluse, { format: 'png' });
+    expect(run.outcome).toEqual({ code: 0, out: '', err: '' });
+    expect(run.bytes()).toEqual(raster('ecluse.snapshot.png'));
+  });
+
+  it('writes a PNG to standard output as bytes, not as text', async () => {
+    const outcome = await render(
+      ecluse,
+      options({ format: 'png', out: '-' }),
+      assets,
+    );
+    expect(outcome.code).toBe(0);
+    expect(outcome.out).toBeInstanceOf(Uint8Array);
+    expect(Buffer.from(bytesOf(outcome.out))).toEqual(
+      raster('ecluse.snapshot.png'),
+    );
+  });
+
+  it('rasterizes the diagram a model of several names by id', async () => {
+    const run = await written('chosen.png', saerskriven, {
+      format: 'png',
+      diagram: 'read-and-render',
+    });
+    expect(run.outcome).toEqual({ code: 0, out: '', err: '' });
+    expect(run.bytes()).toEqual(
+      raster('saerskriven-read-and-render.snapshot.png'),
+    );
+  });
+
+  it('refuses an install whose faces the drawing is not lettered in', async () => {
+    const bare = mkdtempSync(join(tmpdir(), 'saerskriven-cli-mono-'));
+    copyFileSync(
+      join(assets, 'saerskriven_resvg.wasm'),
+      join(bare, 'saerskriven_resvg.wasm'),
+    );
+    copyFileSync(
+      join(assets, 'LiberationMono-Regular.ttf'),
+      join(bare, 'LiberationMono-Regular.ttf'),
+    );
+    const outcome = await render(
+      ecluse,
+      options({ format: 'png', out: '-' }),
+      bare,
+    );
+    expect(outcome.code).toBe(2);
+    expect(outcome.err).toBe(
+      `error: cannot draw the PNG: ${bare} holds no LiberationSans-Regular.ttf, which text is set in\n`,
+    );
+  });
+
+  it('reports an install missing the module it rasterizes with', async () => {
+    const outcome = await render(
+      ecluse,
+      options({ format: 'png', out: '-' }),
+      join(repositoryRoot, 'apps/cli/dist/absent'),
+    );
+    expect(outcome.code).toBe(2);
+    expect(outcome.out).toBe('');
+    expect(outcome.err).toContain('error: cannot draw the PNG');
   });
 
   it('draws the diagram a model of several names by id', async () => {

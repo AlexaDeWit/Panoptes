@@ -1,43 +1,18 @@
 import {
   compilePdf as compileTypst,
   PdfFailure,
-  type PdfAssets,
 } from '@saerskriven/render/pdf';
 import { Either } from 'effect';
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
-import { reasonOf } from './files.js';
+import { wasmAssets, type WasmAssets } from './assets.js';
 
 const wasmModule = 'typst_ts_web_compiler_bg.wasm';
-
-const fontFile = /\.ttf$/u;
-
-const loaded = new Map<string, PdfAssets>();
-
-/**
- * Where the executable carries what the PDF path reads: the Typst
- * WebAssembly module and the fonts, beside the bundle rather than beside the
- * sources, because `deno compile --include` puts that directory into the
- * executable and `import.meta.dirname` is how the code inside one reaches it.
- */
-export const typstAssets = join(import.meta.dirname, 'assets');
 
 /**
  * Typst source compiled to a PDF, or a sentence saying why it was not.
  *
- * Finding the bytes is this side's work and typesetting them is
- * `@saerskriven/render/pdf`'s. The module and every `.ttf` in `assets`, in name
- * order, are read here and handed over, so nothing is read from the host's
- * font directories and the same source gives the same PDF on every machine.
- * A directory missing them is a broken install rather than a bad model file,
- * so it comes back on the left in the sentence a refused document comes back
- * in.
- *
- * A directory that reads clean is read once per process. That spares a
- * second compile the 28 MB WebAssembly module, and it is what lets the
- * subpath's guard see that the process has already started from these
- * bytes. A refused directory is re-read on every call, since nothing about
- * the refusal is worth remembering.
+ * Finding the bytes is this side's work, in `assets.ts`, and typesetting them
+ * is `@saerskriven/render/pdf`'s. The faces arrive in name order, which is the
+ * order the compiler is given them in.
  *
  * The subpath answers with a tagged failure, which this side words: a
  * command prints one line, so the compiler's sentences are joined with
@@ -47,7 +22,7 @@ export function compilePdf(
   source: string,
   assets: string,
 ): Promise<Either.Either<Uint8Array, string>> {
-  return Either.match(bytesIn(assets), {
+  return Either.match(wasmAssets(assets, wasmModule), {
     onLeft: (reason) =>
       Promise.resolve(Either.left(`cannot compile the PDF: ${reason}`)),
     onRight: (found) => typeset(source, found),
@@ -56,7 +31,7 @@ export function compilePdf(
 
 async function typeset(
   source: string,
-  assets: PdfAssets,
+  assets: WasmAssets,
 ): Promise<Either.Either<Uint8Array, string>> {
   return Either.mapLeft(await compileTypst(source, assets), reported);
 }
@@ -67,37 +42,4 @@ function reported(failure: PdfFailure): string {
       `cannot compile the PDF: ${sentences.join('; ')}`,
     NoDocument: () => 'the Typst compiler produced no PDF',
   });
-}
-
-function bytesIn(assets: string): Either.Either<PdfAssets, string> {
-  const known = loaded.get(assets);
-  return known === undefined ? readAssets(assets) : Either.right(known);
-}
-
-function readAssets(assets: string): Either.Either<PdfAssets, string> {
-  const found = Either.flatMap(
-    Either.try({
-      try: (): PdfAssets => ({
-        wasm: readFileSync(join(assets, wasmModule)),
-        fonts: fontsIn(assets).map(
-          (font) => new Uint8Array(readFileSync(font)),
-        ),
-      }),
-      catch: reasonOf,
-    }),
-    (read) =>
-      read.fonts.length === 0
-        ? Either.left(`${assets} holds no .ttf font face`)
-        : Either.right(read),
-  );
-  if (Either.isRight(found)) {
-    loaded.set(assets, found.right);
-  }
-  return found;
-}
-
-function fontsIn(assets: string): readonly string[] {
-  const names = readdirSync(assets).filter((name) => fontFile.test(name));
-  names.sort();
-  return names.map((name) => join(assets, name));
 }
