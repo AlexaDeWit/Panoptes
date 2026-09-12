@@ -36,11 +36,16 @@ export const mcpOptionsSchema = z.object({
 export type McpOptions = z.infer<typeof mcpOptionsSchema>;
 
 /**
- * The rasterizer bytes for one server, read on the first render and held for
- * the rest of the session. A refusal is not held: `assets.ts` re-reads a
- * directory it could not read, since nothing about that refusal is worth
- * remembering, and holding it here would outlive an install being repaired
- * under a long-lived host.
+ * Where one server gets its rasterizer: the injection point that hands
+ * `packages/mcp` bytes it reads no file for, since a browser and an
+ * executable carry them differently.
+ *
+ * It holds what it read, though `assets.ts` already holds a directory that
+ * reads clean for the life of the process, so what this saves a render is a
+ * map lookup rather than the several MiB. A refusal it does not hold, which
+ * is the part that matters: `assets.ts` re-reads a directory it could not
+ * read, and remembering that here would outlive an install repaired under a
+ * long-lived host.
  */
 export function rasterizerIn(assets: string): RasterizerAssets {
   let found: WasmAssets | undefined;

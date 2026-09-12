@@ -85,6 +85,7 @@ export {
   type RegisterResult,
 } from './lib/register.js';
 export {
+  imageExtension,
   imageLinkDescription,
   imageMediaType,
   renderDiagram,
@@ -176,6 +177,7 @@ export {
   candidateFiles,
   candidateLimit,
   confined,
+  extensionOf,
   openWorkspace,
   readModelFile,
   readTextFile,

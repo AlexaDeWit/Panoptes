@@ -31,6 +31,7 @@ import type { WithBlocks } from './tool-result.js';
 import { createdBytes, renderWriteFailure, type WriteTarget } from './write.js';
 import {
   confined,
+  extensionOf,
   renderWorkspaceFailure,
   withinRoot,
   type ModelWorkspace,
@@ -38,6 +39,14 @@ import {
 
 /** The media type of every image this server puts in a result. */
 export const imageMediaType = 'image/png';
+
+/**
+ * The extension a file of those bytes has to carry. A render writes PNG
+ * bytes, and a path under another extension would leave a file that a later
+ * reader, this server's own codecs among them, takes for something it is
+ * not.
+ */
+export const imageExtension = '.png';
 
 /**
  * Where a render gets the rasterizer module and the faces text is set in.
@@ -68,7 +77,7 @@ export const renderDiagramArgumentsSchema = fileArgumentSchema.extend({
     .string()
     .optional()
     .describe(
-      'Where to also write the PNG, as a path relative to the server root. A path already holding a file is refused rather than replaced. Left out, nothing is written and the image reaches you in the result alone.',
+      `Where to also write the PNG, as a path relative to the server root. The path has to end in ${imageExtension}, in any case, since that is what the bytes are, and a path already holding a file is refused rather than replaced. Left out, nothing is written and the image reaches you in the result alone.`,
     ),
 });
 
@@ -205,12 +214,26 @@ function writeTarget(
   workspace: ModelWorkspace,
   out: string | undefined,
 ): Either.Either<WriteTarget | undefined, readonly string[]> {
-  return out === undefined
+  if (out === undefined) {
+    return Either.right(undefined);
+  }
+  return Either.flatMap(
+    Either.mapLeft(confined(workspace, out), renderWorkspaceFailure),
+    (path) =>
+      Either.map(endsInPng(out), () => ({
+        file: withinRoot(workspace, path),
+        path,
+      })),
+  );
+}
+
+function endsInPng(out: string): Either.Either<void, readonly string[]> {
+  return extensionOf(out) === imageExtension
     ? Either.right(undefined)
-    : Either.mapBoth(confined(workspace, out), {
-        onLeft: renderWorkspaceFailure,
-        onRight: (path) => ({ file: withinRoot(workspace, path), path }),
-      });
+    : Either.left([
+        `The path ${quotedForTerminal(out)} does not end in ${imageExtension}, and this tool writes the bytes of a PNG.`,
+        `Name it with a ${imageExtension} extension, so a later reader of that path finds what the name says it holds.`,
+      ]);
 }
 
 function answered(

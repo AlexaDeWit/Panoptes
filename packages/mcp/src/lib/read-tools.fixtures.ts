@@ -105,13 +105,6 @@ export function answerOf<Answer>(
   return outcome.right;
 }
 
-/**
- * A model of every record kind: the editable fixture, which already holds a
- * canvas note, an out-of-scope store, a flow free at one end, both boundary
- * shapes, a mitigation and an assumption, with one threat added under a
- * methodology of its own carrying no prose. The committed Écluse fixture
- * holds none of the last four, so the branches that render them need this.
- */
 const everyRecordModel: Model = parsed({
   ...editableModel,
   threats: [
@@ -135,7 +128,14 @@ const everyRecordModel: Model = parsed({
   lastIssuedThreatNumber: editableModel.lastIssuedThreatNumber + 1,
 });
 
-/** A disposable root holding {@link everyRecordModel} as its default. */
+/**
+ * A disposable root whose default model holds every record kind: the editable
+ * fixture, which already carries a canvas note, an out-of-scope store, a flow
+ * free at one end, both boundary shapes, a mitigation and an assumption, with
+ * one threat added under a methodology of its own carrying no prose. The
+ * committed Écluse fixture holds none of the last four, so the branches that
+ * render them need this.
+ */
 export function everyRecordTree(): ModelWorkspace {
   return treeHolding(saerskrivenYamlCodec.write(everyRecordModel).output);
 }

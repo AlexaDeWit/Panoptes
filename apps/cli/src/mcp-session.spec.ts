@@ -182,12 +182,24 @@ for (const runner of runners) {
         const session = await stdioSession(runner, ecluse);
         const result = await session.client.callTool({
           name: 'saer_render_diagram',
-          arguments: { out: 'package.json' },
+          arguments: { out: 'test-data/render/ecluse.snapshot.png' },
         });
         await session.end();
         expect(result.isError).toBe(true);
         expect(resourceLinksOf(result)).toEqual([]);
         expect(textOf(result)).toContain('is already there');
+      });
+
+      it('refuses an out path that names anything but a PNG', async () => {
+        const session = await stdioSession(runner, ecluse);
+        const result = await session.client.callTool({
+          name: 'saer_render_diagram',
+          arguments: { out: 'package.json' },
+        });
+        await session.end();
+        expect(result.isError).toBe(true);
+        expect(resourceLinksOf(result)).toEqual([]);
+        expect(textOf(result)).toContain('does not end in .png');
       });
 
       it('refuses a file no format claims with the formats it tried', async () => {

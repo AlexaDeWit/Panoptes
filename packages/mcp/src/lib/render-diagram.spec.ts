@@ -57,6 +57,30 @@ describe('what saer_render_diagram refuses', () => {
     ).toContain('cannot draw a PNG');
   });
 
+  it('refuses an out path that names anything but a PNG', async () => {
+    const refused = await Promise.all(
+      ['diagram', 'diagram.', 'diagram.png.yaml', 'model.yaml', '.png'].map(
+        async (out) =>
+          refusalOf(await renderDiagram(ecluse, noRasterizer, { out }))[0],
+      ),
+    );
+    expect(
+      refused.filter((line) => line?.includes('does not end in .png')).length,
+    ).toBe(refused.length);
+  });
+
+  it('takes a PNG extension in any case, and past another extension', async () => {
+    const drawn = await Promise.all(
+      ['diagram.PNG', 'diagram.Png', 'diagram.yaml.png'].map(
+        async (out) =>
+          refusalOf(await renderDiagram(ecluse, noRasterizer, { out }))[0],
+      ),
+    );
+    expect(
+      drawn.filter((line) => line?.includes('cannot draw a PNG')).length,
+    ).toBe(drawn.length);
+  });
+
   it('refuses an out path that leaves the root before it draws', async () => {
     expect(
       refusalOf(

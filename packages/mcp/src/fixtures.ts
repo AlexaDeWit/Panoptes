@@ -2,6 +2,10 @@ import type { CallToolResult } from '@modelcontextprotocol/server';
 import type { z } from 'zod';
 import { editResultSchema, type EditResult } from './lib/edit.js';
 import { inspectResultSchema, type InspectResult } from './lib/inspect.js';
+import {
+  imageLinkDescription,
+  renderDiagramResultSchema,
+} from './lib/render-diagram.js';
 
 /**
  * The tools a release registers, in the order the server registers them: the
@@ -131,6 +135,26 @@ export function mediaTypesOf(result: CallToolResult): readonly string[] {
       ? [block.mimeType ?? '']
       : [],
   );
+}
+
+/**
+ * The only text a resource link of this server may carry for one result: the
+ * path the call asked to write, and the description built out of the image's
+ * own numbers. It is the check {@link proseOf} leaves to a caller, since a
+ * link is not the body of a result and carries no data-not-instructions line
+ * of its own.
+ *
+ * A result that is no render answers empty, so a tool that attaches a link of
+ * its own fails a comparison against this rather than passing unchecked.
+ */
+export function ownLinkTextOf(result: CallToolResult): readonly string[] {
+  const drawn = renderDiagramResultSchema.safeParse(result.structuredContent);
+  return drawn.success && drawn.data.written !== undefined
+    ? [
+        drawn.data.written.file,
+        imageLinkDescription(drawn.data.image.width, drawn.data.image.height),
+      ]
+    : [];
 }
 
 /** Every resource link of a tool result, as the file it names. */

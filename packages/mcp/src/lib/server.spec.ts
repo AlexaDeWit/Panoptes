@@ -1,10 +1,12 @@
 import type { Client } from '@modelcontextprotocol/client';
+import type { CallToolResult } from '@modelcontextprotocol/server';
 import { readFileSync, realpathSync } from 'node:fs';
 import { join } from 'node:path';
 import {
   editOf,
   eras,
   inspectionOf,
+  ownLinkTextOf,
   proseOf,
   readingOf,
   registeredTools,
@@ -23,10 +25,7 @@ import {
 import { editOps } from './edits.js';
 import { dataNotInstructions } from './preface.js';
 import { builtRasterizer, rasterizerUnbuilt } from './rasterizer.fixtures.js';
-import {
-  imageLinkDescription,
-  renderDiagramResultSchema,
-} from './render-diagram.js';
+import { renderDiagramResultSchema } from './render-diagram.js';
 import { revisionOf } from './revision.js';
 import { session, type Session } from './server.fixtures.js';
 import { workspaceTree } from './workspace.fixtures.js';
@@ -40,6 +39,13 @@ const tree = workspaceTree();
 const rasterizer = rasterizerUnbuilt ? undefined : builtRasterizer;
 
 const staleRevision = `sha256:${'0'.repeat(64)}`;
+
+/** One call of the table, and what a client would read back from it. */
+type CalledTool = {
+  readonly name: string;
+  readonly read: ResultProse;
+  readonly result: CallToolResult;
+};
 
 const renaming: EditInput = {
   op: 'rename_element',
@@ -219,37 +225,31 @@ for (const era of eras) {
       const readingsOf = async (
         client: Client,
         revision: string,
-      ): Promise<ResultProse> => {
+      ): Promise<readonly CalledTool[]> => {
         const tools = (await client.listTools()).tools;
         const calls = tools.flatMap((tool) =>
           (callArguments(revision).get(tool.name) ?? []).map(
             (args) => [tool.name, args] as const,
           ),
         );
-        const results = await Promise.all(
-          calls.map(([name, args]) =>
-            client.callTool({ name, arguments: args }),
-          ),
+        return Promise.all(
+          calls.map(async ([name, args]) => {
+            const result = await client.callTool({ name, arguments: args });
+            const read = proseOf(result);
+            return {
+              name,
+              result,
+              read: {
+                prose: read.prose.map((text) => text.split('\n')[0] ?? ''),
+                links: read.links,
+                unread: read.unread,
+              },
+            };
+          }),
         );
-        const read = results.map(proseOf);
-        return {
-          prose: read.flatMap((result) =>
-            result.prose.map((text) => text.split('\n')[0] ?? ''),
-          ),
-          links: read.flatMap((result) => result.links),
-          unread: read.flatMap((result) => result.unread),
-        };
       };
 
-      it('gives every tool the server offers a row in the call table', async () => {
-        const tools = await everyTool();
-        const rows = callArguments(staleRevision);
-        expect(
-          tools.filter((tool) => !rows.has(tool.name)).map((tool) => tool.name),
-        ).toEqual([]);
-      });
-
-      it('opens every prose block of every call, default model or none', async () => {
+      const overEveryCall = async (): Promise<readonly CalledTool[]> => {
         const writable = editableTree();
         const revision = revisionOf(
           readFileSync(join(writable.root, modelFile)),
@@ -265,16 +265,52 @@ for (const era of eras) {
           era,
           rasterizer,
         });
-        const read = [
-          await readingsOf(defaulted.client, revision),
-          await readingsOf(listing.client, revision),
+        const called = [
+          ...(await readingsOf(defaulted.client, revision)),
+          ...(await readingsOf(listing.client, revision)),
         ];
         await defaulted.end();
         await listing.end();
-        const prose = read.flatMap((one) => one.prose);
-        expect(read.flatMap((one) => one.unread)).toEqual([]);
+        return called;
+      };
+
+      it('gives every tool the server offers a row in the call table', async () => {
+        const tools = await everyTool();
+        const rows = callArguments(staleRevision);
+        expect(
+          tools.filter((tool) => !rows.has(tool.name)).map((tool) => tool.name),
+        ).toEqual([]);
+      });
+
+      it('opens every prose block of every call, default model or none', async () => {
+        const called = await overEveryCall();
+        const prose = called.flatMap((one) => one.read.prose);
+        expect(called.flatMap((one) => one.read.unread)).toEqual([]);
         expect(prose.length).toBeGreaterThan(0);
         expect(prose).toEqual(prose.map(() => dataNotInstructions));
+      });
+
+      it('attaches a resource link from no tool but the one that draws', async () => {
+        const called = await overEveryCall();
+        expect(
+          called
+            .filter(
+              (one) =>
+                one.name !== 'saer_render_diagram' && one.read.links.length > 0,
+            )
+            .map((one) => one.name),
+        ).toEqual([]);
+      });
+
+      describe.skipIf(rasterizerUnbuilt)('the link a call does attach', () => {
+        it('names only the path and the picture of what was drawn', async () => {
+          const called = await overEveryCall();
+          const linked = called.filter((one) => one.read.links.length > 0);
+          expect(linked.length).toBeGreaterThan(0);
+          expect(linked.map((one) => one.read.links)).toEqual(
+            linked.map((one) => ownLinkTextOf(one.result)),
+          );
+        });
       });
     });
 
@@ -307,11 +343,8 @@ for (const era of eras) {
           },
         });
         await run.end();
-        const drawn = structuredOf(result, renderDiagramResultSchema);
-        expect(proseOf(result).links).toEqual([
-          'drawn.png',
-          imageLinkDescription(drawn.image.width, drawn.image.height),
-        ]);
+        expect(proseOf(result).links[0]).toEqual('drawn.png');
+        expect(proseOf(result).links).toEqual(ownLinkTextOf(result));
       });
     });
 

@@ -104,8 +104,10 @@ const writes = {
  * The MCP server object, with no transport of its own: a caller connects it
  * to stdio, to an in-memory pair, or to whatever else the SDK offers. It
  * holds no model and no session, so every call reads the file it names from
- * disk again. Every tool builds its result through `toolResult`, which is
- * what puts the data-not-instructions line on each one.
+ * disk again. Every tool builds its result in `tool-result.ts`, through
+ * `toolResult` or, where the result carries blocks past its text,
+ * `attachedToolResult`, which is what puts the data-not-instructions line on
+ * each one.
  */
 export function createSaerskrivenServer(
   options: SaerskrivenServerOptions,
