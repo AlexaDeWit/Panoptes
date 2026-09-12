@@ -14,6 +14,7 @@ import {
 import { parseModel, type Model } from './lib/parse.js';
 
 export { validModelFixture } from './lib/fixtures.js';
+export { modelInputArbitrary } from './lib/model-input.fixtures.js';
 export {
   securityModelFixture,
   securityPropertyFixtures,

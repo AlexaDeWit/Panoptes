@@ -2,6 +2,7 @@ import { Either } from 'effect';
 import type { ElementId, ThreatId } from './ids.js';
 import { OperationFailure } from './operation-failures.js';
 import type { Model } from './parse.js';
+import { culledAfter } from './records.js';
 import { elementIdsAcross, unknownElementIn } from './references.js';
 import type { Threat } from './threats.js';
 
@@ -35,15 +36,10 @@ export type AttachThreatFailure = ThreatLinkFailure;
 export type DetachThreatFailure = ThreatLinkFailure;
 
 /**
- * Returns a new model with `threat` appended to the threat register and the
- * last issued number advanced to its number. The threat value comes from
- * the threat schema; what this operation checks is its fit against the
- * model. The number is the caller's to choose from those above the last
- * issued, and {@link nextThreatNumber} yields the lowest of them. Fails
- * when the id is already taken, when the number is not above the last
- * issued (a spent number stays spent, whether or not a threat still holds
- * it), or when a linked element id names no element of the model. The input
- * model is never mutated.
+ * Appends `threat` to the register and advances the last issued number to
+ * its number, which must be above the last issued ({@link nextThreatNumber}
+ * yields the lowest such number). Fails on a taken id, a spent number, or a
+ * link to an element the model does not hold.
  */
 export function addThreat(
   model: Model,
@@ -73,12 +69,10 @@ export function addThreat(
 }
 
 /**
- * Returns a new model without the threat named by `threatId`, cascading so
- * the rest of the model stays consistent: mitigations and assumptions lose
- * the removed threat from their `threats` links while the records
- * themselves stay. The removed threat's number stays spent: the last
- * issued number does not move, so the gap it leaves is permanent. Fails
- * when the threat is unknown. The input model is never mutated.
+ * Returns a new model without the threat named by `threatId`. Every
+ * mitigation and assumption loses its link to it, and a record whose only
+ * threat link it was goes with it. The removed threat's number stays spent,
+ * so the gap it leaves is permanent. Fails when the threat is unknown.
  */
 export function removeThreat(
   model: Model,
@@ -87,31 +81,25 @@ export function removeThreat(
   if (!model.threats.some((threat) => threat.id === threatId)) {
     return Either.left(OperationFailure.UnknownThreat({ threatId }));
   }
-  const unlinked = (ids: readonly ThreatId[]): ThreatId[] =>
-    ids.filter((id) => id !== threatId);
+  const unlinked = <Linked extends { readonly threats: ThreatId[] }>(
+    record: Linked,
+  ): Linked => ({
+    ...record,
+    threats: record.threats.filter((id) => id !== threatId),
+  });
   return Either.right({
     ...model,
     threats: model.threats.filter((threat) => threat.id !== threatId),
-    mitigations: model.mitigations.map((mitigation) => ({
-      ...mitigation,
-      threats: unlinked(mitigation.threats),
-    })),
-    assumptions: model.assumptions.map((assumption) => ({
-      ...assumption,
-      threats: unlinked(assumption.threats),
-    })),
+    mitigations: culledAfter(model.mitigations, unlinked),
+    assumptions: culledAfter(model.assumptions, unlinked),
   });
 }
 
 /**
- * Returns a new model with the threat carrying `threat.id` swapped for
- * `threat`. Editing a threat is whole-record replacement: the caller builds
- * the complete record from the threat schema and this operation checks its
- * fit against the model. Every field but the id and the number is the
- * caller's to change. Fails when the id names no threat of the model, when the
- * replacement carries a different number from the threat it replaces, or
- * when a linked element id names no element of the model. The input model
- * is never mutated.
+ * Swaps the threat carrying `threat.id` for `threat` in place. Every field
+ * but the id and the number is the caller's to change. Fails on an unknown
+ * threat, a changed number, or a link to an element the model does not
+ * hold.
  */
 export function replaceThreat(
   model: Model,
@@ -141,10 +129,8 @@ export function replaceThreat(
 }
 
 /**
- * Returns a new model with the element named by `elementId` linked to the
- * threat named by `threatId`. Attaching an element the threat already
- * carries succeeds and changes nothing. Fails when either id names no
- * record of the model. The input model is never mutated.
+ * Links the element to the threat. Attaching an element the threat already
+ * carries changes nothing. Fails when either id names nothing.
  */
 export function attachThreat(
   model: Model,
@@ -157,10 +143,8 @@ export function attachThreat(
 }
 
 /**
- * Returns a new model with the element named by `elementId` unlinked from
- * the threat named by `threatId`. Detaching an element the threat does not
- * carry succeeds and changes nothing. Fails when either id names no record
- * of the model. The input model is never mutated.
+ * Unlinks the element from the threat. Detaching an element the threat does
+ * not carry changes nothing. Fails when either id names nothing.
  */
 export function detachThreat(
   model: Model,
@@ -173,10 +157,8 @@ export function detachThreat(
 }
 
 /**
- * The number to give the next threat: one above the number the model last
- * issued, and 1 when it has issued none. A number a removed threat held is
- * never handed out again, so a number names one threat for the life of the
- * model.
+ * One above the number the model last issued, so a removed threat's number
+ * is never handed out again.
  */
 export function nextThreatNumber(model: Model): number {
   return model.lastIssuedThreatNumber + 1;

@@ -73,6 +73,9 @@ const failures: ByTag<OperationFailure> = {
   DuplicateAssumptionId: OperationFailure.DuplicateAssumptionId({
     assumptionId: assumptionId('assumption-managed-db'),
   }),
+  RecordWithoutThreat: OperationFailure.RecordWithoutThreat({
+    record: { kind: 'assumption', id: assumptionId('assumption-managed-db') },
+  }),
   ReusedThreatNumber: OperationFailure.ReusedThreatNumber({ number: 4 }),
   ChangedThreatNumber: OperationFailure.ChangedThreatNumber({
     threatId: threatId('threat-tamper-order'),

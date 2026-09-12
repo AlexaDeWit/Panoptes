@@ -1,4 +1,3 @@
-import { quotedForTerminal } from '@saerskriven/formats';
 import {
   OperationFailure,
   acceptedTextSchema,
@@ -12,6 +11,7 @@ import {
   attachThreat,
   detachThreat,
   diagramIdSchema,
+  droppedRecords,
   editNote,
   elementIdSchema,
   mitigationIdSchema,
@@ -45,7 +45,7 @@ import {
   threatStatusSchema,
   waypointsSchema,
   type Model,
-  type ParseIssue,
+  type RecordReference,
   type ThreatId,
 } from '@saerskriven/model';
 import { Either } from 'effect';
@@ -57,6 +57,7 @@ import {
   editedProperties,
   propertyEditSchema,
 } from './element-edits.js';
+import { describeOperationFailure } from './operation-failure.js';
 
 const elementEditSchema = z.object({
   element: elementIdSchema.describe('The id of the element to edit.'),
@@ -217,6 +218,30 @@ export function applyEdits(
   );
 }
 
+/**
+ * The records `before` held that a batch taking it to `after` culled. A
+ * record the batch named in `remove_mitigation` or `remove_assumption` was
+ * removed rather than culled, and is not among them.
+ */
+export function culledRecords(
+  before: Model,
+  after: Model,
+  edits: readonly ModelEdit[],
+): RecordReference[] {
+  const removed = new Set(
+    edits.flatMap((edit) =>
+      edit.op === 'remove_mitigation'
+        ? [`mitigation ${edit.mitigation}`]
+        : edit.op === 'remove_assumption'
+          ? [`assumption ${edit.assumption}`]
+          : [],
+    ),
+  );
+  return droppedRecords(before, after).filter(
+    (record) => !removed.has(`${record.kind} ${record.id}`),
+  );
+}
+
 /** Which edit was refused and what the model said, as lines for a result. */
 export function renderRefusedEdit(refused: RefusedEdit): readonly string[] {
   return [
@@ -350,70 +375,4 @@ function placementIndex(model: Model, diagramId: string): number {
     model.diagrams.find((diagram) => diagram.id === diagramId)?.elements
       .length ?? 0
   );
-}
-
-function describeOperationFailure(failure: OperationFailure): string {
-  return OperationFailure.$match(failure, {
-    InvalidElementProperties: ({ issues }) =>
-      `The element properties were refused: ${issueLine(issues)}`,
-    InvalidElementRelationship: ({ issues }) =>
-      `The element has invalid boundary relationships: ${issueLine(issues)}`,
-    InvalidFragment: ({ issues }) =>
-      `The edit does not apply to this model: ${issueLine(issues)}.`,
-    UnknownDiagram: ({ diagramId }) =>
-      `The model holds no diagram ${quotedForTerminal(diagramId)}.`,
-    DuplicateDiagramId: ({ diagramId }) =>
-      `The model already holds a diagram ${quotedForTerminal(diagramId)}.`,
-    EmptyTitle: ({ diagramId }) =>
-      `Diagram ${quotedForTerminal(diagramId)} cannot be left without a title.`,
-    RefusedTitleCharacter: ({ diagramId, at }) =>
-      `The title for diagram ${quotedForTerminal(diagramId)} carries a character the model does not accept, at index ${String(at)}.`,
-    DiagramNotEmpty: ({ diagramId, elements }) =>
-      `Diagram ${quotedForTerminal(diagramId)} still holds ${String(elements)} elements, and only an empty diagram is removed.`,
-    UnknownElement: ({ elementId }) =>
-      `The model holds no element ${quotedForTerminal(elementId)}.`,
-    UnknownThreat: ({ threatId }) =>
-      `The model holds no threat ${quotedForTerminal(threatId)}.`,
-    UnknownMitigation: ({ mitigationId }) =>
-      `The model holds no mitigation ${quotedForTerminal(mitigationId)}.`,
-    UnknownAssumption: ({ assumptionId }) =>
-      `The model holds no assumption ${quotedForTerminal(assumptionId)}.`,
-    DuplicateElementId: ({ elementId }) =>
-      `The model already holds an element ${quotedForTerminal(elementId)}.`,
-    DuplicateThreatId: ({ threatId }) =>
-      `The model already holds a threat ${quotedForTerminal(threatId)}.`,
-    DuplicateMitigationId: ({ mitigationId }) =>
-      `The model already holds a mitigation ${quotedForTerminal(mitigationId)}.`,
-    DuplicateAssumptionId: ({ assumptionId }) =>
-      `The model already holds an assumption ${quotedForTerminal(assumptionId)}.`,
-    ReusedThreatNumber: ({ number }) =>
-      `Threat number ${String(number)} was issued already, and a number is issued once.`,
-    ChangedThreatNumber: ({ threatId, number }) =>
-      `Threat ${quotedForTerminal(threatId)} cannot take number ${String(number)}, a number naming one threat for the life of the model.`,
-    InvalidFlowEndpoint: ({ side, reference }) =>
-      `The flow's ${side} names ${quotedForTerminal(reference)}, which is no actor, process or store of its diagram.`,
-    NotResizable: ({ elementId }) =>
-      `Element ${quotedForTerminal(elementId)} has no size to set.`,
-    NotTextElement: ({ elementId }) =>
-      `Element ${quotedForTerminal(elementId)} is not a canvas note.`,
-    NotFlowElement: ({ elementId }) =>
-      `Element ${quotedForTerminal(elementId)} is not a flow.`,
-    EmptyName: ({ elementId }) =>
-      `Element ${quotedForTerminal(elementId)} cannot be left without a name.`,
-    RefusedCharacter: ({ elementId, at }) =>
-      `The text for element ${quotedForTerminal(elementId)} carries a character the model does not accept, at index ${String(at)}.`,
-    RefusedMetadataCharacter: ({ field, at }) =>
-      `The model ${field} carries a character the model does not accept, at index ${String(at)}.`,
-    RefusedContributorCharacter: ({ contributor, at }) =>
-      `Entry ${String(contributor)} of the contributors carries a character the model does not accept, at index ${String(at)}.`,
-  });
-}
-
-function issueLine(issues: readonly ParseIssue[]): string {
-  return issues
-    .map(
-      (issue) =>
-        `${issue.path.length > 0 ? issue.path.join('.') : '(root)'}: ${issue.message}`,
-    )
-    .join(', ');
 }

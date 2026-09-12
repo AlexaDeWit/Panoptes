@@ -21,16 +21,21 @@ const renaming: EditInput = {
   name: 'Order store',
 };
 
-const addedMitigation: EditInput = {
+const addedMitigation = (
+  threat: string,
+  prose = 'Record every write with the caller.',
+): EditInput => ({
   op: 'add_mitigation',
   mitigation: {
     id: 'mitigation-audit-log',
     title: 'Audit log',
-    prose: 'Record every write with the caller.',
+    prose,
     status: 'proposed',
-    threats: [],
+    threats: [threat],
   },
-};
+});
+
+const ecluseThreat = '0ec10e5e-0000-4000-8000-00000000010c';
 
 const attempt = () => {
   const tree = editableTree();
@@ -98,13 +103,10 @@ describe('what a refused edit leaves on disk', () => {
       modelFile,
       revisionIn(attempted, modelFile),
       [
-        {
-          ...addedMitigation,
-          mitigation: {
-            ...addedMitigation.mitigation,
-            prose: 'x'.repeat(readLimits.maxTextBytes),
-          },
-        },
+        addedMitigation(
+          'threat-tamper-order',
+          'x'.repeat(readLimits.maxTextBytes),
+        ),
       ],
     );
     expect(attempted.bytes(modelFile)).toEqual(before);
@@ -125,6 +127,7 @@ describe('what an applied edit writes', () => {
       format: 'saerskriven-yaml',
       revision: written,
       applied: 1,
+      culled: [],
       divergences: [],
     });
     expect(written).not.toEqual(quoted);
@@ -141,6 +144,8 @@ describe('what an applied edit writes', () => {
       Either.match(applied, { onLeft: (lines) => lines, onRight: renderEdit }),
     ).toEqual([
       'edits applied: 1',
+      'culled:',
+      'No record culled.',
       `file: ${modelFile}`,
       'format: saerskriven-yaml',
       `revision: ${revisionIn(attempted, modelFile)}`,
@@ -154,7 +159,7 @@ describe('what an applied edit writes', () => {
     const applied = attempted.edit(
       dragonFile,
       revisionIn(attempted, dragonFile),
-      [addedMitigation],
+      [addedMitigation(ecluseThreat)],
     );
     const reread = readAnyFormat(attempted.bytes(dragonFile).toString('utf8'));
     expect(Either.getOrUndefined(applied)?.format).toEqual('threat-dragon');
@@ -167,6 +172,44 @@ describe('what an applied edit writes', () => {
       },
     ]);
     expect(Either.getOrUndefined(reread)?.format).toEqual('threat-dragon');
+  });
+});
+
+describe('the records a batch culls', () => {
+  it('names each record a removed threat took with it, in its lines too', () => {
+    const attempted = attempt();
+    const applied = attempted.edit(
+      modelFile,
+      revisionIn(attempted, modelFile),
+      [{ op: 'remove_threat', threat: 'threat-tamper-order' }],
+    );
+    expect(Either.getOrUndefined(applied)?.culled).toEqual([
+      { kind: 'mitigation', id: 'mitigation-tls' },
+      { kind: 'assumption', id: 'assumption-managed-db' },
+    ]);
+    expect(
+      Either.match(applied, { onLeft: (lines) => lines, onRight: renderEdit }),
+    ).toEqual(
+      expect.arrayContaining([
+        'mitigation "mitigation-tls"',
+        'assumption "assumption-managed-db"',
+      ]),
+    );
+  });
+
+  it('names neither an explicitly removed record nor one the batch added and culled', () => {
+    const attempted = attempt();
+    const applied = attempted.edit(
+      modelFile,
+      revisionIn(attempted, modelFile),
+      [
+        { op: 'remove_mitigation', mitigation: 'mitigation-tls' },
+        addedMitigation('threat-tamper-order'),
+        { op: 'remove_assumption', assumption: 'assumption-managed-db' },
+        { op: 'remove_threat', threat: 'threat-tamper-order' },
+      ],
+    );
+    expect(Either.getOrUndefined(applied)?.culled).toEqual([]);
   });
 });
 

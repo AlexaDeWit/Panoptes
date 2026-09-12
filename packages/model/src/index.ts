@@ -26,6 +26,12 @@ export * from './lib/operations.js';
 export * from './lib/threat-operations.js';
 export * from './lib/mitigation-operations.js';
 export * from './lib/assumption-operations.js';
+export {
+  droppedRecords,
+  recordReferenceSchema,
+  type RecordReference,
+} from './lib/records.js';
+export * from './lib/threat-flags.js';
 export * from './lib/metadata-operations.js';
 export * from './lib/coverage.js';
 

@@ -154,6 +154,8 @@ function describeOperation(failure: OperationFailure): string {
       `The model already holds a mitigation ${mitigationId}.`,
     DuplicateAssumptionId: ({ assumptionId }) =>
       `The model already holds an assumption ${assumptionId}.`,
+    RecordWithoutThreat: ({ record }) =>
+      `The ${record.kind} ${record.id} links no threat, and a ${record.kind} is added on a threat.`,
     ReusedThreatNumber: ({ number }) =>
       `Threat number ${String(number)} was issued already.`,
     ChangedThreatNumber: ({ threatId, number }) =>

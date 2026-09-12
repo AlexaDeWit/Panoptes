@@ -4,6 +4,7 @@ import {
   type FlowEndpoint,
   type Model,
 } from '@saerskriven/model';
+import { modelInputArbitrary } from '@saerskriven/model/fixtures';
 import { saerskrivenYamlWireSchema } from '@saerskriven/wire-saerskriven-yaml';
 import { Either } from 'effect';
 import * as fc from 'fast-check';
@@ -15,7 +16,6 @@ import {
   emittedModels,
   frozenV021Path,
   goldenPath,
-  modelInputArbitrary,
   nativeFixtures,
   propertyTimeout,
 } from './saerskriven-yaml.fixtures.js';

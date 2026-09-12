@@ -475,6 +475,10 @@ importers:
       zod:
         specifier: 'catalog:'
         version: 4.5.4
+    devDependencies:
+      fast-check:
+        specifier: 'catalog:'
+        version: 4.9.0
 
   packages/render:
     dependencies:

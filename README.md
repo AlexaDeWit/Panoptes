@@ -302,7 +302,9 @@ current revision. The same tools and property semantics apply over stdio and HTT
 format it is already in. The batch is all or nothing: the edits go onto one
 parsed model in the order given, and the first one the model refuses stops the
 batch, so nothing is written and the result names the index that was refused
-and what the model said. Every call quotes the `revision` a read returned, and
+and what the model said. An edit that takes a mitigation or an assumption from
+one or more threat links to none removes the record with it, and the result
+names each record the batch culled under `culled`. Every call quotes the `revision` a read returned, and
 a file that changed before the call is refused rather than overwritten. The
 file is replaced through a temporary file beside it and a rename onto it, so a
 reader of the path sees the file it had or the file the edit wrote. A process
