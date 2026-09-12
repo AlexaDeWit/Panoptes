@@ -162,6 +162,7 @@ export function DiagramCanvas({
   const [exactEdges, setExactEdges] = useState<CanvasFlowEdge[] | undefined>();
   const [moving, setMoving] = useState(false);
   const edgeBases = useRef<ReadonlyMap<string, CanvasEdge>>(new Map());
+  const pause = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const movingElements = useRef<readonly ElementId[]>(selection);
   const surface = useRef<HTMLDivElement>(null);
   const boxSelecting = useRef(false);
@@ -195,6 +196,7 @@ export function DiagramCanvas({
       setExactEdges(withLiveEdges(graph.edges, paused));
       edgeBases.current = canvasEdgesById(paused);
     }, exactLabelDelay);
+    pause.current = timer;
     return () => {
       globalThis.clearTimeout(timer);
     };
@@ -214,10 +216,9 @@ export function DiagramCanvas({
         (change.type === 'dimensions' && change.resizing === false),
     );
     if (active || finished) {
+      globalThis.clearTimeout(pause.current);
       movingElements.current = gestureSelection(changes, positions, selection);
       setMoving(active);
-    }
-    if (active || finished) {
       const live = layoutAtReactFlowNodes(
         layout,
         next,
