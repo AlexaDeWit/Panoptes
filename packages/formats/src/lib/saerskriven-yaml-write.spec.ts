@@ -11,7 +11,10 @@ import {
 } from '@saerskriven/wire-saerskriven-yaml';
 import { parse } from 'yaml';
 import { ecluseModel, goldenPath } from './saerskriven-yaml.fixtures.js';
-import { writeSaerskrivenYaml } from './saerskriven-yaml-write.js';
+import {
+  writeSaerskrivenYaml,
+  writeSaerskrivenYamlDocument,
+} from './saerskriven-yaml-write.js';
 import { isRecord } from './records.js';
 
 const parseDocument: (text: string) => unknown = parse;
@@ -169,5 +172,24 @@ describe('a Saerskriven YAML write', () => {
     expect(writeSaerskrivenYaml(ecluseModel, otherDocument).output).toBe(
       written.output,
     );
+  });
+});
+
+describe('a Saerskriven YAML document written without its text', () => {
+  it('holds what the written file holds', () => {
+    expect(writeSaerskrivenYamlDocument(ecluseModel)).toEqual(
+      parseDocument(written.output),
+    );
+  });
+
+  it('states the direction on every flow, so a read of it defaults nothing', () => {
+    const flows = writeSaerskrivenYamlDocument(ecluseModel).diagrams.flatMap(
+      (diagram) =>
+        diagram.elements.filter((element) => element.kind === 'flow'),
+    );
+    expect(flows.length).toBeGreaterThan(0);
+    expect(
+      flows.filter((flow) => flow.bidirectional === undefined),
+    ).toHaveLength(0);
   });
 });

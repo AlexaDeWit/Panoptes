@@ -1,19 +1,21 @@
 import {
   ReadFailure,
   parseWithinLimits,
+  readSaerskrivenYamlDocument,
   saerskrivenYamlCodec,
   threatDragonCodec,
   withinTextLimit,
+  writeSaerskrivenYamlDocument,
 } from '@saerskriven/formats';
 import {
   diagramIdSchema,
-  parseModel,
   type DiagramId,
   type Model,
 } from '@saerskriven/model';
 import { Data, Either } from 'effect';
 import { z } from 'zod';
 import { reasonOf } from '../files/bridge.js';
+import { studioVersion } from '../version.js';
 import { holdsDiagram } from './selectors.js';
 import {
   FileLifecycle,
@@ -22,19 +24,21 @@ import {
   type State,
 } from './state.js';
 
-const recoveryVersion = 1;
+const recoveryVersion = 2;
 
 /** The browser key that holds the current working session. */
 export const recoveryStorageKey = 'saerskriven:studio:recovery';
 
-const modelSchema = z.unknown().transform((input, context): Model => {
-  const parsed = parseModel(input);
-  if (Either.isLeft(parsed)) {
-    context.addIssue({ code: 'custom', message: 'Invalid stored model.' });
-    return z.NEVER;
-  }
-  return parsed.right;
-});
+const documentSchema = saerskrivenYamlCodec.wire.transform(
+  (document, context): Model => {
+    const model = readSaerskrivenYamlDocument(document);
+    if (Either.isLeft(model)) {
+      context.addIssue({ code: 'custom', message: 'Invalid stored model.' });
+      return z.NEVER;
+    }
+    return model.right;
+  },
+);
 
 const retainedSourceSchema = z
   .discriminatedUnion('format', [
@@ -69,20 +73,34 @@ const fileLifecycleSchema = z
   );
 
 /**
- * The versioned value stored for recovery. The active diagram is optional
+ * The versioned value stored for recovery. The model is held as a
+ * Saerskriven YAML document rather than as itself, so a session written by
+ * one release opens in the next wherever a file written by that release
+ * would: the format's own compatibility contract carries it, and an
+ * additive change to the model costs the snapshot nothing.
+ *
+ * The stored shape and the parsed shape differ, and this is where they
+ * meet. `document` goes in as the wire document and comes out as the model
+ * under the name the store uses for it. The active diagram is optional
  * within the version: a snapshot written before it was stored still loads,
  * on the first diagram.
  */
-export const recoverySnapshotSchema = z.object({
-  version: z.literal(recoveryVersion),
-  present: modelSchema,
-  dirty: z.boolean(),
-  file: fileLifecycleSchema,
-  activeDiagram: diagramIdSchema.optional(),
-});
+export const recoverySnapshotSchema = z
+  .object({
+    version: z.literal(recoveryVersion),
+    document: documentSchema,
+    writtenBy: z.object({ studioVersion: z.string() }),
+    dirty: z.boolean(),
+    file: fileLifecycleSchema,
+    activeDiagram: diagramIdSchema.optional(),
+  })
+  .transform(({ document, ...rest }) => ({ ...rest, present: document }));
 
 /** A validated session recovery snapshot. */
 export type RecoverySnapshot = z.output<typeof recoverySnapshotSchema>;
+
+/** A snapshot as recovery storage holds it, before the document is mapped. */
+export type StoredSnapshot = z.input<typeof recoverySnapshotSchema>;
 
 /** Builds the current recovery version from store data. */
 export function recoverySnapshot(
@@ -90,10 +108,11 @@ export function recoverySnapshot(
   dirty: boolean,
   file: FileLifecycle,
   activeDiagram?: DiagramId,
-): RecoverySnapshot {
+): StoredSnapshot {
   return {
     version: recoveryVersion,
-    present,
+    document: writeSaerskrivenYamlDocument(present),
+    writtenBy: { studioVersion },
     dirty,
     file,
     ...(activeDiagram === undefined ? {} : { activeDiagram }),
@@ -135,7 +154,7 @@ export type RecoveryStorage = {
     RecoveryStorageFailure
   >;
   readonly replace: (
-    snapshot: RecoverySnapshot,
+    snapshot: StoredSnapshot,
   ) => Either.Either<void, RecoveryStorageFailure>;
   readonly clear: () => Either.Either<void, RecoveryStorageFailure>;
 };
@@ -191,7 +210,7 @@ function accessStorage<Value>(
 }
 
 function encodeSnapshot(
-  snapshot: RecoverySnapshot,
+  snapshot: StoredSnapshot,
 ): Either.Either<string, RecoveryStorageFailure> {
   return Either.flatMap(
     Either.try({
@@ -227,11 +246,25 @@ function parseRecoverySnapshot(
     return snapshot.success
       ? Either.right(snapshot.data)
       : Either.left(
-          RecoveryStorageFailure.Rejected({
-            reason: 'The stored snapshot is malformed or unsupported.',
-          }),
+          RecoveryStorageFailure.Rejected({ reason: refusal(value) }),
         );
   });
+}
+
+const envelopeSchema = z.object({
+  version: z.number(),
+  writtenBy: z.object({ studioVersion: z.string() }).optional(),
+});
+
+function refusal(value: unknown): string {
+  const envelope = envelopeSchema.safeParse(value);
+  if (!envelope.success || envelope.data.version >= recoveryVersion) {
+    return 'The stored snapshot is malformed or unsupported.';
+  }
+  const writer = envelope.data.writtenBy?.studioVersion;
+  return writer === undefined
+    ? 'An earlier release of Saerskriven stored this session, in a form this release cannot restore.'
+    : `Saerskriven ${writer} stored this session, in a form this release cannot restore.`;
 }
 
 function describeReadLimit(failure: ReadFailure): string {

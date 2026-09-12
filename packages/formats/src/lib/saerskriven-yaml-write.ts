@@ -40,29 +40,13 @@ const stringifyOptions = { lineWidth: 0 };
  * there is nothing to leave out and the divergence list is empty by
  * construction.
  *
- * The projection is written out record by record rather than handed across,
- * for the reason the read is: the file and the model are separate
- * declarations that say the same thing today and are free to stop. Ids go
- * out as the plain strings the format holds, brands being the model's own
- * business, and vocabularies go through the tables in
- * `saerskriven-yaml-vocabulary.ts`.
- *
  * Two writes of one model are byte-identical, which is what makes a model
- * file in git worth diffing. Three things fix the bytes. Keys are written in
- * the order the wire schema declares them rather than the order the model
- * records were built in, with the discriminator of a tagged variant first.
- * Threats are written in number order: a threat number is unique across the
- * model and never reissued, so ordering by it is total, and it holds a
- * threat's position in the file steady as the model is edited. And no line
- * is wrapped, so editing a sentence changes the line it is on rather than
- * reflowing the paragraph under it.
- *
- * Every other list keeps the model's order. Diagrams and elements are drawn
- * in the order they are held, so that order is information rather than
- * incidental. Mitigations and assumptions have nothing to sort on that
- * would order them any better: their ids are generated, so sorting by id
- * scatters them and drops each new record wherever its id falls, and a
- * title moves when a record is retitled.
+ * file in git worth diffing. Three things fix the bytes, the record order
+ * {@link writeSaerskrivenYamlDocument} settles and two here. Keys are
+ * written in the order the wire schema declares them rather than the order
+ * the model records were built in, with the discriminator of a tagged
+ * variant first. And no line is wrapped, so editing a sentence changes the
+ * line it is on rather than reflowing the paragraph under it.
  *
  * `source` is the contract's write signature at work: given a source
  * document a codec merges onto it, so that what it does not map is left as
@@ -77,14 +61,41 @@ export function writeSaerskrivenYaml(
 ): WriteResult {
   return {
     output: stringify(
-      canonicalOrder(saerskrivenYamlWireSchema, toDocument(model)),
+      canonicalOrder(
+        saerskrivenYamlWireSchema,
+        writeSaerskrivenYamlDocument(model),
+      ),
       stringifyOptions,
     ),
     divergences: noDivergence,
   };
 }
 
-function toDocument(model: Model): SaerskrivenYamlDocument {
+/**
+ * A model as the format's wire document, which is what
+ * {@link writeSaerskrivenYaml} serializes and what a caller keeping a model
+ * in this format outside a file holds in place of the text.
+ *
+ * The projection is written out record by record rather than handed across,
+ * for the reason the read is: the file and the model are separate
+ * declarations that say the same thing today and are free to stop. Ids go
+ * out as the plain strings the format holds, brands being the model's own
+ * business, and vocabularies go through the tables in
+ * `saerskriven-yaml-vocabulary.ts`.
+ *
+ * Threats are written in number order: a threat number is unique across the
+ * model and never reissued, so ordering by it is total, and it holds a
+ * threat's position in the file steady as the model is edited. Every other
+ * list keeps the model's order. Diagrams and elements are drawn in the
+ * order they are held, so that order is information rather than incidental.
+ * Mitigations and assumptions have nothing to sort on that would order them
+ * any better: their ids are generated, so sorting by id scatters them and
+ * drops each new record wherever its id falls, and a title moves when a
+ * record is retitled.
+ */
+export function writeSaerskrivenYamlDocument(
+  model: Model,
+): SaerskrivenYamlDocument {
   const threats = [...model.threats];
   threats.sort((left, right) => left.number - right.number);
   return {

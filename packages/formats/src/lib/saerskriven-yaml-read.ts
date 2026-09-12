@@ -9,6 +9,7 @@ import {
   parseModel,
   threatSchema,
   toParseIssues,
+  type Model,
 } from '@saerskriven/model';
 import {
   saerskrivenYamlWireSchema,
@@ -51,6 +52,25 @@ export function readSaerskrivenYaml(
   return Either.flatMap(parseYaml(text), mapDocument);
 }
 
+/**
+ * A wire document mapped onto the internal model, which is the half of a
+ * read a caller holding a document rather than a text needs. No divergence
+ * comes back: the scan compares the document against the text it was parsed
+ * from, and there is no such text here.
+ *
+ * This is where the format's compatibility contract is honoured for the
+ * model: a key added to version 1 of the format is optional on the wire and
+ * given its value here, so a document written before the key existed maps
+ * onto a model that requires it.
+ */
+export function readSaerskrivenYamlDocument(
+  document: SaerskrivenYamlDocument,
+): Either.Either<Model, ReadFailure> {
+  return Either.mapLeft(parseModel(toModelInput(document)), (failure) =>
+    ReadFailure.InvalidModel({ issues: failure.issues }),
+  );
+}
+
 function mapDocument(
   given: unknown,
 ): Either.Either<ReadResult<typeof saerskrivenYamlWireSchema>, ReadFailure> {
@@ -62,14 +82,11 @@ function mapDocument(
       }),
     );
   }
-  return Either.mapBoth(parseModel(toModelInput(wire.data)), {
-    onLeft: (failure) => ReadFailure.InvalidModel({ issues: failure.issues }),
-    onRight: (model) => ({
-      model,
-      source: wire.data,
-      divergences: undeclaredDivergences(given, wire.data),
-    }),
-  });
+  return Either.map(readSaerskrivenYamlDocument(wire.data), (model) => ({
+    model,
+    source: wire.data,
+    divergences: undeclaredDivergences(given, wire.data),
+  }));
 }
 
 function toModelInput(document: SaerskrivenYamlDocument) {

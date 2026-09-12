@@ -91,10 +91,33 @@ format and nothing has to assert which codec owns which.
 
 `recovery-storage.ts` owns loading, replacing, and clearing one snapshot. The
 browser adapter uses `saerskriven:studio:recovery` in `localStorage`.
-Version 1 stores `present`, dirty status, the file lifecycle, and the active
-diagram as an optional field, so a snapshot written before the field existed
+Version 2 stores the model as a Saerskriven YAML wire document, with dirty
+status, the file lifecycle, the studio version that wrote it, and the active
+diagram as an optional field, so a snapshot written before that field existed
 still loads. The file lifecycle includes the name, format, and retained wire
 document. A restored active diagram the model no longer holds is dropped.
+
+The model travels as a version 1 document of
+[the native format](../../../../docs/saerskriven-yaml.md), so the snapshot
+inherits that format's compatibility contract: a session survives every
+upgrade a file in that format survives. A field added to the model costs the
+snapshot nothing, because the format declares the new key as optional within
+version 1 and the read maps a document written without it onto the model the
+current release requires. A breaking format change will ship as a new wire
+package with a step in `formats`, and the snapshot will follow that step
+rather than carry one of its own. No such step exists yet, so until one does,
+a document of a version this release does not know is rejected like any
+malformed snapshot. The studio version in `writtenBy` is information for a
+refusal, never a guard on what loads.
+
+Going through the format costs the order of the threat register: the format
+writes threats in number order, so a restore puts them in number order, as an
+open of the saved file does.
+
+Version 1 of the snapshot held the model itself rather than a document, and
+nothing maps it. It is refused with a reason saying an earlier release wrote
+it, distinct from the reason a malformed or unsupported snapshot gets, and the
+placeholder opens.
 
 `dispatch` writes each changed recoverable field before it publishes the new
 state. The reducer performs no storage work. The snapshot excludes the undo
@@ -102,7 +125,7 @@ and redo stacks, selection, rename state, and the last failure. A restored
 session starts with those fields empty.
 
 Startup bounds and parses the stored text before its schema validates the
-version, model, file data, and retained source. Missing data opens the
+version, document, file data, and retained source. Missing data opens the
 placeholder without a report. Rejected data opens the placeholder and records
 `StoredRecoveryRejected`.
 
@@ -138,7 +161,11 @@ describe.
 A message is trusted on its build alone: it comes from this origin's own
 code, and the envelope carries the commit CI built the bundle from
 (`studioBuildId`), so a tab left open across a deploy and a tab on the new
-code ignore each other rather than exchange state neither describes. Two
+code ignore each other rather than exchange state neither describes. That is
+what lets a message carry the model as the running code holds it, with no
+format in between: two tabs share a build exactly when they run the same code.
+State that outlives a build travels in the recovery snapshot instead, which is
+why the snapshot holds a document and the channel does not. Two
 tabs editing at once each adopt the other's result, so they diverge until
 the next change in either, while the recovery storage holds whichever wrote
 last. A tab opened later starts from the recovery snapshot, without history,
