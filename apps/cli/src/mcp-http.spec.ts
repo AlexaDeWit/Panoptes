@@ -114,6 +114,33 @@ const statusOf = async (
   headers: OutgoingHttpHeaders,
 ): Promise<number> => (await answerTo(url, headers)).status;
 
+const statusOfOversized = (url: URL, token: string): Promise<number | string> =>
+  new Promise((resolve) => {
+    const sent = request(
+      url,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+      },
+      (response) => {
+        response.on('error', (error) => {
+          resolve(error.message);
+        });
+        response.resume();
+        response.once('end', () => {
+          resolve(response.statusCode ?? 0);
+        });
+      },
+    );
+    sent.on('error', (error) => {
+      resolve(error.message);
+    });
+    sent.end(Buffer.alloc(64 * 1024 * 1024, 0x20));
+  });
+
 describe('saer mcp --http', () => {
   it('listens on 127.0.0.1 and ends with the host, exiting 0', async () => {
     const server = await running();
@@ -185,6 +212,13 @@ describe('saer mcp --http', () => {
     ];
     await server.stop();
     expect(statuses).toEqual([403, 403, 403]);
+  });
+
+  it('answers a body far past the cap with 413 rather than a reset', async () => {
+    const server = await running();
+    const status = await statusOfOversized(server.url, server.token);
+    await server.stop();
+    expect(status).toBe(413);
   });
 
   it('refuses a port already taken, exiting 2', async () => {

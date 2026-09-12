@@ -33,6 +33,8 @@ const httpAddress = '127.0.0.1';
 
 const httpPath = '/mcp';
 
+const drainMilliseconds = 2000;
+
 type HttpServing = {
   readonly port: number;
   readonly tokenFile: string;
@@ -146,14 +148,28 @@ async function answer(
   }
   const body = await bodyOf(request);
   if (Either.isLeft(body)) {
+    response.once('finish', () => {
+      drainedThenClosed(request);
+    });
+    body.left.headers.set('Connection', 'close');
     await sent(body.left, response);
-    request.destroy();
     return;
   }
   await sent(
     await handler.fetch(webRequest(request, headers, body.right)),
     response,
   );
+}
+
+function drainedThenClosed(request: IncomingMessage): void {
+  const timer = setTimeout(() => {
+    request.socket.destroy();
+  }, drainMilliseconds);
+  timer.unref();
+  request.socket.once('close', () => {
+    clearTimeout(timer);
+  });
+  request.resume();
 }
 
 function refused(
@@ -261,22 +277,17 @@ async function sent(reply: Response, response: ServerResponse): Promise<void> {
     response.end();
     return;
   }
-  await pipeline(chunksOf(reply.body), response);
+  const reader = reply.body.getReader();
+  response.once('close', () => {
+    reader.cancel().catch(() => undefined);
+  });
+  await pipeline(chunksOf(reader), response);
 }
 
 async function* chunksOf(
-  body: ReadableStream<Uint8Array>,
+  reader: ReadableStreamDefaultReader<Uint8Array>,
 ): AsyncGenerator<Uint8Array> {
-  const reader = body.getReader();
-  try {
-    for (
-      let read = await reader.read();
-      !read.done;
-      read = await reader.read()
-    ) {
-      yield read.value;
-    }
-  } finally {
-    await reader.cancel();
+  for (let read = await reader.read(); !read.done; read = await reader.read()) {
+    yield read.value;
   }
 }
