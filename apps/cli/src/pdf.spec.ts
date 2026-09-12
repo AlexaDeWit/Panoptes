@@ -1,6 +1,6 @@
 import { deepestProse, renderTypst } from '@saerskriven/render';
 import { Either } from 'effect';
-import { mkdtempSync } from 'node:fs';
+import { copyFileSync, mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fixtureFile, proseThreatYaml } from './cli.fixtures.js';
@@ -101,6 +101,36 @@ describe('Typst source compiled to a PDF', () => {
         deepestProse - 2,
       );
       expect(pageCount(Either.getOrThrow(await compiled(source)))).toBe(1);
+    },
+    compileTimeout,
+  );
+});
+
+describe('an install with the module and no font face', () => {
+  const bareDirectory = mkdtempSync(join(tmpdir(), 'saerskriven-cli-no-font-'));
+  copyFileSync(
+    join(assets, 'typst_ts_web_compiler_bg.wasm'),
+    join(bareDirectory, 'typst_ts_web_compiler_bg.wasm'),
+  );
+
+  it('refuses naming the directory instead of writing a document', async () => {
+    const outcome = await compilePdf(document('#"a document"'), bareDirectory);
+    expect(refusal(outcome)).toBe(
+      `cannot compile the PDF: ${bareDirectory} holds no .ttf font face`,
+    );
+  });
+
+  it(
+    'compiles as before once one face is restored',
+    async () => {
+      copyFileSync(
+        join(assets, 'LiberationSans-Regular.ttf'),
+        join(bareDirectory, 'LiberationSans-Regular.ttf'),
+      );
+      const pdf = Either.getOrThrow(
+        await compilePdf(document('#"a document"'), bareDirectory),
+      );
+      expect(Buffer.from(pdf.subarray(0, 5)).toString('latin1')).toBe('%PDF-');
     },
     compileTimeout,
   );

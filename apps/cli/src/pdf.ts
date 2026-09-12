@@ -74,10 +74,17 @@ function bytesIn(assets: string): Either.Either<PdfAssets, string> {
 
 function readAssets(assets: string): Either.Either<PdfAssets, string> {
   const found = Either.try({
-    try: (): PdfAssets => ({
-      wasm: readFileSync(join(assets, wasmModule)),
-      fonts: fontsIn(assets).map((font) => new Uint8Array(readFileSync(font))),
-    }),
+    try: (): PdfAssets => {
+      const wasm = readFileSync(join(assets, wasmModule));
+      const fonts = fontsIn(assets);
+      if (fonts.length === 0) {
+        throw new Error(`${assets} holds no .ttf font face`);
+      }
+      return {
+        wasm,
+        fonts: fonts.map((font) => new Uint8Array(readFileSync(font))),
+      };
+    },
     catch: reasonOf,
   });
   if (Either.isRight(found)) {
