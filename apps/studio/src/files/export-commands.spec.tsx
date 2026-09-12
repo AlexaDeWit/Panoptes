@@ -237,18 +237,26 @@ describe('the studio exports', () => {
     expect(result.current.notice).toBeUndefined();
   });
 
-  it('puts an informational report away at the next selection, and at no clock', async () => {
+  it('puts an informational report away on Dismiss and on the next selection, and at no clock', async () => {
     modelStore.setState(openedState(unplacedModel), true);
     const bridge = specBridge();
     const result = session(bridge);
+    const exported = async (): Promise<void> => {
+      act(() => {
+        result.current.commands.diagram(mainDiagram);
+      });
+      await waitFor(() => {
+        expect(result.current.notice?.refusal).toBe(false);
+      });
+    };
 
+    await exported();
     act(() => {
-      result.current.commands.diagram(mainDiagram);
+      result.current.dismissNotice();
     });
-    await waitFor(() => {
-      expect(result.current.notice?.refusal).toBe(false);
-    });
+    expect(result.current.notice).toBeUndefined();
 
+    await exported();
     vi.useFakeTimers();
     act(() => {
       vi.advanceTimersByTime(60_000);
