@@ -41,7 +41,7 @@ Dragon and license it under the same Apache License 2.0. See
 | `packages/wire-threat-dragon`    | The Threat Dragon v2 format as a schema and nothing else                                                                                                                                                                                                                                                                         |
 | `packages/formats`               | File-format codecs, and the mappings between a file and the model                                                                                                                                                                                                                                                                |
 | `packages/canvas`                | React canvas components, shared by the UI and headless rendering                                                                                                                                                                                                                                                                 |
-| `packages/render`                | Projections of a model: SVG, markdown, Typst source, and the `pdf` subpath that compiles that source                                                                                                                                                                                                                             |
+| `packages/render`                | Projections of a model: SVG, markdown, Typst source, the `pdf` subpath that compiles that source, and the `resvg` subpath that rasterizes a drawing                                                                                                                                                                              |
 | `packages/mcp`                   | The MCP server object: tools over the model and the codecs, with no transport of its own                                                                                                                                                                                                                                         |
 | `apps/studio`                    | The drawing UI: its [canvas](apps/studio/src/canvas/README.md), its [threat panel](apps/studio/src/panel/README.md), its [model store](apps/studio/src/store/README.md), its [file bridge](apps/studio/src/files/README.md), its [commands](apps/studio/src/commands/README.md) and its [controls](apps/studio/src/ui/README.md) |
 | `apps/cli`                       | The command-line interface                                                                                                                                                                                                                                                                                                       |
@@ -351,6 +351,34 @@ second: an assets directory that reaches it holding the module and no `.ttf`
 now fails the check too, because `apps/cli/src/pdf.ts` refuses that install
 rather than typesetting a document with no text, so the render writes
 nothing and the `%PDF-` test fails on it.
+
+### The SVG rasterizer
+
+`nix build .#resvg-wasm` builds a WebAssembly module out of the `resvg` crate,
+which draws an SVG document into the bytes of a PNG. That crate and every crate
+under it are pinned by [`nix/resvg-wasm/Cargo.lock`](nix/resvg-wasm/Cargo.lock)
+and its checksums, fetched before the build and compiled with no network, so
+two builds of one commit write one module.
+
+No dev shell exports the module or the Rust toolchain that builds it: entering
+`nix develop` to work on the TypeScript pays for neither. The toolchain's
+closure has its own Nix-store cache key in CI, which the `Rasterizer module`
+job is the only writer of.
+
+`@saerskriven/render/resvg` reads the bytes back, on the terms the `pdf`
+subpath reads the Typst module on: the module and the faces are the caller's to
+hand over and nothing is read from a file. `resvgWasmAsset` on the
+`build-assets` subpath locates the module through `SAERSKRIVEN_RESVG_WASM`,
+which names the built file, and the rasterizer's spec skips where that variable
+is unset:
+
+```sh
+export SAERSKRIVEN_RESVG_WASM="$(nix build --no-link --print-out-paths .#resvg-wasm)/lib/saerskriven_resvg.wasm"
+pnpm nx test @saerskriven/render
+```
+
+No executable carries the module yet. The CLI's PNG output is what adds it to
+`apps/cli/dist/assets`, beside the Typst module and the fonts.
 
 [`docs/release.md`](docs/release.md) is the release procedure.
 

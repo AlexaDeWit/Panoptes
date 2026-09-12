@@ -2,6 +2,9 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "outDir": "./out-tsc/vitest",
+    // The declarations under test name WebAssembly, which lib.dom declares
+    // (tsconfig.lib.json).
+    "lib": ["dom", "es2022"],
     "types": [
       "vitest/globals",
       "vitest/importMeta",

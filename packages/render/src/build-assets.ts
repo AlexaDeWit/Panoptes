@@ -5,6 +5,12 @@ import { join } from 'node:path';
 /** The environment variable naming the pinned Liberation font directory. */
 export const fontsVariable = 'SAERSKRIVEN_FONTS_DIR';
 
+/** The environment variable naming the flake-built rasterizer module. */
+export const resvgVariable = 'SAERSKRIVEN_RESVG_WASM';
+
+/** The name the rasterizer module is carried under beside a bundle. */
+export const resvgWasmFile = 'saerskriven_resvg.wasm';
+
 /** The faces every Saerskriven PDF uses, in compiler order. */
 export const typstFontFiles: readonly string[] = [
   'LiberationMono-Regular.ttf',
@@ -45,6 +51,26 @@ export function typstFontAssets(
     from: requiredFont(fonts, name, refuse),
     name,
   }));
+}
+
+/**
+ * The rasterizer module a host build must carry.
+ *
+ * No dev shell exports the variable, because the module is built from Rust
+ * and no shell should pay for that toolchain: `nix build .#resvg-wasm` writes
+ * it and the caller points the variable at the file. The caller supplies its
+ * own refusal, as it does for the fonts.
+ */
+export function resvgWasmAsset(refuse: (sentence: string) => never): string {
+  const module = process.env[resvgVariable];
+  if (module === undefined || module === '') {
+    refuse(
+      `${resvgVariable} is unset, so this build has no SVG rasterizer. nix build .#resvg-wasm writes one under lib/${resvgWasmFile}.`,
+    );
+  }
+  return existsSync(module)
+    ? module
+    : refuse(`${resvgVariable} names ${module}, which is not there.`);
 }
 
 function requiredFont(

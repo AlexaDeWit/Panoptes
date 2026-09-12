@@ -136,6 +136,57 @@ jobs:
       - name: Install and upgrade with the system shell and tools
         run: /bin/bash scripts/release/install-smoke.sh
 
+  rasterizer:
+    if: ${{ !inputs.deploy_pages }}
+    name: Rasterizer module
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      id-token: write # OIDC for tokenless Codecov upload (no stored token)
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up toolchain
+        uses: ./.github/actions/setup-toolchain
+        with:
+          install-dependencies: 'true'
+          # The Rust toolchain is this job's alone, under a key no other job
+          # writes, so it never competes with the .#ci shell's entry.
+          nix-cache-prefix: 'nix-rust'
+
+      # sandbox true gives the builder no network: a crate the vendored
+      # registry does not hold fails here rather than being fetched.
+      - name: Build the rasterizer module offline
+        run: nix build --print-build-logs --option sandbox true .#resvg-wasm
+
+      - name: Rasterize a fixture through the module
+        env:
+          SAERSKRIVEN_RESVG_WASM: ${{ github.workspace }}/result/lib/saerskriven_resvg.wasm
+        run: >-
+          nix develop .#ci --command
+          pnpm nx test @saerskriven/render -- --coverage.enabled=true
+
+      - name: Upload coverage to Codecov
+        continue-on-error: ${{ github.event_name != 'pull_request' }}
+        timeout-minutes: 2
+        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
+        with:
+          use_oidc: true # tokenless upload via GitHub OIDC, no CODECOV_TOKEN secret
+          fail_ci_if_error: true # Report upload failures even when the step is advisory.
+
+      # The module's own closure is what ./result roots. The compile's inputs
+      # are rooted separately or the trim before the save drops the toolchain
+      # this prefix exists to carry.
+      - name: Root the Rust toolchain for the Nix-store cache save
+        if: github.ref == 'refs/heads/main'
+        run: >-
+          nix develop .#resvg-wasm
+          --profile "$RUNNER_TEMP/saerskriven-rust-profile" --command true
+
   static-checks:
     if: ${{ !inputs.deploy_pages }}
     name: Static checks

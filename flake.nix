@@ -108,6 +108,9 @@
         };
       in {
         packages.denort-cache = denortCache;
+        # Built by `nix build .#resvg-wasm`, never by entering a dev shell:
+        # the Rust closure is large and no shell needs it (issue #341).
+        packages.resvg-wasm = pkgs.callPackage ./nix/resvg-wasm { };
         packages.saerskriven = packageFor pkgs;
         checks.saerskriven = pkgs.callPackage ./nix/check.nix {
           saerskriven = packageFor pkgs;
