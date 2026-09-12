@@ -3,6 +3,7 @@ import { expect, type Page, test } from '@playwright/test';
 import { registeredChords } from './chords.js';
 import { savedFromMenu } from './commands.fixtures.js';
 import {
+  closeMenu,
   diagramChoice,
   diagramSwitcher,
   diagramTitleField,
@@ -218,7 +219,8 @@ test('the studio carries no violation with the menu open', async ({ page }) => {
 
   await audit(page, 'showing the menu asking before it closes a file');
 
-  await page.keyboard.press('Escape');
+  await closeMenu(page);
+  await expect(menuButton(page)).toBeFocused();
   await page.keyboard.press(registeredChords.open[0]);
   await expect(menuItem(page, 'Discard changes and open')).toBeVisible();
 
