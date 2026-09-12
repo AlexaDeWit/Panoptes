@@ -6,7 +6,13 @@ import {
   type WriteTarget,
 } from '@saerskriven/mcp';
 import { Either } from 'effect';
-import { existsSync, mkdirSync, readFileSync, realpathSync } from 'node:fs';
+import {
+  existsSync,
+  lstatSync,
+  mkdirSync,
+  readFileSync,
+  realpathSync,
+} from 'node:fs';
 import { dirname } from 'node:path';
 import { z } from 'zod';
 import { reasonOf, withinReadBound } from './files.js';
@@ -114,7 +120,9 @@ export function renderInstallReport(report: InstallReport): readonly string[] {
  * another process took while this one was working rather than replacing it.
  * A file that is there is replaced against the handle over the bytes this
  * call read, so a second `saer mcp install` landing inside the same window
- * is reported rather than overwritten.
+ * is reported rather than overwritten. A symbolic link pointing at nothing
+ * is refused by the same link: the path reads as free and is not, which is
+ * reported as the link it is rather than replaced with a regular file.
  */
 export function installMcp(
   options: InstallOptions,
@@ -290,7 +298,31 @@ function saved(
         ? replacedFile(target, text, held.revision, ownerOnly)
         : createdFile(target, text, ownerOnly),
     ),
-    (failure) => InstallFailure.Unwritten({ failure }),
+    (failure) => refusedWrite(target, failure),
+  );
+}
+
+function refusedWrite(
+  target: WriteTarget,
+  failure: WriteFailure,
+): InstallFailure {
+  return WriteFailure.$is('Occupied')(failure)
+    ? takenPath(target)
+    : WriteFailure.$is('StaleRevision')(failure)
+      ? InstallFailure.Changed({ path: target.file })
+      : InstallFailure.Unwritten({ failure });
+}
+
+function takenPath(target: WriteTarget): InstallFailure {
+  return danglingLink(target.path)
+    ? InstallFailure.DanglingLink({ path: target.file })
+    : InstallFailure.Occupied({ path: target.file });
+}
+
+function danglingLink(path: string): boolean {
+  return Either.getOrElse(
+    Either.try(() => lstatSync(path).isSymbolicLink() && !existsSync(path)),
+    () => false,
   );
 }
 

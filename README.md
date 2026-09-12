@@ -336,10 +336,13 @@ What the command will not do:
   the same arguments writes nothing. Its own `saerskriven` entry is replaced
   whole, so a field added to that entry by hand does not survive a re-run.
 - **It creates a file at mode 0600 and leaves an existing file's mode alone.**
-  A host's configuration can hold a sign-in session or a token. A file it
-  writes through a symbolic link keeps the link.
-- **Two runs at once, the second is refused.** A file that appeared, or
-  changed, while this one was working is reported rather than replaced.
+  A host's configuration can hold a sign-in session or a token.
+- **It writes through a symbolic link and keeps the link**, and refuses a
+  link pointing at nothing rather than leaving a regular file where the link
+  was. Point that link at a file, or remove it, and run the command again.
+- **Two runs at once, the second is refused**, saying the file was taken or
+  changed while it was working and that running it again picks up what the
+  file holds now.
 - **It refuses a file it cannot parse**, or one past the bound every foreign
   text here is read within, naming the path and leaving the file exactly as
   it is. A `.vscode/mcp.json` carrying comments is such a file, since what

@@ -171,6 +171,11 @@ export const hostRegistrations: Record<HostName, HostRegistration> = {
  * user-level file to sit under. `TooLarge` and `Malformed` are the file: one
  * past the shared read bound, and one no parser will read, and neither is
  * replaced with a document that would drop what the read could not take.
+ * `Occupied` and `Changed` are the file moving under this run, which the
+ * write refuses rather than replaces, and `DanglingLink` is a symbolic link
+ * at the target pointing at nothing, which the write will not turn into a
+ * regular file. `Unwritten` carries what the writer said for everything
+ * else, which is the system's own reason.
  */
 export type InstallFailure = Data.TaggedEnum<{
   NoProjectForm: { readonly host: HostName };
@@ -179,6 +184,9 @@ export type InstallFailure = Data.TaggedEnum<{
   TooLarge: { readonly path: string; readonly observed: number };
   Unreadable: { readonly path: string; readonly reason: string };
   Malformed: { readonly path: string; readonly reason: string };
+  Occupied: { readonly path: string };
+  Changed: { readonly path: string };
+  DanglingLink: { readonly path: string };
   Unwritten: { readonly failure: WriteFailure };
 }>;
 
@@ -215,7 +223,22 @@ export function renderInstallFailure(
       `The file ${quotedForTerminal(path)} was left as it is: ${escapedForTerminal(reason)}.`,
       'Pass --print and add the entry by hand, or repair the file and run this again.',
     ],
-    Unwritten: ({ failure: refusal }) => renderWriteFailure(refusal),
+    Occupied: ({ path }) => [
+      `The file ${quotedForTerminal(path)} was taken while this run was working, so nothing was written.`,
+      'Run this again to add the entry to what the file holds now.',
+    ],
+    Changed: ({ path }) => [
+      `The file ${quotedForTerminal(path)} changed while this run was working, so nothing was written.`,
+      'Run this again to add the entry to what the file holds now.',
+    ],
+    DanglingLink: ({ path }) => [
+      `The file ${quotedForTerminal(path)} is a symbolic link to a path that is not there, so nothing was written.`,
+      'Point the link at a file, or remove it, and run this again.',
+    ],
+    Unwritten: ({ failure: refusal }) => [
+      ...renderWriteFailure(refusal),
+      'Nothing was written, and this can be run again once the reason above no longer holds.',
+    ],
   });
 }
 

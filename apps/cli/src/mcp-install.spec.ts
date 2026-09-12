@@ -338,6 +338,23 @@ describe('a host file the command will not write', () => {
     expect(outcome.err).toContain(
       `The file "${join('.cursor', 'mcp.json')}" was not written: `,
     );
+    expect(outcome.err).toContain(
+      'Nothing was written, and this can be run again once the reason above no longer holds.\n',
+    );
+  });
+
+  it('refuses a symbolic link pointing at nothing, and keeps the link', () => {
+    const root = directory();
+    const link = join(root, '.mcp.json');
+    symlinkSync(join(root, 'gone.json'), link);
+    const outcome = installMcp({ host: 'claude-code' }, installedIn(root));
+    expect(outcome.code).toEqual(2);
+    expect(outcome.out).toEqual('');
+    expect(outcome.err).toEqual(
+      'The file ".mcp.json" is a symbolic link to a path that is not there, so nothing was written.\nPoint the link at a file, or remove it, and run this again.\n',
+    );
+    expect(lstatSync(link).isSymbolicLink()).toEqual(true);
+    expect(existsSync(join(root, 'gone.json'))).toEqual(false);
   });
 
   it('refuses the user-level file of a host whose path it cannot name', () => {

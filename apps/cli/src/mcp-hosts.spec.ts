@@ -200,6 +200,26 @@ describe('where a host reads its registration', () => {
   });
 });
 
+describe('a write the host file would not take', () => {
+  it('says a path taken while the run worked can be tried again', () => {
+    expect(
+      renderInstallFailure(InstallFailure.Occupied({ path: '.mcp.json' })),
+    ).toEqual([
+      'The file ".mcp.json" was taken while this run was working, so nothing was written.',
+      'Run this again to add the entry to what the file holds now.',
+    ]);
+  });
+
+  it('says the same of a file that changed under the run', () => {
+    expect(
+      renderInstallFailure(InstallFailure.Changed({ path: '.mcp.json' })),
+    ).toEqual([
+      'The file ".mcp.json" changed while this run was working, so nothing was written.',
+      'Run this again to add the entry to what the file holds now.',
+    ]);
+  });
+});
+
 describe('the environment the process runs in', () => {
   afterEach(() => {
     vi.unstubAllEnvs();
