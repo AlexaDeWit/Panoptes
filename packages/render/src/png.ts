@@ -33,6 +33,31 @@ export const defaultLongEdge = 1568;
 export const drawingFace = 'LiberationSans-Regular.ttf';
 
 /**
+ * The faces a rasterization is offered, the one `leading` names first, which
+ * is the order {@link drawingFace} explains. `named` reads the name off
+ * whatever a caller carries a face as, a path or a URL, and `subject` is what
+ * holds the faces, a directory or a build, which opens the refusal.
+ *
+ * A caller holding no face by that name is refused rather than served the
+ * order it had: the drawing would come out in whichever family happened to be
+ * first, which a reader cannot tell from the one that was asked for.
+ */
+export function ledBy<T>(
+  faces: readonly T[],
+  named: (face: T) => string,
+  leading: string,
+  subject: string,
+): Either.Either<readonly T[], string> {
+  const leads = (face: T): boolean => named(face) === leading;
+  return faces.some(leads)
+    ? Either.right([
+        ...faces.filter(leads),
+        ...faces.filter((face) => !leads(face)),
+      ])
+    : Either.left(`${subject} holds no ${leading}, which text is set in`);
+}
+
+/**
  * What a render was asked for. `assets` is what `rasterizeSvg` reads, module
  * and faces, and a family no face carries falls back to the family of the
  * first face offered, which for these drawings is every family they name.

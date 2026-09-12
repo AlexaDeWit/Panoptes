@@ -2,7 +2,6 @@ import { parseModel, type Diagram, type Model } from '@saerskriven/model';
 import { Either } from 'effect';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-export { drawingFace } from './png.js';
 
 const svgSuffix = '.snapshot.svg';
 
@@ -63,21 +62,6 @@ export const goldenDocuments: readonly GoldenDocument[] = [
 /** The diagram a golden entry names. */
 export function diagramOf(entry: GoldenDocument): Diagram {
   return entry.model.diagrams[entry.diagram];
-}
-
-/**
- * The faces a rasterization is offered, `leading` first, which is what
- * `drawingFace` on the `png` subpath explains.
- */
-export function ledBy<T>(
-  faces: readonly T[],
-  named: (face: T) => string,
-  leading: string,
-): readonly T[] {
-  return [
-    ...faces.filter((face) => named(face) === leading),
-    ...faces.filter((face) => named(face) !== leading),
-  ];
 }
 
 function golden(

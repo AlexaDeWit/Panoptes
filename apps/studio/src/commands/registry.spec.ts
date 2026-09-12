@@ -45,6 +45,7 @@ describe('the command registry', () => {
       'export-register',
       'export-typst',
       'export-pdf',
+      'export-png',
     ]);
   });
 
@@ -188,6 +189,7 @@ describe('runCommand', () => {
       'export-register',
       'export-typst',
       'export-pdf',
+      'export-png',
       'zoom-in',
       'fit-to-view',
       'shortcut-reference',
@@ -205,6 +207,7 @@ describe('runCommand', () => {
       'exportRegister',
       'exportTypst',
       'exportPdf',
+      'exportPng',
       'zoomIn',
       'fitToView',
       'toggleReference',

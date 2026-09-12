@@ -5,7 +5,7 @@ import {
   initialPageStylesheet,
 } from './initial-page.mjs';
 import { socialCardAsset, socialImage } from './social-card.mjs';
-import { typstAssets } from './typst-assets.mjs';
+import { buildAssets } from './build-assets.mjs';
 
 const siteUrl =
   process.env['PAGES_SITE_URL'] ?? 'https://alexadewit.github.io/Saerskriven';
@@ -74,7 +74,7 @@ export const studioConfig = (options: StudioConfigOptions = {}) =>
     plugins: [
       versionStamp(),
       initialPageStyles(),
-      typstAssets(),
+      buildAssets(),
       socialCardAsset(),
     ],
     setupFiles: ['./src/test-setup.ts'],

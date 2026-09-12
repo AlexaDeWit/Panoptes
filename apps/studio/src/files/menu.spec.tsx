@@ -2,6 +2,7 @@ import { saerskrivenYamlCodec } from '@saerskriven/formats';
 import { emptyModel } from '@saerskriven/model';
 import { diagramId } from '@saerskriven/model/fixtures';
 import { PdfFailure } from '@saerskriven/render/pdf';
+import { ResvgFailure } from '@saerskriven/render/png';
 import {
   act,
   fireEvent,
@@ -29,12 +30,14 @@ import {
   sampleModel,
 } from '../store/store.fixtures.js';
 import { SaveOutcome } from './bridge.js';
-import type { PdfExport } from './export-commands.js';
+import type { RenderExports } from './export-commands.js';
 import { useFileSession } from './file-commands.js';
 import { nameOf } from './session.js';
 import {
   chosenFile,
+  pngSignature,
   specBridge,
+  specRenders,
   vendoredFile,
   type SpecBridge,
 } from './files.fixtures.js';
@@ -92,19 +95,22 @@ const reportEntries = (): readonly Element[] => [
 
 function Menu({
   bridge,
-  exportPdf,
-  pdf,
+  runs,
+  renders,
 }: {
   readonly bridge: SpecBridge;
-  readonly exportPdf?: boolean;
-  readonly pdf?: PdfExport;
+  readonly runs?: 'pdf' | 'png';
+  readonly renders?: RenderExports;
 }) {
-  const session = useFileSession(bridge, pdf);
+  const session = useFileSession(bridge, renders);
   useEffect(() => {
-    if (exportPdf === true) {
+    if (runs === 'pdf') {
       session.commands.exportPdf();
     }
-  }, [exportPdf, session.commands]);
+    if (runs === 'png') {
+      session.commands.exportPng();
+    }
+  }, [runs, session.commands]);
   const surface = useMemo(
     () => ({ ...unmountedSurface, files: session.commands }),
     [session.commands],
@@ -119,10 +125,10 @@ function Menu({
 
 const mounted = (
   bridge: SpecBridge,
-  pdf?: PdfExport,
-  exportPdf?: boolean,
+  renders?: RenderExports,
+  runs?: 'pdf' | 'png',
 ): void => {
-  render(<Menu bridge={bridge} exportPdf={exportPdf} pdf={pdf} />);
+  render(<Menu bridge={bridge} renders={renders} runs={runs} />);
 };
 
 const asked = (): boolean =>
@@ -215,6 +221,7 @@ describe('what the menu offers', () => {
       screen.getAllByRole('menuitem').map((entry) => entry.textContent),
     ).toContain('Diagram as SVG');
     for (const name of [
+      'Diagram as PNG',
       'Register as Markdown',
       'Model as Typst',
       'Model as PDF',
@@ -262,22 +269,64 @@ describe('what the menu offers', () => {
     expect(item('Diagram as SVG').getAttribute('data-disabled')).not.toBeNull();
   });
 
+  it('disables the PNG export when the model holds no diagram', async () => {
+    const user = userEvent.setup();
+    modelStore.setState(initialState(emptyModel), true);
+    mounted(specBridge());
+
+    await openExportMenu(user);
+
+    expect(item('Diagram as PNG').getAttribute('data-disabled')).not.toBeNull();
+  });
+
+  it('writes the PNG the rasterizer drew through the same bridge', async () => {
+    const bridge = specBridge();
+    mounted(bridge, specRenders(), 'png');
+
+    await waitFor(() => {
+      expect(bridge.writes).toHaveLength(1);
+    });
+    expect(bridge.writes[0].name).toBe('Untitled.png');
+    expect(bridge.writes[0].bytes).toEqual(pngSignature);
+  });
+
+  it('announces a rasterizer refusal and writes no file', async () => {
+    const bridge = specBridge();
+    mounted(
+      bridge,
+      specRenders({
+        draw: () =>
+          Promise.resolve(
+            Either.left(
+              ResvgFailure.Unusable({ sentence: 'the module reserved none' }),
+            ),
+          ),
+      }),
+      'png',
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId('export-report').textContent).toContain(
+        'the module reserved none',
+      );
+    });
+    expect(bridge.writes).toEqual([]);
+  });
+
   it('announces a PDF compile refusal and writes no file', async () => {
     const user = userEvent.setup();
     const bridge = specBridge();
     mounted(
       bridge,
-      {
-        assets: () =>
-          Promise.resolve(Either.right({ wasm: new Uint8Array(), fonts: [] })),
+      specRenders({
         compile: () =>
           Promise.resolve(
             Either.left(
               PdfFailure.Refused({ sentences: ['unknown function: nope'] }),
             ),
           ),
-      },
-      true,
+      }),
+      'pdf',
     );
 
     await waitFor(() => {

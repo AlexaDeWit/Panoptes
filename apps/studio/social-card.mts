@@ -4,7 +4,7 @@ import { chromium } from '@playwright/test';
 import { tokenStylesheet } from '@saerskriven/canvas/tokens';
 import { typstFontAssets } from '@saerskriven/render/build-assets';
 import type { Plugin } from 'vite';
-import { refuseStudioBuild } from './typst-assets.mjs';
+import { refuseStudioBuild } from './build-assets.mjs';
 
 /** The social image metadata and emitted asset name. */
 export const socialImage = {

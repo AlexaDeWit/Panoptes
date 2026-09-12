@@ -50,6 +50,7 @@ export type FileCommands = {
   exportRegister(): void;
   exportTypst(): void;
   exportPdf(): void;
+  exportPng(): void;
   close(): void;
 };
 
@@ -436,6 +437,17 @@ const table = {
     inTextFields: false,
     dispatch: runs((surface) => {
       surface.files.exportPdf();
+    }),
+  },
+  'export-png': {
+    id: 'export-png',
+    label: 'Diagram as PNG',
+    group: 'File',
+    shortcuts: [],
+    when: 'From the File menu',
+    inTextFields: false,
+    dispatch: runs((surface) => {
+      surface.files.exportPng();
     }),
   },
   'close-file': {

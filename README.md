@@ -400,7 +400,8 @@ and its checksums, fetched before the build and compiled with no network, so
 two builds of one commit write one module.
 
 No dev shell exports the module or the Rust toolchain that builds it: entering
-`nix develop` to work on the TypeScript pays for neither. Nothing saves that
+`nix develop` to work on the TypeScript pays for neither, and the one build
+serves every target that carries it. Nothing saves that
 closure to CI's Nix-store cache either: the `Rasterizer module` job restores
 the shared entry and writes none, so the 2.7G of Rust toolchain cannot evict
 what every other job restores from, and it pays the build each run instead.
@@ -417,8 +418,11 @@ export SAERSKRIVEN_RESVG_WASM="$(nix build --no-link --print-out-paths .#resvg-w
 pnpm nx test @saerskriven/render
 ```
 
-No executable carries the module yet. The CLI's PNG output is what adds it to
-`apps/cli/dist/assets`, beside the Typst module and the fonts.
+The CLI build copies the module into `apps/cli/dist/assets`, beside the Typst
+module and the fonts, and the studio build emits it as a hashed asset of the
+website. Both read `SAERSKRIVEN_RESVG_WASM` and both refuse a build without
+it, rather than shipping a PNG export that cannot draw, so `pnpm check` and
+`pnpm nx serve studio` need the variable set as the commands above set it.
 
 [`docs/release.md`](docs/release.md) is the release procedure.
 

@@ -1,6 +1,5 @@
 import { readLimits, saerskrivenYamlCodec } from '@saerskriven/formats';
 import { act, renderHook, waitFor } from '@testing-library/react';
-import { Either } from 'effect';
 import { Action } from '../store/actions.js';
 import {
   FileLifecycle,
@@ -15,7 +14,7 @@ import {
   newProcess,
   sampleModel,
 } from '../store/store.fixtures.js';
-import type { PdfExport } from './export-commands.js';
+import type { RenderExports } from './export-commands.js';
 import {
   SaveOutcome,
   type ChosenFile,
@@ -29,6 +28,7 @@ import {
   deferred,
   handleFor,
   specBridge,
+  specRenders,
 } from './files.fixtures.js';
 
 const nativeText = saerskrivenYamlCodec.write(sampleModel).output;
@@ -45,9 +45,9 @@ const failedFiles: readonly ChosenFile[] = [
 
 const session = (
   bridge: FileBridge,
-  pdf?: PdfExport,
+  renders?: RenderExports,
   sync?: Pick<StoreSync, 'watch'>,
-) => renderHook(() => useFileSession(bridge, pdf, sync)).result;
+) => renderHook(() => useFileSession(bridge, renders, sync)).result;
 
 function anotherTab() {
   let follow: ((state: SyncedState) => void) | undefined;
@@ -515,27 +515,25 @@ describe('useFileSession', () => {
 
   it('routes every registered export through the export session', async () => {
     const bridge = specBridge();
-    const result = session(bridge, {
-      assets: () =>
-        Promise.resolve(Either.right({ wasm: new Uint8Array(), fonts: [] })),
-      compile: () => Promise.resolve(Either.right(new Uint8Array([37, 80]))),
-    });
+    const result = session(bridge, specRenders());
 
     act(() => {
       result.current.commands.exportDiagram(mainDiagram);
       result.current.commands.exportRegister();
       result.current.commands.exportTypst();
       result.current.commands.exportPdf();
+      result.current.commands.exportPng();
     });
 
     await waitFor(() => {
-      expect(bridge.writes).toHaveLength(4);
+      expect(bridge.writes).toHaveLength(5);
     });
     expect(bridge.writes.map((write) => write.name)).toEqual([
       'Untitled.svg',
       'Untitled.md',
       'Untitled.typ',
       'Untitled.pdf',
+      'Untitled.png',
     ]);
   });
 

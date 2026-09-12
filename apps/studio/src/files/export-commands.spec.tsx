@@ -1,7 +1,8 @@
 import type { Model } from '@saerskriven/model';
 import { diagramId, parsedFixture } from '@saerskriven/model/fixtures';
 import { renderRegister, renderSvg, renderTypst } from '@saerskriven/render';
-import { PdfFailure, type PdfAssets } from '@saerskriven/render/pdf';
+import { PdfFailure } from '@saerskriven/render/pdf';
+import { drawingFace, ResvgFailure } from '@saerskriven/render/png';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { Either } from 'effect';
 import { Action } from '../store/actions.js';
@@ -13,21 +14,17 @@ import {
   sampleModel,
 } from '../store/store.fixtures.js';
 import { SaveOutcome } from './bridge.js';
-import { useExportCommands, type PdfExport } from './export-commands.js';
-import { PdfAssetFailure } from './pdf-assets.js';
-import { specBridge, type SpecBridge } from './files.fixtures.js';
+import { useExportCommands, type RenderExports } from './export-commands.js';
+import {
+  pngSignature,
+  specBridge,
+  specRenders,
+  type SpecBridge,
+} from './files.fixtures.js';
+import { RenderAssetFailure } from './render-assets.js';
 
-const assets: PdfAssets = { wasm: new Uint8Array(), fonts: [] };
-
-const pdfExport = (answer: ReturnType<PdfExport['compile']>): PdfExport => ({
-  assets: () => Promise.resolve(Either.right(assets)),
-  compile: () => answer,
-});
-
-const session = (
-  bridge: SpecBridge,
-  pdf = pdfExport(Promise.resolve(Either.right(new Uint8Array()))),
-) => renderHook(() => useExportCommands(bridge, pdf)).result;
+const session = (bridge: SpecBridge, renders = specRenders()) =>
+  renderHook(() => useExportCommands(bridge, renders)).result;
 
 const openedState = (model: Model = sampleModel) => ({
   ...initialState(model),
@@ -100,13 +97,10 @@ describe('the studio exports', () => {
   it('compiles the render projection and writes the PDF as binary content', async () => {
     const bridge = specBridge();
     const bytes = new Uint8Array([37, 80, 68, 70, 45]);
-    const compile = vi.fn<PdfExport['compile']>(() =>
+    const compile = vi.fn<RenderExports['compile']>(() =>
       Promise.resolve(Either.right(bytes)),
     );
-    const result = session(bridge, {
-      assets: () => Promise.resolve(Either.right(assets)),
-      compile,
-    });
+    const result = session(bridge, specRenders({ compile }));
 
     act(() => {
       result.current.commands.pdf();
@@ -115,12 +109,128 @@ describe('the studio exports', () => {
     await waitFor(() => {
       expect(bridge.writes).toHaveLength(1);
     });
-    expect(compile).toHaveBeenCalledWith(
-      renderTypst(sampleModel).typst,
-      assets,
-    );
+    expect(compile).toHaveBeenCalledWith(renderTypst(sampleModel).typst, {
+      wasm: new Uint8Array(),
+      fonts: [],
+    });
     expect(bridge.writes[0]).toMatchObject({ name: 'model.pdf', text: '' });
     expect(bridge.writes[0].bytes).toEqual(bytes);
+  });
+
+  it('draws the diagram on screen and writes the PNG as binary content', async () => {
+    const bridge = specBridge();
+    const draw = vi.fn<RenderExports['draw']>(() =>
+      Promise.resolve(
+        Either.right({
+          png: pngSignature,
+          width: 2,
+          height: 1,
+          unplaced: [],
+        }),
+      ),
+    );
+    const result = session(bridge, specRenders({ draw }));
+
+    act(() => {
+      result.current.commands.png();
+    });
+
+    await waitFor(() => {
+      expect(bridge.writes).toHaveLength(1);
+    });
+    expect(draw).toHaveBeenCalledWith(sampleModel.diagrams[0], sampleModel, {
+      assets: { wasm: new Uint8Array(), fonts: [] },
+    });
+    expect(bridge.writes[0]).toMatchObject({ name: 'model.png', text: '' });
+    expect(bridge.writes[0].bytes).toEqual(pngSignature);
+  });
+
+  it('reports the endpoints the drawing left out of the PNG', async () => {
+    modelStore.setState(openedState(unplacedModel), true);
+    const bridge = specBridge();
+    const result = session(bridge);
+
+    act(() => {
+      result.current.commands.png();
+    });
+
+    await waitFor(() => {
+      expect(result.current.notice).toBeDefined();
+    });
+    expect(bridge.writes).toHaveLength(1);
+    expect(result.current.notice).toMatchObject({
+      details: ['flow "flow-2" target names "flow-1"'],
+      refusal: false,
+    });
+  });
+
+  it('reports a rasterizer refusal and writes nothing', async () => {
+    const bridge = specBridge();
+    const result = session(
+      bridge,
+      specRenders({
+        draw: () =>
+          Promise.resolve(
+            Either.left(ResvgFailure.Refused({ sentence: 'no long edge' })),
+          ),
+      }),
+    );
+
+    act(() => {
+      result.current.commands.png();
+    });
+
+    await waitFor(() => {
+      expect(result.current.notice?.refusal).toBe(true);
+    });
+    expect(result.current.notice?.details).toEqual(['no long edge']);
+    expect(bridge.writes).toEqual([]);
+  });
+
+  it('reports a build holding no face to letter the drawing in, and writes nothing', async () => {
+    const bridge = specBridge();
+    const draw = vi.fn<RenderExports['draw']>();
+    const result = session(
+      bridge,
+      specRenders({
+        draw,
+        pngAssets: () =>
+          Promise.resolve(
+            Either.left(
+              RenderAssetFailure.Unavailable({
+                reason: `this studio build holds no ${drawingFace}, which text is set in`,
+              }),
+            ),
+          ),
+      }),
+    );
+
+    act(() => {
+      result.current.commands.png();
+    });
+
+    await waitFor(() => {
+      expect(result.current.notice?.refusal).toBe(true);
+    });
+    expect(result.current.notice?.details.join(' ')).toContain(drawingFace);
+    expect(draw).not.toHaveBeenCalled();
+    expect(bridge.writes).toEqual([]);
+  });
+
+  it('draws no PNG from a model holding no diagram', async () => {
+    modelStore.setState(openedState({ ...sampleModel, diagrams: [] }), true);
+    const bridge = specBridge();
+    const draw = vi.fn<RenderExports['draw']>();
+    const result = session(bridge, specRenders({ draw }));
+
+    act(() => {
+      result.current.commands.png();
+    });
+
+    await waitFor(() => {
+      expect(draw).not.toHaveBeenCalled();
+    });
+    expect(bridge.writes).toEqual([]);
   });
 
   it('reports every unplaced endpoint after it still writes the export', async () => {
@@ -148,13 +258,14 @@ describe('the studio exports', () => {
     const bridge = specBridge();
     const result = session(
       bridge,
-      pdfExport(
-        Promise.resolve(
-          Either.left(
-            PdfFailure.Refused({ sentences: ['unknown function: nope'] }),
+      specRenders({
+        compile: () =>
+          Promise.resolve(
+            Either.left(
+              PdfFailure.Refused({ sentences: ['unknown function: nope'] }),
+            ),
           ),
-        ),
-      ),
+      }),
     );
 
     act(() => {
@@ -173,14 +284,17 @@ describe('the studio exports', () => {
 
   it('reports unavailable assets before it asks the compiler', async () => {
     const bridge = specBridge();
-    const compile = vi.fn<PdfExport['compile']>();
-    const result = session(bridge, {
-      assets: () =>
-        Promise.resolve(
-          Either.left(PdfAssetFailure.Unavailable({ reason: 'offline' })),
-        ),
-      compile,
-    });
+    const compile = vi.fn<RenderExports['compile']>();
+    const result = session(
+      bridge,
+      specRenders({
+        compile,
+        pdfAssets: () =>
+          Promise.resolve(
+            Either.left(RenderAssetFailure.Unavailable({ reason: 'offline' })),
+          ),
+      }),
+    );
 
     act(() => {
       result.current.commands.pdf();
@@ -201,7 +315,9 @@ describe('the studio exports', () => {
     const bridge = specBridge();
     const result = session(
       bridge,
-      pdfExport(Promise.resolve(Either.left(PdfFailure.NoDocument()))),
+      specRenders({
+        compile: () => Promise.resolve(Either.left(PdfFailure.NoDocument())),
+      }),
     );
 
     act(() => {

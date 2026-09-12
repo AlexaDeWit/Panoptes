@@ -16,7 +16,7 @@
   "include": [
     "initial-page.mts",
     "social-card.mts",
-    "typst-assets.mts",
+    "build-assets.mts",
     "src/**/*.fixtures.ts",
     "src/test-setup.ts",
     "src/**/*.test.ts",

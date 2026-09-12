@@ -2,8 +2,8 @@ import { expect, test } from '@playwright/test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import {
+  digestOf,
   expectedPdfDigest,
-  pdfDigest,
   pdfPageCount,
 } from './exports.fixtures.js';
 import { exportedFile, openFile, vendored } from './studio.fixtures.js';
@@ -15,6 +15,8 @@ const socialImageAlt =
 test('the Pages build loads its hashed PDF assets below the site base', async ({
   page,
 }) => {
+  // The compiler module is 28 MB, and the fourteen pages are typeset after
+  // it arrives, which together run past the 30 second default.
   test.setTimeout(60_000);
   await openFile(page, 'test-data/ecluse.json', './');
 
@@ -22,7 +24,7 @@ test('the Pages build loads its hashed PDF assets below the site base', async ({
 
   expect(output.name).toBe('ecluse.pdf');
   expect(pdfPageCount(output.bytes)).toBe(14);
-  expect(pdfDigest(output.bytes)).toBe(expectedPdfDigest);
+  expect(digestOf(output.bytes)).toBe(expectedPdfDigest);
 });
 
 test('the Pages build publishes the social card and its text alternative', async ({

@@ -507,6 +507,7 @@ function ExportMenu() {
             key={diagram.id}
           />
         ))}
+        <MenuCommand command="export-png" disabled={diagrams.length === 0} />
         <MenuCommand command="export-register" />
         <MenuCommand command="export-typst" />
         <MenuCommand command="export-pdf" />

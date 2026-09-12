@@ -49,7 +49,7 @@ fields and open overlays keep T for their own input.
 from a closed list, so a binding names a key the studio decided on rather
 than any string a keyboard can produce, and two commands reaching for one
 chord is a comparison over a known alphabet. The registry's spec holds that
-no two commands share one. The four export commands have none, as issue #190
+no two commands share one. The five export commands have none, as issue #190
 permits.
 
 `Mod` is the platform's command modifier: Command on Apple hardware, Control
