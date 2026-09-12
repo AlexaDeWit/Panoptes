@@ -2,6 +2,17 @@ packages:
   - 'packages/*'
   - 'apps/*'
 
+# Which pnpm runs is the flake's decision. pnpm's default is to read
+# `packageManager` out of package.json, fetch that version from the registry
+# and hand off to it, which puts a package manager outside the flake closure
+# on every invocation. `error` refuses instead and stops when the running pnpm
+# is not the pinned one, so `packageManager` and `pkgs.pnpm` are one pair that
+# moves together in a reviewed change, the way `@playwright/test` and the
+# nixpkgs playwright-driver do. Renovate holds pnpm for Dependency Dashboard
+# approval (renovate.json5). `pmOnFail` is pnpm 11's replacement for the
+# removed `managePackageManagerVersions`.
+pmOnFail: error
+
 # Postinstall scripts are opt-in per package. Only these run, and each does so
 # to install its native binary. Every other package's build scripts stay off.
 # esbuild stays off: its platform binary arrives as an optional dependency, so
