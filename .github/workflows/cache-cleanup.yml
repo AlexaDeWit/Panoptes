@@ -8,7 +8,8 @@ name: Cache cleanup
 #
 # A plain `push` on the dependency-plan files, not `workflow_run` or
 # pull_request_target, keeps the privileged `actions: write` token in this
-# single-purpose workflow. The daily schedule is the only reaper of off-main entries.
+# single-purpose workflow. Nothing outside this workflow reaps an off-main entry:
+# ci.yml saves only on main and deletes nothing.
 
 on:
   push:
@@ -18,7 +19,8 @@ on:
       - flake.nix
       - pnpm-lock.yaml
   schedule:
-    - cron: '42 3 * * *' # daily, 03:42 UTC
+    # Off the hour, where GitHub's scheduled-run backlog is deepest.
+    - cron: '42 3 * * *'
   workflow_dispatch:
 
 concurrency:
@@ -41,8 +43,12 @@ jobs:
       KEEP_PER_PREFIX: '2' # newest N per key prefix to retain on main
       KEEP_NIX: '1' # a `nix-*` epoch is 1.4 GB, so that prefix retains the current one alone
       # One DELETE per cache, so an unbounded backlog would outrun both the job timeout
-      # and GitHub's mutation rate limit. The daily run drains the rest.
-      MAX_DELETES: '1200'
+      # and GitHub's secondary limit of 500 mutations an hour, which the step fails on
+      # rather than mistaking for an already-deleted entry. The daily run drains the rest.
+      MAX_DELETES: '400'
+      # The usage API reports the size, not the quota, so the ceiling is stated here.
+      # The owner raised it from GitHub's 10 GB default on 2026-09-12.
+      CACHE_QUOTA_GIB: '15'
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -53,45 +59,64 @@ jobs:
         run: |
           set -euo pipefail
 
+          # No `|| true` on the listing: --paginate streams pages as they arrive, so a
+          # failed page would otherwise leave a partial file that is non-empty and
+          # reads as the whole cache.
           gh api --paginate "repos/$REPO/actions/caches?per_page=100" \
             --jq '.actions_caches[] | [.id, .ref, .key, .created_at, .size_in_bytes] | @tsv' \
-            > caches.tsv || true
+            > caches.tsv
 
           if [ ! -s caches.tsv ]; then
             echo "No caches found; nothing to prune."
             exit 0
           fi
 
-          # The script reasons about each id on stderr, so the log names every key it
-          # reaps. Its stdout is the id list, most urgent first.
-          bash scripts/prune-caches.sh < caches.tsv > all-to-delete.txt
+          # The script refuses a listing whose rows are not five fields with a numeric
+          # id and size, so a stream cut mid-row stops here rather than reaching the
+          # DELETE loop. Its stdout is the id list, most urgent first, and its stderr
+          # reasons about each id in the same order.
+          if ! bash scripts/prune-caches.sh < caches.tsv \
+            > all-to-delete.txt 2> all-reasons.txt; then
+            cat all-reasons.txt >&2
+            exit 1
+          fi
           head -n "$MAX_DELETES" all-to-delete.txt > to-delete.txt
 
           total=$(wc -l < all-to-delete.txt | tr -d ' ')
           count=$(wc -l < to-delete.txt | tr -d ' ')
+          # Truncated to the head this run deletes, so the log claims no more than it reaps.
+          head -n "$count" all-reasons.txt
           echo "Caches selected: $total, deleting this run: $count"
           if [ "$count" -eq 0 ]; then
             echo "Cache already within retention policy."
             exit 0
           fi
 
+          # A DELETE that is not 204 or 404 is a token without actions: write, a
+          # throttled run, or an outage. Reporting those as "already gone" would keep
+          # the job green while the cache kept growing.
           while read -r id; do
             [ -n "$id" ] || continue
-            gh api -X DELETE "repos/$REPO/actions/caches/$id" >/dev/null \
-              && echo "deleted $id" \
-              || echo "$id (already gone)"
+            headers=$(gh api -X DELETE --include --silent \
+              "repos/$REPO/actions/caches/$id" 2>/dev/null) || true
+            status=$(printf '%s\n' "$headers" | awk 'NR == 1 { print $2 }')
+            case "$status" in
+              204) echo "deleted $id" ;;
+              404) echo "$id already gone" ;;
+              *) echo "DELETE $id: HTTP ${status:-no response}" >&2; exit 1 ;;
+            esac
           done < to-delete.txt
 
           if [ "$total" -gt "$count" ]; then
             echo "$((total - count)) selected caches remain for the next run."
           fi
 
-      # The usage API reports the size, not the quota, so the ceiling is stated here.
-      # The owner raised it from GitHub's 10 GB default on 2026-09-12.
       - name: Report remaining usage
         if: ${{ always() }}
         run: |
           set -euo pipefail
           gh api "repos/$REPO/actions/cache/usage" \
-            --jq '"Active caches: \(.active_caches_count), \(.active_caches_size_in_bytes / 1073741824 | (.*100|floor)/100) GiB of the 15 GiB quota"' \
+            --jq '[.active_caches_count, .active_caches_size_in_bytes] | @tsv' \
+            | awk -F'\t' -v quota="$CACHE_QUOTA_GIB" \
+              '{ printf "Active caches: %s, %.2f GiB of the %s GiB quota\n", $1, $2 / 1073741824, quota }' \
             >> "$GITHUB_STEP_SUMMARY"

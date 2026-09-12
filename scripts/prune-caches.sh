@@ -5,10 +5,12 @@
 #     id<TAB>ref<TAB>key<TAB>created_at<TAB>size_in_bytes
 #
 # Writes the ids on stdout, most urgent first, and a reasoned line per id on stderr.
+# A listing whose rows are not five fields with a numeric id and size is incomplete
+# rather than empty, and is refused: see the validation below.
 # Stdin to stdout is the whole interface, so a listing captured from the API or written
 # by hand exercises the retention rules without deleting anything:
 #
-#     printf 'id\trefs/heads/main\tnix-Linux-%064d\t2026-09-08\t1574208472\n' 0 \
+#     printf '1\trefs/heads/main\tnix-Linux-%064d\t2026-09-08\t1574208472\n' 0 \
 #       | KEEP_NIX=1 scripts/prune-caches.sh
 #
 # awk and sort alone, so it runs on a plain runner with no toolchain of its own.
@@ -27,14 +29,31 @@ keep="${KEEP_PER_PREFIX:-2}"
 keep_nix="${KEEP_NIX:-1}"
 rows="$(cat)"
 
+[ -n "$rows" ] || exit 0
+
+# `gh api --paginate` streams pages as they arrive, so a page that fails or a stream cut
+# mid-row leaves a short or truncated last line. A row missing its ref reads as an
+# off-main straggler and one missing its key reads as a key no workflow writes, either
+# of which selects a live entry. So every field must be present, with a numeric id and
+# size: refuse the listing rather than reason over it.
+if ! printf '%s\n' "$rows" | awk -F'\t' '
+  NF != 5 || $1 !~ /^[0-9]+$/ || $5 !~ /^[0-9]+$/ || $2 == "" || $3 == "" || $4 == "" {
+    printf "prune: malformed row %d: %s\n", NR, $0 > "/dev/stderr"
+    malformed = 1
+  }
+  END { exit malformed }'; then
+  echo 'prune: refusing an incomplete listing, selecting nothing' >&2
+  exit 1
+fi
+
 # Each arm emits "id<TAB>key<TAB>size<TAB>reason", most urgent first: off-main
 # stragglers, then superseded epochs, then keys no workflow writes.
 selected="$(
   printf '%s\n' "$rows" | awk -F'\t' '
-    $1 != "" && $2 != "refs/heads/main" { print $1 "\t" $3 "\t" $5 "\toff-main straggler" }'
+    NF == 5 && $1 ~ /^[0-9]+$/ && $2 != "refs/heads/main" { print $1 "\t" $3 "\t" $5 "\toff-main straggler" }'
 
   printf '%s\n' "$rows" | awk -F'\t' '
-      $1 == "" || $2 != "refs/heads/main" { next }
+      NF != 5 || $1 !~ /^[0-9]+$/ || $2 != "refs/heads/main" { next }
       {
         key = $3
         # Group every epoch of one logical cache under the key it varies from: strip
@@ -58,7 +77,7 @@ selected="$(
         }'
 
   printf '%s\n' "$rows" | awk -F'\t' -v allowed="^($allowed_prefixes)" '
-    $1 == "" || $2 != "refs/heads/main" { next }
+    NF != 5 || $1 !~ /^[0-9]+$/ || $2 != "refs/heads/main" { next }
     $3 !~ allowed { print $1 "\t" $3 "\t" $5 "\tno workflow writes this key" }'
 )"
 
