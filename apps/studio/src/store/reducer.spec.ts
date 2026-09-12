@@ -55,7 +55,8 @@ type StudioActionTag =
   | 'Closed'
   | 'Followed'
   | 'ReadFailed'
-  | 'FileRefused';
+  | 'FileRefused'
+  | 'DismissFailure';
 
 type ModelActionTag = Exclude<Action['_tag'], StudioActionTag>;
 
@@ -264,6 +265,7 @@ const studioActions: ActionsByTag<StudioActionTag> = {
     operation: 'open',
     reason: 'the browser said no',
   }),
+  DismissFailure: Action.DismissFailure(),
 };
 
 const purityCases: readonly (readonly [State, Action])[] = [
@@ -762,5 +764,35 @@ describe('a refusal outside the model', () => {
   it('clears a stale refusal once a save lands', () => {
     const stuck = reduce(start, studioActions.FileRefused);
     expect(reduce(stuck, studioActions.Saved).lastFailure).toBeUndefined();
+  });
+
+  it('puts a refusal away on a dismissal, moving neither model nor stacks', () => {
+    const stuck = reduce(withHistory, studioActions.FileRefused);
+    const next = reduce(stuck, studioActions.DismissFailure);
+
+    expect(next.lastFailure).toBeUndefined();
+    expect(next.present).toBe(stuck.present);
+    expect(next.past).toBe(stuck.past);
+    expect(next.future).toBe(stuck.future);
+    expect(next.saved).toBe(stuck.saved);
+    expect(next.file).toBe(stuck.file);
+  });
+
+  it('records a later refusal after a dismissal', () => {
+    const dismissed = reduce(
+      reduce(start, studioActions.FileRefused),
+      studioActions.DismissFailure,
+    );
+
+    expect(reduce(dismissed, studioActions.ReadFailed).lastFailure).toEqual(
+      StudioFailure.Read({
+        name: 'model.yaml',
+        failure: ReadFailure.MalformedText({ message: 'not YAML' }),
+      }),
+    );
+  });
+
+  it('keeps the state it was handed where there is no refusal to dismiss', () => {
+    expect(reduce(start, studioActions.DismissFailure)).toBe(start);
   });
 });

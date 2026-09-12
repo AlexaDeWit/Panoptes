@@ -13,6 +13,7 @@ import {
   openMenu,
   openModel,
   openPlaceholder,
+  openText,
   placeByClick,
   saerskrivenModel,
   selectNode,
@@ -132,11 +133,7 @@ test('the studio carries no violation while it shows a refusal', async ({
     'block',
   );
 
-  await page.getByTestId('file-input').setInputFiles({
-    name: 'notes.txt',
-    mimeType: 'text/plain',
-    buffer: Buffer.from('no threat model here'),
-  });
+  await openText(page, 'notes.txt', 'no threat model here');
   await expect(page.getByTestId('failure-notice')).toContainText('notes.txt');
 
   await audit(page, 'showing a refusal');

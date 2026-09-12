@@ -1,6 +1,8 @@
 import { DetectionFailure, ReadFailure } from '@saerskriven/formats';
 import { OperationFailure, type ParseIssue } from '@saerskriven/model';
+import { Action } from '../store/actions.js';
 import { StudioFailure } from '../store/state.js';
+import { dispatch } from '../store/store.js';
 import styles from './failure-notice.module.css';
 import { LiveRegion } from './live-region.js';
 
@@ -45,7 +47,9 @@ export type FailureNoticeProps = {
 /**
  * The last refusal, wherever it arose, in the studio's own live region, so a
  * refusal that arrives while the person is elsewhere is announced rather than
- * appearing in silence.
+ * appearing in silence. It stands until the person dismisses it or the state
+ * it describes resolves, never on a clock, and it dismisses itself so the
+ * view holding it passes nothing but the refusal.
  */
 export function FailureNotice({ failure }: FailureNoticeProps) {
   const described =
@@ -61,15 +65,38 @@ export function FailureNotice({ failure }: FailureNoticeProps) {
         <>
           <p className={styles.headline}>{described.headline}</p>
           {described.details.length > 0 && (
-            <ul className={styles.details}>
-              {described.details.map((detail, index) => (
-                <li key={`${String(index)} ${detail}`}>{detail}</li>
-              ))}
-            </ul>
+            <FailureDetails details={described.details} />
           )}
+          <button
+            className={styles.dismiss}
+            onClick={() => {
+              dispatch(Action.DismissFailure());
+            }}
+            type="button"
+          >
+            Dismiss problem
+          </button>
         </>
       )}
     </LiveRegion>
+  );
+}
+
+function FailureDetails({ details }: { readonly details: readonly string[] }) {
+  const lines = (
+    <ul className={styles.details}>
+      {details.map((detail, index) => (
+        <li key={`${String(index)} ${detail}`}>{detail}</li>
+      ))}
+    </ul>
+  );
+  return details.length > 1 ? (
+    <details>
+      <summary>{details.length} refusal details</summary>
+      {lines}
+    </details>
+  ) : (
+    lines
   );
 }
 

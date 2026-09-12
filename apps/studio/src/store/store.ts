@@ -82,6 +82,23 @@ export const modelStore = runtime.modelStore;
 /** Reduces an action and returns the recovery storage outcome. */
 export const dispatch = runtime.dispatch;
 
+/**
+ * Runs `changed` on the next user action that moves canvas or panel state:
+ * the model on screen, the selection, or the open inline field. A transient
+ * status clears on one of these rather than on a timer.
+ */
+export function onCanvasOrPanelChange(changed: () => void): () => void {
+  return modelStore.subscribe((state, previous) => {
+    if (
+      state.present !== previous.present ||
+      state.selection !== previous.selection ||
+      state.inlineEditor !== previous.inlineEditor
+    ) {
+      changed();
+    }
+  });
+}
+
 /** Subscribes a component to one store selector. */
 export function useModelStore<Selected>(
   select: (state: State) => Selected,

@@ -92,6 +92,7 @@ export type Action = Data.TaggedEnum<{
     readonly operation: 'open' | 'save' | 'import';
     readonly reason: string;
   };
+  DismissFailure: {};
 }>;
 
 /** Constructors and matching helpers for store actions. */

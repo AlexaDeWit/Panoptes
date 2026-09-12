@@ -5,6 +5,7 @@ import {
   nodeNamed,
   openFile,
   openMenu,
+  openText,
   savedFile,
   withoutPickers,
 } from './studio.fixtures.js';
@@ -55,11 +56,7 @@ test('says what it could not read, and stays up', async ({ page }) => {
   await page.goto('/');
   await expect(page.getByTestId('canvas-container')).toBeVisible();
 
-  await page.getByTestId('file-input').setInputFiles({
-    name: 'notes.txt',
-    mimeType: 'text/plain',
-    buffer: Buffer.from('no threat model here'),
-  });
+  await openText(page, 'notes.txt', 'no threat model here');
 
   await expect(page.getByTestId('failure-notice')).toContainText('notes.txt');
   await expect(page.getByTestId('canvas-container')).toBeVisible();

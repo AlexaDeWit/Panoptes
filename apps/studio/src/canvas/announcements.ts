@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react';
-import { modelStore } from '../store/store.js';
+import { onCanvasOrPanelChange } from '../store/store.js';
 
 export type Announcement = {
   readonly message: string;
@@ -12,15 +12,7 @@ let current = nothingSaid;
 
 const listeners = new Set<() => void>();
 
-modelStore.subscribe((state, previous) => {
-  if (
-    state.present !== previous.present ||
-    state.selection !== previous.selection ||
-    state.inlineEditor !== previous.inlineEditor
-  ) {
-    clear();
-  }
-});
+onCanvasOrPanelChange(clear);
 
 export function announce(message: string): void {
   current = { message, sequence: current.sequence + 1 };

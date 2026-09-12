@@ -37,7 +37,9 @@ and no immutable snapshot to push onto a stack.
   result. `AddDiagram` appends a diagram and shows it, the one edit that
   moves the view as well as the model, since a diagram is added to be drawn
   on. The other tags cover history, the diagram on screen, selection, inline
-  editing, files and failures. `Saved` names a file as `Opened` does, because a first
+  editing, files and failures. `DismissFailure` puts `lastFailure` away and
+  touches nothing else, so a person can clear a refusal without the stacks,
+  the saved point or the file moving. `Saved` names a file as `Opened` does, because a first
   save is a save-as, and folding both into `file` keeps "this model lives in
   this file" one fact. `Closed` is the third: the studio goes back to the
   state it booted in, placeholder model and all, so nothing of the file that
@@ -59,8 +61,8 @@ and no immutable snapshot to push onto a stack.
   the tab and the menu cannot disagree on what the model is called.
   `showingPlaceholder` identifies that opening state for the document title.
 
-The active diagram, selection, the inline editor, and the file lifecycle stay
-out of the undo stacks. `activeDiagram` names the diagram on screen, and
+The active diagram, selection, the inline editor, the last refusal, and the
+file lifecycle stay out of the undo stacks. `activeDiagram` names the diagram on screen, and
 nothing until one has been chosen, the first the model holds being on screen
 meanwhile. `SelectDiagram` sets it,
 clears the selection and closes the editor, since both belong to the diagram

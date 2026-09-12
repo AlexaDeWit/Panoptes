@@ -4,8 +4,9 @@ import { renderRegister, renderSvg, renderTypst } from '@saerskriven/render';
 import { PdfFailure, type PdfAssets } from '@saerskriven/render/pdf';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { Either } from 'effect';
+import { Action } from '../store/actions.js';
 import { initialState, FileLifecycle } from '../store/state.js';
-import { modelStore } from '../store/store.js';
+import { dispatch, modelStore } from '../store/store.js';
 import {
   foreignSource,
   mainDiagram,
@@ -223,6 +224,37 @@ describe('the studio exports', () => {
     });
     act(() => {
       result.current.dismissNotice();
+    });
+    expect(result.current.notice).toBeUndefined();
+  });
+
+  it('puts the report away at the next selection, and at no clock', async () => {
+    const bridge = specBridge();
+    vi.spyOn(bridge, 'exportFile').mockResolvedValue(
+      SaveOutcome.Refused({ reason: 'NotAllowedError' }),
+    );
+    const result = session(bridge);
+
+    act(() => {
+      result.current.commands.register();
+    });
+    await waitFor(() => {
+      expect(result.current.notice).toBeDefined();
+    });
+
+    vi.useFakeTimers();
+    act(() => {
+      vi.advanceTimersByTime(60_000);
+    });
+    expect(result.current.notice).toBeDefined();
+    vi.useRealTimers();
+
+    act(() => {
+      dispatch(
+        Action.Select({
+          elementIds: [sampleModel.diagrams[0].elements[0].id],
+        }),
+      );
     });
     expect(result.current.notice).toBeUndefined();
   });

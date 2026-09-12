@@ -87,9 +87,14 @@ bridge](../files/README.md)). `FailureNotice` renders
 model refusing an edit, a codec refusing a file, and the platform refusing to
 hand one over. It words every variant: nothing reaches a person as a tag, and
 a codec's paths are kept because they say which line of a file was refused
-rather than that the file was. `FailureNotice`, inline field errors, and the
-loss report keep their existing lifetime until state resolves or the person
-dismisses them. `ErrorBoundary` is the last stop for a throw
+rather than that the file was. It carries a Dismiss button of its own, which
+dispatches `Action.DismissFailure` rather than taking a callback, so the view
+mounting it passes the refusal and nothing else. Several paths fold behind a
+disclosure naming how many there are, a single one staying open, so a refusal
+naming a path per line does not fill a phone screen. `FailureNotice`, inline
+field errors, and the loss report stand until the state they describe resolves
+or the person dismisses them, never on a timer.
+`ErrorBoundary` is the last stop for a throw
 from anywhere below it, and is a class because React offers no other way to
 catch one; it holds the only component state in this directory for that
 reason. It needs no live region, because it replaces the tree it was

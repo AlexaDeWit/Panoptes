@@ -164,6 +164,13 @@ been refused or has cost the model a key, and each can run to several lines,
 which is why they are under the card rather than in it. The crossing report and
 export report share one live region. An export reports every endpoint its
 projection could not place after it writes the file. A PDF compile refusal
-reports the compiler's sentences and writes nothing.
+reports the compiler's sentences and writes nothing. Every export report
+carries a Dismiss button, and `refusal` on the report decides what else ends
+it. An export that was written reports informationally, so it goes at the
+next action that moves canvas or panel state, the transient lifetime the
+store defines ([the store](../store/README.md#the-shape)). An export the
+browser, the asset loader or the compiler refused is a problem, and it
+stands until Dismiss or a later export. No notice here is taken away by a
+timer: an error a clock removes is one a person reading slowly never reads.
 
 The File menu also exposes Appearance with System, Light, and Dark choices. The selected choice is shown in words and persists in `localStorage` under `saerskrivenColourMode`. Invalid or unavailable stored data selects System.

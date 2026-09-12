@@ -12,9 +12,9 @@ import {
   type PdfAssets,
 } from '@saerskriven/render/pdf';
 import { Either } from 'effect';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { FileLifecycle } from '../store/state.js';
-import { modelStore } from '../store/store.js';
+import { modelStore, onCanvasOrPanelChange } from '../store/store.js';
 import { SaveOutcome, type FileBridge, type SaveFileType } from './bridge.js';
 import { browserFileBridge } from './browser-bridge.js';
 import {
@@ -88,7 +88,11 @@ export const browserPdfExport: PdfExport = {
   compile: compilePdf,
 };
 
-/** One set of export commands and the report their last run produced. */
+/**
+ * One set of export commands and the report their last run produced. The
+ * report stands until the person dismisses it or the next action that moves
+ * canvas or panel state, never on a timer.
+ */
 export function useExportCommands(
   bridge: FileBridge = browserFileBridge,
   pdf: PdfExport = browserPdfExport,
@@ -188,6 +192,8 @@ export function useExportCommands(
   const dismissNotice = useCallback((): void => {
     setNotice(undefined);
   }, []);
+
+  useEffect(() => onCanvasOrPanelChange(dismissNotice), [dismissNotice]);
 
   return useMemo(
     () => ({ commands, notice, dismissNotice }),

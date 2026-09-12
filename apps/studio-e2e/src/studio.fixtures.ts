@@ -146,6 +146,22 @@ export const openFile = async (
   await canvasSettled(page);
 };
 
+/**
+ * Hands the fallback picker text under a name, for a file the repository does
+ * not hold: a refusal to word, or a model a spec has just written.
+ */
+export const openText = async (
+  page: Page,
+  name: string,
+  text: string,
+): Promise<void> => {
+  await page.getByTestId('file-input').setInputFiles({
+    name,
+    mimeType: 'text/plain',
+    buffer: Buffer.from(text),
+  });
+};
+
 /** The button the studio's one menu opens from. */
 export const menuButton = (page: Page): Locator =>
   page.getByRole('button', { name: /^Menu/u });

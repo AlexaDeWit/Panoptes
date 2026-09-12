@@ -67,6 +67,7 @@ map to the browser specs below. Paths are relative to `src/`.
 | Clipboard, geometry fields, reconnection, arrangement, and snapping   | `interaction-controls.spec.ts`                           |
 | Touch panning, scrolling, and startup overlays                        | `interaction-nits.spec.ts`                               |
 | Edit announcements                                                    | `edit-status.spec.ts`                                    |
+| Folding and dismissing a refusal notice                               | `notices.spec.ts`                                        |
 | Reload recovery, and tabs staying in sync                             | `recovery.spec.ts`                                       |
 | Switching between, adding, and renaming the diagrams of a model       | `diagrams.spec.ts`                                       |
 | The chrome card at desktop and phone width                            | `chrome-card.spec.ts`                                    |
