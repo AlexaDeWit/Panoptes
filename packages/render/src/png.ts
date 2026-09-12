@@ -14,9 +14,29 @@ export { ResvgFailure } from './resvg-failures.js';
 export const defaultLongEdge = 1568;
 
 /**
+ * The face a rasterization is offered first, which decides the family every
+ * drawing is lettered in: a family no loaded face carries falls back to the
+ * family of the first face offered, and the drawings name Helvetica and
+ * Arial, which no Liberation face carries.
+ *
+ * The fallback resolves per family rather than per face, so leading with any
+ * Liberation Sans face makes the fallback family Liberation Sans and weight
+ * and style then resolve within it as usual. The regular face is named
+ * because it is the one an install must not be missing: without it the
+ * remaining Sans faces are bold and italic, and body text would be lettered
+ * in one of them.
+ *
+ * It lives on this subpath rather than beside the module's own name in
+ * `build-assets`, which is loaded as source by a build config and so cannot
+ * reach a relative import, where a caller running inside a bundle can.
+ */
+export const drawingFace = 'LiberationSans-Regular.ttf';
+
+/**
  * What a render was asked for. `assets` is what `rasterizeSvg` reads, module
- * and faces, and the first face is the one an unmatched family falls back to,
- * which for these drawings is every family they name. `longEdge` is the pixel
+ * and faces, and a family no face carries falls back to the family of the
+ * first face offered, which for these drawings is every family they name.
+ * `longEdge` is the pixel
  * length the longer of the image's two edges takes, whichever that is, and it
  * defaults to {@link defaultLongEdge}: a caller wanting a larger image than
  * an MCP host accepts states the number.

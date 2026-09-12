@@ -299,11 +299,17 @@ hosts take an image block as PNG, JPEG, GIF or WebP and never as SVG, so an
 agent that asks for a diagram cannot be handed the drawing itself.
 
 `options.assets` is what `rasterizeSvg` needs, passed through: the module and
-the faces. The faces are offered in the order given, and the first is the one
-an unmatched family falls back to, which for these drawings is every family
-they name. A caller therefore leads with the face it wants text drawn in, and
-`apps/cli` leads with Liberation Sans, which is metrically compatible with the
-Arial the canvas stylesheet asks for.
+the faces. The faces are offered in the order given, and a family no face
+carries falls back to the **family** of the first face offered, which for
+these drawings is every family they name: the stylesheet asks for Helvetica
+and Arial and no Liberation face carries either. The fallback is per family
+rather than per face, so any Liberation Sans face leading makes the fallback
+family Liberation Sans and weight and style then resolve within it as usual.
+A caller therefore leads with a face of the family it wants text drawn in, and
+`apps/cli` leads with Liberation Sans, which is metrically compatible with
+Arial. It names the regular face because that is the one an install must not
+be missing: the remaining Sans faces are bold and italic, and body text would
+come out in one of them.
 
 `options.longEdge` is the pixel length of the image's longer edge, whichever
 that is, and it defaults to 1568, the size an MCP host downscales an image

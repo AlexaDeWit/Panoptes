@@ -1,6 +1,7 @@
 import {
   canvasClassNames,
   canvasStylesheet,
+  svgNumber,
   textExtent,
   wrappedTextStyles,
   type TextStyleRule,
@@ -451,6 +452,17 @@ describe('a diagram as a standalone SVG document', () => {
   it.each(goldenDocuments)('ends $name with a newline', (entry) => {
     expect(svgOfEntry(entry).endsWith('</svg>\n')).toBe(true);
   });
+
+  it.each(goldenDocuments)(
+    'reports the size $name states on its own root',
+    (entry) => {
+      const drawn = renderSvg(diagramOf(entry), entry.model);
+      const root = documentOf(drawn.svg).documentElement;
+      expect([root.getAttribute('width'), root.getAttribute('height')]).toEqual(
+        [svgNumber(drawn.width), svgNumber(drawn.height)],
+      );
+    },
+  );
 
   it('renders each diagram of a model as a document of its own', () => {
     const [front, back] = twoDiagramModel.diagrams.map(

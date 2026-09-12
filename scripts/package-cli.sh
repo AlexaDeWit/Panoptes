@@ -212,5 +212,5 @@ echo "every target compiled twice to the same bytes"
 
 # Log input hashes to locate differences when rebuilding a release.
 sha256sum -- "${bundle}" "${assets}"/*.ttf \
-  "${assets}"/LICENSE.liberation-fonts.txt
+  "${assets}"/LICENSE.liberation-fonts.txt "${assets}/saerskriven_resvg.wasm"
 cat -- "${out_dir}/SHA256SUMS"

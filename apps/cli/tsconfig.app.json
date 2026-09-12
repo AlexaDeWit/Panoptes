@@ -12,8 +12,13 @@
     "tsBuildInfoFile": "out-tsc/app/tsconfig.app.tsbuildinfo",
     // The esbuild build clears composite, so it compiles the render package's
     // sources in this program rather than reading its declarations, and the
-    // resvg subpath names WebAssembly, which only lib.dom declares. The
-    // typecheck target reads the declarations and needs none of this.
+    // resvg subpath names WebAssembly, which only lib.dom declares.
+    // This file is also what the typecheck target reads, which needs none of
+    // it and gets it anyway, so document, localStorage and window type-check
+    // in a program that runs under node and deno alone and would answer a
+    // ReferenceError for each. Nothing but this comment says so until the
+    // narrowing lands: see the tracker issue for pointing the esbuild
+    // target's tsConfig at a build-only config that extends this one.
     "lib": ["dom", "es2022"],
     "types": ["node"],
     "rootDir": "src"

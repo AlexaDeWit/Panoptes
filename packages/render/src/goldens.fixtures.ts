@@ -2,6 +2,7 @@ import { parseModel, type Diagram, type Model } from '@saerskriven/model';
 import { Either } from 'effect';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+export { drawingFace } from './png.js';
 
 const svgSuffix = '.snapshot.svg';
 
@@ -65,10 +66,8 @@ export function diagramOf(entry: GoldenDocument): Diagram {
 }
 
 /**
- * The faces a rasterization is offered, `leading` first. The renderer falls a
- * family no face carries back to the first it was offered, and the drawings
- * name Helvetica and Arial, which no Liberation face carries, so the first
- * face is the one every drawing is lettered in.
+ * The faces a rasterization is offered, `leading` first, which is what
+ * `drawingFace` on the `png` subpath explains.
  */
 export function ledBy<T>(
   faces: readonly T[],
@@ -80,9 +79,6 @@ export function ledBy<T>(
     ...faces.filter((face) => named(face) !== leading),
   ];
 }
-
-/** The face the drawings are lettered in, which is offered first. */
-export const drawingFace = 'LiberationSans-Regular.ttf';
 
 function golden(
   name: string,

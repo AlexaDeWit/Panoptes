@@ -30,12 +30,13 @@ export type WasmAssets = {
  * directories are never consulted.
  *
  * The faces come back in name order, except that `leading` names one to put
- * first. A renderer that falls a family no face carries back to the first
- * face it was offered needs that, and a compiler that resolves families by
- * name does not, so only the caller that needs it asks. A directory that does
- * not hold the named face is refused rather than reordered as far as it can
- * be: the render would come out in whichever face happened to be first, which
- * a reader cannot tell from the one that was asked for.
+ * first. A renderer that falls a family no face carries back to the family of
+ * the first face it was offered needs that, and a compiler that resolves
+ * families by name does not, so only the caller that needs it asks. A
+ * directory that does not hold the named face is refused rather than
+ * reordered as far as it can be: the render would come out in whichever
+ * family happened to be first, which a reader cannot tell from the one that
+ * was asked for.
  *
  * A directory holding no face at all is refused for the same reason, since a
  * compiler and a renderer both accept an empty list and both then write a

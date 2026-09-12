@@ -1,3 +1,4 @@
+import { resvgWasmFile as builtResvgWasmFile } from '@saerskriven/render/build-assets';
 import { createHash } from 'node:crypto';
 import { copyFileSync, mkdtempSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -9,6 +10,7 @@ import {
   unplacedFlowYaml,
 } from './cli.fixtures.js';
 import { compileTimeout, pageCount } from './pdf.fixtures.js';
+import { resvgWasmFile } from './png.js';
 import { render, type RenderOptions } from './render.js';
 
 const repositoryRoot = join(import.meta.dirname, '../../..');
@@ -130,6 +132,28 @@ describe('render', () => {
     expect(run.outcome).toEqual({ code: 0, out: '', err: '' });
     expect(run.bytes()).toEqual(
       raster('saerskriven-read-and-render.snapshot.png'),
+    );
+  });
+
+  it('reads the module under the name the build writes it as', () => {
+    expect(resvgWasmFile).toBe(builtResvgWasmFile);
+  });
+
+  it('refuses an install with the module and no font face', async () => {
+    const bare = mkdtempSync(join(tmpdir(), 'saerskriven-cli-bare-'));
+    copyFileSync(
+      join(assets, 'saerskriven_resvg.wasm'),
+      join(bare, 'saerskriven_resvg.wasm'),
+    );
+    const outcome = await render(
+      ecluse,
+      options({ format: 'png', out: '-' }),
+      bare,
+    );
+    expect(outcome.code).toBe(2);
+    expect(outcome.out).toBe('');
+    expect(outcome.err).toBe(
+      `error: cannot draw the PNG: ${bare} holds no .ttf font face\n`,
     );
   });
 
