@@ -1,3 +1,24 @@
+## 0.3.0 (2026-09-12)
+
+### 🚀 Features
+
+- **formats:** import an OTM bidirectional dataflow as one flow ([#324](https://github.com/AlexaDeWit/Saerskriven/pull/324))
+- **model:** pin flow ends to a side and mark flows bidirectional ([#321](https://github.com/AlexaDeWit/Saerskriven/pull/321))
+- **studio:** import OTM and TM-BOM as native models ([#306](https://github.com/AlexaDeWit/Saerskriven/pull/306))
+- **studio:** switch between the diagrams in a model ([#322](https://github.com/AlexaDeWit/Saerskriven/pull/322))
+- **studio:** follow the edits another tab makes ([#320](https://github.com/AlexaDeWit/Saerskriven/pull/320))
+
+### 🩹 Fixes
+
+- **studio:** trim the menu and compact shortcut alternatives ([#308](https://github.com/AlexaDeWit/Saerskriven/pull/308), [#307](https://github.com/AlexaDeWit/Saerskriven/issues/307))
+- **studio:** let the inline text field stand in for the drawn text ([#326](https://github.com/AlexaDeWit/Saerskriven/pull/326))
+- **studio:** keep shortcut help in one column ([#328](https://github.com/AlexaDeWit/Saerskriven/pull/328))
+- **studio:** stop selection viewport snapping ([#327](https://github.com/AlexaDeWit/Saerskriven/pull/327))
+
+### ❤️ Thank You
+
+- Alexandra de Wit @AlexaDeWit
+
 ## 0.2.1
 
 ### Studio
