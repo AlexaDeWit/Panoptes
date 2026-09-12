@@ -245,6 +245,12 @@ the read, query and edit tools, and a registration command are not built yet.
 Nix with flakes provides the toolchain (node, pnpm, deno). With
 [direnv](https://direnv.net/), `cd` into the checkout and it loads itself.
 
+The flake decides the pnpm version and `packageManager` in
+[`package.json`](package.json) records the version it decided. Run pnpm from
+outside the shell and it stops with a mismatch rather than fetching a pnpm of
+its own, so the two are bumped together
+([`pnpm-workspace.yaml`](pnpm-workspace.yaml) says how that is enforced).
+
 ```sh
 nix develop            # or let direnv do it
 pnpm install

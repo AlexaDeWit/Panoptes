@@ -77,6 +77,18 @@
       dependencyDashboardApproval: true,
     },
 
+    // pnpm must not move independently of `pkgs.pnpm`, which Renovate cannot
+    // bump in step: nixpkgs tracks a branch, so the flake's pnpm arrives
+    // through the lock refresh above rather than as a version this proposes.
+    // Every update type waits for Dependency Dashboard approval, so the
+    // `packageManager` field moves in a reviewed change that pairs it with the
+    // flake, and `pmOnFail: error` in pnpm-workspace.yaml reds a mismatch.
+    // pnpm 12 waits on nixpkgs packaging it at all.
+    {
+      matchPackageNames: ['pnpm'],
+      dependencyDashboardApproval: true,
+    },
+
     // The catalog pins typescript ~6.0.3: nx breaks on TS 7 before 7.1. A
     // major waits for Dependency Dashboard approval; #57 owns the adoption.
     {
