@@ -6,7 +6,7 @@ import {
 } from '@saerskriven/model';
 import { saerskrivenYamlWireSchema } from '@saerskriven/wire-saerskriven-yaml';
 import { Either } from 'effect';
-import fc from 'fast-check';
+import * as fc from 'fast-check';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { saerskrivenYamlCodec } from './saerskriven-yaml.js';

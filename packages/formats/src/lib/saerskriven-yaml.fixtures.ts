@@ -17,7 +17,7 @@ import {
   type ThreatCategory,
 } from '@saerskriven/model';
 import { Either } from 'effect';
-import fc from 'fast-check';
+import * as fc from 'fast-check';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { z } from 'zod';
