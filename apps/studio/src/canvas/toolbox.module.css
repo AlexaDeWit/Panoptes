@@ -33,10 +33,17 @@
   color: var(--pn-colour-accent-text);
 }
 
-.control:focus-visible,
+/* The card draws the border an outset ring would be drawn over, so the tool
+   ring is inset. The flow chooser hangs under the card with a border of its
+   own and keeps the outset one. */
+.control:focus-visible {
+  outline: var(--pn-focus-ring);
+  outline-offset: calc(-1 * var(--pn-focus-ring-offset));
+}
+
 .flowTrigger:focus-visible {
   outline: var(--pn-focus-ring);
-  outline-offset: calc(-1 * var(--pn-focus-ring-width));
+  outline-offset: var(--pn-focus-ring-offset);
 }
 
 .control[aria-pressed='true']:focus-visible {

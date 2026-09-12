@@ -77,6 +77,18 @@ export const openEcluse = async (page: Page): Promise<void> => {
 /** The two-diagram model of Saerskriven's own threat model. */
 export const saerskrivenModel = 'test-data/saerskriven.model.json';
 
+/** What its two diagrams are called, and an element drawn on each. */
+export const saerskrivenDiagrams = {
+  first: {
+    title: 'Reading a file and rendering it',
+    drawn: /^Codec read, process/u,
+  },
+  second: {
+    title: 'Agents and the desktop shell',
+    drawn: /^Agent and its harness, actor/u,
+  },
+} as const;
+
 /** The control joined to the menu button that names the diagram on screen. */
 export const diagramSwitcher = (page: Page): Locator =>
   page.getByTestId('diagram-switcher');
@@ -288,7 +300,8 @@ export const cardControlsClear = async (page: Page): Promise<void> => {
         node.contains(document.elementFromPoint(point.x, point.y)),
       at,
     );
-    expect(reached, `${await control.textContent()} is covered`).toBe(true);
+    const named = await control.getAttribute('aria-label');
+    expect(reached, `${named ?? 'a card control'} is covered`).toBe(true);
   }
 };
 

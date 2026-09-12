@@ -7,6 +7,8 @@
   display: flex;
   flex-direction: column;
   inline-size: calc(var(--pn-panel-cover) - var(--pn-space-3));
+  /* The bare term is the zoom cluster's height, which the pane ends above:
+     one 2rem control, the cluster's pad on each side and its border. */
   max-block-size: calc(
     100% - var(--pn-space-3) * 4 - var(--pn-chrome-block-size) -
       (2rem + var(--pn-space-1) * 2 + 2px)

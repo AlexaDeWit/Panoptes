@@ -33,9 +33,9 @@ React Flow hook, which is what lets the shell host them.
 
 The canvas is the studio's window: it fills the viewport. The chrome card, the
 threat panel and the zoom cluster float inside it instead of taking space from
-the diagram. The card is one box centred at the top holding the menu button,
-the diagram control and the tool modes ([the file
-menu](../files/README.md)); its measured height reaches the threat panel and
+the diagram. `../app/chrome.tsx` is the card: one box centred at the top
+holding the menu button, the diagram control and the tool modes ([the file
+menu](../files/README.md)). Its measured height reaches the threat panel and
 the selection controls as `--pn-chrome-block-size`, so a tools row that wraps
 on a narrow viewport moves both.
 
@@ -240,9 +240,10 @@ the region below, which speaks only for edits that landed.
   draw nothing.
 - **Start a flow.** The chord the registry gives the start-flow command opens
   the target chooser on the selected element, from wherever a person is and
-  with no flow tool ([the commands](../commands/README.md)). The toolbox mounts
-  its listbox only while that command is in progress, so the arrow keys and
-  typeahead move the choice, Enter commits and Escape cancels. Escape reaches
+  with no flow tool ([the commands](../commands/README.md)). `CanvasMessages`
+  mounts the listbox under the card only while that command is in progress, so
+  the arrow keys and typeahead move the choice, Enter commits and Escape
+  cancels. Escape reaches
   Radix rather than the registry, an open overlay owning its own keys, so
   cancelling leaves the selection where it was. A selection no flow can run
   from starts nothing.
@@ -290,11 +291,11 @@ the region below, which speaks only for edits that landed.
   model units.
 
 The canvas announcement is the studio's unnamed status host ([the
-controls](../ui/README.md)), hanging under the chrome card. It reports an edit only when the next focus does
-not expose the result. Canvas and threat deletion, refused text, and completed
-Undo or Redo commands use it. Placement, connection, renaming, threat adds,
-field edits, and keyboard moves rely on their focused control or React Flow's
-message instead.
+controls](../ui/README.md)), hanging under the chrome card. It reports an edit
+only when the next focus does not expose the result. Canvas and threat
+deletion, refused text, and completed Undo or Redo commands use it. Placement,
+connection, renaming, threat adds, field edits, and keyboard moves rely on
+their focused control or React Flow's message instead.
 
 The status is outside the model store because it does not belong in the undo
 stacks. The next action that changes canvas or panel state clears its message.

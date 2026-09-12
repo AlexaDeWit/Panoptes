@@ -48,14 +48,15 @@ export default defineConfig({
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
-      testIgnore: [frameTimeFloor, pagesExport, phoneChrome],
+      testIgnore: [frameTimeFloor, pagesExport],
     },
     // A phone viewport is the one the shell chrome has least room in, so the
-    // card, the switcher and the toolbox are checked there rather than only at
-    // desktop width. The preset carries the viewport, the touch flags and the
-    // device pixel ratio together, so a change of preset changes all three at
-    // once. The set is small on purpose: the rest of the suite is about
-    // behaviour that does not turn on the viewport.
+    // card spec runs here as well as under `chromium`, which is what holds the
+    // ruling that the layout is the same at every width. The preset carries
+    // the viewport, the touch flags and the device pixel ratio together, so a
+    // change of preset changes all three at once. The set is small on purpose:
+    // the rest of the suite is about behaviour that does not turn on the
+    // viewport.
     {
       name: 'phone',
       use: { ...devices['Pixel 7'] },

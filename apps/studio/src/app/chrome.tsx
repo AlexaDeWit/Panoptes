@@ -1,40 +1,14 @@
-import { useLayoutEffect, useRef, type RefObject } from 'react';
+import { useRef } from 'react';
 import { CanvasMessages, Toolbox } from '../canvas/toolbox.js';
 import {
   FileReports,
   StudioMenu,
   type StudioMenuProps,
 } from '../files/menu.js';
+import { useMeasured } from '../ui/measure.js';
 import styles from './chrome.module.css';
 
 const cardHeight = '--pn-chrome-block-size';
-
-function useCardHeight(): RefObject<HTMLDivElement | null> {
-  const card = useRef<HTMLDivElement>(null);
-
-  useLayoutEffect(() => {
-    const node = card.current;
-    if (node === null) {
-      return undefined;
-    }
-    const root = document.documentElement;
-    const measure = (): void => {
-      root.style.setProperty(
-        cardHeight,
-        `${String(node.getBoundingClientRect().height)}px`,
-      );
-    };
-    measure();
-    const observer = new ResizeObserver(measure);
-    observer.observe(node);
-    return () => {
-      observer.disconnect();
-      root.style.removeProperty(cardHeight);
-    };
-  }, []);
-
-  return card;
-}
 
 /**
  * The one floating card of shell chrome: the menu button and the diagram
@@ -51,7 +25,20 @@ export function StudioChrome({
   session,
   triggerRef,
 }: StudioMenuProps) {
-  const card = useCardHeight();
+  const card = useRef<HTMLDivElement>(null);
+
+  useMeasured(
+    card,
+    (node) => {
+      document.documentElement.style.setProperty(
+        cardHeight,
+        `${String(node.getBoundingClientRect().height)}px`,
+      );
+    },
+    () => {
+      document.documentElement.style.removeProperty(cardHeight);
+    },
+  );
 
   return (
     <div className={styles.chrome}>

@@ -13,6 +13,7 @@ import {
   openModel,
   openPlaceholder,
   openSwitcher,
+  saerskrivenDiagrams,
   saerskrivenModel,
   screenBoxOf,
   selectByKeyboard,
@@ -20,9 +21,7 @@ import {
   withoutPickers,
 } from './studio.fixtures.js';
 
-const firstTitle = 'Reading a file and rendering it';
-const secondTitle = 'Agents and the desktop shell';
-const onSecond = /^Agent and its harness, actor/u;
+const { first, second } = saerskrivenDiagrams;
 
 const below = async (target: Locator, card: Box): Promise<void> => {
   const box = await screenBoxOf(target);
@@ -40,15 +39,15 @@ test('the card holds the chrome, and the switcher still switches diagrams', asyn
   expect(card.x + card.width).toBeLessThanOrEqual(viewport?.width ?? 0);
   await cardControlsClear(page);
   await expect(diagramSwitcher(page)).toHaveAccessibleName(
-    `Diagram: ${firstTitle}`,
+    `Diagram: ${first.title}`,
   );
 
   await openSwitcher(page);
-  await diagramChoice(page, secondTitle).click();
+  await diagramChoice(page, second.title).click();
 
-  await expect(nodeNamed(page, onSecond)).toHaveCount(1);
+  await expect(nodeNamed(page, second.drawn)).toHaveCount(1);
   await expect(diagramSwitcher(page)).toHaveAccessibleName(
-    `Diagram: ${secondTitle}`,
+    `Diagram: ${second.title}`,
   );
 });
 

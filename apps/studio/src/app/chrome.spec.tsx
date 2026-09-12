@@ -70,16 +70,17 @@ describe('StudioChrome', () => {
     }
   });
 
-  it('says what an edit did without moving the region into the card', () => {
+  it('says what an edit did from under the card rather than in it', () => {
     render(<Chrome />);
+    const held = card();
 
     act(() => {
       announce('An edit completed.');
     });
 
-    expect(screen.getByTestId('canvas-announcement').textContent).toContain(
-      'completed',
-    );
+    const region = screen.getByTestId('canvas-announcement');
+    expect(region.textContent).toContain('completed');
+    expect(held.contains(region)).toBe(false);
   });
 
   it('measures the card height back onto the document root', () => {

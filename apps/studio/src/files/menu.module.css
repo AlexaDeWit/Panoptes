@@ -23,7 +23,7 @@
 
 .burger:focus-visible {
   outline: var(--pn-focus-ring);
-  outline-offset: calc(-1 * var(--pn-focus-ring-width));
+  outline-offset: calc(-1 * var(--pn-focus-ring-offset));
 }
 
 /* The title takes what row one has left and ellipsises there, so a long one
@@ -81,7 +81,7 @@
 .switcher:focus-visible,
 .titleField:focus-visible {
   outline: var(--pn-focus-ring);
-  outline-offset: calc(-1 * var(--pn-focus-ring-width));
+  outline-offset: calc(-1 * var(--pn-focus-ring-offset));
 }
 
 .grow {

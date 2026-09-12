@@ -5,7 +5,6 @@ import {
   useCallback,
   useEffect,
   useId,
-  useLayoutEffect,
   useRef,
   useState,
   type KeyboardEvent,
@@ -20,6 +19,7 @@ import {
 import { hostPlatform } from '../commands/shortcuts.js';
 import { Action } from '../store/actions.js';
 import { dispatch, modelStore, useModelStore } from '../store/store.js';
+import { useMeasured } from '../ui/measure.js';
 import { VisuallyHidden } from '../ui/visually-hidden.js';
 import {
   ThreatEditor,
@@ -81,32 +81,19 @@ export function ThreatPanel({
   const diagrams = useModelStore((state) => state.present.diagrams);
   const panel = useRef<HTMLElement>(null);
 
-  useLayoutEffect(() => {
-    const node = panel.current;
-    const parent = node?.parentElement;
-    if (
-      node === null ||
-      parent === undefined ||
-      parent === null ||
-      onCover === undefined
-    ) {
-      return undefined;
-    }
-    const measure = (): void => {
-      onCover(
-        parent.getBoundingClientRect().right -
+  useMeasured(
+    panel,
+    (node, parent) => {
+      onCover?.(
+        (parent?.getBoundingClientRect().right ?? 0) -
           node.getBoundingClientRect().left,
       );
-    };
-    measure();
-    const observer = new ResizeObserver(measure);
-    observer.observe(node);
-    observer.observe(parent);
-    return () => {
-      observer.disconnect();
-      onCover(0);
-    };
-  }, [onCover]);
+    },
+    () => {
+      onCover?.(0);
+    },
+    true,
+  );
   const opened = element === undefined ? undefined : drafts.get(element.id);
   const [expanded, setExpanded] = useState<string>(opened?.threatId ?? '');
   const [focus, setFocus] = useState<PanelFocus | undefined>(undefined);

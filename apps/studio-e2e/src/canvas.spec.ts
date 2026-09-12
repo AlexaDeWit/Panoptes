@@ -133,6 +133,15 @@ test('a flow under a selected trust boundary takes a line or label click', async
   await expect(boundary).not.toHaveClass(/selected/u);
 });
 
+test('a trust boundary selects from its drawn name', async ({ page }) => {
+  await openEcluse(page);
+  const boundary = nodeNamed(page, /^Public internet \(untrusted\)/u).first();
+
+  await boundary.locator('.pn-label').click();
+
+  await expect(boundary).toHaveClass(/selected/u);
+});
+
 test('a trust boundary selects and drags from its outline', async ({
   page,
 }) => {
