@@ -1,3 +1,4 @@
+import { readLimits } from '@saerskriven/formats';
 import { Either } from 'effect';
 import {
   chmodSync,
@@ -108,6 +109,22 @@ describe('a save that lands while a replacement is being prepared', () => {
       'Read the file again and reconsider the edit against what it holds now.',
     ]);
   });
+
+  it('refuses a target grown past the bound this server reads', () => {
+    const tree = editableTree();
+    const quoted = revisionIn(tree.root, modelFile);
+    const grown = Buffer.alloc(readLimits.maxTextBytes + 1, 0x61);
+    writeFileSync(join(tree.root, modelFile), grown);
+    const refused = replacedFile(
+      target(tree.root, modelFile),
+      'formatVersion: 1\n',
+      quoted,
+    );
+    expect(statSync(join(tree.root, modelFile)).size).toEqual(grown.length);
+    expect(renderWriteFailure(failureOf(refused))).toEqual([
+      `The file "${modelFile}" was not written: it is now ${String(grown.length)} bytes, past the ${String(readLimits.maxTextBytes)} this server reads.`,
+    ]);
+  });
 });
 
 describe('creating a file', () => {
@@ -164,12 +181,13 @@ describe('the handle a write quotes back', () => {
     const tree = editableTree();
     const workspace = Either.getOrThrow(openWorkspace({ root: tree.root }));
     const read = Either.getOrThrow(readModelFile(workspace, modelFile));
-    const stale = `sha256:${'0'.repeat(64)}`;
     expect(
-      renderWriteFailure(failureOf(unchangedSince(modelFile, stale, read))),
+      renderWriteFailure(
+        failureOf(unchangedSince(modelFile, staleRevision, read)),
+      ),
     ).toEqual([
       `The file "${modelFile}" changed since the read this call quoted, so nothing was written.`,
-      `The call quoted ${stale}, and the file on disk is ${read.revision}.`,
+      `The call quoted ${staleRevision}, and the file on disk is ${read.revision}.`,
       'Read the file again and reconsider the edit against what it holds now.',
     ]);
   });

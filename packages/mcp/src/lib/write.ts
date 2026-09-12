@@ -3,6 +3,7 @@ import {
   escapedForTerminal,
   formatNameSchema,
   quotedForTerminal,
+  readLimits,
   renderDivergences,
   type DetectedRead,
   type WriteResult,
@@ -35,9 +36,11 @@ import {
  * `StaleRevision` is the file having changed since the read whose handle the
  * call quoted, which is the case an agent answers by reading again rather
  * than by retrying, and which a write that replaces a file checks twice.
- * `Occupied` is a tool that creates a file finding a path already taken. `Unwritten` is the write not happening for a reason outside
- * this server's reach: the system refusing it, or the codec throwing on the
- * model it was handed, each with its own sentence.
+ * `Occupied` is a tool that creates a file finding a path already taken.
+ * `Unwritten` is the write not happening for a reason outside this server's
+ * reach: the system refusing it, the file past the bound this server reads,
+ * or the codec throwing on the model it was handed, each with its own
+ * sentence.
  */
 export type WriteFailure = Data.TaggedEnum<{
   NoFile: { readonly root: string };
@@ -70,7 +73,7 @@ export const revisionArgumentSchema = fileArgumentSchema.extend({
   revision: z
     .string()
     .describe(
-      'The revision handle the last read of this file returned. The write is refused when the file no longer hashes to it, checked when this call reads the file and again immediately before the file is replaced, which means something else wrote the file and the edit has to be reconsidered against what it holds now.',
+      'The revision handle the last read of this file returned. The write is refused when the file no longer hashes to it, checked when this call reads the file and again immediately before the file is replaced, which means something else wrote the file and the edit has to be reconsidered against what it holds now. The second check is not a lock: a save landing between it and the replacement is still overwritten.',
     ),
 });
 
@@ -157,7 +160,9 @@ export function unchangedSince(
  * landed while this call was working is reported rather than replaced. The
  * unguarded interval left runs from that hash to the rename rather than from
  * the caller's read to it, and a save landing inside it is still replaced
- * with neither writer told.
+ * with neither writer told. A target that cannot be hashed refuses as
+ * `Unwritten` instead, gone or grown past the bound this server reads, since
+ * what the path holds then is not known.
  */
 export function replacedFile(
   target: WriteTarget,
@@ -240,9 +245,13 @@ function throughTemporary(
   );
   return discarding(
     temporary,
-    Either.map(
+    Either.flatMap(
       Either.flatMap(staged(target, temporary, bytes), () => commit(temporary)),
-      () => revisionOf(bytes),
+      () =>
+        Either.try({
+          try: () => revisionOf(bytes),
+          catch: (error) => unwritten(target.file, error),
+        }),
     ),
   );
 }
@@ -268,22 +277,33 @@ function staged(
   });
 }
 
-/**
- * The target still hashing to `quoted`, or the refusal naming both handles.
- * A target this cannot read refuses as `Unwritten` carrying the system's own
- * reason rather than as `StaleRevision`, since what the path holds now is
- * not known.
- */
 function unmovedSince(
   target: WriteTarget,
   quoted: string,
 ): Either.Either<void, WriteFailure> {
+  return Either.flatMap(rehashed(target), (found) =>
+    staleUnless(target.file, quoted, found),
+  );
+}
+
+function rehashed(target: WriteTarget): Either.Either<string, WriteFailure> {
   return Either.flatMap(
     Either.try({
-      try: () => revisionOf(readFileSync(target.path)),
+      try: () => statSync(target.path).size,
       catch: (error) => unwritten(target.file, error),
     }),
-    (found) => staleUnless(target.file, quoted, found),
+    (size) =>
+      size > readLimits.maxTextBytes
+        ? Either.left(
+            WriteFailure.Unwritten({
+              file: target.file,
+              reason: `it is now ${String(size)} bytes, past the ${String(readLimits.maxTextBytes)} this server reads`,
+            }),
+          )
+        : Either.try({
+            try: () => revisionOf(readFileSync(target.path)),
+            catch: (error) => unwritten(target.file, error),
+          }),
   );
 }
 
@@ -297,11 +317,6 @@ function staleUnless(
     : Either.left(WriteFailure.StaleRevision({ file, quoted, found }));
 }
 
-/**
- * The outcome unchanged, with the temporary file removed. A removal that
- * fails leaves the outcome alone: whether the temporary is still there says
- * nothing about the file the write was for.
- */
 function discarding<Outcome>(temporary: string, outcome: Outcome): Outcome {
   return Either.match(
     Either.try(() => {
