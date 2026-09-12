@@ -500,7 +500,7 @@
         {
           "id": "el-mcp",
           "name": "MCP server and tools",
-          "description": "saerskriven mcp over stdio. Read and query tools in issue #47, and edit tools that write back through the codecs in issue #48. Not built.",
+          "description": "`saer mcp` over stdio, launched by the host. The server object lives in `packages/mcp` and carries no transport, no session and no parsed model, so every call names its file and reads it again. Paths are confined to the root the invocation named. The `saer_inspect` tool is built. Read and query tools are issue #47, edit tools that write back through the codecs are issue #48, and Streamable HTTP on 127.0.0.1 is issue #318.",
           "outOfScope": false,
           "reasonOutOfScope": "",
           "position": {
@@ -1041,7 +1041,7 @@
       "severity": "undecided",
       "status": "open",
       "description": "A threat description is free text that an agent reads as part of its context. A model file is passed between people and pulled from repositories, so its prose is an input channel into an agent that can also write files.",
-      "mitigation": "Nothing is built, and nothing here can be assessed yet. The tools do not exist, and the harness that decides what an agent does with what it reads is out of scope. What Saerskriven owns is the return path, where issue #48 puts every write through the model operations. The severity stays undecided until there is a tool surface to assess.",
+      "mitigation": "Every text result the server returns opens with a fixed line saying that what follows is data read from a file rather than instructions. A spec derives that check from the tool list the server advertises rather than naming the tools it knows, so a tool registered without the line reds it. That line is what Saerskriven owns on the inbound side: the harness that decides what an agent does with what it reads is out of scope. On the return path issue #48 puts every write through the model operations. The severity stays undecided until the tool surface is whole.",
       "elements": [
         "el-mcp",
         "el-core"

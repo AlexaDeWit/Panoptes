@@ -11,7 +11,6 @@ import { join } from 'node:path';
 import {
   danglingReferenceYaml,
   fixtureFile,
-  spawnTimeout,
   undeclaredKeyYaml,
 } from './cli.fixtures.js';
 import {
@@ -20,14 +19,15 @@ import {
   outlineTitles,
   pageCount,
 } from './pdf.fixtures.js';
+import {
+  ran,
+  repositoryRoot,
+  runners,
+  spawnTimeout,
+  text,
+  titleOf,
+} from './runners.fixtures.js';
 import { cliVersion } from './version.js';
-
-type Runner = {
-  readonly name: string;
-  readonly command: string;
-  readonly leading: readonly string[];
-  readonly absence: string | undefined;
-};
 
 type Scenario = {
   readonly name: string;
@@ -37,66 +37,9 @@ type Scenario = {
   readonly err: string;
 };
 
-const repositoryRoot = join(import.meta.dirname, '../../..');
-
 const directory = mkdtempSync(join(tmpdir(), 'saerskriven-cli-main-'));
 
-const bundlePath = join(repositoryRoot, 'apps/cli/dist/saer.js');
-
-const bundle: Runner = {
-  name: 'the bundle under node',
-  command: process.execPath,
-  leading: [bundlePath],
-  absence: undefined,
-};
-
-const hostTarget = (): string | undefined => {
-  const probe = spawnSync('deno', ['eval', 'console.log(Deno.build.target)'], {
-    encoding: 'utf8',
-  });
-  return probe.status === 0 ? probe.stdout.trim() : undefined;
-};
-
-const executablePath = join(
-  repositoryRoot,
-  'dist/cli',
-  `saer-${cliVersion}-${hostTarget() ?? 'unknown-host-target'}`,
-);
-
-const compiled: Runner = {
-  name: 'the compiled executable',
-  command: executablePath,
-  leading: [],
-  absence: existsSync(executablePath)
-    ? undefined
-    : `nothing is at ${executablePath}, which pnpm nx compile @saerskriven/cli writes`,
-};
-
-const runners: readonly Runner[] = [bundle, compiled];
-
-const titleOf = (runner: Runner): string =>
-  runner.absence === undefined
-    ? `the CLI, run as ${runner.name}`
-    : `the CLI, run as ${runner.name}, skipped because ${runner.absence}`;
-
 const fullDevice = '/dev/full';
-
-const ran = (runner: Runner, args: readonly string[]) => {
-  const result = spawnSync(runner.command, [...runner.leading, ...args], {
-    cwd: repositoryRoot,
-    maxBuffer: 64 * 1024 * 1024,
-  });
-  return { code: result.status, out: result.stdout, err: result.stderr };
-};
-
-const text = (runner: Runner, args: readonly string[]) => {
-  const result = ran(runner, args);
-  return {
-    code: result.code,
-    out: result.out.toString('utf8'),
-    err: result.err.toString('utf8'),
-  };
-};
 
 const golden = (name: string): Buffer =>
   readFileSync(join(repositoryRoot, 'test-data/render', name));
@@ -185,24 +128,10 @@ const scenarios: readonly Scenario[] = [
   },
 ];
 
-describe('the CLI as it is packaged', () => {
-  it('has a bundle to run, which the build target produced', () => {
-    expect(existsSync(bundlePath)).toBe(true);
-  });
-
-  it('has the compiled executable wherever the environment demands one', () => {
-    expect(
-      process.env.SAERSKRIVEN_COMPILED_RUNNER === 'required'
-        ? compiled.absence
-        : undefined,
-    ).toBeUndefined();
-  });
-});
-
 for (const runner of runners) {
   const register = runner.absence === undefined ? describe : describe.skip;
   register(
-    titleOf(runner),
+    titleOf(runner, 'the CLI'),
     () => {
       it.each(scenarios)('$name', (scenario) => {
         expect(text(runner, scenario.args)).toEqual({

@@ -68,6 +68,10 @@
               {
                 "name": "@saerskriven/model/fixtures",
                 "message": "Fixture helpers belong to a *.spec.* or *.fixtures.* module. A production module that imports them ships them (CODING.md, Tests)."
+              },
+              {
+                "name": "@saerskriven/mcp/fixtures",
+                "message": "Fixture helpers belong to a *.spec.* or *.fixtures.* module. A production module that imports them ships them (CODING.md, Tests)."
               }
             ]
           }

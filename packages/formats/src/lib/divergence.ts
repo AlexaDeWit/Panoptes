@@ -158,7 +158,7 @@ function renderDivergence(divergence: Divergence): string {
 function renderSubject(subject: DivergenceSubject): string {
   return subject.kind === 'model'
     ? 'model'
-    : `${subject.kind} "${escapeId(subject.id)}"`;
+    : `${subject.kind} ${quotedForTerminal(subject.id)}`;
 }
 
 const escapableText = /\\|\p{Cc}/gu;
@@ -179,10 +179,16 @@ export function escapedForTerminal(text: string): string {
   return text.replace(escapableText, escapeCharacter);
 }
 
-const escapableId = /["\\]|\p{Cc}/gu;
+const escapableQuoted = /["\\]|\p{Cc}/gu;
 
-function escapeId(id: string): string {
-  return id.replace(escapableId, escapeCharacter);
+/**
+ * A foreign text inside double quotes, with every control character written
+ * as `\uXXXX` and every quote and backslash escaped on top of that. What an
+ * id or a path out of a file renders as is then one line that cannot close
+ * its own quoting, and no text renders as another.
+ */
+export function quotedForTerminal(text: string): string {
+  return `"${text.replace(escapableQuoted, escapeCharacter)}"`;
 }
 
 function escapeCharacter(character: string): string {

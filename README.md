@@ -42,6 +42,7 @@ Dragon and license it under the same Apache License 2.0. See
 | `packages/formats`               | File-format codecs, and the mappings between a file and the model                                                                                                                                                                                                                                                                |
 | `packages/canvas`                | React canvas components, shared by the UI and headless rendering                                                                                                                                                                                                                                                                 |
 | `packages/render`                | Projections of a model: SVG, markdown, Typst source, and the `pdf` subpath that compiles that source                                                                                                                                                                                                                             |
+| `packages/mcp`                   | The MCP server object: tools over the model and the codecs, with no transport of its own                                                                                                                                                                                                                                         |
 | `apps/studio`                    | The drawing UI: its [canvas](apps/studio/src/canvas/README.md), its [threat panel](apps/studio/src/panel/README.md), its [model store](apps/studio/src/store/README.md), its [file bridge](apps/studio/src/files/README.md), its [commands](apps/studio/src/commands/README.md) and its [controls](apps/studio/src/ui/README.md) |
 | `apps/cli`                       | The command-line interface                                                                                                                                                                                                                                                                                                       |
 | `apps/studio-e2e`                | The studio's [browser suite](apps/studio-e2e/README.md), and the round-trip coverage matrix it holds                                                                                                                                                                                                                             |
@@ -202,6 +203,42 @@ that has neither Typst nor a browser installed.
 
 Errors go to standard error, path-precise where a schema refused something,
 and no failure prints a stack trace.
+
+### The MCP server
+
+`saer mcp` speaks the Model Context Protocol over standard input and output,
+so an agent host launches the same executable you would run by hand:
+
+```sh
+saer mcp --root . --file threat-model.yaml
+```
+
+`--root` is the directory the server may read, and defaults to the working
+directory. A path a tool call names is resolved through every symbolic link
+before it is compared against the root, and one that lands outside is refused
+as a tool result carrying the path it resolved to. `--file` names the model a
+tool call reads when it names none.
+
+Standard output carries the protocol and nothing else, so anything the server
+has to report goes to standard error, where a host shows it.
+
+One tool is registered. `saer_inspect` reports the format a file was read as,
+its metadata, one line per diagram with its element and threat counts, the
+totals, every place the file and the model do not correspond exactly, and
+`revision`, a SHA-256 over the file's bytes that a later write will have to
+quote back. Called with neither a `file` argument nor a `--file` default, it
+lists the model files under the root instead.
+
+A model file is untrusted input, and the prose a tool result carries came out
+of it. Every text result opens with a line saying that what follows is data
+rather than instructions, and the suite derives that check from the tool list
+the server advertises, so a tool added without the line fails it. An agent
+consuming these results is reading a file somebody else wrote.
+
+The protocol revision is 2026-07-28, and a 2025-era client is served as well,
+so a host on either generation connects. The server holds no session and no
+parsed model: every call names its file and reads it again. Streamable HTTP,
+the read, query and edit tools, and a registration command are not built yet.
 
 ## Development
 

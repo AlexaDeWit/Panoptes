@@ -139,16 +139,6 @@ lastIssuedThreatNumber: 1
 /** A YAML text no registered codec claims. */
 export const unclaimedYaml = 'hello: world\n';
 
-/**
- * How long a spec that runs the packaged CLI is given, past the root
- * `vitest.shared.mts` sets. Such a spec spawns node on the bundle, so it
- * pays for a process start and the bundle's whole import graph before an
- * argument is parsed. Ten runs of the whole workspace's suites on a
- * contended host stopped one of these at the root, where the same test takes
- * about a second and a half on an unloaded runner.
- */
-export const spawnTimeout = 30_000;
-
 /** One fixture on disk, at the path it was written to. */
 export function fixtureFile(
   directory: string,

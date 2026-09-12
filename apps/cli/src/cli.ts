@@ -1,6 +1,8 @@
 import { Command } from 'commander';
 import { Either } from 'effect';
+import type { z } from 'zod';
 import { reasonOf } from './files.js';
+import { mcpOptionsSchema, serveMcp, type McpOptions } from './mcp.js';
 import {
   lines,
   succeeded,
@@ -20,6 +22,7 @@ type Request =
       readonly file: string;
       readonly options: RenderOptions;
     }
+  | { readonly kind: 'mcp'; readonly options: McpOptions }
   | { readonly kind: 'usage'; readonly text: string };
 
 type ParseState = {
@@ -115,21 +118,42 @@ function programFor(state: ParseState): Command {
     .action((file: string, options: unknown) => {
       state.request = renderRequest(file, options);
     });
+  program
+    .command('mcp')
+    .description(
+      'serve the model context protocol over standard input and output',
+    )
+    .option(
+      '--root <dir>',
+      'the directory the server may read, default the working directory',
+    )
+    .option('--file <path>', 'the model a tool call reads when it names none')
+    .action((options: unknown) => {
+      state.request = mcpRequest(options);
+    });
   return program;
+}
+
+function mcpRequest(options: unknown): Request {
+  const parsed = mcpOptionsSchema.safeParse(options);
+  return parsed.success
+    ? { kind: 'mcp', options: parsed.data }
+    : { kind: 'usage', text: optionIssues(parsed.error.issues) };
 }
 
 function renderRequest(file: string, options: unknown): Request {
   const parsed = renderOptionsSchema.safeParse(options);
   return parsed.success
     ? { kind: 'render', file, options: parsed.data }
-    : {
-        kind: 'usage',
-        text: lines(
-          ...parsed.error.issues.map(
-            (issue) => `error: --${issue.path.join('.')}: ${issue.message}`,
-          ),
-        ),
-      };
+    : { kind: 'usage', text: optionIssues(parsed.error.issues) };
+}
+
+function optionIssues(issues: readonly z.core.$ZodIssue[]): string {
+  return lines(
+    ...issues.map(
+      (issue) => `error: --${issue.path.join('.')}: ${issue.message}`,
+    ),
+  );
 }
 
 function outcomeOf(request: Request): Promise<CommandOutcome> {
@@ -137,5 +161,7 @@ function outcomeOf(request: Request): Promise<CommandOutcome> {
     ? Promise.resolve(validate(request.file))
     : request.kind === 'render'
       ? render(request.file, request.options)
-      : Promise.resolve(usageError(request.text));
+      : request.kind === 'mcp'
+        ? serveMcp(request.options)
+        : Promise.resolve(usageError(request.text));
 }

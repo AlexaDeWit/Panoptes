@@ -38,6 +38,15 @@ catalog:
   # accessibility gate, catching contrast, focus order and computed roles
   # that static analysis cannot see.
   '@axe-core/playwright': ^4.13.0
+  # The MCP client, used by the specs alone: the stdio harness drives the
+  # packaged CLI and the in-memory transport drives the server object in
+  # process. Held as one wave with the server package below, which it shares
+  # a @modelcontextprotocol/core pin with.
+  '@modelcontextprotocol/client': ^2.0.0
+  # The MCP server SDK, protocol revision 2026-07-28 (issue #46). The split
+  # 2.0 packages replace the monolithic @modelcontextprotocol/sdk, whose 1.x
+  # line implements the 2025 revisions only.
+  '@modelcontextprotocol/server': ^2.0.0
   # The Typst compiler as a WebAssembly module, which is what puts PDF output
   # inside the CLI's single executable: no browser, no native addon, and
   # nothing fetched at run time (issue #34). The node compiler package of the

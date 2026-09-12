@@ -67,12 +67,26 @@ export default [
               onlyDependOnLibsWithTags: ['layer:model', 'layer:canvas'],
             },
             {
+              // The MCP server object, which reaches the same layers a CLI
+              // command reaches and holds no transport of its own (issue
+              // #46). It sits below the apps so a host process is the only
+              // thing that decides how the server is served.
+              sourceTag: 'layer:mcp',
+              onlyDependOnLibsWithTags: [
+                'layer:model',
+                'layer:formats',
+                'layer:canvas',
+                'layer:render',
+              ],
+            },
+            {
               sourceTag: 'layer:app',
               onlyDependOnLibsWithTags: [
                 'layer:model',
                 'layer:formats',
                 'layer:canvas',
                 'layer:render',
+                'layer:mcp',
               ],
             },
           ],

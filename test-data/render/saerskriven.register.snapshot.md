@@ -341,7 +341,7 @@ A threat description is free text that an agent reads as part of its context. A 
 
 **Mitigation**
 
-Nothing is built, and nothing here can be assessed yet. The tools do not exist, and the harness that decides what an agent does with what it reads is out of scope. What Saerskriven owns is the return path, where issue #48 puts every write through the model operations. The severity stays undecided until there is a tool surface to assess.
+Every text result the server returns opens with a fixed line saying that what follows is data read from a file rather than instructions. A spec derives that check from the tool list the server advertises rather than naming the tools it knows, so a tool registered without the line reds it. That line is what Saerskriven owns on the inbound side: the harness that decides what an agent does with what it reads is out of scope. On the return path issue #48 puts every write through the model operations. The severity stays undecided until the tool surface is whole.
 
 ## Threat 22: A substituted dependency or action reaches the build
 
