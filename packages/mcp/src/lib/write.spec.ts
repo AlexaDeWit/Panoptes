@@ -110,6 +110,20 @@ describe('a save that lands while a replacement is being prepared', () => {
     ]);
   });
 
+  it('reports the reason the system gave where the target is gone', () => {
+    const tree = editableTree();
+    const before = new Set(readdirSync(tree.root));
+    const refused = replacedFile(
+      target(tree.root, 'removed.yaml'),
+      'replaced\n',
+      staleRevision,
+    );
+    expect(new Set(readdirSync(tree.root))).toEqual(before);
+    expect(renderWriteFailure(failureOf(refused)).join('\n')).toContain(
+      'was not written: ENOENT',
+    );
+  });
+
   it('refuses a target grown past the bound this server reads', () => {
     const tree = editableTree();
     const quoted = revisionIn(tree.root, modelFile);
