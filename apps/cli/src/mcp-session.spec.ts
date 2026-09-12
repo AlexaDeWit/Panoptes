@@ -18,9 +18,9 @@ import {
   structuredOf,
   textOf,
 } from '@saerskriven/mcp/fixtures';
-import { readFileSync } from 'node:fs';
+import { readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
-import { sessionOpeners } from './mcp-session.fixtures.js';
+import { httpProcess, sessionOpeners } from './mcp-session.fixtures.js';
 import {
   ran,
   repositoryRoot,
@@ -249,7 +249,7 @@ for (const runner of runners) {
     );
   }
   register(
-    titleOf(runner, 'saer mcp over stdio'),
+    titleOf(runner, 'saer mcp as a process'),
     () => {
       it('leaves standard output to the protocol and exits on end of input', () => {
         const session = ran(runner, ['mcp']);
@@ -258,6 +258,21 @@ for (const runner of runners) {
           out: session.out.toString('utf8'),
           err: session.err.toString('utf8'),
         }).toEqual({ code: 0, out: '', err: '' });
+      });
+
+      it('keeps the HTTP token out of both streams and exits 0 on SIGTERM', async () => {
+        const server = await httpProcess(runner, ecluse);
+        const token = readFileSync(server.tokenFile, 'utf8');
+        const mode = statSync(server.tokenFile).mode & 0o777;
+        const ended = await server.stop();
+        expect(token.length).toBeGreaterThan(0);
+        expect(mode).toBe(0o600);
+        expect({ code: ended.code, signal: ended.signal }).toEqual({
+          code: 0,
+          signal: null,
+        });
+        expect(ended.out).toEqual('');
+        expect(ended.err).not.toContain(token);
       });
     },
     spawnTimeout,

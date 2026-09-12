@@ -26,8 +26,9 @@ import { cliVersion } from './version.js';
 /**
  * What `mcp` needs, and the one gate on the option bag the parser hands over.
  * `--root` defaults to the working directory, which is where a host launches
- * the server. `--port` defaults to one the system picks, and it and
- * `--token-file` are refused without `--http`.
+ * the server. `--http` requires `--token-file`, `--port` defaults to one the
+ * system picks, and both are refused without `--http`. `http` is what the
+ * HTTP server needs, and nothing where the server speaks stdio.
  */
 export const mcpOptionsSchema = z
   .object({
@@ -44,7 +45,18 @@ export const mcpOptionsSchema = z
   .refine((options) => options.http || options.tokenFile === undefined, {
     path: ['token-file'],
     message: 'is given without --http',
-  });
+  })
+  .refine((options) => !options.http || options.tokenFile !== undefined, {
+    path: ['token-file'],
+    message: 'is required with --http, the only place the token is written',
+  })
+  .transform(({ http, port, tokenFile, ...workspace }) => ({
+    ...workspace,
+    http:
+      http && tokenFile !== undefined
+        ? { port: port ?? 0, tokenFile }
+        : undefined,
+  }));
 
 /** The options an `mcp` invocation was given. */
 export type McpOptions = z.infer<typeof mcpOptionsSchema>;
@@ -110,13 +122,9 @@ export function serveMcp(
       const rasterizer = rasterizerIn(assets);
       const factory: McpServerFactory = () =>
         createSaerskrivenServer({ workspace, version: cliVersion, rasterizer });
-      return options.http
-        ? serveHttp(
-            factory,
-            { port: options.port ?? 0, tokenFile: options.tokenFile },
-            host,
-          )
-        : servedOverStdio(factory, host);
+      return options.http === undefined
+        ? servedOverStdio(factory, host)
+        : serveHttp(factory, options.http, host);
     },
   });
 }

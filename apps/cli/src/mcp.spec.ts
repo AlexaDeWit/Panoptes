@@ -28,9 +28,10 @@ const served = (root: string) => {
 
 describe('what the mcp subcommand is given', () => {
   it('reads the working directory as the root where none is named', () => {
-    expect(mcpOptionsSchema.parse({})).toMatchObject({
+    expect(mcpOptionsSchema.parse({})).toEqual({
       root: process.cwd(),
-      http: false,
+      file: undefined,
+      http: undefined,
     });
   });
 
@@ -39,9 +40,14 @@ describe('what the mcp subcommand is given', () => {
     expect(mcpOptionsSchema.safeParse({ tokenFile: 'token' }).success).toBe(
       false,
     );
+  });
+
+  it('refuses --http without a token file', () => {
+    expect(mcpOptionsSchema.safeParse({ http: true }).success).toBe(false);
     expect(
-      mcpOptionsSchema.safeParse({ http: true, port: '8080' }).success,
-    ).toBe(true);
+      mcpOptionsSchema.parse({ http: true, port: '8080', tokenFile: 'token' })
+        .http,
+    ).toEqual({ port: 8080, tokenFile: 'token' });
   });
 });
 

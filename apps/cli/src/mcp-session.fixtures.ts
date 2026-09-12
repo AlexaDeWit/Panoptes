@@ -47,34 +47,68 @@ export async function stdioSession(
   return connected(transport, era, () => Promise.resolve());
 }
 
+/** A spawned `saer mcp --http`, once it has announced its address. */
+export type HttpProcess = {
+  readonly url: URL;
+  readonly tokenFile: string;
+  readonly stop: () => Promise<{
+    readonly code: number | null;
+    readonly signal: NodeJS.Signals | null;
+    readonly out: string;
+    readonly err: string;
+  }>;
+};
+
 /**
- * A client connected to `saer mcp --http` over Streamable HTTP, with the
- * address read from the process's standard error and the token from the file
- * `--token-file` wrote. Ending the session signals the process and waits for
- * it to exit.
+ * `saer mcp --http` spawned with a fresh token file, its address read from
+ * standard error. Stopping it sends SIGTERM and resolves with the exit code
+ * and everything the process wrote.
+ */
+export async function httpProcess(
+  runner: Runner,
+  args: readonly string[],
+): Promise<HttpProcess> {
+  const directory = mkdtempSync(join(tmpdir(), 'saerskriven-cli-http-'));
+  const tokenFile = join(directory, 'token');
+  const child = spawn(
+    runner.command,
+    [...runner.leading, ...args, '--http', '--token-file', tokenFile],
+    { cwd: repositoryRoot, stdio: ['ignore', 'pipe', 'pipe'] },
+  );
+  const written = { out: '', err: '' };
+  child.stdout?.on('data', (chunk: Buffer) => {
+    written.out += chunk.toString('utf8');
+  });
+  const url = await announcedUrl(child, written);
+  return {
+    url: new URL(url),
+    tokenFile,
+    stop: async () => {
+      const exited = once(child, 'exit');
+      child.kill('SIGTERM');
+      await exited;
+      rmSync(directory, { recursive: true, force: true });
+      return { code: child.exitCode, signal: child.signalCode, ...written };
+    },
+  };
+}
+
+/**
+ * A client connected to `saer mcp --http` over Streamable HTTP, carrying the
+ * token read from the file the server wrote.
  */
 export async function httpSession(
   runner: Runner,
   args: readonly string[],
   era: Era = 'modern',
 ): Promise<McpSession> {
-  const directory = mkdtempSync(join(tmpdir(), 'saerskriven-cli-http-'));
-  const tokenFile = join(directory, 'token');
-  const child = spawn(
-    runner.command,
-    [...runner.leading, ...args, '--http', '--token-file', tokenFile],
-    { cwd: repositoryRoot, stdio: ['ignore', 'inherit', 'pipe'] },
-  );
-  const url = await announcedUrl(child);
-  const token = readFileSync(tokenFile, 'utf8');
-  const transport = new StreamableHTTPClientTransport(new URL(url), {
+  const server = await httpProcess(runner, args);
+  const token = readFileSync(server.tokenFile, 'utf8');
+  const transport = new StreamableHTTPClientTransport(server.url, {
     requestInit: { headers: { Authorization: `Bearer ${token}` } },
   });
   return connected(transport, era, async () => {
-    const exited = once(child, 'exit');
-    child.kill('SIGTERM');
-    await exited;
-    rmSync(directory, { recursive: true, force: true });
+    await server.stop();
   });
 }
 
@@ -84,22 +118,23 @@ export const sessionOpeners: readonly SessionOpener[] = [
   { name: 'Streamable HTTP', open: httpSession },
 ];
 
-function announcedUrl(child: ChildProcess): Promise<string> {
+function announcedUrl(
+  child: ChildProcess,
+  written: { err: string },
+): Promise<string> {
   return new Promise((resolve, reject) => {
-    let seen = '';
-    const read = (chunk: Buffer): void => {
-      seen += chunk.toString('utf8');
-      const found = /^MCP server at (\S+)$/m.exec(seen)?.[1];
+    child.stderr?.on('data', (chunk: Buffer) => {
+      written.err += chunk.toString('utf8');
+      const found = /^MCP server at (\S+)$/m.exec(written.err)?.[1];
       if (found !== undefined) {
-        child.stderr?.off('data', read);
-        child.stderr?.pipe(process.stderr, { end: false });
         resolve(found);
       }
-    };
-    child.stderr?.on('data', read);
+    });
     child.once('exit', (code) => {
       reject(
-        new Error(`saer mcp --http exited ${code} before listening: ${seen}`),
+        new Error(
+          `saer mcp --http exited ${code} before listening: ${written.err}`,
+        ),
       );
     });
   });

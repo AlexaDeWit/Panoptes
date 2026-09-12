@@ -320,33 +320,39 @@ standard input and output, for a host that connects to a URL rather than
 launching a process:
 
 ```sh
-saer mcp --http --port 7300 --token-file .saer-token --file threat-model.yaml
+saer mcp --http --token-file .saer-token --port 7300 --file threat-model.yaml
 ```
 
-The server listens on `127.0.0.1` and nowhere else, whatever the flags say,
-and answers `POST` on `/mcp`. `--port` picks the port, and without it the
-system picks one. `--root` and `--file` mean what they mean over stdio.
-Once it is listening, the server writes two lines to standard error, the
-address and then the bearer token:
+`--token-file` is required with `--http`, and `--port` and `--token-file` are
+refused without it. The server listens on `127.0.0.1` and nowhere else,
+whatever the flags say, and answers `POST` on `/mcp`. `--port` picks the port,
+and without it the system picks one. `--root` and `--file` mean what they mean
+over stdio. The standalone executable is granted network access to
+`127.0.0.1` alone.
+
+Every start mints a new bearer token and writes it to the token file, and
+nowhere else: it is never printed, logged or put in an error. The file is
+created new, readable by its owner alone, after whatever was at the path is
+removed, so a symbolic link there is replaced rather than written through.
+Once it is listening, the server writes the address and the token file's path
+to standard error:
 
 ```text
 MCP server at http://127.0.0.1:7300/mcp
-Bearer token: <token>
+Bearer token written to .saer-token
 ```
 
-The token is minted again every time the server starts, and `--token-file`
-also writes it to a file, created readable by its owner alone. Every request
-has to carry it as `Authorization: Bearer <token>`, and one that does not is
-refused with 401. The `Host` header has to name `localhost`, `127.0.0.1` or
-`[::1]`, and an `Origin` header, where a browser sends one, has to name one
-of the same, so a page on another site cannot reach the server through DNS
-rebinding: either is refused with 403. There is no OAuth, no session id and no
-way to listen on another address. The server runs until it receives SIGINT
-or SIGTERM, and exits 0.
+Every request has to carry the token as `Authorization: Bearer <token>`, and
+one that does not is refused with 401. The `Host` header has to name
+`localhost`, `127.0.0.1` or `[::1]`, and an `Origin` header, where a browser
+sends one, has to name one of the same, so a page on another site cannot reach
+the server through DNS rebinding: either is refused with 403. There is no
+OAuth, no session id and no way to listen on another address. The server runs
+until it receives SIGINT or SIGTERM, and exits 0.
 
 `saer mcp install` writes stdio registrations only. A host that takes an HTTP
 server needs the URL and the `Authorization` header in its own configuration,
-and the token in that header changes whenever the server restarts.
+and the token in the file changes whenever the server restarts.
 
 #### Registering the server with a host
 

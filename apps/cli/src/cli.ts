@@ -178,7 +178,10 @@ function mcpCommand(program: Command, state: ParseState): void {
     .option('--file <path>', 'the model a tool call reads when it names none')
     .option('--http', 'serve Streamable HTTP on 127.0.0.1 instead of stdio')
     .option('--port <n>', 'the port for --http, default one the system picks')
-    .option('--token-file <path>', 'also write the --http bearer token here')
+    .option(
+      '--token-file <path>',
+      'where --http writes its bearer token, required with --http',
+    )
     .action((options: unknown) => {
       const parsed = mcpOptionsSchema.safeParse(options);
       state.request = parsed.success

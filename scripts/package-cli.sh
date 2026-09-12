@@ -134,6 +134,7 @@ compile_into() {
     --allow-read \
     --allow-write \
     --allow-env \
+    --allow-net=127.0.0.1 \
     --include "${tree}/assets" \
     --target "${target}" \
     --output "${output}" \
