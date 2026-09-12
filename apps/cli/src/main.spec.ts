@@ -120,6 +120,28 @@ const scenarios: readonly Scenario[] = [
     err: "error: unknown option '--nope'\n",
   },
   {
+    name: 'prints a host registration, writing no file',
+    args: ['mcp', 'install', '--host', 'claude-code', '--print'],
+    code: 0,
+    out: `host: claude-code
+scope: project
+file: .mcp.json
+status: shown
+entry:
+{
+  "mcpServers": {
+    "saerskriven": {
+      "command": "saer",
+      "args": [
+        "mcp"
+      ]
+    }
+  }
+}
+`,
+    err: '',
+  },
+  {
     name: 'reports the version the workspace carries',
     args: ['--version'],
     code: 0,

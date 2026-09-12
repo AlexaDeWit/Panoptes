@@ -1,7 +1,13 @@
+import { escapedForTerminal } from '@saerskriven/formats';
 import { Command } from 'commander';
 import { Either } from 'effect';
 import type { z } from 'zod';
 import { reasonOf } from './files.js';
+import {
+  installMcp,
+  installOptionsSchema,
+  type InstallOptions,
+} from './mcp-install.js';
 import { mcpOptionsSchema, serveMcp, type McpOptions } from './mcp.js';
 import {
   lines,
@@ -23,6 +29,7 @@ type Request =
       readonly options: RenderOptions;
     }
   | { readonly kind: 'mcp'; readonly options: McpOptions }
+  | { readonly kind: 'mcp-install'; readonly options: InstallOptions }
   | { readonly kind: 'usage'; readonly text: string };
 
 type ParseState = {
@@ -38,7 +45,12 @@ export type CliStreams = {
   readonly err: (text: string) => Either.Either<void, string>;
 };
 
-/** Parse arguments and run a command, returning parser errors as outcomes. */
+/**
+ * Parse arguments and run a command, as the outcome to write. Nothing here
+ * throws at the process: a parser that stopped, and a command that threw or
+ * rejected where this codebase says it answers with a refusal, both come
+ * back as an outcome rather than as a stack trace on the host's terminal.
+ */
 export function runCli(argv: readonly string[]): Promise<CommandOutcome> {
   const state: ParseState = {
     out: '',
@@ -51,9 +63,7 @@ export function runCli(argv: readonly string[]): Promise<CommandOutcome> {
   } catch (error) {
     return Promise.resolve(parseStopped(state, error));
   }
-  return state.request === undefined
-    ? Promise.resolve(usageError(state.err))
-    : outcomeOf(state.request);
+  return carriedOut(state);
 }
 
 /** Write output unchanged and return exit code 2 if either stream fails. */
@@ -76,12 +86,31 @@ function lostOutput(streams: CliStreams, reason: string): ExitCode {
   return 2;
 }
 
+function carriedOut(state: ParseState): Promise<CommandOutcome> {
+  const request = state.request;
+  return request === undefined
+    ? Promise.resolve(usageError(state.err))
+    : contained(request);
+}
+
+function contained(request: Request): Promise<CommandOutcome> {
+  try {
+    return outcomeOf(request).catch(threw);
+  } catch (error) {
+    return Promise.resolve(threw(error));
+  }
+}
+
 function parseStopped(state: ParseState, error: unknown): CommandOutcome {
   return state.exitCode === 0
     ? succeeded(state.out, state.err)
-    : usageError(
-        state.err === '' ? lines(`error: ${reasonOf(error)}`) : state.err,
-      );
+    : state.err === ''
+      ? threw(error)
+      : usageError(state.err);
+}
+
+function threw(error: unknown): CommandOutcome {
+  return usageError(lines(`error: ${escapedForTerminal(reasonOf(error))}`));
 }
 
 function programFor(state: ParseState): Command {
@@ -101,6 +130,13 @@ function programFor(state: ParseState): Command {
         state.err += text;
       },
     });
+  validateCommand(program, state);
+  renderCommand(program, state);
+  mcpCommand(program, state);
+  return program;
+}
+
+function validateCommand(program: Command, state: ParseState): void {
   program
     .command('validate')
     .description('read a model file and report what it holds')
@@ -108,6 +144,9 @@ function programFor(state: ParseState): Command {
     .action((file: string) => {
       state.request = { kind: 'validate', file };
     });
+}
+
+function renderCommand(program: Command, state: ParseState): void {
   program
     .command('render')
     .description('write a projection of a model file')
@@ -119,9 +158,15 @@ function programFor(state: ParseState): Command {
       'the diagram to draw, for --format svg or png',
     )
     .action((file: string, options: unknown) => {
-      state.request = renderRequest(file, options);
+      const parsed = renderOptionsSchema.safeParse(options);
+      state.request = parsed.success
+        ? { kind: 'render', file, options: parsed.data }
+        : refused(parsed.error.issues);
     });
-  program
+}
+
+function mcpCommand(program: Command, state: ParseState): void {
+  const mcp = program
     .command('mcp')
     .description(
       'serve the model context protocol over standard input and output',
@@ -132,31 +177,39 @@ function programFor(state: ParseState): Command {
     )
     .option('--file <path>', 'the model a tool call reads when it names none')
     .action((options: unknown) => {
-      state.request = mcpRequest(options);
+      const parsed = mcpOptionsSchema.safeParse(options);
+      state.request = parsed.success
+        ? { kind: 'mcp', options: parsed.data }
+        : refused(parsed.error.issues);
     });
-  return program;
+  mcp
+    .command('install')
+    .description("write a host's registration for this server")
+    .option(
+      '--host <host>',
+      'claude-code, claude-desktop, cursor, vscode or codex',
+    )
+    .option('--project', "write the file the host's project commits")
+    .option('--user', "write the host's user-level file")
+    .option('--file <path>', 'the model a tool call reads when it names none')
+    .option('--print', 'print the entry rather than writing it')
+    .action((options: unknown) => {
+      const parsed = installOptionsSchema.safeParse(options);
+      state.request = parsed.success
+        ? { kind: 'mcp-install', options: parsed.data }
+        : refused(parsed.error.issues);
+    });
 }
 
-function mcpRequest(options: unknown): Request {
-  const parsed = mcpOptionsSchema.safeParse(options);
-  return parsed.success
-    ? { kind: 'mcp', options: parsed.data }
-    : { kind: 'usage', text: optionIssues(parsed.error.issues) };
-}
-
-function renderRequest(file: string, options: unknown): Request {
-  const parsed = renderOptionsSchema.safeParse(options);
-  return parsed.success
-    ? { kind: 'render', file, options: parsed.data }
-    : { kind: 'usage', text: optionIssues(parsed.error.issues) };
-}
-
-function optionIssues(issues: readonly z.core.$ZodIssue[]): string {
-  return lines(
-    ...issues.map(
-      (issue) => `error: --${issue.path.join('.')}: ${issue.message}`,
+function refused(issues: readonly z.core.$ZodIssue[]): Request {
+  return {
+    kind: 'usage',
+    text: lines(
+      ...issues.map(
+        (issue) => `error: --${issue.path.join('.')}: ${issue.message}`,
+      ),
     ),
-  );
+  };
 }
 
 function outcomeOf(request: Request): Promise<CommandOutcome> {
@@ -166,5 +219,7 @@ function outcomeOf(request: Request): Promise<CommandOutcome> {
       ? render(request.file, request.options)
       : request.kind === 'mcp'
         ? serveMcp(request.options)
-        : Promise.resolve(usageError(request.text));
+        : request.kind === 'mcp-install'
+          ? Promise.resolve(installMcp(request.options))
+          : Promise.resolve(usageError(request.text));
 }

@@ -56,6 +56,7 @@ export {
   renderWriteReport,
   replacedFile,
   revisionArgumentSchema,
+  serialized,
   unchangedSince,
   writeReportSchema,
   writtenThrough,

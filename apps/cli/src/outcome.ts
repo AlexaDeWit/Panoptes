@@ -38,11 +38,14 @@ export function invalidInput(err: string): CommandOutcome {
 /**
  * The invocation cannot be carried out: the parser or the option schema
  * refused it, a file cannot be read or written, a choice names no diagram,
- * a stream refused the output, a pipe whose reader closed aside, or a
- * projection could not be produced from a model Saerskriven accepted, which is
- * a typesetter or a rasterizer refusing the document or an install missing
- * the files they read. The last two are 2 rather than 1 because the file was read
- * and was good: what failed is the asking, not the input.
+ * a stream refused the output, a pipe whose reader closed aside, a host's
+ * registration file cannot be named, parsed or written, a projection could
+ * not be produced from a model Saerskriven accepted, which is a typesetter
+ * or a rasterizer refusing the document or an install missing the files they
+ * read, or a command threw or rejected where this codebase says it answers
+ * with a refusal, which `runCli` contains rather than let reach the process.
+ * The projection cases are 2 rather than 1 because the file was read and was
+ * good: what failed is the asking, not the input.
  */
 export function usageError(err: string): CommandOutcome {
   return { code: 2, out: '', err };

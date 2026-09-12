@@ -270,8 +270,96 @@ consuming these results is reading a file somebody else wrote.
 
 The protocol revision is 2026-07-28, and a 2025-era client is served as well,
 so a host on either generation connects. The server holds no session and no
-parsed model: every call names its file and reads it again. Streamable HTTP,
-the read and query tools, and a registration command are not built yet.
+parsed model: every call names its file and reads it again. Streamable HTTP
+and the read and query tools are not built yet.
+
+#### Registering the server with a host
+
+`saer mcp install` writes the registration an agent host reads, and says what
+it wrote and where:
+
+```sh
+saer mcp install --host claude-code
+saer mcp install --host codex --user --file threat-model.yaml
+saer mcp install --host vscode --print
+```
+
+`--host` takes `claude-code`, `claude-desktop`, `cursor`, `vscode` or
+`codex`. `--project` writes the file a repository commits and `--user` the
+one that covers every project for this user. Passing neither leaves the
+choice to the host, which is the project file wherever it keeps one. `--file`
+names the model a tool call reads when it names none, and reaches the server
+as its own `--file`. `--print` writes nothing and shows the entry instead, so
+it is the entry to paste anywhere this command cannot write.
+
+| Host             | File a project commits | File for this user                                              | Key           |
+| ---------------- | ---------------------- | --------------------------------------------------------------- | ------------- |
+| `claude-code`    | `.mcp.json`            | `~/.claude.json`                                                | `mcpServers`  |
+| `claude-desktop` | none                   | `claude_desktop_config.json` in the application's own directory | `mcpServers`  |
+| `cursor`         | `.cursor/mcp.json`     | `~/.cursor/mcp.json`                                            | `mcpServers`  |
+| `vscode`         | `.vscode/mcp.json`     | `mcp.json` in the user profile directory                        | `servers`     |
+| `codex`          | `.codex/config.toml`   | `~/.codex/config.toml`                                          | `mcp_servers` |
+
+The committed project file is the form to reach for: everyone working on the
+repository then gets the same server without setting it up. For Claude Code
+that file is `.mcp.json`, and `saer mcp install --host claude-code --print`
+prints the entry that goes in it, which is the entry this holds:
+
+```json
+{
+  "mcpServers": {
+    "saerskriven": {
+      "command": "saer",
+      "args": ["mcp"]
+    }
+  }
+}
+```
+
+Cursor and VS Code declare the transport as `"type": "stdio"` on top of that,
+VS Code keeps its servers under `servers`, and Codex keeps a TOML table
+instead. `--print` gives the entry for whichever host is named, so nothing has
+to be derived from this one by hand, and its output rather than this page is
+what to copy: what is printed here is the same entry with the array wrapped
+the way this file's formatter wraps it.
+
+An entry names the command `saer` rather than a path, which is what lets one
+committed file work on every machine, so `saer` has to be on the PATH the host
+launches with. Claude Desktop is the exception: its documentation asks for an
+absolute path, and the application does not necessarily see a login shell's
+PATH, so replace `saer` there with what `command -v saer` prints.
+
+What the command will not do:
+
+- **It writes one entry and carries over the rest.** Another server's entry
+  and every unrelated setting stay where they were, and running it again with
+  the same arguments writes nothing. Its own `saerskriven` entry is replaced
+  whole, so a field added to that entry by hand does not survive a re-run.
+- **It creates a file at mode 0600 and leaves an existing file's mode alone.**
+  A host's configuration can hold a sign-in session or a token.
+- **It writes through a symbolic link and keeps the link**, and refuses a
+  link pointing at nothing rather than leaving a regular file where the link
+  was. Point that link at a file, or remove it, and run the command again.
+- **Two runs at once, the second is refused**, saying the file was taken or
+  changed while it was working and that running it again picks up what the
+  file holds now.
+- **It refuses a file it cannot parse**, or one past the bound every foreign
+  text here is read within, naming the path and leaving the file exactly as
+  it is. A `.vscode/mcp.json` carrying comments is such a file, since what
+  this writes back is JSON.
+- **It rewrites a file from what it parsed.** Comments elsewhere in a
+  `config.toml`, the spacing of a file somebody formatted by hand, and a
+  TOML multi-line or literal string, are not kept as they were written.
+  `--print` is there for a file worth protecting.
+- **It writes the default VS Code profile's file.** On another profile, the
+  `MCP: Open User Configuration` command opens the file that profile reads.
+- **It will not name Claude Desktop's file outside macOS and Windows**, the
+  two paths its documentation gives. The application also runs on Linux,
+  where the path is undocumented rather than absent, so there the command
+  refuses and the Settings, Developer, Edit Config button in the application
+  opens the file to paste into.
+- **Codex reads `.codex/config.toml` for a trusted project only**, which is
+  Codex's own condition rather than this command's.
 
 ## Development
 

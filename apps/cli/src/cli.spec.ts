@@ -104,6 +104,42 @@ describe('the arguments as the outcome they ask for', () => {
     });
   });
 
+  it('hands mcp install the options it was given', async () => {
+    const outcome = await runCli([
+      'mcp',
+      'install',
+      '--host',
+      'claude-code',
+      '--print',
+    ]);
+    expect(outcome.code).toEqual(0);
+    expect(outcome.out).toContain('host: claude-code\n');
+    expect(outcome.out).toContain('status: shown\n');
+  });
+
+  it("refuses an install naming both of a host's files", async () => {
+    await expect(
+      runCli(['mcp', 'install', '--host', 'cursor', '--project', '--user']),
+    ).resolves.toEqual({
+      code: 2,
+      out: '',
+      err: 'error: --project: names the file a project commits and --user the one that covers every project, so pass one of them\n',
+    });
+  });
+
+  it('reports a command that threw rather than letting it escape', async () => {
+    vi.spyOn(process, 'cwd').mockImplementation(() => {
+      throw new Error('the working directory is gone');
+    });
+    await expect(
+      runCli(['mcp', 'install', '--host', 'claude-code', '--print']),
+    ).resolves.toEqual({
+      code: 2,
+      out: '',
+      err: 'error: the working directory is gone\n',
+    });
+  });
+
   it('says why a command threw where the parser wrote nothing', async () => {
     vi.spyOn(renderOptionsSchema, 'safeParse').mockImplementation(() => {
       throw new Error('the option schema gave out');
@@ -148,5 +184,31 @@ describe('an outcome onto the streams', () => {
       streams.streams,
     );
     expect(code).toEqual(2);
+  });
+});
+
+describe('a command that rejects rather than answering', () => {
+  beforeEach(() => {
+    vi.resetModules();
+  });
+
+  afterEach(() => {
+    vi.doUnmock('./render.js');
+    vi.resetModules();
+  });
+
+  it('reports the rejection rather than letting it reach the process', async () => {
+    vi.doMock('./render.js', async () => ({
+      ...(await vi.importActual<typeof import('./render.js')>('./render.js')),
+      render: () => Promise.reject(new Error('the projection gave out')),
+    }));
+    const rejecting = await import('./cli.js');
+    await expect(
+      rejecting.runCli(['render', ecluse, '--format', 'md', '--out', '-']),
+    ).resolves.toEqual({
+      code: 2,
+      out: '',
+      err: 'error: the projection gave out\n',
+    });
   });
 });

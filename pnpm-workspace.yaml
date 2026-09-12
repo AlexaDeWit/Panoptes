@@ -35,8 +35,8 @@ peerDependencyRules:
     - '@nx/jest'
 
 # nx pins smol-toml to an exact 1.6.1, so no range bump reaches the fix for
-# the denial of service on malformed documents (<= 1.7.0). Scoped to nx:
-# nothing else in the tree asks for smol-toml.
+# the denial of service on malformed documents (<= 1.7.0). Scoped to nx: the
+# catalog entry below is what every other consumer resolves.
 overrides:
   'nx>smol-toml': '^1.8.0'
 
@@ -155,6 +155,12 @@ catalog:
   remark-gfm: ^4.0.1
   remark-parse: ^11.0.0
   remark-stringify: ^11.0.0
+  # TOML, which is the syntax Codex keeps its MCP registration in, so
+  # `saer mcp install --host codex` parses a config file it did not write and
+  # writes it back with every other setting in it. The floor is 1.8.0: the
+  # 1.7.0 and older line has a denial of service on a malformed document, and
+  # a host configuration file is exactly the input this reads.
+  smol-toml: ^1.8.0
   tslib: ^2.3.0
   # TypeScript stays on 6.x: nx's @nx/js/typescript plugin drives the compiler
   # through the programmatic API, which the Go-native 7.0 line does not ship

@@ -153,6 +153,8 @@ export function unchangedSince(
  * mode the target carried is put on the temporary first, since the rename
  * replaces the file's permissions along with its content. The handle over
  * the bytes written comes back, which is the revision the next write quotes.
+ * `created` names the mode for a target that is not there, which is the
+ * caller's to pass where a rename onto a free path is what it wants.
  *
  * `quoted` is the handle over the bytes the caller read, and the target is
  * hashed again immediately before the rename: one that no longer matches
@@ -168,16 +170,21 @@ export function replacedFile(
   target: WriteTarget,
   text: string,
   quoted: string,
+  created?: number,
 ): Either.Either<string, WriteFailure> {
-  return throughTemporary(target, text, (temporary) =>
-    Either.flatMap(unmovedSince(target, quoted), () =>
-      Either.try({
-        try: () => {
-          renameSync(temporary, target.path);
-        },
-        catch: (error) => unwritten(target.file, error),
-      }),
-    ),
+  return throughTemporary(
+    target,
+    text,
+    (temporary) =>
+      Either.flatMap(unmovedSince(target, quoted), () =>
+        Either.try({
+          try: () => {
+            renameSync(temporary, target.path);
+          },
+          catch: (error) => unwritten(target.file, error),
+        }),
+      ),
+    created,
   );
 }
 
@@ -186,31 +193,39 @@ export function replacedFile(
  * temporary file is linked onto the target rather than renamed onto it,
  * which is what makes the refusal and the write one step: a rename replaces
  * whatever the path holds, where a link fails on a path that holds anything.
+ * `created` is the mode the file is given, since a path that is free carries
+ * none of its own.
  */
 export function createdFile(
   target: WriteTarget,
   text: string,
+  created?: number,
 ): Either.Either<string, WriteFailure> {
-  return throughTemporary(target, text, (temporary) =>
-    Either.try({
-      try: () => {
-        linkSync(temporary, target.path);
-      },
-      catch: (error) => occupiedOrUnwritten(target.file, error),
-    }),
+  return throughTemporary(
+    target,
+    text,
+    (temporary) =>
+      Either.try({
+        try: () => {
+          linkSync(temporary, target.path);
+        },
+        catch: (error) => occupiedOrUnwritten(target.file, error),
+      }),
+    created,
   );
 }
 
 /**
- * The text a codec produced, or the refusal where it threw. A codec answers
- * with text rather than with a result union, so the throw it does not
- * promise is contained here: an exception reaching the transport would lose
- * the tool result, and with it the line that says the text is data.
+ * What a serializer produced, or the refusal where it threw. A codec answers
+ * with its text rather than with a result union, and so does a third-party
+ * writer, so the throw neither promises is contained here: an exception
+ * reaching the transport would lose the tool result, and with it the line
+ * that says the text is data.
  */
-export function serialized(
+export function serialized<Value>(
   file: string,
-  write: () => WriteResult,
-): Either.Either<WriteResult, WriteFailure> {
+  write: () => Value,
+): Either.Either<Value, WriteFailure> {
   return Either.try({
     try: write,
     catch: (error) => unwritten(file, error),
@@ -237,6 +252,7 @@ function throughTemporary(
   target: WriteTarget,
   text: string,
   commit: (temporary: string) => Either.Either<void, WriteFailure>,
+  created?: number,
 ): Either.Either<string, WriteFailure> {
   const bytes = Buffer.from(text, 'utf8');
   const temporary = join(
@@ -246,7 +262,9 @@ function throughTemporary(
   return discarding(
     temporary,
     Either.flatMap(
-      Either.flatMap(staged(target, temporary, bytes), () => commit(temporary)),
+      Either.flatMap(staged(target, temporary, bytes, created), () =>
+        commit(temporary),
+      ),
       () =>
         Either.try({
           try: () => revisionOf(bytes),
@@ -260,8 +278,9 @@ function staged(
   target: WriteTarget,
   temporary: string,
   bytes: Uint8Array,
+  created?: number,
 ): Either.Either<void, WriteFailure> {
-  const mode = modeOf(target.path);
+  const mode = modeOf(target.path) ?? created;
   return Either.try({
     try: () => {
       writeFileSync(

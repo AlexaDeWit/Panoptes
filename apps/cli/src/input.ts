@@ -10,7 +10,7 @@ import {
   type Divergence,
 } from '@saerskriven/formats';
 import { Either } from 'effect';
-import { readTextFile, sizeOf } from './files.js';
+import { readTextFile, withinReadBound } from './files.js';
 import {
   invalidInput,
   lines,
@@ -55,20 +55,17 @@ export function describeDivergences(
 }
 
 function withinSizeBound(file: string): Either.Either<void, CommandOutcome> {
-  const size = sizeOf(file);
-  return size === undefined || size <= readLimits.maxTextBytes
-    ? Either.right(undefined)
-    : Either.left(
-        invalidInput(
-          describeReadFailure(
-            ReadFailure.ExceededReadLimit({
-              limit: 'maxTextBytes',
-              bound: readLimits.maxTextBytes,
-              observed: size,
-            }),
-          ),
-        ),
-      );
+  return withinReadBound(file, (observed) =>
+    invalidInput(
+      describeReadFailure(
+        ReadFailure.ExceededReadLimit({
+          limit: 'maxTextBytes',
+          bound: readLimits.maxTextBytes,
+          observed,
+        }),
+      ),
+    ),
+  );
 }
 
 function detected(file: string): Either.Either<DetectedRead, CommandOutcome> {
