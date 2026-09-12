@@ -425,15 +425,22 @@ toolchain in CI's Nix-store cache either. The out-link the build writes is a
 Nix garbage-collection root for the 2 MiB module and for nothing else, and
 `cache-nix-action` collects the store before it saves, so the entry carries the
 module while the 2 GiB of Rust build inputs are collected and the 5G ceiling
-holds. The `Rasterizer module` job saves no entry at all, so the crate is cold
-there on every run.
+holds. The `Rasterizer module` job writes no entry of its own, `build-test`
+being that prefix's one writer, and the entry it restores already holds the
+module's output path, so its build validates that path rather than compiling
+the crate. What makes a job pay the compile is a change to the derivation
+under `nix/resvg-wasm`, or a `flake.lock` bump that moves the Rust toolchain
+it builds with.
 
 `@saerskriven/render/resvg` reads the bytes back, on the terms the `pdf`
 subpath reads the Typst module on: the module and the faces are the caller's to
 hand over and nothing is read from a file. `resvgWasmAsset` on the
-`build-assets` subpath locates the module through `SAERSKRIVEN_RESVG_WASM`, and
-the rasterizer's spec skips where that variable is unset, which is what running
-outside the flake shell looks like.
+`build-assets` subpath locates the module through `SAERSKRIVEN_RESVG_WASM`. The
+rasterizer's spec skips on an unset or empty variable, which is what running
+outside the flake shell looks like. Inside it the variable is always set, so
+the suite cannot skip: a module the build failed to write fails the spec on the
+missing file instead, which is why no job checks for that file before running
+the suite.
 
 The CLI build copies the module into `apps/cli/dist/assets`, beside the Typst
 module and the fonts, and the studio build emits it as a hashed asset of the

@@ -146,9 +146,11 @@ targets do not run another project's tests.
 
 Files a task produces are restored only when listed in its `outputs`. A task
 that consumes another task's output declares both `dependsOn` and a
-`dependentTasksOutputFiles` input. The CLI's `compile` and `test-compiled`
-targets are the case in this tree: the first stores `dist/cli`, and the second
-hashes that executable before it runs it.
+`dependentTasksOutputFiles` input. Two cases in this tree: the CLI's `compile`
+stores `dist/cli` and its `test-compiled` hashes that executable before it
+runs it, and the `resvg-wasm` build stores the rasterizer module that the
+CLI's build, the studio's build and test, and `@saerskriven/render`'s test
+each hash.
 
 A target that empties its output directory owns that directory alone. The
 studio's vite build empties `dist/` on every run and nothing orders it

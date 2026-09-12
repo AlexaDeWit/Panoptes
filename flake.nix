@@ -36,6 +36,12 @@
           # environment to. The root is walked up to rather than read from
           # $PWD, so entering the shell in a subdirectory still names the one
           # path.
+          #
+          # The path has to stay under the workspace root. The studio's
+          # development server allows that root and no longer names the
+          # module's own directory, so a module outside it would come back as
+          # Vite refusing to serve a file rather than as a sentence naming the
+          # cause (apps/studio/build-assets.mts).
           shellHook = ''
             unset NO_COLOR
             workspace=$PWD

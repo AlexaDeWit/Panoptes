@@ -41,7 +41,7 @@ The producers are `@saerskriven/model`, `@saerskriven/formats`, and
 
 The `.snapshot.png` rasters are written only where the rasterizer module
 [`SAERSKRIVEN_RESVG_WASM`](../README.md#the-svg-rasterizer) names has been
-built, since the rasterizer's suite skips where that variable is unset.
+built, which that section describes.
 
 The remaining files are maintained inputs. `render/ecluse.snapshot.pdf.sha256`
 is the expected PDF digest for the CLI and studio browser suites.

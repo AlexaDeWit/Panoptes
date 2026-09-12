@@ -26,12 +26,22 @@ export default defineConfig({
     trace: 'on-first-retry',
   },
   webServer: [
+    // This command string is load-bearing twice. @nx/playwright parses it to
+    // infer this project's `e2e` dependency on @saerskriven/studio:serve, and
+    // in CI, where the server is not reusable and the plugin infers nothing,
+    // Playwright runs the string itself as a nested nx invocation. Rewriting
+    // it to invoke Vite directly would drop the inferred dependency here and
+    // that invocation there, with nothing said either way.
     {
       command: 'pnpm exec nx run @saerskriven/studio:serve',
       url: 'http://localhost:4200',
       reuseExistingServer: !process.env['CI'],
       timeout: 120_000,
     },
+    // The Pages preview builds the studio itself, so it reads the rasterizer
+    // module too. It needs no dependency of its own: resvg-wasm:build is a
+    // non-continuous dependency of `e2e`, which nx finishes before the task
+    // starts either server.
     {
       command: 'bash scripts/preview-studio-pages.sh',
       cwd: '../..',

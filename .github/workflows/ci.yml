@@ -158,18 +158,21 @@ jobs:
         uses: ./.github/actions/setup-toolchain
         with:
           install-dependencies: 'true'
-          # Restore the shared entry, save nothing: the Rust closure is 2.7G
-          # where the entries every other job restores from already hold 8.2G
-          # of the repository's 10G limit, and saving it would evict them.
-          # Only the Rust half of this job's store is then cold, which is a
-          # build of about a minute on a job nothing waits for.
+          # Restore the shared entry, save nothing: build-test is this
+          # prefix's one writer, and a Rust closure this job did compile
+          # would be 2.7G against the 8.2G of the repository's 10G limit
+          # that the entries every other job restores from already hold.
+          # The restored entry carries the module's output path, so the
+          # build behind this job's test target validates that path rather
+          # than compiling the crate. A change under nix/resvg-wasm is what
+          # makes it pay the compile, about a minute on a job nothing waits
+          # for.
           save-nix-store: 'false'
 
       # The test target depends on the `resvg-wasm` build, so the module is
-      # built here rather than by a step of this job's own. The rasterizer's
-      # spec skips where the variable is unset, which the flake no longer
-      # leaves it, so a green suite can no longer be a skipped one: a module
-      # the build failed to write fails the spec instead.
+      # built here rather than by a step of this job's own, and a green suite
+      # can no longer be a skipped one, so no step checks for the file first
+      # (README.md, The SVG rasterizer).
       - name: Rasterize a fixture through the module
         run: >-
           nix develop .#ci --command

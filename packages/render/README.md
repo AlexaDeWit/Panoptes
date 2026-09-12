@@ -369,9 +369,10 @@ suites compare every golden on every run and red where a file and the output
 differ. Cached tests write no snapshot, so a missing golden fails. Regenerate
 them with `pnpm snapshots:update @saerskriven/render` in the commit that moved
 them, and read the diff. That command runs Vitest directly rather than through
-nx, so the raster goldens need the rasterizer module built first, which
-[`SAERSKRIVEN_RESVG_WASM`](../../README.md#the-svg-rasterizer) names: their
-suite skips where that variable is unset.
+nx, so the raster goldens need the rasterizer module built first, at the path
+[`SAERSKRIVEN_RESVG_WASM`](../../README.md#the-svg-rasterizer) names. Whether
+a missing module skips that suite or fails it turns on the variable rather
+than the file, which that section describes.
 
 The CLI's suites read several of them as fixtures, and the Saerskriven ones
 use the model `@saerskriven/formats` maintains under `test-data`.
