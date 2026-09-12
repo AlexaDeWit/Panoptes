@@ -58,6 +58,11 @@ edit operations take a caller's strings as given, a model assembled in memory
 being the caller's to assemble. A boundary that renders a model escapes or
 replaces what its output format forbids instead of resting on this rule.
 
+Element variants hold optional security facts and declared boundary relationships.
+Their fields and absence semantics follow [the native format](../../docs/saerskriven-yaml.md#security-facts).
+Consumers query typed element properties directly. An absent boolean remains unknown,
+and an absent relationship list remains unrecorded. Geometry edits do not change these facts.
+
 The suite carries a representability gate over the whole model vocabulary.
 `ecluseFixture` transcribes Écluse's real Threat Dragon model, one diagram of
 38 elements and a register of 29 threats numbered with the gaps the source
@@ -92,7 +97,7 @@ themselves, regenerated and checked on every test run.
 Unit tests: `pnpm nx test @saerskriven/model`.
 
 `selectionFragment` copies a selection, closes its attached flow endpoints,
-and restricts related record links to the copied graph. `remapFragment` gives
+and restricts related record links and declared boundary relationships to the copied graph. `remapFragment` gives
 every record a caller-supplied fresh prefix and translates its geometry.
 `insertFragment` validates the combined graph before returning it and issues
 new threat numbers. An ID collision refuses the entire insertion.
@@ -117,7 +122,7 @@ still does, naming how many it holds. The refusal is deliberate: a cascade
 would delete records the caller never named, which no other operation here
 does. A caller that wants the cascade removes the elements with
 `removeElement` first, which detaches the flows anchored to each and drops
-its threat and assumption links, and then removes the emptied diagram.
+its threat, assumption and boundary references, and then removes the emptied diagram.
 
 Editing a mitigation or an assumption is whole-record replacement, as
 editing a threat is: the caller builds the record from its schema and the

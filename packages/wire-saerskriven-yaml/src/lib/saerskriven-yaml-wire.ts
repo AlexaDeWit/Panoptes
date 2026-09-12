@@ -24,11 +24,27 @@ const nodeBaseSchema = elementBaseSchema.extend({
   size: sizeSchema,
 });
 
-const actorSchema = nodeBaseSchema.extend({ kind: z.literal('actor') });
+const actorSchema = nodeBaseSchema.extend({
+  kind: z.literal('actor'),
+  providesAuthentication: z.boolean().optional(),
+});
 
-const processSchema = nodeBaseSchema.extend({ kind: z.literal('process') });
+const processSchema = nodeBaseSchema.extend({
+  kind: z.literal('process'),
+  handlesCardPayment: z.boolean().optional(),
+  handlesGoodsOrServices: z.boolean().optional(),
+  isWebApplication: z.boolean().optional(),
+  privilegeLevel: z.string().optional(),
+});
 
-const storeSchema = nodeBaseSchema.extend({ kind: z.literal('store') });
+const storeSchema = nodeBaseSchema.extend({
+  kind: z.literal('store'),
+  isALog: z.boolean().optional(),
+  isEncrypted: z.boolean().optional(),
+  isSigned: z.boolean().optional(),
+  storesCredentials: z.boolean().optional(),
+  storesInventory: z.boolean().optional(),
+});
 
 const sideSchema = z.enum(['top', 'right', 'bottom', 'left']);
 
@@ -50,6 +66,10 @@ const endpointSchema = z.discriminatedUnion('kind', [
 
 const flowSchema = elementBaseSchema.extend({
   kind: z.literal('flow'),
+  protocol: z.string().optional(),
+  isEncrypted: z.boolean().optional(),
+  isPublicNetwork: z.boolean().optional(),
+  trustBoundaryIds: z.array(z.string()).optional(),
   source: endpointSchema,
   target: endpointSchema,
   waypoints: waypointsSchema,
@@ -74,6 +94,8 @@ const boundaryShapeSchema = z.discriminatedUnion('kind', [
 
 const trustBoundarySchema = elementBaseSchema.extend({
   kind: z.literal('trust-boundary'),
+  containedElements: z.array(z.string()).optional(),
+  crossingFlows: z.array(z.string()).optional(),
   shape: boundaryShapeSchema,
 });
 
@@ -225,41 +247,7 @@ const metadataSchema = z.object({
   contributors: z.array(z.string()),
 });
 
-/**
- * A Saerskriven YAML file, whole, and the whole of what this package declares.
- *
- * The format is a contract with files people already have, so this schema is
- * the only authority on it. It states its own ids, its own vocabularies and
- * its own record shapes, and imports nothing but zod. Where a name here
- * matches one in the internal model, the two are the same today and are free
- * to stop being: a model changed for the sake of the editor must not change
- * what version 1 means, and only the mapping in `@saerskriven/formats` knows
- * both sides.
- *
- * Nothing is defaulted and nothing is transformed. An id is any non-empty
- * string, unbranded: the model brands its ids at its own parse boundary, and
- * a file is not a model. Every key the first release of version 1 declared
- * is required. A key a later release added is optional, so a file written
- * before it still reads, and the mapping supplies what its absence means: a
- * flow endpoint's `side`, absent where the renderer chooses the side, and a
- * flow's `bidirectional`, absent where the flow runs one way. A write states
- * `bidirectional` on every flow and `side` on every pinned end.
- *
- * `formatVersion` is a literal rather than a bounded number, so a file
- * stamped with any other release fails at that path rather than reaching the
- * mapping. It is also what tells a Saerskriven file apart from a JSON format
- * without consulting the extension.
- *
- * A key this schema does not declare is dropped and reported by the codec as
- * an `undeclared` divergence rather than refused, so a file written by a
- * later release of version 1 still reads, minus what this release has no
- * home for.
- *
- * The root keys are declared in three tiers, and a write follows this order:
- * the header (`formatVersion`, then `metadata`), the content in alphabetical
- * order, and the bookkeeping the editor keeps for itself. A key added to the
- * format later has an obvious place rather than an argued one.
- */
+/** Native v1 declares optional additions without defaults. The codec reports unknown keys and defines absence. */
 export const saerskrivenYamlWireSchema = z.object({
   formatVersion: z.literal(1),
   metadata: metadataSchema,

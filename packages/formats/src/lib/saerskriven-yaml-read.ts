@@ -1,4 +1,11 @@
 import {
+  actorProperties,
+  processProperties,
+  storeProperties,
+  flowProperties,
+  boundaryProperties,
+} from './security-properties.js';
+import {
   assumptionSchema,
   boundaryShapeSchema,
   diagramSchema,
@@ -52,17 +59,7 @@ export function readSaerskrivenYaml(
   return Either.flatMap(parseYaml(text), mapDocument);
 }
 
-/**
- * A wire document mapped onto the internal model, which is the half of a
- * read a caller holding a document rather than a text needs. No divergence
- * comes back: the scan compares the document against the text it was parsed
- * from, and there is no such text here.
- *
- * This is where the format's compatibility contract is honoured for the
- * model: a key added to version 1 of the format is optional on the wire and
- * given its value here, so a document written before the key existed maps
- * onto a model that requires it.
- */
+/** Maps a validated wire document. Absent security facts remain unknown. */
 export function readSaerskrivenYamlDocument(
   document: SaerskrivenYamlDocument,
 ): Either.Either<Model, ReadFailure> {
@@ -121,6 +118,7 @@ function toElement(element: SaerskrivenYamlElement): ElementInput {
   if (element.kind === 'flow') {
     return {
       kind: 'flow',
+      ...flowProperties(element),
       ...toCommon(element),
       source: toEndpoint(element.source),
       target: toEndpoint(element.target),
@@ -131,6 +129,7 @@ function toElement(element: SaerskrivenYamlElement): ElementInput {
   if (element.kind === 'trust-boundary') {
     return {
       kind: 'trust-boundary',
+      ...boundaryProperties(element),
       ...toCommon(element),
       shape: toBoundaryShape(element.shape),
     };
@@ -144,12 +143,18 @@ function toElement(element: SaerskrivenYamlElement): ElementInput {
       text: element.text,
     };
   }
-  return {
-    kind: element.kind,
+  const node = {
     ...toCommon(element),
     position: element.position,
     size: element.size,
   };
+  if (element.kind === 'actor') {
+    return { kind: 'actor', ...node, ...actorProperties(element) };
+  }
+  if (element.kind === 'process') {
+    return { kind: 'process', ...node, ...processProperties(element) };
+  }
+  return { kind: 'store', ...node, ...storeProperties(element) };
 }
 
 function toCommon(element: SaerskrivenYamlElement) {

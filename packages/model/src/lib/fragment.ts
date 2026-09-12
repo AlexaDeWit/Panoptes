@@ -1,3 +1,4 @@
+import { restrictRelationships } from './relationships.js';
 import { Either } from 'effect';
 import type { DiagramId, ElementId } from './ids.js';
 import { OperationFailure } from './operation-failures.js';
@@ -45,9 +46,9 @@ export function selectionFragment(
       included.add(element.id);
     }
   }
-  const elements = diagram.elements.filter((element) =>
-    included.has(element.id),
-  );
+  const elements = diagram.elements
+    .filter((element) => included.has(element.id))
+    .map((element) => restrictRelationships(element, included));
   const threats = model.threats
     .filter((threat) => threat.elements.some((id) => included.has(id)))
     .map((threat) => ({
@@ -97,6 +98,9 @@ export function remapFragment(
           ? {
               ...element,
               id: renamed(element.id),
+              ...(element.trustBoundaryIds === undefined
+                ? {}
+                : { trustBoundaryIds: element.trustBoundaryIds.map(renamed) }),
               source:
                 element.source.kind === 'attached'
                   ? {
@@ -112,7 +116,20 @@ export function remapFragment(
                     }
                   : element.target,
             }
-          : { ...element, id: renamed(element.id) };
+          : element.kind === 'trust-boundary'
+            ? {
+                ...element,
+                id: renamed(element.id),
+                ...(element.containedElements === undefined
+                  ? {}
+                  : {
+                      containedElements: element.containedElements.map(renamed),
+                    }),
+                ...(element.crossingFlows === undefined
+                  ? {}
+                  : { crossingFlows: element.crossingFlows.map(renamed) }),
+              }
+            : { ...element, id: renamed(element.id) };
       }),
     })),
     threats: fragment.threats.map((item) => ({

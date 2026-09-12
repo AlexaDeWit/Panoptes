@@ -16,6 +16,25 @@ diagrams:
         description: ""
         outOfScope: false
         reasonOutOfScope: ""
+        containedElements:
+          - 0ec10e5e-0000-4000-8000-000000000012
+          - 0ec10e5e-0000-4000-8000-000000000020
+          - 0ec10e5e-0000-4000-8000-000000000021
+          - 0ec10e5e-0000-4000-8000-000000000022
+          - 0ec10e5e-0000-4000-8000-000000000030
+          - 0ec10e5e-0000-4000-8000-000000000031
+          - 0ec10e5e-0000-4000-8000-000000000032
+          - 0ec10e5e-0000-4000-8000-000000000033
+          - 0ec10e5e-0000-4000-8000-000000000034
+          - f1646094-9885-422a-b7e7-7888c72905ef
+          - c8455307-cef2-4843-a821-ff90db9643d2
+          - f66e2ffa-c6bf-4b45-8aad-a23ced3a97ff
+          - d5da865d-6e80-44da-a2ee-841f6bebd567
+        crossingFlows:
+          - 0ec10e5e-0000-4000-8000-000000000040
+          - 0ec10e5e-0000-4000-8000-000000000043
+          - 0ec10e5e-0000-4000-8000-000000000047
+          - 4e565871-45cc-4987-abba-24859ee2cf60
         shape:
           kind: box
           position:
@@ -30,6 +49,11 @@ diagrams:
         description: ""
         outOfScope: false
         reasonOutOfScope: ""
+        containedElements:
+          - 0ec10e5e-0000-4000-8000-000000000011
+        crossingFlows:
+          - 0ec10e5e-0000-4000-8000-000000000043
+          - 0ec10e5e-0000-4000-8000-000000000047
         shape:
           kind: box
           position:
@@ -44,6 +68,9 @@ diagrams:
         description: ""
         outOfScope: false
         reasonOutOfScope: ""
+        containedElements:
+          - 7528590e-7392-46c4-9b8c-7ca872d63590
+        crossingFlows: []
         shape:
           kind: box
           position:
@@ -66,6 +93,7 @@ diagrams:
         size:
           width: 170
           height: 90
+        providesAuthentication: true
       - kind: actor
         id: 0ec10e5e-0000-4000-8000-000000000011
         name: Public npm registry
@@ -78,6 +106,7 @@ diagrams:
         size:
           width: 180
           height: 90
+        providesAuthentication: false
       - kind: actor
         id: 0ec10e5e-0000-4000-8000-000000000012
         name: AWS IMDS + STS
@@ -90,6 +119,7 @@ diagrams:
         size:
           width: 190
           height: 90
+        providesAuthentication: true
       - kind: process
         id: 0ec10e5e-0000-4000-8000-000000000020
         name: Écluse proxy
@@ -140,6 +170,10 @@ diagrams:
         size:
           width: 180
           height: 90
+        isALog: false
+        isEncrypted: false
+        isSigned: false
+        storesCredentials: false
       - kind: store
         id: 0ec10e5e-0000-4000-8000-000000000031
         name: Mirror queue (SQS)
@@ -152,6 +186,10 @@ diagrams:
         size:
           width: 180
           height: 90
+        isALog: false
+        isEncrypted: false
+        isSigned: false
+        storesCredentials: false
       - kind: store
         id: 0ec10e5e-0000-4000-8000-000000000032
         name: |-
@@ -166,6 +204,10 @@ diagrams:
         size:
           width: 200
           height: 90
+        isALog: false
+        isEncrypted: false
+        isSigned: false
+        storesCredentials: false
       - kind: store
         id: 0ec10e5e-0000-4000-8000-000000000033
         name: |-
@@ -180,6 +222,10 @@ diagrams:
         size:
           width: 200
           height: 90
+        isALog: false
+        isEncrypted: false
+        isSigned: false
+        storesCredentials: false
       - kind: store
         id: 0ec10e5e-0000-4000-8000-000000000034
         name: |-
@@ -194,12 +240,21 @@ diagrams:
         size:
           width: 200
           height: 90
+        isALog: false
+        isEncrypted: false
+        isSigned: false
+        storesCredentials: false
       - kind: flow
         id: 0ec10e5e-0000-4000-8000-000000000040
         name: npm read / publish (passthrough CodeArtifact token)
         description: The caller's request, carrying its own CodeArtifact bearer token. It crosses the operator access edge.
         outOfScope: false
         reasonOutOfScope: ""
+        protocol: HTTPS
+        isEncrypted: true
+        isPublicNetwork: false
+        trustBoundaryIds:
+          - 0ec10e5e-0000-4000-8000-000000000001
         source:
           kind: attached
           element: 0ec10e5e-0000-4000-8000-000000000010
@@ -214,6 +269,10 @@ diagrams:
         description: A per-request private read with the caller's own token. The upstream re-authorises each request. Écluse never shared-caches this read under passthrough.
         outOfScope: false
         reasonOutOfScope: ""
+        protocol: HTTPS
+        isEncrypted: true
+        isPublicNetwork: false
+        trustBoundaryIds: []
         source:
           kind: attached
           element: 0ec10e5e-0000-4000-8000-000000000020
@@ -228,6 +287,10 @@ diagrams:
         description: Reads and writes of the anonymous public gated origin only.
         outOfScope: false
         reasonOutOfScope: ""
+        protocol: in-process
+        isEncrypted: false
+        isPublicNetwork: false
+        trustBoundaryIds: []
         source:
           kind: attached
           element: 0ec10e5e-0000-4000-8000-000000000020
@@ -242,6 +305,12 @@ diagrams:
         description: Untrusted egress to the upstream registry. The target is attacker-influenceable, so Écluse strips the caller credential. The flow crosses to the public internet and is forced HTTPS-only.
         outOfScope: false
         reasonOutOfScope: ""
+        protocol: HTTPS
+        isEncrypted: true
+        isPublicNetwork: true
+        trustBoundaryIds:
+          - 0ec10e5e-0000-4000-8000-000000000001
+          - 0ec10e5e-0000-4000-8000-000000000002
         source:
           kind: attached
           element: 0ec10e5e-0000-4000-8000-000000000020
@@ -256,6 +325,10 @@ diagrams:
         description: A first-party publish relayed to the private store with the publisher's own token. The publish-scope allow-list gates it before any write.
         outOfScope: false
         reasonOutOfScope: ""
+        protocol: HTTPS
+        isEncrypted: true
+        isPublicNetwork: false
+        trustBoundaryIds: []
         source:
           kind: attached
           element: 0ec10e5e-0000-4000-8000-000000000020
@@ -270,6 +343,10 @@ diagrams:
         description: On tarball-path acceptance, Écluse enqueues a mirror job without blocking.
         outOfScope: false
         reasonOutOfScope: ""
+        protocol: AWS SQS
+        isEncrypted: true
+        isPublicNetwork: false
+        trustBoundaryIds: []
         source:
           kind: attached
           element: 0ec10e5e-0000-4000-8000-000000000020
@@ -284,6 +361,10 @@ diagrams:
         description: The worker polls the mirror queue for demand-driven jobs.
         outOfScope: false
         reasonOutOfScope: ""
+        protocol: AWS SQS
+        isEncrypted: true
+        isPublicNetwork: false
+        trustBoundaryIds: []
         source:
           kind: attached
           element: 0ec10e5e-0000-4000-8000-000000000021
@@ -298,6 +379,12 @@ diagrams:
         description: The worker fetches the approved artifact from the upstream registry to mirror it. This is untrusted egress, forced HTTPS-only. The worker verifies the bytes against dist.integrity before it publishes.
         outOfScope: false
         reasonOutOfScope: ""
+        protocol: HTTPS
+        isEncrypted: true
+        isPublicNetwork: true
+        trustBoundaryIds:
+          - 0ec10e5e-0000-4000-8000-000000000001
+          - 0ec10e5e-0000-4000-8000-000000000002
         source:
           kind: attached
           element: 0ec10e5e-0000-4000-8000-000000000021
@@ -312,6 +399,10 @@ diagrams:
         description: The worker asks the credential provider for a mirror-target write token.
         outOfScope: false
         reasonOutOfScope: ""
+        protocol: in-process
+        isEncrypted: false
+        isPublicNetwork: false
+        trustBoundaryIds: []
         source:
           kind: attached
           element: 0ec10e5e-0000-4000-8000-000000000021
@@ -326,6 +417,10 @@ diagrams:
         description: The credential provider exchanges container-role credentials for a CodeArtifact write token. It reaches an internal address by design.
         outOfScope: false
         reasonOutOfScope: ""
+        protocol: HTTPS
+        isEncrypted: true
+        isPublicNetwork: false
+        trustBoundaryIds: []
         source:
           kind: attached
           element: 0ec10e5e-0000-4000-8000-000000000022
@@ -340,6 +435,10 @@ diagrams:
         description: The worker writes the verified, approved artifact to the mirror store with Écluse's own minted token.
         outOfScope: false
         reasonOutOfScope: ""
+        protocol: HTTPS
+        isEncrypted: true
+        isPublicNetwork: false
+        trustBoundaryIds: []
         source:
           kind: attached
           element: 0ec10e5e-0000-4000-8000-000000000021
@@ -356,6 +455,10 @@ diagrams:
         description: Registry C aggregates the first-party store A on read. This is trusted, registry-level composition.
         outOfScope: false
         reasonOutOfScope: ""
+        protocol: HTTPS
+        isEncrypted: true
+        isPublicNetwork: false
+        trustBoundaryIds: []
         source:
           kind: attached
           element: 0ec10e5e-0000-4000-8000-000000000032
@@ -370,6 +473,10 @@ diagrams:
         description: Registry C aggregates the mirror store B on read. This is trusted, registry-level composition.
         outOfScope: false
         reasonOutOfScope: ""
+        protocol: HTTPS
+        isEncrypted: true
+        isPublicNetwork: false
+        trustBoundaryIds: []
         source:
           kind: attached
           element: 0ec10e5e-0000-4000-8000-000000000032
@@ -384,6 +491,10 @@ diagrams:
         description: ""
         outOfScope: false
         reasonOutOfScope: ""
+        protocol: https
+        isEncrypted: false
+        isPublicNetwork: false
+        trustBoundaryIds: []
         source:
           kind: attached
           element: 0ec10e5e-0000-4000-8000-000000000012
@@ -400,6 +511,11 @@ diagrams:
         description: ""
         outOfScope: false
         reasonOutOfScope: ""
+        protocol: https
+        isEncrypted: true
+        isPublicNetwork: false
+        trustBoundaryIds:
+          - 0ec10e5e-0000-4000-8000-000000000001
         source:
           kind: free
           position:
@@ -417,6 +533,10 @@ diagrams:
         description: Pilot pushes the optimised osv.db to S3.
         outOfScope: false
         reasonOutOfScope: ""
+        protocol: https
+        isEncrypted: true
+        isPublicNetwork: false
+        trustBoundaryIds: []
         source:
           kind: attached
           element: f1646094-9885-422a-b7e7-7888c72905ef
@@ -433,6 +553,10 @@ diagrams:
         description: The proxy polls S3 and downloads osv.db with GetObject.
         outOfScope: false
         reasonOutOfScope: ""
+        protocol: https
+        isEncrypted: true
+        isPublicNetwork: false
+        trustBoundaryIds: []
         source:
           kind: attached
           element: c8455307-cef2-4843-a821-ff90db9643d2
@@ -457,6 +581,10 @@ diagrams:
         size:
           width: 130
           height: 130
+        handlesCardPayment: false
+        handlesGoodsOrServices: false
+        isWebApplication: false
+        privilegeLevel: ""
       - kind: actor
         id: 7528590e-7392-46c4-9b8c-7ca872d63590
         name: OSV.dev
@@ -469,6 +597,7 @@ diagrams:
         size:
           width: 170
           height: 110
+        providesAuthentication: false
       - kind: store
         id: c8455307-cef2-4843-a821-ff90db9643d2
         name: S3 (OSV Datasets)
@@ -481,6 +610,11 @@ diagrams:
         size:
           width: 180
           height: 130
+        isALog: false
+        isEncrypted: false
+        isSigned: false
+        storesCredentials: false
+        storesInventory: false
       - kind: process
         id: f66e2ffa-c6bf-4b45-8aad-a23ced3a97ff
         name: Écluse Dredger
@@ -499,6 +633,8 @@ diagrams:
         description: Dredger issues delete requests to Registry B based on CVE advisories or age.
         outOfScope: false
         reasonOutOfScope: ""
+        isEncrypted: true
+        isPublicNetwork: false
         source:
           kind: attached
           element: f66e2ffa-c6bf-4b45-8aad-a23ced3a97ff
@@ -513,6 +649,8 @@ diagrams:
         description: Pilot requests IAM credentials to push to S3.
         outOfScope: false
         reasonOutOfScope: ""
+        isEncrypted: true
+        isPublicNetwork: false
         source:
           kind: attached
           element: f1646094-9885-422a-b7e7-7888c72905ef
@@ -527,6 +665,8 @@ diagrams:
         description: The proxy polls S3 for ETag changes and downloads the osv.db snapshot with the GetObject permission.
         outOfScope: false
         reasonOutOfScope: ""
+        isEncrypted: true
+        isPublicNetwork: false
         source:
           kind: attached
           element: 0ec10e5e-0000-4000-8000-000000000020

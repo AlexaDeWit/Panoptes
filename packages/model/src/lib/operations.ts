@@ -1,3 +1,4 @@
+import { relationshipIssues, restrictRelationships } from './relationships.js';
 import { Either } from 'effect';
 import type { BoundaryShape, Element, Flow, FlowEndpoint } from './elements.js';
 import type { Point, Side, Size } from './geometry.js';
@@ -15,7 +16,13 @@ import { firstRefusedCharacter, isEmptyName } from './text.js';
 /** The failures {@link addElement} can produce. */
 export type AddElementFailure = Extract<
   OperationFailure,
-  { _tag: 'UnknownDiagram' | 'DuplicateElementId' | 'InvalidFlowEndpoint' }
+  {
+    _tag:
+      | 'UnknownDiagram'
+      | 'DuplicateElementId'
+      | 'InvalidFlowEndpoint'
+      | 'InvalidElementRelationship';
+  }
 >;
 
 /** The failure {@link removeElement} can produce. */
@@ -56,6 +63,7 @@ export type AddDiagramFailure = Extract<
       | 'DuplicateDiagramId'
       | 'DuplicateElementId'
       | 'InvalidFlowEndpoint'
+      | 'InvalidElementRelationship'
       | 'EmptyTitle'
       | 'RefusedTitleCharacter';
   }
@@ -102,12 +110,7 @@ export function setFlowWaypoints(
   });
 }
 
-/**
- * Reattaches one flow endpoint to an actor, process, or store in its
- * diagram, the element it already names included. `anchor` pins the end to
- * that side of the element; none releases it to the renderer's choice. The
- * model comes back unchanged where the end already reads so.
- */
+/** Reattaches an endpoint inside its diagram. An absent anchor releases its pinned side. */
 export function reconnectFlow(
   model: Model,
   elementId: ElementId,
@@ -184,6 +187,18 @@ export function addElement(
   if (endpointFailure) {
     return Either.left(endpointFailure);
   }
+  const relationshipFailure = invalidRelationships(
+    element,
+    new Map(
+      [...model.diagrams[diagramIndex].elements, element].map((candidate) => [
+        candidate.id,
+        candidate,
+      ]),
+    ),
+  );
+  if (relationshipFailure !== undefined) {
+    return Either.left(relationshipFailure);
+  }
   return Either.right(
     withDiagram(model, diagramIndex, (diagram) => ({
       ...diagram,
@@ -192,7 +207,7 @@ export function addElement(
   );
 }
 
-/** Removes an element and its threat and assumption links. Attached flows keep their identity and acquire free endpoints at the removed element's anchor. */
+/** Removes an element and its threat, assumption and boundary references. Attached flows keep their identity and acquire free endpoints at the removed element's anchor. */
 export function removeElement(
   model: Model,
   elementId: ElementId,
@@ -209,10 +224,13 @@ export function removeElement(
     endpoint.kind === 'attached' && endpoint.element === elementId
       ? freed
       : endpoint;
+  const retained = elementIdsIn(model.diagrams[located.diagramIndex]);
+  retained.delete(elementId);
   const trimmed = withDiagram(model, located.diagramIndex, (diagram) => ({
     ...diagram,
     elements: diagram.elements
       .filter((element) => element.id !== elementId)
+      .map((element) => restrictRelationships(element, retained))
       .map((element) =>
         element.kind === 'flow'
           ? {
@@ -360,8 +378,13 @@ export function addDiagram(
     }
     own.add(element.id);
   }
+  const known = new Map(
+    diagram.elements.map((element) => [element.id, element]),
+  );
   for (const element of diagram.elements) {
-    const failure = flowEndpointFailure(element, diagram);
+    const failure =
+      flowEndpointFailure(element, diagram) ??
+      invalidRelationships(element, known);
     if (failure !== undefined) {
       return Either.left(failure);
     }
@@ -390,14 +413,7 @@ export function renameDiagram(
   );
 }
 
-/**
- * Drops a diagram that owns no element. One that still owns elements is
- * refused rather than cascaded: the cascade would delete records the caller
- * did not name, and no operation here does that. A caller that wants the
- * cascade removes the elements with {@link removeElement} first, which
- * detaches the flows anchored to each and drops its threat and assumption
- * links, and then removes the emptied diagram.
- */
+/** Removes only an empty diagram. Explicit element deletion must precede diagram deletion. */
 export function removeDiagram(
   model: Model,
   diagramId: DiagramId,
@@ -593,4 +609,19 @@ function resized(element: Element, size: Size): Element | undefined {
       : undefined;
   }
   return { ...element, size };
+}
+
+function invalidRelationships(
+  element: Element,
+  known: ReadonlyMap<ElementId, Element>,
+):
+  | Extract<OperationFailure, { _tag: 'InvalidElementRelationship' }>
+  | undefined {
+  const issues = relationshipIssues(element, known);
+  return issues.length === 0
+    ? undefined
+    : OperationFailure.InvalidElementRelationship({
+        elementId: element.id,
+        issues,
+      });
 }

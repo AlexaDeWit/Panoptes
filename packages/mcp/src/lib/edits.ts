@@ -108,13 +108,7 @@ const diagramEditSchema = z.object({
 
 const threatFieldsSchema = threatSchema.omit({ number: true });
 
-/**
- * One edit of a batch, discriminated on `op`. A record an edit adds or
- * replaces is the whole record, as the model's own operations take it, with
- * one exception: a threat carries no `number`, which the model issues on an
- * add and holds fixed on a replace, threat numbers naming one threat for the
- * life of the model.
- */
+/** An edit supplies a whole record, except the threat number owned by the model. */
 export const modelEditSchema = z.discriminatedUnion('op', [
   z.object({
     op: z.literal('add_element'),
@@ -209,11 +203,7 @@ export const modelEditSchema = z.discriminatedUnion('op', [
 /** One edit of a batch. */
 export type ModelEdit = z.infer<typeof modelEditSchema>;
 
-/**
- * Every `op` the edit schema declares, in the order it declares them, read
- * off the schema rather than listed again: the tool's own description names
- * them, and a suite checks that each one is exercised.
- */
+/** Edit names follow the schema so tool documentation cannot omit a variant. */
 export const editOps: readonly ModelEdit['op'][] = modelEditSchema.options.map(
   (option) => option.shape.op.value,
 );
@@ -224,11 +214,7 @@ export type RefusedEdit = {
   readonly failure: OperationFailure;
 };
 
-/**
- * The model with every edit applied in order, or the first edit the model
- * refused. Nothing here touches a file: the caller writes the model this
- * returns, so a refusal reaches the caller with no file written.
- */
+/** Applies a batch in order and returns its first refusal. The caller owns file writes. */
 export function applyEdits(
   model: Model,
   edits: readonly ModelEdit[],
@@ -342,11 +328,6 @@ function applyEdit(
   }
 }
 
-/**
- * The arm no op reaches. The parsed union has no member left for it, so its
- * parameter is `never`: an op added to the schema without a case above stops
- * compiling here rather than falling through at run time.
- */
 function unapplied(_edit: never): Either.Either<Model, OperationFailure> {
   return Either.left(
     OperationFailure.InvalidFragment({
@@ -423,14 +404,10 @@ function placed(
     : { position: placement.position, size: placement.size };
 }
 
-/**
- * What the model said, as one sentence. Every id it names came out of a
- * model file or out of the call, so each is quoted and escaped: the sentence
- * goes to an agent as text, and an id carrying a control character would
- * otherwise break the line it is on.
- */
 function describeOperationFailure(failure: OperationFailure): string {
   return OperationFailure.$match(failure, {
+    InvalidElementRelationship: ({ issues }) =>
+      `The element has invalid boundary relationships: ${issueLine(issues)}.`,
     InvalidFragment: ({ issues }) =>
       `The edit does not apply to this model: ${issueLine(issues)}.`,
     UnknownDiagram: ({ diagramId }) =>

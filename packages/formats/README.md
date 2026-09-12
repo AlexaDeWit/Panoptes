@@ -97,8 +97,7 @@ bounds reads exactly as it did before they existed.
 [`@saerskriven/wire-threat-dragon`](../wire-threat-dragon/README.md), which
 imports zod and nothing else, and this package is the only one that maps
 between it and the model. That wire schema declares the whole file, the X6
-styling, port styling, text blocks, and boundary bookkeeping Saerskriven does
-not model included. What it declares it demands, and it demands nothing else, because it
+styling and port styling that Saerskriven does not model included. What it declares it demands, and it demands nothing else, because it
 describes the file rather than the subset Saerskriven can represent: a threat's
 status, severity, category and methodology are text, since Threat Dragon
 stores each label in the author's own locale, and a threat number is optional,
@@ -110,6 +109,16 @@ stops as `InvalidWireDocument` with a path into the file rather than as
 `InvalidModel` one layer later. A key the schema does not declare is dropped
 and reported through `undeclaredDivergences`, the walk every wire codec
 shares, so a schema that has fallen behind the format announces itself.
+
+Element security facts and declared boundary relationships map into typed model
+properties and native YAML v1. The mappings preserve explicit negatives, empty
+values, and absence. Threat Dragon writes include these facts without needing the
+original JSON. With a source document, mapped facts follow the model while styling
+and other unmapped fields retain the source values. A removed optional model fact
+also disappears from the merged source. Invalid security text returns an
+`InvalidModel` failure with the field path. Invalid relationship targets do too,
+including missing, cross-diagram and wrong-kind references. Neither read silently
+removes a recorded assertion to make an invalid source pass.
 
 A value with no home in the internal model therefore reaches the document
 intact, and what the mapping then does with it is a separate question from
@@ -196,8 +205,7 @@ and the path down to a threat, which Threat Dragon nests eight levels deep at
 helpers in `threat-dragon-document.ts` rather than with casts.
 
 The merge writes over the mapped fields and leaves the document otherwise as
-it found it, which is how `attrs` styling, `zIndex`, `tools`, and the
-per-type flags Saerskriven does not model survive a save. A port is half
+it found it, which is how `attrs` styling, `zIndex` and `tools` survive a save. A port is half
 mapped: Threat Dragon fastens a flow end to a port, and a port belongs to one
 of four groups named for the sides of the cell, so the read takes the port's
 side as the end's pinned side and the write fastens a pinned end to a port on

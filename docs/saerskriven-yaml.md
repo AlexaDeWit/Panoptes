@@ -30,8 +30,7 @@ order:
 
 Every key the first release declared is required and every list may be
 empty. Nothing is defaulted: a model saves before it is drawn, and it does so
-with empty strings and empty lists rather than with absent keys. Two keys a
-later release added are optional on read: a flow's `bidirectional`, absent
+with empty strings and empty lists rather than with absent keys. Keys added by later releases are optional on read. These include a flow's `bidirectional`, absent
 where the read takes the flow as one way, and an attached endpoint's `side`,
 one of `top`, `right`, `bottom` and `left`, which pins the end to that side
 of its element and absent leaves the side to the renderer. What a key added
@@ -64,9 +63,9 @@ A change to the format is additive when the absence of what it adds means
 something. A new key is then optional on read, the mapping in
 `@saerskriven/formats` supplies what its absence means, a write states it
 wherever the model holds a value for it, and `formatVersion` stays where it
-is. A flow's `bidirectional` and an attached endpoint's `side` are the two
-added that way so far: a write states `bidirectional` on every flow and
-`side` on every pinned end.
+is. A write states `bidirectional` on every flow and `side` on every pinned
+end. Optional security facts and declared relationships follow the same additive
+contract, with absence meaning unknown.
 
 Everything else is breaking: a rename, a type change, a removal, or a new key
 whose absence means nothing. That takes a new `formatVersion`, and a new
@@ -97,11 +96,46 @@ version 1 carries is a change to the wire schema, deliberately.
 A key this release does not declare is not a refusal. The read drops it and
 reports it as an `undeclared` divergence naming its path, so a file written
 by a later release of version 1 still reads here, minus what this release has
-no home for.
+no home for. Older releases can open extended v1 files but lose these new
+fields when saving. Use a release that understands the fields for lossless edits.
 
 What a read does refuse, it refuses with a path: into the file where the
 schema is what said no, and into the model where a rule no schema states did,
 such as a threat referring to an element no diagram holds.
+
+## Security facts
+
+These optional fields use the same names in native YAML, the internal model,
+and Threat Dragon's element `data` object.
+
+| Element kind     | Fields                                                                               |
+| ---------------- | ------------------------------------------------------------------------------------ |
+| `actor`          | `providesAuthentication`                                                             |
+| `process`        | `handlesCardPayment`, `handlesGoodsOrServices`, `isWebApplication`, `privilegeLevel` |
+| `store`          | `isALog`, `isEncrypted`, `isSigned`, `storesCredentials`, `storesInventory`          |
+| `flow`           | `protocol`, `isEncrypted`, `isPublicNetwork`, `trustBoundaryIds`                     |
+| `trust-boundary` | `containedElements`, `crossingFlows`                                                 |
+
+The flags are booleans. An absent flag means unknown, and `false` records an
+explicit negative. `protocol` and `privilegeLevel` are text, without a closed
+vocabulary. An empty string is an explicit value and remains distinct from absence.
+
+`trustBoundaryIds` records the boundaries a flow crosses. `containedElements`
+records the elements inside a boundary, and `crossingFlows` records its crossing
+flows. List order and repeated entries survive conversion. An absent list means
+unrecorded relationships. An empty list explicitly records none. The model does
+not infer these assertions from geometry or add reciprocal assertions.
+
+Each reference must resolve inside its element's diagram. `trustBoundaryIds`
+targets trust boundaries, `crossingFlows` targets flows, and `containedElements`
+targets another element. Invalid relationships refuse the read with a field path.
+
+Deleting an element also removes its entries from these lists. A previously
+present list can become empty, while an absent list stays absent. Moving, resizing,
+renaming, reconnecting or changing flow direction leaves all recorded facts intact.
+Copying a selection restricts the copied relationship lists to copied targets,
+matching threat and assumption links. Pasting remaps every retained target ID.
+The original model retains its full lists.
 
 ## Ordering
 

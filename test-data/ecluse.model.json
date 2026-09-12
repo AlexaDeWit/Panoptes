@@ -19,6 +19,27 @@
           "outOfScope": false,
           "reasonOutOfScope": "",
           "kind": "trust-boundary",
+          "containedElements": [
+            "0ec10e5e-0000-4000-8000-000000000012",
+            "0ec10e5e-0000-4000-8000-000000000020",
+            "0ec10e5e-0000-4000-8000-000000000021",
+            "0ec10e5e-0000-4000-8000-000000000022",
+            "0ec10e5e-0000-4000-8000-000000000030",
+            "0ec10e5e-0000-4000-8000-000000000031",
+            "0ec10e5e-0000-4000-8000-000000000032",
+            "0ec10e5e-0000-4000-8000-000000000033",
+            "0ec10e5e-0000-4000-8000-000000000034",
+            "f1646094-9885-422a-b7e7-7888c72905ef",
+            "c8455307-cef2-4843-a821-ff90db9643d2",
+            "f66e2ffa-c6bf-4b45-8aad-a23ced3a97ff",
+            "d5da865d-6e80-44da-a2ee-841f6bebd567"
+          ],
+          "crossingFlows": [
+            "0ec10e5e-0000-4000-8000-000000000040",
+            "0ec10e5e-0000-4000-8000-000000000043",
+            "0ec10e5e-0000-4000-8000-000000000047",
+            "4e565871-45cc-4987-abba-24859ee2cf60"
+          ],
           "shape": {
             "kind": "box",
             "position": {
@@ -38,6 +59,13 @@
           "outOfScope": false,
           "reasonOutOfScope": "",
           "kind": "trust-boundary",
+          "containedElements": [
+            "0ec10e5e-0000-4000-8000-000000000011"
+          ],
+          "crossingFlows": [
+            "0ec10e5e-0000-4000-8000-000000000043",
+            "0ec10e5e-0000-4000-8000-000000000047"
+          ],
           "shape": {
             "kind": "box",
             "position": {
@@ -57,6 +85,10 @@
           "outOfScope": false,
           "reasonOutOfScope": "",
           "kind": "trust-boundary",
+          "containedElements": [
+            "7528590e-7392-46c4-9b8c-7ca872d63590"
+          ],
+          "crossingFlows": [],
           "shape": {
             "kind": "box",
             "position": {
@@ -83,7 +115,8 @@
             "width": 170,
             "height": 90
           },
-          "kind": "actor"
+          "kind": "actor",
+          "providesAuthentication": true
         },
         {
           "id": "0ec10e5e-0000-4000-8000-000000000011",
@@ -99,7 +132,8 @@
             "width": 180,
             "height": 90
           },
-          "kind": "actor"
+          "kind": "actor",
+          "providesAuthentication": false
         },
         {
           "id": "0ec10e5e-0000-4000-8000-000000000012",
@@ -115,7 +149,8 @@
             "width": 190,
             "height": 90
           },
-          "kind": "actor"
+          "kind": "actor",
+          "providesAuthentication": true
         },
         {
           "id": "0ec10e5e-0000-4000-8000-000000000020",
@@ -179,7 +214,11 @@
             "width": 180,
             "height": 90
           },
-          "kind": "store"
+          "kind": "store",
+          "isALog": false,
+          "isEncrypted": false,
+          "isSigned": false,
+          "storesCredentials": false
         },
         {
           "id": "0ec10e5e-0000-4000-8000-000000000031",
@@ -195,7 +234,11 @@
             "width": 180,
             "height": 90
           },
-          "kind": "store"
+          "kind": "store",
+          "isALog": false,
+          "isEncrypted": false,
+          "isSigned": false,
+          "storesCredentials": false
         },
         {
           "id": "0ec10e5e-0000-4000-8000-000000000032",
@@ -211,7 +254,11 @@
             "width": 200,
             "height": 90
           },
-          "kind": "store"
+          "kind": "store",
+          "isALog": false,
+          "isEncrypted": false,
+          "isSigned": false,
+          "storesCredentials": false
         },
         {
           "id": "0ec10e5e-0000-4000-8000-000000000033",
@@ -227,7 +274,11 @@
             "width": 200,
             "height": 90
           },
-          "kind": "store"
+          "kind": "store",
+          "isALog": false,
+          "isEncrypted": false,
+          "isSigned": false,
+          "storesCredentials": false
         },
         {
           "id": "0ec10e5e-0000-4000-8000-000000000034",
@@ -243,7 +294,11 @@
             "width": 200,
             "height": 90
           },
-          "kind": "store"
+          "kind": "store",
+          "isALog": false,
+          "isEncrypted": false,
+          "isSigned": false,
+          "storesCredentials": false
         },
         {
           "id": "0ec10e5e-0000-4000-8000-000000000040",
@@ -252,6 +307,12 @@
           "outOfScope": false,
           "reasonOutOfScope": "",
           "kind": "flow",
+          "protocol": "HTTPS",
+          "isEncrypted": true,
+          "isPublicNetwork": false,
+          "trustBoundaryIds": [
+            "0ec10e5e-0000-4000-8000-000000000001"
+          ],
           "source": {
             "kind": "attached",
             "element": "0ec10e5e-0000-4000-8000-000000000010"
@@ -270,6 +331,10 @@
           "outOfScope": false,
           "reasonOutOfScope": "",
           "kind": "flow",
+          "protocol": "HTTPS",
+          "isEncrypted": true,
+          "isPublicNetwork": false,
+          "trustBoundaryIds": [],
           "source": {
             "kind": "attached",
             "element": "0ec10e5e-0000-4000-8000-000000000020"
@@ -288,6 +353,10 @@
           "outOfScope": false,
           "reasonOutOfScope": "",
           "kind": "flow",
+          "protocol": "in-process",
+          "isEncrypted": false,
+          "isPublicNetwork": false,
+          "trustBoundaryIds": [],
           "source": {
             "kind": "attached",
             "element": "0ec10e5e-0000-4000-8000-000000000020"
@@ -306,6 +375,13 @@
           "outOfScope": false,
           "reasonOutOfScope": "",
           "kind": "flow",
+          "protocol": "HTTPS",
+          "isEncrypted": true,
+          "isPublicNetwork": true,
+          "trustBoundaryIds": [
+            "0ec10e5e-0000-4000-8000-000000000001",
+            "0ec10e5e-0000-4000-8000-000000000002"
+          ],
           "source": {
             "kind": "attached",
             "element": "0ec10e5e-0000-4000-8000-000000000020"
@@ -324,6 +400,10 @@
           "outOfScope": false,
           "reasonOutOfScope": "",
           "kind": "flow",
+          "protocol": "HTTPS",
+          "isEncrypted": true,
+          "isPublicNetwork": false,
+          "trustBoundaryIds": [],
           "source": {
             "kind": "attached",
             "element": "0ec10e5e-0000-4000-8000-000000000020"
@@ -342,6 +422,10 @@
           "outOfScope": false,
           "reasonOutOfScope": "",
           "kind": "flow",
+          "protocol": "AWS SQS",
+          "isEncrypted": true,
+          "isPublicNetwork": false,
+          "trustBoundaryIds": [],
           "source": {
             "kind": "attached",
             "element": "0ec10e5e-0000-4000-8000-000000000020"
@@ -360,6 +444,10 @@
           "outOfScope": false,
           "reasonOutOfScope": "",
           "kind": "flow",
+          "protocol": "AWS SQS",
+          "isEncrypted": true,
+          "isPublicNetwork": false,
+          "trustBoundaryIds": [],
           "source": {
             "kind": "attached",
             "element": "0ec10e5e-0000-4000-8000-000000000021"
@@ -378,6 +466,13 @@
           "outOfScope": false,
           "reasonOutOfScope": "",
           "kind": "flow",
+          "protocol": "HTTPS",
+          "isEncrypted": true,
+          "isPublicNetwork": true,
+          "trustBoundaryIds": [
+            "0ec10e5e-0000-4000-8000-000000000001",
+            "0ec10e5e-0000-4000-8000-000000000002"
+          ],
           "source": {
             "kind": "attached",
             "element": "0ec10e5e-0000-4000-8000-000000000021"
@@ -396,6 +491,10 @@
           "outOfScope": false,
           "reasonOutOfScope": "",
           "kind": "flow",
+          "protocol": "in-process",
+          "isEncrypted": false,
+          "isPublicNetwork": false,
+          "trustBoundaryIds": [],
           "source": {
             "kind": "attached",
             "element": "0ec10e5e-0000-4000-8000-000000000021"
@@ -414,6 +513,10 @@
           "outOfScope": false,
           "reasonOutOfScope": "",
           "kind": "flow",
+          "protocol": "HTTPS",
+          "isEncrypted": true,
+          "isPublicNetwork": false,
+          "trustBoundaryIds": [],
           "source": {
             "kind": "attached",
             "element": "0ec10e5e-0000-4000-8000-000000000022"
@@ -432,6 +535,10 @@
           "outOfScope": false,
           "reasonOutOfScope": "",
           "kind": "flow",
+          "protocol": "HTTPS",
+          "isEncrypted": true,
+          "isPublicNetwork": false,
+          "trustBoundaryIds": [],
           "source": {
             "kind": "attached",
             "element": "0ec10e5e-0000-4000-8000-000000000021"
@@ -455,6 +562,10 @@
           "outOfScope": false,
           "reasonOutOfScope": "",
           "kind": "flow",
+          "protocol": "HTTPS",
+          "isEncrypted": true,
+          "isPublicNetwork": false,
+          "trustBoundaryIds": [],
           "source": {
             "kind": "attached",
             "element": "0ec10e5e-0000-4000-8000-000000000032"
@@ -473,6 +584,10 @@
           "outOfScope": false,
           "reasonOutOfScope": "",
           "kind": "flow",
+          "protocol": "HTTPS",
+          "isEncrypted": true,
+          "isPublicNetwork": false,
+          "trustBoundaryIds": [],
           "source": {
             "kind": "attached",
             "element": "0ec10e5e-0000-4000-8000-000000000032"
@@ -491,6 +606,10 @@
           "outOfScope": false,
           "reasonOutOfScope": "",
           "kind": "flow",
+          "protocol": "https",
+          "isEncrypted": false,
+          "isPublicNetwork": false,
+          "trustBoundaryIds": [],
           "source": {
             "kind": "attached",
             "element": "0ec10e5e-0000-4000-8000-000000000012",
@@ -511,6 +630,12 @@
           "outOfScope": false,
           "reasonOutOfScope": "",
           "kind": "flow",
+          "protocol": "https",
+          "isEncrypted": true,
+          "isPublicNetwork": false,
+          "trustBoundaryIds": [
+            "0ec10e5e-0000-4000-8000-000000000001"
+          ],
           "source": {
             "kind": "free",
             "position": {
@@ -533,6 +658,10 @@
           "outOfScope": false,
           "reasonOutOfScope": "",
           "kind": "flow",
+          "protocol": "https",
+          "isEncrypted": true,
+          "isPublicNetwork": false,
+          "trustBoundaryIds": [],
           "source": {
             "kind": "attached",
             "element": "f1646094-9885-422a-b7e7-7888c72905ef",
@@ -553,6 +682,10 @@
           "outOfScope": false,
           "reasonOutOfScope": "",
           "kind": "flow",
+          "protocol": "https",
+          "isEncrypted": true,
+          "isPublicNetwork": false,
+          "trustBoundaryIds": [],
           "source": {
             "kind": "attached",
             "element": "c8455307-cef2-4843-a821-ff90db9643d2",
@@ -580,7 +713,11 @@
             "width": 130,
             "height": 130
           },
-          "kind": "process"
+          "kind": "process",
+          "handlesCardPayment": false,
+          "handlesGoodsOrServices": false,
+          "isWebApplication": false,
+          "privilegeLevel": ""
         },
         {
           "id": "7528590e-7392-46c4-9b8c-7ca872d63590",
@@ -596,7 +733,8 @@
             "width": 170,
             "height": 110
           },
-          "kind": "actor"
+          "kind": "actor",
+          "providesAuthentication": false
         },
         {
           "id": "c8455307-cef2-4843-a821-ff90db9643d2",
@@ -612,7 +750,12 @@
             "width": 180,
             "height": 130
           },
-          "kind": "store"
+          "kind": "store",
+          "isALog": false,
+          "isEncrypted": false,
+          "isSigned": false,
+          "storesCredentials": false,
+          "storesInventory": false
         },
         {
           "id": "f66e2ffa-c6bf-4b45-8aad-a23ced3a97ff",
@@ -637,6 +780,8 @@
           "outOfScope": false,
           "reasonOutOfScope": "",
           "kind": "flow",
+          "isEncrypted": true,
+          "isPublicNetwork": false,
           "source": {
             "kind": "attached",
             "element": "f66e2ffa-c6bf-4b45-8aad-a23ced3a97ff"
@@ -655,6 +800,8 @@
           "outOfScope": false,
           "reasonOutOfScope": "",
           "kind": "flow",
+          "isEncrypted": true,
+          "isPublicNetwork": false,
           "source": {
             "kind": "attached",
             "element": "f1646094-9885-422a-b7e7-7888c72905ef"
@@ -673,6 +820,8 @@
           "outOfScope": false,
           "reasonOutOfScope": "",
           "kind": "flow",
+          "isEncrypted": true,
+          "isPublicNetwork": false,
           "source": {
             "kind": "attached",
             "element": "0ec10e5e-0000-4000-8000-000000000020"

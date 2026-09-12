@@ -15,7 +15,6 @@ import type {
   TrustBoundary,
 } from '@saerskriven/model';
 import type {
-  ThreatDragonBaseData,
   ThreatDragonCell,
   ThreatDragonElementData,
   ThreatDragonEndpoint,
@@ -63,40 +62,7 @@ const noPorts: readonly NeededPort[] = [];
 
 type NodePorts = NonNullable<ThreatDragonNode['ports']>;
 
-/**
- * One element of the model as the cell Threat Dragon draws it, merged onto
- * the cell of the same id where the source document holds one. Each shape
- * is built as its own wire variant, so what the cell carries and what its
- * `data` declares cannot drift apart, and the styling, ports, tools and
- * per-type flags the model never held come through the merge untouched.
- *
- * Where the source holds a cell of that id under another shape, an edit has
- * changed what the element is: the cell is drawn afresh and what the old one
- * carried is reported as `discarded-by-edit`. `zIndex` is required of a cell
- * by Threat Dragon's own schema and held by no part of the model, so a cell
- * with none takes its place in the diagram as its plane.
- *
- * Four places the two formats hold one fact differently. A boundary curve
- * keeps whichever of the two shape names the source used, since Threat
- * Dragon registers the misspelled `trust-broundary-curve` itself and a model
- * carrying it should not be corrected into a name its author never wrote. A
- * curve's run of waypoints is the model's one list where Threat Dragon holds
- * a source, a target, and the vertices between, so a run the source already
- * draws is left as it drew it. A boundary takes its name from the label on
- * the cell where `data` holds none, which is where the Écluse model keeps
- * every boundary name, so a name that still reads back the same leaves both
- * alone. And `hasOpenThreats` is Threat Dragon's own bookkeeping, which its
- * own files carry stale, so a cell that declares it keeps what it declared
- * and only a cell declaring none is given what the threats being written
- * say.
- *
- * A flow end pinned to a side is fastened to a port of the cell on that
- * side, read off `ports`: the source's own anchor where it already sits
- * there, else a port the cell declares on that side, else a port named for
- * the side, which {@link MergedCell.ports} asks the diagram merge to declare
- * on the cell. An end the model leaves to the renderer names the cell and no
- * port, since a port would read back as a pinned side.
- */
+/** Merges mapped fields onto the matching source shape and reports discarded source data. */
 export function mergeCell(
   element: Element,
   held: ThreatDragonCell | undefined,
@@ -114,6 +80,7 @@ export function mergeCell(
         data: {
           ...from?.data,
           ...elementData(element, from?.data, threats),
+          providesAuthentication: element.providesAuthentication,
           type: 'tm.Actor',
         },
       },
@@ -131,6 +98,10 @@ export function mergeCell(
         data: {
           ...from?.data,
           ...elementData(element, from?.data, threats),
+          handlesCardPayment: element.handlesCardPayment,
+          handlesGoodsOrServices: element.handlesGoodsOrServices,
+          isWebApplication: element.isWebApplication,
+          privilegeLevel: element.privilegeLevel,
           type: 'tm.Process',
         },
       },
@@ -148,6 +119,11 @@ export function mergeCell(
         data: {
           ...from?.data,
           ...elementData(element, from?.data, threats),
+          isALog: element.isALog,
+          isEncrypted: element.isEncrypted,
+          isSigned: element.isSigned,
+          storesCredentials: element.storesCredentials,
+          storesInventory: element.storesInventory,
           type: 'tm.Store',
         },
       },
@@ -175,6 +151,10 @@ export function mergeCell(
             from?.data.isBidirectional,
             element.bidirectional,
           ),
+          protocol: element.protocol,
+          isEncrypted: element.isEncrypted,
+          isPublicNetwork: element.isPublicNetwork,
+          trustBoundaryIds: element.trustBoundaryIds,
           type: 'tm.Flow',
         },
       },
@@ -329,13 +309,15 @@ function elementData(
 function boundaryData(
   element: TrustBoundary,
   from: ThreatDragonBoundary | undefined,
-): ThreatDragonBaseData {
+): Omit<ThreatDragonBoundary['data'], 'type'> {
   const shown = from?.data.name ?? from?.attrs?.label?.text ?? '';
   return {
     name: shown === element.name ? from?.data.name : element.name,
     description: preservedText(from?.data.description, element.description),
     hasOpenThreats: from?.data.hasOpenThreats ?? false,
     isTrustBoundary: from?.data.isTrustBoundary ?? true,
+    containedElements: element.containedElements,
+    crossingFlows: element.crossingFlows,
   };
 }
 
