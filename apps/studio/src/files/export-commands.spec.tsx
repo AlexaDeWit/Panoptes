@@ -4,8 +4,9 @@ import { renderRegister, renderSvg, renderTypst } from '@saerskriven/render';
 import { PdfFailure, type PdfAssets } from '@saerskriven/render/pdf';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { Either } from 'effect';
+import { Action } from '../store/actions.js';
 import { initialState, FileLifecycle } from '../store/state.js';
-import { modelStore } from '../store/store.js';
+import { dispatch, modelStore } from '../store/store.js';
 import {
   foreignSource,
   mainDiagram,
@@ -60,8 +61,14 @@ const unplacedModel = parsedFixture({
   ],
 });
 
+const selectableElement = sampleModel.diagrams[0].elements[0].id;
+
 beforeEach(() => {
   modelStore.setState(openedState(), true);
+});
+
+afterEach(() => {
+  vi.useRealTimers();
 });
 
 describe('the studio exports', () => {
@@ -133,6 +140,7 @@ describe('the studio exports', () => {
       headline:
         'warning: a flow endpoint names an element the canvas draws as no box, so its flow is not in the drawing.',
       details: ['flow "flow-2" target names "flow-1"'],
+      refusal: false,
     });
   });
 
@@ -157,6 +165,7 @@ describe('the studio exports', () => {
       expect(result.current.notice).toEqual({
         headline: 'Saerskriven could not compile the PDF.',
         details: ['unknown function: nope'],
+        refusal: true,
       });
     });
     expect(bridge.writes).toEqual([]);
@@ -181,6 +190,7 @@ describe('the studio exports', () => {
       expect(result.current.notice).toEqual({
         headline: 'Saerskriven could not load the PDF compiler.',
         details: ['offline'],
+        refusal: true,
       });
     });
     expect(compile).not.toHaveBeenCalled();
@@ -221,6 +231,62 @@ describe('the studio exports', () => {
         'Saerskriven could not write the export.',
       );
     });
+    act(() => {
+      result.current.dismissNotice();
+    });
+    expect(result.current.notice).toBeUndefined();
+  });
+
+  it('puts an informational report away on Dismiss and on the next selection, and at no clock', async () => {
+    modelStore.setState(openedState(unplacedModel), true);
+    const bridge = specBridge();
+    const result = session(bridge);
+    const exported = async (): Promise<void> => {
+      act(() => {
+        result.current.commands.diagram(mainDiagram);
+      });
+      await waitFor(() => {
+        expect(result.current.notice?.refusal).toBe(false);
+      });
+    };
+
+    await exported();
+    act(() => {
+      result.current.dismissNotice();
+    });
+    expect(result.current.notice).toBeUndefined();
+
+    await exported();
+    vi.useFakeTimers();
+    act(() => {
+      vi.advanceTimersByTime(60_000);
+    });
+    expect(result.current.notice).toBeDefined();
+
+    act(() => {
+      dispatch(Action.Select({ elementIds: [selectableElement] }));
+    });
+    expect(result.current.notice).toBeUndefined();
+  });
+
+  it('keeps a refusal through a selection, and clears it on Dismiss', async () => {
+    const bridge = specBridge({
+      save: SaveOutcome.Refused({ reason: 'NotAllowedError' }),
+    });
+    const result = session(bridge);
+
+    act(() => {
+      result.current.commands.register();
+    });
+    await waitFor(() => {
+      expect(result.current.notice?.refusal).toBe(true);
+    });
+
+    act(() => {
+      dispatch(Action.Select({ elementIds: [selectableElement] }));
+    });
+    expect(result.current.notice?.refusal).toBe(true);
+
     act(() => {
       result.current.dismissNotice();
     });

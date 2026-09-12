@@ -298,9 +298,9 @@ connection, renaming, threat adds, field edits, and keyboard moves rely on
 their focused control or React Flow's message instead.
 
 The status is outside the model store because it does not belong in the undo
-stacks. The next action that changes canvas or panel state clears its message.
-The empty host stays mounted, and a sequence key makes repeated words arrive
-as separate messages.
+stacks. The empty host stays mounted, and a sequence key makes repeated words
+arrive as separate messages. The store defines when a message ends
+([the store](../store/README.md#the-shape)).
 
 Selecting an element leaves the viewport where it is, even when the element is
 at the canvas edge or under the threat panel ([the panel](../panel/README.md)).

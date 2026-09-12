@@ -19,9 +19,9 @@ catalog's `@playwright/test` version matches the flake's driver.
 The projects run in order:
 
 - `chromium` runs the main browser specs.
-- `phone` re-runs the chrome-card smoke on a `Pixel 7` preset, the viewport
-  the shell chrome has least room in. `chromium` runs the same spec at desktop
-  width.
+- `phone` re-runs the chrome-card and notices smoke on a `Pixel 7` preset,
+  the viewport the shell chrome has least room in. `chromium` runs the same
+  specs at desktop width.
 - `pages` checks the production build below `/Saerskriven/`, including PDF
   assets, the social card, its text alternative, and the release version.
 - `frame-time` measures an Écluse drag with one worker and one retry. Earlier
@@ -67,6 +67,7 @@ map to the browser specs below. Paths are relative to `src/`.
 | Clipboard, geometry fields, reconnection, arrangement, and snapping   | `interaction-controls.spec.ts`                           |
 | Touch panning, scrolling, and startup overlays                        | `interaction-nits.spec.ts`                               |
 | Edit announcements                                                    | `edit-status.spec.ts`                                    |
+| Folding and dismissing a refusal notice                               | `notices.spec.ts`                                        |
 | Reload recovery, and tabs staying in sync                             | `recovery.spec.ts`                                       |
 | Switching between, adding, and renaming the diagrams of a model       | `diagrams.spec.ts`                                       |
 | The chrome card at desktop and phone width                            | `chrome-card.spec.ts`                                    |

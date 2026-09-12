@@ -7,9 +7,25 @@ import {
   mitigationId,
   threatId,
 } from '@saerskriven/model/fixtures';
-import { render, screen } from '@testing-library/react';
-import { StudioFailure } from '../store/state.js';
+import { act, render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { Action } from '../store/actions.js';
+import { isDirty } from '../store/selectors.js';
+import { StudioFailure, initialState } from '../store/state.js';
+import { sampleModel } from '../store/store.fixtures.js';
+import { dispatch, modelStore, useModelStore } from '../store/store.js';
 import { FailureNotice, describeFailure } from './failure-notice.js';
+
+function StoredFailureNotice() {
+  return (
+    <FailureNotice failure={useModelStore((state) => state.lastFailure)} />
+  );
+}
+
+const dirtyStart = {
+  ...initialState(sampleModel),
+  saved: { ...sampleModel },
+};
 
 type ByTag<Union extends { readonly _tag: string }> = {
   readonly [Tag in Union['_tag']]: Extract<Union, { readonly _tag: Tag }>;
@@ -201,6 +217,10 @@ describe('describeFailure', () => {
 });
 
 describe('FailureNotice', () => {
+  beforeEach(() => {
+    modelStore.setState(dirtyStart, true);
+  });
+
   it('holds a region in the page while there is nothing to say', () => {
     render(<FailureNotice failure={undefined} />);
 
@@ -216,5 +236,71 @@ describe('FailureNotice', () => {
       ),
     ).toBeDefined();
     expect(screen.getAllByRole('listitem')).toHaveLength(1);
+  });
+
+  it('leaves one detail line open beside the headline', () => {
+    const { container } = render(
+      <FailureNotice failure={studioFailures.Read} />,
+    );
+
+    expect(container.querySelector('details')).toBeNull();
+  });
+
+  it('folds several detail lines behind a disclosure naming their count', () => {
+    const issues = [issue, { ...issue, path: ['detail', 'threats', 1] }];
+    const { container } = render(
+      <FailureNotice
+        failure={StudioFailure.Read({
+          name: 'broken.json',
+          failure: ReadFailure.InvalidWireDocument({ issues }),
+        })}
+      />,
+    );
+    const summary = screen.getByText(
+      new RegExp(`^${String(issues.length)}\\b`, 'u'),
+    );
+
+    expect(summary.tagName).toBe('SUMMARY');
+    expect(container.querySelector('details')).not.toBeNull();
+    expect(screen.getAllByRole('listitem')).toHaveLength(issues.length);
+  });
+
+  it('clears itself without moving the model, the stacks or the dirty state', async () => {
+    dispatch(Action.FileRefused({ operation: 'open', reason: 'no' }));
+    render(<StoredFailureNotice />);
+    const before = modelStore.getState();
+
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Dismiss problem' }),
+    );
+
+    const after = modelStore.getState();
+    expect(after.lastFailure).toBeUndefined();
+    expect(after.present).toBe(before.present);
+    expect(after.past).toBe(before.past);
+    expect(after.future).toBe(before.future);
+    expect(isDirty(after)).toBe(isDirty(before));
+    expect(screen.getByTestId('failure-notice').textContent).toBe('');
+  });
+
+  it('shows a later refusal after a dismissal', async () => {
+    dispatch(Action.FileRefused({ operation: 'open', reason: 'no' }));
+    render(<StoredFailureNotice />);
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Dismiss problem' }),
+    );
+
+    act(() => {
+      dispatch(
+        Action.ReadFailed({
+          name: 'notes.txt',
+          failure: ReadFailure.MalformedText({ message: 'not YAML' }),
+        }),
+      );
+    });
+
+    expect(screen.getByTestId('failure-notice').textContent).toContain(
+      'notes.txt',
+    );
   });
 });

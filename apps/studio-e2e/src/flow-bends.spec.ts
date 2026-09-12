@@ -16,6 +16,7 @@ import {
   nodeNamed,
   openFile,
   openPlaceholder,
+  openText,
   savedFile,
   selectByKeyboard,
   vendored,
@@ -282,11 +283,7 @@ for (const fixture of [
       })),
     };
     expect(after).toEqual(expected);
-    await page.getByTestId('file-input').setInputFiles({
-      name: written.name,
-      mimeType: 'text/plain',
-      buffer: Buffer.from(written.text),
-    });
+    await openText(page, written.name, written.text);
     await canvasSettled(page);
     await selectByKeyboard(page, mirrored);
     expect(turnsOf(await drawnBy(line)).slice(1, -1)).toEqual(points);

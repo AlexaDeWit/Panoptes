@@ -12,9 +12,9 @@ import {
   type PdfAssets,
 } from '@saerskriven/render/pdf';
 import { Either } from 'effect';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { FileLifecycle } from '../store/state.js';
-import { modelStore } from '../store/store.js';
+import { modelStore, onCanvasOrPanelChange } from '../store/store.js';
 import { SaveOutcome, type FileBridge, type SaveFileType } from './bridge.js';
 import { browserFileBridge } from './browser-bridge.js';
 import {
@@ -70,10 +70,16 @@ export type ExportCommands = {
   pdf(): void;
 };
 
-/** A report from the last export, announced beside the File menu. */
+/**
+ * A report from the last export, announced beside the File menu. `refusal`
+ * decides its lifetime: a refusal is a problem and stands until the person
+ * dismisses it or a later export replaces it, while an informational report
+ * of an export that was written goes at the next canvas or panel change.
+ */
 export type ExportNotice = {
   readonly headline: string;
   readonly details: readonly string[];
+  readonly refusal: boolean;
 };
 
 /** Browser services the PDF export needs, replaceable by a focused spec. */
@@ -88,7 +94,11 @@ export const browserPdfExport: PdfExport = {
   compile: compilePdf,
 };
 
-/** One set of export commands and the report their last run produced. */
+/**
+ * One set of export commands and the report their last run produced. The
+ * report stands until the person dismisses it or the next action that moves
+ * canvas or panel state, never on a timer.
+ */
 export function useExportCommands(
   bridge: FileBridge = browserFileBridge,
   pdf: PdfExport = browserPdfExport,
@@ -189,6 +199,16 @@ export function useExportCommands(
     setNotice(undefined);
   }, []);
 
+  useEffect(
+    () =>
+      onCanvasOrPanelChange(() => {
+        setNotice((current) =>
+          current?.refusal === true ? current : undefined,
+        );
+      }),
+    [],
+  );
+
   return useMemo(
     () => ({ commands, notice, dismissNotice }),
     [commands, dismissNotice, notice],
@@ -205,6 +225,7 @@ function noticeFrom(
     Refused: ({ reason }) => ({
       headline: 'Saerskriven could not write the export.',
       details: [reason],
+      refusal: true,
     }),
   });
 }
@@ -217,7 +238,11 @@ function unplacedNotice(
     .split('\n');
   return headline === ''
     ? undefined
-    : { headline, details: details.map((line) => line.trim()) };
+    : {
+        headline,
+        details: details.map((line) => line.trim()),
+        refusal: false,
+      };
 }
 
 function assetNotice(failure: PdfAssetFailureType): ExportNotice {
@@ -225,6 +250,7 @@ function assetNotice(failure: PdfAssetFailureType): ExportNotice {
     Unavailable: ({ reason }) => ({
       headline: 'Saerskriven could not load the PDF compiler.',
       details: [reason],
+      refusal: true,
     }),
   });
 }
@@ -234,10 +260,12 @@ function compileNotice(failure: PdfFailure): ExportNotice {
     Refused: ({ sentences }) => ({
       headline: 'Saerskriven could not compile the PDF.',
       details: sentences,
+      refusal: true,
     }),
     NoDocument: () => ({
       headline: 'The Typst compiler produced no PDF.',
       details: [],
+      refusal: true,
     }),
   });
 }

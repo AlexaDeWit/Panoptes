@@ -7,16 +7,17 @@ import { boxOf } from './canvas-geometry.fixtures.js';
 import { Either } from 'effect';
 import {
   canvasSettled,
+  dragBy,
   emptyCanvasPoint,
+  menuItem,
   nodeNamed,
+  openFile,
+  openMenu,
   openPlaceholder,
+  openText,
   savedFile,
   selectByKeyboard,
-  openFile,
-  dragBy,
   withoutPickers,
-  openMenu,
-  menuItem,
 } from './studio.fixtures.js';
 import { touchDrag, touchSession } from './touch.fixtures.js';
 
@@ -303,11 +304,7 @@ for (const fixture of [
     await page.keyboard.press('ControlOrMeta+Shift+ArrowUp');
     const written = await savedFile(page);
     const before = Either.getOrThrow(readAnyFormat(written.text)).model;
-    await page.getByTestId('file-input').setInputFiles({
-      name: written.name,
-      mimeType: 'text/plain',
-      buffer: Buffer.from(written.text),
-    });
+    await openText(page, written.name, written.text);
     await canvasSettled(page);
     const reread = Either.getOrThrow(
       readAnyFormat((await savedFile(page)).text),
