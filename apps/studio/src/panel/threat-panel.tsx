@@ -92,7 +92,7 @@ export function ThreatPanel({
     () => {
       onCover?.(0);
     },
-    true,
+    { alsoParent: true },
   );
   const opened = element === undefined ? undefined : drafts.get(element.id);
   const [expanded, setExpanded] = useState<string>(opened?.threatId ?? '');

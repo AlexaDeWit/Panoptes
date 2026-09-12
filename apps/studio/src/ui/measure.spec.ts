@@ -88,12 +88,59 @@ describe('useMeasured', () => {
           beside.push(against);
         },
         () => {},
-        true,
+        { alsoParent: true },
       );
     });
 
     expect(beside).toEqual([parent]);
     expect(watcher.watched).toEqual([node, parent]);
+  });
+
+  it('keeps its observer across renders that hand it fresh callbacks', () => {
+    const watcher = watching();
+    const { node } = mounted();
+    const ref = createRef<HTMLElement>();
+    ref.current = node;
+    let reads = 0;
+    let cleared = 0;
+
+    const view = renderHook(() => {
+      useMeasured(
+        ref,
+        () => {
+          reads += 1;
+        },
+        () => {
+          cleared += 1;
+        },
+      );
+    });
+    view.rerender();
+
+    expect(reads).toBe(1);
+    expect(cleared).toBe(0);
+    expect(watcher.watched).toEqual([node]);
+  });
+
+  it('reads nothing against a parent the element does not have', () => {
+    const watcher = watching();
+    const ref = createRef<HTMLElement>();
+    ref.current = document.createElement('div');
+    let reads = 0;
+
+    renderHook(() => {
+      useMeasured(
+        ref,
+        () => {
+          reads += 1;
+        },
+        () => {},
+        { alsoParent: true },
+      );
+    });
+
+    expect(reads).toBe(0);
+    expect(watcher.watched).toEqual([]);
   });
 
   it('reads nothing where there is no element to read', () => {
