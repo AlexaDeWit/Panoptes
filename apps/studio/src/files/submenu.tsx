@@ -43,16 +43,24 @@ const placementOf = (
   };
 };
 
-const lands = (event: PointerEvent, target: Element | null): boolean => {
-  if (target === null) {
+const slack = 1;
+
+const entersSubmenu = (
+  event: PointerEvent,
+  submenu: HTMLElement | null,
+): boolean => {
+  if (submenu === null) {
     return false;
   }
-  const box = target.getBoundingClientRect();
+  if (event.relatedTarget instanceof Node) {
+    return submenu.contains(event.relatedTarget);
+  }
+  const box = submenu.getBoundingClientRect();
   return (
-    event.clientX >= box.left &&
-    event.clientX <= box.right &&
-    event.clientY >= box.top &&
-    event.clientY <= box.bottom
+    event.clientX >= box.left - slack &&
+    event.clientX <= box.right + slack &&
+    event.clientY >= box.top - slack &&
+    event.clientY <= box.bottom + slack
   );
 };
 
@@ -94,7 +102,7 @@ export function Submenu({ children, label, trigger }: SubmenuProps) {
         aria-label={label}
         className={styles.item}
         onPointerLeave={(event) => {
-          if (lands(event, content.current)) {
+          if (entersSubmenu(event, content.current)) {
             event.preventDefault();
           }
         }}
