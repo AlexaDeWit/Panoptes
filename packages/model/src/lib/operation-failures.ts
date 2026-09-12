@@ -1,6 +1,12 @@
 import type { ParseIssue } from './parse.js';
 import { Data } from 'effect';
-import type { DiagramId, ElementId, ThreatId } from './ids.js';
+import type {
+  AssumptionId,
+  DiagramId,
+  ElementId,
+  MitigationId,
+  ThreatId,
+} from './ids.js';
 
 /** Why an operation refused to produce a model: `_tag` discriminates the violation, following Effect's own convention, and the remaining fields carry the offending id or reference. */
 export type OperationFailure = Data.TaggedEnum<{
@@ -12,10 +18,18 @@ export type OperationFailure = Data.TaggedEnum<{
     readonly diagramId: DiagramId;
     readonly at: number;
   };
+  DiagramNotEmpty: {
+    readonly diagramId: DiagramId;
+    readonly elements: number;
+  };
   UnknownElement: { readonly elementId: ElementId };
   UnknownThreat: { readonly threatId: ThreatId };
+  UnknownMitigation: { readonly mitigationId: MitigationId };
+  UnknownAssumption: { readonly assumptionId: AssumptionId };
   DuplicateElementId: { readonly elementId: ElementId };
   DuplicateThreatId: { readonly threatId: ThreatId };
+  DuplicateMitigationId: { readonly mitigationId: MitigationId };
+  DuplicateAssumptionId: { readonly assumptionId: AssumptionId };
   ReusedThreatNumber: { readonly number: number };
   ChangedThreatNumber: {
     readonly threatId: ThreatId;

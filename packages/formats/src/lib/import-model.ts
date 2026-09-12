@@ -19,11 +19,6 @@ export type ImportMitigation = z.input<typeof mitigationSchema>;
 /** An assumption expressible by the current model. */
 export type ImportAssumption = z.input<typeof assumptionSchema>;
 
-/** A deterministic layout for records with no drawable position. */
-export function importPosition(index: number) {
-  return { x: 60 + (index % 4) * 260, y: 60 + Math.floor(index / 4) * 160 };
-}
-
 /** Common fields for imported elements, with scoping left undecided by the source. */
 export function importElement(
   context: ImportContext,

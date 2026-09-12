@@ -38,6 +38,29 @@ it.each(['otm', 'tmbom'] as const)(
   },
 );
 
+it('places an OTM component the diagram representation misses on the shared grid', () => {
+  const read = Either.getOrThrow(importModel(importTexts.otm));
+  const placed = read.model.diagrams[0].elements.find(
+    (element) => element.name === 'Class CustomerDatabase',
+  );
+  expect(placed).toMatchObject({ position: { x: 840, y: 60 } });
+  expect(
+    read.divergences.filter(
+      (entry) =>
+        entry.reason === 'overridden' &&
+        entry.detail.includes('class-customerdatabase'),
+    ),
+  ).toHaveLength(1);
+});
+
+it('places TM-BOM nodes on the same grid, offset by their trust-zone band', () => {
+  const read = Either.getOrThrow(importModel(importTexts.tmbom));
+  const placed = read.model.diagrams[0].elements.find((element) =>
+    element.name.startsWith('Host Filesystem'),
+  );
+  expect(placed).toMatchObject({ position: { x: 320, y: 920 } });
+});
+
 it('keeps differing OTM occurrence states, bidirectional flows, and asset names', () => {
   const document = otmFixture();
   const component = document.components?.find(

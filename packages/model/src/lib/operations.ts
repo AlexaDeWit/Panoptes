@@ -67,6 +67,12 @@ export type RenameDiagramFailure = Extract<
   { _tag: 'UnknownDiagram' | 'EmptyTitle' | 'RefusedTitleCharacter' }
 >;
 
+/** The failures {@link removeDiagram} can produce. */
+export type RemoveDiagramFailure = Extract<
+  OperationFailure,
+  { _tag: 'UnknownDiagram' | 'DiagramNotEmpty' }
+>;
+
 /** The failures an edit of one flow's route, anchors, or direction can produce. */
 export type FlowEditFailure = Extract<
   OperationFailure,
@@ -152,15 +158,6 @@ export function setFlowDirection(
           bidirectional,
         }),
   );
-}
-
-function attachedEndpoint(
-  element: ElementId,
-  side: Side | undefined,
-): FlowEndpoint {
-  return side === undefined
-    ? { kind: 'attached', element }
-    : { kind: 'attached', element, side };
 }
 
 /** Adds an element after checking its diagram, ID, and attached endpoint references. */
@@ -256,6 +253,22 @@ export function moveElement(
       translatedElement(located.element, offset),
     ),
   );
+}
+
+/** Translates element geometry while attached endpoints retain their references. */
+export function translatedElement(element: Element, offset: Point): Element {
+  if (element.kind === 'flow') {
+    return {
+      ...element,
+      source: shiftedEndpoint(element.source, offset),
+      target: shiftedEndpoint(element.target, offset),
+      waypoints: element.waypoints.map((waypoint) => shifted(waypoint, offset)),
+    };
+  }
+  if (element.kind === 'trust-boundary') {
+    return { ...element, shape: shiftedShape(element.shape, offset) };
+  }
+  return { ...element, position: shifted(element.position, offset) };
 }
 
 /** Resizes an element that carries an extent. The caller supplies a schema-valid size. */
@@ -375,6 +388,47 @@ export function renameDiagram(
   return Either.right(
     withDiagram(model, diagramIndex, (diagram) => ({ ...diagram, title })),
   );
+}
+
+/**
+ * Drops a diagram that owns no element. One that still owns elements is
+ * refused rather than cascaded: the cascade would delete records the caller
+ * did not name, and no operation here does that. A caller that wants the
+ * cascade removes the elements with {@link removeElement} first, which
+ * detaches the flows anchored to each and drops its threat and assumption
+ * links, and then removes the emptied diagram.
+ */
+export function removeDiagram(
+  model: Model,
+  diagramId: DiagramId,
+): Either.Either<Model, RemoveDiagramFailure> {
+  const diagram = model.diagrams.find(
+    (candidate) => candidate.id === diagramId,
+  );
+  if (diagram === undefined) {
+    return Either.left(OperationFailure.UnknownDiagram({ diagramId }));
+  }
+  if (diagram.elements.length > 0) {
+    return Either.left(
+      OperationFailure.DiagramNotEmpty({
+        diagramId,
+        elements: diagram.elements.length,
+      }),
+    );
+  }
+  return Either.right({
+    ...model,
+    diagrams: model.diagrams.filter((candidate) => candidate.id !== diagramId),
+  });
+}
+
+function attachedEndpoint(
+  element: ElementId,
+  side: Side | undefined,
+): FlowEndpoint {
+  return side === undefined
+    ? { kind: 'attached', element }
+    : { kind: 'attached', element, side };
 }
 
 function refusedTitle(
@@ -508,22 +562,6 @@ function freeEndpointPosition(flow: Flow): Point | undefined {
       endpoint.kind === 'free' ? [endpoint.position] : [],
     )
     .at(0);
-}
-
-/** Translates element geometry while attached endpoints retain their references. */
-export function translatedElement(element: Element, offset: Point): Element {
-  if (element.kind === 'flow') {
-    return {
-      ...element,
-      source: shiftedEndpoint(element.source, offset),
-      target: shiftedEndpoint(element.target, offset),
-      waypoints: element.waypoints.map((waypoint) => shifted(waypoint, offset)),
-    };
-  }
-  if (element.kind === 'trust-boundary') {
-    return { ...element, shape: shiftedShape(element.shape, offset) };
-  }
-  return { ...element, position: shifted(element.position, offset) };
 }
 
 function shifted(point: Point, offset: Point): Point {

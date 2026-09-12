@@ -1,6 +1,12 @@
 import { DetectionFailure, ReadFailure } from '@saerskriven/formats';
 import { OperationFailure } from '@saerskriven/model';
-import { diagramId, elementId, threatId } from '@saerskriven/model/fixtures';
+import {
+  assumptionId,
+  diagramId,
+  elementId,
+  mitigationId,
+  threatId,
+} from '@saerskriven/model/fixtures';
 import { render, screen } from '@testing-library/react';
 import { StudioFailure } from '../store/state.js';
 import { FailureNotice, describeFailure } from './failure-notice.js';
@@ -49,17 +55,33 @@ const operationFailures: ByTag<OperationFailure> = {
   UnknownDiagram: OperationFailure.UnknownDiagram({
     diagramId: diagramId('diagram-missing'),
   }),
+  DiagramNotEmpty: OperationFailure.DiagramNotEmpty({
+    diagramId: diagramId('diagram-main'),
+    elements: 3,
+  }),
   UnknownElement: OperationFailure.UnknownElement({
     elementId: elementId('element-missing'),
   }),
   UnknownThreat: OperationFailure.UnknownThreat({
     threatId: threatId('threat-missing'),
   }),
+  UnknownMitigation: OperationFailure.UnknownMitigation({
+    mitigationId: mitigationId('mitigation-missing'),
+  }),
+  UnknownAssumption: OperationFailure.UnknownAssumption({
+    assumptionId: assumptionId('assumption-missing'),
+  }),
   DuplicateElementId: OperationFailure.DuplicateElementId({
     elementId: elementId('element-twice'),
   }),
   DuplicateThreatId: OperationFailure.DuplicateThreatId({
     threatId: threatId('threat-twice'),
+  }),
+  DuplicateMitigationId: OperationFailure.DuplicateMitigationId({
+    mitigationId: mitigationId('mitigation-twice'),
+  }),
+  DuplicateAssumptionId: OperationFailure.DuplicateAssumptionId({
+    assumptionId: assumptionId('assumption-twice'),
   }),
   ReusedThreatNumber: OperationFailure.ReusedThreatNumber({ number: 1 }),
   ChangedThreatNumber: OperationFailure.ChangedThreatNumber({

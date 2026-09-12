@@ -1,7 +1,7 @@
+import { autoPlacement } from '@saerskriven/model';
 import type { OtmDocument } from '@saerskriven/wire-otm';
 import {
   importElement,
-  importPosition,
   type ImportContext,
   type ImportElement,
 } from './import-model.js';
@@ -165,7 +165,7 @@ function otmGeometry(
       'overridden',
     );
   return {
-    position: appearance?.position ?? importPosition(index),
+    position: appearance?.position ?? autoPlacement(index),
     size: appearance?.size ?? { width: 180, height: 80 },
   };
 }

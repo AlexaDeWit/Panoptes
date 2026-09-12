@@ -9,6 +9,7 @@ import {
   editNote,
   renameDiagram,
   moveElement,
+  removeDiagram,
   removeElement,
   renameElement,
   resizeElement,
@@ -645,6 +646,48 @@ describe('renameDiagram', () => {
   });
 });
 
+describe('removeDiagram', () => {
+  it('drops a diagram that owns no element', () => {
+    const withSecond = modelOf(
+      addDiagram(base, { id: secondDiagram, title: 'Second', elements: [] }),
+    );
+    expect(
+      modelOf(removeDiagram(withSecond, secondDiagram)).diagrams.map(
+        (diagram) => diagram.id,
+      ),
+    ).toEqual([mainDiagram]);
+  });
+
+  it('refuses a diagram that still owns elements, counting them', () => {
+    expect(errorOf(removeDiagram(base, mainDiagram))).toEqual(
+      OperationFailure.DiagramNotEmpty({
+        diagramId: mainDiagram,
+        elements: base.diagrams[0].elements.length,
+      }),
+    );
+  });
+
+  it('fails on an unknown diagram', () => {
+    expect(errorOf(removeDiagram(base, secondDiagram))).toEqual(
+      OperationFailure.UnknownDiagram({ diagramId: secondDiagram }),
+    );
+  });
+
+  it('goes through once the caller has emptied it with removeElement', () => {
+    const emptied = elementIds(base).reduce(
+      (model, id) => modelOf(removeElement(model, elementId(id))),
+      base,
+    );
+    const next = modelOf(removeDiagram(emptied, mainDiagram));
+    expect(next.diagrams).toEqual([]);
+    expect(next.threats.map((threat) => threat.elements)).toEqual([[]]);
+    expect(next.assumptions.map((assumption) => assumption.elements)).toEqual([
+      [],
+    ]);
+    expect(Either.isRight(parseModel(next))).toBe(true);
+  });
+});
+
 describe('operation purity', () => {
   it('leaves the input model untouched', () => {
     const pristine = structuredClone(base);
@@ -657,6 +700,7 @@ describe('operation purity', () => {
     editNote(withNote, elementId('element-note'), 'Edited');
     addDiagram(base, { id: secondDiagram, title: 'Second', elements: [] });
     renameDiagram(base, mainDiagram, 'Retitled');
+    removeDiagram(base, mainDiagram);
     expect(base).toEqual(pristine);
     expect(withNote).toEqual(notePristine);
   });
@@ -688,6 +732,13 @@ describe('operation outputs re-parse through parseModel', () => {
     ],
     ['addDiagram of elements', addDiagram(base, secondOfElements)],
     ['renameDiagram', renameDiagram(base, mainDiagram, 'Retitled')],
+    [
+      'removeDiagram',
+      Either.flatMap(
+        addDiagram(base, { id: secondDiagram, title: 'Second', elements: [] }),
+        (model) => removeDiagram(model, secondDiagram),
+      ),
+    ],
   ];
 
   for (const [operation, result] of outputs) {

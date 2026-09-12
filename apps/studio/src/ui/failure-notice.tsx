@@ -116,13 +116,23 @@ function describeOperation(failure: OperationFailure): string {
       `Diagram ${diagramId} cannot be left without a title.`,
     RefusedTitleCharacter: ({ diagramId }) =>
       `The title for diagram ${diagramId} carries a character the model does not accept.`,
+    DiagramNotEmpty: ({ diagramId, elements }) =>
+      `Diagram ${diagramId} cannot be removed while it holds elements, and it holds ${String(elements)}.`,
     UnknownElement: ({ elementId }) =>
       `The model holds no element ${elementId}.`,
     UnknownThreat: ({ threatId }) => `The model holds no threat ${threatId}.`,
+    UnknownMitigation: ({ mitigationId }) =>
+      `The model holds no mitigation ${mitigationId}.`,
+    UnknownAssumption: ({ assumptionId }) =>
+      `The model holds no assumption ${assumptionId}.`,
     DuplicateElementId: ({ elementId }) =>
       `The model already holds an element ${elementId}.`,
     DuplicateThreatId: ({ threatId }) =>
       `The model already holds a threat ${threatId}.`,
+    DuplicateMitigationId: ({ mitigationId }) =>
+      `The model already holds a mitigation ${mitigationId}.`,
+    DuplicateAssumptionId: ({ assumptionId }) =>
+      `The model already holds an assumption ${assumptionId}.`,
     ReusedThreatNumber: ({ number }) =>
       `Threat number ${String(number)} was issued already.`,
     ChangedThreatNumber: ({ threatId, number }) =>

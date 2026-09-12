@@ -1,10 +1,14 @@
 import { Either } from 'effect';
 import {
+  assumptionIdSchema,
   diagramIdSchema,
   elementIdSchema,
+  mitigationIdSchema,
   threatIdSchema,
+  type AssumptionId,
   type DiagramId,
   type ElementId,
+  type MitigationId,
   type ThreatId,
 } from './lib/ids.js';
 import { parseModel, type Model } from './lib/parse.js';
@@ -20,6 +24,14 @@ export const diagramId = (value: string): DiagramId =>
 /** Parses a spec's literal string into a branded threat id. */
 export const threatId = (value: string): ThreatId =>
   threatIdSchema.parse(value);
+
+/** Parses a spec's literal string into a branded mitigation id. */
+export const mitigationId = (value: string): MitigationId =>
+  mitigationIdSchema.parse(value);
+
+/** Parses a spec's literal string into a branded assumption id. */
+export const assumptionId = (value: string): AssumptionId =>
+  assumptionIdSchema.parse(value);
 
 /**
  * The parsed form of a fixture, for a spec that needs a Model. The input is
