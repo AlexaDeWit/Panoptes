@@ -1,6 +1,6 @@
 import type { ElementPropertyDrafts } from './element-properties.js';
 import type { ElementId } from '@saerskriven/model';
-import { useCallback, useEffect, useState } from 'react';
+import { memo, useCallback, useEffect, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { focusElement } from '../canvas/edits.js';
 import { selectedElements } from '../store/selectors.js';
@@ -15,8 +15,8 @@ type Held = {
   readonly propertyDrafts: ElementPropertyDrafts;
 };
 
-/** Retains refused drafts and pane width across selections. Closing returns focus to the selected element. */
-export function ThreatOverlay({
+/** Retains drafts and pane width across selections. Canvas-only parent renders do not rerender the pane. */
+export const ThreatOverlay = memo(function ThreatOverlay({
   onCover,
 }: {
   readonly onCover?: (cover: number) => void;
@@ -89,4 +89,4 @@ export function ThreatOverlay({
       subject={subject}
     />
   );
-}
+});

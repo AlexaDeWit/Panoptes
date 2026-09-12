@@ -93,13 +93,17 @@ browser's manual vertical resize control.
 ## Element security properties
 
 Select one actor, process, store, flow or trust boundary and expand **Security
-properties** above its threats. The fields follow the selected element kind.
+properties** above its threats. The fields follow the selected element kind. Controls mount on the first opening
+and remain mounted during later collapses, preserving drafts while a field loses
+focus. The pane ignores canvas-only parent renders during a drag.
 **Not recorded** leaves a fact absent. Flags also offer **Yes** and **No**.
 Protocol and privilege level use a recording choice plus a text field, so a
 recorded empty string stays distinct from an absent value.
 
 Relationship editors offer only valid targets in the same diagram. Each row
 names one recorded target. Change a row, remove it, or add another target.
+Repeated names show IDs. If these labels still collide, every option gets a
+distinct numbered prefix.
 Existing order and duplicate declarations remain until explicitly edited.
 A recorded list can be empty. **Not recorded** removes the list itself.
 Geometry does not determine these assertions and editing one side does not

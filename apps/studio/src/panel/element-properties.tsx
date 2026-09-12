@@ -36,6 +36,7 @@ export function ElementPropertiesEditor({
     () => drafts?.get(elementId) ?? new Map<string, PropertyDraft>(),
   );
   const [open, setOpen] = useState(refusals.size > 0);
+  const [hasOpened, setHasOpened] = useState(refusals.size > 0);
   const current = new Map(
     [...refusals].filter(
       ([field, draft]) => propertyValue(element, field) === draft.value,
@@ -67,6 +68,7 @@ export function ElementPropertiesEditor({
       className={styles.properties}
       open={open}
       onOpenChange={(next) => {
+        if (next) setHasOpened(true);
         setOpen(next || current.size > 0);
       }}
     >
@@ -77,13 +79,15 @@ export function ElementPropertiesEditor({
         <p className={styles.hint}>
           Not recorded means no security assertion is stored.
         </p>
-        <PropertyFields
-          element={element}
-          elements={diagram.elements}
-          commit={commit}
-          refused={refused}
-          drafts={current}
-        />
+        {hasOpened && (
+          <PropertyFields
+            element={element}
+            elements={diagram.elements}
+            commit={commit}
+            refused={refused}
+            drafts={current}
+          />
+        )}
       </Collapsible.Content>
     </Collapsible.Root>
   );

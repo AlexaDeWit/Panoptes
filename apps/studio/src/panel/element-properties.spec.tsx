@@ -249,6 +249,63 @@ describe('element security controls', () => {
       'element-duplicate',
     ]);
   });
+  it('keeps final labels distinct when names imitate ID suffixes and numbered labels', async () => {
+    const queue = { ...base.diagrams[0].elements[1], name: 'Queue' };
+    const added = [
+      { ...queue, id: elementId('element-duplicate') },
+      {
+        ...queue,
+        id: elementId('element-lookalike'),
+        name: 'Queue (element-api)',
+      },
+      {
+        ...queue,
+        id: elementId('element-prefixed'),
+        name: '2: Queue (element-api)',
+      },
+    ];
+    modelStore.setState(
+      initialState({
+        ...base,
+        diagrams: [
+          {
+            ...base.diagrams[0],
+            elements: [
+              ...base.diagrams[0].elements.map((element) =>
+                element.id === queue.id ? queue : element,
+              ),
+              ...added,
+            ],
+          },
+        ],
+      }),
+      true,
+    );
+    const user = userEvent.setup();
+    await open('element-perimeter');
+    await chooseFrom('Contained elements recording', 'Recorded');
+    await user.click(
+      screen.getByRole('combobox', { name: 'Add to contained elements' }),
+    );
+    const options = screen.getAllByRole('option');
+    expect(new Set(options.map((option) => option.textContent)).size).toBe(
+      options.length,
+    );
+    await user.click(
+      screen.getByRole('option', { name: '2: Queue (element-api)' }),
+    );
+    const add = within(
+      screen.getByRole('group', { name: 'Contained elements' }),
+    ).getByRole('button', { name: 'Add relationship' });
+    await user.click(add);
+    await chooseFrom('Add to contained elements', '7: Queue (element-api)');
+    await user.click(add);
+    expect(current('element-perimeter')).toHaveProperty('containedElements', [
+      'element-api',
+      'element-lookalike',
+    ]);
+  });
+
   it('keeps keyboard focus when a relationship changes and when its last row is removed', async () => {
     const user = userEvent.setup();
     await open('element-order-flow');
@@ -273,5 +330,51 @@ describe('element security controls', () => {
       'trustBoundaryIds',
       [],
     );
+  });
+  it('mounts fields on first opening and retains them through later collapses', async () => {
+    const user = userEvent.setup();
+    render(<ElementPropertiesEditor elementId={elementId('element-api')} />);
+    expect(screen.queryAllByRole('combobox', { hidden: true })).toHaveLength(0);
+    await user.click(
+      screen.getByRole('button', { name: 'Security properties' }),
+    );
+    const controls = screen.getAllByRole('combobox', { hidden: true });
+    expect(controls.length).toBeGreaterThan(0);
+    await user.click(
+      screen.getByRole('button', { name: 'Security properties' }),
+    );
+    expect(screen.queryAllByRole('combobox')).toHaveLength(0);
+    expect(screen.getAllByRole('combobox', { hidden: true })).toEqual(controls);
+  });
+
+  it('retains an invalid draft when leaving its field also collapses the disclosure', async () => {
+    const user = userEvent.setup();
+    await open('element-api');
+    await chooseFrom('Privilege level recording', 'Recorded');
+    await user.type(
+      screen.getByRole('textbox', { name: 'Privilege level' }),
+      'bad\u00ad',
+    );
+    await user.click(
+      screen.getByRole('button', { name: 'Security properties' }),
+    );
+    await waitFor(() => {
+      expect(
+        screen
+          .getByRole('button', { name: 'Security properties' })
+          .getAttribute('aria-expanded'),
+      ).toBe('true');
+    });
+    expect(
+      screen
+        .getByRole('textbox', { name: 'Privilege level' })
+        .getAttribute('value'),
+    ).toBe('bad\u00ad');
+    expect(
+      screen
+        .getByRole('textbox', { name: 'Privilege level' })
+        .getAttribute('aria-invalid'),
+    ).toBe('true');
+    expect(current('element-api')).toHaveProperty('privilegeLevel', '');
   });
 });
