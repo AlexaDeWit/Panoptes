@@ -39,6 +39,7 @@
     "@saerskriven/model": "workspace:*",
     "@types/mdast": "catalog:",
     "effect": "catalog:",
+    "zod": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
     "remark-gfm": "catalog:",

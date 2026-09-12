@@ -1,23 +1,59 @@
 import type { Model } from '@saerskriven/model';
+import type { Html } from 'mdast';
+import { createElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
 import remarkGfm from 'remark-gfm';
 import remarkStringify from 'remark-stringify';
 import { unified } from 'unified';
+import { visit } from 'unist-util-visit';
+import type { MarkdownOptions } from './register-options.js';
+import {
+  registerClassNames,
+  registerStylesheet,
+} from './register-stylesheet.js';
 import { registerDocument } from './register-tree.js';
 
 const markdown = unified().use(remarkStringify, { bullet: '-' }).use(remarkGfm);
 
-/**
- * The threat register of a model as GFM markdown. What the register holds,
- * and in what order, is {@link registerDocument}'s; this function decides
- * only how that tree is written as markdown.
- *
- * The tree is serialized by remark, never concatenated, so every value that
- * reaches the output is a text node the serializer escapes: a title carrying
- * a pipe, a backtick, or a leading hash lands in the table and the heading as
- * that text and nothing else. Raw HTML in prose passes through as written,
- * because in markdown it is markup the author chose and what to do about it
- * belongs to whatever consumes the register.
- */
-export function renderRegister(model: Model): string {
-  return markdown.stringify(registerDocument(model));
+/** Serializes the shared register as portable or HTML-enriched Markdown. */
+export function renderRegister(
+  model: Model,
+  options: MarkdownOptions = {},
+): string {
+  const tree = registerDocument(model, options);
+  if (options.styled === true) {
+    visit(tree, 'text', (node, index, parent) => {
+      const badge = node.data?.registerBadge;
+      if (badge === undefined || parent === undefined || index === undefined)
+        return;
+      const replacement: Html = {
+        type: 'html',
+        value: renderToStaticMarkup(
+          createElement(
+            'span',
+            {
+              className: `${registerClassNames.badge} saer-${badge.kind} saer-${badge.kind}-${badge.value}`,
+            },
+            createElement(
+              'span',
+              { className: registerClassNames.label },
+              node.value,
+            ),
+          ),
+        ),
+      };
+      parent.children.splice(index, 1, replacement);
+    });
+    tree.children.unshift({
+      type: 'html',
+      value: `<div class="${registerClassNames.root}">`,
+    });
+    tree.children.push({ type: 'html', value: '</div>' });
+    if (options.stylesheet !== false)
+      tree.children.unshift({
+        type: 'html',
+        value: `<style>\n${registerStylesheet(options.theme)}</style>`,
+      });
+  }
+  return markdown.stringify(tree);
 }

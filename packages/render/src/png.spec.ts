@@ -1,3 +1,4 @@
+import { defaultRenderTheme, readThemeOverrides } from './lib/theme.js';
 import type { Model } from '@saerskriven/model';
 import { Either } from 'effect';
 import { readFileSync, writeFileSync } from 'node:fs';
@@ -113,7 +114,7 @@ describe.skipIf(unbuilt)('a diagram rasterized as a PNG', () => {
     },
   );
 
-  it('letters a drawing in the face it is offered first', async () => {
+  it('uses the selected family independently of the fallback font order', async () => {
     const [sansFirst, monoFirst] = [
       await rasterized(ecluseModel),
       await rasterized(ecluseModel, undefined, monoFace),
@@ -122,7 +123,7 @@ describe.skipIf(unbuilt)('a diagram rasterized as a PNG', () => {
       monoFirst.width,
       monoFirst.height,
     ]);
-    expect(Buffer.from(monoFirst.png)).not.toEqual(Buffer.from(sansFirst.png));
+    expect(Buffer.from(monoFirst.png)).toEqual(Buffer.from(sansFirst.png));
   });
 
   it('puts the default long edge on the longer of the two edges', async () => {
@@ -159,5 +160,29 @@ describe.skipIf(unbuilt)('a diagram rasterized as a PNG', () => {
       longEdge: 0.5,
     });
     expect(Either.isLeft(outcome)).toBe(true);
+  });
+});
+
+describe.skipIf(unbuilt)('the selected PNG theme', () => {
+  it('applies font, badge, and background overrides to the raster', async () => {
+    const base = await renderPng(ecluseModel.diagrams[0], ecluseModel, {
+      assets: assetsLedBy(drawingFace),
+      longEdge: 400,
+    });
+    const changed = await renderPng(ecluseModel.diagrams[0], ecluseModel, {
+      assets: assetsLedBy(drawingFace),
+      longEdge: 400,
+      theme: readThemeOverrides({
+        severity: { high: '#112233' },
+        colours: { background: '#334455' },
+        fonts: { body: 'Liberation Mono' },
+        badges: { style: 'outline' },
+      }).theme,
+    });
+    const first = Either.getOrThrow(base);
+    const second = Either.getOrThrow(changed);
+    expect([second.width, second.height]).toEqual([first.width, first.height]);
+    expect(second.png).not.toEqual(first.png);
+    expect(defaultRenderTheme.fonts.body).toBe('Liberation Sans');
   });
 });

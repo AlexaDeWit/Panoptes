@@ -154,6 +154,20 @@ function renderCommand(program: Command, state: ParseState): void {
     .option('--format <format>', 'svg, png, md or pdf')
     .option('--out <path>', 'the file to write, or - for standard output')
     .option(
+      '--theme <path>',
+      'partial YAML appearance overrides, read best effort',
+    )
+    .option('--styled', 'HTML-enriched Markdown with semantic badge classes')
+    .option(
+      '--no-stylesheet',
+      'omit the default stylesheet from styled Markdown',
+    )
+    .option('--no-title', 'omit the generated Markdown document title')
+    .option(
+      '--heading-level <level>',
+      'first included Markdown heading level, 1 to 6 (default 1)',
+    )
+    .option(
       '--diagram <id or title>',
       'the diagram to draw, for --format svg or png',
     )

@@ -6,7 +6,9 @@ to replace a register a downstream site generator builds by hand, and
 `renderTypst` writes the whole model, every diagram and that same register, as
 the source of one Typst document.
 
-Every projection is a pure function of the model. The `pdf` subpath compiles
+Every projection is a pure function of the model and its render options.
+[Render themes and embedded registers](../../docs/render-themes.md) describes
+the shared theme, partial overrides, stylesheet interface, and heading controls. The `pdf` subpath compiles
 that Typst source into the bytes of a document, and it carries no font and
 reads no file either: the WebAssembly module and the faces it typesets with
 are the caller's to hand over. The `resvg` subpath draws one of those SVG
@@ -17,7 +19,7 @@ or a register loads no compiler and no renderer.
 
 ## A diagram as an SVG document
 
-`renderSvg(diagram, model)` lays the diagram out with `@saerskriven/canvas`,
+`renderSvg(diagram, model, theme)` lays the diagram out with `@saerskriven/canvas`,
 draws the canvas primitives once through `renderToStaticMarkup`, and returns
 the document as text beside the flow endpoints the layout could not place.
 The studio will mount those same primitives in React Flow (M4), so what the
@@ -29,14 +31,13 @@ which is what the `png` subpath scales to a pixel size.
 
 The document holds an `svg` root in the SVG namespace, the diagram's title in
 a `title` element, which is the accessible name a reader hears and the name a
-browser puts on the tab, the canvas stylesheet verbatim inside a `style`
+browser puts on the tab, the resolved theme stylesheet inside a `style`
 element, and the diagram's glyphs in painting order, and it ends in a newline
-so the bytes are a text file. That stylesheet is the canvas package's resolved
-one, every colour a value from the light table: the studio has an app root
-carrying custom properties and follows the system colour scheme through them,
-where these bytes have nothing around them to resolve a property against.
-Nothing else is in it: no script, no external stylesheet, no font file, no
-reference of any kind to anything outside the document. The bytes therefore
+so the bytes are a text file. The stylesheet resolves the selected theme to
+colour values, with the light palette as its default. The studio instead
+reads custom properties from its app root.
+The document also paints its selected background. It includes no script,
+external stylesheet, font file, or reference outside the document. The bytes therefore
 open on their own, embed in a PDF, and survive a content policy that forbids
 fetching.
 
@@ -139,11 +140,10 @@ drawing. Nothing is referenced from outside the source: no file, no font
 file, no Typst package, no URL. A compiler therefore needs no filesystem and
 no network, which is what lets the `pdf` subpath run one with neither.
 
-The source names the two font families it expects, Liberation Sans and
+The source names the selected font families, defaulting to Liberation Sans and
 Liberation Mono, and carries neither. A compiler is given them, and
 substitutes where it has neither. That substitution reaches the drawings
-too: their stylesheet asks for Helvetica and Arial, which no compiler here
-has, so the PDF and a standalone `.svg` file are the one drawing rather than
+too: their stylesheet names the selected body family, so the PDF and a standalone `.svg` file are the one drawing rather than
 the one rendering of it. The source also carries no date, so a compiler that
 is itself deterministic writes the same PDF twice.
 
@@ -249,8 +249,8 @@ caller writing a register has no use for.
 the module the `resvg-wasm` project builds out of the `resvg` crate, and
 `fonts` are the faces, offered in the order they are listed. A family the
 document names that no face carries falls back to the first face offered,
-which is what puts a Liberation face behind the Helvetica and Arial the canvas
-stylesheet asks for. Without that fallback the renderer draws no text at all.
+which supplies fallback lettering when the selected body family is unavailable.
+Without a loaded face the renderer draws no text at all.
 
 A buffer holding no face the renderer reads is refused, named by its index,
 rather than passed over. The font database drops a face it cannot parse
@@ -301,12 +301,11 @@ agent that asks for a diagram cannot be handed the drawing itself.
 
 `options.assets` is what `rasterizeSvg` needs, passed through: the module and
 the faces. The faces are offered in the order given, and a family no face
-carries falls back to the **family** of the first face offered, which for
-these drawings is every family they name: the stylesheet asks for Helvetica
-and Arial and no Liberation face carries either. The fallback is per family
+carries falls back to the **family** of the first face offered, when the selected family is unavailable. The fallback is per family
 rather than per face, so any Liberation Sans face leading makes the fallback
 family Liberation Sans and weight and style then resolve within it as usual.
-A caller therefore leads with a face of the family it wants text drawn in, and
+The selected body family determines diagram lettering. A missing family uses
+the rasterizer's fallback order, and
 `apps/cli` leads with Liberation Sans, which is metrically compatible with
 Arial. It names the regular face because that is the one an install must not
 be missing: the remaining Sans faces are bold and italic, and body text would
@@ -317,12 +316,9 @@ that is, and it defaults to 1568, the size an MCP host downscales an image
 block to. The aspect ratio is the drawing's own, so a diagram smaller than
 that is drawn larger rather than placed in a field of background.
 
-The raster carries a background the SVG document does not. `renderSvg` writes
-the diagram and not the surface it was drawn on, and a renderer draws what it
-is given onto transparency, so the picture is nested inside a document
-carrying the canvas ground. Its colours are the light table, measured for
-contrast against that ground, and a viewer filling transparency with its own
-dark theme would put them on something else.
+The raster uses the SVG document's selected background. Both formats use the
+light theme by default, and a consumer override reaches both through the same
+resolved theme.
 
 A refusal is a value, as it is for the PDF and for `rasterizeSvg` underneath:
 the `ResvgFailure` comes back unchanged, and `apps/cli` words it into the one

@@ -1,4 +1,9 @@
-import type { Severity } from '@saerskriven/model';
+import {
+  badgeTextColour,
+  defaultRenderTheme,
+  type RenderTheme,
+} from './render-theme.js';
+import { severitySchema, type Severity } from '@saerskriven/model';
 import {
   canvasType,
   lightPalette,
@@ -7,11 +12,7 @@ import {
   type Palette,
 } from './tokens.js';
 
-/**
- * Every class name the primitives emit. A consumer names a class through
- * this map rather than by its string, so a rename is a compile error
- * wherever it is used and {@link canvasStylesheet} follows it.
- */
+/** Stable class names emitted by the canvas primitives. */
 export const canvasClassNames = {
   element: 'pn-element',
   outOfScope: 'pn-out-of-scope',
@@ -50,12 +51,7 @@ export type TextStyleRule = {
   readonly fontSize: number;
 };
 
-/**
- * The class name and font size of every run of wrapped text, in one table. A
- * primitive names a style rather than passing the two separately and the
- * stylesheet's own font sizes are read from here, so the size the wrap
- * estimates with is the size the text renders at by construction.
- */
+/** The stylesheet and text layout use the same font sizes. */
 export const wrappedTextStyles = {
   label: {
     className: canvasClassNames.label,
@@ -68,10 +64,7 @@ export const wrappedTextStyles = {
   },
 } as const satisfies Record<WrappedTextStyle, TextStyleRule>;
 
-/**
- * The tone class each severity carries. `undecided` takes the neutral tone:
- * it is the absence of an assessment, so it never colours a badge.
- */
+/** Maps each severity to its diagram tone class. */
 export const severityToneClass = {
   low: canvasClassNames.toneLow,
   medium: canvasClassNames.toneMedium,
@@ -80,11 +73,7 @@ export const severityToneClass = {
   undecided: canvasClassNames.toneNeutral,
 } as const satisfies Record<Severity, string>;
 
-/**
- * Stroke width a trust boundary is drawn with, the outline's own weight. The
- * layout grows a boundary curve's derived box by it, so the stroke falls
- * inside the node.
- */
+/** Shared stroke width for drawing and bounding a trust boundary. */
 export const boundaryStrokeWidth = strokeWidths.outline;
 
 const name = canvasClassNames;
@@ -97,8 +86,9 @@ const stroke = strokeWidths;
 
 const sheetFrom = (
   colour: (role: keyof Palette) => string,
+  family: string = type.family,
 ): string => `.${name.element} {
-  font-family: ${type.family};
+  font-family: ${family};
 }
 .${name.shape} {
   fill: ${colour('surfacePanel')};
@@ -200,21 +190,40 @@ const sheetFrom = (
 }
 `;
 
-/**
- * The one stylesheet the primitives are drawn with, with every colour
- * resolved to a value. The headless renderer embeds it in a `<style>` element
- * inside the standalone SVG, and the PDF that embeds those bytes carries it
- * along: neither has a document around it to hold a `:root`, so neither can
- * read a custom property. Only properties SVG applies appear, so the sheet
- * works with no HTML around it, and interactive states join it as further
- * classes rather than as a second sheet.
- */
+/** The studio-independent canvas stylesheet with resolved light colours. */
 export const canvasStylesheet = sheetFrom((role) => lightPalette[role]);
 
-/**
- * The same sheet with every colour left to the custom properties
- * `tokenStylesheet` declares on the document root, which is what the
- * studio injects: the diagram follows the colour scheme the root resolved,
- * where the standalone SVG keeps the light values.
- */
+/** The studio canvas stylesheet resolves colours through its root properties. */
 export const themedCanvasStylesheet = sheetFrom(paletteProperty);
+
+/** Resolves headless drawing colours, font family, and badge appearance. */
+export function renderCanvasStylesheet(
+  theme: RenderTheme = defaultRenderTheme,
+): string {
+  const palette: Palette = {
+    ...lightPalette,
+    surfaceCanvas: theme.colours.background,
+    surfacePanel: theme.colours.element,
+    surfaceActor: theme.colours.actor,
+    surfaceProcess: theme.colours.process,
+    textPrimary: theme.colours.text,
+    textSecondary: theme.colours.muted,
+    badgeGround: badgeTextColour(theme, theme.colours.text),
+    toneCritical: theme.severity.critical,
+    toneHigh: theme.severity.high,
+    toneMedium: theme.severity.medium,
+    toneLow: theme.severity.low,
+    toneNeutral: theme.severity.undecided,
+  };
+  const badges = severitySchema.options.map((severity) => {
+    const className = severityToneClass[severity];
+    const tone = theme.severity[severity];
+    const outlined = theme.badges.style === 'outline';
+    return `.${className} { fill: ${outlined ? theme.colours.background : tone}; stroke: ${tone}; stroke-width: ${String(theme.badges.borderWidth)}; }
+.${className} ~ .${name.badgeCount}, .${className} ~ .${name.badgeMark} { fill: ${badgeTextColour(theme, tone)}; }`;
+  });
+  return [
+    sheetFrom((role) => palette[role], JSON.stringify(theme.fonts.body)),
+    ...badges,
+  ].join('\n');
+}

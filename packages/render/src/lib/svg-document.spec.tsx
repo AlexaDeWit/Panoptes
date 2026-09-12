@@ -1,6 +1,6 @@
 import {
   canvasClassNames,
-  canvasStylesheet,
+  renderCanvasStylesheet,
   svgNumber,
   textExtent,
   wrappedTextStyles,
@@ -574,7 +574,7 @@ describe.each([
   it('carries the stylesheet in a style element, verbatim', () => {
     const styles = [...documentOf(svg).getElementsByTagName('style')];
     expect(styles.map((style) => style.textContent)).toEqual([
-      canvasStylesheet,
+      renderCanvasStylesheet(),
     ]);
   });
 

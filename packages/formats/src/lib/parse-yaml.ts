@@ -15,7 +15,10 @@ import {
 export function parseYaml(text: string): Either.Either<unknown, ReadFailure> {
   return parseWithinLimits(text, (bounded) =>
     Either.flatMap(
-      Either.flatMap(compose(bounded), withinAliasLimits),
+      Either.flatMap(
+        compose(bounded.replace(/\r(?!\n)/gu, '\n')),
+        withinAliasLimits,
+      ),
       toValue,
     ),
   );
