@@ -20,6 +20,7 @@ import {
   flowEndpointSchema,
   mitigationIdSchema,
   mitigationSchema,
+  modelMetadataChangeSchema,
   moveElement,
   nextThreatNumber,
   pointSchema,
@@ -35,7 +36,9 @@ import {
   replaceMitigation,
   replaceThreat,
   resizeElement,
+  setFlowDirection,
   setFlowWaypoints,
+  setModelMetadata,
   severitySchema,
   sideSchema,
   sizeSchema,
@@ -137,6 +140,14 @@ export const modelEditSchema = z.discriminatedUnion('op', [
     waypoints: waypointsSchema,
   }),
   elementEditSchema.extend({
+    op: z.literal('set_flow_direction'),
+    bidirectional: z
+      .boolean()
+      .describe(
+        'Whether data moves both ways along the flow. The flow keeps its id, so the threats attached to it stay attached.',
+      ),
+  }),
+  elementEditSchema.extend({
     op: z.literal('reconnect_flow'),
     side: z.enum(['source', 'target']),
     endpoint: elementIdSchema.describe(
@@ -198,6 +209,11 @@ export const modelEditSchema = z.discriminatedUnion('op', [
     title: acceptedTextSchema,
   }),
   diagramEditSchema.extend({ op: z.literal('remove_diagram') }),
+  modelMetadataChangeSchema
+    .extend({ op: z.literal('set_model_metadata') })
+    .describe(
+      'Sets any of the model title, owner, description and contributors. A field left out keeps its value, and `contributors` replaces the whole list.',
+    ),
 ]);
 
 /** One edit of a batch. */
@@ -262,6 +278,8 @@ function applyEdit(
       return editNote(model, edit.element, edit.text);
     case 'set_flow_waypoints':
       return setFlowWaypoints(model, edit.element, edit.waypoints);
+    case 'set_flow_direction':
+      return setFlowDirection(model, edit.element, edit.bidirectional);
     case 'reconnect_flow':
       return reconnectFlow(
         model,
@@ -323,6 +341,8 @@ function applyEdit(
       return renameDiagram(model, edit.diagram, edit.title);
     case 'remove_diagram':
       return removeDiagram(model, edit.diagram);
+    case 'set_model_metadata':
+      return setModelMetadata(model, edit);
     default:
       return unapplied(edit);
   }
@@ -454,6 +474,10 @@ function describeOperationFailure(failure: OperationFailure): string {
       `Element ${quotedForTerminal(elementId)} cannot be left without a name.`,
     RefusedCharacter: ({ elementId, at }) =>
       `The text for element ${quotedForTerminal(elementId)} carries a character the model does not accept, at index ${String(at)}.`,
+    RefusedMetadataCharacter: ({ field, at }) =>
+      `The model ${field} carries a character the model does not accept, at index ${String(at)}.`,
+    RefusedContributorCharacter: ({ contributor, at }) =>
+      `Entry ${String(contributor)} of the contributors carries a character the model does not accept, at index ${String(at)}.`,
   });
 }
 
