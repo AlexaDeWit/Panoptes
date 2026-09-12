@@ -120,6 +120,22 @@ describe('the arguments as the outcome they ask for', () => {
     expect(outcome.out).toContain('"threat-model.yaml"');
   });
 
+  it('refuses a server flag given after install rather than dropping it', async () => {
+    const outcome = await runCli([
+      'mcp',
+      'install',
+      '--host',
+      'claude-code',
+      '--root',
+      'elsewhere',
+      '--print',
+    ]);
+    expect({ code: outcome.code, out: outcome.out }).toEqual({
+      code: 2,
+      out: '',
+    });
+  });
+
   it("refuses an install naming both of a host's files", async () => {
     await expect(
       runCli(['mcp', 'install', '--host', 'cursor', '--project', '--user']),

@@ -4,14 +4,17 @@ import {
   getThreatResultSchema,
   registerResultSchema,
   renderDiagramResultSchema,
+  renderWriteFailure,
   revisionOf,
   searchElementsResultSchema,
   searchThreatsResultSchema,
   validateResultSchema,
+  WriteFailure,
 } from '@saerskriven/mcp';
 import {
   editOf,
   eras,
+  type Era,
   imagesOf,
   mediaTypesOf,
   proseOf,
@@ -34,6 +37,7 @@ import {
   httpProcess,
   sessionOpeners,
   type McpSession,
+  type SessionOpener,
 } from './mcp-session.fixtures.js';
 import {
   ran,
@@ -41,6 +45,7 @@ import {
   runners,
   spawnTimeout,
   titleOf,
+  type Runner,
 } from './runners.fixtures.js';
 
 const ecluse = ['mcp', '--file', 'test-data/ecluse.json'];
@@ -51,17 +56,23 @@ const pngMagic = Buffer.from([0x89, 0x50, 0x4e, 0x47]);
 
 const retitled = 'Écluse gate: a title written through saer_edit';
 
-const disposableEcluse = (): string => {
+const scripted = async (opener: SessionOpener, runner: Runner, era: Era) => {
   const root = mkdtempSync(join(tmpdir(), 'saerskriven-cli-session-'));
-  writeFileSync(join(root, 'ecluse.json'), ecluseBytes);
-  return root;
-};
-
-const scripted = async (session: McpSession) => {
   try {
-    return await calls(session);
+    writeFileSync(join(root, 'ecluse.json'), ecluseBytes);
+    const session = await opener.open(
+      runner,
+      ['mcp', '--root', root, '--file', 'ecluse.json'],
+      era,
+    );
+    try {
+      const run = await calls(session);
+      return { ...run, onDisk: readFileSync(join(root, 'ecluse.json')) };
+    } finally {
+      await session.end();
+    }
   } finally {
-    await session.end();
+    rmSync(root, { recursive: true, force: true });
   }
 };
 
@@ -70,10 +81,15 @@ const calls = async (session: McpSession) => {
     session.client.callTool({ name, arguments: args });
   const inspected = await call('saer_inspect');
   const drawn = await call('saer_render_diagram');
-  const searched = await call('saer_search_threats', { status: 'open' });
-  const target =
-    structuredOf(searched, searchThreatsResultSchema).threats[0]?.id ?? '';
-  const held = await call('saer_get_threat', { ref: target });
+  const searched = await call('saer_search_threats', {
+    status: 'open',
+    severity: 'high',
+    response_format: 'detailed',
+  });
+  const found = structuredOf(searched, searchThreatsResultSchema).threats[0];
+  const target = found?.id ?? '';
+  const ref = String(found?.number ?? 0);
+  const held = await call('saer_get_threat', { ref });
   const threat = structuredOf(held, getThreatResultSchema).threat;
   const revision = readingOf(inspected).revision;
   const edited = await call('saer_edit', {
@@ -98,7 +114,7 @@ const calls = async (session: McpSession) => {
     revision,
     edits: [{ op: 'set_threat_severity', threat: target, severity: 'low' }],
   });
-  const reread = await call('saer_get_threat', { ref: target });
+  const reread = await call('saer_get_threat', { ref });
   const reinspected = await call('saer_inspect');
   return {
     era: session.client.getProtocolEra(),
@@ -134,15 +150,7 @@ for (const runner of runners) {
       () => {
         for (const era of eras) {
           it(`inspects, draws, searches, edits a threat and reads it back in the ${era} era`, async () => {
-            const root = disposableEcluse();
-            const session = await opener.open(
-              runner,
-              ['mcp', '--root', root, '--file', 'ecluse.json'],
-              era,
-            );
-            const run = await scripted(session);
-            const onDisk = readFileSync(join(root, 'ecluse.json'));
-            rmSync(root, { recursive: true, force: true });
+            const run = await scripted(opener, runner, era);
             const written = editOf(run.edited);
             const [image] = imagesOf(run.drawn);
             const drawn = structuredOf(run.drawn, renderDiagramResultSchema);
@@ -154,10 +162,12 @@ for (const runner of runners) {
             expect(opening.length).toBeGreaterThanOrEqual(run.results.length);
             expect(opening).toEqual(opening.map(() => dataNotInstructions));
             expect({
+              file: run.inspected.file,
               format: run.inspected.format,
               revision: run.inspected.revision,
               totals: run.inspected.totals,
             }).toEqual({
+              file: 'ecluse.json',
               format: 'threat-dragon',
               revision: revisionOf(ecluseBytes),
               totals: {
@@ -172,9 +182,10 @@ for (const runner of runners) {
             expect(image?.bytes.subarray(0, 4)).toEqual(pngMagic);
             expect(Math.max(drawn.image.width, drawn.image.height)).toBe(1568);
             expect(run.searched.threats.length).toBeGreaterThan(0);
-            expect(run.searched.threats.map((row) => row.status)).toEqual(
-              run.searched.threats.map(() => 'open'),
-            );
+            expect(run.searched.response_format).toEqual('detailed');
+            expect(
+              run.searched.threats.map((row) => [row.status, row.severity]),
+            ).toEqual(run.searched.threats.map(() => ['open', 'high']));
             expect(run.edited.isError).toBeFalsy();
             expect({
               file: written.file,
@@ -185,9 +196,18 @@ for (const runner of runners) {
               file: 'ecluse.json',
               format: 'threat-dragon',
               applied: 1,
-              revision: revisionOf(onDisk),
+              revision: revisionOf(run.onDisk),
             });
             expect(run.stale.isError).toBe(true);
+            expect(textOf(run.stale)).toContain(
+              renderWriteFailure(
+                WriteFailure.StaleRevision({
+                  file: 'ecluse.json',
+                  quoted: run.inspected.revision,
+                  found: written.revision,
+                }),
+              ).join('\n'),
+            );
             expect(run.reread).toEqual({
               ...run.held,
               title: retitled,

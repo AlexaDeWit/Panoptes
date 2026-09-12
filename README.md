@@ -418,18 +418,17 @@ interactive session, before it starts a server a project file names.
 arguments. The root is the directory the server may read and write, and
 without `--root` it is the directory the host starts the server in. A project
 entry relies on that: Claude Code and Codex start it in the project directory.
-Where a host starts it anywhere else, or for a user-level entry that should
-reach one repository only, add `"--root", "/absolute/path/to/repository"` to
-the arguments by hand, since `install` writes no `--root`. `--file` is a path
-relative to the root, so `threat-model.yaml` below is the file at the
-repository root.
+For a host that may start it anywhere else, or for a user-level entry that
+should reach one repository only, add `"--root", "/absolute/path/to/project"`
+to the arguments by hand, since `install` writes no `--root`. `--file` is a
+path relative to the root, so `threat-model.yaml` below is the file at the
+project root.
 
-These are the manual entries for each host, as `--print` shows them for
-`--file threat-model.yaml`. Where `--print` from your release shows another
-entry, copy that one instead.
+These are the entries `--print` writes for `--file threat-model.yaml`, with
+the arrays laid out the way this page's formatter lays them out. Where
+`--print` from your release writes another entry, copy that one instead.
 
-Claude Code, in `.mcp.json`, and Claude Desktop, in
-`claude_desktop_config.json`:
+Claude Code, in `.mcp.json`:
 
 ```json
 {
@@ -437,6 +436,29 @@ Claude Code, in `.mcp.json`, and Claude Desktop, in
     "saerskriven": {
       "command": "saer",
       "args": ["mcp", "--file", "threat-model.yaml"]
+    }
+  }
+}
+```
+
+Claude Desktop, in `claude_desktop_config.json`, with the command's absolute
+path and an absolute `--root` filled in by hand. This entry has not been
+verified against the application. Its documentation asks for an absolute
+command path, and the root is absolute because which directory the
+application starts a server in is not established here.
+
+```json
+{
+  "mcpServers": {
+    "saerskriven": {
+      "command": "/absolute/path/to/saer",
+      "args": [
+        "mcp",
+        "--root",
+        "/absolute/path/to/project",
+        "--file",
+        "threat-model.yaml"
+      ]
     }
   }
 }
@@ -480,10 +502,9 @@ args = ["mcp", "--file", "threat-model.yaml"]
 
 An entry names the command `saer` rather than a path, which is what lets one
 committed file work on every machine, so `saer` has to be on the PATH the host
-launches with. Claude Desktop is the exception: its documentation asks for an
-absolute path, and the application does not necessarily see a login shell's
-PATH, so replace `saer` there with what `command -v saer` prints, and give it
-an absolute `--root` too.
+launches with. Claude Desktop is the exception, as its entry above shows: the
+application does not necessarily see a login shell's PATH, so its command is
+what `command -v saer` prints.
 
 What the command will not do:
 
