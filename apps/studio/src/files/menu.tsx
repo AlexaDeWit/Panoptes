@@ -1,8 +1,14 @@
 import { focusSelectionControl } from '../canvas/selection-control.js';
 import { useSnap } from '../canvas/snap.js';
-import { ExternalLinkIcon, ChevronRightIcon } from '@radix-ui/react-icons';
+import { ExternalLinkIcon } from '@radix-ui/react-icons';
 import { DropdownMenu } from 'radix-ui';
-import { useEffect, useState, type ReactNode, type RefObject } from 'react';
+import {
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+  type RefObject,
+} from 'react';
 import { useCommandSurface } from '../commands/binding.js';
 import {
   commandById,
@@ -27,7 +33,13 @@ import { FailureNotice } from '../ui/failure-notice.js';
 import { LiveRegion } from '../ui/live-region.js';
 import { colourModes, type ColourMode } from '../theme-preference.js';
 import { DiagramSwitcher } from './diagram-switcher.js';
-import { MenuCommand, MenuItem, RegisteredMenuCommand } from './menu-items.js';
+import {
+  MenuCommand,
+  MenuItem,
+  RegisteredMenuCommand,
+  Submenu,
+  SubmenuEdge,
+} from './menu-items.js';
 import type { FileSession } from './file-commands.js';
 import styles from './menu.module.css';
 import { RadioChoices } from './radio-choices.js';
@@ -90,21 +102,6 @@ function UnsavedChangesCommand({
   );
 }
 
-function SubmenuTrigger({
-  children,
-  label,
-}: {
-  readonly children: ReactNode;
-  readonly label?: string;
-}) {
-  return (
-    <DropdownMenu.SubTrigger aria-label={label} className={styles.item}>
-      {children}
-      <ChevronRightIcon aria-hidden="true" className={styles.chord} />
-    </DropdownMenu.SubTrigger>
-  );
-}
-
 function ProjectLink({
   href,
   children,
@@ -140,7 +137,7 @@ export function StudioMenu({
   const dirty = useModelStore(isDirty);
   const guarded = useModelStore(needsCloseGuard);
   const [open, setOpen] = useState(false);
-  const selectedColourMode = colourMode ?? 'system';
+  const bar = useRef<HTMLDivElement>(null);
 
   useCloseGuard(guarded);
   useAsking(session.opening, dirty, setOpen, session.cancelOpen);
@@ -152,7 +149,7 @@ export function StudioMenu({
     session;
 
   return (
-    <div className={styles.bar}>
+    <div className={styles.bar} ref={bar}>
       <DropdownMenu.Root
         modal={false}
         onOpenChange={(next) => {
@@ -174,64 +171,14 @@ export function StudioMenu({
           <span aria-hidden="true">☰</span>
           {dirty && <span aria-hidden="true" className={styles.dot} />}
         </DropdownMenu.Trigger>
-        <DropdownMenu.Content
-          tabIndex={0}
-          onCloseAutoFocus={(event) => {
-            if (focusSelectionControl()) {
-              event.preventDefault();
-            }
-          }}
-          align="start"
-          className={styles.panel}
-          sideOffset={6}
-        >
-          <FileMenu dirty={dirty} session={session} />
-          <DropdownMenu.Separator className={styles.rule} />
-          <DropdownMenu.Sub>
-            <SubmenuTrigger label={`Appearance ${selectedColourMode}`}>
-              <span>Appearance</span>
-              <span aria-hidden="true" className={styles.chord}>
-                {selectedColourMode[0].toUpperCase() +
-                  selectedColourMode.slice(1)}
-              </span>
-            </SubmenuTrigger>
-            <DropdownMenu.SubContent tabIndex={0} className={styles.panel}>
-              <RadioChoices
-                choices={colourModes.map((mode) => ({
-                  value: mode,
-                  label: mode[0].toUpperCase() + mode.slice(1),
-                }))}
-                label="Appearance"
-                onChoose={(mode) => {
-                  onColourModeChange?.(mode);
-                }}
-                value={selectedColourMode}
-              />
-            </DropdownMenu.SubContent>
-          </DropdownMenu.Sub>
-          <DropdownMenu.Separator className={styles.rule} />
-          <EditMenu />
-          <DropdownMenu.Separator className={styles.rule} />
-          <ViewMenu />
-          <DropdownMenu.Separator className={styles.rule} />
-          <DropdownMenu.Group>
-            <DropdownMenu.Label className={styles.heading}>
-              Project
-            </DropdownMenu.Label>
-            <ProjectLink href="https://github.com/AlexaDeWit/Saerskriven">
-              View source on GitHub
-            </ProjectLink>
-          </DropdownMenu.Group>
-          <DropdownMenu.Separator className={styles.rule} />
-          <DropdownMenu.Group>
-            <DropdownMenu.Label className={styles.heading}>
-              Help
-            </DropdownMenu.Label>
-            <MenuCommand command="shortcut-reference" />
-          </DropdownMenu.Group>
-          <DropdownMenu.Separator className={styles.rule} />
-          <FileState dirty={dirty} />
-        </DropdownMenu.Content>
+        <SubmenuEdge value={bar}>
+          <MenuPanel
+            colourMode={colourMode ?? 'system'}
+            dirty={dirty}
+            onColourModeChange={onColourModeChange}
+            session={session}
+          />
+        </SubmenuEdge>
       </DropdownMenu.Root>
       <DiagramSwitcher />
       <input
@@ -246,6 +193,83 @@ export function StudioMenu({
         type="file"
       />
     </div>
+  );
+}
+
+const titled = (mode: ColourMode): string =>
+  mode[0].toUpperCase() + mode.slice(1);
+
+type MenuPanelProps = {
+  readonly colourMode: ColourMode;
+  readonly dirty: boolean;
+  readonly onColourModeChange?: (mode: ColourMode) => void;
+  readonly session: FileSession;
+};
+
+function MenuPanel({
+  colourMode,
+  dirty,
+  onColourModeChange,
+  session,
+}: MenuPanelProps) {
+  return (
+    <DropdownMenu.Content
+      tabIndex={0}
+      onCloseAutoFocus={(event) => {
+        if (focusSelectionControl()) {
+          event.preventDefault();
+        }
+      }}
+      align="start"
+      className={styles.panel}
+      sideOffset={6}
+    >
+      <FileMenu dirty={dirty} session={session} />
+      <DropdownMenu.Separator className={styles.rule} />
+      <Submenu
+        label={`Appearance ${colourMode}`}
+        trigger={
+          <>
+            <span>Appearance</span>
+            <span aria-hidden="true" className={styles.chord}>
+              {titled(colourMode)}
+            </span>
+          </>
+        }
+      >
+        <RadioChoices
+          choices={colourModes.map((mode) => ({
+            value: mode,
+            label: titled(mode),
+          }))}
+          label="Appearance"
+          onChoose={(mode) => {
+            onColourModeChange?.(mode);
+          }}
+          value={colourMode}
+        />
+      </Submenu>
+      <DropdownMenu.Separator className={styles.rule} />
+      <EditMenu />
+      <DropdownMenu.Separator className={styles.rule} />
+      <ViewMenu />
+      <DropdownMenu.Separator className={styles.rule} />
+      <DropdownMenu.Group>
+        <DropdownMenu.Label className={styles.heading}>
+          Project
+        </DropdownMenu.Label>
+        <ProjectLink href="https://github.com/AlexaDeWit/Saerskriven">
+          View source on GitHub
+        </ProjectLink>
+      </DropdownMenu.Group>
+      <DropdownMenu.Separator className={styles.rule} />
+      <DropdownMenu.Group>
+        <DropdownMenu.Label className={styles.heading}>Help</DropdownMenu.Label>
+        <MenuCommand command="shortcut-reference" />
+      </DropdownMenu.Group>
+      <DropdownMenu.Separator className={styles.rule} />
+      <FileState dirty={dirty} />
+    </DropdownMenu.Content>
   );
 }
 
@@ -427,25 +451,22 @@ function EditMenu() {
       <DropdownMenu.Label className={styles.heading}>Edit</DropdownMenu.Label>
       <MenuCommand command="undo" disabled={!undoable} />
       <MenuCommand command="redo" disabled={!redoable} />
-      <DropdownMenu.Sub>
-        <SubmenuTrigger>Arrange</SubmenuTrigger>
-        <DropdownMenu.SubContent tabIndex={0} className={styles.panel}>
-          {(
-            [
-              'align-left',
-              'align-centre',
-              'align-right',
-              'align-top',
-              'align-middle',
-              'align-bottom',
-              'distribute-horizontal',
-              'distribute-vertical',
-            ] as const
-          ).map((command) => (
-            <MenuCommand command={command} disabled={nothing} key={command} />
-          ))}
-        </DropdownMenu.SubContent>
-      </DropdownMenu.Sub>
+      <Submenu trigger="Arrange">
+        {(
+          [
+            'align-left',
+            'align-centre',
+            'align-right',
+            'align-top',
+            'align-middle',
+            'align-bottom',
+            'distribute-horizontal',
+            'distribute-vertical',
+          ] as const
+        ).map((command) => (
+          <MenuCommand command={command} disabled={nothing} key={command} />
+        ))}
+      </Submenu>
       <MenuCommand command="rename" disabled={!renamable} />
     </DropdownMenu.Group>
   );
@@ -489,30 +510,21 @@ function ExportMenu() {
   const several = diagrams.length > 1;
 
   return (
-    <DropdownMenu.Sub>
-      <SubmenuTrigger>
-        <span>Export</span>
-      </SubmenuTrigger>
-      <DropdownMenu.SubContent
-        tabIndex={0}
-        className={styles.panel}
-        sideOffset={6}
-      >
-        {diagrams.length === 0 && (
-          <MenuCommand command="export-diagram" disabled />
-        )}
-        {diagrams.map((diagram) => (
-          <RegisteredMenuCommand
-            entry={diagramExportCommand(diagram, several)}
-            key={diagram.id}
-          />
-        ))}
-        <MenuCommand command="export-png" disabled={diagrams.length === 0} />
-        <MenuCommand command="export-register" />
-        <MenuCommand command="export-typst" />
-        <MenuCommand command="export-pdf" />
-      </DropdownMenu.SubContent>
-    </DropdownMenu.Sub>
+    <Submenu trigger={<span>Export</span>}>
+      {diagrams.length === 0 && (
+        <MenuCommand command="export-diagram" disabled />
+      )}
+      {diagrams.map((diagram) => (
+        <RegisteredMenuCommand
+          entry={diagramExportCommand(diagram, several)}
+          key={diagram.id}
+        />
+      ))}
+      <MenuCommand command="export-png" disabled={diagrams.length === 0} />
+      <MenuCommand command="export-register" />
+      <MenuCommand command="export-typst" />
+      <MenuCommand command="export-pdf" />
+    </Submenu>
   );
 }
 

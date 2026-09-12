@@ -71,7 +71,7 @@ map to the browser specs below. Paths are relative to `src/`.
 | Folding and dismissing a refusal notice                                            | `notices.spec.ts`                                        |
 | Reload recovery, and tabs staying in sync                                          | `recovery.spec.ts`                                       |
 | Switching between, adding, and renaming the diagrams of a model                    | `diagrams.spec.ts`                                       |
-| The chrome card at desktop and phone width                                         | `chrome-card.spec.ts`                                    |
+| The chrome card and its submenus at desktop and phone width                        | `chrome-card.spec.ts`                                    |
 | System and saved colour preferences                                                | `dark-mode.spec.ts`, `appearance.spec.ts`                |
 | axe-core checks of the page and open controls                                      | `accessibility.spec.ts`                                  |
 | Drag frame times                                                                   | `drag-frame-time.spec.ts`                                |

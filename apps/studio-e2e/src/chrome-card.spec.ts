@@ -4,11 +4,14 @@ import { registeredChords } from './chords.js';
 import {
   cardControlsClear,
   chromeCard,
+  closeMenu,
   diagramChoice,
   diagramSwitcher,
   diagramTitleField,
+  exportedFile,
   menuItem,
   nodeNamed,
+  openFile,
   openMenu,
   openModel,
   openPlaceholder,
@@ -112,4 +115,36 @@ test('a refused read and a loss report hang under the card', async ({
   await expect(report).not.toBeEmpty();
   await below(report, card);
   await cardControlsClear(page);
+});
+
+test('every submenu opens on screen at the card edge, and an export downloads from one', async ({
+  page,
+}) => {
+  await openFile(page, 'test-data/ecluse.json');
+  const card = await screenBoxOf(chromeCard(page));
+  const viewport = page.viewportSize();
+
+  for (const name of ['Export', 'Arrange', /^Appearance /u]) {
+    await openMenu(page);
+    const trigger = page.getByRole('menuitem', { name });
+    await trigger.click();
+    const submenu = page.getByRole('menu', { name });
+    await expect(submenu).toBeVisible();
+
+    const row = await screenBoxOf(trigger);
+    const drawn = await screenBoxOf(submenu);
+    expect(Math.round(drawn.x - card.x)).toBeGreaterThanOrEqual(0);
+    expect(Math.round(drawn.x - card.x)).toBeLessThanOrEqual(1);
+    expect(Math.round(drawn.x + drawn.width)).toBeLessThanOrEqual(
+      viewport?.width ?? 0,
+    );
+    expect(Math.round(drawn.y)).toBeGreaterThanOrEqual(
+      Math.round(row.y + row.height),
+    );
+    await closeMenu(page);
+  }
+
+  const output = await exportedFile(page, 'Diagram as SVG');
+  expect(output.name).toBe('ecluse.svg');
+  expect(output.bytes.length).toBeGreaterThan(0);
 });

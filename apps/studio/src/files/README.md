@@ -148,7 +148,11 @@ the menu and open it again around an answer.
 shell's chrome card ([`../app/chrome.tsx`](../app/chrome.tsx)), the file and
 edit commands, the Export submenu, the project link, and the
 state of the open file. `menu-items.tsx` holds the item components the menu
-and the switcher share. `diagram-switcher.tsx` is the control joined to the
+and the switcher share, and the submenu the Appearance, Arrange and Export
+items open. A submenu opens under its own row at the start edge of the chrome
+card rather than beside the menu, so every item in it, each export included,
+is on screen at every width down to a phone. It never covers its own row, and
+one taller than the room below scrolls. `diagram-switcher.tsx` is the control joined to the
 burger: it names the diagram on screen, and under it lists every diagram to
 switch to, New diagram, which adds an empty diagram and opens its title for
 naming, and Rename diagram, which turns the name into a field that commits

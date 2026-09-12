@@ -1,5 +1,13 @@
+import { ChevronRightIcon } from '@radix-ui/react-icons';
 import { DropdownMenu } from 'radix-ui';
-import type { ReactNode } from 'react';
+import {
+  createContext,
+  useContext,
+  useRef,
+  useState,
+  type ReactNode,
+  type RefObject,
+} from 'react';
 import { useCommandSurface } from '../commands/binding.js';
 import {
   commandById,
@@ -101,5 +109,71 @@ export function RegisteredMenuCommand({
     >
       {children ?? entry.label}
     </MenuItem>
+  );
+}
+
+/** The element a {@link Submenu} lines its start edge up with: row one of the chrome card, on screen at every width. */
+export const SubmenuEdge = createContext<RefObject<HTMLElement | null>>({
+  current: null,
+});
+
+type SubmenuOffsets = {
+  readonly align: number;
+  readonly side: number;
+};
+
+const besideTrigger: SubmenuOffsets = { align: 0, side: 0 };
+
+const offsetsFrom = (edge: Element, trigger: Element): SubmenuOffsets => {
+  const row = trigger.getBoundingClientRect();
+  return {
+    align: row.height,
+    side: edge.getBoundingClientRect().left - row.right,
+  };
+};
+
+type SubmenuProps = {
+  readonly children: ReactNode;
+  readonly label?: string;
+  readonly trigger: ReactNode;
+};
+
+/**
+ * A second level of the menu. It opens under its own row at the start edge of
+ * {@link SubmenuEdge}, measured as it opens, and never over the row: a pointer
+ * that opened it by hovering would otherwise press whatever item landed under
+ * it. A submenu taller than the room below scrolls rather than moving up.
+ */
+export function Submenu({ children, label, trigger }: SubmenuProps) {
+  const edge = useContext(SubmenuEdge);
+  const row = useRef<HTMLDivElement>(null);
+  const [offsets, setOffsets] = useState(besideTrigger);
+
+  return (
+    <DropdownMenu.Sub
+      onOpenChange={(open) => {
+        if (open && edge.current !== null && row.current !== null) {
+          setOffsets(offsetsFrom(edge.current, row.current));
+        }
+      }}
+    >
+      <DropdownMenu.SubTrigger
+        aria-label={label}
+        className={styles.item}
+        ref={row}
+      >
+        {trigger}
+        <ChevronRightIcon aria-hidden="true" className={styles.chord} />
+      </DropdownMenu.SubTrigger>
+      <DropdownMenu.SubContent
+        alignOffset={offsets.align}
+        avoidCollisions={false}
+        className={styles.panel}
+        sideOffset={offsets.side}
+        tabIndex={0}
+      >
+        {children}
+      </DropdownMenu.SubContent>
+    </DropdownMenu.Sub>
   );
 }
