@@ -36,6 +36,11 @@ jobs:
     permissions:
       contents: read
       id-token: write # OIDC for tokenless Codecov upload (no stored token)
+    env:
+      # Where the step below writes the module. Every step after it that
+      # builds or compiles the CLI reads this, because the CLI build copies
+      # the module into dist/assets and refuses without it.
+      SAERSKRIVEN_RESVG_WASM: ${{ github.workspace }}/result/lib/saerskriven_resvg.wasm
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -49,6 +54,19 @@ jobs:
 
       - name: Check the installed Nix CLI without runtime network access
         run: nix build --no-link --print-build-logs --option sandbox true .#checks.x86_64-linux.saerskriven
+
+      # Built here rather than taken from the rasterizer job, which saves no
+      # Nix-store entry: this job is the one that writes the shared `nix`
+      # prefix on main, so the module lands in the store it already saves and
+      # a later run finds the output path valid and skips the Rust build.
+      # What the entry has to carry for that is the 2 MiB output alone, which
+      # `./result` roots. The 2.7 GiB of Rust build inputs are rooted by
+      # nothing, so the `nix store gc` before the save collects them and the
+      # 5G ceiling holds: the rooted closure measures 3.45 GiB for the `.#ci`
+      # shell plus 2 MiB for the module.
+      # sandbox true gives the builder no network, as in the rasterizer job.
+      - name: Build the rasterizer module the CLI carries
+        run: nix build --print-build-logs --option sandbox true .#resvg-wasm
 
       - name: Check
         run: nix develop .#ci --command pnpm check
