@@ -239,6 +239,13 @@ export const focusRing = {
 /** Default threat pane coverage, including its outer inset, in screen pixels. */
 export const panelCover = 472;
 
+/**
+ * What the controls below the studio's chrome card offset by until the card
+ * has measured itself onto the document root. The card writes its own height
+ * back over this, its tool row being able to wrap.
+ */
+export const chromeCard = '5rem';
+
 const colourProperties = {
   surfaceApp: '--pn-colour-surface',
   surfaceCanvas: '--pn-colour-canvas',
@@ -308,6 +315,7 @@ ${colourBlock(lightPalette, '  ')}
   --pn-radius: ${radius};
 
   --pn-panel-cover: ${String(panelCover)}px;
+  --pn-chrome-block-size: ${chromeCard};
 
   --pn-focus-ring-width: ${focusRing.width};
   --pn-focus-ring: var(--pn-focus-ring-width) solid var(--pn-colour-accent);

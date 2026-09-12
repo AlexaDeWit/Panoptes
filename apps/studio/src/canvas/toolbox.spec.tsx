@@ -8,7 +8,7 @@ import { announce, resetAnnouncements } from './announcements.js';
 import { resetConnecting, startFlow } from './connecting.js';
 import { canvasModel, readerElement } from './canvas.fixtures.js';
 import { currentTool, resetTools } from './tools.js';
-import { Toolbox } from './toolbox.js';
+import { CanvasMessages, Toolbox } from './toolbox.js';
 
 const opened = (selected?: State['selection'][number]): void => {
   const selection = selected === undefined ? [] : [selected];
@@ -20,6 +20,15 @@ const opened = (selected?: State['selection'][number]): void => {
 
 const elementCount = (): number =>
   modelStore.getState().present.diagrams[0].elements.length;
+
+const chrome = (): void => {
+  render(
+    <>
+      <Toolbox />
+      <CanvasMessages />
+    </>,
+  );
+};
 
 describe('Toolbox', () => {
   beforeEach(() => {
@@ -80,9 +89,15 @@ describe('Toolbox', () => {
     expect(tooltip.textContent).toContain('Actor');
     expect(within(tooltip).getByText('A or 2')).toBeDefined();
   });
+});
+
+describe('the canvas messages', () => {
+  beforeEach(() => {
+    opened();
+  });
 
   it('keeps the canvas message region mounted while it has nothing to say', () => {
-    render(<Toolbox />);
+    chrome();
 
     const status = screen.getByRole('status');
     expect(status.textContent).toBe('');
@@ -91,7 +106,7 @@ describe('Toolbox', () => {
   });
 
   it('clears a message when the next canvas action changes state', () => {
-    render(<Toolbox />);
+    chrome();
     act(() => {
       announce('An edit completed.');
     });
@@ -108,7 +123,7 @@ describe('Toolbox', () => {
     opened(readerElement);
     startFlow();
 
-    render(<Toolbox />);
+    chrome();
 
     expect(screen.getByRole('listbox')).toBeDefined();
     expect(screen.queryByRole('button', { name: /flow tool/iu })).toBeNull();
@@ -118,7 +133,7 @@ describe('Toolbox', () => {
     const user = userEvent.setup();
     opened(readerElement);
     startFlow();
-    render(<Toolbox />);
+    chrome();
 
     await user.click(screen.getByRole('option', { name: 'Studio' }));
 

@@ -1,16 +1,17 @@
 .panel {
   position: absolute;
   z-index: 1;
-  inset-block-start: calc(
-    var(--pn-space-3) * 2 + 2rem + var(--pn-space-1) * 2 + 2px
-  );
+  inset-block-start: calc(var(--pn-space-3) * 2 + var(--pn-chrome-block-size));
   inset-inline-end: var(--pn-space-3);
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
   inline-size: calc(var(--pn-panel-cover) - var(--pn-space-3));
+  /* The bare term is the zoom cluster's height, which the pane ends above:
+     one 2rem control, the cluster's pad on each side and its border. */
   max-block-size: calc(
-    100% - var(--pn-space-3) * 4 - (2rem + var(--pn-space-1) * 2 + 2px) * 2
+    100% - var(--pn-space-3) * 4 - var(--pn-chrome-block-size) -
+      (2rem + var(--pn-space-1) * 2 + 2px)
   );
   max-inline-size: calc(100% - var(--pn-space-3) * 2);
   border: 1px solid var(--pn-colour-border);

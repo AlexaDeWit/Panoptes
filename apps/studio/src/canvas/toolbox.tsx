@@ -33,33 +33,45 @@ const glyphs: Record<Tool, ReactNode> = {
   hand: <HandIcon aria-hidden="true" className={styles.icon} />,
 };
 
-/** The floating tool modes, canvas messages and on-demand flow chooser. */
+/** The tool modes, as row two of the shell's chrome card. */
 export function Toolbox() {
   const mode = useTool();
+
+  return (
+    <section aria-label="Tools" className={styles.row} data-testid="toolbox">
+      {tools.map((tool) => (
+        <IconCommandButton
+          className={styles.control}
+          command={toolCommands[tool]}
+          key={tool}
+          onDoubleClick={
+            isElementTool(tool)
+              ? () => {
+                  lockTool(tool);
+                }
+              : undefined
+          }
+          pressed={mode.active === tool}
+          side="bottom"
+        >
+          {glyphs[tool]}
+        </IconCommandButton>
+      ))}
+    </section>
+  );
+}
+
+/**
+ * What the canvas last said an edit did, and the flow chooser a start-flow
+ * chord opens. Both hang under the chrome card rather than sitting in it: the
+ * chooser is in the page only while a connection is in progress, and the
+ * region is empty until there is something to announce.
+ */
+export function CanvasMessages() {
   const announcement = useAnnouncement();
 
   return (
-    <div className={styles.toolbox} data-testid="toolbox">
-      <section aria-label="Tools" className={styles.row}>
-        {tools.map((tool) => (
-          <IconCommandButton
-            className={styles.control}
-            command={toolCommands[tool]}
-            key={tool}
-            onDoubleClick={
-              isElementTool(tool)
-                ? () => {
-                    lockTool(tool);
-                  }
-                : undefined
-            }
-            pressed={mode.active === tool}
-          >
-            {glyphs[tool]}
-          </IconCommandButton>
-        ))}
-      </section>
-      <FlowTargetChooser />
+    <>
       <LiveRegion className={styles.announcement} testId="canvas-announcement">
         {announcement.message !== '' && (
           <p className={styles.message} key={announcement.sequence}>
@@ -67,7 +79,8 @@ export function Toolbox() {
           </p>
         )}
       </LiveRegion>
-    </div>
+      <FlowTargetChooser />
+    </>
   );
 }
 

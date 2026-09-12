@@ -42,6 +42,7 @@ and the focus ring, are declared once, being the same in both.
 | `--pn-colour-tone-critical` to `--pn-colour-tone-neutral`            | One per severity                   |
 | `--pn-space-1` to `--pn-space-4`                                     | Every gap and every pad            |
 | `--pn-panel-cover`                                                   | Default threat pane coverage       |
+| `--pn-chrome-block-size`                                             | The chrome card's height, measured |
 | `--pn-radius`                                                        | Every corner                       |
 | `--pn-focus-ring`, `--pn-focus-ring-width`, `--pn-focus-ring-offset` | The one visible focus indicator    |
 

@@ -77,6 +77,18 @@ export const openEcluse = async (page: Page): Promise<void> => {
 /** The two-diagram model of Saerskriven's own threat model. */
 export const saerskrivenModel = 'test-data/saerskriven.model.json';
 
+/** What its two diagrams are called, and an element drawn on each. */
+export const saerskrivenDiagrams = {
+  first: {
+    title: 'Reading a file and rendering it',
+    drawn: /^Codec read, process/u,
+  },
+  second: {
+    title: 'Agents and the desktop shell',
+    drawn: /^Agent and its harness, actor/u,
+  },
+} as const;
+
 /** The control joined to the menu button that names the diagram on screen. */
 export const diagramSwitcher = (page: Page): Locator =>
   page.getByTestId('diagram-switcher');
@@ -248,18 +260,60 @@ export const canvasSurface = (page: Page): Locator =>
 export const editAnnouncement = (page: Page): Locator =>
   page.getByTestId('canvas-announcement');
 
-/** One icon in the floating toolbox. */
+/** One icon in the toolbox, row two of the chrome card. */
 export const toolButton = (page: Page, name: string): Locator =>
   page.getByRole('button', { name, exact: true });
 
+/** The card holding the menu button, the diagram control and the toolbox. */
+export const chromeCard = (page: Page): Locator =>
+  page.getByTestId('chrome-card');
+
+/** Every tool the card offers, in the order the row draws them. */
+export const toolNames = [
+  'Select',
+  'Actor',
+  'Process',
+  'Store',
+  'Trust boundary',
+  'Trust boundary curve',
+  'Note',
+  'Hand',
+] as const;
+
+/**
+ * Holds that every control of the chrome card is inside the viewport and is
+ * what a click at its own centre would reach. An overlay drawn over the card
+ * leaves a control visible and unclickable, which a visibility check alone
+ * would pass.
+ */
+export const cardControlsClear = async (page: Page): Promise<void> => {
+  const controls = [
+    menuButton(page),
+    diagramSwitcher(page),
+    ...toolNames.map((name) => toolButton(page, name)),
+  ];
+  for (const control of controls) {
+    await expect(control).toBeInViewport();
+    const at = await centreOf(control);
+    const reached = await control.evaluate(
+      (node, point) =>
+        node.contains(document.elementFromPoint(point.x, point.y)),
+      at,
+    );
+    const named = await control.getAttribute('aria-label');
+    expect(reached, `${named ?? 'a card control'} is covered`).toBe(true);
+  }
+};
+
 /**
  * The last control on the tab path before the canvas, which is where a spec
- * that tabs into the diagram starts. The diagram switcher is that stop
- * whether or not anything is selected, the only control after it being the
- * one that dismisses a loss report, which is in the page only while a
- * crossing of the file boundary has cost something.
+ * that tabs into the diagram starts. The chrome card comes before the canvas
+ * in the page and Hand is its last button, the only controls after it being
+ * the ones that dismiss a report and the flow chooser, each in the page only
+ * while a crossing of the file boundary has cost something or a connection is
+ * in progress.
  */
-export const beforeCanvas = (page: Page): Locator => diagramSwitcher(page);
+export const beforeCanvas = (page: Page): Locator => toolButton(page, 'Hand');
 
 /** The panel holding the threats of whatever the canvas has selected. */
 export const threatPanel = (page: Page): Locator =>
@@ -291,13 +345,16 @@ export const widthOf = async (node: Locator): Promise<string> => {
   return /width:\s*[^;]*/u.exec(style)?.[0] ?? style;
 };
 
-export const centreOf = async (target: Locator): Promise<Point> => {
+/** Where a control is drawn on screen, held to be drawn at all. */
+export const screenBoxOf = async (target: Locator): Promise<Box> => {
   const box = await target.boundingBox();
   expect(box).not.toBeNull();
-  return {
-    x: (box?.x ?? 0) + (box?.width ?? 0) / 2,
-    y: (box?.y ?? 0) + (box?.height ?? 0) / 2,
-  };
+  return box ?? { x: 0, y: 0, width: 0, height: 0 };
+};
+
+export const centreOf = async (target: Locator): Promise<Point> => {
+  const box = await screenBoxOf(target);
+  return { x: box.x + box.width / 2, y: box.y + box.height / 2 };
 };
 
 /** Drags from the centre of `target` by the given screen-pixel offset. */

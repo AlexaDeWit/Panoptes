@@ -26,11 +26,18 @@ bodies that mount them. `announcements.ts` carries what an edit did to the regio
 and `viewport.ts` is the arithmetic of the view,
 whether a node is drawn inside the canvas and the viewport that fits a diagram
 into it, `view-commands.tsx` applies that to React Flow, and `toolbox.tsx` and
-`zoom-cluster.tsx` are the controls.
+`zoom-cluster.tsx` are the controls. `toolbox.tsx` holds two of them: the tool
+modes, which the shell mounts as row two of its chrome card, and the canvas
+announcement and flow chooser, which hang under that card. Neither reads a
+React Flow hook, which is what lets the shell host them.
 
-The canvas is the studio's window: it fills the viewport. The menu, toolbox,
-threat panel and zoom cluster float inside it instead of taking space from the
-diagram.
+The canvas is the studio's window: it fills the viewport. The chrome card, the
+threat panel and the zoom cluster float inside it instead of taking space from
+the diagram. `../app/chrome.tsx` is the card: one box centred at the top
+holding the menu button, the diagram control and the tool modes ([the file
+menu](../files/README.md)). Its measured height reaches the threat panel and
+the selection controls as `--pn-chrome-block-size`, so a tools row that wraps
+on a narrow viewport moves both.
 
 React Flow draws the graph-paper ground at the grid spacing from the canvas
 package. The studio supplies its grid and connection-handle colours through
@@ -179,8 +186,10 @@ the region below, which speaks only for edits that landed.
   Dragging any selected node moves the full selection.
 
 - **Place.** Select, Actor, Process, Store, Boundary box, Boundary curve, Note
-  and Hand are icon buttons in the floating toolbox. Each button shows every
-  shortcut its registered command owns ([the commands](../commands/README.md)).
+  and Hand are icon buttons on row two of the chrome card. Each button shows
+  every shortcut its registered command owns ([the
+  commands](../commands/README.md)), in a tooltip that opens downward so it
+  does not cover the row above it.
   A click with an element tool places its default size under the pointer.
   Pointer-down draws that geometry through the shared element glyph. A Note
   uses the same box geometry and draws no outline. A drag updates the box
@@ -231,9 +240,10 @@ the region below, which speaks only for edits that landed.
   draw nothing.
 - **Start a flow.** The chord the registry gives the start-flow command opens
   the target chooser on the selected element, from wherever a person is and
-  with no flow tool ([the commands](../commands/README.md)). The toolbox mounts
-  its listbox only while that command is in progress, so the arrow keys and
-  typeahead move the choice, Enter commits and Escape cancels. Escape reaches
+  with no flow tool ([the commands](../commands/README.md)). `CanvasMessages`
+  mounts the listbox under the card only while that command is in progress, so
+  the arrow keys and typeahead move the choice, Enter commits and Escape
+  cancels. Escape reaches
   Radix rather than the registry, an open overlay owning its own keys, so
   cancelling leaves the selection where it was. A selection no flow can run
   from starts nothing.
@@ -280,12 +290,12 @@ the region below, which speaks only for edits that landed.
   so pan, zoom and drag frames add no model edits. Width and height stop at ten
   model units.
 
-The toolbox holds the studio's unnamed status host ([the
-controls](../ui/README.md)). It reports an edit only when the next focus does
-not expose the result. Canvas and threat deletion, refused text, and completed
-Undo or Redo commands use it. Placement, connection, renaming, threat adds,
-field edits, and keyboard moves rely on their focused control or React Flow's
-message instead.
+The canvas announcement is the studio's unnamed status host ([the
+controls](../ui/README.md)), hanging under the chrome card. It reports an edit
+only when the next focus does not expose the result. Canvas and threat
+deletion, refused text, and completed Undo or Redo commands use it. Placement,
+connection, renaming, threat adds, field edits, and keyboard moves rely on
+their focused control or React Flow's message instead.
 
 The status is outside the model store because it does not belong in the undo
 stacks. The next action that changes canvas or panel state clears its message.
@@ -405,7 +415,9 @@ start-flow chord, which opens the chooser on it and draws the flow the choice
 commits, which is why the source is the selection rather than a mode to enter
 and leave. Deleting is the Delete or Backspace key, from anywhere in the
 studio. The connector listbox exists only while that command is in progress,
-so the toolbox adds no dead stop to the tab path.
+so it adds no dead stop to the tab path. The card comes before the canvas in
+the page, so Tab runs the menu button, the diagram control and the tool modes
+before the first element.
 Editing text is Enter on one selected element. F2 remains the name-editing
 alias. T focuses the threat panel. A field keeps every key a person types,
 Escape and Backspace among them: a chord fires inside a control that takes
@@ -441,7 +453,7 @@ twenty. Each press is one undo step, and the opposite edge stays fixed.
   screen reader's browse mode inside the canvas: Tab reaches every element
   but the reader's own navigation keys do not. React Flow writes the role
   after any property handed to it, so it cannot be overridden from here.
-- The canvas draws one diagram at a time. The switcher beside the menu
+- The canvas draws one diagram at a time. The switcher joined to the menu
   button and the Next and Previous diagram commands switch between them, and
   the switcher adds and renames diagrams (`diagrams.ts`). Removing and
   reordering diagrams is not offered: #316 holds the model operations that

@@ -16,15 +16,17 @@ import {
   openPlaceholder,
   openSwitcher,
   placeByClick,
+  saerskrivenDiagrams,
   saerskrivenModel,
   savedFile,
   withoutPickers,
 } from './studio.fixtures.js';
 
-const firstTitle = 'Reading a file and rendering it';
-const secondTitle = 'Agents and the desktop shell';
-const onFirst = /^Codec read, process/u;
-const onSecond = /^Agent and its harness, actor/u;
+const { first, second } = saerskrivenDiagrams;
+const firstTitle = first.title;
+const secondTitle = second.title;
+const onFirst = first.drawn;
+const onSecond = second.drawn;
 
 const titlesIn = (text: string): readonly string[] => {
   const read = readAnyFormat(text);

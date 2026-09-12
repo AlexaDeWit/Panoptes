@@ -19,6 +19,9 @@ catalog's `@playwright/test` version matches the flake's driver.
 The projects run in order:
 
 - `chromium` runs the main browser specs.
+- `phone` re-runs the chrome-card smoke on a `Pixel 7` preset, the viewport
+  the shell chrome has least room in. `chromium` runs the same spec at desktop
+  width.
 - `pages` checks the production build below `/Saerskriven/`, including PDF
   assets, the social card, its text alternative, and the release version.
 - `frame-time` measures an Écluse drag with one worker and one retry. Earlier
@@ -66,6 +69,7 @@ map to the browser specs below. Paths are relative to `src/`.
 | Edit announcements                                                    | `edit-status.spec.ts`                                    |
 | Reload recovery, and tabs staying in sync                             | `recovery.spec.ts`                                       |
 | Switching between, adding, and renaming the diagrams of a model       | `diagrams.spec.ts`                                       |
+| The chrome card at desktop and phone width                            | `chrome-card.spec.ts`                                    |
 | System and saved colour preferences                                   | `dark-mode.spec.ts`, `appearance.spec.ts`                |
 | axe-core checks of the page and open controls                         | `accessibility.spec.ts`                                  |
 | Drag frame times                                                      | `drag-frame-time.spec.ts`                                |
@@ -77,7 +81,8 @@ The browser suite does not check the browser-owned `beforeunload` prompt.
 The file-menu unit specs cover its registration. Dedicated boundary deletion
 coverage is absent. The canvas package owns detailed glyph and stylesheet
 checks. Automated accessibility checks do not replace manual screen-reader
-review. The configured browser projects use Chromium only.
+review. The configured browser projects use Chromium only, the phone one
+through a device preset rather than another engine.
 
 Current interaction limitations live in the
 [canvas documentation](../studio/src/canvas/README.md#what-is-not-attempted-here).
