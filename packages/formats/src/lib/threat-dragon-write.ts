@@ -24,42 +24,9 @@ import { planThreats, type HighWaterMark } from './threat-dragon-threats.js';
 const writtenVersion = '2.6.2';
 
 /**
- * The model as a Threat Dragon v2 file, merged onto the document it was
- * read from where one is given and projected into Threat Dragon's own
- * canonical form where none is. The output is built through the wire
- * schema's own inferred types, so nothing this writes is a shape that
- * schema would refuse.
- *
- * The merge is what preserves the file. Everything the wire schema declares
- * and the model does not hold, ports and `attrs` styling and `zIndex` and
- * `tools` among them, reaches the output because the merge writes over the
- * mapped fields alone and leaves the rest of the document as it found it. A
- * mapped field is rewritten only where the source disagrees with the model,
- * on the terms `threat-dragon-preservation.ts` sets, because the mapping
- * from a file to the model is not injective and overwriting would report a
- * user's edit where there was none.
- *
- * Three decisions the codec makes on its own, each an `overridden`
- * divergence where the source said otherwise. The version stamp is the
- * release this codec writes rather than the one the file arrived with.
- * `detail.threatTop` and `detail.diagramTop` rise to cover a number this
- * write put in the file that the file did not already carry, so Threat
- * Dragon does not hand that number out again, and neither ever falls. A
- * file that declared no mark of its own is given one that covers the
- * numbers it holds rather than a zero it would reissue from. Each entry
- * says which of the two reasons in {@link HighWaterMark} moved the mark,
- * since one claims a number went into the file and the other claims the
- * model has issued past everything in it. Issuing the number is not itself
- * a divergence: the file gains a fact rather than losing one.
- *
- * What the format cannot hold is reported rather than dropped in silence,
- * and a record the source held that an edit has since removed is reported
- * with what it was carrying: a diagram, a cell, a threat, and the copy of a
- * threat nested under a cell the model no longer attaches it to, which is a
- * loss the surviving copies elsewhere would otherwise hide. Each names its
- * own record, and an id the model's own schema would refuse names the model
- * instead, rather than a write stopping over a file it can still produce.
- * Nothing throws.
+ * Writes model fields and preserves source fields the codec does not map.
+ * An absent optional model property clears its mapped source property.
+ * The package README defines the numbering and divergence rules.
  */
 export function writeThreatDragon(
   model: Model,

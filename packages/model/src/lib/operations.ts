@@ -163,7 +163,7 @@ export function setFlowDirection(
   );
 }
 
-/** Adds an element after checking its diagram, ID, and attached endpoint references. */
+/** Requires an existing diagram, a new ID and valid local endpoint and boundary references. */
 export function addElement(
   model: Model,
   diagramId: DiagramId,
@@ -350,11 +350,7 @@ export function editNote(
   );
 }
 
-/**
- * Appends a diagram, screening its title as {@link renameDiagram} does and
- * its elements as {@link addElement} does: every id new to the model, and
- * every attached flow end inside the diagram.
- */
+/** Appends a diagram with a valid title, new element IDs and valid local endpoint and boundary references. */
 export function addDiagram(
   model: Model,
   diagram: Diagram,

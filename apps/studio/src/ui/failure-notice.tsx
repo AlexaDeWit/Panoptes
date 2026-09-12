@@ -124,7 +124,7 @@ function describeRead(
 function describeOperation(failure: OperationFailure): string {
   return OperationFailure.$match(failure, {
     InvalidElementRelationship: ({ issues }) =>
-      `The element has invalid boundary relationships: ${issueLines(issues).join(' ')}.`,
+      `The element has invalid boundary relationships: ${issueLines(issues).join(' ')}`,
     InvalidFragment: ({ issues }) =>
       `The copied graph was refused. ${issueLines(issues).join(' ')}`,
     UnknownDiagram: ({ diagramId }) =>

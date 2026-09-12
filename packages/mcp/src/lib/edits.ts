@@ -407,7 +407,7 @@ function placed(
 function describeOperationFailure(failure: OperationFailure): string {
   return OperationFailure.$match(failure, {
     InvalidElementRelationship: ({ issues }) =>
-      `The element has invalid boundary relationships: ${issueLine(issues)}.`,
+      `The element has invalid boundary relationships: ${issueLine(issues)}`,
     InvalidFragment: ({ issues }) =>
       `The edit does not apply to this model: ${issueLine(issues)}.`,
     UnknownDiagram: ({ diagramId }) =>
