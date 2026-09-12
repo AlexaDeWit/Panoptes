@@ -81,7 +81,9 @@ status. The severity marker uses the canvas tone class. Its text remains
 readable in forced colours. The summary remains the accordion control, and
 hidden content has no layout box or keyboard controls.
 
-The pane starts below the toolbox and ends above the zoom controls.
+The pane starts below the chrome card, offset by the height the card measures
+into `--pn-chrome-block-size` rather than by a constant, and ends above the
+zoom controls.
 The heading, width control, and close button sit outside the scrollable body.
 A long element name scrolls within a three-line heading, reachable by Tab.
 Severity and status share a row when space permits. Description and Mitigation

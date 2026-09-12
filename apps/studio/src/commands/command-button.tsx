@@ -35,7 +35,8 @@ export type CommandButtonProps = {
 /**
  * Which command the control runs, and the glyph that stands for it.
  * `children` is the icon, and is required: an icon control that draws nothing
- * shows nothing.
+ * shows nothing. `side` is which way the tooltip opens, for a row of controls
+ * that has something of its own above or below it.
  */
 export type IconCommandButtonProps = {
   readonly description?: string;
@@ -43,6 +44,7 @@ export type IconCommandButtonProps = {
   readonly className?: string;
   readonly disabled?: boolean;
   readonly pressed?: boolean;
+  readonly side?: 'top' | 'bottom';
   readonly onDoubleClick?: MouseEventHandler<HTMLButtonElement>;
   readonly children: ReactNode;
 };
@@ -88,6 +90,7 @@ export function IconCommandButton({
   className,
   disabled,
   pressed,
+  side,
   onDoubleClick,
   children,
 }: IconCommandButtonProps) {
@@ -112,7 +115,11 @@ export function IconCommandButton({
         >
           {children}
         </Tooltip.Trigger>
-        <Tooltip.Content className={styles.tooltip} sideOffset={tooltipOffset}>
+        <Tooltip.Content
+          className={styles.tooltip}
+          side={side}
+          sideOffset={tooltipOffset}
+        >
           {entry.label} <span className={styles.chord}>{spelled}</span>
         </Tooltip.Content>
         {description !== undefined && (

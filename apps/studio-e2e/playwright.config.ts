@@ -2,6 +2,7 @@ import { defineConfig, devices } from '@playwright/test';
 
 const frameTimeFloor = /drag-frame-time\.spec\.ts$/u;
 const pagesExport = /pages-export\.spec\.ts$/u;
+const phoneChrome = /chrome-card\.spec\.ts$/u;
 const pagesBasePath = '/Saerskriven';
 const pagesPort = 4300;
 
@@ -47,7 +48,19 @@ export default defineConfig({
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
-      testIgnore: [frameTimeFloor, pagesExport],
+      testIgnore: [frameTimeFloor, pagesExport, phoneChrome],
+    },
+    // A phone viewport is the one the shell chrome has least room in, so the
+    // card, the switcher and the toolbox are checked there rather than only at
+    // desktop width. The preset carries the viewport, the touch flags and the
+    // device pixel ratio together, so a change of preset changes all three at
+    // once. The set is small on purpose: the rest of the suite is about
+    // behaviour that does not turn on the viewport.
+    {
+      name: 'phone',
+      use: { ...devices['Pixel 7'] },
+      testMatch: phoneChrome,
+      dependencies: ['chromium'],
     },
     {
       name: 'pages',
@@ -56,7 +69,7 @@ export default defineConfig({
         baseURL: `http://localhost:${String(pagesPort)}${pagesBasePath}/`,
       },
       testMatch: pagesExport,
-      dependencies: ['chromium'],
+      dependencies: ['phone'],
       workers: 1,
     },
     // The floor reads what the machine gives the page, so it is comparable

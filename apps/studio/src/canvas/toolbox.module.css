@@ -1,23 +1,14 @@
-.toolbox {
-  position: absolute;
-  z-index: 2;
-  inset-block-start: var(--pn-space-3);
-  inset-inline-start: 50%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--pn-space-2);
-  max-inline-size: calc(100% - 2 * var(--pn-space-3));
-  transform: translateX(-50%);
-}
-
+/* Row two of the chrome card, and the row whose natural width the card takes.
+   It wraps rather than overflowing where the viewport is narrower than one
+   line of buttons. The card draws the border and the ground; the rule here is
+   the one between the two rows. */
 .row {
   display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   gap: var(--pn-space-1);
   padding: var(--pn-space-1);
-  border: 1px solid var(--pn-colour-border);
-  border-radius: var(--pn-radius);
-  background: var(--pn-colour-surface-raised);
+  border-block-start: 1px solid var(--pn-colour-border);
 }
 
 .control {
@@ -45,7 +36,7 @@
 .control:focus-visible,
 .flowTrigger:focus-visible {
   outline: var(--pn-focus-ring);
-  outline-offset: var(--pn-focus-ring-offset);
+  outline-offset: calc(-1 * var(--pn-focus-ring-width));
 }
 
 .control[aria-pressed='true']:focus-visible {
@@ -106,6 +97,13 @@
 .announcement:empty {
   border: 0;
   padding: 0;
+}
+
+/* Each hanging report carries its own gap, so an empty one leaves no band of
+   dead space over the diagram. */
+.announcement:not(:empty),
+.flowTrigger {
+  margin-block-start: var(--pn-space-2);
 }
 
 .message {

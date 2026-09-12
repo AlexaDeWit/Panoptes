@@ -9,10 +9,10 @@ import {
   useShortcutReference,
 } from '../commands/shortcut-reference.js';
 import { useFileSession } from '../files/file-commands.js';
-import { StudioMenu } from '../files/menu.js';
 import { useColourMode } from '../theme.js';
 import { studioReleaseTag, studioVersion } from '../version.js';
 import styles from './app.module.css';
+import { StudioChrome } from './chrome.js';
 
 /** The studio shell and the provider that exposes its viewport commands. */
 export function App() {
@@ -45,7 +45,7 @@ function Studio() {
         <main className={styles.diagram}>
           <h1 className={styles.title}>Saerskriven</h1>
           <div className={styles.stage}>
-            <StudioMenu
+            <StudioChrome
               colourMode={colourMode}
               onColourModeChange={setColourMode}
               session={session}

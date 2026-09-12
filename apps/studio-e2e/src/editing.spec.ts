@@ -7,6 +7,7 @@ import {
   canvasContainer,
   canvasSettled,
   canvasSurface,
+  cardControlsClear,
   dragOnto,
   editAnnouncement,
   elementNodes,
@@ -546,8 +547,7 @@ test('the canvas owns the full viewport beneath its floating chrome', async ({
     width: viewport?.width,
     height: viewport?.height,
   });
-  await expect(page.getByTestId('toolbox')).toBeInViewport();
-  await expect(page.getByRole('button', { name: /^Menu/u })).toBeInViewport();
+  await cardControlsClear(page);
 });
 
 test('the delete key removes the element, and the flows it held lose an end', async ({

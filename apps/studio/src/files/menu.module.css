@@ -1,43 +1,50 @@
-/* The chrome overlays the canvas rather than taking width from it, so the
-   menu is positioned over the top left corner of the diagram and stacks above
-   React Flow, whose own stylesheet gives the canvas a stacking context of its
-   own at z-index 0. */
-.menu {
-  position: absolute;
-  top: var(--pn-space-3);
-  left: var(--pn-space-3);
-  z-index: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  max-width: min(30rem, calc(100% - 2 * var(--pn-space-3)));
-}
-
-/* The menu button and the diagram switcher are one joined control: the
-   switcher continues the button's box to the right, sharing its border. */
+/* Row one of the chrome card. The card draws the border and the ground, so
+   the joint between the button and the diagram control is the only rule left
+   here. The row is laid out at the width the card already has, which the tools
+   row below it settles: a zero inline size keeps row one out of that
+   calculation, and the minimum puts it back across the card. */
 .bar {
   display: flex;
   align-items: stretch;
-  max-width: 100%;
+  inline-size: 0;
+  min-inline-size: 100%;
 }
 
-.bar .burger {
-  border-top-right-radius: 0;
-  border-bottom-right-radius: 0;
+.burger {
+  position: relative;
+  flex: none;
+  padding: var(--pn-space-2) var(--pn-space-3);
+  border: 0;
+  background: none;
+  color: var(--pn-colour-text);
+  font: inherit;
+  line-height: 1;
+}
+
+.burger:focus-visible {
+  outline: var(--pn-focus-ring);
+  outline-offset: calc(-1 * var(--pn-focus-ring-width));
+}
+
+/* The title takes what row one has left and ellipsises there, so a long one
+   never widens the card. */
+.switcher,
+.titleEditor {
+  flex: 1;
+  min-inline-size: 0;
 }
 
 .switcher,
 .titleField {
-  min-width: 0;
-  max-width: 18rem;
+  inline-size: 100%;
   padding: var(--pn-space-2) var(--pn-space-3);
-  border: 1px solid var(--pn-colour-border);
-  border-left: 0;
-  border-radius: 0 var(--pn-radius) var(--pn-radius) 0;
-  background: var(--pn-colour-surface);
+  border: 0;
+  border-inline-start: 1px solid var(--pn-colour-border);
+  background: none;
   color: var(--pn-colour-text);
   font: inherit;
   line-height: 1;
+  text-align: start;
 }
 
 .switcher {
@@ -46,12 +53,8 @@
   text-overflow: ellipsis;
 }
 
-.titleField {
-  width: 16rem;
-}
-
-/* The field and its refusal stack, the refusal hanging below the bar over
-   the canvas, in words rather than the outline alone. */
+/* The field and its refusal stack, the refusal hanging below the field over
+   row two, in words rather than the outline alone. */
 .titleEditor {
   position: relative;
   display: flex;
@@ -78,36 +81,21 @@
 .switcher:focus-visible,
 .titleField:focus-visible {
   outline: var(--pn-focus-ring);
-  outline-offset: var(--pn-focus-ring-offset);
+  outline-offset: calc(-1 * var(--pn-focus-ring-width));
 }
 
 .grow {
   flex: 1;
 }
 
-.burger {
-  position: relative;
-  padding: var(--pn-space-2) var(--pn-space-3);
-  border: 1px solid var(--pn-colour-border);
-  border-radius: var(--pn-radius);
-  background: var(--pn-colour-surface);
-  color: var(--pn-colour-text);
-  font: inherit;
-  line-height: 1;
-}
-
-.burger:focus-visible {
-  outline: var(--pn-focus-ring);
-  outline-offset: var(--pn-focus-ring-offset);
-}
-
 /* The dot marks unsaved work at a glance. It is never the only way to learn
    of it: the button's accessible name says so, and the open menu says so in
-   words. */
+   words. It sits inside the button rather than over its corner, the corner
+   now being the card's own edge. */
 .dot {
   position: absolute;
-  top: calc(-1 * var(--pn-space-1));
-  right: calc(-1 * var(--pn-space-1));
+  top: var(--pn-space-1);
+  right: var(--pn-space-1);
   width: var(--pn-space-2);
   height: var(--pn-space-2);
   border-radius: 50%;

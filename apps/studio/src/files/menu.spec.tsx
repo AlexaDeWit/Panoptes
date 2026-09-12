@@ -38,7 +38,7 @@ import {
   vendoredFile,
   type SpecBridge,
 } from './files.fixtures.js';
-import { StudioMenu } from './menu.js';
+import { FileReports, StudioMenu } from './menu.js';
 
 const nativeText = saerskrivenYamlCodec.write(sampleModel).output;
 
@@ -112,6 +112,7 @@ function Menu({
   return (
     <CommandSurfaceProvider surface={surface}>
       <StudioMenu session={session} />
+      <FileReports session={session} />
     </CommandSurfaceProvider>
   );
 }

@@ -65,7 +65,6 @@ import {
 import { editingEdgeTypes, editingNodeTypes } from './rename-field.js';
 import { PlacementPreview } from './placement-preview.js';
 import { usePlacement } from './placement.js';
-import { Toolbox } from './toolbox.js';
 import { currentTool } from './tools.js';
 import { FitOnOpen } from './view-commands.js';
 import { zoomLimits } from './viewport.js';
@@ -476,7 +475,6 @@ export function DiagramCanvas({
       </ReactFlow>
       <SelectionControls />
       <FlowEndpointCommands />
-      <Toolbox />
       <ThreatOverlay onCover={setPanelCover} />
     </div>
   );

@@ -136,8 +136,9 @@ adds no second overlay to walk into. Whether the platform asks is read as the
 item is drawn rather than after a save-as has started, so nothing has to close
 the menu and open it again around an answer.
 
-`menu.tsx` mounts the rest: the burger button over the top left of the canvas,
-the file and edit commands, the Export submenu, the project link, and the
+`menu.tsx` mounts the rest: the burger button, which starts row one of the
+shell's chrome card ([the canvas](../canvas/README.md)), the file and edit
+commands, the Export submenu, the project link, and the
 state of the open file. `menu-items.tsx` holds the item components the menu
 and the switcher share. `diagram-switcher.tsx` is the control joined to the
 burger: it names the diagram on screen, and under it lists every diagram to
@@ -156,8 +157,10 @@ the model is dirty and the latest recovery write is unconfirmed. Open and
 New model still ask before they replace or clear a dirty recovered session. New model
 releases the native handle only after the recovery snapshot clears.
 
-The report of the last crossing, an export report, and the failure notice sit
-below the button and over the canvas. The crossing report and export report
+`FileReports` is the report of the last crossing, an export report, and the
+failure notice, which the shell hangs under the chrome card: each is empty
+until something has been refused or has cost the model a key, and each can run
+to several lines, which is why they are under the card rather than in it. The crossing report and export report
 share one live region. An export reports every endpoint its projection could
 not place after it writes the file. A PDF compile refusal reports the
 compiler's sentences and writes nothing.

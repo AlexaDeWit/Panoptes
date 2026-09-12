@@ -3,7 +3,7 @@
   position: absolute;
   z-index: 2;
   inset-inline-start: var(--pn-space-3);
-  inset-block-start: 5rem;
+  inset-block-start: calc(var(--pn-space-3) * 2 + var(--pn-chrome-block-size));
   max-width: min(22rem, 90vw);
   max-height: 65vh;
   overflow: auto;

@@ -1,0 +1,45 @@
+/* The chrome floats over the diagram rather than taking width from it, so it
+   is a band across the top of the canvas that lets a pointer through
+   everywhere except on the card and on what hangs below it. React Flow gives
+   the canvas a stacking context of its own at z-index 0, so the band stacks
+   above it. The band is as wide as the widest thing it holds, capped at the
+   viewport less its gutters, rather than shrink-to-fit: shrink-to-fit against
+   a 50% start offset would leave the tools row half the canvas to wrap in. */
+.chrome {
+  position: absolute;
+  z-index: 2;
+  inset-block-start: var(--pn-space-3);
+  inset-inline-start: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  inline-size: max-content;
+  max-inline-size: calc(100% - 2 * var(--pn-space-3));
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+/* Row two sets the width: its natural size is the card's, and row one is laid
+   out inside that. A viewport narrower than the card takes the card down with
+   it. */
+.card {
+  display: flex;
+  flex-direction: column;
+  inline-size: max-content;
+  max-inline-size: 100%;
+  border: 1px solid var(--pn-colour-border);
+  border-radius: var(--pn-radius);
+  background: var(--pn-colour-surface-raised);
+  pointer-events: auto;
+}
+
+/* What hangs under the card: wider than the card where there is room, the
+   card's width on a phone. No gap here, each report carrying its own, so an
+   empty one adds nothing between the card and the diagram. */
+.below {
+  display: flex;
+  flex-direction: column;
+  inline-size: 30rem;
+  max-inline-size: 100%;
+  pointer-events: auto;
+}

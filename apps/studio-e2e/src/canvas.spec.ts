@@ -116,7 +116,8 @@ test('a flow under a selected trust boundary takes a line or label click', async
   const flowName = /^npm read \/ publish/u;
   const flow = nodeNamed(page, flowName);
 
-  await boundary.locator('.pn-label').click();
+  const onOutline = await boundaryHandlePoint(boundary, 'bottom');
+  await page.mouse.click(onOutline.x, onOutline.y);
   await expect(boundary).toHaveClass(/selected/u);
   await canvasSettled(page);
 
@@ -125,7 +126,7 @@ test('a flow under a selected trust boundary takes a line or label click', async
   await expect(flow).toHaveClass(/selected/u);
   await expect(boundary).not.toHaveClass(/selected/u);
 
-  await boundary.locator('.pn-label').click();
+  await page.mouse.click(onOutline.x, onOutline.y);
   await canvasSettled(page);
   await flow.locator('.pn-flow-label').click();
   await expect(flow).toHaveClass(/selected/u);

@@ -130,15 +130,13 @@ export type StudioMenuProps = {
   readonly triggerRef?: RefObject<HTMLButtonElement | null>;
 };
 
-/** The non-modal file, edit and project menu, with reports beside its trigger. */
+/** The non-modal file, edit and project menu, as row one of the chrome card. */
 export function StudioMenu({
   session,
   colourMode,
   onColourModeChange,
   triggerRef,
 }: StudioMenuProps) {
-  const file = useModelStore((state) => state.file);
-  const failure = useModelStore((state) => state.lastFailure);
   const dirty = useModelStore(isDirty);
   const guarded = useModelStore(needsCloseGuard);
   const [open, setOpen] = useState(false);
@@ -150,192 +148,92 @@ export function StudioMenu({
   useAsking(session.closing, dirty, setOpen, session.cancelClose);
   useChoosing(session.choosing, setOpen);
 
-  const {
-    asksFormat,
-    attachPicker,
-    cancelOpen,
-    cancelChoice,
-    cancelClose,
-    chooseFormat,
-    choosing,
-    closing,
-    commands,
-    confirmOpen,
-    confirmClose,
-    dismissReport,
-    dismissExportNotice,
-    exportNotice,
-    opening,
-    receive,
-    report,
-  } = session;
-  const saveAsCommand = commandById('save-as');
-  const askingOpen = opening && dirty;
-  const askingClose = closing && dirty;
-  const format = formatOf(file);
+  const { attachPicker, cancelOpen, cancelChoice, cancelClose, receive } =
+    session;
 
   return (
-    <div className={styles.menu}>
-      <div className={styles.bar}>
-        <DropdownMenu.Root
-          modal={false}
-          onOpenChange={(next) => {
-            setOpen(next);
-            if (!next) {
-              cancelOpen();
-              session.cancelImport();
-              cancelClose();
-              cancelChoice();
+    <div className={styles.bar}>
+      <DropdownMenu.Root
+        modal={false}
+        onOpenChange={(next) => {
+          setOpen(next);
+          if (!next) {
+            cancelOpen();
+            session.cancelImport();
+            cancelClose();
+            cancelChoice();
+          }
+        }}
+        open={open}
+      >
+        <DropdownMenu.Trigger
+          aria-label={dirty ? 'Menu, unsaved changes' : 'Menu'}
+          className={styles.burger}
+          ref={triggerRef}
+        >
+          <span aria-hidden="true">☰</span>
+          {dirty && <span aria-hidden="true" className={styles.dot} />}
+        </DropdownMenu.Trigger>
+        <DropdownMenu.Content
+          tabIndex={0}
+          onCloseAutoFocus={(event) => {
+            if (focusSelectionControl()) {
+              event.preventDefault();
             }
           }}
-          open={open}
+          align="start"
+          className={styles.panel}
+          sideOffset={6}
         >
-          <DropdownMenu.Trigger
-            aria-label={dirty ? 'Menu, unsaved changes' : 'Menu'}
-            className={styles.burger}
-            ref={triggerRef}
-          >
-            <span aria-hidden="true">☰</span>
-            {dirty && <span aria-hidden="true" className={styles.dot} />}
-          </DropdownMenu.Trigger>
-          <DropdownMenu.Content
-            tabIndex={0}
-            onCloseAutoFocus={(event) => {
-              if (focusSelectionControl()) {
-                event.preventDefault();
-              }
-            }}
-            align="start"
-            className={styles.panel}
-            sideOffset={6}
-          >
-            <DropdownMenu.Group>
-              <DropdownMenu.Label className={styles.heading}>
-                File
-              </DropdownMenu.Label>
-              <UnsavedChangesCommand
-                asking={askingOpen}
-                cancel={cancelOpen}
-                command="open"
-                dirty={dirty}
-                proceed={confirmOpen}
-                question="Discard changes and open"
+          <FileMenu dirty={dirty} session={session} />
+          <DropdownMenu.Separator className={styles.rule} />
+          <DropdownMenu.Sub>
+            <SubmenuTrigger label={`Appearance ${selectedColourMode}`}>
+              <span>Appearance</span>
+              <span aria-hidden="true" className={styles.chord}>
+                {selectedColourMode[0].toUpperCase() +
+                  selectedColourMode.slice(1)}
+              </span>
+            </SubmenuTrigger>
+            <DropdownMenu.SubContent tabIndex={0} className={styles.panel}>
+              <RadioChoices
+                choices={colourModes.map((mode) => ({
+                  value: mode,
+                  label: mode[0].toUpperCase() + mode.slice(1),
+                }))}
+                label="Appearance"
+                onChoose={(mode) => {
+                  onColourModeChange?.(mode);
+                }}
+                value={selectedColourMode}
               />
-              <MenuCommand command="save" />
-              <MenuItem
-                chord={
-                  choosing
-                    ? undefined
-                    : spellShortcuts(saveAsCommand.shortcuts, hostPlatform)
-                }
-                keepOpen={asksFormat && !choosing}
-                keyShortcuts={
-                  choosing
-                    ? undefined
-                    : keyShortcutsAttribute(
-                        saveAsCommand.shortcuts,
-                        hostPlatform,
-                      )
-                }
-                onChoose={
-                  choosing
-                    ? () => {
-                        chooseFormat(format);
-                      }
-                    : () => {
-                        commands.saveAs();
-                      }
-                }
-              >
-                {choosing
-                  ? `Save as ${formatFiles[format].label}`
-                  : saveAsCommand.label}
-              </MenuItem>
-              {choosing &&
-                formatsFrom(format)
-                  .slice(1)
-                  .map((option) => (
-                    <MenuItem
-                      key={option}
-                      onChoose={() => {
-                        chooseFormat(option);
-                      }}
-                    >
-                      Save as {formatFiles[option].label}
-                    </MenuItem>
-                  ))}
-              <UnsavedChangesCommand
-                asking={session.importing && dirty}
-                cancel={session.cancelImport}
-                command="import"
-                dirty={dirty}
-                proceed={session.confirmImport}
-                question="Discard changes and import"
-              />
-              <ExportMenu />
-              <UnsavedChangesCommand
-                asking={askingClose}
-                cancel={cancelClose}
-                command="close-file"
-                dirty={dirty}
-                proceed={confirmClose}
-                question="Discard changes and create new model"
-              />
-            </DropdownMenu.Group>
-            <DropdownMenu.Separator className={styles.rule} />
-            <DropdownMenu.Sub>
-              <SubmenuTrigger label={`Appearance ${selectedColourMode}`}>
-                <span>Appearance</span>
-                <span aria-hidden="true" className={styles.chord}>
-                  {selectedColourMode[0].toUpperCase() +
-                    selectedColourMode.slice(1)}
-                </span>
-              </SubmenuTrigger>
-              <DropdownMenu.SubContent tabIndex={0} className={styles.panel}>
-                <RadioChoices
-                  choices={colourModes.map((mode) => ({
-                    value: mode,
-                    label: mode[0].toUpperCase() + mode.slice(1),
-                  }))}
-                  label="Appearance"
-                  onChoose={(mode) => {
-                    onColourModeChange?.(mode);
-                  }}
-                  value={selectedColourMode}
-                />
-              </DropdownMenu.SubContent>
-            </DropdownMenu.Sub>
-            <DropdownMenu.Separator className={styles.rule} />
-            <EditMenu />
-            <DropdownMenu.Separator className={styles.rule} />
-            <ViewMenu />
-            <DropdownMenu.Separator className={styles.rule} />
-            <DropdownMenu.Group>
-              <DropdownMenu.Label className={styles.heading}>
-                Project
-              </DropdownMenu.Label>
-              <ProjectLink href="https://github.com/AlexaDeWit/Saerskriven">
-                View source on GitHub
-              </ProjectLink>
-            </DropdownMenu.Group>
-            <DropdownMenu.Separator className={styles.rule} />
-            <DropdownMenu.Group>
-              <DropdownMenu.Label className={styles.heading}>
-                Help
-              </DropdownMenu.Label>
-              <MenuCommand command="shortcut-reference" />
-            </DropdownMenu.Group>
-            <DropdownMenu.Separator className={styles.rule} />
-            <DropdownMenu.Group className={styles.about}>
-              <p className={styles.state} data-testid="file-state">
-                {nameOf(file)}, {formatFiles[format].label},{' '}
-                {dirty ? 'unsaved changes' : 'no unsaved changes'}
-              </p>
-            </DropdownMenu.Group>
-          </DropdownMenu.Content>
-        </DropdownMenu.Root>
-        <DiagramSwitcher />
-      </div>
+            </DropdownMenu.SubContent>
+          </DropdownMenu.Sub>
+          <DropdownMenu.Separator className={styles.rule} />
+          <EditMenu />
+          <DropdownMenu.Separator className={styles.rule} />
+          <ViewMenu />
+          <DropdownMenu.Separator className={styles.rule} />
+          <DropdownMenu.Group>
+            <DropdownMenu.Label className={styles.heading}>
+              Project
+            </DropdownMenu.Label>
+            <ProjectLink href="https://github.com/AlexaDeWit/Saerskriven">
+              View source on GitHub
+            </ProjectLink>
+          </DropdownMenu.Group>
+          <DropdownMenu.Separator className={styles.rule} />
+          <DropdownMenu.Group>
+            <DropdownMenu.Label className={styles.heading}>
+              Help
+            </DropdownMenu.Label>
+            <MenuCommand command="shortcut-reference" />
+          </DropdownMenu.Group>
+          <DropdownMenu.Separator className={styles.rule} />
+          <FileState dirty={dirty} />
+        </DropdownMenu.Content>
+      </DropdownMenu.Root>
+      <DiagramSwitcher />
       <input
         className={styles.input}
         data-testid="file-input"
@@ -347,6 +245,22 @@ export function StudioMenu({
         ref={attachPicker}
         type="file"
       />
+    </div>
+  );
+}
+
+/**
+ * The last refused read and the report of the last crossing of the file
+ * boundary, which hang under the chrome card rather than sitting in it: both
+ * are empty until something has been refused or has cost the model a key, and
+ * both can run to several lines.
+ */
+export function FileReports({ session }: { readonly session: FileSession }) {
+  const failure = useModelStore((state) => state.lastFailure);
+  const { dismissExportNotice, dismissReport, exportNotice, report } = session;
+
+  return (
+    <>
       <FailureNotice failure={failure} />
       <LiveRegion
         className={styles.report}
@@ -388,7 +302,117 @@ export function StudioMenu({
           </div>
         )}
       </LiveRegion>
-    </div>
+    </>
+  );
+}
+
+function FileState({ dirty }: { readonly dirty: boolean }) {
+  const file = useModelStore((state) => state.file);
+
+  return (
+    <DropdownMenu.Group className={styles.about}>
+      <p className={styles.state} data-testid="file-state">
+        {nameOf(file)}, {formatFiles[formatOf(file)].label},{' '}
+        {dirty ? 'unsaved changes' : 'no unsaved changes'}
+      </p>
+    </DropdownMenu.Group>
+  );
+}
+
+function FileMenu({
+  dirty,
+  session,
+}: {
+  readonly dirty: boolean;
+  readonly session: FileSession;
+}) {
+  const file = useModelStore((state) => state.file);
+  const {
+    asksFormat,
+    cancelOpen,
+    cancelClose,
+    chooseFormat,
+    choosing,
+    closing,
+    commands,
+    confirmOpen,
+    confirmClose,
+    opening,
+  } = session;
+  const saveAsCommand = commandById('save-as');
+  const format = formatOf(file);
+  const askingOpen = opening && dirty;
+  const askingClose = closing && dirty;
+
+  return (
+    <DropdownMenu.Group>
+      <DropdownMenu.Label className={styles.heading}>File</DropdownMenu.Label>
+      <UnsavedChangesCommand
+        asking={askingOpen}
+        cancel={cancelOpen}
+        command="open"
+        dirty={dirty}
+        proceed={confirmOpen}
+        question="Discard changes and open"
+      />
+      <MenuCommand command="save" />
+      <MenuItem
+        chord={
+          choosing
+            ? undefined
+            : spellShortcuts(saveAsCommand.shortcuts, hostPlatform)
+        }
+        keepOpen={asksFormat && !choosing}
+        keyShortcuts={
+          choosing
+            ? undefined
+            : keyShortcutsAttribute(saveAsCommand.shortcuts, hostPlatform)
+        }
+        onChoose={
+          choosing
+            ? () => {
+                chooseFormat(format);
+              }
+            : () => {
+                commands.saveAs();
+              }
+        }
+      >
+        {choosing
+          ? `Save as ${formatFiles[format].label}`
+          : saveAsCommand.label}
+      </MenuItem>
+      {choosing &&
+        formatsFrom(format)
+          .slice(1)
+          .map((option) => (
+            <MenuItem
+              key={option}
+              onChoose={() => {
+                chooseFormat(option);
+              }}
+            >
+              Save as {formatFiles[option].label}
+            </MenuItem>
+          ))}
+      <UnsavedChangesCommand
+        asking={session.importing && dirty}
+        cancel={session.cancelImport}
+        command="import"
+        dirty={dirty}
+        proceed={session.confirmImport}
+        question="Discard changes and import"
+      />
+      <ExportMenu />
+      <UnsavedChangesCommand
+        asking={askingClose}
+        cancel={cancelClose}
+        command="close-file"
+        dirty={dirty}
+        proceed={confirmClose}
+        question="Discard changes and create new model"
+      />
+    </DropdownMenu.Group>
   );
 }
 
