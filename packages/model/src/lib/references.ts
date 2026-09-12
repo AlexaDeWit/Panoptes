@@ -1,6 +1,7 @@
 import type { Element, Flow } from './elements.js';
-import type { ElementId } from './ids.js';
+import type { ElementId, ThreatId } from './ids.js';
 import type { Diagram } from './model.js';
+import type { Threat } from './threats.js';
 
 /**
  * One attached flow endpoint that cannot anchor where it points: at the
@@ -52,4 +53,29 @@ export function elementsAcross(diagrams: readonly Diagram[]): Element[] {
 /** Ids of every element across the given diagrams. */
 export function elementIdsAcross(diagrams: readonly Diagram[]): Set<string> {
   return new Set(elementsAcross(diagrams).map((element) => element.id));
+}
+
+/**
+ * The first of `elementIds` that names no element of the given diagrams,
+ * and undefined where every one of them resolves. The operations report it
+ * as the failure's offending reference.
+ */
+export function unknownElementIn(
+  diagrams: readonly Diagram[],
+  elementIds: readonly ElementId[],
+): ElementId | undefined {
+  const known = elementIdsAcross(diagrams);
+  return elementIds.find((elementId) => !known.has(elementId));
+}
+
+/**
+ * The first of `threatIds` that names no threat of the given register, and
+ * undefined where every one of them resolves.
+ */
+export function unknownThreatIn(
+  threats: readonly Threat[],
+  threatIds: readonly ThreatId[],
+): ThreatId | undefined {
+  const known = new Set<string>(threats.map((threat) => threat.id));
+  return threatIds.find((threatId) => !known.has(threatId));
 }

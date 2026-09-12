@@ -1,3 +1,4 @@
+import { autoPlacement } from '@saerskriven/model';
 import type { TmbomDocument } from '@saerskriven/wire-tmbom';
 import {
   importElement,
@@ -89,6 +90,7 @@ export function tmbomGraph(document: TmbomDocument, context: ImportContext) {
       });
     }
     for (const [index, { source, kind }] of members.entries()) {
+      const placed = autoPlacement(index);
       fields(source, ['symbolic_name', 'title', 'description']);
       if ('trust_zone' in source) fields(source, ['trust_zone']);
       elements.push({
@@ -104,10 +106,7 @@ export function tmbomGraph(document: TmbomDocument, context: ImportContext) {
           ]),
         ),
         kind,
-        position: {
-          x: 60 + (index % 4) * 260,
-          y: top + 60 + Math.floor(index / 4) * 160,
-        },
+        position: { x: placed.x, y: top + placed.y },
         size: { width: 180, height: 80 },
       });
     }

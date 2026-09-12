@@ -6,7 +6,9 @@ elements, diagrams, threats, mitigations, assumptions, and model metadata.
 comes into existence, `emptyModel` being the one the package parses for you,
 where a model that has not been drawn starts. Operations are pure functions
 returning new models: graph edits (add, remove, move, resize, rename, edit Note
-text) and threat register edits (add, remove, replace, attach, detach). A threat
+text), diagram edits (add, rename, remove), and register edits for threats
+(add, remove, replace, attach, detach), mitigations and assumptions (add,
+replace, remove). A threat
 number is issued once and never moves: the model carries the highest number it has ever
 issued, so a removed threat leaves a permanent gap and `nextThreatNumber`
 never hands its number back. Coverage queries read a model without changing
@@ -75,7 +77,8 @@ threat model against this one. Regenerate it with
 written. Cached tests only read its committed bytes.
 
 `@saerskriven/model/fixtures` is the one home for the fixture helpers every
-suite in the workspace shares: `elementId`, `diagramId` and `threatId`, which
+suite in the workspace shares: `elementId`, `diagramId`, `threatId`,
+`mitigationId` and `assumptionId`, which
 parse a spec's literal string into a branded id, and `parsedFixture`, the
 fold from a fixture document to a `Model` that throws where the fixture stops
 parsing, a fixture that no longer parses being a broken suite rather than a
@@ -108,3 +111,23 @@ keeps its source and target and is drawn with an arrowhead at each end.
 preserves the endpoints and metadata, rejects another element kind, and
 returns the same model for an unchanged list. The studio uses that identity
 to leave history and dirty state unchanged for a route with no edits.
+
+`removeDiagram` drops a diagram that owns no element and refuses one that
+still does, naming how many it holds. The refusal is deliberate: a cascade
+would delete records the caller never named, which no other operation here
+does. A caller that wants the cascade removes the elements with
+`removeElement` first, which detaches the flows anchored to each and drops
+its threat and assumption links, and then removes the emptied diagram.
+
+Editing a mitigation or an assumption is whole-record replacement, as
+editing a threat is: the caller builds the record from its schema and the
+operation checks its fit, so a linked threat id that names no threat, or an
+assumption's element id that names no element, is refused. Removing either
+record takes its own links with it and leaves the threats and elements it
+pointed at untouched, neither of them carrying a link back.
+
+`autoPlacement` gives the position for the element at an index in a run the
+caller has no geometry for: a row-major grid of four columns from a fixed
+margin. The import mappings in `@saerskriven/formats` place a record whose
+source file carries no geometry with it, and an editor asked to choose a
+position uses the same grid, so the two agree.

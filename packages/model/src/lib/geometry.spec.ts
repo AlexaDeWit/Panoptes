@@ -1,4 +1,9 @@
-import { pointSchema, sizeSchema, waypointsSchema } from './geometry.js';
+import {
+  autoPlacement,
+  pointSchema,
+  sizeSchema,
+  waypointsSchema,
+} from './geometry.js';
 
 describe('pointSchema', () => {
   it('accepts negative and fractional coordinates', () => {
@@ -29,6 +34,18 @@ describe('waypointsSchema', () => {
     ).toEqual([
       { x: 1, y: 2 },
       { x: 3, y: 4 },
+    ]);
+  });
+});
+
+describe('autoPlacement', () => {
+  it('fills four columns before it starts a row', () => {
+    expect([0, 1, 2, 3, 4].map(autoPlacement)).toEqual([
+      { x: 60, y: 60 },
+      { x: 320, y: 60 },
+      { x: 580, y: 60 },
+      { x: 840, y: 60 },
+      { x: 60, y: 220 },
     ]);
   });
 });

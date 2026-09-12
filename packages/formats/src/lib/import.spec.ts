@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { autoPlacement } from '@saerskriven/model';
 import { Either } from 'effect';
 import { stringify } from 'yaml';
 import { importModel } from './import.js';
@@ -37,6 +38,17 @@ it.each(['otm', 'tmbom'] as const)(
     );
   },
 );
+
+it('places an OTM component the diagram representation misses on the shared grid', () => {
+  const read = Either.getOrThrow(importModel(importTexts.otm));
+  const placed = read.model.diagrams[0].elements.find(
+    (element) => element.name === 'Class CustomerDatabase',
+  );
+  expect(placed).toMatchObject({ position: autoPlacement(3) });
+  expect(read.divergences).toEqual(
+    expect.arrayContaining([expect.objectContaining({ reason: 'overridden' })]),
+  );
+});
 
 it('keeps differing OTM occurrence states, bidirectional flows, and asset names', () => {
   const document = otmFixture();

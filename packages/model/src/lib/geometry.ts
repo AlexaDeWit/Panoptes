@@ -44,3 +44,21 @@ export const waypointsSchema = z.array(pointSchema);
 
 /** Ordered route points. */
 export type Waypoints = z.infer<typeof waypointsSchema>;
+
+const placementColumns = 4;
+const placementMargin = 60;
+const placementStep = { x: 260, y: 160 };
+
+/**
+ * Where to put the element at `index` among a run of elements the caller
+ * has no position for: a row-major grid of four columns, laid out from a
+ * fixed margin so the same index always lands on the same spot. Import
+ * mappings place a record whose source file carries no geometry with it,
+ * and so does an editor asked to choose a position.
+ */
+export function autoPlacement(index: number): Point {
+  return {
+    x: placementMargin + (index % placementColumns) * placementStep.x,
+    y: placementMargin + Math.floor(index / placementColumns) * placementStep.y,
+  };
+}

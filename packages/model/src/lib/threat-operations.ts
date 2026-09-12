@@ -2,7 +2,7 @@ import { Either } from 'effect';
 import type { ElementId, ThreatId } from './ids.js';
 import { OperationFailure } from './operation-failures.js';
 import type { Model } from './parse.js';
-import { elementIdsAcross } from './references.js';
+import { elementIdsAcross, unknownElementIn } from './references.js';
 import type { Threat } from './threats.js';
 
 /** The failures {@link addThreat} can produce. */
@@ -59,7 +59,7 @@ export function addThreat(
       OperationFailure.ReusedThreatNumber({ number: threat.number }),
     );
   }
-  const unlinkable = unknownElementIn(model, threat.elements);
+  const unlinkable = unknownElementIn(model.diagrams, threat.elements);
   if (unlinkable) {
     return Either.left(
       OperationFailure.UnknownElement({ elementId: unlinkable }),
@@ -131,7 +131,7 @@ export function replaceThreat(
       }),
     );
   }
-  const unlinkable = unknownElementIn(model, threat.elements);
+  const unlinkable = unknownElementIn(model.diagrams, threat.elements);
   if (unlinkable) {
     return Either.left(
       OperationFailure.UnknownElement({ elementId: unlinkable }),
@@ -207,12 +207,4 @@ function withRelinkedThreat(
   return Either.right(
     withThreat(model, { ...threat, elements: relink(threat.elements) }),
   );
-}
-
-function unknownElementIn(
-  model: Model,
-  elementIds: readonly ElementId[],
-): ElementId | undefined {
-  const known = elementIdsAcross(model.diagrams);
-  return elementIds.find((elementId) => !known.has(elementId));
 }
