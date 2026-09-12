@@ -1,8 +1,4 @@
-import {
-  DetectionFailure,
-  ReadFailure,
-  readLimits,
-} from '@saerskriven/formats';
+import { ReadFailure, readLimits } from '@saerskriven/formats';
 import { Either } from 'effect';
 import { mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -83,7 +79,7 @@ describe('a model file read at the edge', () => {
 });
 
 describe('why a read produced nothing', () => {
-  it('names the bound a text was past', () => {
+  it('writes the wording the codec layer owns as one line each', () => {
     expect(
       describeReadFailure(
         ReadFailure.ExceededReadLimit({
@@ -95,60 +91,6 @@ describe('why a read produced nothing', () => {
     ).toEqual(
       'The file is past a read bound, so nothing read it.\n' +
         'maxNestingDepth: the bound is 64, the file reached 65.\n',
-    );
-  });
-
-  it("carries the parser's own message for a text of no syntax", () => {
-    expect(
-      describeReadFailure(ReadFailure.MalformedText({ message: 'bad token' })),
-    ).toEqual(
-      'The file is not valid text of the format that claimed it.\nbad token\n',
-    );
-  });
-
-  it('points into the document the wire schema refused', () => {
-    expect(
-      describeReadFailure(
-        ReadFailure.InvalidWireDocument({
-          issues: [
-            {
-              path: ['metadata', 'title'],
-              message: 'expected string',
-              code: 'invalid_type',
-            },
-          ],
-        }),
-      ),
-    ).toEqual(
-      'The file is not a valid document of the format that claimed it:\n' +
-        'metadata.title: expected string\n',
-    );
-  });
-
-  it('names the whole document where an issue points at no path', () => {
-    expect(
-      describeReadFailure(
-        ReadFailure.InvalidModel({
-          issues: [
-            { path: [], message: 'expected object', code: 'invalid_type' },
-          ],
-        }),
-      ),
-    ).toEqual(
-      'The file is a valid document, and the model it maps to is not:\n' +
-        '(root): expected object\n',
-    );
-  });
-
-  it('lists the formats tried where none claimed the text', () => {
-    expect(
-      describeReadFailure(
-        DetectionFailure.NoFormatClaimed({
-          tried: ['threat-dragon', 'saerskriven-yaml'],
-        }),
-      ),
-    ).toEqual(
-      'No format claimed the file. Saerskriven tried threat-dragon, saerskriven-yaml.\n',
     );
   });
 });

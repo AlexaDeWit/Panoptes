@@ -17,13 +17,16 @@
   "exclude": ["src/**/*.fixtures.ts", "src/**/*.test.ts", "src/**/*.spec.ts"],
   "references": [
     {
-      "path": "../../packages/render/tsconfig.lib.json"
-    },
-    {
       "path": "../../packages/model/tsconfig.lib.json"
     },
     {
+      "path": "../../packages/mcp/tsconfig.lib.json"
+    },
+    {
       "path": "../../packages/formats/tsconfig.lib.json"
+    },
+    {
+      "path": "../../packages/render/tsconfig.lib.json"
     }
   ]
 }

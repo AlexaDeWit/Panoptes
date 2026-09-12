@@ -1,15 +1,14 @@
 import {
-  DetectionFailure,
   ReadFailure,
-  escapedForTerminal,
   hasDiverged,
   readAnyFormat,
   readLimits,
   renderDivergences,
+  renderReadFailure,
   type DetectedRead,
+  type DetectionFailure,
   type Divergence,
 } from '@saerskriven/formats';
-import type { ParseIssue } from '@saerskriven/model';
 import { Either } from 'effect';
 import { readTextFile, sizeOf } from './files.js';
 import {
@@ -32,42 +31,11 @@ export function readModel(
   return Either.flatMap(withinSizeBound(file), () => detected(file));
 }
 
-/**
- * Why a read produced nothing, as the lines a person reads on standard
- * error. Every variant is worded, `MalformedText` included, which detection
- * reads as the codec declining rather than passing on, so a caller holding
- * the union has nothing left to narrow and no failure reaches a user as a
- * tag.
- */
+/** Why a read produced nothing, as the lines the CLI writes to standard error. */
 export function describeReadFailure(
   failure: ReadFailure | DetectionFailure,
 ): string {
-  return DetectionFailure.$is('NoFormatClaimed')(failure)
-    ? lines(
-        `No format claimed the file. Saerskriven tried ${failure.tried.join(', ')}.`,
-      )
-    : ReadFailure.$match(failure, {
-        ExceededReadLimit: ({ limit, bound, observed }) =>
-          lines(
-            'The file is past a read bound, so nothing read it.',
-            `${limit}: the bound is ${String(bound)}, the file reached ${String(observed)}.`,
-          ),
-        MalformedText: ({ message }) =>
-          lines(
-            'The file is not valid text of the format that claimed it.',
-            message,
-          ),
-        InvalidWireDocument: ({ issues }) =>
-          lines(
-            'The file is not a valid document of the format that claimed it:',
-            ...issueLines(issues),
-          ),
-        InvalidModel: ({ issues }) =>
-          lines(
-            'The file is a valid document, and the model it maps to is not:',
-            ...issueLines(issues),
-          ),
-      });
+  return lines(...renderReadFailure(failure));
 }
 
 /**
@@ -111,14 +79,4 @@ function detected(file: string): Either.Either<DetectedRead, CommandOutcome> {
         invalidInput(describeReadFailure(failure)),
       ),
   });
-}
-
-function issueLines(issues: readonly ParseIssue[]): readonly string[] {
-  return issues.map((issue) =>
-    escapedForTerminal(`${pathOf(issue.path)}: ${issue.message}`),
-  );
-}
-
-function pathOf(path: readonly (string | number)[]): string {
-  return path.length > 0 ? path.join('.') : '(root)';
 }
