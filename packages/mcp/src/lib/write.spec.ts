@@ -176,6 +176,19 @@ describe('a write past the size this server reads', () => {
     expect(Either.isRight(readModelFile(workspace, modelFile))).toBe(true);
   });
 
+  it('matches the read, which refuses a file one byte past it', () => {
+    const tree = editableTree();
+    const size = readLimits.maxTextBytes + 1;
+    writeFileSync(join(tree.root, modelFile), paddedTo(tree.root, size));
+    const workspace = Either.getOrThrow(openWorkspace({ root: tree.root }));
+    expect(readModelFile(workspace, modelFile)).toMatchObject({
+      left: {
+        _tag: 'Unread',
+        failure: { _tag: 'ExceededReadLimit', observed: size },
+      },
+    });
+  });
+
   it('is refused one byte past it, leaving the file byte-identical', () => {
     const tree = editableTree();
     const before = readFileSync(join(tree.root, modelFile));
@@ -190,6 +203,19 @@ describe('a write past the size this server reads', () => {
     expect(new Set(readdirSync(tree.root))).toEqual(entries);
     expect(failureOf(refused)).toEqual(
       WriteFailure.PastReadBound({ file: modelFile, size }),
+    );
+  });
+
+  it('counts UTF-8 bytes rather than code units', () => {
+    const tree = editableTree();
+    const text = `# ${'é'.repeat(readLimits.maxTextBytes / 2)}\n`;
+    const refused = createdFile(target(tree.root, 'fresh.yaml'), text);
+    expect(text.length).toBeLessThan(readLimits.maxTextBytes);
+    expect(failureOf(refused)).toEqual(
+      WriteFailure.PastReadBound({
+        file: 'fresh.yaml',
+        size: Buffer.byteLength(text),
+      }),
     );
   });
 

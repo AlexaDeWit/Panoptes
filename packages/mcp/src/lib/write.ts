@@ -117,8 +117,8 @@ export function renderWriteFailure(failure: WriteFailure): readonly string[] {
       `The file ${quotedForTerminal(file)} is already there, and this tool writes only a path that is free.`,
     ],
     PastReadBound: ({ file, size }) => [
-      `The file ${quotedForTerminal(file)} was left as it was: what this call would write is ${String(size)} bytes, past the size this server reads (${String(readLimits.maxTextBytes)} bytes), so the server could not open it again.`,
-      'Make a smaller change, so the file stays within that size.',
+      `The file ${quotedForTerminal(file)} was not written: what this call would write is ${String(size)} bytes, past the size this server reads (${String(readLimits.maxTextBytes)} bytes), so the server could not open it again.`,
+      'Whatever the path held before is unchanged. The file has to stay within that size, so write less into it: a smaller change for an edit, a smaller source for an import.',
     ],
     Unwritten: ({ file, reason }) => [
       `The file ${quotedForTerminal(file)} was not written: ${escapedForTerminal(reason)}.`,
