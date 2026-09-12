@@ -90,6 +90,32 @@ Severity and status share a row when space permits. Description and Mitigation
 start at eight lines and grow with content to 24 lines. They retain the
 browser's manual vertical resize control.
 
+## Element security properties
+
+Select one actor, process, store, flow or trust boundary and expand **Security
+properties** above its threats. The fields follow the selected element kind.
+**Not recorded** leaves a fact absent. Flags also offer **Yes** and **No**.
+Protocol and privilege level use a recording choice plus a text field, so a
+recorded empty string stays distinct from an absent value.
+
+Relationship editors offer only valid targets in the same diagram. Each row
+names one recorded target. Change a row, remove it, or add another target.
+Existing order and duplicate declarations remain until explicitly edited.
+A recorded list can be empty. **Not recorded** removes the list itself.
+Geometry does not determine these assertions and editing one side does not
+invent reciprocal entries.
+
+Each committed field change is one undo step. Unchanged commits leave history
+and dirty state alone. Text commits on blur or Enter. Invalid text stays beside
+its field with an inline error and an announcement. Refused property drafts
+survive closing or changing selection, using the same file lifetime as threat
+drafts. A changed model value clears a stale draft. Model validation failures
+use the shared failure notice.
+
+Deleting an element removes its entries from recorded lists. Copies retain
+only relationships between copied elements, and pasting remaps those IDs.
+Saving and recovery preserve these facts through the native v1 codec.
+
 ## The commit rule
 
 One committed change is one `ReplaceThreat`, so one field is one undo step.

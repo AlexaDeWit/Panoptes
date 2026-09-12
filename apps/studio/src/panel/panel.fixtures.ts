@@ -1,3 +1,6 @@
+import { screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+
 /**
  * How long a spec that drives the threat editor is given, past the root
  * `vitest.shared.mts` sets. The editor's own suite renders three text fields,
@@ -9,3 +12,13 @@
  * rather than one test's.
  */
 export const editorTimeout = 30_000;
+
+/** Chooses a labelled option through the shared listbox control. */
+export const chooseFrom = async (
+  field: string,
+  option: string,
+): Promise<void> => {
+  const user = userEvent.setup();
+  await user.click(screen.getByRole('combobox', { name: field }));
+  await user.click(screen.getByRole('option', { name: option }));
+};

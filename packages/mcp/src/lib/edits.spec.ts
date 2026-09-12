@@ -13,6 +13,12 @@ type ByTag<Union extends { readonly _tag: string }> = {
 };
 
 const failures: ByTag<OperationFailure> = {
+  InvalidElementProperties: OperationFailure.InvalidElementProperties({
+    elementId: elementId('element-api'),
+    issues: [
+      { path: ['kind'], code: 'custom', message: 'Element kind changed.' },
+    ],
+  }),
   InvalidElementRelationship: OperationFailure.InvalidElementRelationship({
     elementId: elementId('element-api'),
     issues: [

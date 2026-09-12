@@ -10,6 +10,10 @@
 }
 
 .trigger {
+  min-inline-size: 0;
+  max-inline-size: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
   display: inline-flex;
   align-items: center;
   justify-content: space-between;
@@ -35,6 +39,8 @@
 }
 
 .content {
+  z-index: 3;
+  max-inline-size: min(30rem, var(--radix-select-content-available-width));
   border: 1px solid var(--pn-colour-border);
   border-radius: var(--pn-radius);
   background: var(--pn-colour-surface);
@@ -42,10 +48,13 @@
 }
 
 .viewport {
+  max-block-size: min(24rem, var(--radix-select-content-available-height));
   padding: var(--pn-space-1);
 }
 
 .item {
+  overflow-wrap: anywhere;
+  white-space: normal;
   display: flex;
   align-items: center;
   justify-content: space-between;

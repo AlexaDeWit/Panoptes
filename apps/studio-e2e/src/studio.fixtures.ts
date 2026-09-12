@@ -13,14 +13,7 @@ export const vendored = (path: string): string =>
 export const canvasContainer = (page: Page): Locator =>
   page.getByTestId('canvas-container');
 
-/**
- * Waits for the canvas to stop moving. `FitOnOpen` fits the view to the
- * diagram from an effect, once React Flow has measured the canvas, so a click
- * sent before that lands where a node is about to be rather than where it
- * is. The viewport's
- * own transform is the signal, and it is read twice: it has settled when a
- * poll finds it where the poll before found it.
- */
+/** Waits for consecutive matching viewport transforms before a canvas gesture. */
 export const canvasSettled = async (page: Page): Promise<void> => {
   const viewport = page.locator('.react-flow__viewport');
   let before = '';
@@ -48,14 +41,7 @@ export const focusSettled = async (target: Locator): Promise<void> => {
     .toBe(true);
 };
 
-/**
- * Opens the studio on a model document of the repository, put on the page
- * before the studio's own modules run under the name
- * `apps/studio/src/store/development-model.ts` declares, which is how a real
- * file reaches the canvas without a picker. `globalThis` in a page is the
- * window the studio reads. A recovery snapshot still wins over the document,
- * so a reload lands on the session rather than back on the file.
- */
+/** Opens a vendored model through the development hook. Existing recovery still takes precedence. */
 export const openModel = async (page: Page, path: string): Promise<void> => {
   const model: unknown = JSON.parse(readFileSync(vendored(path), 'utf8'));
   await page.addInitScript(
@@ -117,22 +103,13 @@ export const openPlaceholder = async (page: Page): Promise<void> => {
   await canvasSettled(page);
 };
 
-/**
- * Takes the File System Access API off the page, so the studio falls back to
- * its own file input and to a download. Playwright cannot operate the native
- * pickers that API opens, and the fallback is the path a browser without it
- * takes anyway.
- */
+/** Removes native picker APIs so tests use the file input and download fallback. */
 export const withoutPickers = (): void => {
   Reflect.deleteProperty(globalThis, 'showOpenFilePicker');
   Reflect.deleteProperty(globalThis, 'showSaveFilePicker');
 };
 
-/**
- * Opens a file of the repository through the fallback picker, and holds that
- * it was read and drawn. The format is the file's own: the studio reads the
- * content rather than the name.
- */
+/** Opens a vendored file through the fallback picker and waits for its canvas. */
 export const openFile = async (
   page: Page,
   path: string,
@@ -170,11 +147,7 @@ export const menuButton = (page: Page): Locator =>
 export const menuItem = (page: Page, name: string): Locator =>
   page.getByRole('menuitem', { name, exact: true });
 
-/**
- * Opens the menu, and does nothing where it is already open. What the menu
- * says about the file is only in the page while it is open, so a spec that
- * reads that opens the menu first.
- */
+/** Opens the menu only when closed, making its file-dependent items available. */
 export const openMenu = async (page: Page): Promise<void> => {
   if (await page.getByRole('menu').isVisible()) {
     return;
@@ -243,10 +216,7 @@ export const exportedFile = async (
   };
 };
 
-/**
- * Every element drawn as a box. The anchor a free flow end rides on is hidden
- * from assistive technology, so it is no group and is not among these.
- */
+/** Visible box elements exclude the hidden anchors of free flow ends. */
 export const elementNodes = (page: Page): Locator =>
   page.locator('.react-flow__nodes').getByRole('group');
 
@@ -254,21 +224,13 @@ export const elementNodes = (page: Page): Locator =>
 export const nodeNamed = (page: Page, name: string | RegExp): Locator =>
   page.getByRole('group', { name });
 
-/**
- * One of the four handles a flow attaches to, by the side of the element it
- * sits at. React Flow names a handle by the id the canvas gave it, which is
- * that side.
- */
+/** Finds an attachment handle by the element side used as its ID. */
 export const handleOn = (
   node: Locator,
   side: 'top' | 'right' | 'bottom' | 'left',
 ): Locator => node.locator(`[data-handleid="${side}"]`);
 
-/**
- * The canvas itself, which React Flow gives the application role and the
- * canvas its name. It is where focus lands once the element that held it has
- * been deleted.
- */
+/** The diagram application receives focus after deleting its focused element. */
 export const canvasSurface = (page: Page): Locator =>
   page.getByRole('application', { name: 'Diagram' });
 
@@ -296,12 +258,7 @@ export const toolNames = [
   'Hand',
 ] as const;
 
-/**
- * Holds that every control of the chrome card is inside the viewport and is
- * what a click at its own centre would reach. An overlay drawn over the card
- * leaves a control visible and unclickable, which a visibility check alone
- * would pass.
- */
+/** Checks viewport bounds and hit targets, because visible controls can still be covered. */
 export const cardControlsClear = async (page: Page): Promise<void> => {
   const controls = [
     menuButton(page),
@@ -321,14 +278,7 @@ export const cardControlsClear = async (page: Page): Promise<void> => {
   }
 };
 
-/**
- * The last control on the tab path before the canvas, which is where a spec
- * that tabs into the diagram starts. The chrome card comes before the canvas
- * in the page and Hand is its last button, the only controls after it being
- * the ones that dismiss a report and the flow chooser, each in the page only
- * while a crossing of the file boundary has cost something or a connection is
- * in progress.
- */
+/** The Hand tool is the last persistent control before the canvas in the tab order. */
 export const beforeCanvas = (page: Page): Locator => toolButton(page, 'Hand');
 
 /** The panel holding the threats of whatever the canvas has selected. */
@@ -342,14 +292,10 @@ export const chooseInPanel = async (
   option: string,
 ): Promise<void> => {
   await threatPanel(page).getByRole('combobox', { name: field }).click();
-  await page.getByRole('option', { name: option }).click();
+  await page.getByRole('option', { name: option, exact: true }).click();
 };
 
-/**
- * Where React Flow has placed a node, read off the transform in its style
- * attribute. The rest of the attribute is left out: selecting a node also
- * raises it, and a spec about position should not read that.
- */
+/** Reads a node position from its transform without including the selection-dependent stacking style. */
 export const placeOf = async (node: Locator): Promise<string> => {
   const style = (await node.getAttribute('style')) ?? '';
   return /translate\([^)]*\)/u.exec(style)?.[0] ?? style;
@@ -453,15 +399,7 @@ const clearOf = (boxes: readonly (Box | null)[], at: Point): boolean =>
       at.y > box.y + box.height + clearBy,
   );
 
-/**
- * A point on the canvas that no element is drawn near, which is where a
- * connection released cancels. It is searched for rather than assumed: a fit
- * puts the diagram wherever the model it opened needs, so which part of the
- * canvas is clear moves with the file. The margin is well past React Flow's
- * connection radius, so a drop there resolves to no handle rather than
- * snapping to the nearest one. The bottom quarter is left out, being where
- * the floating chrome sits.
- */
+/** Finds a point clear of drawn elements, connection snap distance and the lower chrome area. */
 export const emptyCanvasPoint = async (page: Page): Promise<Point> => {
   const canvas = await canvasContainer(page).boundingBox();
   expect(canvas).not.toBeNull();
@@ -513,13 +451,7 @@ export const placeByClick = async (
   return placed;
 };
 
-/**
- * Selects an element by clicking it, and holds that the click landed. The
- * element is on the page and the canvas has stopped moving before the click
- * is sent ({@link canvasSettled}), so one click is one selection: a click
- * that does not select is a regression in the canvas rather than something
- * to send again.
- */
+/** Waits for canvas layout and sends one click. A missed selection fails instead of retrying the gesture. */
 export const selectNode = async (
   page: Page,
   name: RegExp,
@@ -547,21 +479,11 @@ export const selectByKeyboard = async (
   return node;
 };
 
-/**
- * The option the open listbox has focused, waited for. Radix marks it with
- * `aria-selected` only while it is both focused and the value already set, so
- * focus is what a spec follows through a listbox rather than that attribute.
- */
+/** Follows real listbox focus because Radix marks aria-selected only for an already selected focused option. */
 export const focusedOption = (page: Page): Locator =>
   page.locator('[role="option"]:focus');
 
-/**
- * Moves the highlight one step through the open listbox and answers where it
- * landed. Radix focuses the chosen item as the listbox opens and again once
- * the popper has been positioned, so an arrow key pressed between the two
- * moves nothing: the press is repeated until the highlight lands somewhere
- * else.
- */
+/** Retries arrow navigation until focus moves, accounting for Radix restoring focus after popup positioning. */
 export const stepThroughOptions = async (
   page: Page,
   step: 'ArrowDown' | 'ArrowUp',

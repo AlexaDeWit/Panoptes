@@ -406,6 +406,8 @@ function placed(
 
 function describeOperationFailure(failure: OperationFailure): string {
   return OperationFailure.$match(failure, {
+    InvalidElementProperties: ({ issues }) =>
+      `The element properties were refused: ${issueLine(issues)}`,
     InvalidElementRelationship: ({ issues }) =>
       `The element has invalid boundary relationships: ${issueLine(issues)}`,
     InvalidFragment: ({ issues }) =>

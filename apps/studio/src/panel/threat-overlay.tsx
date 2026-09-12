@@ -1,3 +1,4 @@
+import type { ElementPropertyDrafts } from './element-properties.js';
 import type { ElementId } from '@saerskriven/model';
 import { useCallback, useEffect, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
@@ -11,6 +12,7 @@ import { openFileName, panelSubject } from './threats.js';
 type Held = {
   readonly file: string | undefined;
   readonly drafts: Map<ElementId, HeldDraft>;
+  readonly propertyDrafts: ElementPropertyDrafts;
 };
 
 /** Retains refused drafts and pane width across selections. Closing returns focus to the selected element. */
@@ -24,6 +26,7 @@ export function ThreatOverlay({
   const [held, setHeld] = useState<Held>(() => ({
     file,
     drafts: new Map<ElementId, HeldDraft>(),
+    propertyDrafts: new Map(),
   }));
   const selection = useModelStore(selectedElements);
   const selectionKey = selection.join(':');
@@ -37,7 +40,7 @@ export function ThreatOverlay({
   }
 
   if (held.file !== file) {
-    setHeld({ file, drafts: new Map() });
+    setHeld({ file, drafts: new Map(), propertyDrafts: new Map() });
   }
 
   const take = useCallback((): boolean => {
@@ -73,6 +76,7 @@ export function ThreatOverlay({
   return (
     <ThreatPanel
       drafts={held.drafts}
+      propertyDrafts={held.propertyDrafts}
       focusing={focusing}
       key={selected ?? 'several'}
       onClose={close}

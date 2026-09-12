@@ -1,3 +1,9 @@
+import {
+  elementPropertiesSchema,
+  type ElementProperties,
+} from './element-properties.js';
+import { elementSchema } from './elements.js';
+import { toParseIssues } from './parse.js';
 import { relationshipIssues, restrictRelationships } from './relationships.js';
 import { Either } from 'effect';
 import type { BoundaryShape, Element, Flow, FlowEndpoint } from './elements.js';
@@ -205,6 +211,75 @@ export function addElement(
       elements: [...diagram.elements, element],
     })),
   );
+}
+
+/** Validates a property edit for the existing element kind. Unknown values clear only explicitly named fields. */
+export function setElementProperties(
+  model: Model,
+  elementId: ElementId,
+  properties: ElementProperties,
+): Either.Either<Model, OperationFailure> {
+  const located = locateElement(model, elementId);
+  if (located === undefined) {
+    return Either.left(OperationFailure.UnknownElement({ elementId }));
+  }
+  const parsed = elementPropertiesSchema.safeParse(properties);
+  if (!parsed.success) {
+    return Either.left(
+      OperationFailure.InvalidElementProperties({
+        elementId,
+        issues: toParseIssues(parsed.error.issues),
+      }),
+    );
+  }
+  if (parsed.data.kind !== located.element.kind) {
+    return Either.left(
+      OperationFailure.InvalidElementProperties({
+        elementId,
+        issues: [
+          {
+            path: ['kind'],
+            code: 'custom',
+            message: 'Properties must match the existing element kind.',
+          },
+        ],
+      }),
+    );
+  }
+  const previous = new Map<string, unknown>(Object.entries(located.element));
+  const changed = Object.entries(parsed.data).some(([key, value]) => {
+    const held = previous.get(key);
+    return Array.isArray(value) && Array.isArray(held)
+      ? value.length !== held.length ||
+          value.some((id, index) => id !== held[index])
+      : value !== held;
+  });
+  if (!changed) {
+    return Either.right(model);
+  }
+  const candidate = { ...located.element, ...parsed.data };
+  for (const [key, value] of Object.entries(parsed.data)) {
+    if (value === undefined) {
+      Reflect.deleteProperty(candidate, key);
+    }
+  }
+  const next = elementSchema.safeParse(candidate);
+  if (!next.success) {
+    return Either.left(
+      OperationFailure.InvalidElementProperties({
+        elementId,
+        issues: toParseIssues(next.error.issues),
+      }),
+    );
+  }
+  const diagram = model.diagrams[located.diagramIndex];
+  const failure = invalidRelationships(
+    next.data,
+    new Map(diagram.elements.map((element) => [element.id, element])),
+  );
+  return failure === undefined
+    ? Either.right(withElement(model, located.diagramIndex, next.data))
+    : Either.left(failure);
 }
 
 /** Removes an element and its threat, assumption and boundary references. Attached flows keep their identity and acquire free endpoints at the removed element's anchor. */

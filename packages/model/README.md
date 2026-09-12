@@ -60,7 +60,11 @@ replaces what its output format forbids instead of resting on this rule.
 
 Element variants hold optional security facts and declared boundary relationships.
 Their fields and absence semantics follow [the native format](../../docs/saerskriven-yaml.md#security-facts).
-Consumers query typed element properties directly. An absent boolean remains unknown,
+Consumers query typed element properties directly. `setElementProperties` accepts
+an `ElementProperties` patch for the existing kind. Omitted keys keep their values,
+and keys explicitly set to `undefined` clear them. The operation validates text
+and relationship targets, preserves unrelated fields, and returns the same model
+when the patch changes nothing. An absent boolean remains unknown,
 and an absent relationship list remains unrecorded. Geometry edits do not change these facts.
 
 The suite carries a representability gate over the whole model vocabulary.

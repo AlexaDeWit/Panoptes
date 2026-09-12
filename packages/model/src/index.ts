@@ -27,3 +27,5 @@ export * from './lib/assumption-operations.js';
 export * from './lib/coverage.js';
 
 export * from './lib/fragment.js';
+
+export * from './lib/element-properties.js';

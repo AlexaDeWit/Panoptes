@@ -123,6 +123,8 @@ function describeRead(
 
 function describeOperation(failure: OperationFailure): string {
   return OperationFailure.$match(failure, {
+    InvalidElementProperties: ({ issues }) =>
+      `The element properties were refused: ${issueLines(issues).join(' ')}`,
     InvalidElementRelationship: ({ issues }) =>
       `The element has invalid boundary relationships: ${issueLines(issues).join(' ')}`,
     InvalidFragment: ({ issues }) =>

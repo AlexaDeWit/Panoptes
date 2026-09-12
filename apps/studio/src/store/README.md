@@ -32,7 +32,9 @@ and no immutable snapshot to push onto a stack.
   has never been in a file is called, so the tab, the file controls and a
   saved file all read one string rather than a word a view supplied.
 - `actions.ts` is the `Action` union, an Effect `Data.taggedEnum`. Model edits
-  carry one operation and its arguments. `MoveElements` and `RemoveElements`
+  carry one operation and its arguments. `SetElementProperties` applies a typed
+  patch to the existing element kind, including explicit clearing of optional
+  fields. Invalid changes preserve the model and history. `MoveElements` and `RemoveElements`
   fold the matching operation over one ID array before history records the
   result. `AddDiagram` appends a diagram and shows it, the one edit that
   moves the view as well as the model, since a diagram is added to be drawn

@@ -1,3 +1,7 @@
+import {
+  ElementPropertiesEditor,
+  type ElementPropertyDrafts,
+} from './element-properties.js';
 import { Cross1Icon, WidthIcon, ArrowRightIcon } from '@radix-ui/react-icons';
 import type { ElementId, Threat, ThreatId } from '@saerskriven/model';
 import { Accordion, Tooltip } from 'radix-ui';
@@ -46,6 +50,7 @@ export type HeldDraft = RefusedField & { readonly threatId: ThreatId };
 export type ThreatPanelProps = {
   readonly subject: PanelSubject;
   readonly drafts: Map<ElementId, HeldDraft>;
+  readonly propertyDrafts?: ElementPropertyDrafts;
   readonly focusing: boolean;
   readonly onFocused: () => void;
   readonly onClose: () => void;
@@ -68,6 +73,7 @@ function focusIn(
 export function ThreatPanel({
   subject,
   drafts,
+  propertyDrafts,
   focusing,
   onFocused,
   onClose,
@@ -260,6 +266,10 @@ export function ThreatPanel({
           </p>
         ) : (
           <>
+            <ElementPropertiesEditor
+              elementId={subject.element.id}
+              drafts={propertyDrafts}
+            />
             <button
               className={styles.add}
               onClick={add}
@@ -270,7 +280,7 @@ export function ThreatPanel({
             </button>
             {threats.length === 0 ? (
               <p className={styles.instruction}>
-                Nothing is recorded against this element yet.
+                No threats are recorded against this element.
               </p>
             ) : (
               <Accordion.Root
