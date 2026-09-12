@@ -34,9 +34,7 @@ export function sizeOf(path: string): number | undefined {
 /**
  * Nothing where the path is inside the shared read bound, or the caller's own
  * refusal carrying the size measured where it is past it. A size that cannot
- * be measured passes, since the read that follows says why the path was no
- * good. The refusal is the caller's to build: a model file and a host's
- * configuration are refused with different values.
+ * be measured passes, for the same reason as {@link sizeOf}.
  */
 export function withinReadBound<Failure>(
   path: string,
@@ -50,15 +48,17 @@ export function withinReadBound<Failure>(
 
 /**
  * The content written to a path, text as UTF-8 and bytes as they are, or a
- * sentence naming the path and the system's reason.
+ * sentence naming the path and the system's reason. `mode` applies only where
+ * the write creates the file.
  */
 export function writeFile(
   path: string,
   content: string | Uint8Array,
+  mode?: number,
 ): Either.Either<void, string> {
   return Either.try({
     try: () => {
-      writeFileSync(path, content);
+      writeFileSync(path, content, { mode });
     },
     catch: (error) => `cannot write ${path}: ${reasonOf(error)}`,
   });

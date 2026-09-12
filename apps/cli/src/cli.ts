@@ -169,13 +169,16 @@ function mcpCommand(program: Command, state: ParseState): void {
   const mcp = program
     .command('mcp')
     .description(
-      'serve the model context protocol over standard input and output',
+      'serve the model context protocol over standard input and output, or HTTP',
     )
     .option(
       '--root <dir>',
       'the directory the server may read, default the working directory',
     )
     .option('--file <path>', 'the model a tool call reads when it names none')
+    .option('--http', 'serve Streamable HTTP on 127.0.0.1 instead of stdio')
+    .option('--port <n>', 'the port for --http, default one the system picks')
+    .option('--token-file <path>', 'also write the --http bearer token here')
     .action((options: unknown) => {
       const parsed = mcpOptionsSchema.safeParse(options);
       state.request = parsed.success

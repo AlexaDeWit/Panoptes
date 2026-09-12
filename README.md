@@ -200,11 +200,11 @@ formats work with no network and on a machine that has neither Typst nor a
 browser installed. Building the executable builds the rasterizer module first,
 which [The SVG rasterizer](#the-svg-rasterizer) below describes.
 
-| Exit code | What it means                                                                                                                                                                                                                                                                                                                                                                                             |
-| --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 0         | The command did what it was asked.                                                                                                                                                                                                                                                                                                                                                                        |
-| 1         | Saerskriven read the file and refused it: no format claimed it, or one did and either the document or the model it maps to is not valid.                                                                                                                                                                                                                                                                  |
-| 2         | The invocation cannot be carried out: the parser or the option schema refused it, a file cannot be read or written, a choice names no diagram, a stream refused the output, a pipe whose reader closed aside, or a projection could not be produced from a model Saerskriven accepted, which is the PDF typesetter or the PNG rasterizer refusing the document or an install missing the files they read. |
+| Exit code | What it means                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0         | The command did what it was asked.                                                                                                                                                                                                                                                                                                                                                                                                                |
+| 1         | Saerskriven read the file and refused it: no format claimed it, or one did and either the document or the model it maps to is not valid.                                                                                                                                                                                                                                                                                                          |
+| 2         | The invocation cannot be carried out: the parser or the option schema refused it, a file cannot be read or written, a choice names no diagram, a stream refused the output, a pipe whose reader closed aside, `mcp --http` cannot listen on its port, or a projection could not be produced from a model Saerskriven accepted, which is the PDF typesetter or the PNG rasterizer refusing the document or an install missing the files they read. |
 
 Errors go to standard error, path-precise where a schema refused something,
 and no failure prints a stack trace.
@@ -311,8 +311,42 @@ consuming these results is reading a file somebody else wrote.
 
 The protocol revision is 2026-07-28, and a 2025-era client is served as well,
 so a host on either generation connects. The server holds no session and no
-parsed model: every call names its file and reads it again. Streamable HTTP is
-not built yet.
+parsed model: every call names its file and reads it again.
+
+#### Serving over Streamable HTTP
+
+`saer mcp --http` serves the same tools over Streamable HTTP instead of
+standard input and output, for a host that connects to a URL rather than
+launching a process:
+
+```sh
+saer mcp --http --port 7300 --token-file .saer-token --file threat-model.yaml
+```
+
+The server listens on `127.0.0.1` and nowhere else, whatever the flags say,
+and answers `POST` on `/mcp`. `--port` picks the port, and without it the
+system picks one. `--root` and `--file` mean what they mean over stdio.
+Once it is listening, the server writes two lines to standard error, the
+address and then the bearer token:
+
+```text
+MCP server at http://127.0.0.1:7300/mcp
+Bearer token: <token>
+```
+
+The token is minted again every time the server starts, and `--token-file`
+also writes it to a file, created readable by its owner alone. Every request
+has to carry it as `Authorization: Bearer <token>`, and one that does not is
+refused with 401. The `Host` header has to name `localhost`, `127.0.0.1` or
+`[::1]`, and an `Origin` header, where a browser sends one, has to name one
+of the same, so a page on another site cannot reach the server through DNS
+rebinding: either is refused with 403. There is no OAuth, no session id and no
+way to listen on another address. The server runs until it receives SIGINT
+or SIGTERM, and exits 0.
+
+`saer mcp install` writes stdio registrations only. A host that takes an HTTP
+server needs the URL and the `Authorization` header in its own configuration,
+and the token in that header changes whenever the server restarts.
 
 #### Registering the server with a host
 

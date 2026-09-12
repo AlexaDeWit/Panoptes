@@ -5,7 +5,12 @@ import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { PassThrough } from 'node:stream';
-import { mcpOptionsSchema, rasterizerIn, serveMcp } from './mcp.js';
+import {
+  mcpOptionsSchema,
+  processHost,
+  rasterizerIn,
+  serveMcp,
+} from './mcp.js';
 import { resvgWasmFile } from './png.js';
 
 const repositoryRoot = join(import.meta.dirname, '../../..');
@@ -13,16 +18,30 @@ const repositoryRoot = join(import.meta.dirname, '../../..');
 const served = (root: string) => {
   const input = new PassThrough();
   const output = new PassThrough();
-  const outcome = serveMcp({ root }, { input, output });
+  const outcome = serveMcp(mcpOptionsSchema.parse({ root }), {
+    ...processHost(),
+    input,
+    output,
+  });
   return { input, output, outcome };
 };
 
 describe('what the mcp subcommand is given', () => {
   it('reads the working directory as the root where none is named', () => {
-    expect(mcpOptionsSchema.parse({})).toEqual({
+    expect(mcpOptionsSchema.parse({})).toMatchObject({
       root: process.cwd(),
-      file: undefined,
+      http: false,
     });
+  });
+
+  it('refuses a port or a token file without --http', () => {
+    expect(mcpOptionsSchema.safeParse({ port: '8080' }).success).toBe(false);
+    expect(mcpOptionsSchema.safeParse({ tokenFile: 'token' }).success).toBe(
+      false,
+    );
+    expect(
+      mcpOptionsSchema.safeParse({ http: true, port: '8080' }).success,
+    ).toBe(true);
   });
 });
 
@@ -68,7 +87,7 @@ describe('the rasterizer one server reads', () => {
 describe('the mcp subcommand as it runs', () => {
   it('refuses a root that is not there, saying so on standard error', async () => {
     const missing = join(repositoryRoot, 'nowhere-at-all');
-    const outcome = await serveMcp({ root: missing });
+    const outcome = await serveMcp(mcpOptionsSchema.parse({ root: missing }));
     expect(outcome.code).toEqual(2);
     expect(outcome.out).toEqual('');
     expect(outcome.err).toContain(`The root "${missing}" cannot be used`);
