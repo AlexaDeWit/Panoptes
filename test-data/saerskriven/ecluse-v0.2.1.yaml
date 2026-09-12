@@ -3,6 +3,9 @@
 # Frozen: never regenerate it from the current writer. It is what holds the
 # additive rule to its promise, that a file an earlier release wrote still
 # reads, and the next additive key gets a file of the shape before it.
+# A change to `test-data/ecluse.json` that is not one of those keys is made
+# here by hand, in lockstep: the spec reads this file against the model that
+# corpus gives.
 formatVersion: 1
 metadata:
   title: Écluse

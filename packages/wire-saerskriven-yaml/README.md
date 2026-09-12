@@ -21,8 +21,9 @@ parse boundary, and a file is not a model. Nothing here is defaulted and
 nothing is transformed. Every key the first release of version 1 declared is
 required; a key a later release added is optional, so a file written before
 it still reads, and `@saerskriven/formats` supplies what its absence means and
-states it on every write. A flow's `bidirectional` and an attached endpoint's
-`side` are the two so far.
+states it on a write wherever the model holds a value for it. A flow's
+`bidirectional` and an attached endpoint's `side` are the two so far: a write
+states `bidirectional` on every flow and `side` on every pinned end.
 
 `formatVersion` is a zod literal, so a file stamped with any other release
 fails at that path rather than reaching the mapping. Within version 1 a key
