@@ -1,6 +1,9 @@
 import { Either } from 'effect';
 import { readFailureIssues } from './codec.js';
-import { readSaerskrivenYaml } from './saerskriven-yaml-read.js';
+import {
+  readSaerskrivenYaml,
+  readSaerskrivenYamlDocument,
+} from './saerskriven-yaml-read.js';
 
 const minimalDocument = [
   'formatVersion: 1',
@@ -116,6 +119,13 @@ function failureOf(text: string) {
   return Either.isLeft(result) ? result.left : undefined;
 }
 
+function modelOfDocumentIn(text: string) {
+  const read = readSaerskrivenYaml(text);
+  return Either.isLeft(read)
+    ? undefined
+    : Either.getOrUndefined(readSaerskrivenYamlDocument(read.right.source));
+}
+
 function issuePathsOf(text: string) {
   const failure = failureOf(text);
   return failure === undefined
@@ -193,6 +203,22 @@ describe('a Saerskriven YAML read', () => {
       target: { kind: 'attached', element: 'element-2', side: 'bottom' },
       bidirectional: true,
     });
+  });
+});
+
+describe('a Saerskriven YAML document mapped without its text', () => {
+  it('gives the model its own text read gave', () => {
+    expect(modelOfDocumentIn(oneFlowDocument)).toEqual(
+      readingOf(oneFlowDocument)?.model,
+    );
+  });
+
+  it('defaults a key the document was written before the format declared', () => {
+    expect(
+      modelOfDocumentIn(oneFlowDocument)?.diagrams[0]?.elements.find(
+        (element) => element.kind === 'flow',
+      ),
+    ).toMatchObject({ bidirectional: false });
   });
 });
 

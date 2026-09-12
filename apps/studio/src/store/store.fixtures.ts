@@ -1,5 +1,11 @@
 import { threatDragonCodec } from '@saerskriven/formats';
-import type { Element, ElementId, Model, Threat } from '@saerskriven/model';
+import type {
+  DiagramId,
+  Element,
+  ElementId,
+  Model,
+  Threat,
+} from '@saerskriven/model';
 import {
   diagramId,
   elementId,
@@ -7,7 +13,12 @@ import {
   threatId,
 } from '@saerskriven/model/fixtures';
 import { Either } from 'effect';
-import type { RetainedSource } from './state.js';
+import {
+  recoverySnapshot,
+  recoverySnapshotSchema,
+  type RecoverySnapshot,
+} from './recovery-storage.js';
+import type { FileLifecycle, RetainedSource } from './state.js';
 
 /**
  * A file in the native format that retained no document, which is what a
@@ -233,4 +244,24 @@ export function newNote(id: string, text: string): Element {
     position: { x: 0, y: 320 },
     size: { width: 200, height: 40 },
   };
+}
+
+/**
+ * A snapshot as recovery storage hands one back, which is what a store spec
+ * loads from its storage double: what the studio writes, mapped through the
+ * schema the load path parses it with.
+ */
+export function restorableSnapshot(
+  present: Model,
+  dirty: boolean,
+  file: FileLifecycle,
+  activeDiagram?: DiagramId,
+): RecoverySnapshot {
+  const parsed = recoverySnapshotSchema.safeParse(
+    recoverySnapshot(present, dirty, file, activeDiagram),
+  );
+  if (!parsed.success) {
+    throw new Error('The recovery snapshot fixture no longer parses.');
+  }
+  return parsed.data;
 }

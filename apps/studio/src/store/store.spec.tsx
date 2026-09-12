@@ -8,6 +8,7 @@ import {
   nativeSource,
   mainDiagram,
   newProcess,
+  restorableSnapshot,
   sampleModel,
   secondDiagram,
   twoDiagramModel,
@@ -20,9 +21,9 @@ import {
 } from './selectors.js';
 import {
   RecoveryStorageFailure,
-  recoverySnapshot,
   type RecoverySnapshot,
   type RecoveryStorage,
+  type StoredSnapshot,
 } from './recovery-storage.js';
 import type { StoreSync, SyncedState } from './sync.js';
 import { FileLifecycle, initialState, placeholderModel } from './state.js';
@@ -124,7 +125,7 @@ describe('session recovery', () => {
         source: foreignSource,
       });
       const runtime = createModelStore(
-        loaded(recoverySnapshot(sampleModel, dirty, file)),
+        loaded(restorableSnapshot(sampleModel, dirty, file)),
         silent,
         placeholderModel,
       );
@@ -145,7 +146,7 @@ describe('session recovery', () => {
   it('restores the diagram on screen where the restored model holds it', () => {
     const shown = createModelStore(
       loaded(
-        recoverySnapshot(
+        restorableSnapshot(
           twoDiagramModel,
           false,
           FileLifecycle.NoFile(),
@@ -158,7 +159,7 @@ describe('session recovery', () => {
 
     const stale = createModelStore(
       loaded(
-        recoverySnapshot(
+        restorableSnapshot(
           sampleModel,
           false,
           FileLifecycle.NoFile(),
@@ -172,7 +173,7 @@ describe('session recovery', () => {
   });
 
   it('replaces recovery when the diagram on screen changes', () => {
-    let stored: RecoverySnapshot | undefined;
+    let stored: StoredSnapshot | undefined;
     const storage: RecoveryStorage = {
       ...loaded(),
       replace: (snapshot) => {
@@ -215,7 +216,7 @@ describe('session recovery', () => {
 
   it('replaces recovery before publishing a recoverable state change', () => {
     let runtime: ReturnType<typeof createModelStore>;
-    let stored: RecoverySnapshot | undefined;
+    let stored: StoredSnapshot | undefined;
     const storage: RecoveryStorage = {
       ...loaded(),
       replace: (snapshot) => {
@@ -228,7 +229,7 @@ describe('session recovery', () => {
 
     runtime.dispatch(addProcess);
 
-    expect(stored?.present.diagrams[0].elements).toHaveLength(4);
+    expect(stored?.document.diagrams[0].elements).toHaveLength(4);
     expect(runtime.modelStore.getState().recoveryCurrent).toBe(true);
   });
 
@@ -361,7 +362,7 @@ describe('session recovery', () => {
   it('clears recovery when the session closes', () => {
     let clears = 0;
     const storage: RecoveryStorage = {
-      ...loaded(recoverySnapshot(sampleModel, true, FileLifecycle.NoFile())),
+      ...loaded(restorableSnapshot(sampleModel, true, FileLifecycle.NoFile())),
       clear: () => {
         clears += 1;
         return Either.right(undefined);
@@ -382,7 +383,7 @@ describe('session recovery', () => {
       source: foreignSource,
     });
     const storage: RecoveryStorage = {
-      ...loaded(recoverySnapshot(sampleModel, true, file)),
+      ...loaded(restorableSnapshot(sampleModel, true, file)),
       clear: () => {
         clears += 1;
         return clears === 1
