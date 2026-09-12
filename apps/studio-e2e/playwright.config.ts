@@ -2,7 +2,7 @@ import { defineConfig, devices } from '@playwright/test';
 
 const frameTimeFloor = /drag-frame-time\.spec\.ts$/u;
 const pagesExport = /pages-export\.spec\.ts$/u;
-const phoneChrome = /chrome-card\.spec\.ts$/u;
+const phoneSmoke = /(?:chrome-card|notices)\.spec\.ts$/u;
 const pagesBasePath = '/Saerskriven';
 const pagesPort = 4300;
 
@@ -51,16 +51,17 @@ export default defineConfig({
       testIgnore: [frameTimeFloor, pagesExport],
     },
     // A phone viewport is the one the shell chrome has least room in, so the
-    // card spec runs here as well as under `chromium`, which is what holds the
-    // ruling that the layout is the same at every width. The preset carries
-    // the viewport, the touch flags and the device pixel ratio together, so a
-    // change of preset changes all three at once. The set is small on purpose:
-    // the rest of the suite is about behaviour that does not turn on the
-    // viewport.
+    // card spec and the notice spec run here as well as under `chromium`,
+    // which is what holds the ruling that the layout is the same at every
+    // width and that a dismissed refusal leaves the chrome clear. The preset
+    // carries the viewport, the touch flags and the device pixel ratio
+    // together, so a change of preset changes all three at once. The set is
+    // small on purpose: the rest of the suite is about behaviour that does
+    // not turn on the viewport.
     {
       name: 'phone',
       use: { ...devices['Pixel 7'] },
-      testMatch: phoneChrome,
+      testMatch: phoneSmoke,
       dependencies: ['chromium'],
     },
     {

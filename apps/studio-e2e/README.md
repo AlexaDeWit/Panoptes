@@ -19,9 +19,9 @@ catalog's `@playwright/test` version matches the flake's driver.
 The projects run in order:
 
 - `chromium` runs the main browser specs.
-- `phone` re-runs the chrome-card smoke on a `Pixel 7` preset, the viewport
-  the shell chrome has least room in. `chromium` runs the same spec at desktop
-  width.
+- `phone` re-runs the chrome-card and notices smoke on a `Pixel 7` preset,
+  the viewport the shell chrome has least room in. `chromium` runs the same
+  specs at desktop width.
 - `pages` checks the production build below `/Saerskriven/`, including PDF
   assets, the social card, its text alternative, and the release version.
 - `frame-time` measures an Écluse drag with one worker and one retry. Earlier
