@@ -34,8 +34,9 @@ import {
  * `StaleRevision` is the file having changed since the read whose handle the
  * call quoted, which is the case an agent answers by reading again rather
  * than by retrying. `Occupied` is a tool that creates a file finding a path
- * already taken. `Unwritten` is the system refusing the write, with its own
- * sentence.
+ * already taken. `Unwritten` is the write not happening for a reason outside
+ * this server's reach: the system refusing it, or the codec throwing on the
+ * model it was handed, each with its own sentence.
  */
 export type WriteFailure = Data.TaggedEnum<{
   NoFile: { readonly root: string };
@@ -128,8 +129,13 @@ export function namedFile(
 /**
  * The read a write may go on from, refused where the file no longer hashes
  * to the revision the call quoted. The comparison is between whole handles
- * over the bytes the edit was computed from, so a file a studio saved
- * between the read and the write is refused rather than overwritten.
+ * over the bytes this call read, which is what it catches and what it does
+ * not: a save that landed before this read is refused, and a save landing
+ * between this read and the rename that follows it is not seen, so that
+ * writer's work is replaced with neither side told. The window is the read,
+ * the edits and the serialization, milliseconds on a large model. The handle
+ * refuses an agent editing a model it has moved past; it is not a lock on
+ * the file.
  */
 export function unchangedSince(
   file: string,
@@ -159,9 +165,14 @@ export function replacedFile(
   target: WriteTarget,
   text: string,
 ): Either.Either<string, WriteFailure> {
-  return throughTemporary(target, text, (temporary) => {
-    renameSync(temporary, target.path);
-  });
+  return throughTemporary(
+    target,
+    text,
+    (temporary) => {
+      renameSync(temporary, target.path);
+    },
+    unwritten,
+  );
 }
 
 /**
@@ -174,8 +185,29 @@ export function createdFile(
   target: WriteTarget,
   text: string,
 ): Either.Either<string, WriteFailure> {
-  return throughTemporary(target, text, (temporary) => {
-    linkSync(temporary, target.path);
+  return throughTemporary(
+    target,
+    text,
+    (temporary) => {
+      linkSync(temporary, target.path);
+    },
+    occupiedOrUnwritten,
+  );
+}
+
+/**
+ * The text a codec produced, or the refusal where it threw. A codec answers
+ * with text rather than with a result union, so the throw it does not
+ * promise is contained here: an exception reaching the transport would lose
+ * the tool result, and with it the line that says the text is data.
+ */
+export function serialized(
+  file: string,
+  write: () => WriteResult,
+): Either.Either<WriteResult, WriteFailure> {
+  return Either.try({
+    try: write,
+    catch: (error) => unwritten(file, error),
   });
 }
 
@@ -199,23 +231,28 @@ function throughTemporary(
   target: WriteTarget,
   text: string,
   commit: (temporary: string) => void,
+  refusal: (file: string, error: unknown) => WriteFailure,
 ): Either.Either<string, WriteFailure> {
   const bytes = Buffer.from(text, 'utf8');
   const temporary = join(
     dirname(target.path),
     `.${basename(target.path)}.${randomUUID()}.saer`,
   );
+  const mode = modeOf(target.path);
   const written = Either.try({
     try: () => {
-      writeFileSync(temporary, bytes);
-      const mode = modeOf(target.path);
+      writeFileSync(
+        temporary,
+        bytes,
+        mode === undefined ? undefined : { mode },
+      );
       if (mode !== undefined) {
         chmodSync(temporary, mode);
       }
       commit(temporary);
       return revisionOf(bytes);
     },
-    catch: (error) => failureOf(target.file, error),
+    catch: (error) => refusal(target.file, error),
   });
   return discarding(temporary, written);
 }
@@ -238,9 +275,13 @@ function modeOf(path: string): number | undefined {
   return Either.getOrUndefined(Either.try(() => statSync(path).mode & 0o777));
 }
 
-function failureOf(file: string, error: unknown): WriteFailure {
+function unwritten(file: string, error: unknown): WriteFailure {
+  return WriteFailure.Unwritten({ file, reason: reasonOf(error) });
+}
+
+function occupiedOrUnwritten(file: string, error: unknown): WriteFailure {
   const errno = errnoSchema.safeParse(error);
   return errno.success && errno.data.code === 'EEXIST'
     ? WriteFailure.Occupied({ file })
-    : WriteFailure.Unwritten({ file, reason: reasonOf(error) });
+    : unwritten(file, error);
 }

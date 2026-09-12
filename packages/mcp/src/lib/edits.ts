@@ -10,6 +10,7 @@ import {
   assumptionIdSchema,
   assumptionSchema,
   attachThreat,
+  autoExtent,
   autoPlacement,
   boundaryShapeSchema,
   detachThreat,
@@ -251,8 +252,6 @@ export function renderRefusedEdit(refused: RefusedEdit): readonly string[] {
     describeOperationFailure(refused.failure),
   ];
 }
-
-const autoExtent: Size = { width: 180, height: 80 };
 
 function applyEdit(
   model: Model,

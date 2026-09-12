@@ -12,6 +12,7 @@ import {
   createdFile,
   renderWriteFailure,
   renderWriteReport,
+  serialized,
   writeReportSchema,
 } from './write.js';
 import {
@@ -91,22 +92,34 @@ function converted(
   args: ImportArguments,
   imported: ConvertedModel,
 ): Either.Either<ImportResult, readonly string[]> {
-  const written = saerskrivenYamlCodec.write(imported.model);
   return pipe(
     confined(workspace, args.target),
     Either.mapLeft(renderWorkspaceFailure),
-    Either.flatMap((path) => {
-      const file = withinRoot(workspace, path);
-      return Either.mapBoth(createdFile({ file, path }, written.output), {
-        onLeft: renderWriteFailure,
-        onRight: (revision): ImportResult => ({
+    Either.flatMap((path) => targeted(workspace, path, args, imported)),
+  );
+}
+
+function targeted(
+  workspace: ModelWorkspace,
+  path: string,
+  args: ImportArguments,
+  imported: ConvertedModel,
+): Either.Either<ImportResult, readonly string[]> {
+  const file = withinRoot(workspace, path);
+  return pipe(
+    serialized(file, () => saerskrivenYamlCodec.write(imported.model)),
+    Either.flatMap((written) =>
+      Either.map(
+        createdFile({ file, path }, written.output),
+        (revision): ImportResult => ({
           file,
           format: 'saerskriven-yaml',
           revision,
           divergences: [...imported.divergences, ...written.divergences],
           source: { file: args.file, format: imported.format },
         }),
-      });
-    }),
+      ),
+    ),
+    Either.mapLeft(renderWriteFailure),
   );
 }

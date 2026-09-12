@@ -50,6 +50,15 @@ const placementMargin = 60;
 const placementStep = { x: 260, y: 160 };
 
 /**
+ * The extent to give an element whose source states none, and the extent the
+ * grid {@link autoPlacement} lays out is stepped for. The import mappings in
+ * `@saerskriven/formats` give it to a record whose file carries no geometry,
+ * and a caller placing an element rather than reading one takes it from here
+ * rather than choosing its own.
+ */
+export const autoExtent: Size = { width: 180, height: 80 };
+
+/**
  * Where to put the element at `index` among a run of elements the caller
  * has no position for: a row-major grid of four columns, laid out from a
  * fixed margin so the same index always lands on the same spot. The import

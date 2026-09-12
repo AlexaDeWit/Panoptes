@@ -13,6 +13,7 @@ import {
   renderWriteReport,
   replacedFile,
   revisionArgumentSchema,
+  serialized,
   unchangedSince,
   writeReportSchema,
   writtenThrough,
@@ -51,7 +52,7 @@ export const editDescription = [
   'Apply a batch of edits to one Saerskriven threat model file and save the file in the format it is already in.',
   'The edits are applied in order to one parsed model, and the file is written once at the end. The first edit the model refuses stops the batch: nothing is written, the file stays byte for byte as it was, and the result names the index that was refused and what the model said about it. The batch is the unit of change rather than the edit.',
   `Each edit is an object carrying \`op\` and that op's own fields. The ops are ${editOps.join(', ')}.`,
-  'Pass `revision` as the handle the last read of this file returned. A file that changed since that read is refused rather than overwritten, and the answer to that refusal is to read the file again and reconsider the edit against what it now holds. Read the file in the same turn you edit it.',
+  'Pass `revision` as the handle the last read of this file returned. A file that changed before this call is refused rather than overwritten, and the answer to that refusal is to read the file again and reconsider the edit against what the file now holds. A change that lands while this call is running is not seen and is overwritten, so read the file in the same turn you edit it, and expect to lose an edit where somebody is working in the same file from another tool.',
   'A threat carries no number: the model issues one when a threat is added and holds it when the threat is replaced, so numbers name one threat for the life of a model and there is no edit that renumbers.',
   'Use this on a model that exists. Start a new one with saer_create and convert a foreign file with saer_import. What the file format cannot hold comes back in the divergences of the result rather than as a refusal, so read them after a write to a Threat Dragon file.',
 ].join(' ');
@@ -105,18 +106,20 @@ function saved(
   applied: number,
 ): Either.Either<EditResult, readonly string[]> {
   const file = withinRoot(workspace, read.path);
-  const written = writtenThrough(read.read, model);
-  return Either.mapBoth(
-    replacedFile({ file, path: read.path }, written.output),
-    {
-      onLeft: renderWriteFailure,
-      onRight: (revision) => ({
-        file,
-        format: read.read.format,
-        revision,
-        applied,
-        divergences: [...written.divergences],
-      }),
-    },
+  return pipe(
+    serialized(file, () => writtenThrough(read.read, model)),
+    Either.flatMap((written) =>
+      Either.map(
+        replacedFile({ file, path: read.path }, written.output),
+        (revision): EditResult => ({
+          file,
+          format: read.read.format,
+          revision,
+          applied,
+          divergences: [...written.divergences],
+        }),
+      ),
+    ),
+    Either.mapLeft(renderWriteFailure),
   );
 }

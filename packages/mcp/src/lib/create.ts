@@ -2,7 +2,12 @@ import { saerskrivenYamlCodec } from '@saerskriven/formats';
 import { acceptedTextSchema, emptyModel, type Model } from '@saerskriven/model';
 import { Either, pipe } from 'effect';
 import { z } from 'zod';
-import { createdFile, renderWriteFailure, writeReportSchema } from './write.js';
+import {
+  createdFile,
+  renderWriteFailure,
+  serialized,
+  writeReportSchema,
+} from './write.js';
 import {
   confined,
   renderWorkspaceFailure,
@@ -21,7 +26,7 @@ export const createArgumentsSchema = z.object({
   owner: acceptedTextSchema
     .optional()
     .describe(
-      'Who answers for the model. Left out, the field is empty and an edit can fill it in later.',
+      'Who answers for the model. Left out, the field is written empty, and no tool of this server sets it afterwards, so pass it wherever it is known.',
     ),
 });
 
@@ -48,22 +53,33 @@ export function createModel(
   workspace: ModelWorkspace,
   args: CreateArguments,
 ): Either.Either<CreateResult, readonly string[]> {
-  const written = saerskrivenYamlCodec.write(titled(args));
   return pipe(
     confined(workspace, args.file),
     Either.mapLeft(renderWorkspaceFailure),
-    Either.flatMap((path) => {
-      const file = withinRoot(workspace, path);
-      return Either.mapBoth(createdFile({ file, path }, written.output), {
-        onLeft: renderWriteFailure,
-        onRight: (revision): CreateResult => ({
+    Either.flatMap((path) => started(workspace, path, args)),
+  );
+}
+
+function started(
+  workspace: ModelWorkspace,
+  path: string,
+  args: CreateArguments,
+): Either.Either<CreateResult, readonly string[]> {
+  const file = withinRoot(workspace, path);
+  return pipe(
+    serialized(file, () => saerskrivenYamlCodec.write(titled(args))),
+    Either.flatMap((written) =>
+      Either.map(
+        createdFile({ file, path }, written.output),
+        (revision): CreateResult => ({
           file,
           format: 'saerskriven-yaml',
           revision,
           divergences: [...written.divergences],
         }),
-      });
-    }),
+      ),
+    ),
+    Either.mapLeft(renderWriteFailure),
   );
 }
 

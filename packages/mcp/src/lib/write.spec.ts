@@ -9,6 +9,7 @@ import {
   namedFile,
   renderWriteFailure,
   replacedFile,
+  serialized,
   unchangedSince,
 } from './write.js';
 import { openWorkspace, readModelFile } from './workspace.js';
@@ -81,6 +82,27 @@ describe('creating a file', () => {
     const before = new Set(readdirSync(tree.root));
     createdFile(target(tree.root, modelFile), 'replaced\n');
     expect(new Set(readdirSync(tree.root))).toEqual(before);
+  });
+});
+
+describe('a codec that throws', () => {
+  it('is contained as a refusal rather than left to reach the transport', () => {
+    const refused = serialized('model.yaml', () => {
+      throw new Error('the codec gave up');
+    });
+    expect(renderWriteFailure(failureOf(refused))).toEqual([
+      'The file "model.yaml" was not written: the codec gave up.',
+    ]);
+  });
+
+  it('answers with what the codec produced where it produced one', () => {
+    const written = serialized('model.yaml', () => ({
+      output: 'formatVersion: 1\n',
+      divergences: [],
+    }));
+    expect(Either.getOrUndefined(written)?.output).toEqual(
+      'formatVersion: 1\n',
+    );
   });
 });
 

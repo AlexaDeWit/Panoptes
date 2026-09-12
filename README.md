@@ -234,9 +234,16 @@ format it is already in. The batch is all or nothing: the edits go onto one
 parsed model in the order given, and the first one the model refuses stops the
 batch, so nothing is written and the result names the index that was refused
 and what the model said. Every call quotes the `revision` a read returned, and
-a file that changed since that read is refused rather than overwritten. The
-file is replaced through a temporary file beside it and a rename onto it, so a
-reader of the path sees the file it had or the file the edit wrote. What the
+a file that changed before the call is refused rather than overwritten. The
+handle is compared against the bytes the call itself read rather than held as
+a lock, so it catches an agent editing a model it has moved past and not
+another writer saving in the window between that read and the rename, whose
+save is replaced with neither side told. The file is replaced through a
+temporary file beside it and a rename onto it, so a reader of the path sees
+the file it had or the file the edit wrote. A process killed between the two,
+or a removal the system refuses, leaves a `.<name>.<uuid>.saer` copy in the
+directory that no listing shows and nothing reports, and deleting it is safe.
+What the
 format cannot hold comes back in the result's divergences rather than as a
 refusal, which is how a write to a Threat Dragon file reports a mitigation
 that format keeps no record of.
