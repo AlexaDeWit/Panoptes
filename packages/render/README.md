@@ -9,8 +9,10 @@ the source of one Typst document.
 Every projection is a pure function of the model. The `pdf` subpath compiles
 that Typst source into the bytes of a document, and it carries no font and
 reads no file either: the WebAssembly module and the faces it typesets with
-are the caller's to hand over. The main entry loads none of it, so a caller
-that wants a drawing or a register loads no compiler.
+are the caller's to hand over. The `resvg` subpath draws one of those SVG
+documents into the bytes of a PNG on the same terms. The main entry loads
+none of it, so a caller that wants a drawing or a register loads no compiler
+and no renderer.
 
 ## A diagram as an SVG document
 
@@ -230,6 +232,58 @@ throwing a string holding Rust's own debug rendering of its diagnostics, of
 which a reader needs the message and the hints. The byte offsets and empty
 traces beside them are dropped, and a rendering this does not recognize is
 carried as it stands rather than swallowed.
+
+## An SVG document as a PNG
+
+`rasterizeSvg(source, assets, longEdge)`, on the `@saerskriven/render/resvg`
+subpath, is the rasterization step: the bytes of a PNG beside the pixel size it
+drew at, or a `ResvgFailure` saying why there are none. It sits on a subpath
+for the reason the `pdf` one does: it pulls in 2 MB of WebAssembly, which a
+caller writing a register has no use for.
+
+`assets` is where the bytes come from, since this package holds none: `wasm` is
+the module `nix build .#resvg-wasm` writes out of the `resvg` crate, and
+`fonts` are the faces, offered in the order they are listed. A family the
+document names that no face carries falls back to the first face offered,
+which is what puts a Liberation face behind the Helvetica and Arial the canvas
+stylesheet asks for. Without that fallback the renderer draws no text at all.
+
+A buffer holding no face the renderer reads is refused, named by its index,
+rather than passed over. The font database drops a face it cannot parse
+without a word, so a truncated file, a wrong file, or an empty one would
+otherwise rasterize as a picture with no text in it, which is this package's
+worst way to be wrong.
+
+`longEdge` scales the drawing so its longer side is that many pixels, and 0
+draws it at the size the document names. A long edge that is not a whole
+number of pixels from 0 to 4294967295 is refused rather than truncated or
+wrapped: a caller sizing a diagram is asking for that size, and the size it
+would get instead is the document's own. An image past 67108864 pixels is
+refused as well, because an allocation the module cannot satisfy aborts it
+where a refusal it can report costs nothing.
+
+The renderer reads no file. It is compiled for `wasm32-unknown-unknown`, which
+has no syscall to reach one with, out of a crate built without the features
+that read faces off a disk, and an `<image>` element naming a path resolves to
+nothing rather than to a file the host holds.
+
+Each call runs its own instance of the module, so the faces one call offers
+reach no other. The compiled module is held per `wasm` array, so a second call
+on the same bytes does not compile it again. An instance that stopped partway
+is dropped rather than called again to free what it held: it is that call's
+alone, and calling back into it would fail a second time over the failure
+that reaches the caller.
+
+A refusal is a value rather than a throw, and a tagged one this package owns
+([`CODING.md`](../../CODING.md), Error handling). `ResvgFailure.Refused`
+carries the sentence the renderer reported about the document it was given,
+and `ResvgFailure.Unusable` the one a module that would not start reported.
+
+The `build-assets` subpath names the variable a build reads the module's path
+from and the name it is carried under beside a bundle. Its spec skips where
+that variable is unset, since no dev shell exports it: `nix build
+.#resvg-wasm` writes the module and the caller points the variable at it, as
+[the repository README](../../README.md#the-svg-rasterizer) describes.
 
 ## The goldens
 

@@ -136,6 +136,55 @@ jobs:
       - name: Install and upgrade with the system shell and tools
         run: /bin/bash scripts/release/install-smoke.sh
 
+  rasterizer:
+    if: ${{ !inputs.deploy_pages }}
+    name: Rasterizer module
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      id-token: write # OIDC for tokenless Codecov upload (no stored token)
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up toolchain
+        uses: ./.github/actions/setup-toolchain
+        with:
+          install-dependencies: 'true'
+          # Restore the shared entry, save nothing: the Rust closure is 2.7G
+          # where the entries every other job restores from already hold 8.2G
+          # of the repository's 10G limit, and saving it would evict them.
+          # Only the Rust half of this job's store is then cold, which is a
+          # build of about a minute on a job nothing waits for.
+          save-nix-store: 'false'
+
+      # sandbox true gives the builder no network: a crate the vendored
+      # registry does not hold fails here rather than being fetched.
+      - name: Build the rasterizer module offline
+        run: nix build --print-build-logs --option sandbox true .#resvg-wasm
+
+      # The rasterizer's spec skips where the variable is unset, so the run is
+      # gated on the module being there, rather than on a green suite that may
+      # have skipped. An unset key, an empty value and a path naming no file
+      # all fail here.
+      - name: Rasterize a fixture through the module
+        env:
+          SAERSKRIVEN_RESVG_WASM: ${{ github.workspace }}/result/lib/saerskriven_resvg.wasm
+        run: |
+          nix develop .#ci --command test -f "$SAERSKRIVEN_RESVG_WASM"
+          nix develop .#ci --command pnpm nx test @saerskriven/render -- --coverage.enabled=true
+
+      - name: Upload coverage to Codecov
+        continue-on-error: ${{ github.event_name != 'pull_request' }}
+        timeout-minutes: 2
+        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
+        with:
+          use_oidc: true # tokenless upload via GitHub OIDC, no CODECOV_TOKEN secret
+          fail_ci_if_error: true # Report upload failures even when the step is advisory.
+
   static-checks:
     if: ${{ !inputs.deploy_pages }}
     name: Static checks

@@ -5,6 +5,10 @@
     "outDir": "dist",
     "tsBuildInfoFile": "dist/tsconfig.lib.tsbuildinfo",
     "emitDeclarationOnly": true,
+    // WebAssembly is declared in lib.dom rather than in an es lib, and the
+    // resvg subpath instantiates a module. This package runs in a browser as
+    // well as under node.
+    "lib": ["dom", "es2022"],
     "forceConsistentCasingInFileNames": true,
     "types": ["node"]
   },

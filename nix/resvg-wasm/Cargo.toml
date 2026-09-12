@@ -1,0 +1,21 @@
+[package]
+name = "saerskriven-resvg"
+version = "0.0.0"
+edition = "2024"
+publish = false
+license = "Apache-2.0"
+
+[lib]
+crate-type = ["cdylib"]
+
+# default-features = false drops usvg's system-fonts and memmap-fonts, which
+# are the only paths in this dependency tree that would read a file.
+[dependencies]
+resvg = { version = "0.48.1", default-features = false, features = ["text"] }
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true

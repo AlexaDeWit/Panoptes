@@ -17,6 +17,9 @@ test-output/
 .nx/self-healing
 .nx/migrate-runs
 
+# The default out-link of `nix build`, which writes the rasterizer module
+/result
+
 # Toolchain caches
 *.tsbuildinfo
 .direnv/

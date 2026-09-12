@@ -16,6 +16,11 @@
       "import": "./src/pdf.ts",
       "default": "./src/pdf.ts"
     },
+    "./resvg": {
+      "types": "./src/resvg.ts",
+      "import": "./src/resvg.ts",
+      "default": "./src/resvg.ts"
+    },
     "./build-assets": {
       "types": "./src/build-assets.ts",
       "import": "./src/build-assets.ts",
@@ -53,6 +58,9 @@
       "test": {
         "inputs": [
           "...",
+          {
+            "env": "SAERSKRIVEN_RESVG_WASM"
+          },
           "{workspaceRoot}/test-data/ecluse.model.json",
           "{workspaceRoot}/test-data/every-glyph.model.json",
           "{workspaceRoot}/test-data/saerskriven.model.json",
