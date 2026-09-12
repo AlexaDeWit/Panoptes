@@ -31,6 +31,11 @@ const revisionIn = (root: string, file: string): string =>
 
 const staleRevision = `sha256:${'0'.repeat(64)}`;
 
+const paddedTo = (root: string, bytes: number): string => {
+  const model = readFileSync(join(root, modelFile), 'utf8');
+  return `${model}#${'a'.repeat(bytes - Buffer.byteLength(model) - 2)}\n`;
+};
+
 const failureOf = <Value>(
   outcome: Either.Either<Value, WriteFailure>,
 ): WriteFailure => {
@@ -151,6 +156,80 @@ describe('a save that lands while a replacement is being prepared', () => {
     expect(renderWriteFailure(failureOf(refused))).toEqual([
       `The file "${modelFile}" was not written: it is now ${String(grown.length)} bytes, past the ${String(readLimits.maxTextBytes)} this server reads.`,
     ]);
+  });
+});
+
+describe('a write past the size this server reads', () => {
+  it('is written at exactly the bound, and the read accepts what it wrote', () => {
+    const tree = editableTree();
+    const text = paddedTo(tree.root, readLimits.maxTextBytes);
+    const written = replacedFile(
+      target(tree.root, modelFile),
+      text,
+      revisionIn(tree.root, modelFile),
+    );
+    const workspace = Either.getOrThrow(openWorkspace({ root: tree.root }));
+    expect(Either.isRight(written)).toBe(true);
+    expect(statSync(join(tree.root, modelFile)).size).toEqual(
+      readLimits.maxTextBytes,
+    );
+    expect(Either.isRight(readModelFile(workspace, modelFile))).toBe(true);
+  });
+
+  it('matches the read, which refuses a file one byte past it', () => {
+    const tree = editableTree();
+    const size = readLimits.maxTextBytes + 1;
+    writeFileSync(join(tree.root, modelFile), paddedTo(tree.root, size));
+    const workspace = Either.getOrThrow(openWorkspace({ root: tree.root }));
+    expect(readModelFile(workspace, modelFile)).toMatchObject({
+      left: {
+        _tag: 'Unread',
+        failure: { _tag: 'ExceededReadLimit', observed: size },
+      },
+    });
+  });
+
+  it('is refused one byte past it, leaving the file byte-identical', () => {
+    const tree = editableTree();
+    const before = readFileSync(join(tree.root, modelFile));
+    const entries = new Set(readdirSync(tree.root));
+    const size = readLimits.maxTextBytes + 1;
+    const refused = replacedFile(
+      target(tree.root, modelFile),
+      paddedTo(tree.root, size),
+      revisionIn(tree.root, modelFile),
+    );
+    expect(readFileSync(join(tree.root, modelFile))).toEqual(before);
+    expect(new Set(readdirSync(tree.root))).toEqual(entries);
+    expect(failureOf(refused)).toEqual(
+      WriteFailure.PastReadBound({ file: modelFile, size }),
+    );
+  });
+
+  it('counts UTF-8 bytes rather than code units', () => {
+    const tree = editableTree();
+    const text = `# ${'é'.repeat(readLimits.maxTextBytes / 2)}\n`;
+    const refused = createdFile(target(tree.root, 'fresh.yaml'), text);
+    expect(text.length).toBeLessThan(readLimits.maxTextBytes);
+    expect(failureOf(refused)).toEqual(
+      WriteFailure.PastReadBound({
+        file: 'fresh.yaml',
+        size: Buffer.byteLength(text),
+      }),
+    );
+  });
+
+  it('is refused where it creates a file, leaving the path free', () => {
+    const tree = editableTree();
+    const size = readLimits.maxTextBytes + 1;
+    const refused = createdFile(
+      target(tree.root, 'fresh.yaml'),
+      paddedTo(tree.root, size),
+    );
+    expect(readdirSync(tree.root)).not.toContain('fresh.yaml');
+    expect(renderWriteFailure(failureOf(refused)).join('\n')).toContain(
+      'past the size this server reads',
+    );
   });
 });
 

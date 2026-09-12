@@ -192,7 +192,7 @@ diagrams:
         size:
           width: 260
           height: 130
-        text: Every read is bounded before anything trusts it. 4 MiB of text, 64 levels of nesting, 50 aliases, and 100,000 nodes those aliases may reach.
+        text: Every read is bounded before anything trusts it. 8 MiB of text, 64 levels of nesting, 50 aliases, and 100,000 nodes those aliases may reach.
       - kind: flow
         id: fl-authoring
         name: Writes the file
@@ -558,7 +558,7 @@ diagrams:
 mitigations:
   - id: mit-read-limits
     title: Bounded reads
-    prose: "`readLimits` in `@saerskriven/formats` is one exported value carrying four numbers: 4 MiB of text measured in UTF-8 bytes before a parser sees it, 64 levels of nesting measured afterwards by a walk that carries its own stack, 50 aliases counted on the composed document before any of them is resolved, and 100,000 nodes those aliases may reach between them. Both reads pass their text through `parseWithinLimits`, and detection is the reads themselves, so the bounds hold whether or not the caller knows the format. Each number has a fixture under `test-data/adversarial` built to break it, and `read-limits.spec.ts` hands every one of them to both reads."
+    prose: "`readLimits` in `@saerskriven/formats` is one exported value carrying four numbers: 8 MiB of text measured in UTF-8 bytes before a parser sees it, 64 levels of nesting measured afterwards by a walk that carries its own stack, 50 aliases counted on the composed document before any of them is resolved, and 100,000 nodes those aliases may reach between them. Both reads pass their text through `parseWithinLimits`, and detection is the reads themselves, so the bounds hold whether or not the caller knows the format. Each number has a fixture under `test-data/adversarial` built to break it, and `read-limits.spec.ts` hands every one of them to both reads."
     status: verified
     threats:
       - th-oversize
@@ -648,7 +648,7 @@ threats:
     severity: medium
     status: mitigated
     description: A file large enough to fill memory is handed to Saerskriven, and the parse itself is what costs, so a check after parsing arrives too late.
-    mitigation: The size is measured in UTF-8 bytes before a parser sees the text, against `readLimits.maxTextBytes`, which is 4 MiB and about thirty times the largest file this repository vendors. Past it the read comes back as `ExceededReadLimit` naming the bound and what it had measured. A generated text one byte over the bound gates it in `read-limits.spec.ts`, since committing megabytes to prove a size bound would be the wrong trade.
+    mitigation: The size is measured in UTF-8 bytes before a parser sees the text, against `readLimits.maxTextBytes`, which is 8 MiB and about sixty times the largest file this repository vendors. Past it the read comes back as `ExceededReadLimit` naming the bound and what it had measured. A generated text one byte over the bound gates it in `read-limits.spec.ts`, since committing megabytes to prove a size bound would be the wrong trade.
     elements:
       - el-model-file
       - el-read

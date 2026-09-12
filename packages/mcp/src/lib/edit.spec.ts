@@ -1,4 +1,4 @@
-import { readAnyFormat } from '@saerskriven/formats';
+import { readAnyFormat, readLimits } from '@saerskriven/formats';
 import { Either } from 'effect';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -89,6 +89,28 @@ describe('what a refused edit leaves on disk', () => {
     expect(
       Either.isLeft(refused) ? refused.left.join('\n') : 'the edit was applied',
     ).toContain('was not read');
+  });
+
+  it('writes nothing when the edited model would be past the size this server reads', () => {
+    const attempted = attempt();
+    const before = attempted.bytes(modelFile);
+    const refused = attempted.edit(
+      modelFile,
+      revisionIn(attempted, modelFile),
+      [
+        {
+          ...addedMitigation,
+          mitigation: {
+            ...addedMitigation.mitigation,
+            prose: 'x'.repeat(readLimits.maxTextBytes),
+          },
+        },
+      ],
+    );
+    expect(attempted.bytes(modelFile)).toEqual(before);
+    expect(
+      Either.isLeft(refused) ? refused.left.join('\n') : 'the edit was applied',
+    ).toContain('past the size this server reads');
   });
 });
 

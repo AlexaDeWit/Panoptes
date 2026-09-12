@@ -43,7 +43,7 @@ A file large enough to fill memory is handed to Saerskriven, and the parse itsel
 
 **Mitigation**
 
-The size is measured in UTF-8 bytes before a parser sees the text, against `readLimits.maxTextBytes`, which is 4 MiB and about thirty times the largest file this repository vendors. Past it the read comes back as `ExceededReadLimit` naming the bound and what it had measured. A generated text one byte over the bound gates it in `read-limits.spec.ts`, since committing megabytes to prove a size bound would be the wrong trade.
+The size is measured in UTF-8 bytes before a parser sees the text, against `readLimits.maxTextBytes`, which is 8 MiB and about sixty times the largest file this repository vendors. Past it the read comes back as `ExceededReadLimit` naming the bound and what it had measured. A generated text one byte over the bound gates it in `read-limits.spec.ts`, since committing megabytes to prove a size bound would be the wrong trade.
 
 <a name="threat-2"></a>
 

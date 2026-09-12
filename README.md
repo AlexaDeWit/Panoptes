@@ -303,6 +303,13 @@ file reports a mitigation that format keeps no record of.
 converts an OTM or TM-BOM file into one. Both refuse a path that is already
 taken, so neither replaces a file.
 
+A file this server writes is one it can read again. A read refuses a file past
+8 MiB in UTF-8, and `saer_edit`, `saer_create` and `saer_import` all refuse a
+write whose output would be past that size, leaving the file as it was and
+saying the change would take it past the size the server reads. Make a smaller
+change instead. The bound was 4 MiB up to 0.3.0, so an earlier release refuses
+a file between the two sizes.
+
 A model file is untrusted input, and the prose a tool result carries came out
 of it. Every text result opens with a line saying that what follows is data
 rather than instructions, and the suite derives that check from the tool list

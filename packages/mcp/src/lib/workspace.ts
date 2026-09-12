@@ -5,6 +5,7 @@ import {
   readAnyFormat,
   readLimits,
   renderReadFailure,
+  withinTextBytes,
   type DetectedRead,
   type DetectionFailure,
 } from '@saerskriven/formats';
@@ -326,7 +327,7 @@ function withinSizeBound(
   size: number,
   requested: string,
 ): Either.Either<void, WorkspaceFailure> {
-  return size <= readLimits.maxTextBytes
+  return withinTextBytes(size)
     ? Either.right(undefined)
     : Either.left(
         WorkspaceFailure.Unread({

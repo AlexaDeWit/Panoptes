@@ -1,4 +1,4 @@
-import { readLimits } from '@saerskriven/formats';
+import { withinTextBytes } from '@saerskriven/formats';
 import { Either } from 'effect';
 import { readFileSync, statSync, writeFileSync } from 'node:fs';
 
@@ -43,7 +43,7 @@ export function withinReadBound<Failure>(
   refusal: (observed: number) => Failure,
 ): Either.Either<void, Failure> {
   const size = sizeOf(path);
-  return size === undefined || size <= readLimits.maxTextBytes
+  return size === undefined || withinTextBytes(size)
     ? Either.right(undefined)
     : Either.left(refusal(size));
 }

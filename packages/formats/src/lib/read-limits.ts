@@ -7,7 +7,7 @@ const encoder = new TextEncoder();
 /** Shared resource bounds for parsing and importing foreign documents. */
 export const readLimits = Object.freeze({
   /** UTF-8 input bytes, checked before parsing. */
-  maxTextBytes: 4_194_304,
+  maxTextBytes: 8_388_608,
   /** Cumulative UTF-16 units charged for reference expansion and escaped identifiers. */
   maxImportTextUnits: 16_777_216,
   /** Maximum parsed depth, including values in extension maps. */
@@ -60,9 +60,18 @@ export function withinTextLimit(
     text.length > readLimits.maxTextBytes
       ? text.length
       : encoder.encode(text).length;
-  return observed > readLimits.maxTextBytes
-    ? Either.left(exceededReadLimit('maxTextBytes', observed))
-    : Either.right(text);
+  return withinTextBytes(observed)
+    ? Either.right(text)
+    : Either.left(exceededReadLimit('maxTextBytes', observed));
+}
+
+/**
+ * Whether a text of `bytes` UTF-8 bytes is inside the shared read bound. A
+ * write checks what it produces here, so a file a writer produced is one the
+ * reads accept.
+ */
+export function withinTextBytes(bytes: number): boolean {
+  return bytes <= readLimits.maxTextBytes;
 }
 
 function withinNestingLimit(
