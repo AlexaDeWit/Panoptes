@@ -16,6 +16,27 @@ A fallible function's own parameter and return types carry no zod type,
 and its failure carries plain data. A type that holds a schema as a member,
 or is parameterized by one, is not a fallible signature.
 
+A failure travels to the outermost boundary rather than being handled
+early. That boundary is `apps/cli/src/outcome.ts` and `runCli`, where it
+becomes an exit code and a sentence: 0 for the command doing what it was
+asked, 1 for a file Saerskriven read and refused, and 2 for an invocation
+it cannot carry out.
+
+An operation with no value to return is typed `Either<void, E>`, never a
+bare `void`, which is the shape at 16 sites across `packages` and `apps`.
+Narrowing such a parameter to `void` is not the simplification it looks
+like. TypeScript accepts a function returning anything where a
+`void`-returning function is expected, so every callback already passed in
+still compiles, and the function taking the callback then drops the
+failure and reports success. `packages/mcp/src/lib/write.ts` is the case
+in this tree: `throughTemporary` takes
+`commit: (temporary: string) => Either.Either<void, WriteFailure>`, and
+the guard that refuses a target something else has written returns a Left
+from inside that callback. Narrow the parameter, follow it through the one
+line that consumes the result, and `tsc --strict` reports nothing while
+the write path answers with a fresh revision handle for a file it never
+replaced.
+
 ## Schema-first typing
 
 Strict typing everywhere, schema-first. Zod schemas are the source of
