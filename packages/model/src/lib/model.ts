@@ -8,13 +8,8 @@ import { acceptedTextSchema } from './text.js';
 
 /**
  * Facts about the model as a whole: what it covers and who answers for it.
- * `title`, `owner`, and `description` are free text; empty strings are
- * allowed so a model can be saved before it is described. `contributors`
- * names everyone who worked on the model, one name per entry, and is
- * required with an empty array legal, so a model can be saved before anyone
- * is credited. Threat Dragon wraps each name in an object of its own; the
- * internal model is format-independent, so the import codec (M2) flattens
- * that wrapper to the name.
+ * Every text may be empty, so a model saves before it is described.
+ * `contributors` holds one name per entry.
  */
 export const modelMetadataSchema = z.object({
   title: acceptedTextSchema,
@@ -25,6 +20,12 @@ export const modelMetadataSchema = z.object({
 
 /** Model metadata. */
 export type ModelMetadata = z.infer<typeof modelMetadataSchema>;
+
+/** A change to model metadata: the fields it names replace the held ones. */
+export const modelMetadataChangeSchema = modelMetadataSchema.partial();
+
+/** A change to model metadata. */
+export type ModelMetadataChange = z.infer<typeof modelMetadataChangeSchema>;
 
 /**
  * One diagram: a titled canvas that owns its elements, geometry inline on

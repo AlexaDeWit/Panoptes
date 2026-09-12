@@ -169,3 +169,51 @@ describe('what an applied edit writes', () => {
     expect(Either.getOrUndefined(reread)?.format).toEqual('threat-dragon');
   });
 });
+
+describe('what the flow direction and metadata ops write', () => {
+  it('makes a flow bidirectional and keeps the threats attached to it', () => {
+    const attempted = attempt();
+    attempted.edit(modelFile, revisionIn(attempted, modelFile), [
+      {
+        op: 'set_flow_direction',
+        element: 'element-order-flow',
+        bidirectional: true,
+      },
+    ]);
+    const model = Either.getOrUndefined(
+      readAnyFormat(attempted.bytes(modelFile).toString('utf8')),
+    )?.model;
+    expect(
+      model?.diagrams[0].elements.find(
+        (element) => element.id === 'element-order-flow',
+      ),
+    ).toMatchObject({ bidirectional: true });
+    expect(
+      model?.threats.find((threat) => threat.id === 'threat-tamper-order')
+        ?.elements,
+    ).toContain('element-order-flow');
+  });
+
+  const metadata = {
+    title: 'Écluse, second pass',
+    owner: 'Jonas Lindqvist',
+    description: 'Reviewed with the platform team.\nSecond line.',
+    contributors: ['Alexandra de Wit', 'Jonas Lindqvist', ''],
+  };
+
+  for (const file of [modelFile, dragonFile]) {
+    it(`carries every metadata field through a ${file} write and back`, () => {
+      const attempted = attempt();
+      const applied = attempted.edit(file, revisionIn(attempted, file), [
+        { op: 'set_model_metadata', ...metadata },
+      ]);
+      const reread = readAnyFormat(attempted.bytes(file).toString('utf8'));
+      expect(Either.getOrUndefined(reread)?.model.metadata).toEqual(metadata);
+      expect(
+        Either.getOrUndefined(applied)?.divergences.filter(
+          (divergence) => divergence.subject.kind === 'model',
+        ),
+      ).toEqual([]);
+    });
+  }
+});

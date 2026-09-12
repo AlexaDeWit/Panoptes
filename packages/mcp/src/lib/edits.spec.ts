@@ -98,6 +98,14 @@ const failures: ByTag<OperationFailure> = {
     elementId: elementId('element-api'),
     at: 2,
   }),
+  RefusedMetadataCharacter: OperationFailure.RefusedMetadataCharacter({
+    field: 'owner',
+    at: 1,
+  }),
+  RefusedContributorCharacter: OperationFailure.RefusedContributorCharacter({
+    contributor: 2,
+    at: 0,
+  }),
 };
 
 const refusalOf = (failure: OperationFailure, index = 0): string =>

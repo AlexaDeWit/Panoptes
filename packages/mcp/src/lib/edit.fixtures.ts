@@ -224,6 +224,16 @@ export const editVariants: readonly {
     ],
   },
   {
+    op: 'set_flow_direction',
+    edits: [
+      {
+        op: 'set_flow_direction',
+        element: 'element-order-flow',
+        bidirectional: true,
+      },
+    ],
+  },
+  {
     op: 'reconnect_flow',
     edits: [
       {
@@ -408,5 +418,15 @@ export const editVariants: readonly {
   {
     op: 'remove_diagram',
     edits: [{ op: 'remove_diagram', diagram: 'diagram-empty' }],
+  },
+  {
+    op: 'set_model_metadata',
+    edits: [
+      {
+        op: 'set_model_metadata',
+        owner: 'Jonas Lindqvist',
+        contributors: ['Alexandra de Wit', 'Jonas Lindqvist'],
+      },
+    ],
   },
 ];
