@@ -103,10 +103,16 @@ inherits that format's compatibility contract: a session survives every
 upgrade a file in that format survives. A field added to the model costs the
 snapshot nothing, because the format declares the new key as optional within
 version 1 and the read maps a document written without it onto the model the
-current release requires. A breaking format change is a new wire version with
-a step in `formats`, and the snapshot follows that step rather than one of its
-own. The studio version in `writtenBy` is information for a refusal, never a
-guard on what loads.
+current release requires. A breaking format change will ship as a new wire
+package with a step in `formats`, and the snapshot will follow that step
+rather than carry one of its own. No such step exists yet, so until one does,
+a document of a version this release does not know is rejected like any
+malformed snapshot. The studio version in `writtenBy` is information for a
+refusal, never a guard on what loads.
+
+Going through the format costs the order of the threat register: the format
+writes threats in number order, so a restore puts them in number order, as an
+open of the saved file does.
 
 Version 1 of the snapshot held the model itself rather than a document, and
 nothing maps it. It is refused with a reason saying an earlier release wrote

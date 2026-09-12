@@ -261,7 +261,11 @@ export function restorableSnapshot(
     recoverySnapshot(present, dirty, file, activeDiagram),
   );
   if (!parsed.success) {
-    throw new Error('The recovery snapshot fixture no longer parses.');
+    throw new Error(
+      `Snapshot fixture does not parse: ${parsed.error.issues
+        .map((issue) => `${issue.path.join('.')}: ${issue.message}`)
+        .join('; ')}`,
+    );
   }
   return parsed.data;
 }
