@@ -70,10 +70,16 @@ export type ExportCommands = {
   pdf(): void;
 };
 
-/** A report from the last export, announced beside the File menu. */
+/**
+ * A report from the last export, announced beside the File menu. `refusal`
+ * decides its lifetime: a refusal is a problem and stands until the person
+ * dismisses it or a later export replaces it, while an informational report
+ * of an export that was written goes at the next canvas or panel change.
+ */
 export type ExportNotice = {
   readonly headline: string;
   readonly details: readonly string[];
+  readonly refusal: boolean;
 };
 
 /** Browser services the PDF export needs, replaceable by a focused spec. */
@@ -193,7 +199,15 @@ export function useExportCommands(
     setNotice(undefined);
   }, []);
 
-  useEffect(() => onCanvasOrPanelChange(dismissNotice), [dismissNotice]);
+  useEffect(
+    () =>
+      onCanvasOrPanelChange(() => {
+        setNotice((current) =>
+          current?.refusal === true ? current : undefined,
+        );
+      }),
+    [],
+  );
 
   return useMemo(
     () => ({ commands, notice, dismissNotice }),
@@ -211,6 +225,7 @@ function noticeFrom(
     Refused: ({ reason }) => ({
       headline: 'Saerskriven could not write the export.',
       details: [reason],
+      refusal: true,
     }),
   });
 }
@@ -223,7 +238,11 @@ function unplacedNotice(
     .split('\n');
   return headline === ''
     ? undefined
-    : { headline, details: details.map((line) => line.trim()) };
+    : {
+        headline,
+        details: details.map((line) => line.trim()),
+        refusal: false,
+      };
 }
 
 function assetNotice(failure: PdfAssetFailureType): ExportNotice {
@@ -231,6 +250,7 @@ function assetNotice(failure: PdfAssetFailureType): ExportNotice {
     Unavailable: ({ reason }) => ({
       headline: 'Saerskriven could not load the PDF compiler.',
       details: [reason],
+      refusal: true,
     }),
   });
 }
@@ -240,10 +260,12 @@ function compileNotice(failure: PdfFailure): ExportNotice {
     Refused: ({ sentences }) => ({
       headline: 'Saerskriven could not compile the PDF.',
       details: sentences,
+      refusal: true,
     }),
     NoDocument: () => ({
       headline: 'The Typst compiler produced no PDF.',
       details: [],
+      refusal: true,
     }),
   });
 }

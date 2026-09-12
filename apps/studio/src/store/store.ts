@@ -83,9 +83,8 @@ export const modelStore = runtime.modelStore;
 export const dispatch = runtime.dispatch;
 
 /**
- * Runs `changed` on the next user action that moves canvas or panel state:
- * the model on screen, the selection, or the open inline field. A transient
- * status clears on one of these rather than on a timer.
+ * Runs `changed` whenever an action moves the model on screen, the selection,
+ * or the open inline field. Returns the unsubscribe.
  */
 export function onCanvasOrPanelChange(changed: () => void): () => void {
   return modelStore.subscribe((state, previous) => {

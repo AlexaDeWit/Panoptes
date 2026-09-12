@@ -39,21 +39,24 @@ and no immutable snapshot to push onto a stack.
   on. The other tags cover history, the diagram on screen, selection, inline
   editing, files and failures. `DismissFailure` puts `lastFailure` away and
   touches nothing else, so a person can clear a refusal without the stacks,
-  the saved point or the file moving. `Saved` names a file as `Opened` does, because a first
-  save is a save-as, and folding both into `file` keeps "this model lives in
-  this file" one fact. `Closed` is the third: the studio goes back to the
-  state it booted in, placeholder model and all, so nothing of the file that
-  was open survives for a later save to merge onto.
+  the saved point or the file moving. `Saved` names a file as `Opened` does,
+  because a first save is a save-as, and folding both into `file` keeps
+  "this model lives in this file" one fact. `Closed` is the third: the
+  studio goes back to the state it booted in, placeholder model and all, so
+  nothing of the file that was open survives for a later save to merge onto.
 - `reducer.ts` is the one pure function, beside the private helpers its arms
   share. It is total: an operation the model refuses leaves the present and
   both stacks alone and records the refusal in `lastFailure`, so no dispatch
   fails and no view handles an error. A successful edit pushes the old present
   onto `past` and clears `future`.
-- `store.ts` creates the vanilla store, `dispatch` applies the reducer to it,
-  writes recoverable changes, publishes the state, and sends the result to
-  the other tabs ([Other tabs](#other-tabs)).
-  `useModelStore(selector)` is the React half. The store opens from recovery,
-  the development model, or the placeholder, in that order.
+- `store.ts` creates the vanilla store, `dispatch` applies the reducer to
+  it, writes recoverable changes, publishes the state, and sends the result
+  to the other tabs ([Other tabs](#other-tabs)). `useModelStore(selector)`
+  is the React half. The store opens from recovery, the development model,
+  or the placeholder, in that order. `onCanvasOrPanelChange(changed)`
+  subscribes to the model on screen, the selection and the open inline
+  field, which is the lifetime of a transient status: it ends at the next
+  action that moves one of the three, never on a clock.
 - `selectors.ts` derives what views show. Unsaved work is `present !== saved`
   by identity, so undoing back to the saved point clears it with no
   bookkeeping. `windowTitle` is what the browser tab is named: the model's
@@ -62,22 +65,22 @@ and no immutable snapshot to push onto a stack.
   `showingPlaceholder` identifies that opening state for the document title.
 
 The active diagram, selection, the inline editor, the last refusal, and the
-file lifecycle stay out of the undo stacks. `activeDiagram` names the diagram on screen, and
-nothing until one has been chosen, the first the model holds being on screen
-meanwhile. `SelectDiagram` sets it,
-clears the selection and closes the editor, since both belong to the diagram
-left, and moves neither the model nor the history. The `activeDiagram`
-selector resolves it, falling back to the first diagram while the model does
-not hold the one named, so an open, an undo or a redo that takes the diagram
-away leaves the canvas on something rather than refusing. `selection` is a
-unique, ordered array of element IDs. A removal drops
-every removed ID from it and closes a matching editor. `inlineEditor` names
-the element and whether the field edits its name or its Note text. It is in
-the store because a command reaches it from the keyboard
-([the canvas](../canvas/README.md)). Being total, the reducer cannot
-refuse `Opened` or `Closed` over unsaved work, so the guards on those, and the
-one on closing the tab, belong in the view ([the file
-bridge](../files/README.md)).
+file lifecycle stay out of the undo stacks. `activeDiagram` names the
+diagram on screen, and nothing until one has been chosen, the first the
+model holds being on screen meanwhile. `SelectDiagram` sets it, clears the
+selection and closes the editor, since both belong to the diagram left, and
+moves neither the model nor the history. The `activeDiagram` selector
+resolves it, falling back to the first diagram while the model does not hold
+the one named, so an open, an undo or a redo that takes the diagram away
+leaves the canvas on something rather than refusing. `selection` is a
+unique, ordered array of element IDs. A removal drops every removed ID from
+it and closes a matching editor. `inlineEditor` names the element and
+whether the field edits its name or its Note text. It is in the store
+because a command reaches it from the keyboard
+([the canvas](../canvas/README.md)). Being total, the reducer cannot refuse
+`Opened` or `Closed` over unsaved work, so the guards on those, and the one
+on closing the tab, belong in the view
+([the file bridge](../files/README.md)).
 
 `FileLifecycle.Opened` carries the file's name and its `RetainedSource`: the
 format it was read as, and the wire document that read produced. The document

@@ -61,8 +61,14 @@ const unplacedModel = parsedFixture({
   ],
 });
 
+const selectableElement = sampleModel.diagrams[0].elements[0].id;
+
 beforeEach(() => {
   modelStore.setState(openedState(), true);
+});
+
+afterEach(() => {
+  vi.useRealTimers();
 });
 
 describe('the studio exports', () => {
@@ -134,6 +140,7 @@ describe('the studio exports', () => {
       headline:
         'warning: a flow endpoint names an element the canvas draws as no box, so its flow is not in the drawing.',
       details: ['flow "flow-2" target names "flow-1"'],
+      refusal: false,
     });
   });
 
@@ -158,6 +165,7 @@ describe('the studio exports', () => {
       expect(result.current.notice).toEqual({
         headline: 'Saerskriven could not compile the PDF.',
         details: ['unknown function: nope'],
+        refusal: true,
       });
     });
     expect(bridge.writes).toEqual([]);
@@ -182,6 +190,7 @@ describe('the studio exports', () => {
       expect(result.current.notice).toEqual({
         headline: 'Saerskriven could not load the PDF compiler.',
         details: ['offline'],
+        refusal: true,
       });
     });
     expect(compile).not.toHaveBeenCalled();
@@ -228,18 +237,16 @@ describe('the studio exports', () => {
     expect(result.current.notice).toBeUndefined();
   });
 
-  it('puts the report away at the next selection, and at no clock', async () => {
+  it('puts an informational report away at the next selection, and at no clock', async () => {
+    modelStore.setState(openedState(unplacedModel), true);
     const bridge = specBridge();
-    vi.spyOn(bridge, 'exportFile').mockResolvedValue(
-      SaveOutcome.Refused({ reason: 'NotAllowedError' }),
-    );
     const result = session(bridge);
 
     act(() => {
-      result.current.commands.register();
+      result.current.commands.diagram(mainDiagram);
     });
     await waitFor(() => {
-      expect(result.current.notice).toBeDefined();
+      expect(result.current.notice?.refusal).toBe(false);
     });
 
     vi.useFakeTimers();
@@ -247,14 +254,33 @@ describe('the studio exports', () => {
       vi.advanceTimersByTime(60_000);
     });
     expect(result.current.notice).toBeDefined();
-    vi.useRealTimers();
 
     act(() => {
-      dispatch(
-        Action.Select({
-          elementIds: [sampleModel.diagrams[0].elements[0].id],
-        }),
-      );
+      dispatch(Action.Select({ elementIds: [selectableElement] }));
+    });
+    expect(result.current.notice).toBeUndefined();
+  });
+
+  it('keeps a refusal through a selection, and clears it on Dismiss', async () => {
+    const bridge = specBridge({
+      save: SaveOutcome.Refused({ reason: 'NotAllowedError' }),
+    });
+    const result = session(bridge);
+
+    act(() => {
+      result.current.commands.register();
+    });
+    await waitFor(() => {
+      expect(result.current.notice?.refusal).toBe(true);
+    });
+
+    act(() => {
+      dispatch(Action.Select({ elementIds: [selectableElement] }));
+    });
+    expect(result.current.notice?.refusal).toBe(true);
+
+    act(() => {
+      result.current.dismissNotice();
     });
     expect(result.current.notice).toBeUndefined();
   });
