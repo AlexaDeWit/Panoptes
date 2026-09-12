@@ -22,11 +22,55 @@ function file(text: string): string {
 }
 
 describe('best-effort theme files', () => {
-  it.each(['', '  \n', '# Consumer colours\n'])(
-    'uses defaults for empty content %j',
+  it.each([
+    '',
+    '  \n',
+    '# Consumer colours\n',
+    '\ufeff',
+    '\ufeff# comment\r\n',
+    '\ufeff# comment\r',
+  ])('uses defaults for empty content %j', (text) => {
+    const read = Either.getOrThrow(readThemeFile(file(text)));
+    expect(read).toEqual({ theme: defaultRenderTheme, diagnostics: [] });
+  });
+
+  it.each(['\n', '\r\n', '\r'])(
+    'reads overrides after a comment with line ending %j',
+    (ending) => {
+      const read = Either.getOrThrow(
+        readThemeFile(
+          file(
+            ['# comment', 'severity:', '  high: "#123456"', ''].join(ending),
+          ),
+        ),
+      );
+      expect(read.theme.severity.high).toBe('#123456');
+      expect(read.diagnostics).toEqual([]);
+    },
+  );
+
+  it.each(['\n', '\r\n', '\r'])(
+    'distinguishes comment-only input from explicit null with line ending %j',
+    (ending) => {
+      const empty = Either.getOrThrow(
+        readThemeFile(file(['# first', '  ', '# second', ''].join(ending))),
+      );
+      expect(empty).toEqual({ theme: defaultRenderTheme, diagnostics: [] });
+      const explicit = Either.getOrThrow(
+        readThemeFile(file(['# first', 'null', ''].join(ending))),
+      );
+      expect(explicit.theme).toEqual(defaultRenderTheme);
+      expect(explicit.diagnostics).toHaveLength(1);
+      expect(explicit.diagnostics[0].message).toContain('mapping');
+    },
+  );
+
+  it.each(['\u000b', '\u000c', '\u00a0'])(
+    'reports non-YAML whitespace %j instead of treating it as empty',
     (text) => {
-      const read = Either.getOrThrow(readThemeFile(file(text)));
-      expect(read).toEqual({ theme: defaultRenderTheme, diagnostics: [] });
+      const read = commandTheme(file(text), 'svg', false);
+      expect(read.theme).toEqual(defaultRenderTheme);
+      expect(read.diagnostics.length).toBeGreaterThan(0);
     },
   );
 

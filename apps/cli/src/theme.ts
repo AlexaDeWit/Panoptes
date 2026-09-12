@@ -24,7 +24,7 @@ export type ThemeFileFailure = Data.TaggedEnum<{
 /** The theme reader's package-owned file and parser failures. */
 export const ThemeFileFailure = Data.taggedEnum<ThemeFileFailure>();
 
-/** Reads partial YAML overrides within the format package's shared resource bounds. */
+/** Reads bounded YAML overrides with LF, CRLF, or CR line endings. */
 export function readThemeFile(
   path: string,
 ): Either.Either<ThemeRead, ThemeFileFailure> {
@@ -49,12 +49,20 @@ export function readThemeFile(
 }
 
 function themeText(text: string): Either.Either<ThemeRead, ThemeFileFailure> {
-  const empty = /^(?:\s|#[^\n]*(?:\n|$))*$/u.test(text);
   return Either.map(
     Either.mapLeft(parseYaml(text), (failure) =>
       ThemeFileFailure.Unusable({ failure }),
     ),
-    (value) => readThemeOverrides(empty ? {} : value),
+    (value) => {
+      const empty = text
+        .replace(/^\ufeff/u, '')
+        .split(/\r\n?|\n/u)
+        .every((line) => {
+          const content = line.replace(/^[ \t]*/u, '');
+          return content.length === 0 || content.startsWith('#');
+        });
+      return readThemeOverrides(empty ? {} : value);
+    },
   );
 }
 
