@@ -68,7 +68,7 @@ export async function rasterizeSvg(
   if (!Number.isInteger(longEdge) || longEdge < 0 || longEdge > mostEdge) {
     return Either.left(
       ResvgFailure.Refused({
-        sentence: `a long edge of ${longEdge} is not a whole number of pixels from 0 to ${mostEdge}`,
+        sentence: `a long edge of ${longEdge} is not a pixel count from 0 to ${mostEdge}`,
       }),
     );
   }

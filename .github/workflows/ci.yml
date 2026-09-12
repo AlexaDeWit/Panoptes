@@ -167,14 +167,14 @@ jobs:
         run: nix build --print-build-logs --option sandbox true .#resvg-wasm
 
       # The rasterizer's spec skips where the variable is unset, so the run is
-      # gated on the shell it runs in seeing a value, rather than on a green
-      # suite that may have skipped. A value naming no file reds the suite on
-      # its own.
+      # gated on the module being there, rather than on a green suite that may
+      # have skipped. An unset key, an empty value and a path naming no file
+      # all fail here.
       - name: Rasterize a fixture through the module
         env:
           SAERSKRIVEN_RESVG_WASM: ${{ github.workspace }}/result/lib/saerskriven_resvg.wasm
         run: |
-          nix develop .#ci --command printenv SAERSKRIVEN_RESVG_WASM
+          nix develop .#ci --command test -f "$SAERSKRIVEN_RESVG_WASM"
           nix develop .#ci --command pnpm nx test @saerskriven/render -- --coverage.enabled=true
 
       - name: Upload coverage to Codecov
