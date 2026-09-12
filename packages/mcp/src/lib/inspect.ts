@@ -23,6 +23,14 @@ import {
   type ReadModelFile,
 } from './workspace.js';
 
+/** What `saer_inspect` tells a client it is for. */
+export const inspectDescription = [
+  'Read one Saerskriven threat model file and report what it holds: the file format detected from its content, the model metadata, one line per diagram with its element and threat counts, the totals over the whole model, and every place the file and the model do not correspond exactly.',
+  'Call this first on a model you have not read in this session. The `revision` it returns is the handle an edit has to quote back, so a tool that writes will ask you for a fresh one.',
+  'Pass `file` as a path relative to the server root. Leave it out when the server was started with a default model; with no default and no `file`, the result lists the model files under the root instead of reading one.',
+  'This tool never writes. A path that leaves the server root is refused rather than read.',
+].join(' ');
+
 /**
  * The `file` argument every tool of this server takes, optional because
  * `--file` can name the model the server works over. Later tools extend this

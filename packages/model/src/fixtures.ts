@@ -13,6 +13,8 @@ import {
 } from './lib/ids.js';
 import { parseModel, type Model } from './lib/parse.js';
 
+export { validModelFixture } from './lib/fixtures.js';
+
 /** Parses a spec's literal string into a branded element id. */
 export const elementId = (value: string): ElementId =>
   elementIdSchema.parse(value);

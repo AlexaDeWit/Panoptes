@@ -406,7 +406,7 @@ diagrams:
       - kind: process
         id: el-mcp
         name: MCP server and tools
-        description: "`saer mcp` over stdio, launched by the host. The server object lives in `packages/mcp` and carries no transport, no session and no parsed model, so every call names its file and reads it again. Paths are confined to the root the invocation named. The `saer_inspect` tool is built. Read and query tools are issue #47, edit tools that write back through the codecs are issue #48, and Streamable HTTP on 127.0.0.1 is issue #318."
+        description: "`saer mcp` over stdio, launched by the host. The server object lives in `packages/mcp` and carries no transport, no session and no parsed model, so every call names its file and reads it again. Paths are confined to the root the invocation named. The `saer_inspect` tool is built, and so are the writing tools `saer_edit`, `saer_create` and `saer_import`: each confines its path to the root, each refuses a revision handle the file no longer hashes to, and each writes through a temporary file in the target's own directory. Read and query tools are issue #47, and Streamable HTTP on 127.0.0.1 is issue #318."
         outOfScope: false
         reasonOutOfScope: ""
         position:

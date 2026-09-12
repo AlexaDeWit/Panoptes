@@ -1,11 +1,32 @@
 import { McpServer } from '@modelcontextprotocol/server';
 import {
+  createArgumentsSchema,
+  createDescription,
+  createModel,
+} from './create.js';
+import {
+  editArgumentsSchema,
+  editDescription,
+  editModel,
+  editResultSchema,
+  renderEdit,
+} from './edit.js';
+import {
+  importArgumentsSchema,
+  importDescription,
+  importIntoModel,
+  importResultSchema,
+  renderImport,
+} from './import.js';
+import {
   fileArgumentSchema,
   inspect,
+  inspectDescription,
   inspectResultSchema,
   renderInspection,
 } from './inspect.js';
 import { toolResult } from './tool-result.js';
+import { renderWriteReport, writeReportSchema } from './write.js';
 import type { ModelWorkspace } from './workspace.js';
 
 /** The name the server reports to a host, and the prefix every tool carries. */
@@ -17,12 +38,11 @@ export type SaerskrivenServerOptions = {
   readonly version: string;
 };
 
-const inspectDescription = [
-  'Read one Saerskriven threat model file and report what it holds: the file format detected from its content, the model metadata, one line per diagram with its element and threat counts, the totals over the whole model, and every place the file and the model do not correspond exactly.',
-  'Call this first on a model you have not read in this session. The `revision` it returns is the handle an edit has to quote back, so a tool that writes will ask you for a fresh one.',
-  'Pass `file` as a path relative to the server root. Leave it out when the server was started with a default model; with no default and no `file`, the result lists the model files under the root instead of reading one.',
-  'This tool never writes. A path that leaves the server root is refused rather than read.',
-].join(' ');
+const writes = {
+  readOnlyHint: false,
+  idempotentHint: false,
+  openWorldHint: false,
+} as const;
 
 /**
  * The MCP server object, with no transport of its own: a caller connects it
@@ -48,6 +68,41 @@ export function createSaerskrivenServer(
       annotations: { readOnlyHint: true, openWorldHint: false },
     },
     (args) => toolResult(inspect(options.workspace, args), renderInspection),
+  );
+  server.registerTool(
+    'saer_edit',
+    {
+      title: 'Edit a threat model',
+      description: editDescription,
+      inputSchema: editArgumentsSchema,
+      outputSchema: editResultSchema,
+      annotations: { ...writes, destructiveHint: true },
+    },
+    (args) => toolResult(editModel(options.workspace, args), renderEdit),
+  );
+  server.registerTool(
+    'saer_create',
+    {
+      title: 'Start a threat model',
+      description: createDescription,
+      inputSchema: createArgumentsSchema,
+      outputSchema: writeReportSchema,
+      annotations: { ...writes, destructiveHint: false },
+    },
+    (args) =>
+      toolResult(createModel(options.workspace, args), renderWriteReport),
+  );
+  server.registerTool(
+    'saer_import',
+    {
+      title: 'Convert a foreign threat model',
+      description: importDescription,
+      inputSchema: importArgumentsSchema,
+      outputSchema: importResultSchema,
+      annotations: { ...writes, destructiveHint: false },
+    },
+    (args) =>
+      toolResult(importIntoModel(options.workspace, args), renderImport),
   );
   return server;
 }
