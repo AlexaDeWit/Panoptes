@@ -57,8 +57,30 @@ tells a Saerskriven file apart from a JSON format without consulting the file
 extension.
 
 - **Missing**: the read fails, with the issue at path `formatVersion`.
-- **Any value but `1`**: the read fails, with the issue at path
-  `formatVersion`. A later version is refused rather than read in part.
+- **A version this release does not know**: the read fails, with the issue at
+  path `formatVersion`, and the file is refused whole rather than read in
+  part.
+
+A change to the format is additive when the absence of what it adds means
+something. A new key is then optional on read, the mapping in
+`@saerskriven/formats` supplies what its absence means, a write always states
+it, and `formatVersion` stays where it is. A flow's `bidirectional` and an
+attached endpoint's `side` are the two added that way so far.
+
+Everything else is breaking: a rename, a type change, a removal, or a new key
+whose absence means nothing. That takes a new `formatVersion`, and a new
+version arrives as a wire package of its own beside the one before it, so
+`@saerskriven/wire-saerskriven-yaml` goes on declaring version 1 unchanged and
+a file of that version keeps the reading it has. The migration from one
+version to the next lives in `@saerskriven/formats`, which the layer matrix
+makes the only place allowed to know two wire packages. A write emits the
+version this release is current on.
+
+Every released version reads, for good. A read dispatches on the version the
+file states and chains the migrations from there to the current one, so a
+file Saerskriven has ever written opens in every later release of it. Nothing
+past version 1 exists yet, so there is no dispatch and no migration to read:
+this says what the first bump has to build.
 
 The internal model cannot change this. The wire schema declares its own ids,
 its own vocabularies, and its own record shapes, and the layer matrix forbids

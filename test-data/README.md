@@ -67,6 +67,15 @@ The native YAML encoding of `ecluse.json`, produced through both codecs.
 The formats suite compares the write against this snapshot and reads it back
 to check model equality.
 
+## `saerskriven/ecluse-v0.2.1.yaml`
+
+The same model in the document shape v0.2.1 wrote, before version 1 of the
+format gained a flow's `bidirectional` and an attached endpoint's `side`. It
+is committed data rather than a snapshot: no target writes it, and it is never
+regenerated from the current writer, because what it holds the format to is
+that a file an earlier release wrote still reads. The formats suite reads it
+and checks that the mapping supplies a one-way flow and an unpinned side.
+
 ## `ecluse.model.json`
 
 The internal model serialized from `ecluseFixture` by `packages/model`.
