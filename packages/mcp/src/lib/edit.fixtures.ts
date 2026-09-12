@@ -175,6 +175,20 @@ export const editVariants: readonly {
     ],
   },
   {
+    op: 'set_element_properties',
+    edits: [
+      {
+        op: 'set_element_properties',
+        element: 'element-db',
+        properties: {
+          kind: 'store',
+          isEncrypted: true,
+          storesCredentials: false,
+        },
+      },
+    ],
+  },
+  {
     op: 'remove_element',
     edits: [{ op: 'remove_element', element: 'element-note' }],
   },

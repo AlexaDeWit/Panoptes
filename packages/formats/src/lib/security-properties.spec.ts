@@ -19,6 +19,8 @@ import {
   elementId,
   parsedFixture,
   validModelFixture,
+  securityModelFixture,
+  securityPropertyFixtures as properties,
 } from '@saerskriven/model/fixtures';
 import { threatDragonWireSchema } from '@saerskriven/wire-threat-dragon';
 import { Either } from 'effect';
@@ -35,44 +37,7 @@ import { allCells, threatsOf } from './threat-dragon-document.js';
 import { isRecord } from './records.js';
 import { readFailureIssues } from './codec.js';
 
-const properties = [
-  { providesAuthentication: false },
-  {
-    handlesCardPayment: true,
-    handlesGoodsOrServices: false,
-    isWebApplication: true,
-    privilegeLevel: '',
-  },
-  {
-    isALog: false,
-    isEncrypted: true,
-    isSigned: false,
-    storesCredentials: true,
-    storesInventory: false,
-  },
-  {
-    protocol: 'HTTPS',
-    isEncrypted: true,
-    isPublicNetwork: false,
-    trustBoundaryIds: ['element-perimeter'],
-  },
-  {
-    containedElements: ['element-api', 'element-db'],
-    crossingFlows: ['element-order-flow'],
-  },
-  { containedElements: [], crossingFlows: [] },
-];
-
-const secured = parsedFixture({
-  ...validModelFixture,
-  diagrams: validModelFixture.diagrams.map((diagram) => ({
-    ...diagram,
-    elements: diagram.elements.map((element, index) => ({
-      ...element,
-      ...properties[index],
-    })),
-  })),
-});
+const secured = parsedFixture(securityModelFixture);
 
 function nativeCycle(model: Model): Model {
   const written = writeSaerskrivenYaml(model);

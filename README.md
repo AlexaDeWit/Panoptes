@@ -249,13 +249,15 @@ claims and refuses comes back naming the path inside the document of every
 issue the schema raised, down to the field.
 
 `saer_search_elements` and `saer_search_threats` find the records of a model.
-The first takes `diagram`, `kind` and `query` and carries the element id, its
+The first takes `element`, `diagram`, `kind` and `query` and carries the element id, its
 diagram, its kind, its name, whether it is in scope, and how many threats
 reference it. The second takes `status`, `severity`, `element` and `query` and
 carries the threat number and id, its title, status, severity, category and
 attached elements. Both take `response_format`: `concise` is those fields, and
-`detailed` adds the rest of the record, which for an element is the geometry of
-its kind and for a threat is its prose. A listing is cut at fifty concise
+`detailed` adds the complete model record, including an element's geometry,
+flow direction, security facts and declared relationships, or a threat's prose.
+Use `element` for an exact element-id lookup. Element queries also search ids,
+protocol, privilege level and declared relationship ids. A listing is cut at fifty concise
 matches or twenty detailed ones, and a cut result says what it matched and
 names the arguments that narrow it, so the first twenty of two hundred is never
 read as the whole answer.
@@ -277,6 +279,24 @@ refuses with the reason named rather than drawing a textless picture. Given
 `out`, it also writes the PNG to a path under the root and returns it as a
 resource link. That path has to be free, so this tool replaces no file and
 writes no model.
+
+`add_element` accepts the optional security properties of its element kind.
+Use `set_element_properties` to patch an existing element. Omitted fields keep
+their values. Its `unset` list clears named properties back to not recorded,
+distinct from `false`, empty text and empty lists. Clearing fields of another
+kind, or both setting and clearing one field, is refused.
+
+```json
+{
+  "op": "set_element_properties",
+  "element": "flow-id",
+  "properties": { "kind": "flow", "isEncrypted": false },
+  "unset": ["protocol"]
+}
+```
+
+Place that operation in the `edits` array of a `saer_edit` call with the file's
+current revision. The same tools and property semantics apply over stdio and HTTP.
 
 `saer_edit` applies a batch of edits to one model and saves the file in the
 format it is already in. The batch is all or nothing: the edits go onto one
