@@ -115,7 +115,6 @@ export {
   imageExtension,
   imageLinkDescription,
   imageMediaType,
-  namedDiagram,
   rasterized,
   renderDiagram,
   renderDiagramArgumentsSchema,

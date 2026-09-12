@@ -3,7 +3,7 @@ import type {
   ReadResourceResult,
   Variables,
 } from '@modelcontextprotocol/server';
-import type { Diagram } from '@saerskriven/model';
+import { diagramsNamed, type Diagram } from '@saerskriven/model';
 import { defaultLongEdge } from '@saerskriven/render/png';
 import { Data, Either } from 'effect';
 import { prefaced } from './preface.js';
@@ -12,7 +12,6 @@ import { register, renderRegisterResult } from './register.js';
 import {
   drawnOf,
   imageMediaType,
-  namedDiagram,
   rasterized,
   renderDrawing,
   type DrawnDiagram,
@@ -105,8 +104,9 @@ export async function readDiagramResource(
       ),
       (reading) =>
         Either.map(
-          Either.fromNullable(namedDiagram(reading.model, named), () =>
-            ResourceFailure.NoSuchDiagram(),
+          Either.fromNullable(
+            diagramsNamed(reading.model.diagrams, named)[0],
+            () => ResourceFailure.NoSuchDiagram(),
           ),
           (diagram) => ({ reading, diagram }),
         ),

@@ -3,6 +3,7 @@ import { escapedForTerminal, quotedForTerminal } from '@saerskriven/formats';
 import {
   acceptedTextSchema,
   diagramIdSchema,
+  diagramsNamed,
   elementIdSchema,
   type Diagram,
   type Model,
@@ -386,25 +387,13 @@ function theNamedDiagram(
   model: Model,
   named: string,
 ): Either.Either<Diagram, readonly string[]> {
-  const found = namedDiagram(model, named);
+  const [found] = diagramsNamed(model.diagrams, named);
   return found === undefined
     ? Either.left([
         `The model holds no diagram named ${quotedForTerminal(named)}.`,
         ...diagramList(model),
       ])
     : Either.right(found);
-}
-
-/**
- * The diagram a name selects: the one whose id it is, and otherwise the first
- * whose title it is exactly. An id is tried first, so a URI built from an id
- * never selects another diagram titled with it.
- */
-export function namedDiagram(model: Model, named: string): Diagram | undefined {
-  return (
-    model.diagrams.find((diagram) => diagram.id === named) ??
-    model.diagrams.find((diagram) => diagram.title === named)
-  );
 }
 
 function diagramList(model: Model): readonly string[] {

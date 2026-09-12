@@ -50,13 +50,19 @@ const cacheFields = (result: object) => ({
   cacheScope: 'cacheScope' in result ? result.cacheScope : undefined,
 });
 
-const rejectionOf = async (call: Promise<unknown>) => {
+const unheardOf = 'Unheard-of-name-Qx7';
+
+const rejectionOf = async (call: Promise<unknown>, named: string) => {
   try {
     await call;
     return 'the call was answered';
   } catch (error) {
     return error instanceof ProtocolError
-      ? { code: error.code, data: error.data }
+      ? {
+          code: error.code,
+          data: error.data,
+          quotesName: error.message.includes(named),
+        }
       : error;
   }
 };
@@ -374,18 +380,37 @@ for (const era of eras) {
         const listing = await session({ root: repositoryRoot, era });
         const refused = await Promise.all([
           rejectionOf(
-            fixture.client.readResource({ uri: 'saer://diagram/Nothing' }),
+            fixture.client.readResource({
+              uri: `saer://diagram/${unheardOf}`,
+            }),
+            unheardOf,
           ),
           rejectionOf(
             fixture.client.readResource({ uri: 'saer://diagram/%E0' }),
+            '%E0',
           ),
-          rejectionOf(listing.client.readResource({ uri: 'saer://register' })),
+          rejectionOf(
+            listing.client.readResource({ uri: 'saer://register' }),
+            'saer://register',
+          ),
         ]);
         await listing.end();
         expect(refused).toEqual([
-          { code: -32602, data: { uri: 'saer://diagram/Nothing' } },
-          { code: -32602, data: { uri: 'saer://diagram/%E0' } },
-          { code: -32602, data: { uri: 'saer://register' } },
+          {
+            code: -32602,
+            data: { uri: `saer://diagram/${unheardOf}` },
+            quotesName: false,
+          },
+          {
+            code: -32602,
+            data: { uri: 'saer://diagram/%E0' },
+            quotesName: false,
+          },
+          {
+            code: -32602,
+            data: { uri: 'saer://register' },
+            quotesName: false,
+          },
         ]);
       });
 
@@ -397,10 +422,15 @@ for (const era of eras) {
           rasterizer: noRasterizer,
         });
         const refused = await rejectionOf(
-          undrawn.client.readResource({ uri: 'saer://diagram/0' }),
+          undrawn.client.readResource({ uri: 'saer://diagram/High%20Level' }),
+          'High Level',
         );
         await undrawn.end();
-        expect(refused).toEqual({ code: -32603, data: undefined });
+        expect(refused).toEqual({
+          code: -32603,
+          data: undefined,
+          quotesName: false,
+        });
       });
 
       it('answers a prompt argument naming nothing usable as invalid params', async () => {
@@ -409,15 +439,22 @@ for (const era of eras) {
           rejectionOf(
             fixture.client.getPrompt({
               name: 'stride_pass',
-              arguments: { element: 'Nothing' },
+              arguments: { element: unheardOf },
             }),
+            unheardOf,
           ),
-          rejectionOf(listing.client.getPrompt({ name: 'review_model' })),
+          rejectionOf(
+            listing.client.getPrompt({
+              name: 'review_model',
+              arguments: { file: unheardOf },
+            }),
+            unheardOf,
+          ),
         ]);
         await listing.end();
         expect(refused).toEqual([
-          { code: -32602, data: undefined },
-          { code: -32602, data: undefined },
+          { code: -32602, data: undefined, quotesName: false },
+          { code: -32602, data: undefined, quotesName: false },
         ]);
       });
     });

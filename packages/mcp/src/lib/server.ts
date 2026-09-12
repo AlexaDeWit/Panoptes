@@ -387,9 +387,9 @@ function resourceOrThrow(
 ): ReadResourceResult {
   return Either.getOrThrowWith(outcome, (failure) =>
     ResourceFailure.$match(failure, {
-      NoModel: () => new ResourceNotFoundError(uri),
-      NoSuchDiagram: () => new ResourceNotFoundError(uri),
-      UndecodableName: () => new ResourceNotFoundError(uri),
+      NoModel: () => notFound(uri),
+      NoSuchDiagram: () => notFound(uri),
+      UndecodableName: () => notFound(uri),
       RasterizerFailed: () =>
         new ProtocolError(
           ProtocolErrorCode.InternalError,
@@ -418,5 +418,12 @@ function promptOrThrow(
             'A STRIDE pass runs over an actor, a process, a store or a flow, and that element is none of these.',
         }),
       ),
+  );
+}
+
+function notFound(uri: string): ResourceNotFoundError {
+  return new ResourceNotFoundError(
+    uri,
+    'This server has no resource to answer that URI with. The listing names every diagram it can draw.',
   );
 }

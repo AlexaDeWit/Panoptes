@@ -209,6 +209,24 @@ describe('render', () => {
     });
   });
 
+  it('draws the diagram whose id a name is before one titled with it', async () => {
+    const colliding = fixtureFile(
+      directory,
+      'colliding.yaml',
+      readFileSync(saerskriven, 'utf8').replace(
+        'title: Reading a file and rendering it',
+        'title: agent-and-desktop',
+      ),
+    );
+    await expect(
+      render(colliding, options({ diagram: 'agent-and-desktop' })),
+    ).resolves.toEqual({
+      code: 0,
+      out: golden('saerskriven-agent-and-desktop.snapshot.svg'),
+      err: '',
+    });
+  });
+
   it('lists the diagrams where a model of several names none', async () => {
     await expect(render(saerskriven, options({}))).resolves.toEqual({
       code: 2,
