@@ -10,9 +10,10 @@ Every projection is a pure function of the model. The `pdf` subpath compiles
 that Typst source into the bytes of a document, and it carries no font and
 reads no file either: the WebAssembly module and the faces it typesets with
 are the caller's to hand over. The `resvg` subpath draws one of those SVG
-documents into the bytes of a PNG on the same terms. The main entry loads
-none of it, so a caller that wants a drawing or a register loads no compiler
-and no renderer.
+documents into the bytes of a PNG on the same terms, and the `png` subpath is
+the projection over it, taking a diagram and a model where `resvg` takes a
+document. The main entry loads none of it, so a caller that wants a drawing
+or a register loads no compiler and no renderer.
 
 ## A diagram as an SVG document
 
@@ -22,6 +23,9 @@ the document as text beside the flow endpoints the layout could not place.
 The studio will mount those same primitives in React Flow (M4), so what the
 CLI writes and what a browser draws come out of one set of glyphs and one
 path maths.
+
+`width` and `height` beside them are the document's own size in user units,
+which is what the `png` subpath scales to a pixel size.
 
 The document holds an `svg` root in the SVG namespace, the diagram's title in
 a `title` element, which is the accessible name a reader hears and the name a
@@ -285,9 +289,47 @@ that variable is unset, since no dev shell exports it: `nix build
 .#resvg-wasm` writes the module and the caller points the variable at it, as
 [the repository README](../../README.md#the-svg-rasterizer) describes.
 
+## A diagram as a PNG
+
+`renderPng(diagram, model, options)`, on the `@saerskriven/render/png`
+subpath, draws one diagram with `renderSvg` and rasterizes that document
+through the `resvg` subpath, returning the bytes of a PNG file, its pixel
+size, and the same `unplaced` list the drawing reports. It is here because MCP
+hosts take an image block as PNG, JPEG, GIF or WebP and never as SVG, so an
+agent that asks for a diagram cannot be handed the drawing itself.
+
+`options.assets` is what `rasterizeSvg` needs, passed through: the module and
+the faces. The faces are offered in the order given, and a family no face
+carries falls back to the **family** of the first face offered, which for
+these drawings is every family they name: the stylesheet asks for Helvetica
+and Arial and no Liberation face carries either. The fallback is per family
+rather than per face, so any Liberation Sans face leading makes the fallback
+family Liberation Sans and weight and style then resolve within it as usual.
+A caller therefore leads with a face of the family it wants text drawn in, and
+`apps/cli` leads with Liberation Sans, which is metrically compatible with
+Arial. It names the regular face because that is the one an install must not
+be missing: the remaining Sans faces are bold and italic, and body text would
+come out in one of them.
+
+`options.longEdge` is the pixel length of the image's longer edge, whichever
+that is, and it defaults to 1568, the size an MCP host downscales an image
+block to. The aspect ratio is the drawing's own, so a diagram smaller than
+that is drawn larger rather than placed in a field of background.
+
+The raster carries a background the SVG document does not. `renderSvg` writes
+the diagram and not the surface it was drawn on, and a renderer draws what it
+is given onto transparency, so the picture is nested inside a document
+carrying the canvas ground. Its colours are the light table, measured for
+contrast against that ground, and a viewer filling transparency with its own
+dark theme would put them on something else.
+
+A refusal is a value, as it is for the PDF and for `rasterizeSvg` underneath:
+the `ResvgFailure` comes back unchanged, and `apps/cli` words it into the one
+line a command prints.
+
 ## The goldens
 
-Seven files under [`test-data/render/`](../../test-data/render) are this
+The files under [`test-data/render/`](../../test-data/render) are this
 package's output, committed so a change to what it writes arrives as a diff
 on a file rather than as a test that still passes:
 
@@ -306,19 +348,30 @@ on a file rather than as a test that still passes:
 - `saerskriven-read-and-render.snapshot.svg` and
   `saerskriven-agent-and-desktop.snapshot.svg`, the two diagrams of the Saerskriven
   model, which is the only committed model holding more than one.
+- One `<diagram>.snapshot.png` beside each of those four drawings, that same
+  drawing rasterized.
 - `ecluse.snapshot.typ`, the Écluse model as the Typst source of a whole
   document, which holds the diagram above inside it, so the two goldens move
   together.
 
-Each list is one list in the spec, the registers and the documents alike, so
-a further model or diagram joins every check over them by being added there.
-The suite compares all seven on every run as vitest file snapshots and reds
-where a file and the output differ. Cached tests run with snapshot writes
-disabled, so a missing golden fails. Regenerate them with
-`pnpm snapshots:update @saerskriven/render` in the commit that moved
-them, and read the diff.
+The rasters are committed as pictures rather than as a digest of one. The
+comparison is the bytes either way, so the gate is the same, and a review of a
+changed raster is then a look at the two images side by side rather than two
+hexadecimal strings that say only that something moved. What a comparison
+cannot tell a reader is whether the new picture is the right one, which is why
+it is committed in a form a reviewer can open.
 
-Four are also fixtures for `apps/cli`. Three use the Saerskriven model that
-`@saerskriven/formats` maintains under `test-data`.
+Each list is one list in `src/goldens.fixtures.ts`, the drawings and their
+rasters alike, so a further model or diagram joins every check over them by
+being added there. The registers keep their own list in their own spec. The
+suites compare every golden on every run and red where a file and the output
+differ. Cached tests write no snapshot, so a missing golden fails. Regenerate
+them with `pnpm snapshots:update @saerskriven/render` in the commit that moved
+them, and read the diff. The raster goldens need
+[`SAERSKRIVEN_RESVG_WASM`](../../README.md#the-svg-rasterizer) set, and their
+suite skips where it is not.
+
+The CLI's suites read several of them as fixtures, and the Saerskriven ones
+use the model `@saerskriven/formats` maintains under `test-data`.
 
 Unit tests: `pnpm nx test @saerskriven/render`.

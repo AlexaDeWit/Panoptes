@@ -5,7 +5,7 @@
   "type": "module",
   "//": [
     "The build bundles every workspace and npm dependency as ESM for `deno compile`. It stamps the root manifest version through esbuild.config.mts.",
-    "The build copies the Typst module and pinned fonts into dist/assets. The compiled executable includes that directory.",
+    "The build copies the Typst module out of node_modules and the resvg module and pinned fonts out of the flake into dist/assets, so it names the two variables that locate them among its inputs. The compiled executable includes that directory.",
     "The typecheck writes declarations under out-tsc. The build writes only the bundle and its runtime assets under dist.",
     "The test target depends on build because main.spec.ts and mcp-session.spec.ts run dist/saer.js. The compiled test runs those two and the runner table's own spec, which is what demands the executable compile produced.",
     "The compile target hashes its bundle, packaging script, toolchain, fixture, and host target. Nx stores the gitignored dist/cli directory as its output."
@@ -17,6 +17,16 @@
     "targets": {
       "build": {
         "executor": "@nx/esbuild:esbuild",
+        "inputs": [
+          "production",
+          "^production",
+          {
+            "env": "SAERSKRIVEN_FONTS_DIR"
+          },
+          {
+            "env": "SAERSKRIVEN_RESVG_WASM"
+          }
+        ],
         "options": {
           "bundle": true,
           "outputFileName": "saer.js",

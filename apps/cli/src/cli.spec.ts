@@ -89,7 +89,7 @@ describe('the arguments as the outcome they ask for', () => {
       code: 2,
       out: '',
       err:
-        'error: --format: must be svg, md or pdf\n' +
+        'error: --format: must be svg, png, md or pdf\n' +
         'error: --out: must be a path, or - for standard output\n',
     });
   });
@@ -100,7 +100,7 @@ describe('the arguments as the outcome they ask for', () => {
     ).resolves.toEqual({
       code: 2,
       out: '',
-      err: 'error: --format: must be svg, md or pdf\n',
+      err: 'error: --format: must be svg, png, md or pdf\n',
     });
   });
 

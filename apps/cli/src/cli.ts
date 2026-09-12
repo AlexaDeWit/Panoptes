@@ -112,9 +112,12 @@ function programFor(state: ParseState): Command {
     .command('render')
     .description('write a projection of a model file')
     .argument('<file>', 'the model file to read')
-    .option('--format <format>', 'svg, md or pdf')
+    .option('--format <format>', 'svg, png, md or pdf')
     .option('--out <path>', 'the file to write, or - for standard output')
-    .option('--diagram <id or title>', 'the diagram to draw, for --format svg')
+    .option(
+      '--diagram <id or title>',
+      'the diagram to draw, for --format svg or png',
+    )
     .action((file: string, options: unknown) => {
       state.request = renderRequest(file, options);
     });

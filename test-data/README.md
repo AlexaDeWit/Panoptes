@@ -32,8 +32,16 @@ The producers are `@saerskriven/model`, `@saerskriven/formats`, and
 | `render/saerskriven-read-and-render.snapshot.svg`   | `packages/render`  | `apps/cli`                                                                  |
 | `render/saerskriven-agent-and-desktop.snapshot.svg` | `packages/render`  | `apps/cli`                                                                  |
 | `render/saerskriven.register.snapshot.md`           | `packages/render`  | no other suite                                                              |
+| `render/ecluse.snapshot.png`                        | `packages/render`  | `apps/cli`                                                                  |
+| `render/saerskriven-read-and-render.snapshot.png`   | `packages/render`  | `apps/cli`                                                                  |
+| `render/saerskriven-agent-and-desktop.snapshot.png` | `packages/render`  | no other suite                                                              |
+| `render/every-glyph.snapshot.png`                   | `packages/render`  | no other suite                                                              |
 | `render/every-glyph.snapshot.svg`                   | `packages/render`  | no other suite                                                              |
 | `render/ecluse.snapshot.typ`                        | `packages/render`  | `apps/studio-e2e`                                                           |
+
+The `.snapshot.png` rasters are written only where
+[`SAERSKRIVEN_RESVG_WASM`](../README.md#the-svg-rasterizer) is set, since the
+rasterizer's suite skips without it.
 
 The remaining files are maintained inputs. `render/ecluse.snapshot.pdf.sha256`
 is the expected PDF digest for the CLI and studio browser suites.

@@ -180,6 +180,63 @@ for (const runner of runners) {
         expect(readFileSync(out)).toEqual(golden('ecluse.snapshot.svg'));
       });
 
+      it('rasterizes the Écluse fixture as the golden picture', () => {
+        const out = join(directory, `${runner.name}.png`);
+        expect(
+          text(runner, [
+            'render',
+            'test-data/ecluse.json',
+            '--format',
+            'png',
+            '--out',
+            out,
+          ]),
+        ).toEqual({ code: 0, out: '', err: '' });
+        expect(readFileSync(out)).toEqual(golden('ecluse.snapshot.png'));
+      });
+
+      it('writes a PNG to standard output as bytes, not as text', () => {
+        const out = join(directory, `${runner.name}.stdout.png`);
+        const streamed = ran(runner, [
+          'render',
+          'test-data/ecluse.json',
+          '--format',
+          'png',
+          '--out',
+          '-',
+        ]);
+        text(runner, [
+          'render',
+          'test-data/ecluse.json',
+          '--format',
+          'png',
+          '--out',
+          out,
+        ]);
+        expect(streamed.code).toEqual(0);
+        expect(streamed.out).toEqual(golden('ecluse.snapshot.png'));
+        expect(streamed.out).toEqual(readFileSync(out));
+      });
+
+      it('rasterizes the diagram a model of several names', () => {
+        const out = join(directory, `${runner.name}.chosen.png`);
+        expect(
+          text(runner, [
+            'render',
+            'threat-modelling/saerskriven.yaml',
+            '--format',
+            'png',
+            '--out',
+            out,
+            '--diagram',
+            'read-and-render',
+          ]),
+        ).toEqual({ code: 0, out: '', err: '' });
+        expect(readFileSync(out)).toEqual(
+          golden('saerskriven-read-and-render.snapshot.png'),
+        );
+      });
+
       it(
         'writes the Écluse fixture as a PDF of diagram and register',
         () => {

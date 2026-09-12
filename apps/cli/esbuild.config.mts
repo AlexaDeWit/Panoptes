@@ -8,6 +8,8 @@ import {
 import { basename, dirname, join } from 'node:path';
 import {
   fontsVariable,
+  resvgWasmAsset,
+  resvgWasmFile,
   typstFontFiles,
   typstWasmModule,
 } from '@saerskriven/render/build-assets';
@@ -84,19 +86,23 @@ const licenceIn = (fonts: string): string => {
 };
 
 // Everything the executable carries beside its bundle, gathered in
-// dist/assets: the fonts and their licence out of the flake, and the Typst
-// WebAssembly module out of node_modules. esbuild inlines JavaScript and
-// nothing else, so all of it arrives as files. src/pdf.ts reaches the fonts
-// and the module through import.meta.dirname, and `deno compile --include`
-// puts the same directory inside an executable (scripts/package-cli.sh). A
-// file that is neither inlined nor included does not exist for a user who has
-// only the executable.
+// dist/assets: the fonts and their licence and the SVG rasterizer out of the
+// flake, and the Typst WebAssembly module out of node_modules. esbuild
+// inlines JavaScript and nothing else, so all of it arrives as files.
+// src/assets.ts reaches them through import.meta.dirname, and `deno compile
+// --include` puts the same directory inside an executable
+// (scripts/package-cli.sh). A file that is neither inlined nor included does
+// not exist for a user who has only the executable.
 const runtimeAssets = (): readonly RuntimeAsset[] => {
   const fonts = fontsDirectory();
   return [
-    ...typstFontFiles.map((name) => ({ from: fontIn(fonts, name), to: name })),
+    ...typstFontFiles.map((name) => ({
+      from: fontIn(fonts, name),
+      to: name,
+    })),
     { from: licenceIn(fonts), to: licenceName },
     { from: typstWasmModule, to: basename(typstWasmModule) },
+    { from: resvgWasmAsset(refuse), to: resvgWasmFile },
   ];
 };
 

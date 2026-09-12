@@ -195,11 +195,22 @@ if [ "${pdf_header}" != '%PDF-' ]; then
   exit 1
 fi
 
+# The same for the embedded resvg module, which the PDF check does not reach.
+readonly png_check="${scratch}/png-check.png"
+"${host_binary}" render "${fixture}" --format png --out "${png_check}"
+png_header="$(head -c 8 -- "${png_check}" | od -An -tx1 | tr -d ' \n')"
+readonly png_header
+if [ "${png_header}" != '89504e470d0a1a0a' ]; then
+  echo "saer render --format png wrote a file opening '${png_header}'," >&2
+  echo "not a PNG. The executable carries no working rasterizer." >&2
+  exit 1
+fi
+
 echo "saer --version reports ${reported}, saer validate ${fixture}"
-echo "reports ${summary}, saer render --format pdf writes a PDF, and"
+echo "reports ${summary}, saer render writes a PDF and a PNG, and"
 echo "every target compiled twice to the same bytes"
 
 # Log input hashes to locate differences when rebuilding a release.
 sha256sum -- "${bundle}" "${assets}"/*.ttf \
-  "${assets}"/LICENSE.liberation-fonts.txt
+  "${assets}"/LICENSE.liberation-fonts.txt "${assets}/saerskriven_resvg.wasm"
 cat -- "${out_dir}/SHA256SUMS"

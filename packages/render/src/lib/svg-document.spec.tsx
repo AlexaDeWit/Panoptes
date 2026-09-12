@@ -1,6 +1,7 @@
 import {
   canvasClassNames,
   canvasStylesheet,
+  svgNumber,
   textExtent,
   wrappedTextStyles,
   type TextStyleRule,
@@ -13,28 +14,19 @@ import {
 } from '@saerskriven/model';
 import { Either } from 'effect';
 import { JSDOM } from 'jsdom';
-import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import {
+  diagramOf,
+  everyGlyphModel,
+  goldenDocuments,
+  repositoryRoot,
+  type GoldenDocument,
+} from '../goldens.fixtures.js';
 import { renderSvg } from './svg-document.js';
 
 const svgNamespace = 'http://www.w3.org/2000/svg';
 
-const repositoryRoot = join(import.meta.dirname, '../../../..');
-
 const { DOMParser } = new JSDOM().window;
-
-const modelFile = (name: string): Model =>
-  Either.getOrThrow(
-    parseModel(
-      JSON.parse(readFileSync(join(repositoryRoot, 'test-data', name), 'utf8')),
-    ),
-  );
-
-const ecluseModel = modelFile('ecluse.model.json');
-
-const everyGlyphModel = modelFile('every-glyph.model.json');
-
-const saerskrivenModel = modelFile('saerskriven.model.json');
 
 const modelOf = (elements: unknown[], title = 'Diagram'): Model =>
   Either.getOrThrow(
@@ -435,60 +427,42 @@ function drawnOutsideTheViewBox(svg: string): Box[] {
   );
 }
 
-const documents: readonly {
-  readonly name: string;
-  readonly model: Model;
-  readonly diagram: number;
-  readonly golden: string;
-}[] = [
-  {
-    name: 'the Écluse diagram',
-    model: ecluseModel,
-    diagram: 0,
-    golden: 'test-data/render/ecluse.snapshot.svg',
-  },
-  {
-    name: 'every glyph',
-    model: everyGlyphModel,
-    diagram: 0,
-    golden: 'test-data/render/every-glyph.snapshot.svg',
-  },
-  {
-    name: "Saerskriven's read and render diagram",
-    model: saerskrivenModel,
-    diagram: 0,
-    golden: 'test-data/render/saerskriven-read-and-render.snapshot.svg',
-  },
-  {
-    name: "Saerskriven's agent and desktop diagram",
-    model: saerskrivenModel,
-    diagram: 1,
-    golden: 'test-data/render/saerskriven-agent-and-desktop.snapshot.svg',
-  },
-];
-
-const svgOfEntry = (entry: (typeof documents)[number]): string =>
-  renderSvg(entry.model.diagrams[entry.diagram], entry.model).svg;
+const svgOfEntry = (entry: GoldenDocument): string =>
+  renderSvg(diagramOf(entry), entry.model).svg;
 
 const forbiddenCharacterSvg = svgOf(forbiddenCharacterModel);
 
 describe('a diagram as a standalone SVG document', () => {
-  it.each(documents)(
+  it.each(goldenDocuments)(
     'writes $name as the committed golden file',
     async (entry) => {
       await expect(svgOfEntry(entry)).toMatchFileSnapshot(
-        join(repositoryRoot, entry.golden),
+        join(repositoryRoot, entry.svg),
       );
     },
   );
 
-  it.each(documents)('writes $name the same bytes on a second run', (entry) => {
-    expect(svgOfEntry(entry)).toBe(svgOfEntry(entry));
-  });
+  it.each(goldenDocuments)(
+    'writes $name the same bytes on a second run',
+    (entry) => {
+      expect(svgOfEntry(entry)).toBe(svgOfEntry(entry));
+    },
+  );
 
-  it.each(documents)('ends $name with a newline', (entry) => {
+  it.each(goldenDocuments)('ends $name with a newline', (entry) => {
     expect(svgOfEntry(entry).endsWith('</svg>\n')).toBe(true);
   });
+
+  it.each(goldenDocuments)(
+    'reports the size $name states on its own root',
+    (entry) => {
+      const drawn = renderSvg(diagramOf(entry), entry.model);
+      const root = documentOf(drawn.svg).documentElement;
+      expect([root.getAttribute('width'), root.getAttribute('height')]).toEqual(
+        [svgNumber(drawn.width), svgNumber(drawn.height)],
+      );
+    },
+  );
 
   it('renders each diagram of a model as a document of its own', () => {
     const [front, back] = twoDiagramModel.diagrams.map(
@@ -538,7 +512,7 @@ describe('the viewBox around what a diagram draws', () => {
     expect(drawnOutsideTheViewBox(svg)).toEqual([]);
   });
 
-  it.each(documents)('holds everything $name draws', (entry) => {
+  it.each(goldenDocuments)('holds everything $name draws', (entry) => {
     expect(drawnOutsideTheViewBox(svgOfEntry(entry))).toEqual([]);
   });
 });
@@ -576,7 +550,10 @@ describe('free text carrying what XML forbids, never parsed', () => {
 });
 
 describe.each([
-  ...documents.map((entry) => ({ name: entry.name, svg: svgOfEntry(entry) })),
+  ...goldenDocuments.map((entry) => ({
+    name: entry.name,
+    svg: svgOfEntry(entry),
+  })),
   { name: 'text XML forbids', svg: forbiddenCharacterSvg },
 ])('$name as a document a reader can open', ({ svg }) => {
   it('parses as well-formed XML with one svg root in the SVG namespace', () => {

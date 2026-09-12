@@ -40,8 +40,8 @@ export function invalidInput(err: string): CommandOutcome {
  * refused it, a file cannot be read or written, a choice names no diagram,
  * a stream refused the output, a pipe whose reader closed aside, or a
  * projection could not be produced from a model Saerskriven accepted, which is
- * a typesetter refusing the document or an install missing the files it
- * typesets with. The last two are 2 rather than 1 because the file was read
+ * a typesetter or a rasterizer refusing the document or an install missing
+ * the files they read. The last two are 2 rather than 1 because the file was read
  * and was good: what failed is the asking, not the input.
  */
 export function usageError(err: string): CommandOutcome {
