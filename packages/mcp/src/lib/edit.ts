@@ -1,3 +1,4 @@
+import { readLimits } from '@saerskriven/formats';
 import { Either, pipe } from 'effect';
 import type { Model } from '@saerskriven/model';
 import { z } from 'zod';
@@ -51,6 +52,7 @@ export type EditResult = z.infer<typeof editResultSchema>;
 export const editDescription = [
   'Apply a batch of edits to one Saerskriven threat model file and save the file in the format it is already in.',
   'The edits are applied in order to one parsed model, and the file is written once at the end. The first edit the model refuses stops the batch: nothing is written, the file stays byte for byte as it was, and the result names the index that was refused and what the model said about it. The batch is the unit of change rather than the edit.',
+  `A batch that would take the file past ${String(readLimits.maxTextBytes / 1_048_576)} MiB, the size this server reads, is refused the same way, so make a smaller change rather than retrying it.`,
   `Each edit is an object carrying \`op\` and that op's own fields. The ops are ${editOps.join(', ')}.`,
   'Pass `revision` as the handle the last read of this file returned. A file that changed before this call is refused rather than overwritten, and the answer to that refusal is to read the file again and reconsider the edit against what the file now holds. The file is hashed again immediately before it is replaced, so a change that landed while this call was working is refused there instead of overwritten. That check is not a lock: a save landing between it and the replacement is still overwritten with neither side told, so read the file in the same turn you edit it, and expect to lose an edit where somebody is working in the same file from another tool.',
   'A threat carries no number: the model issues one when a threat is added and holds it when the threat is replaced, so numbers name one threat for the life of a model and there is no edit that renumbers.',

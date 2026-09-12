@@ -46,8 +46,9 @@ one exported value, so a caller that checks a file before handing it over
 enforces the numbers the codecs enforce rather than numbers of its own. Four
 parsing bounds today, each with headroom over the largest file the repository vendors
 and each justified by a fixture under `test-data/adversarial` built to break
-it: the size of the text in UTF-8 bytes, 4 MiB and about thirty times that
-file; how far below the root a value may sit, 64 levels; how many aliases
+it: the size of the text in UTF-8 bytes, 8 MiB and about sixty times that
+file (4 MiB up to 0.3.0, so an earlier release refuses a file between the
+two); how far below the root a value may sit, 64 levels; how many aliases
 resolving a document works through, 50; and how much of a document those
 aliases reach, 100,000 nodes.
 

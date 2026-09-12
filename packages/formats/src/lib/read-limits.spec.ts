@@ -6,7 +6,11 @@ import type { ReadFailure } from './codec.js';
 import { aliasCostIn } from './saerskriven-yaml-document.js';
 import { readSaerskrivenYaml } from './saerskriven-yaml-read.js';
 import { nativeFixtures } from './saerskriven-yaml.fixtures.js';
-import { parseWithinLimits, readLimits } from './read-limits.js';
+import {
+  parseWithinLimits,
+  readLimits,
+  withinTextBytes,
+} from './read-limits.js';
 import { readThreatDragon } from './threat-dragon-read.js';
 import { corpusTexts, corpusTimeout } from './threat-dragon.fixtures.js';
 
@@ -163,7 +167,7 @@ describe('the read limits against the files the repository vendors', () => {
 
   it('are the numbers this release enforces', () => {
     expect(readLimits).toEqual({
-      maxTextBytes: 4_194_304,
+      maxTextBytes: 8_388_608,
       maxImportTextUnits: 16_777_216,
       maxNestingDepth: 64,
       maxAliasCount: 50,
@@ -235,6 +239,13 @@ describe('the size bound', () => {
     expect(
       refusalOf(readThreatDragon, 'a'.repeat(readLimits.maxTextBytes)),
     ).toBe('MalformedText');
+  });
+
+  it('is the one comparison a writer checks its output against', () => {
+    expect([
+      withinTextBytes(readLimits.maxTextBytes),
+      withinTextBytes(readLimits.maxTextBytes + 1),
+    ]).toEqual([true, false]);
   });
 });
 

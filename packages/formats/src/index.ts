@@ -8,6 +8,7 @@ export * from './lib/saerskriven-yaml.js';
 export {
   parseWithinLimits,
   readLimits,
+  withinTextBytes,
   withinTextLimit,
   type ReadLimit,
 } from './lib/read-limits.js';

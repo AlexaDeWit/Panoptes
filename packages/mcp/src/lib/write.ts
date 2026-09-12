@@ -5,6 +5,7 @@ import {
   quotedForTerminal,
   readLimits,
   renderDivergences,
+  withinTextBytes,
   type DetectedRead,
   type WriteResult,
 } from '@saerskriven/formats';
@@ -37,10 +38,11 @@ import {
  * call quoted, which is the case an agent answers by reading again rather
  * than by retrying, and which a write that replaces a file checks twice.
  * `Occupied` is a tool that creates a file finding a path already taken.
+ * `PastReadBound` is the text a write would produce being past the size this
+ * server reads, refused so a file the server wrote is one it can open again.
  * `Unwritten` is the write not happening for a reason outside this server's
- * reach: the system refusing it, the file past the bound this server reads,
- * or the codec throwing on the model it was handed, each with its own
- * sentence.
+ * reach: the system refusing it, the file on disk past the read bound, or the
+ * codec throwing on the model it was handed, each with its own sentence.
  */
 export type WriteFailure = Data.TaggedEnum<{
   NoFile: { readonly root: string };
@@ -50,6 +52,7 @@ export type WriteFailure = Data.TaggedEnum<{
     readonly found: string;
   };
   Occupied: { readonly file: string };
+  PastReadBound: { readonly file: string; readonly size: number };
   Unwritten: { readonly file: string; readonly reason: string };
 }>;
 
@@ -113,6 +116,10 @@ export function renderWriteFailure(failure: WriteFailure): readonly string[] {
     Occupied: ({ file }) => [
       `The file ${quotedForTerminal(file)} is already there, and this tool writes only a path that is free.`,
     ],
+    PastReadBound: ({ file, size }) => [
+      `The file ${quotedForTerminal(file)} was left as it was: what this call would write is ${String(size)} bytes, past the size this server reads (${String(readLimits.maxTextBytes)} bytes), so the server could not open it again.`,
+      'Make a smaller change, so the file stays within that size.',
+    ],
     Unwritten: ({ file, reason }) => [
       `The file ${quotedForTerminal(file)} was not written: ${escapedForTerminal(reason)}.`,
     ],
@@ -154,7 +161,8 @@ export function unchangedSince(
  * replaces the file's permissions along with its content. The handle over
  * the bytes written comes back, which is the revision the next write quotes.
  * `created` names the mode for a target that is not there, which is the
- * caller's to pass where a rename onto a free path is what it wants.
+ * caller's to pass where a rename onto a free path is what it wants. A text
+ * past the read bound refuses as `PastReadBound` before anything is written.
  *
  * `quoted` is the handle over the bytes the caller read, and the target is
  * hashed again immediately before the rename: one that no longer matches
@@ -172,29 +180,36 @@ export function replacedFile(
   quoted: string,
   created?: number,
 ): Either.Either<string, WriteFailure> {
-  return throughTemporary(
-    target,
-    Buffer.from(text, 'utf8'),
-    (temporary) =>
-      Either.flatMap(unmovedSince(target, quoted), () =>
-        Either.try({
-          try: () => {
-            renameSync(temporary, target.path);
-          },
-          catch: (error) => unwritten(target.file, error),
-        }),
-      ),
-    created,
+  return Either.flatMap(readableBytes(target, text), (bytes) =>
+    throughTemporary(
+      target,
+      bytes,
+      (temporary) =>
+        Either.flatMap(unmovedSince(target, quoted), () =>
+          Either.try({
+            try: () => {
+              renameSync(temporary, target.path);
+            },
+            catch: (error) => unwritten(target.file, error),
+          }),
+        ),
+      created,
+    ),
   );
 }
 
-/** {@link createdBytes} for a text, which is what a codec produces. */
+/**
+ * {@link createdBytes} for a text, which is what a codec produces, refused as
+ * `PastReadBound` where the text is past the size this server reads.
+ */
 export function createdFile(
   target: WriteTarget,
   text: string,
   created?: number,
 ): Either.Either<string, WriteFailure> {
-  return createdBytes(target, Buffer.from(text, 'utf8'), created);
+  return Either.flatMap(readableBytes(target, text), (bytes) =>
+    createdBytes(target, bytes, created),
+  );
 }
 
 /**
@@ -264,6 +279,18 @@ export function writtenThrough(read: DetectedRead, model: Model): WriteResult {
 
 const errnoSchema = z.object({ code: z.string() });
 
+function readableBytes(
+  target: WriteTarget,
+  text: string,
+): Either.Either<Buffer, WriteFailure> {
+  const bytes = Buffer.from(text, 'utf8');
+  return withinTextBytes(bytes.length)
+    ? Either.right(bytes)
+    : Either.left(
+        WriteFailure.PastReadBound({ file: target.file, size: bytes.length }),
+      );
+}
+
 function throughTemporary(
   target: WriteTarget,
   bytes: Uint8Array,
@@ -327,17 +354,17 @@ function rehashed(target: WriteTarget): Either.Either<string, WriteFailure> {
       catch: (error) => unwritten(target.file, error),
     }),
     (size) =>
-      size > readLimits.maxTextBytes
-        ? Either.left(
+      withinTextBytes(size)
+        ? Either.try({
+            try: () => revisionOf(readFileSync(target.path)),
+            catch: (error) => unwritten(target.file, error),
+          })
+        : Either.left(
             WriteFailure.Unwritten({
               file: target.file,
               reason: `it is now ${String(size)} bytes, past the ${String(readLimits.maxTextBytes)} this server reads`,
             }),
-          )
-        : Either.try({
-            try: () => revisionOf(readFileSync(target.path)),
-            catch: (error) => unwritten(target.file, error),
-          }),
+          ),
   );
 }
 
