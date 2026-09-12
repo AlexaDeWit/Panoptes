@@ -64,6 +64,19 @@ describe('replacing a file', () => {
     expect(statSync(join(tree.root, modelFile)).mode & 0o777).toEqual(0o640);
   });
 
+  it('prefers the mode the target carries to the one for a new file', () => {
+    const tree = editableTree();
+    const path = join(tree.root, modelFile);
+    chmodSync(path, 0o640);
+    replacedFile(
+      target(tree.root, modelFile),
+      'replaced\n',
+      revisionOf(readFileSync(path)),
+      0o600,
+    );
+    expect(statSync(path).mode & 0o777).toEqual(0o640);
+  });
+
   it('leaves no temporary file behind', () => {
     const tree = editableTree();
     const before = new Set(readdirSync(tree.root));
@@ -150,6 +163,23 @@ describe('creating a file', () => {
     expect(renderWriteFailure(failureOf(refused))).toEqual([
       `The file "${modelFile}" is already there, and this tool writes only a path that is free.`,
     ]);
+  });
+
+  it('gives the file it creates the mode it was handed', () => {
+    const tree = editableTree();
+    const created = createdFile(
+      target(tree.root, 'fresh.yaml'),
+      'formatVersion: 1\n',
+      0o600,
+    );
+    expect(Either.isRight(created)).toEqual(true);
+    expect(statSync(join(tree.root, 'fresh.yaml')).mode & 0o777).toEqual(0o600);
+  });
+
+  it('leaves a file it creates to the umask where it is handed no mode', () => {
+    const tree = editableTree();
+    createdFile(target(tree.root, 'plain.yaml'), 'formatVersion: 1\n');
+    expect(statSync(join(tree.root, 'plain.yaml')).mode & 0o200).toEqual(0o200);
   });
 
   it('leaves no temporary file behind when it refuses', () => {

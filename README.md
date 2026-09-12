@@ -338,6 +338,8 @@ What the command will not do:
 - **It creates a file at mode 0600 and leaves an existing file's mode alone.**
   A host's configuration can hold a sign-in session or a token. A file it
   writes through a symbolic link keeps the link.
+- **Two runs at once, the second is refused.** A file that appeared, or
+  changed, while this one was working is reported rather than replaced.
 - **It refuses a file it cannot parse**, or one past the bound every foreign
   text here is read within, naming the path and leaving the file exactly as
   it is. A `.vscode/mcp.json` carrying comments is such a file, since what

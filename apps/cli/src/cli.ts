@@ -1,3 +1,4 @@
+import { escapedForTerminal } from '@saerskriven/formats';
 import { Command } from 'commander';
 import { Either } from 'effect';
 import type { z } from 'zod';
@@ -109,7 +110,7 @@ function parseStopped(state: ParseState, error: unknown): CommandOutcome {
 }
 
 function threw(error: unknown): CommandOutcome {
-  return usageError(lines(`error: ${reasonOf(error)}`));
+  return usageError(lines(`error: ${escapedForTerminal(reasonOf(error))}`));
 }
 
 function programFor(state: ParseState): Command {

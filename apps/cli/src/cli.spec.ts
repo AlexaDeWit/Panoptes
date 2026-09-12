@@ -186,3 +186,29 @@ describe('an outcome onto the streams', () => {
     expect(code).toEqual(2);
   });
 });
+
+describe('a command that rejects rather than answering', () => {
+  beforeEach(() => {
+    vi.resetModules();
+  });
+
+  afterEach(() => {
+    vi.doUnmock('./render.js');
+    vi.resetModules();
+  });
+
+  it('reports the rejection rather than letting it reach the process', async () => {
+    vi.doMock('./render.js', async () => ({
+      ...(await vi.importActual<typeof import('./render.js')>('./render.js')),
+      render: () => Promise.reject(new Error('the projection gave out')),
+    }));
+    const rejecting = await import('./cli.js');
+    await expect(
+      rejecting.runCli(['render', ecluse, '--format', 'md', '--out', '-']),
+    ).resolves.toEqual({
+      code: 2,
+      out: '',
+      err: 'error: the projection gave out\n',
+    });
+  });
+});
