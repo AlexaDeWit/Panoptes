@@ -33,9 +33,11 @@ export const typstAssets = join(import.meta.dirname, 'assets');
  * so it comes back on the left in the sentence a refused document comes back
  * in.
  *
- * What a directory holds is read once per process. That spares a second
- * compile the 28 MB WebAssembly module, and it is what lets the subpath's
- * guard see that the process has already started from these bytes.
+ * A directory that reads clean is read once per process. That spares a
+ * second compile the 28 MB WebAssembly module, and it is what lets the
+ * subpath's guard see that the process has already started from these
+ * bytes. A refused directory is re-read on every call, since nothing about
+ * the refusal is worth remembering.
  *
  * The subpath answers with a tagged failure, which this side words: a
  * command prints one line, so the compiler's sentences are joined with
@@ -73,20 +75,21 @@ function bytesIn(assets: string): Either.Either<PdfAssets, string> {
 }
 
 function readAssets(assets: string): Either.Either<PdfAssets, string> {
-  const found = Either.try({
-    try: (): PdfAssets => {
-      const wasm = readFileSync(join(assets, wasmModule));
-      const fonts = fontsIn(assets);
-      if (fonts.length === 0) {
-        throw new Error(`${assets} holds no .ttf font face`);
-      }
-      return {
-        wasm,
-        fonts: fonts.map((font) => new Uint8Array(readFileSync(font))),
-      };
-    },
-    catch: reasonOf,
-  });
+  const found = Either.flatMap(
+    Either.try({
+      try: (): PdfAssets => ({
+        wasm: readFileSync(join(assets, wasmModule)),
+        fonts: fontsIn(assets).map(
+          (font) => new Uint8Array(readFileSync(font)),
+        ),
+      }),
+      catch: reasonOf,
+    }),
+    (read) =>
+      read.fonts.length === 0
+        ? Either.left(`${assets} holds no .ttf font face`)
+        : Either.right(read),
+  );
   if (Either.isRight(found)) {
     loaded.set(assets, found.right);
   }
