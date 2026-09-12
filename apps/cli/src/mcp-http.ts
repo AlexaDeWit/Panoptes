@@ -33,8 +33,6 @@ const httpAddress = '127.0.0.1';
 
 const httpPath = '/mcp';
 
-const drainMilliseconds = 2000;
-
 type HttpServing = {
   readonly port: number;
   readonly tokenFile: string;
@@ -148,9 +146,6 @@ async function answer(
   }
   const body = await bodyOf(request);
   if (Either.isLeft(body)) {
-    response.once('finish', () => {
-      drainedThenClosed(request);
-    });
     body.left.headers.set('Connection', 'close');
     await sent(body.left, response);
     return;
@@ -159,17 +154,6 @@ async function answer(
     await handler.fetch(webRequest(request, headers, body.right)),
     response,
   );
-}
-
-function drainedThenClosed(request: IncomingMessage): void {
-  const timer = setTimeout(() => {
-    request.socket.destroy();
-  }, drainMilliseconds);
-  timer.unref();
-  request.socket.once('close', () => {
-    clearTimeout(timer);
-  });
-  request.resume();
 }
 
 function refused(
@@ -272,6 +256,10 @@ function webRequest(
 }
 
 async function sent(reply: Response, response: ServerResponse): Promise<void> {
+  if (response.destroyed) {
+    await reply.body?.cancel().catch(() => undefined);
+    return;
+  }
   response.writeHead(reply.status, [...reply.headers.entries()].flat());
   if (reply.body === null) {
     response.end();
