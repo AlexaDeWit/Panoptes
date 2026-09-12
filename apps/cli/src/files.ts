@@ -1,6 +1,6 @@
 import { withinTextBytes } from '@saerskriven/formats';
 import { Either } from 'effect';
-import { readFileSync, statSync, writeFileSync } from 'node:fs';
+import { readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 
 /**
  * What a thrown value says. Node's file calls throw an Error carrying the
@@ -34,9 +34,7 @@ export function sizeOf(path: string): number | undefined {
 /**
  * Nothing where the path is inside the shared read bound, or the caller's own
  * refusal carrying the size measured where it is past it. A size that cannot
- * be measured passes, since the read that follows says why the path was no
- * good. The refusal is the caller's to build: a model file and a host's
- * configuration are refused with different values.
+ * be measured passes, for the same reason as {@link sizeOf}.
  */
 export function withinReadBound<Failure>(
   path: string,
@@ -59,6 +57,24 @@ export function writeFile(
   return Either.try({
     try: () => {
       writeFileSync(path, content);
+    },
+    catch: (error) => `cannot write ${path}: ${reasonOf(error)}`,
+  });
+}
+
+/**
+ * The text written to a new file only its owner can read, after removing
+ * whatever was at the path. A symbolic link there is removed itself, so the
+ * text never lands in the file it pointed at.
+ */
+export function createPrivateFile(
+  path: string,
+  text: string,
+): Either.Either<void, string> {
+  return Either.try({
+    try: () => {
+      rmSync(path, { force: true });
+      writeFileSync(path, text, { flag: 'wx', mode: 0o600 });
     },
     catch: (error) => `cannot write ${path}: ${reasonOf(error)}`,
   });

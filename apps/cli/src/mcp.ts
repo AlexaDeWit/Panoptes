@@ -1,3 +1,4 @@
+import type { McpServerFactory } from '@modelcontextprotocol/server';
 import {
   StdioServerTransport,
   serveStdio,
@@ -6,13 +7,13 @@ import {
   createSaerskrivenServer,
   openWorkspace,
   renderWorkspaceFailure,
-  type ModelWorkspace,
   type RasterizerAssets,
 } from '@saerskriven/mcp';
 import { Either } from 'effect';
 import type { Readable, Writable } from 'node:stream';
 import { z } from 'zod';
 import { runtimeAssets, type WasmAssets } from './assets.js';
+import { processStopped, serveHttp, type HttpHost } from './mcp-http.js';
 import { pngAssets } from './png.js';
 import {
   lines,
@@ -25,27 +26,44 @@ import { cliVersion } from './version.js';
 /**
  * What `mcp` needs, and the one gate on the option bag the parser hands over.
  * `--root` defaults to the working directory, which is where a host launches
- * the server.
+ * the server. `--http` requires `--token-file`, `--port` defaults to one the
+ * system picks, and both are refused without `--http`. `http` is what the
+ * HTTP server needs, and nothing where the server speaks stdio.
  */
-export const mcpOptionsSchema = z.object({
-  root: z.string().default(() => process.cwd()),
-  file: z.string().optional(),
-});
+export const mcpOptionsSchema = z
+  .object({
+    root: z.string().default(() => process.cwd()),
+    file: z.string().optional(),
+    http: z.boolean().default(false),
+    port: z.coerce.number().int().min(0).max(65_535).optional(),
+    tokenFile: z.string().optional(),
+  })
+  .refine((options) => options.http || options.port === undefined, {
+    path: ['port'],
+    message: 'is given without --http',
+  })
+  .refine((options) => options.http || options.tokenFile === undefined, {
+    path: ['token-file'],
+    message: 'is given without --http',
+  })
+  .refine((options) => !options.http || options.tokenFile !== undefined, {
+    path: ['token-file'],
+    message: 'is required with --http, the only place the token is written',
+  })
+  .transform(({ http, port, tokenFile, ...workspace }) => ({
+    ...workspace,
+    http:
+      http && tokenFile !== undefined
+        ? { port: port ?? 0, tokenFile }
+        : undefined,
+  }));
 
 /** The options an `mcp` invocation was given. */
 export type McpOptions = z.infer<typeof mcpOptionsSchema>;
 
 /**
- * Where one server gets its rasterizer: the injection point that hands
- * `packages/mcp` bytes it reads no file for, since a browser and an
- * executable carry them differently.
- *
- * It holds what it read, though `assets.ts` already holds a directory that
- * reads clean for the life of the process, so what this saves a render is a
- * map lookup rather than the several MiB. A refusal it does not hold, which
- * is the part that matters: `assets.ts` re-reads a directory it could not
- * read, and remembering that here would outlive an install repaired under a
- * long-lived host.
+ * Where one server gets its rasterizer. It holds bytes it read, but not a
+ * refusal, so an install repaired under a long-lived host is read again.
  */
 export function rasterizerIn(assets: string): RasterizerAssets {
   let found: WasmAssets | undefined;
@@ -61,57 +79,69 @@ export function rasterizerIn(assets: string): RasterizerAssets {
   };
 }
 
-/** Which streams carry the protocol, so a spec can serve over a pair of pipes. */
-export type McpStreams = {
+/**
+ * The process as a server sees it: the streams stdio carries the protocol
+ * over, and what the HTTP server reports through and stops on.
+ */
+export type McpHost = HttpHost & {
   readonly input: Readable;
   readonly output: Writable;
 };
 
+/** The running process's standard streams and signals. */
+export function processHost(): McpHost {
+  return {
+    input: process.stdin,
+    output: process.stdout,
+    report: (text) => {
+      process.stderr.write(text);
+    },
+    stopped: processStopped,
+  };
+}
+
 /**
- * `saer mcp`: the MCP server over stdio, serving until the host closes the
- * input. Standard output carries the protocol and nothing else, so this
- * outcome writes nothing there and whatever the transport reported goes to
- * standard error once the connection is over. A 2025-era client is served as
- * well as a 2026-07-28 one.
+ * `saer mcp`: the MCP server over stdio until the host closes the input, or
+ * with `--http` over Streamable HTTP until the process is signalled. Over
+ * stdio, standard output carries the protocol alone, so what the transport
+ * reported goes to standard error once the connection is over. Both eras of
+ * client are served over both transports.
  *
  * `assets` is where a render tool reads the rasterizer module and its faces,
  * which is the directory beside the bundle unless a spec names another.
  */
 export function serveMcp(
   options: McpOptions,
-  streams: McpStreams = { input: process.stdin, output: process.stdout },
+  host: McpHost = processHost(),
   assets: string = runtimeAssets,
 ): Promise<CommandOutcome> {
   return Either.match(openWorkspace(options), {
     onLeft: (failure) =>
       Promise.resolve(usageError(lines(...renderWorkspaceFailure(failure)))),
-    onRight: (workspace) => served(workspace, streams, assets),
+    onRight: (workspace) => {
+      const rasterizer = rasterizerIn(assets);
+      const factory: McpServerFactory = () =>
+        createSaerskrivenServer({ workspace, version: cliVersion, rasterizer });
+      return options.http === undefined
+        ? servedOverStdio(factory, host)
+        : serveHttp(factory, options.http, host);
+    },
   });
 }
 
-async function served(
-  workspace: ModelWorkspace,
-  streams: McpStreams,
-  assets: string,
+async function servedOverStdio(
+  factory: McpServerFactory,
+  host: McpHost,
 ): Promise<CommandOutcome> {
   const reported: string[] = [];
-  const rasterizer = rasterizerIn(assets);
-  const handle = serveStdio(
-    () =>
-      createSaerskrivenServer({
-        workspace,
-        version: cliVersion,
-        rasterizer,
-      }),
-    {
-      transport: new StdioServerTransport(streams.input, streams.output),
-      legacy: 'serve',
-      onerror: (error) => {
-        reported.push(`error: ${error.message}`);
-      },
+  const handle = serveStdio(factory, {
+    transport: new StdioServerTransport(host.input, host.output),
+    legacy: 'serve',
+    onerror: (error) => {
+      reported.push(`error: ${error.message}`);
     },
-  );
-  await ended(streams.input);
+  });
+  await ended(host.input);
   await handle.close();
   return succeeded('', lines(...reported));
 }
