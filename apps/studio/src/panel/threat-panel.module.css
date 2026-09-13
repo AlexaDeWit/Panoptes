@@ -206,6 +206,10 @@
   border-radius: var(--pn-radius);
 }
 
+.recordBody {
+  display: contents;
+}
+
 .records legend {
   padding-inline: var(--pn-space-1);
   font-weight: 600;

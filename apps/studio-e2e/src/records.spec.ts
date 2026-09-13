@@ -1,4 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
+import { registeredChords } from './chords.js';
 import {
   centreOf,
   closeMenu,
@@ -12,6 +13,10 @@ import {
 } from './studio.fixtures.js';
 
 const proxy = /^Écluse proxy, process/u;
+
+const dredger = /^Écluse Dredger, process/u;
+
+const purge = /Dredger inappropriately purges/u;
 
 const forwarded = /Forwarded caller credentials/u;
 
@@ -61,8 +66,10 @@ test('a mitigation added from the empty row is one undo step, and its status cha
   page,
 }) => {
   await openEcluse(page);
-  await selectNode(page, proxy);
-  await expandThreat(page, forwarded);
+  await selectNode(page, dredger);
+  await expandThreat(page, purge);
+  const threatStatus = field(page, 'combobox', 'Status');
+  const before = await threatStatus.textContent();
 
   const add = control(page, 'Add mitigation');
   await onScreen(add);
@@ -71,7 +78,7 @@ test('a mitigation added from the empty row is one undo step, and its status cha
   const title = field(page, 'textbox', 'Mitigation 1 title');
   await expect(title).toBeFocused();
   await onScreen(title);
-  await page.keyboard.type('Strip caller tokens at the edge');
+  await page.keyboard.type('Keep a restorable copy of every purge');
   await page.keyboard.press('Tab');
   await expect(
     field(page, 'textbox', 'Mitigation 1 description'),
@@ -82,16 +89,39 @@ test('a mitigation added from the empty row is one undo step, and its status cha
   await expect(status).toContainText(/proposed/iu);
   await onScreen(control(page, 'Unlink mitigation 1'));
 
-  await choose(page, 'Mitigation 1 status', 'implemented');
-  await expect(status).toContainText(/implemented/iu);
-  await expect(field(page, 'combobox', 'Status')).toContainText(/mitigated/iu);
+  for (const chosen of ['implemented', 'verified']) {
+    await choose(page, 'Mitigation 1 status', chosen);
+    await expect(status).toContainText(chosen);
+    await expect(threatStatus).toHaveText(before ?? '');
+  }
 
   await runFromMenu(page, 'Undo');
-  await expect(status).toContainText(/proposed/iu);
+  await expect(status).toContainText(/implemented/iu);
+  await runFromMenu(page, 'Undo');
   await runFromMenu(page, 'Undo');
   await expect(title).toHaveCount(0);
   await runFromMenu(page, 'Redo');
-  await expect(title).toHaveValue('Strip caller tokens at the edge');
+  await expect(title).toHaveValue('Keep a restorable copy of every purge');
+});
+
+test('Tab out of a new record reaches its status, and undoing the record keeps focus in its group', async ({
+  page,
+}) => {
+  await openEcluse(page);
+  await selectNode(page, proxy);
+  await expandThreat(page, forwarded);
+
+  await control(page, 'Add assumption').click();
+  await page.keyboard.type('Callers rotate their tokens.');
+  await page.keyboard.press('Tab');
+
+  const status = field(page, 'combobox', 'Assumption 1 status');
+  await expect(status).toBeFocused();
+
+  await page.keyboard.press(registeredChords.undo[0]);
+
+  await expect(status).toHaveCount(0);
+  await expect(control(page, 'Add assumption')).toBeFocused();
 });
 
 test('leaving the empty row leaves no record and nothing to undo', async ({
@@ -175,6 +205,7 @@ test('a record edit in one tab reaches another, which keeps its own selection', 
   await page.keyboard.press('Tab');
   await expect(field(page, 'combobox', 'Mitigation 1 status')).toBeVisible();
 
+  await expect.poll(() => undoOffered(other)).toBe(true);
   await expect(worker).toHaveClass(/selected/u);
   await expect(
     threatPanel(other).getByRole('heading', { name: /Mirror worker/u }),

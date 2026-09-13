@@ -10,8 +10,9 @@ import {
   linkableRecords,
   mitigationKind,
   otherThreats,
+  recordFieldIn,
   recordFieldName,
-  recordIdIn,
+  recordLabel,
   recordsOn,
 } from './records.js';
 
@@ -74,10 +75,32 @@ describe('editedRecord', () => {
 });
 
 describe('record field names', () => {
-  it('give back the id of the record of their own kind', () => {
-    const name = recordFieldName('mitigation', 'title', 'mitigation/odd id');
-    expect(recordIdIn(name, 'mitigation')).toBe('mitigation/odd id');
-    expect(recordIdIn(name, 'assumption')).toBeUndefined();
-    expect(recordIdIn('Description', 'mitigation')).toBeUndefined();
+  it('give back the record of their own kind, and whether it was a pending row', () => {
+    const name = recordFieldName({
+      noun: 'mitigation',
+      part: 'title',
+      recordId: 'mitigation/odd id',
+      pending: true,
+    });
+    expect(recordFieldIn(name, 'mitigation')).toEqual({
+      noun: 'mitigation',
+      part: 'title',
+      recordId: 'mitigation/odd id',
+      pending: true,
+    });
+    expect(recordFieldIn(name, 'assumption')).toBeUndefined();
+    expect(recordFieldIn('Description', 'mitigation')).toBeUndefined();
+  });
+});
+
+describe('recordLabel', () => {
+  it('is the title, else the first line of text, else the id', () => {
+    expect(recordLabel(mitigation)).toBe(mitigation.title);
+    expect(recordLabel({ ...mitigation, title: '', prose: 'One\nTwo' })).toBe(
+      'One',
+    );
+    expect(recordLabel({ ...mitigation, title: '', prose: '' })).toBe(
+      mitigation.id,
+    );
   });
 });

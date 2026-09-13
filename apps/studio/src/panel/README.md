@@ -106,14 +106,17 @@ functions the groups read.
   assumption `unconfirmed`. Focus leaving a row whose fields are all empty
   closes it, with no record and no undo entry. The row keeps its place and
   its focus when it becomes a record, so typing a title and pressing Tab
-  lands in the same row's description.
+  lands in the same row's description. Tab out of the row's last field
+  after it became a record lands on its status rather than skipping it.
 - **Link existing** offers the model's records of that kind that are not on
   this threat, by title or first line of text, and links the one chosen.
 - Each row edits the record's text in place, changes its status in place and
   unlinks it. A record on other threats says how many, and the unlink
   control is described by that count. Unlinking a record from its last
   threat removes it, which is the model operation's rule rather than the
-  studio's, and one undo brings it back linked.
+  studio's, and one undo brings it back linked. The announcement names the
+  record by its title or first line. A row that goes while it holds focus,
+  by an unlink or an undo, leaves focus in its group.
 
 Every edit is one store action carrying one model operation, so each is one
 undo step, reaches other tabs through the same sync as every other edit,
@@ -121,8 +124,9 @@ and leaves every threat's status alone. A record text commit that changes
 nothing dispatches nothing. Refused record text is held as threat text is
 ([the commit rule](#the-commit-rule)): the field keeps the draft, the threat
 stays expanded, and the draft survives the panel closing. A refused draft in
-an empty row keeps the row open, and is put back in an empty row of the same
-record id. A draft whose row an edit took away is dropped.
+an empty row keeps the row open and reopens that row when the panel opens
+again. A draft for a record no longer on the threat is dropped, whether the
+panel was open or closed when the record went.
 
 Control names carry the kind and the row's position: "Mitigation 2 title",
 "Mitigation 2 description", "Mitigation 2 status", "Unlink mitigation 2",

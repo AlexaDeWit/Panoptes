@@ -22,7 +22,8 @@ export type RecordPart = (typeof recordParts)[number];
 export type ThreatRecord = Mitigation | Assumption;
 
 /** Names one text field of one record, so a refused draft typed there can be put back. */
-export type RecordFieldName = `${RecordNoun}/${RecordPart}/${string}`;
+export type RecordFieldName =
+  `${RecordNoun | `new-${RecordNoun}`}/${RecordPart}/${string}`;
 
 type RecordNoun = 'mitigation' | 'assumption';
 
@@ -33,6 +34,7 @@ type RecordNoun = 'mitigation' | 'assumption';
  */
 export type RecordKind<Held extends ThreatRecord> = {
   readonly noun: RecordNoun;
+  readonly title: string;
   readonly heading: string;
   readonly parts: readonly RecordPart[];
   readonly statuses: readonly Held['status'][];
@@ -50,6 +52,7 @@ export type RecordKind<Held extends ThreatRecord> = {
 /** Mitigations, which start `proposed`. */
 export const mitigationKind: RecordKind<Mitigation> = {
   noun: 'mitigation',
+  title: 'Mitigation',
   heading: 'Mitigations',
   parts: ['title', 'prose'],
   statuses: mitigationStatusSchema.options,
@@ -82,6 +85,7 @@ export const mitigationKind: RecordKind<Mitigation> = {
 /** Assumptions, which start `unconfirmed` and carry prose alone. */
 export const assumptionKind: RecordKind<Assumption> = {
   noun: 'assumption',
+  title: 'Assumption',
   heading: 'Assumptions',
   parts: ['prose'],
   statuses: assumptionStatusSchema.options,
@@ -132,6 +136,11 @@ export function otherThreats(record: ThreatRecord, threatId: ThreatId): number {
   return record.threats.filter((id) => id !== threatId).length;
 }
 
+/** What a person calls a record: its title or the first line of its text, and its id while both are empty. */
+export function recordLabel(record: ThreatRecord): string {
+  return firstLine(record) ?? record.id;
+}
+
 /**
  * The records of one kind that "Link existing" offers the threat: every one
  * not already linked to it, each under a label a person can tell apart.
@@ -144,16 +153,11 @@ export function linkableRecords<Held extends ThreatRecord>(
     (record) => !record.threats.includes(threatId),
   );
   const labels = distinctLabels(
-    offered.map((record) => {
-      const named = [textOf(record, 'title'), record.prose]
-        .map((text) => text.split('\n')[0].trim())
-        .find((line) => line !== '');
-      return {
-        id: record.id,
-        label: named ?? record.id,
-        unnamed: named === undefined,
-      };
-    }),
+    offered.map((record) => ({
+      id: record.id,
+      label: recordLabel(record),
+      unnamed: firstLine(record) === undefined,
+    })),
   );
   return offered.map((record) => ({
     record,
@@ -176,30 +180,56 @@ export function editedRecord<Held extends ThreatRecord>(
     : kind.withText(record, part, text);
 }
 
-/** The name a refused draft in one part of one record is held under. */
-export function recordFieldName(
-  noun: RecordNoun,
-  part: RecordPart,
-  recordId: string,
-): RecordFieldName {
-  return `${noun}/${part}/${recordId}`;
+/** One text field of one record, and whether that record is still an empty row the model does not hold. */
+export type RecordField = {
+  readonly noun: RecordNoun;
+  readonly part: RecordPart;
+  readonly recordId: string;
+  readonly pending: boolean;
+};
+
+/**
+ * The name a refused draft in one text field of one record is held under.
+ * A pending row's name is marked, so a draft held for it reopens the row
+ * where a draft held for a record the model has since dropped does not.
+ */
+export function recordFieldName({
+  noun,
+  part,
+  recordId,
+  pending,
+}: RecordField): RecordFieldName {
+  return pending
+    ? `new-${noun}/${part}/${recordId}`
+    : `${noun}/${part}/${recordId}`;
 }
 
-/** Whether a held field name names a text field of a record of this kind. */
+/** The record field a held name belongs to, where it names a record of this kind. */
+export function recordFieldIn(
+  field: string | undefined,
+  noun: RecordNoun,
+): RecordField | undefined {
+  for (const pending of [false, true]) {
+    for (const part of recordParts) {
+      const prefix = `${pending ? `new-${noun}` : noun}/${part}/`;
+      if (field?.startsWith(prefix) === true) {
+        return { noun, part, recordId: field.slice(prefix.length), pending };
+      }
+    }
+  }
+  return undefined;
+}
+
+/** Whether a held name names a text field of a record of this kind. */
 export function isRecordField(
   field: string,
   noun: RecordNoun,
 ): field is RecordFieldName {
-  return recordIdIn(field, noun) !== undefined;
+  return recordFieldIn(field, noun) !== undefined;
 }
 
-/** The id of the record a held field name belongs to, where it names a record of this kind. */
-export function recordIdIn(
-  field: string | undefined,
-  noun: RecordNoun,
-): string | undefined {
-  const prefix = recordParts
-    .map((part) => `${noun}/${part}/`)
-    .find((candidate) => field?.startsWith(candidate) === true);
-  return prefix === undefined ? undefined : field?.slice(prefix.length);
+function firstLine(record: ThreatRecord): string | undefined {
+  return [textOf(record, 'title'), record.prose]
+    .map((text) => text.split('\n')[0].trim())
+    .find((line) => line !== '');
 }

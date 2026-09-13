@@ -11,6 +11,10 @@ import {
   recordedModel,
   secondThreat,
 } from '../store/store.fixtures.js';
+import {
+  currentAnnouncement,
+  resetAnnouncements,
+} from '../canvas/announcements.js';
 import { dispatch, modelStore } from '../store/store.js';
 import { chooseFrom, editorTimeout } from './panel.fixtures.js';
 import { ThreatEditor, type RefusedField } from './threat-editor.js';
@@ -60,6 +64,7 @@ describe(
   () => {
     beforeEach(() => {
       modelStore.setState(initialState(recordedModel), true);
+      resetAnnouncements();
     });
 
     it('opens an empty first row with focus in its first field, and leaves the model alone', async () => {
@@ -143,6 +148,9 @@ describe(
 
       expect(present().mitigations).toEqual([]);
       expect(document.activeElement).toBe(button('Add mitigation'));
+      expect(currentAnnouncement().message).toContain(
+        recordedModel.mitigations[0].title,
+      );
       act(() => {
         dispatch(Action.Undo());
       });
@@ -219,12 +227,12 @@ describe(
       expect(textbox('Assumption 1').getAttribute('aria-invalid')).toBe('true');
       const reported = onRefusal.mock.lastCall?.[0];
       expect(reported?.text).toBe(`Pasted${softHyphen}prose`);
-      expect(reported?.field.startsWith('assumption/prose/')).toBe(true);
+      expect(reported?.field.startsWith('new-assumption/prose/')).toBe(true);
     });
 
     it('puts a held draft back in the empty row it was typed in', () => {
       showRecords(threatOf(secondThreat), {
-        field: 'assumption/prose/assumption-drafted',
+        field: 'new-assumption/prose/assumption-drafted',
         text: `Pasted${softHyphen}prose`,
         said: 'A refusal',
       });
@@ -255,6 +263,114 @@ describe(
       });
 
       expect(onRefusal).toHaveBeenLastCalledWith(undefined);
+    });
+
+    it('edits a mitigation title and description in place, each as one replace', async () => {
+      const user = userEvent.setup();
+      showRecords(threatOf(firstThreat));
+
+      await user.click(textbox('Mitigation 1 title'));
+      await user.keyboard(' for readers');
+      await user.tab();
+      await user.keyboard('Links carry a scope.');
+      await user.tab();
+
+      expect(present().mitigations).toMatchObject([
+        {
+          id: firstMitigation,
+          title: 'Read-only share links for readers',
+          prose: 'Links carry a scope.',
+          threats: [firstThreat],
+        },
+      ]);
+      expect(undoable()).toBe(2);
+      act(() => {
+        dispatch(Action.Undo());
+      });
+      expect(present().mitigations[0]).toMatchObject({
+        title: 'Read-only share links for readers',
+        prose: '',
+      });
+    });
+
+    it('edits an assumption in place as one replace', async () => {
+      const user = userEvent.setup();
+      showRecords(threatOf(firstThreat));
+
+      await user.click(textbox('Assumption 1'));
+      await user.keyboard('{End} Readers are too.');
+      await user.tab();
+
+      expect(present().assumptions).toMatchObject([
+        {
+          id: firstAssumption,
+          prose: 'Every editor is signed in. Readers are too.',
+        },
+      ]);
+      expect(undoable()).toBe(1);
+    });
+
+    it('links an existing assumption and changes its status in place', async () => {
+      const user = userEvent.setup();
+      showRecords(threatOf(secondThreat));
+
+      await user.click(button('Link existing assumption'));
+      expect(present().assumptions[0].threats).toEqual([
+        firstThreat,
+        secondThreat,
+      ]);
+
+      await chooseFrom('Assumption 1 status', 'invalidated');
+
+      expect(present().assumptions[0].status).toBe('invalidated');
+      expect(present().threats).toBe(recordedModel.threats);
+      expect(undoable()).toBe(2);
+    });
+
+    it('puts a held mitigation draft back in its empty row', () => {
+      showRecords(threatOf(secondThreat), {
+        field: 'new-mitigation/title/mitigation-drafted',
+        text: `Pasted${softHyphen}title`,
+        said: 'A refusal',
+      });
+
+      expect(screen.getByDisplayValue(`Pasted${softHyphen}title`)).toBe(
+        textbox('Mitigation 1 title'),
+      );
+    });
+
+    it('drops a held draft for a record no longer on the threat, rather than reopening it', () => {
+      const onRefusal = vi.fn<(refused: RefusedField | undefined) => void>();
+      showRecords(
+        threatOf(secondThreat),
+        {
+          field: 'mitigation/title/mitigation-culled',
+          text: `Pasted${softHyphen}title`,
+          said: 'A refusal',
+        },
+        onRefusal,
+      );
+
+      expect(
+        screen.queryByRole('textbox', { name: 'Mitigation 1 title' }),
+      ).toBeNull();
+      expect(onRefusal).toHaveBeenLastCalledWith(undefined);
+    });
+
+    it('keeps focus in the group when an undo takes the focused row away', async () => {
+      const user = userEvent.setup();
+      showRecords(threatOf(secondThreat));
+
+      await user.click(button('Add mitigation'));
+      await user.keyboard('Sign every share link');
+      await user.tab();
+      expect(document.activeElement).toBe(textbox('Mitigation 1 description'));
+
+      act(() => {
+        dispatch(Action.Undo());
+      });
+
+      expect(document.activeElement).toBe(button('Add mitigation'));
     });
   },
   editorTimeout,

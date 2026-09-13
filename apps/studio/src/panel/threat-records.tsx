@@ -9,8 +9,9 @@ import {
   isRecordField,
   linkableRecords,
   otherThreats,
+  recordFieldIn,
   recordFieldName,
-  recordIdIn,
+  recordLabel,
   recordsOn,
   textOf,
   type RecordFieldName,
@@ -18,13 +19,12 @@ import {
   type RecordPart,
   type ThreatRecord,
 } from './records.js';
+import type { RefusedField } from './threat-editor.js';
 import styles from './threat-panel.module.css';
 
-/** A refused draft the panel held for this threat, by the field it was typed in. */
-export type HeldText = { readonly field: string; readonly text: string };
+type HeldText = Pick<RefusedField, 'field' | 'text'>;
 
-/** One kind of record on one threat, with the refusals its fields report. */
-export type RecordGroupProps<Held extends ThreatRecord> = {
+type RecordGroupProps<Held extends ThreatRecord> = {
   readonly kind: RecordKind<Held>;
   readonly threatId: ThreatId;
   readonly held: HeldText | undefined;
@@ -37,22 +37,34 @@ export type RecordGroupProps<Held extends ThreatRecord> = {
 };
 
 type FocusRequest =
-  | { readonly kind: 'row'; readonly recordId: string }
+  | { readonly kind: 'text'; readonly recordId: string }
+  | { readonly kind: 'status'; readonly recordId: string }
   | { readonly kind: 'unlinked'; readonly index: number };
 
-const capitalized = (noun: string): string =>
-  `${noun.charAt(0).toUpperCase()}${noun.slice(1)}`;
+const rowSelector = '[data-record-row]';
+
+function rowOf(
+  group: HTMLFieldSetElement | null,
+  recordId: string,
+): HTMLElement | undefined {
+  return [...(group?.querySelectorAll<HTMLElement>(rowSelector) ?? [])].find(
+    (row) => row.dataset['recordRow'] === recordId,
+  );
+}
 
 function focusTarget(
   group: HTMLFieldSetElement | null,
   focus: FocusRequest,
 ): HTMLElement | null | undefined {
-  if (focus.kind === 'row') {
-    return [
-      ...(group?.querySelectorAll<HTMLElement>('[data-record-row]') ?? []),
-    ]
-      .find((row) => row.dataset['recordRow'] === focus.recordId)
-      ?.querySelector<HTMLElement>('input, textarea');
+  if (focus.kind === 'text') {
+    return rowOf(group, focus.recordId)?.querySelector<HTMLElement>(
+      'input, textarea',
+    );
+  }
+  if (focus.kind === 'status') {
+    return rowOf(group, focus.recordId)?.querySelector<HTMLElement>(
+      '[role="combobox"]',
+    );
   }
   const unlinks = group?.querySelectorAll<HTMLElement>('[data-unlink-record]');
   return (
@@ -80,27 +92,28 @@ export function RecordGroup<Held extends ThreatRecord>({
   const linkable = linkableRecords(all, threatId);
   const group = useRef<HTMLFieldSetElement>(null);
   const [draft, setDraft] = useState<Held | undefined>(() => {
-    const heldId = recordIdIn(held?.field, kind.noun);
-    return heldId === undefined || all.some(({ id }) => id === heldId)
+    const heldField = recordFieldIn(held?.field, kind.noun);
+    return heldField === undefined ||
+      !heldField.pending ||
+      all.some(({ id }) => id === heldField.recordId)
       ? undefined
-      : kind.restored(threatId, heldId);
+      : kind.restored(threatId, heldField.recordId);
   });
   const focus = useRef<FocusRequest | undefined>(undefined);
+  const focusedRow = useRef<string | undefined>(undefined);
+  const created = useRef<string | undefined>(undefined);
   const [chosen, setChosen] = useState<string | undefined>(undefined);
   const drafting =
     draft !== undefined && !records.some(({ id }) => id === draft.id);
   const rows = drafting ? [...records, draft] : records;
-  const live = new Set<string>(
-    rows.flatMap(({ id }) =>
-      kind.parts.map((part) => recordFieldName(kind.noun, part, id)),
-    ),
-  );
-  const stale = [...refused]
+  const shown = new Set<string>(rows.map(({ id }) => id));
+  const stale = [...refused, held?.field ?? '']
     .filter((field) => isRecordField(field, kind.noun))
-    .find((field) => !live.has(field));
+    .find(
+      (field) => !shown.has(recordFieldIn(field, kind.noun)?.recordId ?? field),
+    );
   const offered =
     linkable.find(({ record }) => record.id === chosen) ?? linkable.at(0);
-  const noun = capitalized(kind.noun);
 
   useEffect(() => {
     if (stale !== undefined) {
@@ -110,9 +123,18 @@ export function RecordGroup<Held extends ThreatRecord>({
 
   useEffect(() => {
     const request = focus.current;
+    focus.current = undefined;
     if (request !== undefined) {
-      focus.current = undefined;
       focusTarget(group.current, request)?.focus();
+    }
+    const lost = focusedRow.current;
+    if (
+      lost !== undefined &&
+      rowOf(group.current, lost) === undefined &&
+      !(group.current?.contains(document.activeElement) ?? false)
+    ) {
+      focusedRow.current = undefined;
+      group.current?.querySelector<HTMLElement>('[data-add-record]')?.focus();
     }
   });
 
@@ -133,6 +155,7 @@ export function RecordGroup<Held extends ThreatRecord>({
           .held(modelStore.getState().present)
           .some(({ id }) => id === next.id)
       ) {
+        created.current = next.id;
         setDraft(undefined);
       }
     };
@@ -158,78 +181,112 @@ export function RecordGroup<Held extends ThreatRecord>({
       .held(modelStore.getState().present)
       .some(({ id }) => id === record.id);
     focus.current = { kind: 'unlinked', index };
-    announce(`${noun} ${String(index + 1)} ${kept ? 'unlinked' : 'removed'}.`);
+    announce(
+      `${kind.title} ${recordLabel(record)} ${kept ? 'unlinked' : 'removed'}.`,
+    );
+  };
+
+  const tracked = (event: FocusEvent<HTMLDivElement>): void => {
+    if (event.type === 'focus') {
+      focusedRow.current =
+        document.activeElement?.closest<HTMLElement>(rowSelector)?.dataset[
+          'recordRow'
+        ];
+    } else if (
+      event.target.isConnected &&
+      !event.currentTarget.contains(event.relatedTarget)
+    ) {
+      focusedRow.current = undefined;
+      created.current = undefined;
+    }
+  };
+
+  const reachedAdd = (): void => {
+    const recordId = created.current;
+    created.current = undefined;
+    if (recordId === undefined) {
+      return;
+    }
+    const status = focusTarget(group.current, { kind: 'status', recordId });
+    if (status) {
+      status.focus();
+    } else {
+      focus.current = { kind: 'status', recordId };
+    }
   };
 
   return (
     <fieldset className={styles.records} ref={group}>
       <legend>{kind.heading}</legend>
-      {rows.map((record, index) => (
-        <RecordRow
-          draft={drafting && record.id === draft.id}
-          held={held}
-          key={record.id}
-          kind={kind}
-          name={`${noun} ${String(index + 1)}`}
-          onBlur={left}
-          onChange={onChange}
-          onCommit={(part) => commit(record, part)}
-          onRefused={(part) => (refusal) => {
-            onRefused(recordFieldName(kind.noun, part, record.id), refusal);
-          }}
-          onStatus={(status) => {
-            dispatch(kind.setStatus(record, status));
-          }}
-          onUnlink={() => {
-            unlink(record, index);
-          }}
-          record={record}
-          threatId={threatId}
-        />
-      ))}
-      <button
-        className={styles.recordAction}
-        data-add-record
-        onClick={() => {
-          if (drafting) {
-            focusTarget(group.current, {
-              kind: 'row',
-              recordId: draft.id,
-            })?.focus();
-            return;
-          }
-          const opened = kind.fresh(threatId);
-          focus.current = { kind: 'row', recordId: opened.id };
-          setDraft(opened);
-        }}
-        type="button"
-      >
-        Add {kind.noun}
-      </button>
-      {offered !== undefined && (
-        <div className={styles.existing}>
-          <EnumField
-            label={`Existing ${kind.noun}`}
-            labelOf={(id) =>
-              linkable.find(({ record }) => record.id === id)?.label ?? id
-            }
-            onCommit={setChosen}
-            options={linkable.map(({ record }) => record.id)}
-            value={offered.record.id}
-          />
-          <button
-            className={styles.recordAction}
-            onClick={() => {
-              dispatch(kind.link(offered.record, threatId));
-              focus.current = { kind: 'row', recordId: offered.record.id };
-              setChosen(undefined);
+      <div className={styles.recordBody} onBlur={tracked} onFocus={tracked}>
+        {rows.map((record, index) => (
+          <RecordRow
+            draft={drafting && record.id === draft.id}
+            held={held}
+            key={record.id}
+            kind={kind}
+            name={`${kind.title} ${String(index + 1)}`}
+            onBlur={left}
+            onChange={onChange}
+            onCommit={(part) => commit(record, part)}
+            onRefused={(field, refusal) => {
+              onRefused(recordFieldName(field), refusal);
             }}
-            type="button"
-          >
-            Link existing {kind.noun}
-          </button>
-        </div>
-      )}
+            onStatus={(status) => {
+              dispatch(kind.setStatus(record, status));
+            }}
+            onUnlink={() => {
+              unlink(record, index);
+            }}
+            record={record}
+            threatId={threatId}
+          />
+        ))}
+        <button
+          className={styles.recordAction}
+          data-add-record
+          onClick={() => {
+            if (drafting) {
+              focusTarget(group.current, {
+                kind: 'text',
+                recordId: draft.id,
+              })?.focus();
+              return;
+            }
+            const opened = kind.fresh(threatId);
+            focus.current = { kind: 'text', recordId: opened.id };
+            setDraft(opened);
+          }}
+          onFocus={reachedAdd}
+          type="button"
+        >
+          Add {kind.noun}
+        </button>
+        {offered !== undefined && (
+          <div className={styles.existing}>
+            <EnumField
+              label={`Existing ${kind.noun}`}
+              labelOf={(id) =>
+                linkable.find(({ record }) => record.id === id)?.label ?? id
+              }
+              onCommit={setChosen}
+              options={linkable.map(({ record }) => record.id)}
+              value={offered.record.id}
+            />
+            <button
+              className={styles.recordAction}
+              onClick={() => {
+                dispatch(kind.link(offered.record, threatId));
+                focus.current = { kind: 'text', recordId: offered.record.id };
+                setChosen(undefined);
+              }}
+              type="button"
+            >
+              Link existing {kind.noun}
+            </button>
+          </div>
+        )}
+      </div>
     </fieldset>
   );
 }
@@ -245,8 +302,9 @@ type RecordRowProps<Held extends ThreatRecord> = {
   readonly onChange: () => void;
   readonly onCommit: (part: RecordPart) => (text: string) => void;
   readonly onRefused: (
-    part: RecordPart,
-  ) => (refusal: RefusedDraft | undefined) => void;
+    field: Parameters<typeof recordFieldName>[0],
+    refusal: RefusedDraft | undefined,
+  ) => void;
   readonly onStatus: (status: Held['status']) => void;
   readonly onUnlink: () => void;
 };
@@ -267,14 +325,28 @@ function RecordRow<Held extends ThreatRecord>({
 }: RecordRowProps<Held>) {
   const sharedId = useId();
   const others = otherThreats(record, threatId);
+  const heldField = recordFieldIn(held?.field, kind.noun);
   const heldIn = (part: RecordPart): string | undefined =>
-    held?.field === recordFieldName(kind.noun, part, record.id)
-      ? held.text
+    heldField?.recordId === record.id && heldField.part === part
+      ? held?.text
       : undefined;
   const labelOf = (part: RecordPart): string =>
     kind.parts.length === 1
       ? name
       : `${name} ${part === 'title' ? 'title' : 'description'}`;
+  const fieldProps = (part: RecordPart) => ({
+    held: heldIn(part),
+    label: labelOf(part),
+    onChange,
+    onCommit: onCommit(part),
+    onRefused: (refusal: RefusedDraft | undefined) => {
+      onRefused(
+        { noun: kind.noun, part, recordId: record.id, pending: draft },
+        refusal,
+      );
+    },
+    value: textOf(record, part),
+  });
 
   return (
     <div
@@ -284,26 +356,9 @@ function RecordRow<Held extends ThreatRecord>({
     >
       {kind.parts.map((part) =>
         part === 'title' ? (
-          <TextField
-            held={heldIn(part)}
-            key={part}
-            label={labelOf(part)}
-            onChange={onChange}
-            onCommit={onCommit(part)}
-            onRefused={onRefused(part)}
-            value={textOf(record, part)}
-          />
+          <TextField key={part} {...fieldProps(part)} />
         ) : (
-          <ProseField
-            compact
-            held={heldIn(part)}
-            key={part}
-            label={labelOf(part)}
-            onChange={onChange}
-            onCommit={onCommit(part)}
-            onRefused={onRefused(part)}
-            value={textOf(record, part)}
-          />
+          <ProseField compact key={part} {...fieldProps(part)} />
         ),
       )}
       {!draft && (

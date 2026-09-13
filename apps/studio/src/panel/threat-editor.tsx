@@ -98,7 +98,9 @@ export function ThreatEditor({
     } else {
       noted.set(field, draft);
     }
-    setRefusals(noted);
+    if (draft !== undefined || refusals.has(field)) {
+      setRefusals(noted);
+    }
     onRefusal(firstRefusal(noted));
   };
 
