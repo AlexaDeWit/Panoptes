@@ -1,4 +1,6 @@
+import { saerskrivenYamlWireSchema } from '@saerskriven/wire-saerskriven-yaml';
 import { Either } from 'effect';
+import { parse } from 'yaml';
 import { readFailureIssues } from './codec.js';
 import {
   readSaerskrivenYaml,
@@ -104,6 +106,20 @@ const withPinnedBidirectionalFlow = oneFlowDocument
     '        waypoints: []\n        bidirectional: true',
   );
 
+const elementLinkedAssumption = (elements: readonly string[]) =>
+  oneFlowDocument.replace(
+    'assumptions: []',
+    [
+      'assumptions:',
+      '  - id: assumption-1',
+      '    prose: The ledger is append only.',
+      '    status: valid',
+      `    elements: [${elements.join(', ')}]`,
+      '    threats:',
+      '      - threat-1',
+    ].join('\n'),
+  );
+
 const withExtras = `${oneThreatDocument.replace(
   '    number: 1',
   '    number: 1\n    likelihood: high',
@@ -203,6 +219,47 @@ describe('a Saerskriven YAML read', () => {
       target: { kind: 'attached', element: 'element-2', side: 'bottom' },
       bidirectional: true,
     });
+  });
+});
+
+describe('a version 1 assumption that links elements', () => {
+  it('reads with its threat links and without its element links', () => {
+    expect(
+      readingOf(elementLinkedAssumption(['element-1', 'element-2']))?.model
+        .assumptions,
+    ).toEqual([
+      {
+        id: 'assumption-1',
+        prose: 'The ledger is append only.',
+        status: 'valid',
+        threats: ['threat-1'],
+      },
+    ]);
+  });
+
+  it('is reported once as narrowed, naming the assumption', () => {
+    expect(
+      readingOf(elementLinkedAssumption(['element-1', 'element-2']))
+        ?.divergences,
+    ).toEqual([
+      expect.objectContaining({
+        subject: { kind: 'assumption', id: 'assumption-1' },
+        reason: 'narrowed',
+      }),
+    ]);
+  });
+
+  it('reports nothing when its element list is empty', () => {
+    expect(readingOf(elementLinkedAssumption([]))?.divergences).toEqual([]);
+  });
+
+  it('maps without its element links from the document alone', () => {
+    const document = saerskrivenYamlWireSchema.parse(
+      parse(elementLinkedAssumption(['element-1', 'element-2'])),
+    );
+    expect(
+      Either.getOrUndefined(readSaerskrivenYamlDocument(document))?.assumptions,
+    ).toEqual(readingOf(elementLinkedAssumption([]))?.model.assumptions);
   });
 });
 

@@ -49,7 +49,7 @@ export const coverageDescription = [
   'Report what one Saerskriven threat model has analyzed and what it has not: the elements no threat references, the open threats grouped by severity, and the number of threats recorded against every element of every diagram.',
   'Call this to decide where to work next, and to answer whether a model is analyzed at all. Use saer_search_elements where you want to look up particular elements, and saer_search_threats where you want the threats themselves rather than the counts.',
   'Pass `file` as a path relative to the server root, or leave it out where the server was started with a default model. This tool takes no other argument and reports on the whole model.',
-  'The unanalyzed list means no threat references the element. It may still hold security properties or assumptions. The count does not say that no data is recorded or that an element is safe. Scope is reported separately. Counts cover recorded threats, and the open groups count only outstanding threats. This tool never writes.',
+  'The unanalyzed list means no threat references the element. It may still hold security properties. The count does not say that no data is recorded or that an element is safe. Scope is reported separately. Counts cover recorded threats, and the open groups count only outstanding threats. This tool never writes.',
 ].join(' ');
 
 /** Reports threat coverage using the model's queries, independently of recorded security properties. */

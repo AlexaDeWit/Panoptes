@@ -257,14 +257,6 @@ function referenceViolations(model: StructuralModel): Violation[] {
       idLists: model.threats.map((threat) => threat.elements),
     },
     {
-      collection: 'assumptions',
-      entity: 'Assumption',
-      field: 'elements',
-      referent: 'element',
-      known: elementIds,
-      idLists: model.assumptions.map((assumption) => assumption.elements),
-    },
-    {
       collection: 'mitigations',
       entity: 'Mitigation',
       field: 'threats',

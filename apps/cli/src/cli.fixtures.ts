@@ -91,6 +91,20 @@ export const undeclaredKeyYaml = `${heading}nonsense: true
 diagrams: []
 ${oneThreat}`;
 
+/**
+ * A version 1 native file whose one assumption links the file's element as
+ * well as its threat, which a read drops and reports.
+ */
+export const elementLinkedAssumptionYaml = referencing('element-1').replace(
+  'assumptions: []',
+  `assumptions:
+  - id: assumption-1
+    prose: The gateway authenticates every caller.
+    status: valid
+    elements: [element-1]
+    threats: [threat-1]`,
+);
+
 /** A native file whose title is a number, which the wire schema refuses. */
 export const brokenDocumentYaml = `${heading.replace(
   'title: Small',

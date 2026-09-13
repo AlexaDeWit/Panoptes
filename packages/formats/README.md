@@ -144,10 +144,12 @@ one of them is written in English.
 
 `readSaerskrivenYaml` and `writeSaerskrivenYaml` are the Saerskriven YAML format,
 version 1, paired as `saerskrivenYamlCodec`. It is the native format: it holds
-the whole model, so a read maps nothing away, a write leaves nothing out, and
-both report an empty divergence list on every valid file.
-[`docs/saerskriven-yaml.md`](../../docs/saerskriven-yaml.md) describes the file
-itself.
+the whole model, so a write leaves nothing out and reports no divergence. A
+read maps nothing away but assumption element links, which the model no
+longer holds: `withoutAssumptionElementLinks` empties them and
+`droppedAssumptionElementLinks` reports each assumption that held any as
+`narrowed`. [`docs/saerskriven-yaml.md`](../../docs/saerskriven-yaml.md)
+describes the file itself.
 
 The format is declared by [`@saerskriven/wire-saerskriven-yaml`](../wire-saerskriven-yaml/README.md),
 which imports zod and nothing else. A file is a contract with people who

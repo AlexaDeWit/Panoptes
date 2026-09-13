@@ -32,6 +32,10 @@ import {
 } from '@saerskriven/wire-saerskriven-yaml';
 import { Either } from 'effect';
 import type { z } from 'zod';
+import {
+  droppedAssumptionElementLinks,
+  withoutAssumptionElementLinks,
+} from './assumption-element-links.js';
 import { ReadFailure, type ReadResult } from './codec.js';
 import {
   assumptionStatusesToModel,
@@ -59,7 +63,10 @@ export function readSaerskrivenYaml(
   return Either.flatMap(parseYaml(text), mapDocument);
 }
 
-/** Maps a validated wire document. Absent security facts remain unknown. */
+/**
+ * Maps a validated wire document. Absent security facts remain unknown, and
+ * assumption element links are dropped without a report.
+ */
 export function readSaerskrivenYamlDocument(
   document: SaerskrivenYamlDocument,
 ): Either.Either<Model, ReadFailure> {
@@ -79,10 +86,14 @@ function mapDocument(
       }),
     );
   }
-  return Either.map(readSaerskrivenYamlDocument(wire.data), (model) => ({
+  const source = withoutAssumptionElementLinks(wire.data);
+  return Either.map(readSaerskrivenYamlDocument(source), (model) => ({
     model,
-    source: wire.data,
-    divergences: undeclaredDivergences(given, wire.data),
+    source,
+    divergences: [
+      ...undeclaredDivergences(given, wire.data),
+      ...droppedAssumptionElementLinks(wire.data, model),
+    ],
   }));
 }
 
@@ -213,7 +224,6 @@ function toAssumption(assumption: SaerskrivenYamlAssumption): AssumptionInput {
     id: assumption.id,
     prose: assumption.prose,
     status: assumptionStatusesToModel[assumption.status],
-    elements: assumption.elements,
     threats: assumption.threats,
   };
 }

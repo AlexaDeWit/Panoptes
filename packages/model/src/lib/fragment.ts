@@ -67,14 +67,9 @@ export function selectionFragment(
         threats: item.threats.filter((id) => threatIds.has(id)),
       })),
     assumptions: model.assumptions
-      .filter(
-        (item) =>
-          item.elements.some((id) => included.has(id)) ||
-          item.threats.some((id) => threatIds.has(id)),
-      )
+      .filter((item) => item.threats.some((id) => threatIds.has(id)))
       .map((item) => ({
         ...item,
-        elements: item.elements.filter((id) => included.has(id)),
         threats: item.threats.filter((id) => threatIds.has(id)),
       })),
   });
@@ -145,7 +140,6 @@ export function remapFragment(
     assumptions: fragment.assumptions.map((item) => ({
       ...item,
       id: renamed(item.id),
-      elements: item.elements.map(renamed),
       threats: item.threats.map(renamed),
     })),
   });

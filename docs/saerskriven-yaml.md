@@ -1,9 +1,10 @@
 # The Saerskriven YAML format
 
 Saerskriven's own file format, version 1. Everything the internal model holds has
-a place in the file and everything the file holds has a place in the model, so
-reading a file and writing it back changes nothing and neither direction
-reports a divergence. The other format Saerskriven reads, Threat Dragon v2 JSON,
+a place in the file and everything the file holds has a place in the model,
+apart from the assumption element links [Reading](#reading) describes, so
+reading a file and writing it back changes nothing else and neither direction
+reports a divergence for anything else. The other format Saerskriven reads, Threat Dragon v2 JSON,
 is somebody else's shape and does not have that property.
 
 The format is declared by `@saerskriven/wire-saerskriven-yaml`, a package of one
@@ -22,7 +23,7 @@ order:
 | ------------------------ | ------------------------------------------------------------ |
 | `formatVersion`          | `1`, exactly                                                 |
 | `metadata`               | Title, owner, description, contributors                      |
-| `assumptions`            | What the analysis rests on, linked to elements and threats   |
+| `assumptions`            | What the analysis rests on, linked to threats by id          |
 | `diagrams`               | The diagrams, each owning its elements and their geometry    |
 | `mitigations`            | Mitigating work, addressing threats by id                    |
 | `threats`                | The threats, each attached to elements by id                 |
@@ -108,6 +109,12 @@ fields when saving. Use a release that understands the fields for lossless edits
 A value this release does not declare in an enumerated vocabulary is a
 refusal, at the path of that value, as the additive rule above sets out.
 
+An assumption links threats and nothing else, so its `elements` list has no
+place in the model. The read drops every id in it and reports each assumption
+whose list held any as a `narrowed` divergence naming that assumption. A
+write states `elements: []` on every assumption, so a file this release
+writes is still a version 1 file an older release reads.
+
 What a read does refuse, it refuses with a path: into the file where the
 schema is what said no, and into the model where a rule no schema states did,
 such as a threat referring to an element no diagram holds.
@@ -143,7 +150,7 @@ Deleting an element also removes its entries from these lists. A previously
 present list can become empty, while an absent list stays absent. Moving, resizing,
 renaming, reconnecting or changing flow direction leaves all recorded facts intact.
 Copying a selection restricts the copied relationship lists to copied targets,
-matching threat and assumption links. Pasting remaps every retained target ID.
+matching threat links. Pasting remaps every retained target ID.
 The original model retains its full lists.
 
 In Studio, select an element and expand **Security properties** to view or edit

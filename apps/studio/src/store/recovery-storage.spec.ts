@@ -99,6 +99,33 @@ const documentWithoutDirection = {
   assumptions: [],
 };
 
+const documentWithElementLinkedAssumption = {
+  ...documentWithoutDirection,
+  threats: [
+    {
+      id: 'threat-spoofed-reader',
+      number: 1,
+      title: 'Spoofed reader',
+      category: { methodology: 'STRIDE', category: 'spoofing' },
+      severity: 'high',
+      status: 'open',
+      description: '',
+      mitigation: '',
+      elements: ['actor-reader'],
+    },
+  ],
+  lastIssuedThreatNumber: 1,
+  assumptions: [
+    {
+      id: 'assumption-signed-in',
+      prose: 'Every reader signs in.',
+      status: 'valid',
+      elements: ['actor-reader', 'process-studio'],
+      threats: ['threat-spoofed-reader'],
+    },
+  ],
+};
+
 describe('local recovery storage', () => {
   it('loads nothing when the namespaced key is absent', () => {
     const memory = memoryStorage();
@@ -179,6 +206,30 @@ describe('local recovery storage', () => {
         (element) => element.kind === 'flow',
       ),
     ).toMatchObject({ bidirectional: false });
+  });
+
+  it('restores a document whose assumption links elements, without the element links', () => {
+    const memory = memoryStorage();
+    memory.values.set(
+      recoveryStorageKey,
+      JSON.stringify({
+        version: 2,
+        document: documentWithElementLinkedAssumption,
+        writtenBy: { studioVersion: '0.4.0' },
+        dirty: false,
+        file: { _tag: 'NoFile' },
+      }),
+    );
+    const loaded = localRecoveryStorage(() => memory.backend).load();
+
+    expect(Either.getOrThrow(loaded)?.present.assumptions).toEqual([
+      {
+        id: 'assumption-signed-in',
+        prose: 'Every reader signs in.',
+        status: 'valid',
+        threats: ['threat-spoofed-reader'],
+      },
+    ]);
   });
 
   it('rejects a version 1 snapshot, saying an earlier release wrote it', () => {

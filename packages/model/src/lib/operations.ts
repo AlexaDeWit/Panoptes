@@ -282,7 +282,7 @@ export function setElementProperties(
     : Either.left(failure);
 }
 
-/** Removes an element and its threat, assumption and boundary references. Attached flows keep their identity and acquire free endpoints at the removed element's anchor. */
+/** Removes an element and its threat and boundary references. Attached flows keep their identity and acquire free endpoints at the removed element's anchor. */
 export function removeElement(
   model: Model,
   elementId: ElementId,
@@ -321,10 +321,6 @@ export function removeElement(
     threats: trimmed.threats.map((threat) => ({
       ...threat,
       elements: threat.elements.filter((id) => id !== elementId),
-    })),
-    assumptions: trimmed.assumptions.map((assumption) => ({
-      ...assumption,
-      elements: assumption.elements.filter((id) => id !== elementId),
     })),
   });
 }

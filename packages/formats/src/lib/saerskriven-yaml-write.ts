@@ -192,7 +192,7 @@ function toWireAssumption(assumption: Assumption): SaerskrivenYamlAssumption {
     id: assumption.id,
     prose: assumption.prose,
     status: assumptionStatusesToWire[assumption.status],
-    elements: assumption.elements,
+    elements: [],
     threats: assumption.threats,
   };
 }

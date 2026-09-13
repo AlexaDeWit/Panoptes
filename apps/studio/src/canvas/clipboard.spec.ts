@@ -174,7 +174,6 @@ it('reports excluded links in related records and source-only format fields', as
         id: 'shared-assumption',
         prose: 'Shared',
         status: 'valid',
-        elements: [actor, store],
         threats: [originalThreat.id, 'external-threat'],
       },
     ],
@@ -196,11 +195,8 @@ it('reports excluded links in related records and source-only format fields', as
   ).model;
   expect(copy.threats[0].elements).toEqual([actor]);
   expect(copy.mitigations[0].threats).toEqual([originalThreat.id]);
-  expect(copy.assumptions[0]).toMatchObject({
-    elements: [actor],
-    threats: [originalThreat.id],
-  });
-  expect(currentAnnouncement().message).toContain('4 external links excluded');
+  expect(copy.assumptions[0].threats).toEqual([originalThreat.id]);
+  expect(currentAnnouncement().message).toContain('3 external links excluded');
   expect(currentAnnouncement().message).toContain('Source-format fields');
   expect(modelStore.getState().present).toBe(model);
 });
@@ -244,6 +240,30 @@ it.each([
   await pasteSelected();
   expect(modelStore.getState()).toBe(before);
   expect(clipboard.writeText).not.toHaveBeenCalled();
+});
+
+it('refuses a selection copied before assumptions dropped their element links', async () => {
+  const clipboard = recordingClipboard();
+  const withAssumption = parsedFixture({
+    ...placeholderModel,
+    assumptions: [
+      {
+        id: 'assumption-linked',
+        prose: 'Linked to an element',
+        status: 'valid',
+        threats: [placeholderModel.threats[0].id],
+      },
+    ],
+  });
+  const written = marker + saerskrivenYamlCodec.write(withAssumption).output;
+  expect(written).toContain('    elements: []');
+  clipboard.readText.mockResolvedValueOnce(
+    written.replace('    elements: []', `    elements: [${actor}]`),
+  );
+  const before = modelStore.getState();
+  await pasteSelected();
+  expect(modelStore.getState()).toBe(before);
+  expect(currentAnnouncement().message).toContain('invalid');
 });
 
 it('reports clipboard read refusal and a missing destination diagram', async () => {
