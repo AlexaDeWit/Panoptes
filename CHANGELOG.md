@@ -1,3 +1,43 @@
+## 0.4.0 (2026-09-13)
+
+### 🚀 Features
+
+- **cli:** saer mcp install writes a host's registration ([#372](https://github.com/AlexaDeWit/Saerskriven/pull/372))
+- **formats:** raise the readable size to 8 MiB and refuse larger writes ([#388](https://github.com/AlexaDeWit/Saerskriven/pull/388), [#374](https://github.com/AlexaDeWit/Saerskriven/issues/374))
+- **mcp:** serve the model context protocol from saer mcp ([#338](https://github.com/AlexaDeWit/Saerskriven/pull/338))
+- **mcp:** write models through the codec merge path ([#361](https://github.com/AlexaDeWit/Saerskriven/pull/361))
+- **mcp:** read and query tools over a threat model ([#373](https://github.com/AlexaDeWit/Saerskriven/pull/373))
+- **mcp:** serve Streamable HTTP on 127.0.0.1 with a bearer token ([#389](https://github.com/AlexaDeWit/Saerskriven/pull/389))
+- **mcp:** add set_flow_direction and set_model_metadata edit ops ([#391](https://github.com/AlexaDeWit/Saerskriven/pull/391), [#362](https://github.com/AlexaDeWit/Saerskriven/issues/362))
+- **mcp:** expose element security properties ([#393](https://github.com/AlexaDeWit/Saerskriven/pull/393), [#390](https://github.com/AlexaDeWit/Saerskriven/issues/390))
+- **mcp:** serve the register and diagrams as resources, add STRIDE and review prompts ([#394](https://github.com/AlexaDeWit/Saerskriven/pull/394))
+- **model:** add mitigation, assumption and diagram operations ([#332](https://github.com/AlexaDeWit/Saerskriven/pull/332))
+- **render:** draw a diagram as a PNG, and render --format png ([#333](https://github.com/AlexaDeWit/Saerskriven/pull/333))
+- **render:** add stable threat number anchors ([#385](https://github.com/AlexaDeWit/Saerskriven/pull/385))
+- **render:** add shared themes and embeddable registers ([#387](https://github.com/AlexaDeWit/Saerskriven/pull/387))
+- **studio:** join the menu, the switcher and the toolbox in one card ([#360](https://github.com/AlexaDeWit/Saerskriven/pull/360))
+- **studio:** export the current diagram as a PNG ([#375](https://github.com/AlexaDeWit/Saerskriven/pull/375))
+- **studio:** edit and preserve element security properties ([#386](https://github.com/AlexaDeWit/Saerskriven/pull/386))
+- **wire:** declare Saerskriven YAML version 2 ([#412](https://github.com/AlexaDeWit/Saerskriven/pull/412))
+
+### 🩹 Fixes
+
+- **cli:** refuse an asset directory with no font face ([#346](https://github.com/AlexaDeWit/Saerskriven/pull/346))
+- **cli:** hand mcp install its --file, and gate a scripted MCP session ([#392](https://github.com/AlexaDeWit/Saerskriven/pull/392))
+- **mcp:** hash the target again immediately before the rename ([#370](https://github.com/AlexaDeWit/Saerskriven/pull/370))
+- **studio:** keep a recovered session across an upgrade ([#350](https://github.com/AlexaDeWit/Saerskriven/pull/350))
+- **studio:** let a failure notice be dismissed and fold its details ([#357](https://github.com/AlexaDeWit/Saerskriven/pull/357), [#352](https://github.com/AlexaDeWit/Saerskriven/issues/352))
+- **studio:** settle two intermittent browser smoke failures ([#397](https://github.com/AlexaDeWit/Saerskriven/pull/397))
+- ⚠️ **studio:** open submenus against the card so they stay on screen ([#396](https://github.com/AlexaDeWit/Saerskriven/pull/396))
+
+### ⚠️ Breaking Changes
+
+- **studio:** open submenus against the card so they stay on screen ([#396](https://github.com/AlexaDeWit/Saerskriven/pull/396))
+
+### ❤️ Thank You
+
+- Alexandra de Wit @AlexaDeWit
+
 ## 0.3.0 (2026-09-12)
 
 ### 🚀 Features
