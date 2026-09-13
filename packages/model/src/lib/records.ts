@@ -1,24 +1,94 @@
+import { Either } from 'effect';
 import { z } from 'zod';
 import {
   assumptionIdSchema,
   mitigationIdSchema,
   type ThreatId,
 } from './ids.js';
+import { OperationFailure } from './operation-failures.js';
 import type { Model } from './parse.js';
 
-/** One mitigation or assumption record, named by its kind and its id. */
+/** Names one record across both registers, where a mitigation and an assumption may share an id. */
 export const recordReferenceSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('mitigation'), id: mitigationIdSchema }),
   z.object({ kind: z.literal('assumption'), id: assumptionIdSchema }),
 ]);
 
-/** A mitigation or assumption record, named by its kind and its id. */
+/** A mitigation or an assumption, by kind and id. */
 export type RecordReference = z.infer<typeof recordReferenceSchema>;
 
 type ThreatLinked = {
   readonly id: string;
   readonly threats: readonly string[];
 };
+
+type RecordKey = 'mitigations' | 'assumptions';
+
+type RecordIn<Key extends RecordKey> = Model[Key][number];
+
+type UnknownThreatFailure = Extract<
+  OperationFailure,
+  { _tag: 'UnknownThreat' }
+>;
+
+/** The register a per-kind record operation edits, and its failure for an id the register does not hold. */
+export type RecordRegister<Key extends RecordKey, Unknown> = {
+  readonly key: Key;
+  readonly unknown: (id: RecordIn<Key>['id']) => Unknown;
+};
+
+/**
+ * Applies `relink` to the threat links of one record, culling the record
+ * where that leaves it no link. A relink that changes no link returns the
+ * model it was given.
+ */
+export function relinkedRecord<Key extends RecordKey, Unknown>(
+  model: Model,
+  register: RecordRegister<Key, Unknown>,
+  recordId: RecordIn<Key>['id'],
+  threatId: ThreatId,
+  relink: (threats: readonly ThreatId[]) => ThreatId[],
+): Either.Either<Model, Unknown | UnknownThreatFailure> {
+  const records: readonly RecordIn<Key>[] = model[register.key];
+  const held = records.find(({ id }) => id === recordId);
+  if (!held) {
+    return Either.left(register.unknown(recordId));
+  }
+  if (!model.threats.some(({ id }) => id === threatId)) {
+    return Either.left(OperationFailure.UnknownThreat({ threatId }));
+  }
+  const threats = relink(held.threats);
+  return threats.length === held.threats.length
+    ? Either.right(model)
+    : Either.right({
+        ...model,
+        [register.key]: culledAfter(records, (candidate) =>
+          candidate.id === recordId ? { ...held, threats } : candidate,
+        ),
+      });
+}
+
+/** Sets one record's status. The status it already has returns the model it was given. */
+export function withRecordStatus<Key extends RecordKey, Unknown>(
+  model: Model,
+  register: RecordRegister<Key, Unknown>,
+  recordId: RecordIn<Key>['id'],
+  status: RecordIn<Key>['status'],
+): Either.Either<Model, Unknown> {
+  const records: readonly RecordIn<Key>[] = model[register.key];
+  const held = records.find(({ id }) => id === recordId);
+  if (!held) {
+    return Either.left(register.unknown(recordId));
+  }
+  return held.status === status
+    ? Either.right(model)
+    : Either.right({
+        ...model,
+        [register.key]: records.map((candidate) =>
+          candidate.id === recordId ? { ...held, status } : candidate,
+        ),
+      });
+}
 
 /**
  * `records` with `edit` applied to each one, less every record the edit

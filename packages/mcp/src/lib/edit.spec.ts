@@ -213,6 +213,64 @@ describe('the records a batch culls', () => {
   });
 });
 
+const tlsOn = (threat: string): EditInput => ({
+  op: 'add_mitigation',
+  mitigation: {
+    id: 'mitigation-tls',
+    title: 'TLS on the order flow',
+    prose: 'Terminate TLS at the perimeter and pin the certificate.',
+    status: 'proposed',
+    threats: [threat],
+  },
+});
+
+describe('the records a batch culls and adds back', () => {
+  const replay: EditInput = {
+    op: 'add_threat',
+    threat: {
+      id: 'threat-replay',
+      title: 'Order replay',
+      category: { methodology: 'STRIDE', category: 'repudiation' },
+      severity: 'low',
+      status: 'open',
+      description: '',
+      mitigation: '',
+      elements: [],
+    },
+  };
+
+  const culledBy = (edits: readonly EditInput[]) => {
+    const attempted = attempt();
+    return Either.getOrUndefined(
+      attempted.edit(modelFile, revisionIn(attempted, modelFile), edits),
+    )?.culled;
+  };
+
+  it('names a record a removed threat culled, though a later edit adds it back', () => {
+    expect(
+      culledBy([
+        replay,
+        { op: 'remove_threat', threat: 'threat-tamper-order' },
+        tlsOn('threat-replay'),
+      ]),
+    ).toEqual([
+      { kind: 'mitigation', id: 'mitigation-tls' },
+      { kind: 'assumption', id: 'assumption-managed-db' },
+    ]);
+  });
+
+  it('names a record the file held that the batch removed, added back and then culled', () => {
+    expect(
+      culledBy([
+        { op: 'remove_mitigation', mitigation: 'mitigation-tls' },
+        tlsOn('threat-tamper-order'),
+        { op: 'remove_assumption', assumption: 'assumption-managed-db' },
+        { op: 'remove_threat', threat: 'threat-tamper-order' },
+      ]),
+    ).toEqual([{ kind: 'mitigation', id: 'mitigation-tls' }]);
+  });
+});
+
 describe('what the flow direction and metadata ops write', () => {
   it('makes a flow bidirectional and keeps the threats attached to it', () => {
     const attempted = attempt();

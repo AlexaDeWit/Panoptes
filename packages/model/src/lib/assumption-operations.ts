@@ -3,13 +3,25 @@ import type { Assumption, AssumptionStatus } from './assumptions.js';
 import type { AssumptionId, ThreatId } from './ids.js';
 import { OperationFailure } from './operation-failures.js';
 import type { Model } from './parse.js';
-import { culledAfter, linkedThreats } from './records.js';
+import {
+  culledAfter,
+  linkedThreats,
+  relinkedRecord,
+  withRecordStatus,
+  type RecordRegister,
+} from './records.js';
 import { unknownElementIn, unknownThreatIn } from './references.js';
 
 type UnknownAssumptionFailure = Extract<
   OperationFailure,
   { _tag: 'UnknownAssumption' }
 >;
+
+const assumptions: RecordRegister<'assumptions', UnknownAssumptionFailure> = {
+  key: 'assumptions',
+  unknown: (assumptionId) =>
+    OperationFailure.UnknownAssumption({ assumptionId }),
+};
 
 type AssumptionReferenceFailure = Extract<
   OperationFailure,
@@ -126,7 +138,7 @@ export function linkAssumption(
   assumptionId: AssumptionId,
   threatId: ThreatId,
 ): Either.Either<Model, AssumptionLinkFailure> {
-  return withRelinkedAssumption(model, assumptionId, threatId, (threats) =>
+  return relinkedRecord(model, assumptions, assumptionId, threatId, (threats) =>
     linkedThreats(threats, threatId),
   );
 }
@@ -141,7 +153,7 @@ export function unlinkAssumption(
   assumptionId: AssumptionId,
   threatId: ThreatId,
 ): Either.Either<Model, AssumptionLinkFailure> {
-  return withRelinkedAssumption(model, assumptionId, threatId, (threats) =>
+  return relinkedRecord(model, assumptions, assumptionId, threatId, (threats) =>
     threats.filter((id) => id !== threatId),
   );
 }
@@ -155,42 +167,7 @@ export function setAssumptionStatus(
   assumptionId: AssumptionId,
   status: AssumptionStatus,
 ): Either.Either<Model, SetAssumptionStatusFailure> {
-  const held = model.assumptions.find(({ id }) => id === assumptionId);
-  if (!held) {
-    return Either.left(OperationFailure.UnknownAssumption({ assumptionId }));
-  }
-  return held.status === status
-    ? Either.right(model)
-    : Either.right({
-        ...model,
-        assumptions: model.assumptions.map((candidate) =>
-          candidate.id === assumptionId ? { ...held, status } : candidate,
-        ),
-      });
-}
-
-function withRelinkedAssumption(
-  model: Model,
-  assumptionId: AssumptionId,
-  threatId: ThreatId,
-  relink: (threats: readonly ThreatId[]) => ThreatId[],
-): Either.Either<Model, AssumptionLinkFailure> {
-  const held = model.assumptions.find(({ id }) => id === assumptionId);
-  if (!held) {
-    return Either.left(OperationFailure.UnknownAssumption({ assumptionId }));
-  }
-  if (!model.threats.some(({ id }) => id === threatId)) {
-    return Either.left(OperationFailure.UnknownThreat({ threatId }));
-  }
-  const threats = relink(held.threats);
-  return threats.length === held.threats.length
-    ? Either.right(model)
-    : Either.right({
-        ...model,
-        assumptions: culledAfter(model.assumptions, (candidate) =>
-          candidate.id === assumptionId ? { ...held, threats } : candidate,
-        ),
-      });
+  return withRecordStatus(model, assumptions, assumptionId, status);
 }
 
 function referenceFailure(

@@ -16,7 +16,7 @@ export const threatFlagSchema = z.enum([
   'rests-on-invalidated-assumption',
 ]);
 
-/** Threat flag. */
+/** One of the flags {@link threatFlags} derives. */
 export type ThreatFlag = z.infer<typeof threatFlagSchema>;
 
 const implementedWork: ReadonlySet<MitigationStatus> = new Set([

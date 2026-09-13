@@ -75,12 +75,14 @@ describe('addMitigation', () => {
   });
 
   it('refuses a mitigation linked to no threat and leaves the model alone', () => {
+    const pristine = structuredClone(base);
     const unlinked = mitigationSchema.parse({ ...rateLimitInput, threats: [] });
     expect(errorOf(addMitigation(base, unlinked))).toEqual(
       OperationFailure.RecordWithoutThreat({
         record: { kind: 'mitigation', id: unlinked.id },
       }),
     );
+    expect(base).toEqual(pristine);
   });
 
   it('fails on an id the register already holds', () => {

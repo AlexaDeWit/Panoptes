@@ -201,44 +201,53 @@ export type RefusedEdit = {
   readonly failure: OperationFailure;
 };
 
-/** Applies a batch in order and returns its first refusal. The caller owns file writes. */
+/** A batch applied: the model it produced and the records it culled. */
+export type AppliedBatch = {
+  readonly model: Model;
+  readonly culled: readonly RecordReference[];
+};
+
+/**
+ * Applies a batch in order and returns its first refusal. `culled` names,
+ * once each, every record an edit other than `remove_mitigation` or
+ * `remove_assumption` took out of the model, where the model the batch
+ * started from held that record. The caller owns file writes.
+ */
 export function applyEdits(
   model: Model,
   edits: readonly ModelEdit[],
-): Either.Either<Model, RefusedEdit> {
-  return edits.reduce<Either.Either<Model, RefusedEdit>>(
-    (carried, edit, index) =>
-      Either.flatMap(carried, (current) =>
-        Either.mapLeft(applyEdit(current, edit), (failure) => ({
-          index,
-          failure,
-        })),
-      ),
-    Either.right(model),
-  );
-}
-
-/**
- * The records `before` held that a batch taking it to `after` culled. A
- * record the batch named in `remove_mitigation` or `remove_assumption` was
- * removed rather than culled, and is not among them.
- */
-export function culledRecords(
-  before: Model,
-  after: Model,
-  edits: readonly ModelEdit[],
-): RecordReference[] {
-  const removed = new Set(
-    edits.flatMap((edit) =>
-      edit.op === 'remove_mitigation'
-        ? [`mitigation ${edit.mitigation}`]
-        : edit.op === 'remove_assumption'
-          ? [`assumption ${edit.assumption}`]
-          : [],
+): Either.Either<AppliedBatch, RefusedEdit> {
+  const held = new Set([
+    ...model.mitigations.map(({ id }) => recordKey({ kind: 'mitigation', id })),
+    ...model.assumptions.map(({ id }) => recordKey({ kind: 'assumption', id })),
+  ]);
+  return Either.map(
+    edits.reduce<Either.Either<AppliedBatch, RefusedEdit>>(
+      (carried, edit, index) =>
+        Either.flatMap(carried, (batch) =>
+          Either.mapBoth(applyEdit(batch.model, edit), {
+            onLeft: (failure) => ({ index, failure }),
+            onRight: (next) => ({
+              model: next,
+              culled: [
+                ...batch.culled,
+                ...(isRemoval(edit) ? [] : droppedRecords(batch.model, next)),
+              ],
+            }),
+          }),
+        ),
+      Either.right({ model, culled: [] }),
     ),
-  );
-  return droppedRecords(before, after).filter(
-    (record) => !removed.has(`${record.kind} ${record.id}`),
+    (batch) => ({
+      model: batch.model,
+      culled: [
+        ...new Map(
+          batch.culled
+            .filter((record) => held.has(recordKey(record)))
+            .map((record) => [recordKey(record), record]),
+        ).values(),
+      ],
+    }),
   );
 }
 
@@ -375,4 +384,12 @@ function placementIndex(model: Model, diagramId: string): number {
     model.diagrams.find((diagram) => diagram.id === diagramId)?.elements
       .length ?? 0
   );
+}
+
+function isRemoval(edit: ModelEdit): boolean {
+  return edit.op === 'remove_mitigation' || edit.op === 'remove_assumption';
+}
+
+function recordKey(record: RecordReference): string {
+  return `${record.kind} ${record.id}`;
 }

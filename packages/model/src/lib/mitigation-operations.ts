@@ -3,13 +3,25 @@ import type { MitigationId, ThreatId } from './ids.js';
 import type { Mitigation, MitigationStatus } from './mitigations.js';
 import { OperationFailure } from './operation-failures.js';
 import type { Model } from './parse.js';
-import { culledAfter, linkedThreats } from './records.js';
+import {
+  culledAfter,
+  linkedThreats,
+  relinkedRecord,
+  withRecordStatus,
+  type RecordRegister,
+} from './records.js';
 import { unknownThreatIn } from './references.js';
 
 type UnknownMitigationFailure = Extract<
   OperationFailure,
   { _tag: 'UnknownMitigation' }
 >;
+
+const mitigations: RecordRegister<'mitigations', UnknownMitigationFailure> = {
+  key: 'mitigations',
+  unknown: (mitigationId) =>
+    OperationFailure.UnknownMitigation({ mitigationId }),
+};
 
 /** The failures {@link addMitigation} can produce. */
 export type AddMitigationFailure = Extract<
@@ -123,7 +135,7 @@ export function linkMitigation(
   mitigationId: MitigationId,
   threatId: ThreatId,
 ): Either.Either<Model, MitigationLinkFailure> {
-  return withRelinkedMitigation(model, mitigationId, threatId, (threats) =>
+  return relinkedRecord(model, mitigations, mitigationId, threatId, (threats) =>
     linkedThreats(threats, threatId),
   );
 }
@@ -138,7 +150,7 @@ export function unlinkMitigation(
   mitigationId: MitigationId,
   threatId: ThreatId,
 ): Either.Either<Model, MitigationLinkFailure> {
-  return withRelinkedMitigation(model, mitigationId, threatId, (threats) =>
+  return relinkedRecord(model, mitigations, mitigationId, threatId, (threats) =>
     threats.filter((id) => id !== threatId),
   );
 }
@@ -152,40 +164,5 @@ export function setMitigationStatus(
   mitigationId: MitigationId,
   status: MitigationStatus,
 ): Either.Either<Model, SetMitigationStatusFailure> {
-  const held = model.mitigations.find(({ id }) => id === mitigationId);
-  if (!held) {
-    return Either.left(OperationFailure.UnknownMitigation({ mitigationId }));
-  }
-  return held.status === status
-    ? Either.right(model)
-    : Either.right({
-        ...model,
-        mitigations: model.mitigations.map((candidate) =>
-          candidate.id === mitigationId ? { ...held, status } : candidate,
-        ),
-      });
-}
-
-function withRelinkedMitigation(
-  model: Model,
-  mitigationId: MitigationId,
-  threatId: ThreatId,
-  relink: (threats: readonly ThreatId[]) => ThreatId[],
-): Either.Either<Model, MitigationLinkFailure> {
-  const held = model.mitigations.find(({ id }) => id === mitigationId);
-  if (!held) {
-    return Either.left(OperationFailure.UnknownMitigation({ mitigationId }));
-  }
-  if (!model.threats.some(({ id }) => id === threatId)) {
-    return Either.left(OperationFailure.UnknownThreat({ threatId }));
-  }
-  const threats = relink(held.threats);
-  return threats.length === held.threats.length
-    ? Either.right(model)
-    : Either.right({
-        ...model,
-        mitigations: culledAfter(model.mitigations, (candidate) =>
-          candidate.id === mitigationId ? { ...held, threats } : candidate,
-        ),
-      });
+  return withRecordStatus(model, mitigations, mitigationId, status);
 }
