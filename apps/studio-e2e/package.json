@@ -1,6 +1,6 @@
 {
   "name": "@saerskriven/studio-e2e",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "private": true,
   "//": [
     "e2e carries the rasterizer module through both of its web servers, so it depends on the build that writes it. The dependency is declared with nx's '...' spread, which merges with what @nx/playwright inferred. A plain array replaces that instead, and under CI the plugin infers no dependsOn at all while setting parallelism false, because it skips a web server it will not reuse, so a replacement supplying a continuous edge makes nx refuse to build the graph. Both directions measured on #379."
