@@ -137,8 +137,10 @@ a draft reported that way rather than on the value it is given, which is how
 the threat panel puts a refused draft back in the field it was typed in after
 the panel itself has been unmounted ([the panel](../panel/README.md)).
 
-`ProseField` starts at eight lines. CSS `field-sizing: content` grows it with
-its text up to 24 lines while preserving manual vertical resizing. Browsers
-without this CSS property keep the eight-line field and its resize control.
+`ProseField` starts at eight lines, or three when `compact`, which is how the
+threat editor's record rows stay short. CSS `field-sizing: content` grows it
+with its text up to 24 lines while preserving manual vertical resizing.
+Browsers without this CSS property keep the starting height and its resize
+control.
 
 The Appearance choice in the File menu selects System, Light, or Dark. System uses the browser media preference. An explicit choice sets `data-pn-colour-mode` on the document root and persists through reload. Components read tokens only, so the mode does not add palette values to component styles.

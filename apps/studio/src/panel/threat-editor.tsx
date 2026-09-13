@@ -7,26 +7,32 @@ import { SeverityField } from '../ui/severity-field.js';
 import { StatusField } from '../ui/status-field.js';
 import { ProseField, TextField, type RefusedDraft } from '../ui/text-field.js';
 import styles from './threat-panel.module.css';
+import {
+  assumptionKind,
+  mitigationKind,
+  type RecordFieldName,
+} from './records.js';
+import { RecordGroup } from './threat-records.js';
 import { elementLabel } from './threats.js';
 
 const textFields = ['Title', 'Description', 'Mitigation'] as const;
 
-/** Which text field of a threat a draft was typed in. */
-export type TextFieldName = (typeof textFields)[number];
+/** Which text field of a threat, or of one of its records, a draft was typed in. */
+export type TextFieldName = (typeof textFields)[number] | RecordFieldName;
 
 /** A refused draft with the field it was typed in, which is what puts it back. */
 export type RefusedField = RefusedDraft & { readonly field: TextFieldName };
 
-type Refusals = Partial<Record<TextFieldName, RefusedDraft>>;
+type Refusals = ReadonlyMap<TextFieldName, RefusedDraft>;
 
 function firstRefusal(refusals: Refusals): RefusedField | undefined {
-  for (const field of textFields) {
-    const draft = refusals[field];
-    if (draft !== undefined) {
-      return { field, ...draft };
-    }
-  }
-  return undefined;
+  const field =
+    textFields.find((name) => refusals.has(name)) ??
+    refusals.keys().next().value;
+  const draft = field === undefined ? undefined : refusals.get(field);
+  return field === undefined || draft === undefined
+    ? undefined
+    : { field, ...draft };
 }
 
 function draftIn(
@@ -67,7 +73,7 @@ export function ThreatEditor({
   const titleField = useRef<HTMLInputElement>(null);
   const disclosure = useRef<HTMLButtonElement>(null);
   const spreadId = useId();
-  const [refusals, setRefusals] = useState<Refusals>({});
+  const [refusals, setRefusals] = useState<Refusals>(new Map());
   const spread = threat.elements.length;
 
   useEffect(() => {
@@ -82,13 +88,27 @@ export function ThreatEditor({
     }
   }, [focus, onFocused]);
 
+  const noteRefusal = (
+    field: TextFieldName,
+    draft: RefusedDraft | undefined,
+  ): void => {
+    const noted = new Map(refusals);
+    if (draft === undefined) {
+      noted.delete(field);
+    } else {
+      noted.set(field, draft);
+    }
+    setRefusals(noted);
+    onRefusal(firstRefusal(noted));
+  };
+
   const refused =
     (field: TextFieldName) =>
     (draft: RefusedDraft | undefined): void => {
-      const noted: Refusals = { ...refusals, [field]: draft };
-      setRefusals(noted);
-      onRefusal(firstRefusal(noted));
+      noteRefusal(field, draft);
     };
+
+  const refusedNames = new Set<string>(refusals.keys());
 
   return (
     <Accordion.Item className={styles.item} value={threat.id}>
@@ -172,6 +192,22 @@ export function ThreatEditor({
           }}
           onRefused={refused('Mitigation')}
           value={threat.mitigation}
+        />
+        <RecordGroup
+          held={held}
+          kind={mitigationKind}
+          onChange={onChange}
+          onRefused={noteRefusal}
+          refused={refusedNames}
+          threatId={threat.id}
+        />
+        <RecordGroup
+          held={held}
+          kind={assumptionKind}
+          onChange={onChange}
+          onRefused={noteRefusal}
+          refused={refusedNames}
+          threatId={threat.id}
         />
         {spread > 1 && (
           <div className={styles.spread}>

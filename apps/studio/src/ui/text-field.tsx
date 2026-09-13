@@ -168,15 +168,21 @@ export function TextField({
   );
 }
 
+/** A {@link TextFieldProps} for prose, which starts at three lines rather than eight when `compact`. */
+export type ProseFieldProps = Omit<TextFieldProps, 'ref'> & {
+  readonly compact?: boolean;
+};
+
 /** Edits Markdown source and commits on blur. The textarea grows with content and supports vertical resizing. */
 export function ProseField({
   label,
   value,
   held,
+  compact = false,
   onChange,
   onCommit,
   onRefused,
-}: TextFieldProps) {
+}: ProseFieldProps) {
   const fieldId = useId();
   const refusalId = useId();
   const { text, refusal, change, commit } = useTextDraft(
@@ -195,14 +201,14 @@ export function ProseField({
       <textarea
         aria-describedby={refusal === undefined ? undefined : refusalId}
         aria-invalid={refusal !== undefined}
-        className={styles.prose}
+        className={compact ? `${styles.prose} ${styles.compact}` : styles.prose}
         id={fieldId}
         onBlur={commit}
         onChange={(event) => {
           onChange?.();
           change(event.target.value);
         }}
-        rows={8}
+        rows={compact ? 3 : 8}
         value={text}
       />
       {refusal !== undefined && (

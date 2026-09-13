@@ -4,11 +4,17 @@ import type {
   ReadFailure,
 } from '@saerskriven/formats';
 import type {
+  Assumption,
+  AssumptionId,
+  AssumptionStatus,
   Diagram,
   DiagramId,
   Element,
   ElementId,
   ElementProperties,
+  Mitigation,
+  MitigationId,
+  MitigationStatus,
   Model,
   Point,
   Side,
@@ -67,6 +73,34 @@ export type Action = Data.TaggedEnum<{
   ReplaceThreat: { readonly threat: Threat };
   AttachThreat: { readonly threatId: ThreatId; readonly elementId: ElementId };
   DetachThreat: { readonly threatId: ThreatId; readonly elementId: ElementId };
+  AddMitigation: { readonly mitigation: Mitigation };
+  ReplaceMitigation: { readonly mitigation: Mitigation };
+  LinkMitigation: {
+    readonly mitigationId: MitigationId;
+    readonly threatId: ThreatId;
+  };
+  UnlinkMitigation: {
+    readonly mitigationId: MitigationId;
+    readonly threatId: ThreatId;
+  };
+  SetMitigationStatus: {
+    readonly mitigationId: MitigationId;
+    readonly status: MitigationStatus;
+  };
+  AddAssumption: { readonly assumption: Assumption };
+  ReplaceAssumption: { readonly assumption: Assumption };
+  LinkAssumption: {
+    readonly assumptionId: AssumptionId;
+    readonly threatId: ThreatId;
+  };
+  UnlinkAssumption: {
+    readonly assumptionId: AssumptionId;
+    readonly threatId: ThreatId;
+  };
+  SetAssumptionStatus: {
+    readonly assumptionId: AssumptionId;
+    readonly status: AssumptionStatus;
+  };
   AddDiagram: { readonly diagram: Diagram };
   RenameDiagram: { readonly diagramId: DiagramId; readonly title: string };
   Undo: {};

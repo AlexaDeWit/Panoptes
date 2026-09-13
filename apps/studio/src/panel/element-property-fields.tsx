@@ -2,6 +2,7 @@ import type { Element, ElementId } from '@saerskriven/model';
 import { useRef, useState } from 'react';
 import { EnumField } from '../ui/enum-field.js';
 import { TextField, type RefusedDraft } from '../ui/text-field.js';
+import { distinctLabels } from './distinct-labels.js';
 import styles from './element-properties.module.css';
 import { elementLabel } from './threats.js';
 
@@ -81,23 +82,12 @@ export function RelationshipProperty({
   const options = choices.map((element) => element.id);
   const addition =
     chosen !== undefined && options.includes(chosen) ? chosen : options[0];
-  const names = choices.map(elementLabel);
-  const counts = new Map<string, number>();
-  for (const name of names) counts.set(name, (counts.get(name) ?? 0) + 1);
-  const labels = choices.map((element, index) =>
-    element.name === '' || (counts.get(names[index]) ?? 0) > 1
-      ? `${names[index]} (${element.id})`
-      : names[index],
-  );
-  const distinct =
-    new Set(
-      labels.map((name) => name.normalize('NFC').replace(/\s+/gu, ' ').trim()),
-    ).size === choices.length;
-  const labelled = new Map(
-    choices.map((element, index) => [
-      element.id,
-      distinct ? labels[index] : `${String(index + 1)}: ${labels[index]}`,
-    ]),
+  const labelled = distinctLabels(
+    choices.map((element) => ({
+      id: element.id,
+      label: elementLabel(element),
+      unnamed: element.name === '',
+    })),
   );
   const labelOf = (id: ElementId) => labelled.get(id) ?? id;
 

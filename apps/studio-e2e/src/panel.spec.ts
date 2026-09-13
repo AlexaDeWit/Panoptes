@@ -311,6 +311,18 @@ test('every field of a threat is reachable and editable from the keyboard, add a
     'The queue accepts a job nobody enqueued.',
   );
 
+  for (const [group, control] of [
+    ['Mitigations', 'Add mitigation'],
+    ['Assumptions', 'Add assumption'],
+  ] as const) {
+    await page.keyboard.press('Tab');
+    await expect(
+      threatPanel(page)
+        .getByRole('group', { name: group })
+        .getByRole('button', { name: control }),
+    ).toBeFocused();
+  }
+
   await page.keyboard.press('Tab');
   const remove = threatPanel(page).getByRole('button', {
     name: 'Delete threat 103',

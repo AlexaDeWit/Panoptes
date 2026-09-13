@@ -23,6 +23,8 @@ import {
 } from './state.js';
 import {
   actorElement,
+  firstAssumption,
+  firstMitigation,
   firstThreat,
   foreignSource,
   mainDiagram,
@@ -31,13 +33,18 @@ import {
   newProcess,
   otherElement,
   processElement,
+  recordedModel,
   sampleModel,
   sampleThreat,
   secondDiagram,
+  secondThreat,
   twoDiagramModel,
 } from './store.fixtures.js';
 
 const start = initialState(sampleModel);
+const recordedStart = initialState(recordedModel);
+const [heldMitigation] = recordedModel.mitigations;
+const [heldAssumption] = recordedModel.assumptions;
 const noteElement = elementId('note-editable');
 const noteModel = {
   ...sampleModel,
@@ -146,6 +153,50 @@ const applied: ActionsByTag<ModelActionTag> = {
     threatId: firstThreat,
     elementId: actorElement,
   }),
+  AddMitigation: Action.AddMitigation({
+    mitigation: {
+      ...heldMitigation,
+      id: mitigationId('mitigation-added'),
+      threats: [secondThreat],
+    },
+  }),
+  ReplaceMitigation: Action.ReplaceMitigation({
+    mitigation: { ...heldMitigation, title: 'Signed share links' },
+  }),
+  LinkMitigation: Action.LinkMitigation({
+    mitigationId: firstMitigation,
+    threatId: secondThreat,
+  }),
+  UnlinkMitigation: Action.UnlinkMitigation({
+    mitigationId: firstMitigation,
+    threatId: firstThreat,
+  }),
+  SetMitigationStatus: Action.SetMitigationStatus({
+    mitigationId: firstMitigation,
+    status: 'implemented',
+  }),
+  AddAssumption: Action.AddAssumption({
+    assumption: {
+      ...heldAssumption,
+      id: assumptionId('assumption-added'),
+      threats: [secondThreat],
+    },
+  }),
+  ReplaceAssumption: Action.ReplaceAssumption({
+    assumption: { ...heldAssumption, prose: 'Every reader is signed in.' },
+  }),
+  LinkAssumption: Action.LinkAssumption({
+    assumptionId: firstAssumption,
+    threatId: secondThreat,
+  }),
+  UnlinkAssumption: Action.UnlinkAssumption({
+    assumptionId: firstAssumption,
+    threatId: firstThreat,
+  }),
+  SetAssumptionStatus: Action.SetAssumptionStatus({
+    assumptionId: firstAssumption,
+    status: 'invalidated',
+  }),
 };
 
 const refused: ActionsByTag<ModelActionTag> = {
@@ -229,7 +280,52 @@ const refused: ActionsByTag<ModelActionTag> = {
     threatId: threatId('threat-missing'),
     elementId: actorElement,
   }),
+  AddMitigation: Action.AddMitigation({
+    mitigation: { ...heldMitigation, threats: [] },
+  }),
+  ReplaceMitigation: Action.ReplaceMitigation({ mitigation: heldMitigation }),
+  LinkMitigation: Action.LinkMitigation({
+    mitigationId: firstMitigation,
+    threatId: firstThreat,
+  }),
+  UnlinkMitigation: Action.UnlinkMitigation({
+    mitigationId: firstMitigation,
+    threatId: firstThreat,
+  }),
+  SetMitigationStatus: Action.SetMitigationStatus({
+    mitigationId: firstMitigation,
+    status: 'verified',
+  }),
+  AddAssumption: Action.AddAssumption({
+    assumption: { ...heldAssumption, threats: [] },
+  }),
+  ReplaceAssumption: Action.ReplaceAssumption({ assumption: heldAssumption }),
+  LinkAssumption: Action.LinkAssumption({
+    assumptionId: firstAssumption,
+    threatId: firstThreat,
+  }),
+  UnlinkAssumption: Action.UnlinkAssumption({
+    assumptionId: firstAssumption,
+    threatId: firstThreat,
+  }),
+  SetAssumptionStatus: Action.SetAssumptionStatus({
+    assumptionId: firstAssumption,
+    status: 'valid',
+  }),
 };
+
+const recordActions = new Set<Action['_tag']>([
+  'AddMitigation',
+  'ReplaceMitigation',
+  'LinkMitigation',
+  'UnlinkMitigation',
+  'SetMitigationStatus',
+  'AddAssumption',
+  'ReplaceAssumption',
+  'LinkAssumption',
+  'UnlinkAssumption',
+  'SetAssumptionStatus',
+]);
 
 const withHistory: State = {
   ...start,
@@ -310,6 +406,9 @@ function stateFor(action: Action): State {
   ) {
     return initialState(placeholderModel);
   }
+  if (recordActions.has(action._tag)) {
+    return recordedStart;
+  }
   return Action.$is('EditNote')(action) ? noteStart : start;
 }
 
@@ -381,36 +480,57 @@ describe('history', () => {
   });
 
   it('restores a removed threat and the records it culled, links and all, in one undo', () => {
-    const recorded = initialState({
-      ...sampleModel,
-      mitigations: [
-        {
-          id: mitigationId('mitigation-read-only'),
-          title: 'Read-only share links',
-          prose: '',
-          status: 'proposed',
-          threats: [firstThreat],
-        },
-      ],
-      assumptions: [
-        {
-          id: assumptionId('assumption-signed-in'),
-          prose: 'Every editor is signed in.',
-          status: 'valid',
-          threats: [firstThreat],
-        },
-      ],
-    });
-    const removed = reduce(recorded, applied.RemoveThreat);
+    const removed = reduce(recordedStart, applied.RemoveThreat);
     expect(removed.present.mitigations).toEqual([]);
     expect(removed.present.assumptions).toEqual([]);
-    expect(reduce(removed, Action.Undo()).present).toBe(recorded.present);
+    expect(reduce(removed, Action.Undo()).present).toBe(recordedStart.present);
   });
 
   it('drops the future once an edit lands on an undone model', () => {
     const undone = reduce(reduce(start, applied.AddElement), Action.Undo());
     expect(undone.future).toHaveLength(1);
     expect(reduce(undone, applied.MoveElement).future).toEqual([]);
+  });
+});
+
+describe('a record', () => {
+  it('goes with the unlink that takes its last threat, and one undo brings it back linked', () => {
+    const unlinked = reduce(recordedStart, applied.UnlinkMitigation);
+    expect(unlinked.present.mitigations).toEqual([]);
+    expect(unlinked.past).toHaveLength(1);
+    expect(reduce(unlinked, Action.Undo()).present.mitigations).toEqual([
+      heldMitigation,
+    ]);
+  });
+
+  it('stays on its other threats when a shared link is unlinked', () => {
+    const shared = reduce(recordedStart, applied.LinkAssumption);
+    const unlinked = reduce(shared, applied.UnlinkAssumption);
+    expect(unlinked.present.assumptions).toEqual([
+      { ...heldAssumption, threats: [secondThreat] },
+    ]);
+  });
+
+  it('changes status as one undo step without moving any threat status', () => {
+    const changed = reduce(
+      reduce(recordedStart, applied.SetMitigationStatus),
+      applied.SetAssumptionStatus,
+    );
+    expect(changed.past).toHaveLength(2);
+    expect(changed.present.threats).toBe(recordedStart.present.threats);
+  });
+
+  it('keeps history alone for a status or a link it already holds', () => {
+    expect(
+      reduce(
+        recordedStart,
+        Action.SetMitigationStatus({
+          mitigationId: firstMitigation,
+          status: 'proposed',
+        }),
+      ),
+    ).toBe(recordedStart);
+    expect(reduce(recordedStart, refused.LinkAssumption)).toBe(recordedStart);
   });
 });
 

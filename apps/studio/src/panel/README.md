@@ -90,6 +90,45 @@ Severity and status share a row when space permits. Description and Mitigation
 start at eight lines and grow with content to 24 lines. They retain the
 browser's manual vertical resize control.
 
+## Mitigations and assumptions
+
+An expanded threat carries a Mitigations group and an Assumptions group,
+after its Mitigation prose field and before its delete control. They live
+here and nowhere else: a record only has meaning on a threat, so the studio
+gives records no panel, list or tab of their own. `threat-records.tsx` draws
+one group, `records.ts` holds what differs between the two kinds and the pure
+functions the groups read.
+
+- **Add** opens an empty row with focus in its first field (a mitigation's
+  title, an assumption's text). Nothing enters the model until a field in
+  that row commits, and that commit is one `AddMitigation` or `AddAssumption`
+  linked to this threat. A new mitigation starts `proposed` and a new
+  assumption `unconfirmed`. Focus leaving a row whose fields are all empty
+  closes it, with no record and no undo entry. The row keeps its place and
+  its focus when it becomes a record, so typing a title and pressing Tab
+  lands in the same row's description.
+- **Link existing** offers the model's records of that kind that are not on
+  this threat, by title or first line of text, and links the one chosen.
+- Each row edits the record's text in place, changes its status in place and
+  unlinks it. A record on other threats says how many, and the unlink
+  control is described by that count. Unlinking a record from its last
+  threat removes it, which is the model operation's rule rather than the
+  studio's, and one undo brings it back linked.
+
+Every edit is one store action carrying one model operation, so each is one
+undo step, reaches other tabs through the same sync as every other edit,
+and leaves every threat's status alone. A record text commit that changes
+nothing dispatches nothing. Refused record text is held as threat text is
+([the commit rule](#the-commit-rule)): the field keeps the draft, the threat
+stays expanded, and the draft survives the panel closing. A refused draft in
+an empty row keeps the row open, and is put back in an empty row of the same
+record id. A draft whose row an edit took away is dropped.
+
+Control names carry the kind and the row's position: "Mitigation 2 title",
+"Mitigation 2 description", "Mitigation 2 status", "Unlink mitigation 2",
+"Assumption 1", "Add assumption", "Existing mitigation", "Link existing
+mitigation". Positions renumber when a row above is unlinked.
+
 ## Element security properties
 
 Select one actor, process, store, flow or trust boundary and expand **Security
@@ -183,9 +222,14 @@ is in it.
 
 ## What is not attempted here
 
-- The mitigations register, which the model holds as records of its own
-  linked to threats, has no UI. The issue and the milestone defer it. The
-  threat's own `mitigation` prose is a threat field and is edited here.
+- Records have no surface outside the threat editor, by design. A record is
+  reached through a threat, and removing one means unlinking it from every
+  threat it is on. The model's explicit remove operations have no control.
+- The threat's own `mitigation` prose is still a threat field and is edited
+  here beside its mitigation records, until the model drops the field.
+- The collapsed threat summary shows no record counts or flags.
+- Link existing lists every unlinked record of its kind, with no search or
+  filter over them.
 - Markdown is edited as its source. A preview beside the prose is deferred
   with the rest of the rendering surface.
 - A shared threat lists its attached elements by name. The list is read-only,
