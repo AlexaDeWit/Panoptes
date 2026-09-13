@@ -295,25 +295,29 @@ test('opening and closing each submenu by pointer leaves the chrome in place', a
   }
 });
 
-test('walking the menu by keyboard, opening and closing each submenu, leaves the chrome in place', async ({
+test('walking the menu by keyboard from the burger, opening and closing each submenu, leaves the chrome in place', async ({
   page,
 }) => {
-  const burger = await openInShortViewport(page);
+  await shortenViewport(page, 720);
+  await openFile(page, 'test-data/ecluse.json');
+  const burger = await screenBoxOf(menuButton(page));
+  await menuButton(page).press('Enter');
   const rows = rootMenu(page).getByRole('menuitem', { disabled: false });
   const count = await rows.count();
-  await rows.first().focus();
 
   for (let index = 0; index < count; index += 1) {
     const row = rows.nth(index);
     await expect(row).toBeFocused();
+    await staysInPlace(page, burger);
     if ((await row.getAttribute('aria-haspopup')) === 'menu') {
       await page.keyboard.press('ArrowRight');
       await expect(row).toHaveAttribute('aria-expanded', 'true');
+      await staysInPlace(page, burger);
       await page.keyboard.press('ArrowLeft');
       await expect(row).toHaveAttribute('aria-expanded', 'false');
       await expect(row).toBeFocused();
+      await staysInPlace(page, burger);
     }
-    await staysInPlace(page, burger);
     await page.keyboard.press('ArrowDown');
   }
 });
