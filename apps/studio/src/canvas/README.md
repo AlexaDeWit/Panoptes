@@ -84,14 +84,14 @@ Text fields keep their native clipboard keys. Copy includes the selected
 elements, the attached endpoints of selected flows, and flows between copied
 nodes. A free endpoint stays free. It includes attached threats once each,
 and each mitigation and assumption that a copied threat links. Their copied
-links name copied records only. The announcement counts excluded external links. Original
-records keep their links.
+links name copied records only. The announcement counts excluded external
+links. Original records keep their links.
 
 The system clipboard carries a marked native YAML selection. Reads use the
 format reader's size, alias, and depth limits. A malformed or unsupported
-selection produces no edit. A selection copied by an earlier release
-whose assumptions hold element links is refused on paste as invalid. A failed copy leaves the existing clipboard and
-document alone. Cut waits for the write and removes only the original
+selection produces no edit. A selection copied by an earlier release whose
+assumptions hold element links is refused on paste as invalid. A failed copy
+leaves the existing clipboard and document alone. Cut waits for the write and removes only the original
 selection. A changed document or selection during that wait cancels removal.
 The ordinary removal rules keep original threat records and detach other
 flows. Paste and Duplicate give every copied record a new ID, and insertion

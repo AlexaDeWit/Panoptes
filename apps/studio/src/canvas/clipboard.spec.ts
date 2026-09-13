@@ -257,13 +257,17 @@ it('refuses a selection copied before assumptions dropped their element links', 
   });
   const written = marker + saerskrivenYamlCodec.write(withAssumption).output;
   expect(written).toContain('    elements: []');
+  clipboard.readText.mockResolvedValueOnce(marker + 'invalid: [');
+  await pasteSelected();
+  const invalidSelection = currentAnnouncement().message;
+  resetAnnouncements();
   clipboard.readText.mockResolvedValueOnce(
     written.replace('    elements: []', `    elements: [${actor}]`),
   );
   const before = modelStore.getState();
   await pasteSelected();
   expect(modelStore.getState()).toBe(before);
-  expect(currentAnnouncement().message).toContain('invalid');
+  expect(currentAnnouncement().message).toBe(invalidSelection);
 });
 
 it('reports clipboard read refusal and a missing destination diagram', async () => {

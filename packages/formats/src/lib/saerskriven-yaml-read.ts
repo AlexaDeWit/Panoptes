@@ -92,7 +92,7 @@ function mapDocument(
     source,
     divergences: [
       ...undeclaredDivergences(given, wire.data),
-      ...droppedAssumptionElementLinks(wire.data, model),
+      ...droppedAssumptionElementLinks(wire.data),
     ],
   }));
 }

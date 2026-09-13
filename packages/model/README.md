@@ -132,8 +132,9 @@ its threat and boundary references, and then removes the emptied diagram.
 
 A mitigation or an assumption only has meaning on a threat, and one record
 can link many threats. A record links threats and nothing else. The links
-live on the record, and a threat carries no link back. `addMitigation` and `addAssumption` refuse a record linked to
-no threat with `RecordWithoutThreat`. `linkMitigation`, `unlinkMitigation`,
+live on the record, and a threat carries no link back. `addMitigation` and
+`addAssumption` refuse a record linked to no threat with
+`RecordWithoutThreat`. `linkMitigation`, `unlinkMitigation`,
 `setMitigationStatus` and their assumption equivalents edit one record, and
 a link that is already there, an unlink of a link that is not, or the status
 a record already has return the model they were given. A replace is
@@ -142,9 +143,9 @@ that names nothing.
 
 Culling is edit-triggered. `removeThreat`, an unlink, and a replace that
 take a record from one or more threat links to none remove the record in
-the same operation, so one undo step restores both. A record that already had no threat link, which a
-file can hold, stays through a replace or a status change, and `parseModel`
-keeps it. `removeMitigation` and `removeAssumption` are explicit removals,
+the same operation, so one undo step restores both. A record that already
+had no threat link, which a file can hold, stays through a replace or a
+status change, and `parseModel` keeps it. `removeMitigation` and `removeAssumption` are explicit removals,
 not culls. `droppedRecords` names the records one model holds and another
 does not, which is how a caller reports what an edit culled.
 

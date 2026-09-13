@@ -4,8 +4,9 @@ Saerskriven's own file format, version 1. Everything the internal model holds ha
 a place in the file and everything the file holds has a place in the model,
 apart from the assumption element links [Reading](#reading) describes, so
 reading a file and writing it back changes nothing else and neither direction
-reports a divergence for anything else. The other format Saerskriven reads, Threat Dragon v2 JSON,
-is somebody else's shape and does not have that property.
+reports a divergence for anything else. The other format Saerskriven reads,
+Threat Dragon v2 JSON, is somebody else's shape and does not have that
+property.
 
 The format is declared by `@saerskriven/wire-saerskriven-yaml`, a package of one
 zod schema that imports nothing but zod. That is the format's definition, and

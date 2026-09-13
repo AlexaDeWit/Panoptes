@@ -1,4 +1,4 @@
-import type { Model } from '@saerskriven/model';
+import { assumptionIdSchema } from '@saerskriven/model';
 import type { SaerskrivenYamlDocument } from '@saerskriven/wire-saerskriven-yaml';
 import type { Divergence } from './divergence.js';
 
@@ -16,27 +16,21 @@ export function withoutAssumptionElementLinks(
 }
 
 /**
- * One `narrowed` divergence for each assumption of `document` whose
- * `elements` list held an id, naming the assumption as `model`, the model
- * read from that document, holds it.
+ * One `narrowed` divergence for each assumption of a version 1 document
+ * whose `elements` list held an id. An assumption whose id the model does
+ * not accept is skipped, since a read of that document refuses it.
  */
 export function droppedAssumptionElementLinks(
   document: SaerskrivenYamlDocument,
-  model: Model,
 ): Divergence[] {
-  const linked = new Map(
-    document.assumptions
-      .filter((assumption) => assumption.elements.length > 0)
-      .map((assumption) => [assumption.id, assumption.elements.length]),
-  );
-  return model.assumptions.flatMap((assumption): Divergence[] => {
-    const links = linked.get(assumption.id);
-    return links === undefined
+  return document.assumptions.flatMap((assumption): Divergence[] => {
+    const id = assumptionIdSchema.safeParse(assumption.id);
+    return assumption.elements.length === 0 || !id.success
       ? []
       : [
           {
-            subject: { kind: 'assumption', id: assumption.id },
-            detail: `the links to ${String(links)} elements, which an assumption does not hold`,
+            subject: { kind: 'assumption', id: id.data },
+            detail: 'its element links, which an assumption does not hold',
             reason: 'narrowed',
           },
         ];

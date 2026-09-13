@@ -249,6 +249,14 @@ describe('a version 1 assumption that links elements', () => {
     ]);
   });
 
+  it('hands back a source document that holds no element links', () => {
+    expect(
+      readingOf(
+        elementLinkedAssumption(['element-1', 'element-2']),
+      )?.source.assumptions.map(({ elements }) => elements),
+    ).toEqual([[]]);
+  });
+
   it('reports nothing when its element list is empty', () => {
     expect(readingOf(elementLinkedAssumption([]))?.divergences).toEqual([]);
   });
