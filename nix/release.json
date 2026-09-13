@@ -1,22 +1,22 @@
 {
-  "version": "0.3.0",
+  "version": "0.4.0",
   "binaryName": "saer",
   "assets": {
     "x86_64-linux": {
       "target": "x86_64-unknown-linux-gnu",
-      "hash": "416f368bc57bf63c5fcd4064e982d2141946e1bbad47aff698dcce02f4710c3c"
+      "hash": "4cc8b51b51e2e4642cc3f2ff390193486edd4c9efd26f0f66e1cb1d5dff2f63d"
     },
     "aarch64-linux": {
       "target": "aarch64-unknown-linux-gnu",
-      "hash": "78e3f851438d38eb8c2b5754531f8129d3d01519e4194502adc4d04c4001cd0d"
+      "hash": "241d6b044497aefc3fb22bdacb3302782f19d753a24272a34f75b87b07d985c0"
     },
     "x86_64-darwin": {
       "target": "x86_64-apple-darwin",
-      "hash": "68dabbcf0f630e3cd7da1e6e0134064cb316e685268884909dcc08d7f5f31e07"
+      "hash": "b47a2f18988af69ded5ebe23f988f80fa61d2998b6d7c44eff8f0f06cc25dc1d"
     },
     "aarch64-darwin": {
       "target": "aarch64-apple-darwin",
-      "hash": "ad3d06df24e4ee0744943936e613e9f9edebd3c3f707f96b9dcebd3a2cc91bac"
+      "hash": "ba236ea258b6a82ab50976e8805d854d19e9aa5f2f1846ac9a9dc6c8ae2ff9ce"
     }
   }
 }
