@@ -4,7 +4,13 @@ metadata:
   owner: '<script>alert(1)</script>'
   description: 'Every free-text field here carries something that means something to a markup language.'
   contributors: []
-assumptions: []
+assumptions:
+  - id: assumption-1
+    prose: 'Assumed #read("/etc/passwd") holds, with a quote " and <script>alert(5)</script>.'
+    status: invalidated
+    elements: []
+    threats:
+      - threat-1
 diagrams:
   - id: only
     title: 'Diagram #read("/etc/passwd") <script>alert(1)</script>'
@@ -58,5 +64,18 @@ threats:
     mitigation: "## <img src=x onerror=\"alert(3)\">\n\nApply the patch."
     elements:
       - element-2
-mitigations: []
+mitigations:
+  - id: mitigation-1
+    title: 'Record #eval("1+1") <script>alert(4)</script>'
+    prose: 'Record prose #include "/etc/passwd" and a backslash \ and `#read("/etc/passwd")`.'
+    status: proposed
+    threats:
+      - threat-1
+      - threat-2
+  - id: mitigation-2
+    title: ''
+    prose: "## <img src=x onerror=\"alert(6)\">\n\n- #eval(\"list\")"
+    status: implemented
+    threats:
+      - threat-2
 lastIssuedThreatNumber: 2

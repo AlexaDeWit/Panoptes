@@ -1,12 +1,19 @@
 import {
+  assumptionSchema,
+  assumptionStatusSchema,
   customCategorySchema,
   diagramSchema,
+  mitigationSchema,
+  mitigationStatusSchema,
   parseModel,
   severitySchema,
   threatCategorySchema,
+  threatFlagSchema,
   threatSchema,
   threatStatusSchema,
+  type Assumption,
   type Diagram,
+  type Mitigation,
   type Model,
   type Severity,
   type Threat,
@@ -14,13 +21,21 @@ import {
   type ThreatStatus,
 } from '@saerskriven/model';
 import { Either } from 'effect';
-import type { PhrasingContent } from 'mdast';
+import type { RegisterBadge } from '@saerskriven/canvas';
+import type {
+  ListItem,
+  PhrasingContent,
+  Root,
+  RootContent,
+  Strong,
+} from 'mdast';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import remarkGfm from 'remark-gfm';
 import remarkParse from 'remark-parse';
 import { unified } from 'unified';
 import { renderRegister } from './markdown-register.js';
+import { registerDocument } from './register-tree.js';
 
 const repositoryRoot = join(import.meta.dirname, '../../../..');
 
@@ -169,6 +184,127 @@ function modelOf(
     mitigations: [],
     assumptions: [],
   };
+}
+
+type RecordFields = {
+  readonly id: string;
+  readonly threats: readonly string[];
+  readonly prose?: string;
+};
+
+function mitigationOf(
+  fields: RecordFields & {
+    readonly title?: string;
+    readonly status?: Mitigation['status'];
+  },
+): Mitigation {
+  return mitigationSchema.parse({
+    title: '',
+    prose: '',
+    status: 'proposed',
+    ...fields,
+  });
+}
+
+function assumptionOf(
+  fields: RecordFields & { readonly status?: Assumption['status'] },
+): Assumption {
+  return assumptionSchema.parse({
+    prose: '',
+    status: 'unconfirmed',
+    elements: [],
+    ...fields,
+  });
+}
+
+function withRecords(
+  threats: readonly Threat[],
+  mitigations: readonly Mitigation[],
+  assumptions: readonly Assumption[] = [],
+): Model {
+  return {
+    ...modelOf(threats),
+    mitigations: [...mitigations],
+    assumptions: [...assumptions],
+  };
+}
+
+function threatSectionsIn(tree: Root): RootContent[][] {
+  return tree.children.reduce<RootContent[][]>(
+    (sections, node) =>
+      node.type === 'heading' && node.depth === 2
+        ? [...sections, []]
+        : sections.length === 0
+          ? sections
+          : [
+              ...sections.slice(0, -1),
+              [...sections[sections.length - 1], node],
+            ],
+    [],
+  );
+}
+
+function isLabel(node: RootContent | undefined, label: string): boolean {
+  return (
+    node?.type === 'paragraph' &&
+    node.children.length === 1 &&
+    node.children[0].type === 'strong' &&
+    textOf(node.children[0].children) === label
+  );
+}
+
+function recordItems(
+  section: readonly RootContent[],
+  label: string,
+): readonly ListItem[] {
+  const following =
+    section[section.findIndex((node) => isLabel(node, label)) + 1];
+  return following?.type === 'list' ? following.children : [];
+}
+
+function titleLine(item: ListItem): Strong[] {
+  const [lead] = item.children;
+  return lead.type === 'paragraph'
+    ? lead.children.filter((node) => node.type === 'strong')
+    : [];
+}
+
+function plainTextIn(nodes: readonly RootContent[]): string {
+  return nodes
+    .map((node) =>
+      node.type === 'text'
+        ? node.value
+        : 'children' in node
+          ? plainTextIn(node.children)
+          : '',
+    )
+    .join(' ');
+}
+
+const everyRecordLabel = withRecords(
+  [threatOf({ number: 1, status: 'mitigated' }), threatOf({ number: 2 })],
+  mitigationStatusSchema.options.map((status) =>
+    mitigationOf({ id: `mitigation-${status}`, threats: ['threat-2'], status }),
+  ),
+  assumptionStatusSchema.options.map((status) =>
+    assumptionOf({ id: `assumption-${status}`, threats: ['threat-1'], status }),
+  ),
+);
+
+function badgeTextsIn(
+  nodes: readonly RootContent[],
+): { readonly badge: RegisterBadge; readonly label: string }[] {
+  return nodes.flatMap((node) => {
+    if (node.type === 'text') {
+      const badge = node.data?.registerBadge;
+      return badge === undefined ? [] : [{ badge, label: node.value }];
+    }
+    return 'children' in node ? badgeTextsIn(node.children) : [];
+  });
+}
+
+function badgesIn(nodes: readonly RootContent[]): RegisterBadge[] {
+  return badgeTextsIn(nodes).map((entry) => entry.badge);
 }
 
 function textOf(nodes: readonly PhrasingContent[]): string {
@@ -425,13 +561,15 @@ describe('a threat section', () => {
     expect(rendered).toContain('- **Elements**: el-gone');
   });
 
-  it('says None recorded where the threat carries neither prose', () => {
+  it('says None recorded where the threat carries neither prose nor records', () => {
     const rendered = renderRegister(modelOf([threatOf({ number: 1 })]));
     expect(rendered).toContain('**Description**\n\nNone recorded.');
     expect(rendered).toContain('**Mitigation**\n\nNone recorded.');
+    expect(rendered).toContain('**Mitigations**\n\nNone recorded.');
+    expect(rendered).toContain('**Assumptions**\n\nNone recorded.');
   });
 
-  it('labels every severity, status and category the model declares', async () => {
+  it('labels every severity, status, category, record status and flag the model declares', async () => {
     const rendered = renderRegister(
       modelOf(
         labelledMembers.map((entry, index) =>
@@ -444,7 +582,212 @@ describe('a threat section', () => {
     const listing = labelledMembers
       .map((entry, index) => `${entry.member}: ${rows[index][entry.column]}`)
       .join('\n');
-    await expect(`${listing}\n`).toMatchFileSnapshot(labelsPath);
+    const recordLines = [
+      ...new Set(
+        badgeTextsIn(registerDocument(everyRecordLabel).children)
+          .filter(({ badge }) => !['severity', 'status'].includes(badge.kind))
+          .map(({ badge, label }) => `${badge.kind} ${badge.value}: ${label}`),
+      ),
+    ];
+    expect(recordLines.length).toBe(
+      mitigationStatusSchema.options.length +
+        assumptionStatusSchema.options.length +
+        threatFlagSchema.options.length,
+    );
+    await expect(`${listing}\n${recordLines.join('\n')}\n`).toMatchFileSnapshot(
+      labelsPath,
+    );
+  });
+});
+
+describe("a threat's records", () => {
+  const model = withRecords(
+    [threatOf({ number: 1 }), threatOf({ number: 2 })],
+    [
+      mitigationOf({
+        id: 'mitigation-a',
+        threats: ['threat-2'],
+        prose: 'elsewhere',
+      }),
+      mitigationOf({
+        id: 'mitigation-b',
+        threats: ['threat-1'],
+        status: 'verified',
+        prose: 'second in the model',
+      }),
+      mitigationOf({ id: 'mitigation-c', threats: [], prose: 'unlinked' }),
+      mitigationOf({
+        id: 'mitigation-d',
+        threats: ['threat-2', 'threat-1'],
+        status: 'implemented',
+        prose: 'shared',
+      }),
+    ],
+    [
+      assumptionOf({ id: 'assumption-a', threats: [], prose: 'unlinked' }),
+      assumptionOf({
+        id: 'assumption-b',
+        threats: ['threat-1'],
+        status: 'valid',
+        prose: 'held',
+      }),
+    ],
+  );
+
+  it('lists exactly the linked records, with their status badges, in model order', () => {
+    const [first] = threatSectionsIn(registerDocument(model));
+    const mitigations = recordItems(first, 'Mitigations');
+    const assumptions = recordItems(first, 'Assumptions');
+    expect(mitigations.map((item) => badgesIn(item.children))).toEqual([
+      [{ kind: 'mitigation', value: 'verified' }],
+      [{ kind: 'mitigation', value: 'implemented' }],
+    ]);
+    expect(assumptions.map((item) => badgesIn(item.children))).toEqual([
+      [{ kind: 'assumption', value: 'valid' }],
+    ]);
+    const [written] = threatSectionsIn(reader.parse(renderRegister(model)));
+    expect(
+      recordItems(written, 'Mitigations').map((item) =>
+        plainTextIn(item.children.slice(1)),
+      ),
+    ).toEqual(['second in the model', 'shared']);
+    expect(
+      recordItems(written, 'Assumptions').map((item) =>
+        plainTextIn(item.children.slice(1)),
+      ),
+    ).toEqual(['held']);
+  });
+
+  it('lists a shared record in each of its threats, and in no other part of the register', () => {
+    const tree = registerDocument(model);
+    const sections = threatSectionsIn(tree);
+    expect(
+      sections.map((section) =>
+        recordItems(section, 'Mitigations').map((item) =>
+          plainTextIn(item.children.slice(1)),
+        ),
+      ),
+    ).toEqual([
+      ['second in the model', 'shared'],
+      ['elsewhere', 'shared'],
+    ]);
+    const beforeSections = tree.children.slice(
+      0,
+      tree.children.findIndex(
+        (node) => node.type === 'heading' && node.depth === 2,
+      ),
+    );
+    expect(beforeSections.some((node) => node.type === 'list')).toBe(false);
+    expect(plainTextIn(beforeSections)).not.toContain('shared');
+    expect(renderRegister(model)).not.toContain('unlinked');
+  });
+
+  it('writes a mitigation title before its prose, and no title line where it has none', () => {
+    const titledModel = withRecords(
+      [threatOf({ number: 1 })],
+      [
+        mitigationOf({
+          id: 'mitigation-titled',
+          threats: ['threat-1'],
+          title: 'Pinned digests',
+          prose: 'titled prose',
+        }),
+        mitigationOf({
+          id: 'mitigation-bare',
+          threats: ['threat-1'],
+          prose: 'bare prose',
+        }),
+      ],
+    );
+    for (const tree of [
+      registerDocument(titledModel),
+      reader.parse(renderRegister(titledModel)),
+    ]) {
+      const [section] = threatSectionsIn(tree);
+      const [titled, bare] = recordItems(section, 'Mitigations');
+      expect(titleLine(titled).map((node) => textOf(node.children))).toEqual([
+        'Pinned digests',
+      ]);
+      expect(plainTextIn(titled.children.slice(1))).toBe('titled prose');
+      expect(titleLine(bare)).toEqual([]);
+      expect(plainTextIn(bare.children.slice(1))).toBe('bare prose');
+    }
+  });
+
+  it('parses record prose as markdown, demoting its headings and keeping its lists and HTML', () => {
+    const rendered = renderRegister(
+      withRecords(
+        [threatOf({ number: 1 })],
+        [
+          mitigationOf({
+            id: 'mitigation-a',
+            threats: ['threat-1'],
+            prose: '# Rollout\n\n* one\n* two\n\n<b>bold</b>',
+          }),
+        ],
+        [
+          assumptionOf({
+            id: 'assumption-a',
+            threats: ['threat-1'],
+            prose: '## Premise',
+          }),
+        ],
+      ),
+    );
+    const [section] = threatSectionsIn(reader.parse(rendered));
+    const [mitigation] = recordItems(section, 'Mitigations');
+    const [assumption] = recordItems(section, 'Assumptions');
+    expect(mitigation.children.map((node) => node.type)).toEqual([
+      'paragraph',
+      'heading',
+      'list',
+      'paragraph',
+    ]);
+    expect(
+      [mitigation.children[1], assumption.children[1]].map((node) =>
+        node.type === 'heading' ? node.depth : 0,
+      ),
+    ).toEqual([3, 4]);
+    expect(rendered).toContain('<b>bold</b>');
+  });
+});
+
+describe("a threat's flags", () => {
+  const flagsBySection = (model: Model) =>
+    threatSectionsIn(registerDocument(model)).map((section) =>
+      badgesIn(section).filter((badge) => badge.kind === 'flag'),
+    );
+
+  it('carries a badge for each flag the model derives, and none where there is none', () => {
+    const model = withRecords(
+      [
+        threatOf({ number: 1, status: 'mitigated' }),
+        threatOf({ number: 2 }),
+        threatOf({ number: 3, status: 'mitigated' }),
+      ],
+      [
+        mitigationOf({
+          id: 'mitigation-a',
+          threats: ['threat-3'],
+          status: 'implemented',
+        }),
+      ],
+      [
+        assumptionOf({
+          id: 'assumption-a',
+          threats: ['threat-1', 'threat-3'],
+          status: 'invalidated',
+        }),
+      ],
+    );
+    expect(flagsBySection(model)).toEqual([
+      [
+        { kind: 'flag', value: 'mitigated-without-implemented-work' },
+        { kind: 'flag', value: 'rests-on-invalidated-assumption' },
+      ],
+      [],
+      [{ kind: 'flag', value: 'rests-on-invalidated-assumption' }],
+    ]);
   });
 });
 

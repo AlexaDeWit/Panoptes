@@ -15,7 +15,7 @@ const socialImageAlt =
 test('the Pages build loads its hashed PDF assets below the site base', async ({
   page,
 }) => {
-  // The compiler module is 28 MB, and the fourteen pages are typeset after
+  // The compiler module is 28 MB, and the eighteen pages are typeset after
   // it arrives, which together run past the 30 second default.
   test.setTimeout(60_000);
   await openFile(page, 'test-data/ecluse.json', './');
@@ -23,7 +23,7 @@ test('the Pages build loads its hashed PDF assets below the site base', async ({
   const output = await exportedFile(page, 'Model as PDF');
 
   expect(output.name).toBe('ecluse.pdf');
-  expect(pdfPageCount(output.bytes)).toBe(14);
+  expect(pdfPageCount(output.bytes)).toBe(18);
   expect(digestOf(output.bytes)).toBe(expectedPdfDigest);
 });
 

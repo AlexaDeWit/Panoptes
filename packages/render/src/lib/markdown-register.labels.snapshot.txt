@@ -41,3 +41,11 @@ category PLOT4ai privacy-and-data-protection: Privacy and data protection (PLOT4
 category PLOT4ai safety-and-environmental-impact: Safety and environmental impact (PLOT4ai)
 category PLOT4ai transparency-and-accessibility: Transparency and accessibility (PLOT4ai)
 category custom Prompt injection: Prompt injection (OWASP LLM Top 10)
+flag mitigated-without-implemented-work: Mitigated without implemented work
+flag rests-on-invalidated-assumption: Rests on an invalidated assumption
+assumption unconfirmed: Unconfirmed
+assumption valid: Valid
+assumption invalidated: Invalidated
+mitigation proposed: Proposed
+mitigation implemented: Implemented
+mitigation verified: Verified

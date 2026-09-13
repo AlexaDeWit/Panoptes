@@ -1,6 +1,7 @@
 import {
   lightPalette,
   defaultRenderTheme,
+  registerBadgeKinds,
   type RenderTheme,
 } from '@saerskriven/canvas';
 
@@ -22,7 +23,7 @@ export function registerStylesheet(
     ...Object.entries(theme.fonts).map(
       ([key, value]) => `  --saer-font-${key}: ${JSON.stringify(value)};`,
     ),
-    ...(['severity', 'status'] as const).flatMap((kind) =>
+    ...registerBadgeKinds.flatMap((kind) =>
       Object.entries(theme[kind]).map(
         ([key, value]) => `  --saer-${kind}-${key}: ${value};`,
       ),
@@ -40,7 +41,7 @@ export function registerStylesheet(
     '  --saer-badge-padding: 0.1em 0.35em;',
   ];
   const root = `.${registerClassNames.root}`;
-  const roles = (['severity', 'status'] as const).flatMap((kind) =>
+  const roles = registerBadgeKinds.flatMap((kind) =>
     Object.keys(theme[kind]).map(
       (value) =>
         `:where(${root} .saer-${kind}-${value}) { --saer-tone: var(--saer-${kind}-${value}); }`,
