@@ -397,7 +397,6 @@ describe('history', () => {
           id: assumptionId('assumption-signed-in'),
           prose: 'Every editor is signed in.',
           status: 'valid',
-          elements: [],
           threats: [firstThreat],
         },
       ],

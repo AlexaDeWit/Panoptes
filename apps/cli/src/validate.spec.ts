@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import {
   brokenDocumentYaml,
   danglingReferenceYaml,
+  elementLinkedAssumptionYaml,
   fixtureFile,
   unclaimedYaml,
   undeclaredKeyYaml,
@@ -54,6 +55,15 @@ describe('validate', () => {
         'warning: the file and the model do not correspond exactly.\n' +
         'model: the key nonsense (not declared by the wire schema)\n',
     });
+  });
+
+  it('warns naming an assumption whose element links a read dropped, and still succeeds', () => {
+    const result = validated('linked.yaml', elementLinkedAssumptionYaml);
+    expect(result).toMatchObject({
+      code: 0,
+      out: 'saerskriven-yaml: 1 diagram, 1 element, 1 threat\n',
+    });
+    expect(result.err).toContain('\nassumption "assumption-1": ');
   });
 
   it('refuses a document the wire schema does not describe', () => {

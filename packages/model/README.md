@@ -128,26 +128,25 @@ still does, naming how many it holds. The refusal is deliberate: a cascade
 would delete records the caller never named, which no other operation here
 does. A caller that wants the cascade removes the elements with
 `removeElement` first, which detaches the flows anchored to each and drops
-its threat, assumption and boundary references, and then removes the emptied diagram.
+its threat and boundary references, and then removes the emptied diagram.
 
-A mitigation or an assumption only has meaning on a threat, and one record
-can link many threats. The links live on the record, and a threat carries
-no link back. `addMitigation` and `addAssumption` refuse a record linked to
-no threat with `RecordWithoutThreat`. `linkMitigation`, `unlinkMitigation`,
-`setMitigationStatus` and their assumption equivalents edit one record, and
-a link that is already there, an unlink of a link that is not, or the status
-a record already has return the model they were given. A replace is
-whole-record replacement, as editing a threat is, and refuses a threat or
-element id that names nothing.
+A mitigation or an assumption only has meaning on a threat, and one record can
+link many threats. A record links threats and nothing else. The links live on
+the record, and a threat carries no link back. `addMitigation` and
+`addAssumption` refuse a record linked to no threat with `RecordWithoutThreat`.
+`linkMitigation`, `unlinkMitigation`, `setMitigationStatus` and their
+assumption equivalents edit one record, and a link that is already there, an
+unlink of a link that is not, or the status a record already has return the
+model they were given. A replace is whole-record replacement, as editing a
+threat is, and refuses a threat id that names nothing.
 
-Culling is edit-triggered. `removeThreat`, an unlink, and a replace that
-take a record from one or more threat links to none remove the record in
-the same operation, so one undo step restores both. An assumption's element
-links do not keep it. A record that already had no threat link, which a
-file can hold, stays through a replace or a status change, and `parseModel`
-keeps it. `removeMitigation` and `removeAssumption` are explicit removals,
-not culls. `droppedRecords` names the records one model holds and another
-does not, which is how a caller reports what an edit culled.
+Culling is edit-triggered. `removeThreat`, an unlink, and a replace that take
+a record from one or more threat links to none remove the record in the same
+operation, so one undo step restores both. A record that already had no threat
+link, which a file can hold, stays through a replace or a status change, and
+`parseModel` keeps it. `removeMitigation` and `removeAssumption` are explicit
+removals, not culls. `droppedRecords` names the records one model holds and
+another does not, which is how a caller reports what an edit culled.
 
 `threatFlags` derives the flags a threat's records raise, as
 `threatFlagSchema` values: `mitigated-without-implemented-work` for a

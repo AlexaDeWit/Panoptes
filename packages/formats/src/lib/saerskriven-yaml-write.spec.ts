@@ -9,6 +9,7 @@ import {
   saerskrivenYamlWireSchema,
   type SaerskrivenYamlDocument,
 } from '@saerskriven/wire-saerskriven-yaml';
+import { parsedFixture, validModelFixture } from '@saerskriven/model/fixtures';
 import { parse } from 'yaml';
 import { ecluseModel, goldenPath } from './saerskriven-yaml.fixtures.js';
 import {
@@ -172,6 +173,24 @@ describe('a Saerskriven YAML write', () => {
     expect(writeSaerskrivenYaml(ecluseModel, otherDocument).output).toBe(
       written.output,
     );
+  });
+});
+
+describe('a Saerskriven YAML write of assumptions', () => {
+  const output = writeSaerskrivenYaml(parsedFixture(validModelFixture)).output;
+
+  it('states no element link on any assumption', () => {
+    const assumptions = listOf(at(parseDocument(output), 'assumptions'));
+    expect(assumptions.length).toBeGreaterThan(0);
+    expect(assumptions.map((assumption) => at(assumption, 'elements'))).toEqual(
+      assumptions.map(() => []),
+    );
+  });
+
+  it('parses under the version 1 wire schema', () => {
+    expect(
+      saerskrivenYamlWireSchema.safeParse(parseDocument(output)).success,
+    ).toBe(true);
   });
 });
 

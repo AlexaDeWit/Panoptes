@@ -243,12 +243,15 @@ describe('removeElement', () => {
     expect(Either.isRight(parseModel(next))).toBe(true);
   });
 
-  it('detaches the removed element from threat and assumption links', () => {
+  it('detaches the removed element from threat links', () => {
     const next = modelOf(removeElement(base, elementId('element-api')));
     expect(next.threats).toHaveLength(1);
     expect(next.threats[0].elements).toEqual(['element-order-flow']);
-    const other = modelOf(removeElement(base, elementId('element-db')));
-    expect(other.assumptions[0].elements).toEqual([]);
+  });
+
+  it('leaves every assumption record unchanged', () => {
+    const next = modelOf(removeElement(base, elementId('element-db')));
+    expect(next.assumptions).toEqual(base.assumptions);
   });
 
   it('removes a flow and detaches its threat links', () => {
@@ -681,9 +684,7 @@ describe('removeDiagram', () => {
     const next = modelOf(removeDiagram(emptied, mainDiagram));
     expect(next.diagrams).toEqual([]);
     expect(next.threats.map((threat) => threat.elements)).toEqual([[]]);
-    expect(next.assumptions.map((assumption) => assumption.elements)).toEqual([
-      [],
-    ]);
+    expect(next.assumptions).toEqual(base.assumptions);
     expect(Either.isRight(parseModel(next))).toBe(true);
   });
 });

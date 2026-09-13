@@ -57,38 +57,7 @@ function selectedCopy(
           item.elements.map((element) => element.id),
         ),
       );
-      const copiedThreats = new Set(
-        fragment.threats.map((threat) => threat.id),
-      );
-      const externalLinks =
-        state.present.threats
-          .filter((item) => copiedThreats.has(item.id))
-          .reduce(
-            (count, item) =>
-              count + item.elements.filter((id) => !copiedIds.has(id)).length,
-            0,
-          ) +
-        state.present.mitigations
-          .filter((item) =>
-            fragment.mitigations.some((copy) => copy.id === item.id),
-          )
-          .reduce(
-            (count, item) =>
-              count +
-              item.threats.filter((id) => !copiedThreats.has(id)).length,
-            0,
-          ) +
-        state.present.assumptions
-          .filter((item) =>
-            fragment.assumptions.some((copy) => copy.id === item.id),
-          )
-          .reduce(
-            (count, item) =>
-              count +
-              item.elements.filter((id) => !copiedIds.has(id)).length +
-              item.threats.filter((id) => !copiedThreats.has(id)).length,
-            0,
-          );
+      const excluded = externalLinkCount(state.present, fragment, copiedIds);
       const extras =
         FileLifecycle.$is('Opened')(state.file) &&
         state.file.source.format === 'threat-dragon'
@@ -97,9 +66,46 @@ function selectedCopy(
       return Either.right({
         fragment,
         text,
-        report: `${String(copiedIds.size)} elements and ${String(fragment.threats.length)} threats. ${String(externalLinks)} external links excluded.${extras}`,
+        report: `${String(copiedIds.size)} elements and ${String(fragment.threats.length)} threats. ${String(excluded)} external links excluded.${extras}`,
       });
     },
+  );
+}
+
+function externalLinkCount(
+  present: Model,
+  fragment: Model,
+  copiedIds: ReadonlySet<string>,
+): number {
+  const copiedThreats = new Set<string>(
+    fragment.threats.map((threat) => threat.id),
+  );
+  const uncopied = (
+    records: readonly {
+      readonly id: string;
+      readonly threats: readonly string[];
+    }[],
+    copies: readonly { readonly id: string }[],
+  ): number => {
+    const copied = new Set(copies.map((copy) => copy.id));
+    return records
+      .filter((record) => copied.has(record.id))
+      .reduce(
+        (count, record) =>
+          count + record.threats.filter((id) => !copiedThreats.has(id)).length,
+        0,
+      );
+  };
+  return (
+    present.threats
+      .filter((threat) => copiedThreats.has(threat.id))
+      .reduce(
+        (count, threat) =>
+          count + threat.elements.filter((id) => !copiedIds.has(id)).length,
+        0,
+      ) +
+    uncopied(present.mitigations, fragment.mitigations) +
+    uncopied(present.assumptions, fragment.assumptions)
   );
 }
 

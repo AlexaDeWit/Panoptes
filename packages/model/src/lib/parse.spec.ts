@@ -233,19 +233,6 @@ describe('parseModel', () => {
     );
   });
 
-  it('rejects an assumption naming an unknown element', () => {
-    const result = seededModel((draft) => {
-      draft.assumptions[0].elements.push('element-ghost');
-    });
-    expect(issuesOf(result)).toContainEqual(
-      expect.objectContaining({
-        path: ['assumptions', 0, 'elements', 1],
-        message:
-          'Assumption elements references unknown element id "element-ghost".',
-      }),
-    );
-  });
-
   it('rejects a mitigation naming an unknown threat', () => {
     const result = seededModel((draft) => {
       draft.mitigations[0].threats.push('threat-ghost');

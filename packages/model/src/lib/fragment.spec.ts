@@ -27,6 +27,18 @@ it('copies related records once, excludes external links, and does not change th
   expect(model).toEqual(before);
 });
 
+it('copies an assumption only through a copied threat that links it', () => {
+  const unthreatened = Either.getOrThrow(
+    selectionFragment(model, diagram, [elementId('element-db')]),
+  );
+  expect(unthreatened.threats).toEqual([]);
+  expect(unthreatened.assumptions).toEqual([]);
+  const threatened = Either.getOrThrow(
+    selectionFragment(model, diagram, [elementId('element-api')]),
+  );
+  expect(threatened.assumptions).toEqual(model.assumptions);
+});
+
 it('includes the endpoint of a selected flow and keeps its free endpoint', () => {
   const flow = model.diagrams[0].elements.find(
     (element) => element.kind === 'flow',

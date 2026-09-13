@@ -112,7 +112,6 @@ export function tmbomRegister(document: TmbomDocument, context: ImportContext) {
         id: context.id('tmbom-assumption', String(index)),
         prose: context.text([assumption.description]),
         status: assumption.validity === 'confirmed' ? 'valid' : 'invalidated',
-        elements: [],
         threats: [],
       });
     }

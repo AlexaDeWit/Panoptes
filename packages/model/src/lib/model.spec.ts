@@ -67,7 +67,6 @@ const assumption = {
   id: 'osv-is-trusted',
   prose: 'Écluse trusts the OSV database as the oracle of vulnerability truth.',
   status: 'valid',
-  elements: ['f1646094-9885-422a-b7e7-7888c72905ef'],
   threats: ['c87367bd-fc3f-4792-94b6-8db459011823'],
 };
 

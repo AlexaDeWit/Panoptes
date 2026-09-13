@@ -167,7 +167,7 @@ export const modelInputArbitrary = fc
       ),
       assumptions: fc.tuple(
         ...countTo(plan.assumptionCount).map((index) =>
-          assumptionArbitrary(`assumption-${index}`, allElementIds, threatIds),
+          assumptionArbitrary(`assumption-${index}`, threatIds),
         ),
       ),
     });
@@ -315,14 +315,12 @@ function mitigationArbitrary(
 
 function assumptionArbitrary(
   id: string,
-  elementIds: readonly string[],
   threatIds: readonly string[],
 ): fc.Arbitrary<AssumptionInput> {
   return fc.record({
     id: fc.constant(id),
     prose: textArbitrary,
     status: fc.constantFrom(...assumptionStatusSchema.options),
-    elements: fc.subarray([...elementIds]),
     threats: fc.subarray([...threatIds]),
   });
 }

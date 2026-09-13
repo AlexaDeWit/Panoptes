@@ -1,10 +1,5 @@
 import { Either } from 'effect';
-import {
-  assumptionId,
-  elementId,
-  parsedFixture,
-  threatId,
-} from '../fixtures.js';
+import { assumptionId, parsedFixture, threatId } from '../fixtures.js';
 import {
   addAssumption,
   linkAssumption,
@@ -33,7 +28,6 @@ const unlinkedFromFile = parsedFixture({
       id: 'assumption-pci-scope',
       prose: 'The card vault is audited under PCI DSS every year.',
       status: 'valid',
-      elements: ['element-vault'],
       threats: [],
     },
   ],
@@ -58,7 +52,6 @@ const tlsInput = {
   id: 'assumption-tls-everywhere',
   prose: 'Every hop between the shopper and checkout runs over TLS.',
   status: 'valid',
-  elements: ['element-pay-flow'],
   threats: ['threat-tamper-payment'],
 };
 
@@ -68,7 +61,6 @@ const invalidatedScope: Assumption = assumptionSchema.parse({
   id: 'assumption-pci-scope',
   prose: 'The card vault is audited under PCI DSS every year.',
   status: 'invalidated',
-  elements: ['element-vault', 'element-ledger'],
   threats: ['threat-spoof-shopper'],
 });
 
@@ -81,7 +73,7 @@ describe('addAssumption', () => {
     ]);
   });
 
-  it('refuses an assumption linked to no threat, whatever elements it links', () => {
+  it('refuses an assumption linked to no threat', () => {
     const unlinked = assumptionSchema.parse({ ...tlsInput, threats: [] });
     expect(errorOf(addAssumption(base, unlinked))).toEqual(
       OperationFailure.RecordWithoutThreat({
@@ -97,18 +89,6 @@ describe('addAssumption', () => {
     });
     expect(errorOf(addAssumption(base, clash))).toEqual(
       OperationFailure.DuplicateAssumptionId({ assumptionId: pciScope }),
-    );
-  });
-
-  it('fails on a link to an unknown element', () => {
-    const dangling = assumptionSchema.parse({
-      ...tlsInput,
-      elements: ['element-ghost'],
-    });
-    expect(errorOf(addAssumption(base, dangling))).toEqual(
-      OperationFailure.UnknownElement({
-        elementId: elementId('element-ghost'),
-      }),
     );
   });
 
@@ -138,18 +118,6 @@ describe('replaceAssumption', () => {
     );
   });
 
-  it('fails on a link to an unknown element', () => {
-    const dangling = assumptionSchema.parse({
-      ...invalidatedScope,
-      elements: ['element-ghost'],
-    });
-    expect(errorOf(replaceAssumption(base, dangling))).toEqual(
-      OperationFailure.UnknownElement({
-        elementId: elementId('element-ghost'),
-      }),
-    );
-  });
-
   it('fails on a link to an unknown threat', () => {
     const dangling = assumptionSchema.parse({
       ...invalidatedScope,
@@ -162,7 +130,7 @@ describe('replaceAssumption', () => {
 });
 
 describe('replaceAssumption and the last threat link', () => {
-  it('culls an assumption the replacement takes to no threat link, element links or not', () => {
+  it('culls an assumption the replacement takes to no threat link', () => {
     const unlinked = assumptionSchema.parse({
       ...invalidatedScope,
       threats: [],
@@ -190,7 +158,7 @@ describe('removeAssumption', () => {
     );
   });
 
-  it('leaves the elements and threats it rested on untouched', () => {
+  it('leaves the threats it rested on untouched', () => {
     const next = modelOf(removeAssumption(base, pciScope));
     expect(next.diagrams).toEqual(base.diagrams);
     expect(next.threats).toEqual(base.threats);
@@ -233,7 +201,7 @@ describe('unlinkAssumption', () => {
     expect(next.assumptions[0].threats).toEqual([tamperPayment]);
   });
 
-  it('culls the assumption when the threat was its last link, element links or not', () => {
+  it('culls the assumption when the threat was its last link', () => {
     expect(
       assumptionIds(modelOf(unlinkAssumption(base, pciScope, spoofShopper))),
     ).toEqual([]);

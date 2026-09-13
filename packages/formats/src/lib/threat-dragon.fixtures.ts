@@ -526,7 +526,6 @@ export const richerThanFormatFixture: ModelInput = {
       id: 'assumption-vault-audited',
       prose: 'The vault is audited every year.',
       status: 'valid',
-      elements: ['element-vault'],
       threats: ['threat-split'],
     },
   ],
