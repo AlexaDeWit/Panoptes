@@ -260,6 +260,7 @@ it('refuses a selection copied before assumptions dropped their element links', 
   clipboard.readText.mockResolvedValueOnce(marker + 'invalid: [');
   await pasteSelected();
   const invalidSelection = currentAnnouncement().message;
+  expect(invalidSelection).not.toBe('');
   resetAnnouncements();
   clipboard.readText.mockResolvedValueOnce(
     written.replace('    elements: []', `    elements: [${actor}]`),

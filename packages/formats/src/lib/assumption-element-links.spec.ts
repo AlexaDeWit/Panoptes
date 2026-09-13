@@ -28,7 +28,7 @@ const document: SaerskrivenYamlDocument = {
 };
 
 describe('droppedAssumptionElementLinks', () => {
-  it('names each assumption that held element links, from the document alone', () => {
+  it('names each assumption that held element links, from the document alone, and skips one whose id the model refuses', () => {
     expect(droppedAssumptionElementLinks(document)).toEqual([
       expect.objectContaining({
         subject: {
