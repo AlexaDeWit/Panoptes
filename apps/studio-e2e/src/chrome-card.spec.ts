@@ -10,6 +10,7 @@ import {
   diagramSwitcher,
   diagramTitleField,
   exportedFile,
+  menuButton,
   menuItem,
   nodeNamed,
   openFile,
@@ -155,12 +156,16 @@ const opensOnScreen = async (
   return { row, drawn, scrolls };
 };
 
+const shortenViewport = async (page: Page, height: number): Promise<void> => {
+  const width = page.viewportSize()?.width ?? 0;
+  await page.setViewportSize({ width, height });
+};
+
 const openLowInShortViewport = async (
   page: Page,
   height: number,
 ): Promise<OpenedSubmenu> => {
-  const width = page.viewportSize()?.width ?? 0;
-  await page.setViewportSize({ width, height });
+  await shortenViewport(page, height);
   await openFile(page, 'test-data/ecluse.json');
   await openMenu(page);
   await menuItem(page, 'Arrange').evaluate((element) => {
@@ -226,6 +231,95 @@ test('a pointer heading down and left from Export into its submenu reaches an ex
     page.mouse.click(target.x, target.y),
   ]);
   expect(download.suggestedFilename()).toBe('ecluse.svg');
+});
+
+const chromeScroll = (page: Page): Promise<number> =>
+  chromeCard(page).evaluate((card) => {
+    let scrolled = 0;
+    for (let node = card.parentElement; node; node = node.parentElement) {
+      scrolled += node.scrollTop;
+    }
+    return scrolled;
+  });
+
+const staysInPlace = async (page: Page, burger: Box): Promise<void> => {
+  expect(await chromeScroll(page)).toBe(0);
+  expect(await screenBoxOf(menuButton(page))).toEqual(burger);
+};
+
+const openInShortViewport = async (page: Page): Promise<Box> => {
+  await shortenViewport(page, 720);
+  await openFile(page, 'test-data/ecluse.json');
+  const burger = await screenBoxOf(menuButton(page));
+  await openMenu(page);
+  return burger;
+};
+
+const rootMenu = (page: Page): Locator => page.getByRole('menu').first();
+
+test('the menu ends inside a 720 px tall viewport and scrolls itself to its last row', async ({
+  page,
+}) => {
+  const burger = await openInShortViewport(page);
+  const panel = await screenBoxOf(rootMenu(page));
+  expect(Math.round(panel.y + panel.height)).toBeLessThanOrEqual(720);
+
+  await rootMenu(page).evaluate((menu) => {
+    menu.scrollTop = menu.scrollHeight;
+  });
+
+  const last = await screenBoxOf(rootMenu(page).getByRole('menuitem').last());
+  expect(Math.round(last.y + last.height)).toBeLessThanOrEqual(
+    Math.round(panel.y + panel.height),
+  );
+  await staysInPlace(page, burger);
+});
+
+test('opening and closing each submenu by pointer leaves the chrome in place', async ({
+  page,
+}) => {
+  const burger = await openInShortViewport(page);
+  const panel = await screenBoxOf(rootMenu(page));
+  const beside = panel.x + panel.width - 8;
+
+  for (const name of ['Export', /^Appearance /u, 'Arrange']) {
+    const row = await screenBoxOf(page.getByRole('menuitem', { name }));
+    const middle = row.y + row.height / 2;
+    await page.mouse.move(row.x + row.width / 2, middle);
+    await expect(page.getByRole('menu', { name })).toBeVisible();
+    await staysInPlace(page, burger);
+    await page.mouse.move(beside, middle, { steps: 5 });
+    await page.mouse.move(beside, row.y - row.height, { steps: 5 });
+    await expect(page.getByRole('menu', { name })).toHaveCount(0);
+    await staysInPlace(page, burger);
+  }
+});
+
+test('walking the menu by keyboard from the burger, opening and closing each submenu, leaves the chrome in place', async ({
+  page,
+}) => {
+  await shortenViewport(page, 720);
+  await openFile(page, 'test-data/ecluse.json');
+  const burger = await screenBoxOf(menuButton(page));
+  await menuButton(page).press('Enter');
+  const rows = rootMenu(page).getByRole('menuitem', { disabled: false });
+  const count = await rows.count();
+
+  for (let index = 0; index < count; index += 1) {
+    const row = rows.nth(index);
+    await expect(row).toBeFocused();
+    await staysInPlace(page, burger);
+    if ((await row.getAttribute('aria-haspopup')) === 'menu') {
+      await page.keyboard.press('ArrowRight');
+      await expect(row).toHaveAttribute('aria-expanded', 'true');
+      await staysInPlace(page, burger);
+      await page.keyboard.press('ArrowLeft');
+      await expect(row).toHaveAttribute('aria-expanded', 'false');
+      await expect(row).toBeFocused();
+      await staysInPlace(page, burger);
+    }
+    await page.keyboard.press('ArrowDown');
+  }
 });
 
 test.describe('at a device pixel ratio of 2', () => {
