@@ -115,6 +115,9 @@ const operationFailures: ByTag<OperationFailure> = {
   DuplicateAssumptionId: OperationFailure.DuplicateAssumptionId({
     assumptionId: assumptionId('assumption-twice'),
   }),
+  RecordWithoutThreat: OperationFailure.RecordWithoutThreat({
+    record: { kind: 'mitigation', id: mitigationId('mitigation-alone') },
+  }),
   ReusedThreatNumber: OperationFailure.ReusedThreatNumber({ number: 1 }),
   ChangedThreatNumber: OperationFailure.ChangedThreatNumber({
     threatId: threatId('threat-moved'),

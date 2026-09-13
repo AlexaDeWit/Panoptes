@@ -1,4 +1,3 @@
-import { quotedForTerminal } from '@saerskriven/formats';
 import {
   OperationFailure,
   acceptedTextSchema,
@@ -12,6 +11,7 @@ import {
   attachThreat,
   detachThreat,
   diagramIdSchema,
+  droppedRecords,
   editNote,
   elementIdSchema,
   mitigationIdSchema,
@@ -45,7 +45,7 @@ import {
   threatStatusSchema,
   waypointsSchema,
   type Model,
-  type ParseIssue,
+  type RecordReference,
   type ThreatId,
 } from '@saerskriven/model';
 import { Either } from 'effect';
@@ -57,6 +57,7 @@ import {
   editedProperties,
   propertyEditSchema,
 } from './element-edits.js';
+import { describeOperationFailure } from './operation-failure.js';
 
 const elementEditSchema = z.object({
   element: elementIdSchema.describe('The id of the element to edit.'),
@@ -200,20 +201,53 @@ export type RefusedEdit = {
   readonly failure: OperationFailure;
 };
 
-/** Applies a batch in order and returns its first refusal. The caller owns file writes. */
+/** A batch applied: the model it produced and the records it culled. */
+export type AppliedBatch = {
+  readonly model: Model;
+  readonly culled: readonly RecordReference[];
+};
+
+/**
+ * Applies a batch in order and returns its first refusal. `culled` names,
+ * once each, every record an edit other than `remove_mitigation` or
+ * `remove_assumption` took out of the model, where the model the batch
+ * started from held that record. The caller owns file writes.
+ */
 export function applyEdits(
   model: Model,
   edits: readonly ModelEdit[],
-): Either.Either<Model, RefusedEdit> {
-  return edits.reduce<Either.Either<Model, RefusedEdit>>(
-    (carried, edit, index) =>
-      Either.flatMap(carried, (current) =>
-        Either.mapLeft(applyEdit(current, edit), (failure) => ({
-          index,
-          failure,
-        })),
-      ),
-    Either.right(model),
+): Either.Either<AppliedBatch, RefusedEdit> {
+  const held = new Set([
+    ...model.mitigations.map(({ id }) => recordKey({ kind: 'mitigation', id })),
+    ...model.assumptions.map(({ id }) => recordKey({ kind: 'assumption', id })),
+  ]);
+  return Either.map(
+    edits.reduce<Either.Either<AppliedBatch, RefusedEdit>>(
+      (carried, edit, index) =>
+        Either.flatMap(carried, (batch) =>
+          Either.mapBoth(applyEdit(batch.model, edit), {
+            onLeft: (failure) => ({ index, failure }),
+            onRight: (next) => ({
+              model: next,
+              culled: [
+                ...batch.culled,
+                ...(isRemoval(edit) ? [] : droppedRecords(batch.model, next)),
+              ],
+            }),
+          }),
+        ),
+      Either.right({ model, culled: [] }),
+    ),
+    (batch) => ({
+      model: batch.model,
+      culled: [
+        ...new Map(
+          batch.culled
+            .filter((record) => held.has(recordKey(record)))
+            .map((record) => [recordKey(record), record]),
+        ).values(),
+      ],
+    }),
   );
 }
 
@@ -352,68 +386,10 @@ function placementIndex(model: Model, diagramId: string): number {
   );
 }
 
-function describeOperationFailure(failure: OperationFailure): string {
-  return OperationFailure.$match(failure, {
-    InvalidElementProperties: ({ issues }) =>
-      `The element properties were refused: ${issueLine(issues)}`,
-    InvalidElementRelationship: ({ issues }) =>
-      `The element has invalid boundary relationships: ${issueLine(issues)}`,
-    InvalidFragment: ({ issues }) =>
-      `The edit does not apply to this model: ${issueLine(issues)}.`,
-    UnknownDiagram: ({ diagramId }) =>
-      `The model holds no diagram ${quotedForTerminal(diagramId)}.`,
-    DuplicateDiagramId: ({ diagramId }) =>
-      `The model already holds a diagram ${quotedForTerminal(diagramId)}.`,
-    EmptyTitle: ({ diagramId }) =>
-      `Diagram ${quotedForTerminal(diagramId)} cannot be left without a title.`,
-    RefusedTitleCharacter: ({ diagramId, at }) =>
-      `The title for diagram ${quotedForTerminal(diagramId)} carries a character the model does not accept, at index ${String(at)}.`,
-    DiagramNotEmpty: ({ diagramId, elements }) =>
-      `Diagram ${quotedForTerminal(diagramId)} still holds ${String(elements)} elements, and only an empty diagram is removed.`,
-    UnknownElement: ({ elementId }) =>
-      `The model holds no element ${quotedForTerminal(elementId)}.`,
-    UnknownThreat: ({ threatId }) =>
-      `The model holds no threat ${quotedForTerminal(threatId)}.`,
-    UnknownMitigation: ({ mitigationId }) =>
-      `The model holds no mitigation ${quotedForTerminal(mitigationId)}.`,
-    UnknownAssumption: ({ assumptionId }) =>
-      `The model holds no assumption ${quotedForTerminal(assumptionId)}.`,
-    DuplicateElementId: ({ elementId }) =>
-      `The model already holds an element ${quotedForTerminal(elementId)}.`,
-    DuplicateThreatId: ({ threatId }) =>
-      `The model already holds a threat ${quotedForTerminal(threatId)}.`,
-    DuplicateMitigationId: ({ mitigationId }) =>
-      `The model already holds a mitigation ${quotedForTerminal(mitigationId)}.`,
-    DuplicateAssumptionId: ({ assumptionId }) =>
-      `The model already holds an assumption ${quotedForTerminal(assumptionId)}.`,
-    ReusedThreatNumber: ({ number }) =>
-      `Threat number ${String(number)} was issued already, and a number is issued once.`,
-    ChangedThreatNumber: ({ threatId, number }) =>
-      `Threat ${quotedForTerminal(threatId)} cannot take number ${String(number)}, a number naming one threat for the life of the model.`,
-    InvalidFlowEndpoint: ({ side, reference }) =>
-      `The flow's ${side} names ${quotedForTerminal(reference)}, which is no actor, process or store of its diagram.`,
-    NotResizable: ({ elementId }) =>
-      `Element ${quotedForTerminal(elementId)} has no size to set.`,
-    NotTextElement: ({ elementId }) =>
-      `Element ${quotedForTerminal(elementId)} is not a canvas note.`,
-    NotFlowElement: ({ elementId }) =>
-      `Element ${quotedForTerminal(elementId)} is not a flow.`,
-    EmptyName: ({ elementId }) =>
-      `Element ${quotedForTerminal(elementId)} cannot be left without a name.`,
-    RefusedCharacter: ({ elementId, at }) =>
-      `The text for element ${quotedForTerminal(elementId)} carries a character the model does not accept, at index ${String(at)}.`,
-    RefusedMetadataCharacter: ({ field, at }) =>
-      `The model ${field} carries a character the model does not accept, at index ${String(at)}.`,
-    RefusedContributorCharacter: ({ contributor, at }) =>
-      `Entry ${String(contributor)} of the contributors carries a character the model does not accept, at index ${String(at)}.`,
-  });
+function isRemoval(edit: ModelEdit): boolean {
+  return edit.op === 'remove_mitigation' || edit.op === 'remove_assumption';
 }
 
-function issueLine(issues: readonly ParseIssue[]): string {
-  return issues
-    .map(
-      (issue) =>
-        `${issue.path.length > 0 ? issue.path.join('.') : '(root)'}: ${issue.message}`,
-    )
-    .join(', ');
+function recordKey(record: RecordReference): string {
+  return `${record.kind} ${record.id}`;
 }

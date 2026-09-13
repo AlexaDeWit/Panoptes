@@ -22,6 +22,9 @@
     "effect": "catalog:",
     "zod": "catalog:"
   },
+  "devDependencies": {
+    "fast-check": "catalog:"
+  },
   "nx": {
     "tags": [
       "layer:model"

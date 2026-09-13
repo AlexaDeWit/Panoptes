@@ -1,14 +1,32 @@
 import { Either } from 'effect';
-import type { MitigationId } from './ids.js';
-import type { Mitigation } from './mitigations.js';
+import type { MitigationId, ThreatId } from './ids.js';
+import type { Mitigation, MitigationStatus } from './mitigations.js';
 import { OperationFailure } from './operation-failures.js';
 import type { Model } from './parse.js';
+import {
+  culledAfter,
+  linkedThreats,
+  relinkedRecord,
+  withRecordStatus,
+  type RecordRegister,
+} from './records.js';
 import { unknownThreatIn } from './references.js';
+
+type UnknownMitigationFailure = Extract<
+  OperationFailure,
+  { _tag: 'UnknownMitigation' }
+>;
+
+const mitigations: RecordRegister<'mitigations', UnknownMitigationFailure> = {
+  key: 'mitigations',
+  unknown: (mitigationId) =>
+    OperationFailure.UnknownMitigation({ mitigationId }),
+};
 
 /** The failures {@link addMitigation} can produce. */
 export type AddMitigationFailure = Extract<
   OperationFailure,
-  { _tag: 'DuplicateMitigationId' | 'UnknownThreat' }
+  { _tag: 'DuplicateMitigationId' | 'RecordWithoutThreat' | 'UnknownThreat' }
 >;
 
 /** The failures {@link replaceMitigation} can produce. */
@@ -18,17 +36,20 @@ export type ReplaceMitigationFailure = Extract<
 >;
 
 /** The failure {@link removeMitigation} can produce. */
-export type RemoveMitigationFailure = Extract<
+export type RemoveMitigationFailure = UnknownMitigationFailure;
+
+/** The failures {@link linkMitigation} and {@link unlinkMitigation} can produce. */
+export type MitigationLinkFailure = Extract<
   OperationFailure,
-  { _tag: 'UnknownMitigation' }
+  { _tag: 'UnknownMitigation' | 'UnknownThreat' }
 >;
 
+/** The failure {@link setMitigationStatus} can produce. */
+export type SetMitigationStatusFailure = UnknownMitigationFailure;
+
 /**
- * Returns a new model with `mitigation` appended to the register. The
- * mitigation value comes from the mitigation schema; what this operation
- * checks is its fit against the model. Fails when the id is already taken
- * or when a linked threat id names no threat of the model. The input model
- * is never mutated.
+ * Appends `mitigation` to the register. Refuses a taken id, a mitigation
+ * linked to no threat, and a link to a threat the model does not hold.
  */
 export function addMitigation(
   model: Model,
@@ -37,6 +58,13 @@ export function addMitigation(
   if (model.mitigations.some((candidate) => candidate.id === mitigation.id)) {
     return Either.left(
       OperationFailure.DuplicateMitigationId({ mitigationId: mitigation.id }),
+    );
+  }
+  if (mitigation.threats.length === 0) {
+    return Either.left(
+      OperationFailure.RecordWithoutThreat({
+        record: { kind: 'mitigation', id: mitigation.id },
+      }),
     );
   }
   const unlinkable = unknownThreatIn(model.threats, mitigation.threats);
@@ -52,12 +80,9 @@ export function addMitigation(
 }
 
 /**
- * Returns a new model with the mitigation carrying `mitigation.id` swapped
- * for `mitigation`, keeping its place in the register. Editing a mitigation
- * is whole-record replacement, as editing a threat is: every field but the
- * id is the caller's to change. Fails when the id names no mitigation of
- * the model or when a linked threat id names no threat of it. The input
- * model is never mutated.
+ * Swaps the mitigation carrying `mitigation.id` for `mitigation` in place.
+ * A replacement that takes the mitigation from one or more threat links to
+ * none removes it instead. One that already had no link stays.
  */
 export function replaceMitigation(
   model: Model,
@@ -76,18 +101,15 @@ export function replaceMitigation(
   }
   return Either.right({
     ...model,
-    mitigations: model.mitigations.map((candidate) =>
+    mitigations: culledAfter(model.mitigations, (candidate) =>
       candidate.id === mitigation.id ? mitigation : candidate,
     ),
   });
 }
 
 /**
- * Returns a new model without the mitigation named by `mitigationId`. The
- * threats it addressed keep their own records and lose nothing: a threat
- * carries no link back, so the links leave with the mitigation that held
- * them. Fails when the mitigation is unknown. The input model is never
- * mutated.
+ * Drops the mitigation named by `mitigationId`. This is an explicit
+ * removal, not a cull, and the threats it addressed are untouched.
  */
 export function removeMitigation(
   model: Model,
@@ -102,4 +124,45 @@ export function removeMitigation(
       (candidate) => candidate.id !== mitigationId,
     ),
   });
+}
+
+/**
+ * Links the mitigation to the threat. A link the mitigation already holds
+ * returns the model it was given.
+ */
+export function linkMitigation(
+  model: Model,
+  mitigationId: MitigationId,
+  threatId: ThreatId,
+): Either.Either<Model, MitigationLinkFailure> {
+  return relinkedRecord(model, mitigations, mitigationId, threatId, (threats) =>
+    linkedThreats(threats, threatId),
+  );
+}
+
+/**
+ * Unlinks the mitigation from the threat, removing the mitigation where
+ * that was its last link. A link the mitigation does not hold returns the
+ * model it was given.
+ */
+export function unlinkMitigation(
+  model: Model,
+  mitigationId: MitigationId,
+  threatId: ThreatId,
+): Either.Either<Model, MitigationLinkFailure> {
+  return relinkedRecord(model, mitigations, mitigationId, threatId, (threats) =>
+    threats.filter((id) => id !== threatId),
+  );
+}
+
+/**
+ * Sets the status of one mitigation, and nothing else. The status it
+ * already has returns the model it was given.
+ */
+export function setMitigationStatus(
+  model: Model,
+  mitigationId: MitigationId,
+  status: MitigationStatus,
+): Either.Either<Model, SetMitigationStatusFailure> {
+  return withRecordStatus(model, mitigations, mitigationId, status);
 }

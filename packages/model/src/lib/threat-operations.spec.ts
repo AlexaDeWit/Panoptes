@@ -133,17 +133,30 @@ describe('removeThreat', () => {
     expect(threatIds(next)).not.toContain('threat-spoof-shopper');
   });
 
-  it('unlinks the removed threat from mitigations and assumptions', () => {
+  it('unlinks the removed threat from a record that still links another', () => {
     const next = modelOf(removeThreat(base, spoofShopper));
-    expect(next.mitigations[0]).toMatchObject({
-      id: 'mitigation-bind-session',
-      threats: ['threat-tamper-payment'],
+    expect(next.mitigations).toEqual([
+      { ...base.mitigations[0], threats: [threatId('threat-tamper-payment')] },
+    ]);
+  });
+
+  it('culls every record whose only threat link it was, element links or not', () => {
+    const next = modelOf(removeThreat(base, spoofShopper));
+    expect(next.assumptions).toEqual([]);
+    const again = modelOf(
+      removeThreat(next, threatId('threat-tamper-payment')),
+    );
+    expect(again.mitigations).toEqual([]);
+  });
+
+  it('keeps a record that had no threat link before the removal', () => {
+    const unlinked = parsedFixture({
+      ...threatRegisterFixture,
+      assumptions: [{ ...threatRegisterFixture.assumptions[0], threats: [] }],
     });
-    expect(next.assumptions[0]).toMatchObject({
-      id: 'assumption-pci-scope',
-      threats: [],
-      elements: ['element-vault'],
-    });
+    expect(modelOf(removeThreat(unlinked, spoofShopper)).assumptions).toEqual(
+      unlinked.assumptions,
+    );
   });
 
   it('leaves the surviving numbers and the last issued number alone', () => {

@@ -634,6 +634,54 @@ for (const era of eras) {
       });
     });
 
+    describe('the records a batch culls', () => {
+      const batches: Record<string, readonly EditInput[]> = {
+        remove_threat: [{ op: 'remove_threat', threat: 'threat-tamper-order' }],
+        remove_mitigation: [
+          { op: 'remove_mitigation', mitigation: 'mitigation-tls' },
+        ],
+        rename_element: [
+          { op: 'rename_element', element: 'element-db', name: 'Orders' },
+        ],
+      };
+
+      it('names what remove_threat culled, and nothing for an explicit removal or an edit that culls nothing', async () => {
+        const writable = editableTree();
+        const quoted = revisionOf(readFileSync(join(writable.root, modelFile)));
+        const run = await session({ root: writable.root, era });
+        const outcomes = await Promise.all(
+          Object.entries(batches).map(async ([name, edits]) => {
+            const result = await run.client.callTool({
+              name: 'saer_edit',
+              arguments: {
+                file: writable.copy(`${name}.yaml`),
+                revision: quoted,
+                edits,
+              },
+            });
+            return [
+              name,
+              editOf(result).culled,
+              textOf(result).split('\n')[0],
+            ] as const;
+          }),
+        );
+        await run.end();
+        expect(outcomes).toEqual([
+          [
+            'remove_threat',
+            [
+              { kind: 'mitigation', id: 'mitigation-tls' },
+              { kind: 'assumption', id: 'assumption-managed-db' },
+            ],
+            dataNotInstructions,
+          ],
+          ['remove_mitigation', [], dataNotInstructions],
+          ['rename_element', [], dataNotInstructions],
+        ]);
+      });
+    });
+
     describe('saer_inspect against the Ecluse fixture', () => {
       it('reports the format, the counts and the revision of the file', async () => {
         const reading = readingOf(await inspecting());

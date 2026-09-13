@@ -7,6 +7,7 @@ import type {
   MitigationId,
   ThreatId,
 } from './ids.js';
+import type { RecordReference } from './records.js';
 
 /** Why an operation refused to produce a model: `_tag` names the violation and the other fields say where it is. */
 export type OperationFailure = Data.TaggedEnum<{
@@ -38,6 +39,7 @@ export type OperationFailure = Data.TaggedEnum<{
   DuplicateThreatId: { readonly threatId: ThreatId };
   DuplicateMitigationId: { readonly mitigationId: MitigationId };
   DuplicateAssumptionId: { readonly assumptionId: AssumptionId };
+  RecordWithoutThreat: { readonly record: RecordReference };
   ReusedThreatNumber: { readonly number: number };
   ChangedThreatNumber: {
     readonly threatId: ThreatId;

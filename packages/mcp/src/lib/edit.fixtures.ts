@@ -393,7 +393,7 @@ export const editVariants: readonly {
           prose: 'Backups are encrypted with the same key policy.',
           status: 'valid',
           elements: ['element-db'],
-          threats: [],
+          threats: ['threat-tamper-order'],
         },
       },
     ],

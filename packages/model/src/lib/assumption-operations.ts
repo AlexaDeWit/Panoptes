@@ -1,37 +1,62 @@
 import { Either } from 'effect';
-import type { Assumption } from './assumptions.js';
-import type { AssumptionId } from './ids.js';
+import type { Assumption, AssumptionStatus } from './assumptions.js';
+import type { AssumptionId, ThreatId } from './ids.js';
 import { OperationFailure } from './operation-failures.js';
 import type { Model } from './parse.js';
+import {
+  culledAfter,
+  linkedThreats,
+  relinkedRecord,
+  withRecordStatus,
+  type RecordRegister,
+} from './records.js';
 import { unknownElementIn, unknownThreatIn } from './references.js';
 
-type AssumptionLinkFailure = Extract<
+type UnknownAssumptionFailure = Extract<
+  OperationFailure,
+  { _tag: 'UnknownAssumption' }
+>;
+
+const assumptions: RecordRegister<'assumptions', UnknownAssumptionFailure> = {
+  key: 'assumptions',
+  unknown: (assumptionId) =>
+    OperationFailure.UnknownAssumption({ assumptionId }),
+};
+
+type AssumptionReferenceFailure = Extract<
   OperationFailure,
   { _tag: 'UnknownElement' | 'UnknownThreat' }
 >;
 
 /** The failures {@link addAssumption} can produce. */
 export type AddAssumptionFailure =
-  | Extract<OperationFailure, { _tag: 'DuplicateAssumptionId' }>
-  | AssumptionLinkFailure;
+  | Extract<
+      OperationFailure,
+      { _tag: 'DuplicateAssumptionId' | 'RecordWithoutThreat' }
+    >
+  | AssumptionReferenceFailure;
 
 /** The failures {@link replaceAssumption} can produce. */
 export type ReplaceAssumptionFailure =
-  | Extract<OperationFailure, { _tag: 'UnknownAssumption' }>
-  | AssumptionLinkFailure;
+  | UnknownAssumptionFailure
+  | AssumptionReferenceFailure;
 
 /** The failure {@link removeAssumption} can produce. */
-export type RemoveAssumptionFailure = Extract<
+export type RemoveAssumptionFailure = UnknownAssumptionFailure;
+
+/** The failures {@link linkAssumption} and {@link unlinkAssumption} can produce. */
+export type AssumptionLinkFailure = Extract<
   OperationFailure,
-  { _tag: 'UnknownAssumption' }
+  { _tag: 'UnknownAssumption' | 'UnknownThreat' }
 >;
 
+/** The failure {@link setAssumptionStatus} can produce. */
+export type SetAssumptionStatusFailure = UnknownAssumptionFailure;
+
 /**
- * Returns a new model with `assumption` appended to the register. The
- * assumption value comes from the assumption schema; what this operation
- * checks is its fit against the model. Fails when the id is already taken,
- * when a linked element id names no element of the model, or when a linked
- * threat id names no threat of it. The input model is never mutated.
+ * Appends `assumption` to the register. Refuses a taken id, an assumption
+ * linked to no threat, and a link to an element or threat the model does
+ * not hold.
  */
 export function addAssumption(
   model: Model,
@@ -42,7 +67,14 @@ export function addAssumption(
       OperationFailure.DuplicateAssumptionId({ assumptionId: assumption.id }),
     );
   }
-  const unlinkable = linkFailure(model, assumption);
+  if (assumption.threats.length === 0) {
+    return Either.left(
+      OperationFailure.RecordWithoutThreat({
+        record: { kind: 'assumption', id: assumption.id },
+      }),
+    );
+  }
+  const unlinkable = referenceFailure(model, assumption);
   return unlinkable
     ? Either.left(unlinkable)
     : Either.right({
@@ -52,13 +84,10 @@ export function addAssumption(
 }
 
 /**
- * Returns a new model with the assumption carrying `assumption.id` swapped
- * for `assumption`, keeping its place in the register. Editing an
- * assumption is whole-record replacement, as editing a threat is: every
- * field but the id is the caller's to change, its status included, so
- * invalidating an assumption goes through here. Fails when the id names no
- * assumption of the model or when a linked element or threat id resolves to
- * nothing. The input model is never mutated.
+ * Swaps the assumption carrying `assumption.id` for `assumption` in place.
+ * A replacement that takes the assumption from one or more threat links to
+ * none removes it instead, whatever element links it keeps. One that
+ * already had no threat link stays.
  */
 export function replaceAssumption(
   model: Model,
@@ -69,23 +98,21 @@ export function replaceAssumption(
       OperationFailure.UnknownAssumption({ assumptionId: assumption.id }),
     );
   }
-  const unlinkable = linkFailure(model, assumption);
+  const unlinkable = referenceFailure(model, assumption);
   return unlinkable
     ? Either.left(unlinkable)
     : Either.right({
         ...model,
-        assumptions: model.assumptions.map((candidate) =>
+        assumptions: culledAfter(model.assumptions, (candidate) =>
           candidate.id === assumption.id ? assumption : candidate,
         ),
       });
 }
 
 /**
- * Returns a new model without the assumption named by `assumptionId`. The
- * elements and threats it rested on keep their own records and lose
- * nothing: neither carries a link back, so the links leave with the
- * assumption that held them. Fails when the assumption is unknown. The
- * input model is never mutated.
+ * Drops the assumption named by `assumptionId`. This is an explicit
+ * removal, not a cull, and the elements and threats it rested on are
+ * untouched.
  */
 export function removeAssumption(
   model: Model,
@@ -102,10 +129,51 @@ export function removeAssumption(
   });
 }
 
-function linkFailure(
+/**
+ * Links the assumption to the threat. A link the assumption already holds
+ * returns the model it was given.
+ */
+export function linkAssumption(
+  model: Model,
+  assumptionId: AssumptionId,
+  threatId: ThreatId,
+): Either.Either<Model, AssumptionLinkFailure> {
+  return relinkedRecord(model, assumptions, assumptionId, threatId, (threats) =>
+    linkedThreats(threats, threatId),
+  );
+}
+
+/**
+ * Unlinks the assumption from the threat, removing the assumption where
+ * that was its last threat link, whatever element links it keeps. A link
+ * the assumption does not hold returns the model it was given.
+ */
+export function unlinkAssumption(
+  model: Model,
+  assumptionId: AssumptionId,
+  threatId: ThreatId,
+): Either.Either<Model, AssumptionLinkFailure> {
+  return relinkedRecord(model, assumptions, assumptionId, threatId, (threats) =>
+    threats.filter((id) => id !== threatId),
+  );
+}
+
+/**
+ * Sets the status of one assumption, and nothing else. The status it
+ * already has returns the model it was given.
+ */
+export function setAssumptionStatus(
+  model: Model,
+  assumptionId: AssumptionId,
+  status: AssumptionStatus,
+): Either.Either<Model, SetAssumptionStatusFailure> {
+  return withRecordStatus(model, assumptions, assumptionId, status);
+}
+
+function referenceFailure(
   model: Model,
   assumption: Assumption,
-): AssumptionLinkFailure | undefined {
+): AssumptionReferenceFailure | undefined {
   const element = unknownElementIn(model.diagrams, assumption.elements);
   if (element) {
     return OperationFailure.UnknownElement({ elementId: element });

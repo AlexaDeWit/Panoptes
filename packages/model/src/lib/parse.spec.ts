@@ -25,6 +25,27 @@ describe('parseModel', () => {
     );
   });
 
+  it('keeps a mitigation and an assumption linked to no threat', () => {
+    const unlinked = Either.getOrNull(
+      seededModel((draft) => {
+        draft.mitigations = draft.mitigations?.map((mitigation) => ({
+          ...mitigation,
+          threats: [],
+        }));
+        draft.assumptions = draft.assumptions?.map((assumption) => ({
+          ...assumption,
+          threats: [],
+        }));
+      }),
+    );
+    expect(
+      unlinked?.mitigations.map(({ id, threats }) => [id, threats]),
+    ).toEqual([['mitigation-tls', []]]);
+    expect(
+      unlinked?.assumptions.map(({ id, threats }) => [id, threats]),
+    ).toEqual([['assumption-managed-db', []]]);
+  });
+
   it('strips a key no schema declares rather than refusing the model', () => {
     expect(
       Either.getOrNull(parseModel(plantEverywhere(validModelFixture))),

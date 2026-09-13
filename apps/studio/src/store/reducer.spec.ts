@@ -4,7 +4,13 @@ import {
   OperationFailure,
   type DiagramId,
 } from '@saerskriven/model';
-import { diagramId, elementId, threatId } from '@saerskriven/model/fixtures';
+import {
+  assumptionId,
+  diagramId,
+  elementId,
+  mitigationId,
+  threatId,
+} from '@saerskriven/model/fixtures';
 import { Action } from './actions.js';
 import { reduce } from './reducer.js';
 import { activeDiagramId } from './selectors.js';
@@ -372,6 +378,34 @@ describe('history', () => {
   it('is a no-op with nothing to go back to or forward to', () => {
     expect(reduce(start, Action.Undo())).toBe(start);
     expect(reduce(start, Action.Redo())).toBe(start);
+  });
+
+  it('restores a removed threat and the records it culled, links and all, in one undo', () => {
+    const recorded = initialState({
+      ...sampleModel,
+      mitigations: [
+        {
+          id: mitigationId('mitigation-read-only'),
+          title: 'Read-only share links',
+          prose: '',
+          status: 'proposed',
+          threats: [firstThreat],
+        },
+      ],
+      assumptions: [
+        {
+          id: assumptionId('assumption-signed-in'),
+          prose: 'Every editor is signed in.',
+          status: 'valid',
+          elements: [],
+          threats: [firstThreat],
+        },
+      ],
+    });
+    const removed = reduce(recorded, applied.RemoveThreat);
+    expect(removed.present.mitigations).toEqual([]);
+    expect(removed.present.assumptions).toEqual([]);
+    expect(reduce(removed, Action.Undo()).present).toBe(recorded.present);
   });
 
   it('drops the future once an edit lands on an undone model', () => {
