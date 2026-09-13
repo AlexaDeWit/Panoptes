@@ -50,7 +50,7 @@ first: `kind` for an element, a flow endpoint and a boundary shape,
 
 ## `formatVersion`
 
-The version is the whole of the compatibility contract, and it is also what
+The version carries the compatibility contract set out below, and it is also what
 tells a Saerskriven file apart from a JSON format without consulting the file
 extension.
 
@@ -105,6 +105,8 @@ reports it as an `undeclared` divergence naming its path, so a file written
 by a later release of version 1 still reads here, minus what this release has
 no home for. Older releases can open extended v1 files but lose these new
 fields when saving. Use a release that understands the fields for lossless edits.
+A value this release does not declare in an enumerated vocabulary is a
+refusal, at the path of that value, as the additive rule above sets out.
 
 What a read does refuse, it refuses with a path: into the file where the
 schema is what said no, and into the model where a rule no schema states did,
