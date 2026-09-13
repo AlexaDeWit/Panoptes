@@ -19,9 +19,9 @@ catalog's `@playwright/test` version matches the flake's driver.
 The projects run in order:
 
 - `chromium` runs the main browser specs.
-- `phone` re-runs the chrome-card and notices smoke on a `Pixel 7` preset,
-  the viewport the shell chrome has least room in. `chromium` runs the same
-  specs at desktop width.
+- `phone` re-runs the chrome-card, notices and records specs on a `Pixel 7`
+  preset, the viewport the shell chrome and the threat panel have least room
+  in. `chromium` runs the same specs at desktop width.
 - `pages` checks the production build below `/Saerskriven/`, including PDF
   assets, the social card, its text alternative, and the release version.
 - `frame-time` measures an Écluse drag with one worker and one retry. Earlier
@@ -61,6 +61,7 @@ map to the browser specs below. Paths are relative to `src/`.
 | Inline names and Note text                                                         | `renaming.spec.ts`                                       |
 | Element security fields, declared relationships, save/reload and responsive layout | `element-properties.spec.ts`                             |
 | Threat fields, badges, pane layout, focus, and draft retention                     | `panel.spec.ts`                                          |
+| Mitigation and assumption records inside a threat, across tabs and at phone width  | `records.spec.ts`                                        |
 | Undo and redo across canvas and panel edits                                        | `commands.spec.ts`, `redo.spec.ts`, `round-trip.spec.ts` |
 | Menu navigation, dirty state, open/close guards, and loss reports                  | `menu.spec.ts`                                           |
 | Shortcuts and their reference                                                      | `commands.spec.ts`                                       |

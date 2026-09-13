@@ -27,6 +27,10 @@
   resize: vertical;
 }
 
+.compact {
+  min-block-size: calc(3lh + var(--pn-space-2) * 2);
+}
+
 .input:focus-visible,
 .prose:focus-visible {
   outline: var(--pn-focus-ring);

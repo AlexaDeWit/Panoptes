@@ -1,5 +1,15 @@
 import {
+  addAssumption,
   addDiagram,
+  addMitigation,
+  linkAssumption,
+  linkMitigation,
+  replaceAssumption,
+  replaceMitigation,
+  setAssumptionStatus,
+  setMitigationStatus,
+  unlinkAssumption,
+  unlinkMitigation,
   addElement,
   setElementProperties,
   insertFragment,
@@ -98,6 +108,26 @@ export function reduce(state: State, action: Action): State {
       edited(state, attachThreat(state.present, threatId, elementId)),
     DetachThreat: ({ threatId, elementId }) =>
       edited(state, detachThreat(state.present, threatId, elementId)),
+    AddMitigation: ({ mitigation }) =>
+      edited(state, addMitigation(state.present, mitigation)),
+    ReplaceMitigation: ({ mitigation }) =>
+      edited(state, replaceMitigation(state.present, mitigation)),
+    LinkMitigation: ({ mitigationId, threatId }) =>
+      edited(state, linkMitigation(state.present, mitigationId, threatId)),
+    UnlinkMitigation: ({ mitigationId, threatId }) =>
+      edited(state, unlinkMitigation(state.present, mitigationId, threatId)),
+    SetMitigationStatus: ({ mitigationId, status }) =>
+      edited(state, setMitigationStatus(state.present, mitigationId, status)),
+    AddAssumption: ({ assumption }) =>
+      edited(state, addAssumption(state.present, assumption)),
+    ReplaceAssumption: ({ assumption }) =>
+      edited(state, replaceAssumption(state.present, assumption)),
+    LinkAssumption: ({ assumptionId, threatId }) =>
+      edited(state, linkAssumption(state.present, assumptionId, threatId)),
+    UnlinkAssumption: ({ assumptionId, threatId }) =>
+      edited(state, unlinkAssumption(state.present, assumptionId, threatId)),
+    SetAssumptionStatus: ({ assumptionId, status }) =>
+      edited(state, setAssumptionStatus(state.present, assumptionId, status)),
     AddDiagram: ({ diagram }) => addedDiagram(state, diagram),
     RenameDiagram: ({ diagramId, title }) =>
       edited(state, renameDiagram(state.present, diagramId, title)),

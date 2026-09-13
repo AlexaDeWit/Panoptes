@@ -34,7 +34,10 @@ and no immutable snapshot to push onto a stack.
 - `actions.ts` is the `Action` union, an Effect `Data.taggedEnum`. Model edits
   carry one operation and its arguments. `SetElementProperties` applies a typed
   patch to the existing element kind, including explicit clearing of optional
-  fields. Invalid changes preserve the model and history. `MoveElements` and `RemoveElements`
+  fields. Invalid changes preserve the model and history. The mitigation and
+  assumption actions (add, replace, link, unlink, set status) each carry one
+  model operation, so an unlink that removes a record from its last threat
+  is one undo step. `MoveElements` and `RemoveElements`
   fold the matching operation over one ID array before history records the
   result. `AddDiagram` appends a diagram and shows it, the one edit that
   moves the view as well as the model, since a diagram is added to be drawn

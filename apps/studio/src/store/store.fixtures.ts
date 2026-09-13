@@ -7,8 +7,10 @@ import type {
   Threat,
 } from '@saerskriven/model';
 import {
+  assumptionId,
   diagramId,
   elementId,
+  mitigationId,
   parsedFixture,
   threatId,
 } from '@saerskriven/model/fixtures';
@@ -176,6 +178,52 @@ export const sampleModel: Model = parsedFixture(document);
 
 /** The fixture threat, as the register holds it. */
 export const sampleThreat: Threat = sampleModel.threats[0];
+
+/** The second threat {@link recordedModel} holds, on the process. */
+export const secondThreat = threatId('threat-disclosure');
+
+/** The mitigation {@link recordedModel} holds on the first threat. */
+export const firstMitigation = mitigationId('mitigation-read-only');
+
+/** The assumption {@link recordedModel} holds on the first threat. */
+export const firstAssumption = assumptionId('assumption-signed-in');
+
+/**
+ * The sample model with a second threat, and one mitigation and one
+ * assumption on the first threat alone, for the specs that edit records.
+ */
+export const recordedModel: Model = parsedFixture({
+  ...document,
+  threats: [
+    ...document.threats,
+    {
+      ...document.threats[0],
+      id: secondThreat,
+      number: 2,
+      title: 'A reader sees a model they were not shared',
+      category: { methodology: 'STRIDE', category: 'information-disclosure' },
+      elements: [processElement],
+    },
+  ],
+  lastIssuedThreatNumber: 2,
+  mitigations: [
+    {
+      id: firstMitigation,
+      title: 'Read-only share links',
+      prose: '',
+      status: 'proposed',
+      threats: [firstThreat],
+    },
+  ],
+  assumptions: [
+    {
+      id: firstAssumption,
+      prose: 'Every editor is signed in.',
+      status: 'unconfirmed',
+      threats: [firstThreat],
+    },
+  ],
+});
 
 /**
  * The sample model with a second diagram of one actor after the first, for
