@@ -204,7 +204,7 @@ const threatStatusSchema = z.enum([
 
 const mitigationStatusSchema = z.enum(['proposed', 'implemented', 'verified']);
 
-const assumptionStatusSchema = z.enum(['valid', 'invalidated']);
+const assumptionStatusSchema = z.enum(['unconfirmed', 'valid', 'invalidated']);
 
 const threatSchema = z.object({
   id: idSchema,

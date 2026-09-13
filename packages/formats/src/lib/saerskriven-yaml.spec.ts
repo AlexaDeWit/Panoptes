@@ -104,6 +104,54 @@ describe('the Saerskriven YAML codec', () => {
   });
 });
 
+describe('a version 1 file with an unconfirmed assumption', () => {
+  const unconfirmedDocument = [
+    'formatVersion: 1',
+    'metadata:',
+    '  title: Unconfirmed',
+    '  owner: ""',
+    '  description: ""',
+    '  contributors: []',
+    'assumptions:',
+    '  - id: assumption-1',
+    '    prose: The provider signs every webhook.',
+    '    status: unconfirmed',
+    '    elements: []',
+    '    threats:',
+    '      - threat-1',
+    'diagrams: []',
+    'mitigations: []',
+    'threats:',
+    '  - id: threat-1',
+    '    number: 1',
+    '    title: Replayed webhook',
+    '    category:',
+    '      methodology: STRIDE',
+    '      category: spoofing',
+    '    severity: high',
+    '    status: open',
+    '    description: ""',
+    '    mitigation: ""',
+    '    elements: []',
+    'lastIssuedThreatNumber: 1',
+    '',
+  ].join('\n');
+
+  it('reads to a model holding the status, with nothing diverging', () => {
+    const reading = readOrThrow(unconfirmedDocument);
+    expect(reading.divergences).toEqual([]);
+    expect(reading.model.assumptions.map(({ status }) => status)).toEqual([
+      'unconfirmed',
+    ]);
+  });
+
+  it('writes back as version 1, to the byte', () => {
+    expect(
+      saerskrivenYamlCodec.write(readOrThrow(unconfirmedDocument).model).output,
+    ).toBe(unconfirmedDocument);
+  });
+});
+
 describe('the document shape v0.2.1 wrote', () => {
   it('reads as the model it describes, with nothing diverging', () => {
     const reading = readOrThrow(frozenV021);

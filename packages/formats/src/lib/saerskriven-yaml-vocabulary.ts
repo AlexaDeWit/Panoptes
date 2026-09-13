@@ -94,12 +94,14 @@ export const mitigationStatusesToWire = {
 
 /** The file's assumption statuses as the model holds them. */
 export const assumptionStatusesToModel = {
+  unconfirmed: 'unconfirmed',
   valid: 'valid',
   invalidated: 'invalidated',
 } as const satisfies Record<SaerskrivenYamlAssumptionStatus, AssumptionStatus>;
 
 /** The model's assumption statuses as the file states them. */
 export const assumptionStatusesToWire = {
+  unconfirmed: 'unconfirmed',
   valid: 'valid',
   invalidated: 'invalidated',
 } as const satisfies Record<AssumptionStatus, SaerskrivenYamlAssumptionStatus>;

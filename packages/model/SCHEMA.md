@@ -184,6 +184,6 @@ every test run, so it cannot fall behind them. Regenerate it with
 - `assumptions`: list of object
   - `id`: AssumptionId (text, at least 2 characters)
   - `prose`: text
-  - `status`: one of `valid`, `invalidated`
+  - `status`: one of `unconfirmed`, `valid`, `invalidated`
   - `elements`: list of ElementId (text, at least 2 characters)
   - `threats`: list of ThreatId (text, at least 2 characters)

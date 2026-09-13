@@ -67,6 +67,12 @@ is. A write states `bidirectional` on every flow and `side` on every pinned
 end. Optional security facts and declared relationships follow the same additive
 contract, with absence meaning unknown.
 
+A new value in an enumerated vocabulary is additive too: the version stays
+where it is, and every file that does not use the value reads and writes as
+it did. An older release refuses a file that holds the new value, at the path
+of that value, because its schema does not declare it. An assumption's
+`unconfirmed` status arrived this way in version 1.
+
 Everything else is breaking: a rename, a type change, a removal, or a new key
 whose absence means nothing. That takes a new `formatVersion`, and a new
 version arrives as a wire package of its own beside the one before it, so

@@ -391,7 +391,7 @@ export const editVariants: readonly {
         assumption: {
           id: 'assumption-backups',
           prose: 'Backups are encrypted with the same key policy.',
-          status: 'valid',
+          status: 'unconfirmed',
           elements: ['element-db'],
           threats: ['threat-tamper-order'],
         },

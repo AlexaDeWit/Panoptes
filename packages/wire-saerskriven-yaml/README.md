@@ -30,6 +30,10 @@ fails at that path rather than reaching the mapping. Within version 1 a key
 this schema does not declare is dropped rather than refused, and the codec
 reports it, so a file from a later release still reads.
 
+A later release may add a value to a vocabulary within version 1, as the
+assumption status `unconfirmed` was added. A file holding such a value fails
+at its path in a release whose schema does not declare it.
+
 A change version 1 cannot absorb is a new `formatVersion`, and a version gets
 a package of its own. Version 2 is
 [`@saerskriven/wire-saerskriven-yaml-v2`](../wire-saerskriven-yaml-v2/README.md),

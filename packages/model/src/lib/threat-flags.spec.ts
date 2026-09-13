@@ -83,6 +83,13 @@ describe('threatFlags on each boundary', () => {
     ],
     ['resting only on valid assumptions', 'open', [], ['valid', 'valid'], []],
     [
+      'resting only on unconfirmed assumptions',
+      'open',
+      [],
+      ['unconfirmed', 'unconfirmed'],
+      [],
+    ],
+    [
       'mitigated with no work and an invalidated assumption',
       'mitigated',
       ['proposed'],
