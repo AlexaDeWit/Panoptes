@@ -79,6 +79,6 @@ Active controls become implemented mitigations. Suggested controls become
 proposed mitigations. Other pending states remain in prose and import as
 proposed. Retired and declined controls are reported as omissions.
 
-Confirmed and rejected assumptions map to the existing valid and invalidated
-states. Unconfirmed assumptions remain prose in the model description.
-Topic links are reported as omissions. This adds no assumption state or UI.
+Confirmed and rejected assumptions map to the valid and invalidated states.
+Unconfirmed assumptions remain prose in the model description. Topic links are
+reported as omissions.

@@ -153,7 +153,8 @@ does not, which is how a caller reports what an edit culled.
 `threatFlagSchema` values: `mitigated-without-implemented-work` for a
 `mitigated` threat with no linked mitigation `implemented` or `verified`, and
 `rests-on-invalidated-assumption` for a threat with a linked `invalidated`
-assumption. Flags are never stored and never change a threat's status.
+assumption. An assumption is `unconfirmed`, `valid` or `invalidated`, and only
+`invalidated` flags. Flags are never stored and never change a threat's status.
 
 `autoPlacement` gives the position for the element at an index in a run the
 caller has no geometry for: a row-major grid of four columns from a fixed

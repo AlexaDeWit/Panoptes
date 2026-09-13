@@ -3,11 +3,16 @@ import { assumptionIdSchema, elementIdSchema, threatIdSchema } from './ids.js';
 import { acceptedTextSchema } from './text.js';
 
 /**
- * Whether the assumption still holds. An invalidated assumption raises the
- * `rests-on-invalidated-assumption` flag on each threat it links, which
+ * Whether the assumption still holds. `unconfirmed` is an assumption no one
+ * has checked yet, and it raises no flag. An `invalidated` assumption raises
+ * the `rests-on-invalidated-assumption` flag on each threat it links, which
  * `threatFlags` derives.
  */
-export const assumptionStatusSchema = z.enum(['valid', 'invalidated']);
+export const assumptionStatusSchema = z.enum([
+  'unconfirmed',
+  'valid',
+  'invalidated',
+]);
 
 /** Assumption status. */
 export type AssumptionStatus = z.infer<typeof assumptionStatusSchema>;

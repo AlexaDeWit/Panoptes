@@ -11,13 +11,13 @@ const osvTrusted = {
 };
 
 describe('assumptionStatusSchema', () => {
-  it('parses both statuses', () => {
-    for (const status of ['valid', 'invalidated']) {
+  it('parses every status', () => {
+    for (const status of ['unconfirmed', 'valid', 'invalidated']) {
       expect(assumptionStatusSchema.safeParse(status).success).toBe(true);
     }
   });
 
-  it("rejects 'invalid'; the state is the event of invalidation", () => {
+  it("rejects 'invalid', since the status names the event of invalidation", () => {
     expect(assumptionStatusSchema.safeParse('invalid').success).toBe(false);
   });
 });

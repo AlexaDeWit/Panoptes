@@ -2,16 +2,10 @@ import type { z } from 'zod';
 import type { modelSchema } from './model.js';
 
 /**
- * Hand-authored valid model covering the constructs Écluse's real threat
- * model never reaches: a curve trust boundary, an out-of-scope element with
- * its reason, a canvas note, a multi-name contributor list, the `undecided`
- * severity, every threat status Écluse does not use, every category of the
- * four enumerated methodologies outside STRIDE, the custom methodology, all
- * three mitigation statuses, and both assumption statuses. The representability
- * gate reads it beside `ecluseFixture` (`ecluse.fixtures.ts`) so the two
- * together span the model's whole vocabulary; it stays separate so that
- * fixture remains a faithful transcription of the source file. Typed as the
- * schema's input, not as a Model: specs feed it through parseModel.
+ * Hand-authored model covering the vocabulary `ecluseFixture` never reaches,
+ * so the two together span every construct the model declares. It stays
+ * separate so that fixture remains a faithful transcription of its source.
+ * Typed as the schema's input: specs feed it through parseModel.
  */
 export const vocabularyComplementFixture: z.input<typeof modelSchema> = {
   metadata: {
@@ -429,6 +423,13 @@ export const vocabularyComplementFixture: z.input<typeof modelSchema> = {
     },
   ],
   assumptions: [
+    {
+      id: 'assumption-vocab-unconfirmed',
+      prose: 'The archive vendor is thought to wipe returned tapes.',
+      status: 'unconfirmed',
+      elements: [],
+      threats: ['threat-vocab-linking'],
+    },
     {
       id: 'assumption-vocab-valid',
       prose: 'The records department encrypts every tape it holds.',
