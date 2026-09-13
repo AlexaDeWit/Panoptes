@@ -102,7 +102,11 @@
   background: var(--pn-colour-accent);
 }
 
+/* The border box has to fit the height Radix reports as available. Past it,
+   the panel overflows the app shell, which holds the menu through the chrome's
+   transform, and every focus on the panel scrolls the shell. */
 .panel {
+  box-sizing: border-box;
   max-height: var(--radix-dropdown-menu-content-available-height);
   overflow-y: auto;
   min-width: 18rem;
@@ -115,10 +119,8 @@
 }
 
 /* A submenu opens over the menu panel, so it takes the raised ground the card
-   and the other overlays use, to stand apart from the panel under it. Its
-   border box is what has to fit the height Radix reports as available. */
+   and the other overlays use, to stand apart from the panel under it. */
 .submenu {
-  box-sizing: border-box;
   background: var(--pn-colour-surface-raised);
 }
 
