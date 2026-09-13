@@ -91,17 +91,22 @@ export function ThreatEditor({
     }
   }, [focus, onFocused]);
 
-  const noteRefusal = (
-    field: TextFieldName,
-    draft: RefusedText | undefined,
+  const noteRefusals = (
+    changes: readonly (readonly [TextFieldName, RefusedText | undefined])[],
   ): void => {
     const noted = new Map(refusals);
-    if (draft === undefined) {
-      noted.delete(field);
-    } else {
-      noted.set(field, draft);
+    for (const [field, draft] of changes) {
+      if (draft === undefined) {
+        noted.delete(field);
+      } else {
+        noted.set(field, draft);
+      }
     }
-    if (draft !== undefined || refusals.has(field)) {
+    if (
+      changes.some(
+        ([field, draft]) => draft !== undefined || refusals.has(field),
+      )
+    ) {
       setRefusals(noted);
     }
     onRefusal(firstRefusal(noted));
@@ -110,7 +115,7 @@ export function ThreatEditor({
   const refused =
     (field: TextFieldName) =>
     (draft: RefusedDraft | undefined): void => {
-      noteRefusal(field, draft);
+      noteRefusals([[field, draft]]);
     };
 
   return (
@@ -200,7 +205,7 @@ export function ThreatEditor({
           held={held}
           kind={mitigationKind}
           onChange={onChange}
-          onRefused={noteRefusal}
+          onRefused={noteRefusals}
           refusals={refusals}
           threatId={threat.id}
         />
@@ -208,7 +213,7 @@ export function ThreatEditor({
           held={held}
           kind={assumptionKind}
           onChange={onChange}
-          onRefused={noteRefusal}
+          onRefused={noteRefusals}
           refusals={refusals}
           threatId={threat.id}
         />

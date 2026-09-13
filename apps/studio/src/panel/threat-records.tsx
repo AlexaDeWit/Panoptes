@@ -32,8 +32,7 @@ type RecordGroupProps<Held extends ThreatRecord> = {
   readonly refusals: ReadonlyMap<string, RefusedText>;
   readonly onChange: () => void;
   readonly onRefused: (
-    field: RecordFieldName,
-    draft: RefusedText | undefined,
+    changes: readonly (readonly [RecordFieldName, RefusedText | undefined])[],
   ) => void;
 };
 
@@ -96,7 +95,6 @@ export function RecordGroup<Held extends ThreatRecord>({
       : kind.restored(threatId, heldField.recordId, held?.status);
   });
   const focus = useRef<FocusRequest | undefined>(undefined);
-  const discarded = useRef<string | undefined>(undefined);
   const focusedRow = useRef<string | undefined>(undefined);
   const [chosen, setChosen] = useState<string | undefined>(undefined);
   const drafting =
@@ -113,7 +111,7 @@ export function RecordGroup<Held extends ThreatRecord>({
 
   useEffect(() => {
     if (stale !== undefined) {
-      onRefused(stale, undefined);
+      onRefused([[stale, undefined]]);
     }
   }, [stale, onRefused]);
 
@@ -138,7 +136,7 @@ export function RecordGroup<Held extends ThreatRecord>({
     (record: Held, part: RecordPart) =>
     (text: string): void => {
       const next = editedRecord(kind, record, part, text);
-      if (next === undefined || record.id === discarded.current) {
+      if (next === undefined) {
         return;
       }
       if (!drafting || record.id !== draft.id) {
@@ -210,26 +208,25 @@ export function RecordGroup<Held extends ThreatRecord>({
             onChange={onChange}
             onCommit={(part) => commit(record, part)}
             onRefused={(field, refusal) => {
-              onRefused(recordFieldName(field), refusal);
+              onRefused([[recordFieldName(field), refusal]]);
             }}
             onStatus={(status) => {
               if (drafting && record.id === draft.id) {
                 setDraft({ ...draft, status });
-                for (const [field, refusal] of refusals) {
-                  if (
+                onRefused(
+                  [...refusals].flatMap(([field, refusal]) =>
                     isRecordField(field, kind.noun) &&
                     recordFieldIn(field, kind.noun)?.recordId === draft.id
-                  ) {
-                    onRefused(field, { ...refusal, status });
-                  }
-                }
+                      ? [[field, { ...refusal, status }] as const]
+                      : [],
+                  ),
+                );
               } else {
                 dispatch(kind.setStatus(record, status));
               }
             }}
             onRemove={() => {
               if (drafting && record.id === draft.id) {
-                discarded.current = draft.id;
                 focus.current = { kind: 'add' };
                 setDraft(undefined);
               } else {

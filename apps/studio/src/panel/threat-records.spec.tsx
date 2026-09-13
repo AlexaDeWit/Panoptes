@@ -437,6 +437,30 @@ describe(
       ).toContain('valid');
       expect(present()).toBe(recordedModel);
     });
+
+    it('holds a picked status with every refused draft of a new row', async () => {
+      const user = userEvent.setup();
+      const onRefusal = vi.fn<(refused: RefusedField | undefined) => void>();
+      showRecords(threatOf(secondThreat), undefined, onRefusal);
+
+      await user.click(button('Add mitigation'));
+      await user.keyboard(`Pasted${softHyphen}title`);
+      await user.tab();
+      await user.keyboard(`Pasted${softHyphen}prose`);
+      await user.tab();
+      await chooseFrom('Mitigation 1 status', 'implemented');
+
+      const reported = onRefusal.mock.lastCall?.[0];
+      expect(reported?.field.startsWith('new-mitigation/title/')).toBe(true);
+      expect(reported?.status).toBe('implemented');
+      cleanup();
+      showRecords(threatOf(secondThreat), reported);
+
+      expect(
+        screen.getByRole('combobox', { name: 'Mitigation 1 status' })
+          .textContent,
+      ).toContain('implemented');
+    });
   },
   editorTimeout,
 );
