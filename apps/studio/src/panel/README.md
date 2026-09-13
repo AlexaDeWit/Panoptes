@@ -106,8 +106,11 @@ functions the groups read.
   assumption `unconfirmed`. Focus leaving a row whose fields are all empty
   closes it, with no record and no undo entry. The row keeps its place and
   its focus when it becomes a record, so typing a title and pressing Tab
-  lands in the same row's description. Tab out of the row's last field
-  after it became a record lands on its status rather than skipping it.
+  lands in the same row's description. The empty row already carries the
+  status control, which holds the starting status until the first commit
+  uses it, and a Discard control where a record row has Unlink. Nothing
+  moves when the row becomes a record, so Tab from its text reaches the
+  status and a click on Add or Link existing lands where it was aimed.
 - **Link existing** offers the model's records of that kind that are not on
   this threat, by title or first line of text, and links the one chosen.
 - Each row edits the record's text in place, changes its status in place and

@@ -82,8 +82,10 @@ describe(
       showRecords(threatOf(secondThreat));
 
       await user.click(button('Add mitigation'));
-      await user.tab();
-      await user.tab();
+      for (const _ of ['description', 'status', 'discard', 'add']) {
+        await user.tab();
+      }
+      expect(document.activeElement).toBe(button('Add mitigation'));
 
       expect(
         screen.queryByRole('textbox', { name: 'Mitigation 1 title' }),
@@ -371,6 +373,34 @@ describe(
       });
 
       expect(document.activeElement).toBe(button('Add mitigation'));
+    });
+
+    it('starts a record on the status chosen in its empty row, and Discard leaves nothing', async () => {
+      const user = userEvent.setup();
+      showRecords(threatOf(secondThreat));
+
+      await user.click(button('Add mitigation'));
+      await chooseFrom('Mitigation 1 status', 'implemented');
+      expect(present()).toBe(recordedModel);
+      await user.click(button('Discard mitigation 1'));
+
+      expect(
+        screen.queryByRole('textbox', { name: 'Mitigation 1 title' }),
+      ).toBeNull();
+      expect(document.activeElement).toBe(button('Add mitigation'));
+      expect(present()).toBe(recordedModel);
+
+      await user.click(button('Add mitigation'));
+      await chooseFrom('Mitigation 1 status', 'implemented');
+      await user.click(textbox('Mitigation 1 title'));
+      await user.keyboard('Sign every share link');
+      await user.tab();
+
+      expect(present().mitigations.at(-1)).toMatchObject({
+        title: 'Sign every share link',
+        status: 'implemented',
+      });
+      expect(undoable()).toBe(1);
     });
   },
   editorTimeout,

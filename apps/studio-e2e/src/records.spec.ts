@@ -124,6 +124,47 @@ test('Tab out of a new record reaches its status, and undoing the record keeps f
   await expect(control(page, 'Add assumption')).toBeFocused();
 });
 
+test('a click on Add right after typing in a new row keeps the record and opens the next row', async ({
+  page,
+}) => {
+  await openEcluse(page);
+  await selectNode(page, proxy);
+  await expandThreat(page, forwarded);
+
+  const add = control(page, 'Add mitigation');
+  await add.click();
+  await page.keyboard.type('Strip caller tokens at the edge');
+  await add.click();
+
+  await expect(field(page, 'textbox', 'Mitigation 1 title')).toHaveValue(
+    'Strip caller tokens at the edge',
+  );
+  await expect(field(page, 'textbox', 'Mitigation 2 title')).toBeFocused();
+});
+
+test('Shift+Tab from Existing reaches Add after a new row became a record', async ({
+  page,
+}) => {
+  await openEcluse(page);
+  await selectNode(page, proxy);
+  await expandThreat(page, forwarded);
+  await control(page, 'Add mitigation').click();
+  await page.keyboard.type('Bound every upstream response');
+  await page.keyboard.press('Tab');
+
+  await expandThreat(page, chokepoint);
+  await control(page, 'Add mitigation').click();
+  await page.keyboard.type('Shed load at the chokepoint');
+  const existing = field(page, 'combobox', 'Existing mitigation');
+  await existing.focus();
+  await expect(field(page, 'textbox', 'Mitigation 1 title')).toHaveValue(
+    'Shed load at the chokepoint',
+  );
+  await page.keyboard.press('Shift+Tab');
+
+  await expect(control(page, 'Add mitigation')).toBeFocused();
+});
+
 test('leaving the empty row leaves no record and nothing to undo', async ({
   page,
 }) => {
@@ -135,6 +176,10 @@ test('leaving the empty row leaves no record and nothing to undo', async ({
   await add.click();
   const prose = field(page, 'textbox', 'Assumption 1');
   await expect(prose).toBeFocused();
+  await page.keyboard.press('Tab');
+  await expect(field(page, 'combobox', 'Assumption 1 status')).toBeFocused();
+  await page.keyboard.press('Tab');
+  await expect(control(page, 'Discard assumption 1')).toBeFocused();
   await page.keyboard.press('Tab');
 
   await expect(add).toBeFocused();
