@@ -110,7 +110,11 @@ functions the groups read.
   status control, which holds the starting status until the first commit
   uses it, and a Discard control where a record row has Unlink. Nothing
   moves when the row becomes a record, so Tab from its text reaches the
-  status and a click on Add or Link existing lands where it was aimed.
+  status and a click on Add or Link existing lands where it was aimed. A
+  pointer press on Discard keeps focus in the text, so typed text is
+  discarded rather than committed. From the keyboard, Tab out of typed text
+  commits it, and the control reads Unlink by the time it has focus: to
+  discard from the keyboard, clear the text first.
 - **Link existing** offers the model's records of that kind that are not on
   this threat, by title or first line of text, and links the one chosen.
 - Each row edits the record's text in place, changes its status in place and
@@ -127,8 +131,8 @@ and leaves every threat's status alone. A record text commit that changes
 nothing dispatches nothing. Refused record text is held as threat text is
 ([the commit rule](#the-commit-rule)): the field keeps the draft, the threat
 stays expanded, and the draft survives the panel closing. A refused draft in
-an empty row keeps the row open and reopens that row when the panel opens
-again. A draft for a record no longer on the threat is dropped, whether the
+an empty row keeps the row open and reopens that row, with the status
+picked in it, when the panel opens again. A draft for a record no longer on the threat is dropped, whether the
 panel was open or closed when the record went.
 
 Control names carry the kind and the row's position: "Mitigation 2 title",

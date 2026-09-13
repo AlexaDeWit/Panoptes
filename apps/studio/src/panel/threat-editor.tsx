@@ -20,10 +20,13 @@ const textFields = ['Title', 'Description', 'Mitigation'] as const;
 /** Which text field of a threat, or of one of its records, a draft was typed in. */
 export type TextFieldName = (typeof textFields)[number] | RecordFieldName;
 
-/** A refused draft with the field it was typed in, which is what puts it back. */
-export type RefusedField = RefusedDraft & { readonly field: TextFieldName };
+/** A refused draft, and the status picked in the empty record row it was typed in, if it was typed in one. */
+export type RefusedText = RefusedDraft & { readonly status?: string };
 
-type Refusals = ReadonlyMap<TextFieldName, RefusedDraft>;
+/** A refused draft with the field it was typed in, which is what puts it back. */
+export type RefusedField = RefusedText & { readonly field: TextFieldName };
+
+type Refusals = ReadonlyMap<TextFieldName, RefusedText>;
 
 function firstRefusal(refusals: Refusals): RefusedField | undefined {
   const field =
@@ -90,7 +93,7 @@ export function ThreatEditor({
 
   const noteRefusal = (
     field: TextFieldName,
-    draft: RefusedDraft | undefined,
+    draft: RefusedText | undefined,
   ): void => {
     const noted = new Map(refusals);
     if (draft === undefined) {
@@ -109,8 +112,6 @@ export function ThreatEditor({
     (draft: RefusedDraft | undefined): void => {
       noteRefusal(field, draft);
     };
-
-  const refusedNames = new Set<string>(refusals.keys());
 
   return (
     <Accordion.Item className={styles.item} value={threat.id}>
@@ -200,7 +201,7 @@ export function ThreatEditor({
           kind={mitigationKind}
           onChange={onChange}
           onRefused={noteRefusal}
-          refused={refusedNames}
+          refusals={refusals}
           threatId={threat.id}
         />
         <RecordGroup
@@ -208,7 +209,7 @@ export function ThreatEditor({
           kind={assumptionKind}
           onChange={onChange}
           onRefused={noteRefusal}
-          refused={refusedNames}
+          refusals={refusals}
           threatId={threat.id}
         />
         {spread > 1 && (

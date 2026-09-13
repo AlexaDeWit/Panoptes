@@ -40,7 +40,11 @@ export type RecordKind<Held extends ThreatRecord> = {
   readonly statuses: readonly Held['status'][];
   readonly held: (model: Model) => readonly Held[];
   readonly fresh: (threatId: ThreatId) => Held;
-  readonly restored: (threatId: ThreatId, id: string) => Held | undefined;
+  readonly restored: (
+    threatId: ThreatId,
+    id: string,
+    status: string | undefined,
+  ) => Held | undefined;
   readonly withText: (record: Held, part: RecordPart, text: string) => Held;
   readonly add: (record: Held) => Action;
   readonly replace: (record: Held) => Action;
@@ -64,10 +68,15 @@ export const mitigationKind: RecordKind<Mitigation> = {
     status: 'proposed',
     threats: [threatId],
   }),
-  restored: (threatId, id) => {
+  restored: (threatId, id, status) => {
     const parsed = mitigationIdSchema.safeParse(id);
+    const fresh = mitigationKind.fresh(threatId);
     return parsed.success
-      ? { ...mitigationKind.fresh(threatId), id: parsed.data }
+      ? {
+          ...fresh,
+          id: parsed.data,
+          status: mitigationStatusSchema.catch(fresh.status).parse(status),
+        }
       : undefined;
   },
   withText: (record, part, text) =>
@@ -96,10 +105,15 @@ export const assumptionKind: RecordKind<Assumption> = {
     status: 'unconfirmed',
     threats: [threatId],
   }),
-  restored: (threatId, id) => {
+  restored: (threatId, id, status) => {
     const parsed = assumptionIdSchema.safeParse(id);
+    const fresh = assumptionKind.fresh(threatId);
     return parsed.success
-      ? { ...assumptionKind.fresh(threatId), id: parsed.data }
+      ? {
+          ...fresh,
+          id: parsed.data,
+          status: assumptionStatusSchema.catch(fresh.status).parse(status),
+        }
       : undefined;
   },
   withText: (record, part, text) =>

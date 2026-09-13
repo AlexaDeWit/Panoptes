@@ -1,5 +1,5 @@
 import type { Threat } from '@saerskriven/model';
-import { act, render, screen } from '@testing-library/react';
+import { act, cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Accordion } from 'radix-ui';
 import { Action } from '../store/actions.js';
@@ -401,6 +401,41 @@ describe(
         status: 'implemented',
       });
       expect(undoable()).toBe(1);
+    });
+
+    it('discards typed text in a new row on a pointer press of Discard, with no record and no undo entry', async () => {
+      const user = userEvent.setup();
+      showRecords(threatOf(secondThreat));
+
+      await user.click(button('Add mitigation'));
+      await user.keyboard('Sign every share link');
+      await user.click(button('Discard mitigation 1'));
+
+      expect(present()).toBe(recordedModel);
+      expect(undoable()).toBe(0);
+      expect(document.activeElement).toBe(button('Add mitigation'));
+    });
+
+    it('holds the status picked in a new row with its refused draft, and restores both', async () => {
+      const user = userEvent.setup();
+      const onRefusal = vi.fn<(refused: RefusedField | undefined) => void>();
+      showRecords(threatOf(secondThreat), undefined, onRefusal);
+
+      await user.click(button('Add assumption'));
+      await user.keyboard(`Pasted${softHyphen}prose`);
+      await user.tab();
+      await chooseFrom('Assumption 1 status', 'valid');
+
+      const reported = onRefusal.mock.lastCall?.[0];
+      expect(reported?.status).toBe('valid');
+      cleanup();
+      showRecords(threatOf(secondThreat), reported);
+
+      expect(
+        screen.getByRole('combobox', { name: 'Assumption 1 status' })
+          .textContent,
+      ).toContain('valid');
+      expect(present()).toBe(recordedModel);
     });
   },
   editorTimeout,

@@ -20,20 +20,20 @@ import {
   type RecordPart,
   type ThreatRecord,
 } from './records.js';
-import type { RefusedField } from './threat-editor.js';
+import type { RefusedField, RefusedText } from './threat-editor.js';
 import styles from './threat-panel.module.css';
 
-type HeldText = Pick<RefusedField, 'field' | 'text'>;
+type HeldText = Pick<RefusedField, 'field' | 'text' | 'status'>;
 
 type RecordGroupProps<Held extends ThreatRecord> = {
   readonly kind: RecordKind<Held>;
   readonly threatId: ThreatId;
   readonly held: HeldText | undefined;
-  readonly refused: ReadonlySet<string>;
+  readonly refusals: ReadonlyMap<string, RefusedText>;
   readonly onChange: () => void;
   readonly onRefused: (
     field: RecordFieldName,
-    draft: RefusedDraft | undefined,
+    draft: RefusedText | undefined,
   ) => void;
 };
 
@@ -79,7 +79,7 @@ export function RecordGroup<Held extends ThreatRecord>({
   kind,
   threatId,
   held,
-  refused,
+  refusals,
   onChange,
   onRefused,
 }: RecordGroupProps<Held>) {
@@ -93,16 +93,17 @@ export function RecordGroup<Held extends ThreatRecord>({
       !heldField.pending ||
       all.some(({ id }) => id === heldField.recordId)
       ? undefined
-      : kind.restored(threatId, heldField.recordId);
+      : kind.restored(threatId, heldField.recordId, held?.status);
   });
   const focus = useRef<FocusRequest | undefined>(undefined);
+  const discarded = useRef<string | undefined>(undefined);
   const focusedRow = useRef<string | undefined>(undefined);
   const [chosen, setChosen] = useState<string | undefined>(undefined);
   const drafting =
     draft !== undefined && !records.some(({ id }) => id === draft.id);
   const rows = drafting ? [...records, draft] : records;
   const shown = new Set<string>(rows.map(({ id }) => id));
-  const stale = [...refused, held?.field ?? '']
+  const stale = [...refusals.keys(), held?.field ?? '']
     .filter((field) => isRecordField(field, kind.noun))
     .find(
       (field) => !shown.has(recordFieldIn(field, kind.noun)?.recordId ?? field),
@@ -137,7 +138,7 @@ export function RecordGroup<Held extends ThreatRecord>({
     (record: Held, part: RecordPart) =>
     (text: string): void => {
       const next = editedRecord(kind, record, part, text);
-      if (next === undefined) {
+      if (next === undefined || record.id === discarded.current) {
         return;
       }
       if (!drafting || record.id !== draft.id) {
@@ -214,12 +215,21 @@ export function RecordGroup<Held extends ThreatRecord>({
             onStatus={(status) => {
               if (drafting && record.id === draft.id) {
                 setDraft({ ...draft, status });
+                for (const [field, refusal] of refusals) {
+                  if (
+                    isRecordField(field, kind.noun) &&
+                    recordFieldIn(field, kind.noun)?.recordId === draft.id
+                  ) {
+                    onRefused(field, { ...refusal, status });
+                  }
+                }
               } else {
                 dispatch(kind.setStatus(record, status));
               }
             }}
             onRemove={() => {
               if (drafting && record.id === draft.id) {
+                discarded.current = draft.id;
                 focus.current = { kind: 'add' };
                 setDraft(undefined);
               } else {
@@ -290,7 +300,7 @@ type RecordRowProps<Held extends ThreatRecord> = {
   readonly onCommit: (part: RecordPart) => (text: string) => void;
   readonly onRefused: (
     field: RecordField,
-    refusal: RefusedDraft | undefined,
+    refusal: RefusedText | undefined,
   ) => void;
   readonly onStatus: (status: Held['status']) => void;
   readonly onRemove: () => void;
@@ -329,7 +339,9 @@ function RecordRow<Held extends ThreatRecord>({
     onRefused: (refusal: RefusedDraft | undefined) => {
       onRefused(
         { noun: kind.noun, part, recordId: record.id, pending: draft },
-        refusal,
+        refusal !== undefined && draft
+          ? { ...refusal, status: record.status }
+          : refusal,
       );
     },
     value: textOf(record, part),
@@ -360,6 +372,13 @@ function RecordRow<Held extends ThreatRecord>({
           className={styles.recordAction}
           data-unlink-record={draft ? undefined : true}
           onClick={onRemove}
+          onMouseDown={
+            draft
+              ? (event) => {
+                  event.preventDefault();
+                }
+              : undefined
+          }
           type="button"
         >
           {draft ? 'Discard' : 'Unlink'} {name.toLowerCase()}

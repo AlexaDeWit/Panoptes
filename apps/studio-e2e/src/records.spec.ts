@@ -165,6 +165,25 @@ test('Shift+Tab from Existing reaches Add after a new row became a record', asyn
   await expect(control(page, 'Add mitigation')).toBeFocused();
 });
 
+test('Discard on a new row with typed text leaves no record and nothing to undo', async ({
+  page,
+  isMobile,
+}) => {
+  await openEcluse(page);
+  await selectNode(page, proxy);
+  await expandThreat(page, forwarded);
+
+  const add = control(page, 'Add mitigation');
+  await add.click();
+  await page.keyboard.type('Strip caller tokens at the edge');
+  const discard = control(page, 'Discard mitigation 1');
+  await (isMobile ? discard.tap() : discard.click());
+
+  await expect(field(page, 'textbox', 'Mitigation 1 title')).toHaveCount(0);
+  await expect(add).toBeFocused();
+  expect(await undoOffered(page)).toBe(false);
+});
+
 test('leaving the empty row leaves no record and nothing to undo', async ({
   page,
 }) => {
