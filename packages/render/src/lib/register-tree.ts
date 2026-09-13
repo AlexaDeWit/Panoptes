@@ -1,19 +1,21 @@
 import type { RegisterBadge } from '@saerskriven/canvas';
 import type { RegisterOptions } from './register-options.js';
-import type {
-  CustomCategory,
-  Element,
-  Model,
-  Severity,
-  Threat,
-  ThreatCategory,
-  ThreatStatus,
+import {
+  threatFlags,
+  type Assumption,
+  type Element,
+  type Mitigation,
+  type Model,
+  type Threat,
 } from '@saerskriven/model';
 import type {
+  BlockContent,
+  DefinitionContent,
   Heading,
   Html,
   Link,
   List,
+  ListItem,
   Nodes,
   Paragraph,
   Parents,
@@ -29,6 +31,7 @@ import remarkGfm from 'remark-gfm';
 import remarkParse from 'remark-parse';
 import { unified } from 'unified';
 import { visit } from 'unist-util-visit';
+import { badgeLabel, categoryLabel } from './register-labels.js';
 
 const prose = unified().use(remarkParse).use(remarkGfm);
 
@@ -62,81 +65,34 @@ const overviewColumns = [
   'Status',
 ] as const;
 
-const noElements = 'None';
+const none = 'None';
 
 const noProse = 'None recorded.';
 
 const noThreats = 'This model records no threats.';
 
-const severityLabels = {
-  low: 'Low',
-  medium: 'Medium',
-  high: 'High',
-  critical: 'Critical',
-  undecided: 'Undecided',
-} satisfies Record<Severity, string>;
+const recordNesting = 2;
 
-const statusLabels = {
-  open: 'Open',
-  mitigated: 'Mitigated',
-  transferred: 'Transferred',
-  avoided: 'Avoided',
-  'accepted-risk': 'Accepted risk',
-  eliminated: 'Eliminated',
-  'not-applicable': 'Not applicable',
-} satisfies Record<ThreatStatus, string>;
+type FlowContent = BlockContent | DefinitionContent;
 
-type EnumeratedCategory = Exclude<ThreatCategory, CustomCategory>;
+const flowTypes = {
+  blockquote: true,
+  code: true,
+  definition: true,
+  footnoteDefinition: true,
+  heading: true,
+  html: true,
+  list: true,
+  paragraph: true,
+  table: true,
+  thematicBreak: true,
+} satisfies Record<FlowContent['type'], true>;
 
-type CategoryLabels = {
-  [Variant in EnumeratedCategory as Variant['methodology']]: Record<
-    Variant['category'],
-    string
-  >;
+type SectionContext = {
+  readonly model: Model;
+  readonly elements: ReadonlyMap<string, Element>;
+  readonly depth: Heading['depth'];
 };
-
-const categoryLabels = {
-  STRIDE: {
-    spoofing: 'Spoofing',
-    tampering: 'Tampering',
-    repudiation: 'Repudiation',
-    'information-disclosure': 'Information disclosure',
-    'denial-of-service': 'Denial of service',
-    'elevation-of-privilege': 'Elevation of privilege',
-  },
-  LINDDUN: {
-    linking: 'Linking',
-    identifying: 'Identifying',
-    'non-repudiation': 'Non-repudiation',
-    detecting: 'Detecting',
-    'data-disclosure': 'Data disclosure',
-    unawareness: 'Unawareness',
-    'non-compliance': 'Non-compliance',
-  },
-  CIA: {
-    confidentiality: 'Confidentiality',
-    integrity: 'Integrity',
-    availability: 'Availability',
-  },
-  'CIA-DIE': {
-    confidentiality: 'Confidentiality',
-    integrity: 'Integrity',
-    availability: 'Availability',
-    distributed: 'Distributed',
-    immutable: 'Immutable',
-    ephemeral: 'Ephemeral',
-  },
-  PLOT4ai: {
-    'accountability-and-human-oversight': 'Accountability and human oversight',
-    'bias-fairness-and-discrimination': 'Bias, fairness and discrimination',
-    cybersecurity: 'Cybersecurity',
-    'data-and-data-governance': 'Data and data governance',
-    'ethics-and-human-rights': 'Ethics and human rights',
-    'privacy-and-data-protection': 'Privacy and data protection',
-    'safety-and-environmental-impact': 'Safety and environmental impact',
-    'transparency-and-accessibility': 'Transparency and accessibility',
-  },
-} satisfies CategoryLabels;
 
 /** Builds the shared register tree in threat-number order. */
 export function registerDocument(
@@ -144,10 +100,13 @@ export function registerDocument(
   options: RegisterOptions = {},
 ): Root {
   const first = options.headingLevel ?? 1;
-  const sectionDepth = boundedDepth(first + (options.title === false ? 0 : 1));
   const threats = [...model.threats];
   threats.sort((left, right) => left.number - right.number);
-  const elements = elementsById(model);
+  const context: SectionContext = {
+    model,
+    elements: elementsById(model),
+    depth: boundedDepth(first + (options.title === false ? 0 : 1)),
+  };
   return {
     type: 'root',
     children: [
@@ -157,10 +116,8 @@ export function registerDocument(
       ...(threats.length === 0
         ? [paragraph(noThreats)]
         : [
-            overviewTable(threats, elements),
-            ...threats.flatMap((threat) =>
-              threatSection(threat, elements, sectionDepth),
-            ),
+            overviewTable(threats, context.elements),
+            ...threats.flatMap((threat) => threatSection(threat, context)),
           ]),
     ],
   };
@@ -197,8 +154,8 @@ function overviewTable(
           threat.title,
           elementNames(threat, elements),
           categoryLabel(threat.category),
-          severityText(threat),
-          statusText(threat),
+          badgeText({ kind: 'severity', value: threat.severity }),
+          badgeText({ kind: 'status', value: threat.status }),
         ]),
       ),
     ],
@@ -215,20 +172,32 @@ function tableRow(cells: readonly (PhrasingContent | string)[]): TableRow {
   };
 }
 
-function threatSection(
-  threat: Threat,
-  elements: ReadonlyMap<string, Element>,
-  sectionDepth: Heading['depth'],
-): RootContent[] {
+function threatSection(threat: Threat, context: SectionContext): RootContent[] {
   return [
     threatAnchor(threat.number),
     heading(
-      sectionDepth,
+      context.depth,
       headingText(`Threat ${threat.number}: ${threat.title}`),
     ),
-    fieldList(threat, elements),
-    ...proseSection('Description', threat.description, sectionDepth),
-    ...proseSection('Mitigation', threat.mitigation, sectionDepth),
+    fieldList(threat, context),
+    ...labelled('Description', proseContent(threat.description, context)),
+    ...labelled('Mitigation', proseContent(threat.mitigation, context)),
+    ...labelled(
+      'Mitigations',
+      recordList(
+        linked(context.model.mitigations, threat).map((mitigation) =>
+          mitigationItem(mitigation, context),
+        ),
+      ),
+    ),
+    ...labelled(
+      'Assumptions',
+      recordList(
+        linked(context.model.assumptions, threat).map((assumption) =>
+          assumptionItem(assumption, context),
+        ),
+      ),
+    ),
   ];
 }
 
@@ -254,15 +223,23 @@ function threatTarget(number: number): string {
   return `threat-${String(number)}`;
 }
 
-function fieldList(
-  threat: Threat,
-  elements: ReadonlyMap<string, Element>,
-): List {
-  const fields: readonly (readonly [string, Text])[] = [
-    ['Elements', text(elementNames(threat, elements))],
-    ['Category', text(categoryLabel(threat.category))],
-    ['Severity', severityText(threat)],
-    ['Status', statusText(threat)],
+function fieldList(threat: Threat, context: SectionContext): List {
+  const flags = threatFlags(context.model, threat).map((flag) =>
+    badgeText({ kind: 'flag', value: flag }),
+  );
+  const fields: readonly (readonly [string, readonly PhrasingContent[]])[] = [
+    ['Elements', [text(elementNames(threat, context.elements))]],
+    ['Category', [text(categoryLabel(threat.category))]],
+    ['Severity', [badgeText({ kind: 'severity', value: threat.severity })]],
+    ['Status', [badgeText({ kind: 'status', value: threat.status })]],
+    [
+      'Flags',
+      flags.length === 0
+        ? [text(none)]
+        : flags.flatMap((flag, index) =>
+            index === 0 ? [flag] : [text(', '), flag],
+          ),
+    ],
   ];
   return {
     type: 'list',
@@ -277,7 +254,7 @@ function fieldList(
           children: [
             { type: 'strong', children: [text(label)] },
             text(': '),
-            value,
+            ...value,
           ],
         },
       ],
@@ -285,35 +262,87 @@ function fieldList(
   };
 }
 
-function proseSection(
-  label: string,
-  written: string,
-  sectionDepth: Heading['depth'],
-): RootContent[] {
+function labelled(label: string, content: RootContent[]): RootContent[] {
   return [
     {
       type: 'paragraph',
       children: [{ type: 'strong', children: [text(label)] }],
     },
-    ...proseContent(written, sectionDepth),
+    ...content,
   ];
+}
+
+function linked<Linked extends Mitigation | Assumption>(
+  records: readonly Linked[],
+  threat: Threat,
+): Linked[] {
+  return records.filter((record) => record.threats.includes(threat.id));
+}
+
+function recordList(items: readonly ListItem[]): RootContent[] {
+  return items.length === 0
+    ? [paragraph(noProse)]
+    : [{ type: 'list', ordered: false, spread: true, children: [...items] }];
+}
+
+function mitigationItem(
+  mitigation: Mitigation,
+  context: SectionContext,
+): ListItem {
+  const title = headingText(mitigation.title);
+  return recordItem(
+    [
+      badgeText({ kind: 'mitigation', value: mitigation.status }),
+      ...(title.length === 0
+        ? []
+        : [text(' '), { type: 'strong' as const, children: [text(title)] }]),
+    ],
+    proseContent(mitigation.prose, context, recordNesting),
+  );
+}
+
+function assumptionItem(
+  assumption: Assumption,
+  context: SectionContext,
+): ListItem {
+  return recordItem(
+    [badgeText({ kind: 'assumption', value: assumption.status })],
+    proseContent(assumption.prose, context, recordNesting),
+  );
+}
+
+function recordItem(lead: PhrasingContent[], content: FlowContent[]): ListItem {
+  return {
+    type: 'listItem',
+    spread: true,
+    children: [{ type: 'paragraph', children: lead }, ...content],
+  };
 }
 
 function proseContent(
   written: string,
-  sectionDepth: Heading['depth'],
-): RootContent[] {
+  context: SectionContext,
+  enclosing = 0,
+): FlowContent[] {
   const parsed = prose.parse(written);
   if (parsed.children.length === 0) {
     return [paragraph(noProse)];
   }
-  if (nestingOf(parsed) > deepestProse) {
+  const flow = parsed.children.filter(isFlow);
+  if (
+    flow.length < parsed.children.length ||
+    nestingOf(parsed) + enclosing > deepestProse
+  ) {
     return [paragraph(written)];
   }
   visit(parsed, 'heading', (node) => {
-    node.depth = boundedDepth(sectionDepth + node.depth);
+    node.depth = boundedDepth(context.depth + node.depth);
   });
-  return parsed.children;
+  return flow;
+}
+
+function isFlow(node: RootContent): node is FlowContent {
+  return Object.hasOwn(flowTypes, node.type);
 }
 
 function nestingOf(tree: Root): number {
@@ -341,7 +370,7 @@ function elementNames(
   elements: ReadonlyMap<string, Element>,
 ): string {
   return threat.elements.length === 0
-    ? noElements
+    ? none
     : threat.elements.map((id) => elementName(id, elements)).join(', ');
 }
 
@@ -351,35 +380,6 @@ function elementName(
 ): string {
   const element = elements.get(id);
   return element === undefined || element.name.length === 0 ? id : element.name;
-}
-
-function categoryLabel(category: ThreatCategory): string {
-  return `${categoryName(category)} (${methodologyName(category)})`;
-}
-
-function categoryName(category: ThreatCategory): string {
-  if (category.methodology === 'STRIDE') {
-    return categoryLabels.STRIDE[category.category];
-  }
-  if (category.methodology === 'LINDDUN') {
-    return categoryLabels.LINDDUN[category.category];
-  }
-  if (category.methodology === 'CIA') {
-    return categoryLabels.CIA[category.category];
-  }
-  if (category.methodology === 'CIA-DIE') {
-    return categoryLabels['CIA-DIE'][category.category];
-  }
-  if (category.methodology === 'PLOT4ai') {
-    return categoryLabels.PLOT4ai[category.category];
-  }
-  return category.category;
-}
-
-function methodologyName(category: ThreatCategory): string {
-  return category.methodology === 'custom'
-    ? category.methodologyName
-    : category.methodology;
 }
 
 function heading(depth: Heading['depth'], value: string): Heading {
@@ -398,18 +398,10 @@ function boundedDepth(depth: number): Heading['depth'] {
   return headingDepths[Math.min(6, Math.max(1, depth)) - 1];
 }
 
-function severityText(threat: Threat): Text {
+function badgeText(badge: RegisterBadge): Text {
   return {
     type: 'text',
-    value: severityLabels[threat.severity],
-    data: { registerBadge: { kind: 'severity', value: threat.severity } },
-  };
-}
-
-function statusText(threat: Threat): Text {
-  return {
-    type: 'text',
-    value: statusLabels[threat.status],
-    data: { registerBadge: { kind: 'status', value: threat.status } },
+    value: badgeLabel(badge),
+    data: { registerBadge: badge },
   };
 }

@@ -297,7 +297,7 @@ describe('render', () => {
       expect(run.outcome).toEqual({ code: 0, out: '', err: '' });
       const pdf = run.bytes();
       expect(pdf.subarray(0, 5).toString('latin1')).toBe('%PDF-');
-      expect(pageCount(pdf)).toBe(14);
+      expect(pageCount(pdf)).toBe(18);
       expect(createHash('sha256').update(pdf).digest('hex')).toBe(pdfDigest);
     },
     compileTimeout,
@@ -313,7 +313,7 @@ describe('render', () => {
       );
       expect(outcome.code).toBe(0);
       expect(outcome.out).toBeInstanceOf(Uint8Array);
-      expect(pageCount(bytesOf(outcome.out))).toBe(14);
+      expect(pageCount(bytesOf(outcome.out))).toBe(18);
     },
     compileTimeout,
   );

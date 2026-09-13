@@ -137,6 +137,36 @@ describe('an install with the module and no font face', () => {
 });
 
 describe('the hostile fixture', () => {
+  it("writes no # outside a string literal but the package's own calls", () => {
+    const outsideLiterals = hostileSource.replace(
+      /"(?:[^"\\]|\\[\s\S])*"/gu,
+      '""',
+    );
+    const calls = new Set(
+      [...outsideLiterals.matchAll(/#(""|[a-z-]+|.)/gu)].map(
+        (found) => found[1],
+      ),
+    );
+    expect(calls).toEqual(
+      new Set([
+        '""',
+        'emph',
+        'grid',
+        'heading',
+        'image',
+        'let',
+        'list',
+        'page',
+        'raw',
+        'saer-badge',
+        'set',
+        'show',
+        'strong',
+        'table',
+      ]),
+    );
+  });
+
   it(
     'compiles to a PDF of the pages its two threats need',
     async () => {
@@ -156,6 +186,7 @@ describe('the hostile fixture', () => {
         'Threat 1: Title #eval("1+1") <script>alert(1)</script>',
         'Threat 2: Raw HTML in prose',
         '<img src=x onerror="alert(3)">',
+        '<img src=x onerror="alert(6)">',
         'Injection model #eval("1+1")',
       ]);
     },

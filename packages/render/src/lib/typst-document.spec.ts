@@ -1,4 +1,6 @@
 import {
+  assumptionSchema,
+  mitigationSchema,
   parseModel,
   threatSchema,
   type Model,
@@ -55,6 +57,37 @@ const modelOf = (threats: readonly Threat[], title = 'Sample'): Model => ({
 });
 
 const sourceOf = (model: Model): string => renderTypst(model).typst;
+
+const recordsModel = (
+  mitigations: readonly {
+    readonly prose: string;
+    readonly threats?: readonly string[];
+  }[],
+  assumptions: readonly { readonly prose: string }[] = [],
+): Model => ({
+  ...modelOf([threatOf({ number: 1 }), threatOf({ number: 2 })]),
+  mitigations: mitigations.map((fields, index) =>
+    mitigationSchema.parse({
+      id: `mitigation-${String(index)}`,
+      title: '',
+      status: 'proposed',
+      threats: ['threat-1'],
+      ...fields,
+    }),
+  ),
+  assumptions: assumptions.map((fields, index) =>
+    assumptionSchema.parse({
+      id: `assumption-${String(index)}`,
+      status: 'valid',
+      elements: [],
+      threats: ['threat-1'],
+      ...fields,
+    }),
+  ),
+});
+
+const between = (source: string, from: string, to: string): string =>
+  source.slice(source.indexOf(from), source.indexOf(to, source.indexOf(from)));
 
 const proseOf = (written: string): string =>
   sourceOf(modelOf([threatOf({ number: 1, description: written })]));
@@ -228,6 +261,61 @@ describe('threat prose', () => {
 
   it('collapses a soft line break inside a paragraph to a space', () => {
     expect(proseOf('first\nsecond')).toContain('#"first second"');
+  });
+});
+
+describe("a threat's records", () => {
+  it('lists the linked records with their status badges, in model order', () => {
+    const source = sourceOf(
+      recordsModel(
+        [
+          { prose: 'alpha' },
+          { prose: 'elsewhere', threats: ['threat-2'] },
+          { prose: 'beta' },
+        ],
+        [{ prose: 'gamma' }],
+      ),
+    );
+    const threatOne = between(source, '#"Threat 1: ', '#"Threat 2: ');
+    const mitigations = between(
+      threatOne,
+      '#strong[#"Mitigations"]',
+      '#strong[#"Assumptions"]',
+    );
+    const assumptions = threatOne.slice(
+      threatOne.indexOf('#strong[#"Assumptions"]'),
+    );
+    expect(mitigations.split('#saer-badge(').length - 1).toBe(2);
+    expect(mitigations.indexOf('#"alpha"')).toBeLessThan(
+      mitigations.indexOf('#"beta"'),
+    );
+    expect(mitigations.indexOf('#"alpha"')).toBeGreaterThan(-1);
+    expect(assumptions.split('#saer-badge(').length - 1).toBe(1);
+    expect(assumptions).toContain('#"gamma"');
+    expect(threatOne).not.toContain('elsewhere');
+  });
+
+  it('writes record prose under the promises threat prose keeps', () => {
+    const source = sourceOf(
+      recordsModel([
+        { prose: '# Rollout\n\n- one\n- two\n\n<b onclick="x()">bold</b>' },
+      ]),
+    );
+    expect(source).toContain('#heading(level: 3)[#"Rollout"]');
+    expect(source).toContain('#list([#"one"], [#"two"])');
+    expect(source).toContain('#"<b onclick=\\"x()\\">"');
+    expect(withoutLiterals(source)).not.toContain('<b');
+  });
+
+  it('writes record prose past the depth bound, counted from the register root, as the bytes the author wrote', () => {
+    const admitted = sourceOf(
+      recordsModel([{ prose: nested(deepestProse - 4) }]),
+    );
+    const refused = sourceOf(
+      recordsModel([{ prose: nested(deepestProse - 3) }]),
+    );
+    expect(quotesIn(admitted)).toBe(deepestProse - 4);
+    expect(quotesIn(refused)).toBe(0);
   });
 });
 

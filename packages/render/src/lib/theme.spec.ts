@@ -2,13 +2,18 @@ import {
   badgeTextColour,
   contrastRatio,
   defaultRenderTheme,
+  registerBadgeKinds,
   severityToneClass,
 } from '@saerskriven/canvas';
 import { Either } from 'effect';
 import { readFileSync } from 'node:fs';
 import { typstFontAssets, typstWasmModule } from '../build-assets.js';
 import { compilePdf } from '../pdf.js';
-import { threatSchema } from '@saerskriven/model';
+import {
+  assumptionSchema,
+  mitigationSchema,
+  threatSchema,
+} from '@saerskriven/model';
 import { ecluseModel } from '../goldens.fixtures.js';
 import { renderRegister } from './markdown-register.js';
 import { registerDocument } from './register-tree.js';
@@ -32,6 +37,24 @@ const sample = {
       id: 'accepted-example',
       number: 8,
       status: 'accepted-risk',
+    }),
+  ],
+  mitigations: [
+    mitigationSchema.parse({
+      id: 'mitigation-example',
+      title: '',
+      prose: '',
+      status: 'proposed',
+      threats: ['accepted-example'],
+    }),
+  ],
+  assumptions: [
+    assumptionSchema.parse({
+      id: 'assumption-example',
+      prose: '',
+      status: 'invalidated',
+      elements: [],
+      threats: ['accepted-example'],
     }),
   ],
 };
@@ -113,6 +136,40 @@ describe('consumer themes', () => {
     expect(embedded).toContain('.pn-tone-high { fill: #b45309;');
   });
 
+  it('loads a theme written before record and flag badges with no warning', () => {
+    const read = readThemeOverrides({
+      severity: { high: '#b45309' },
+      status: { open: '#223344' },
+      colours: { text: '#111111' },
+      fonts: { body: 'Liberation Mono' },
+      badges: { style: 'outline' },
+    });
+    expect(read.diagnostics).toEqual([]);
+    expect(read.theme.mitigation).toEqual(defaultRenderTheme.mitigation);
+    expect(read.theme.assumption).toEqual(defaultRenderTheme.assumption);
+    expect(read.theme.flag).toEqual(defaultRenderTheme.flag);
+  });
+
+  it('classes and colours record status and flag badges from their theme sections', () => {
+    const theme = readThemeOverrides({
+      mitigation: { proposed: '#123456' },
+    }).theme;
+    const markdown = renderRegister(sample, { styled: true, theme });
+    const typst = renderTypst(sample, theme).typst;
+    for (const kind of ['mitigation', 'assumption', 'flag']) {
+      expect(markdown).toContain(`saer-badge saer-${kind} saer-${kind}-`);
+    }
+    expect(markdown).toContain('saer-mitigation-proposed');
+    expect(markdown).toContain('saer-assumption-invalidated');
+    expect(markdown).toContain('saer-flag-rests-on-invalidated-assumption');
+    expect(registerStylesheet(theme)).toContain(
+      '--saer-mitigation-proposed: #123456',
+    );
+    expect(registerStylesheet(defaultRenderTheme)).not.toContain('#123456');
+    expect(typst).toMatch(/#saer-badge\("[^"]+", rgb\("#123456"\)\)/u);
+    expect(renderTypst(sample).typst).not.toContain('#123456');
+  });
+
   it('applies font and outlined badge controls without hiding labels', () => {
     const theme = readThemeOverrides({
       fonts: { body: 'Liberation Mono', code: 'Liberation Sans' },
@@ -134,16 +191,15 @@ describe('consumer themes', () => {
     );
   });
 
-  it('keeps every default severity and status label above the text contrast floor', () => {
+  it('keeps every default badge label above the text contrast floor', () => {
     for (const style of ['filled', 'outline'] as const) {
       const theme = {
         ...defaultRenderTheme,
         badges: { ...defaultRenderTheme.badges, style },
       };
-      for (const tone of [
-        ...Object.values(theme.severity),
-        ...Object.values(theme.status),
-      ]) {
+      for (const tone of registerBadgeKinds.flatMap((kind) =>
+        Object.values(theme[kind]),
+      )) {
         const background = style === 'filled' ? tone : theme.colours.background;
         expect(
           contrastRatio(badgeTextColour(theme, tone), background),

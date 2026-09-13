@@ -1,4 +1,10 @@
-import { severitySchema, threatStatusSchema } from '@saerskriven/model';
+import {
+  assumptionStatusSchema,
+  mitigationStatusSchema,
+  severitySchema,
+  threatFlagSchema,
+  threatStatusSchema,
+} from '@saerskriven/model';
 import { z } from 'zod';
 import { lightPalette, strokeWidths, type Colour } from './tokens.js';
 
@@ -29,6 +35,20 @@ export const renderThemeSchema = z.object({
     'accepted-risk': colourSchema,
     eliminated: colourSchema,
     'not-applicable': colourSchema,
+  }),
+  mitigation: z.object({
+    proposed: colourSchema,
+    implemented: colourSchema,
+    verified: colourSchema,
+  }),
+  assumption: z.object({
+    unconfirmed: colourSchema,
+    valid: colourSchema,
+    invalidated: colourSchema,
+  }),
+  flag: z.object({
+    'mitigated-without-implemented-work': colourSchema,
+    'rests-on-invalidated-assumption': colourSchema,
   }),
   colours: z.object({
     background: colourSchema,
@@ -67,6 +87,20 @@ export const defaultRenderTheme: RenderTheme = {
     eliminated: lightPalette.toneLow,
     'not-applicable': lightPalette.toneNeutral,
   },
+  mitigation: {
+    proposed: lightPalette.toneNeutral,
+    implemented: lightPalette.toneMedium,
+    verified: lightPalette.toneLow,
+  },
+  assumption: {
+    unconfirmed: lightPalette.toneNeutral,
+    valid: lightPalette.toneLow,
+    invalidated: lightPalette.toneCritical,
+  },
+  flag: {
+    'mitigated-without-implemented-work': lightPalette.toneHigh,
+    'rests-on-invalidated-assumption': lightPalette.toneCritical,
+  },
   colours: {
     background: lightPalette.surfaceCanvas,
     text: lightPalette.textPrimary,
@@ -85,20 +119,47 @@ export const defaultRenderTheme: RenderTheme = {
 
 const semanticBase = z.object({});
 
-/** Semantic badge identity stays separate from its readable label. */
+/**
+ * Semantic badge identity stays separate from its readable label. Each kind
+ * names the theme section its colour comes from.
+ */
 export const registerBadgeSchema = z.discriminatedUnion('kind', [
   semanticBase.extend({ kind: z.literal('severity'), value: severitySchema }),
   semanticBase.extend({ kind: z.literal('status'), value: threatStatusSchema }),
+  semanticBase.extend({
+    kind: z.literal('mitigation'),
+    value: mitigationStatusSchema,
+  }),
+  semanticBase.extend({
+    kind: z.literal('assumption'),
+    value: assumptionStatusSchema,
+  }),
+  semanticBase.extend({ kind: z.literal('flag'), value: threatFlagSchema }),
 ]);
 
 /** The semantic colour assigned to one generated label. */
 export type RegisterBadge = z.infer<typeof registerBadgeSchema>;
 
+/** Every badge kind, which is also the theme section holding its colours. */
+export const registerBadgeKinds = registerBadgeSchema.options.map(
+  (option) => option.shape.kind.value,
+);
+
 /** Resolves a semantic role without reading its display text. */
 export function badgeColour(theme: RenderTheme, badge: RegisterBadge): Colour {
-  return badge.kind === 'severity'
-    ? theme.severity[badge.value]
-    : theme.status[badge.value];
+  if (badge.kind === 'severity') {
+    return theme.severity[badge.value];
+  }
+  if (badge.kind === 'status') {
+    return theme.status[badge.value];
+  }
+  if (badge.kind === 'mitigation') {
+    return theme.mitigation[badge.value];
+  }
+  if (badge.kind === 'assumption') {
+    return theme.assumption[badge.value];
+  }
+  return theme.flag[badge.value];
 }
 
 /** Automatic lettering follows the semantic tone on outlined badges. */

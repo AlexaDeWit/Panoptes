@@ -313,7 +313,8 @@ cost under half a second. This is that shape at a size worth committing.
 
 ### `adversarial/typst-injection.yaml`
 
-A valid model of two elements and two threats, whose every free-text field
+A valid model of two elements, two threats, two mitigations and one
+assumption, whose every free-text field
 carries something that means something to a markup language: `#eval("1+1")`
 and `#read("/etc/passwd")` and `#include`, which are Typst function calls, a
 `<script>` tag and an `onerror` attribute, which are HTML, a bare `"` and a
@@ -331,7 +332,8 @@ Threat 2's mitigation is a markdown heading whose content is a raw HTML tag.
 That shape is deliberate: a heading becomes a PDF outline entry, which is a
 PDF string rather than glyphs, so a spec reads it back without a font or a
 content stream. It is how the register's treatment of raw HTML is proven in
-the artifact rather than only in the source.
+the artifact rather than only in the source. Its untitled mitigation's prose
+has the same shape, so a record's prose is held to it too.
 
 `nested-anchors.yaml` is what the parser's own alias accounting costs rather
 than what an alias costs. `yaml` resolves an alias by scanning the whole

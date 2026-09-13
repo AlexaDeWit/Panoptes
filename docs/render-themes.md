@@ -19,7 +19,7 @@ The same theme controls diagram colours, the PNG background, and register badges
 PDF applies it to both the register and every embedded drawing.
 Defaults come from the canvas light palette. Every badge keeps a readable label.
 Diagram badges retain their threat count and severity letter.
-Status colours apply to register labels. Diagram badges summarize open threats by severity.
+Status, record status, and flag colours apply to register labels. Diagram badges summarize open threats by severity.
 
 ## Partial overrides
 
@@ -35,15 +35,18 @@ or enter the document written to standard output with `--out -`.
 Theme parsing uses the model reader's size, nesting, and YAML alias limits.
 The theme accepts data only. It cannot load fonts, execute code, or contain CSS or Typst source.
 
-| Section    | Keys                                                                                           | Values                                         |
-| ---------- | ---------------------------------------------------------------------------------------------- | ---------------------------------------------- |
-| `severity` | `critical`, `high`, `medium`, `low`, `undecided`                                               | Quoted `#RGB` or `#RRGGBB` colours             |
-| `status`   | `open`, `mitigated`, `transferred`, `avoided`, `accepted-risk`, `eliminated`, `not-applicable` | Quoted `#RGB` or `#RRGGBB` colours             |
-| `colours`  | `background`, `text`, `muted`, `element`, `actor`, `process`                                   | Quoted `#RGB` or `#RRGGBB` colours             |
-| `fonts`    | `body`, `code`                                                                                 | A single font family name, up to 80 characters |
-| `badges`   | `style`                                                                                        | `filled` or `outline`                          |
-| `badges`   | `text`                                                                                         | `auto` or a quoted colour                      |
-| `badges`   | `borderWidth`                                                                                  | A number from 0 to 3                           |
+| Section      | Keys                                                                                           | Values                                         |
+| ------------ | ---------------------------------------------------------------------------------------------- | ---------------------------------------------- |
+| `severity`   | `critical`, `high`, `medium`, `low`, `undecided`                                               | Quoted `#RGB` or `#RRGGBB` colours             |
+| `status`     | `open`, `mitigated`, `transferred`, `avoided`, `accepted-risk`, `eliminated`, `not-applicable` | Quoted `#RGB` or `#RRGGBB` colours             |
+| `mitigation` | `proposed`, `implemented`, `verified`                                                          | Quoted `#RGB` or `#RRGGBB` colours             |
+| `assumption` | `unconfirmed`, `valid`, `invalidated`                                                          | Quoted `#RGB` or `#RRGGBB` colours             |
+| `flag`       | `mitigated-without-implemented-work`, `rests-on-invalidated-assumption`                        | Quoted `#RGB` or `#RRGGBB` colours             |
+| `colours`    | `background`, `text`, `muted`, `element`, `actor`, `process`                                   | Quoted `#RGB` or `#RRGGBB` colours             |
+| `fonts`      | `body`, `code`                                                                                 | A single font family name, up to 80 characters |
+| `badges`     | `style`                                                                                        | `filled` or `outline`                          |
+| `badges`     | `text`                                                                                         | `auto` or a quoted colour                      |
+| `badges`     | `borderWidth`                                                                                  | A number from 0 to 3                           |
 
 `background` and `text` apply to drawings and register pages. `muted`, `element`,
 `actor`, and `process` name diagram roles. Website CSS exposes all these colours.
@@ -100,21 +103,24 @@ A consumer can load that file before its own overrides, or replace it completely
 Stable classes are `saer-register`, `saer-badge`, and `saer-badge-label`.
 Severity badges also carry `saer-severity` and `saer-severity-<value>`.
 Status badges carry `saer-status` and `saer-status-<value>`.
+A mitigation's status badge carries `saer-mitigation` and `saer-mitigation-<value>`,
+an assumption's `saer-assumption` and `saer-assumption-<value>`, and a threat's
+flag badges `saer-flag` and `saer-flag-<value>`.
 The values are the YAML keys above, including `accepted-risk` and `undecided`.
 Labels remain readable if the site removes every stylesheet.
 
 The stylesheet supports these CSS variables within `.saer-register`.
 Unspecified badge fill and lettering values fall back to the current semantic tone:
 
-| Variables                                                                                              | Purpose                             |
-| ------------------------------------------------------------------------------------------------------ | ----------------------------------- |
-| `--saer-severity-<value>`, `--saer-status-<value>`                                                     | Semantic colours                    |
-| `--saer-background`, `--saer-text`, `--saer-muted`, `--saer-element`, `--saer-actor`, `--saer-process` | Colour roles                        |
-| `--saer-font-body`, `--saer-font-code`                                                                 | Font families                       |
-| `--saer-tone`                                                                                          | The current badge's semantic colour |
-| `--saer-badge-text`, `--saer-badge-colour`                                                             | Lettering colours                   |
-| `--saer-badge-background`, `--saer-badge-border-width`                                                 | Fill and border                     |
-| `--saer-badge-radius`, `--saer-badge-padding`                                                          | Website badge geometry              |
+| Variables                                                                                                                           | Purpose                             |
+| ----------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------- |
+| `--saer-severity-<value>`, `--saer-status-<value>`, `--saer-mitigation-<value>`, `--saer-assumption-<value>`, `--saer-flag-<value>` | Semantic colours                    |
+| `--saer-background`, `--saer-text`, `--saer-muted`, `--saer-element`, `--saer-actor`, `--saer-process`                              | Colour roles                        |
+| `--saer-font-body`, `--saer-font-code`                                                                                              | Font families                       |
+| `--saer-tone`                                                                                                                       | The current badge's semantic colour |
+| `--saer-badge-text`, `--saer-badge-colour`                                                                                          | Lettering colours                   |
+| `--saer-badge-background`, `--saer-badge-border-width`                                                                              | Fill and border                     |
+| `--saer-badge-radius`, `--saer-badge-padding`                                                                                       | Website badge geometry              |
 
 For example, a site's CSS can set `.saer-register { --saer-badge-radius: 0; }`
 in its stylesheet. Default selectors use `:where()` with zero specificity, so

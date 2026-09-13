@@ -82,7 +82,8 @@ that list drops the only notice of it.
 
 The document opens on the model's title, then an overview table of every
 threat (number, title, elements, category, severity, status), then one
-section per threat carrying the same fields as a list and the threat's prose.
+section per threat carrying the same fields and the threat's flags as a list,
+the threat's prose, and the mitigation and assumption records linked to it.
 Threats come out in number order whatever order the model holds them in, and
 the same model always renders the same bytes.
 
@@ -105,26 +106,38 @@ observe.
   `#threat-7`. The generated anchor and link target do not enter Typst output,
   so a PDF keeps the overview number without showing HTML or a fragment URL.
   Line breaks in a title are collapsed to spaces in the heading text alone.
-- **Prose is markdown.** A threat's description and mitigation are parsed and
-  spliced into the section as nodes, so a list or a table an author wrote
-  stays one. A heading inside prose is demoted below the section heading, so
-  it cannot break the register's structure. Raw HTML passes through as
-  written: what to do about it belongs to whatever consumes the register.
-  Prose nested deeper than `deepestProse` is rendered as one paragraph of the
-  author's own bytes so both register writers stay within their depth bounds.
+- **Records sit on their threats.** A section lists the threat's mitigations
+  and then its assumptions, each in the order the model holds them, and each
+  item leads with the record's status. A mitigation's title follows the
+  status, and a mitigation with an empty title has no title there. A record
+  linked to several threats is listed in each of their sections, and a record
+  linked to none appears nowhere: the register has no section of records of
+  its own. The threat's flags, as `threatFlags` in `@saerskriven/model`
+  derives them, are a field of the section, `None` where there are none.
+- **Prose is markdown.** A threat's description and mitigation, and a
+  record's prose, are parsed and spliced into the section as nodes, so a list
+  or a table an author wrote stays one. A heading inside prose is demoted
+  below the section heading, so it cannot break the register's structure. Raw
+  HTML passes through as written: what to do about it belongs to whatever
+  consumes the register. Prose nested deeper than `deepestProse`, counted
+  from the register's root, is rendered as one paragraph of the author's own
+  bytes so both register writers stay within their depth bounds. A record's
+  prose sits two levels down, inside its list item, so it admits two levels
+  fewer than a threat's.
 - **Escaping is the library's.** The tree is built out of mdast nodes and
   serialized by remark, never concatenated, so a title carrying a pipe, a
   backtick, or a leading hash lands in the table and the heading as that text
   and nothing else. Line breaks are the one thing a heading cannot carry, and
   they are collapsed rather than escaped.
 - **Nothing goes missing.** An enum crosses to its display label through a
-  table the compiler checks for totality, so a severity, status, or
-  methodology added to `@saerskriven/model` stops this package compiling rather
-  than rendering blank, and `markdown-register.labels.snapshot.txt` beside
-  the spec pins the label text of every member the model declares, rendered
-  rather than restated. A threat attached to no element reads `None`, prose
-  a threat does not carry reads `None recorded.`, and a model holding no
-  threats says so in place of an empty table.
+  table the compiler checks for totality, so a severity, status, record
+  status, flag, or methodology added to `@saerskriven/model` stops this
+  package compiling rather than rendering blank, and
+  `markdown-register.labels.snapshot.txt` beside the spec pins the label text
+  of every member the model declares, rendered rather than restated. A threat
+  attached to no element or carrying no flag reads `None`, prose a threat
+  does not carry and a kind of record it has none of read `None recorded.`,
+  and a model holding no threats says so in place of an empty table.
 
 ## A model as a Typst document
 
