@@ -22,13 +22,7 @@ import {
 } from '@saerskriven/model';
 import { Either } from 'effect';
 import type { RegisterBadge } from '@saerskriven/canvas';
-import type {
-  ListItem,
-  PhrasingContent,
-  Root,
-  RootContent,
-  Strong,
-} from 'mdast';
+import type { ListItem, Root, RootContent, Strong } from 'mdast';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import remarkGfm from 'remark-gfm';
@@ -229,21 +223,6 @@ function withRecords(
   };
 }
 
-function threatSectionsIn(tree: Root): RootContent[][] {
-  return tree.children.reduce<RootContent[][]>(
-    (sections, node) =>
-      node.type === 'heading' && node.depth === 2
-        ? [...sections, []]
-        : sections.length === 0
-          ? sections
-          : [
-              ...sections.slice(0, -1),
-              [...sections[sections.length - 1], node],
-            ],
-    [],
-  );
-}
-
 function isLabel(node: RootContent | undefined, label: string): boolean {
   return (
     node?.type === 'paragraph' &&
@@ -267,18 +246,6 @@ function titleLine(item: ListItem): Strong[] {
   return lead.type === 'paragraph'
     ? lead.children.filter((node) => node.type === 'strong')
     : [];
-}
-
-function plainTextIn(nodes: readonly RootContent[]): string {
-  return nodes
-    .map((node) =>
-      node.type === 'text'
-        ? node.value
-        : 'children' in node
-          ? plainTextIn(node.children)
-          : '',
-    )
-    .join(' ');
 }
 
 const everyRecordLabel = withRecords(
@@ -307,7 +274,7 @@ function badgesIn(nodes: readonly RootContent[]): RegisterBadge[] {
   return badgeTextsIn(nodes).map((entry) => entry.badge);
 }
 
-function textOf(nodes: readonly PhrasingContent[]): string {
+function textOf(nodes: readonly RootContent[]): string {
   return nodes
     .map((node) =>
       node.type === 'text'
@@ -368,6 +335,21 @@ function sectionsOf(document: string): string[] {
   return document
     .split(/^(?=<a name="threat-\d+"><\/a>\n\n## Threat )/m)
     .slice(1);
+}
+
+function threatSectionsIn(tree: Root): RootContent[][] {
+  return tree.children.reduce<RootContent[][]>(
+    (sections, node) =>
+      node.type === 'heading' && node.depth === 2
+        ? [...sections, []]
+        : sections.length === 0
+          ? sections
+          : [
+              ...sections.slice(0, -1),
+              [...sections[sections.length - 1], node],
+            ],
+    [],
+  );
 }
 
 describe.each(registers)('the $name register', ({ model, golden }) => {
@@ -648,12 +630,12 @@ describe("a threat's records", () => {
     const [written] = threatSectionsIn(reader.parse(renderRegister(model)));
     expect(
       recordItems(written, 'Mitigations').map((item) =>
-        plainTextIn(item.children.slice(1)),
+        textOf(item.children.slice(1)),
       ),
     ).toEqual(['second in the model', 'shared']);
     expect(
       recordItems(written, 'Assumptions').map((item) =>
-        plainTextIn(item.children.slice(1)),
+        textOf(item.children.slice(1)),
       ),
     ).toEqual(['held']);
   });
@@ -664,7 +646,7 @@ describe("a threat's records", () => {
     expect(
       sections.map((section) =>
         recordItems(section, 'Mitigations').map((item) =>
-          plainTextIn(item.children.slice(1)),
+          textOf(item.children.slice(1)),
         ),
       ),
     ).toEqual([
@@ -678,7 +660,7 @@ describe("a threat's records", () => {
       ),
     );
     expect(beforeSections.some((node) => node.type === 'list')).toBe(false);
-    expect(plainTextIn(beforeSections)).not.toContain('shared');
+    expect(textOf(beforeSections)).not.toContain('shared');
     expect(renderRegister(model)).not.toContain('unlinked');
   });
 
@@ -708,9 +690,9 @@ describe("a threat's records", () => {
       expect(titleLine(titled).map((node) => textOf(node.children))).toEqual([
         'Pinned digests',
       ]);
-      expect(plainTextIn(titled.children.slice(1))).toBe('titled prose');
+      expect(textOf(titled.children.slice(1))).toBe('titled prose');
       expect(titleLine(bare)).toEqual([]);
-      expect(plainTextIn(bare.children.slice(1))).toBe('bare prose');
+      expect(textOf(bare.children.slice(1))).toBe('bare prose');
     }
   });
 

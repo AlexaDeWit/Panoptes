@@ -8,6 +8,8 @@ import {
 } from './exports.fixtures.js';
 import { exportedFile, openFile, vendored } from './studio.fixtures.js';
 
+const compilerDownloadAndTypesetTimeout = 60_000;
+
 const socialImage = 'https://alexadewit.github.io/Saerskriven/social-card.png';
 const socialImageAlt =
   'Saerskriven: Draw the system. Record the threats. An example threat model connects a maintainer, studio, and model file.';
@@ -15,9 +17,7 @@ const socialImageAlt =
 test('the Pages build loads its hashed PDF assets below the site base', async ({
   page,
 }) => {
-  // The compiler module is 28 MB, and the eighteen pages are typeset after
-  // it arrives, which together run past the 30 second default.
-  test.setTimeout(60_000);
+  test.setTimeout(compilerDownloadAndTypesetTimeout);
   await openFile(page, 'test-data/ecluse.json', './');
 
   const output = await exportedFile(page, 'Model as PDF');
