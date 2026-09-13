@@ -1,0 +1,335 @@
+import { z } from 'zod';
+
+const idSchema = z.string().min(1);
+
+const pointSchema = z.object({ x: z.number(), y: z.number() });
+
+const sizeSchema = z.object({
+  width: z.number().positive(),
+  height: z.number().positive(),
+});
+
+const waypointsSchema = z.array(pointSchema);
+
+const elementBaseSchema = z.object({
+  id: idSchema,
+  name: z.string(),
+  description: z.string(),
+  outOfScope: z.boolean(),
+  reasonOutOfScope: z.string(),
+});
+
+const nodeBaseSchema = elementBaseSchema.extend({
+  position: pointSchema,
+  size: sizeSchema,
+});
+
+const actorSchema = nodeBaseSchema.extend({
+  kind: z.literal('actor'),
+  providesAuthentication: z.boolean().optional(),
+});
+
+const processSchema = nodeBaseSchema.extend({
+  kind: z.literal('process'),
+  handlesCardPayment: z.boolean().optional(),
+  handlesGoodsOrServices: z.boolean().optional(),
+  isWebApplication: z.boolean().optional(),
+  privilegeLevel: z.string().optional(),
+});
+
+const storeSchema = nodeBaseSchema.extend({
+  kind: z.literal('store'),
+  isALog: z.boolean().optional(),
+  isEncrypted: z.boolean().optional(),
+  isSigned: z.boolean().optional(),
+  storesCredentials: z.boolean().optional(),
+  storesInventory: z.boolean().optional(),
+});
+
+const sideSchema = z.enum(['top', 'right', 'bottom', 'left']);
+
+const attachedEndpointSchema = z.object({
+  kind: z.literal('attached'),
+  element: idSchema,
+  side: sideSchema.optional(),
+});
+
+const freeEndpointSchema = z.object({
+  kind: z.literal('free'),
+  position: pointSchema,
+});
+
+const endpointSchema = z.discriminatedUnion('kind', [
+  attachedEndpointSchema,
+  freeEndpointSchema,
+]);
+
+const flowSchema = elementBaseSchema.extend({
+  kind: z.literal('flow'),
+  protocol: z.string().optional(),
+  isEncrypted: z.boolean().optional(),
+  isPublicNetwork: z.boolean().optional(),
+  trustBoundaryIds: z.array(z.string()).optional(),
+  source: endpointSchema,
+  target: endpointSchema,
+  waypoints: waypointsSchema,
+  bidirectional: z.boolean().optional(),
+});
+
+const boxBoundaryShapeSchema = z.object({
+  kind: z.literal('box'),
+  position: pointSchema,
+  size: sizeSchema,
+});
+
+const curveBoundaryShapeSchema = z.object({
+  kind: z.literal('curve'),
+  waypoints: waypointsSchema.min(2),
+});
+
+const boundaryShapeSchema = z.discriminatedUnion('kind', [
+  boxBoundaryShapeSchema,
+  curveBoundaryShapeSchema,
+]);
+
+const trustBoundarySchema = elementBaseSchema.extend({
+  kind: z.literal('trust-boundary'),
+  containedElements: z.array(z.string()).optional(),
+  crossingFlows: z.array(z.string()).optional(),
+  shape: boundaryShapeSchema,
+});
+
+const textSchema = nodeBaseSchema.extend({
+  kind: z.literal('text'),
+  text: z.string(),
+});
+
+const elementSchema = z.discriminatedUnion('kind', [
+  actorSchema,
+  processSchema,
+  storeSchema,
+  flowSchema,
+  trustBoundarySchema,
+  textSchema,
+]);
+
+const strideCategorySchema = z.object({
+  methodology: z.literal('STRIDE'),
+  category: z.enum([
+    'spoofing',
+    'tampering',
+    'repudiation',
+    'information-disclosure',
+    'denial-of-service',
+    'elevation-of-privilege',
+  ]),
+});
+
+const linddunCategorySchema = z.object({
+  methodology: z.literal('LINDDUN'),
+  category: z.enum([
+    'linking',
+    'identifying',
+    'non-repudiation',
+    'detecting',
+    'data-disclosure',
+    'unawareness',
+    'non-compliance',
+  ]),
+});
+
+const ciaCategorySchema = z.object({
+  methodology: z.literal('CIA'),
+  category: z.enum(['confidentiality', 'integrity', 'availability']),
+});
+
+const ciaDieCategorySchema = z.object({
+  methodology: z.literal('CIA-DIE'),
+  category: z.enum([
+    'confidentiality',
+    'integrity',
+    'availability',
+    'distributed',
+    'immutable',
+    'ephemeral',
+  ]),
+});
+
+const plot4aiCategorySchema = z.object({
+  methodology: z.literal('PLOT4ai'),
+  category: z.enum([
+    'accountability-and-human-oversight',
+    'bias-fairness-and-discrimination',
+    'cybersecurity',
+    'data-and-data-governance',
+    'ethics-and-human-rights',
+    'privacy-and-data-protection',
+    'safety-and-environmental-impact',
+    'transparency-and-accessibility',
+  ]),
+});
+
+const customCategorySchema = z.object({
+  methodology: z.literal('custom'),
+  methodologyName: z.string().min(1),
+  category: z.string().min(1),
+});
+
+const categorySchema = z.discriminatedUnion('methodology', [
+  strideCategorySchema,
+  linddunCategorySchema,
+  ciaCategorySchema,
+  ciaDieCategorySchema,
+  plot4aiCategorySchema,
+  customCategorySchema,
+]);
+
+const severitySchema = z.enum([
+  'low',
+  'medium',
+  'high',
+  'critical',
+  'undecided',
+]);
+
+const threatStatusSchema = z.enum([
+  'open',
+  'mitigated',
+  'transferred',
+  'avoided',
+  'accepted-risk',
+  'eliminated',
+  'not-applicable',
+]);
+
+const mitigationStatusSchema = z.enum(['proposed', 'implemented', 'verified']);
+
+const assumptionStatusSchema = z.enum(['unconfirmed', 'valid', 'invalidated']);
+
+const threatSchema = z.object({
+  id: idSchema,
+  number: z.int().positive(),
+  title: z.string(),
+  category: categorySchema,
+  severity: severitySchema,
+  status: threatStatusSchema,
+  description: z.string(),
+  elements: z.array(idSchema),
+});
+
+const mitigationSchema = z.object({
+  id: idSchema,
+  title: z.string(),
+  prose: z.string(),
+  status: mitigationStatusSchema,
+  threats: z.array(idSchema),
+});
+
+const assumptionSchema = z.object({
+  id: idSchema,
+  prose: z.string(),
+  status: assumptionStatusSchema,
+  threats: z.array(idSchema),
+});
+
+const diagramSchema = z.object({
+  id: idSchema,
+  title: z.string(),
+  elements: z.array(elementSchema),
+});
+
+const metadataSchema = z.object({
+  title: z.string(),
+  owner: z.string(),
+  description: z.string(),
+  contributors: z.array(z.string()),
+});
+
+/** Version 2 declares optional additions without defaults. The codec reports unknown keys and defines absence. */
+export const saerskrivenYamlV2WireSchema = z.object({
+  formatVersion: z.literal(2),
+  metadata: metadataSchema,
+  assumptions: z.array(assumptionSchema),
+  diagrams: z.array(diagramSchema),
+  mitigations: z.array(mitigationSchema),
+  threats: z.array(threatSchema),
+  lastIssuedThreatNumber: z.int().nonnegative(),
+});
+
+/** A whole Saerskriven YAML version 2 document. */
+export type SaerskrivenYamlV2Document = z.infer<
+  typeof saerskrivenYamlV2WireSchema
+>;
+
+/** What a Saerskriven YAML version 2 file says about the model as a whole. */
+export type SaerskrivenYamlV2Metadata = z.infer<typeof metadataSchema>;
+
+/** One diagram of a Saerskriven YAML version 2 document. */
+export type SaerskrivenYamlV2Diagram = z.infer<typeof diagramSchema>;
+
+/** One element of a Saerskriven YAML version 2 diagram. */
+export type SaerskrivenYamlV2Element = z.infer<typeof elementSchema>;
+
+/** Where a Saerskriven YAML version 2 flow starts or ends. */
+export type SaerskrivenYamlV2Endpoint = z.infer<typeof endpointSchema>;
+
+/** The geometry of a Saerskriven YAML version 2 trust boundary. */
+export type SaerskrivenYamlV2BoundaryShape = z.infer<
+  typeof boundaryShapeSchema
+>;
+
+/** One threat of a Saerskriven YAML version 2 document. */
+export type SaerskrivenYamlV2Threat = z.infer<typeof threatSchema>;
+
+/** One mitigation of a Saerskriven YAML version 2 document. */
+export type SaerskrivenYamlV2Mitigation = z.infer<typeof mitigationSchema>;
+
+/** One assumption of a Saerskriven YAML version 2 document. */
+export type SaerskrivenYamlV2Assumption = z.infer<typeof assumptionSchema>;
+
+/** How bad a Saerskriven YAML version 2 threat is if realized. */
+export type SaerskrivenYamlV2Severity = z.infer<typeof severitySchema>;
+
+/** Where a Saerskriven YAML version 2 threat stands. */
+export type SaerskrivenYamlV2ThreatStatus = z.infer<typeof threatStatusSchema>;
+
+/** How far a Saerskriven YAML version 2 mitigation has got. */
+export type SaerskrivenYamlV2MitigationStatus = z.infer<
+  typeof mitigationStatusSchema
+>;
+
+/** Whether a Saerskriven YAML version 2 assumption still holds. */
+export type SaerskrivenYamlV2AssumptionStatus = z.infer<
+  typeof assumptionStatusSchema
+>;
+
+/** The category of a Saerskriven YAML version 2 threat, by methodology. */
+export type SaerskrivenYamlV2Category = z.infer<typeof categorySchema>;
+
+/** A STRIDE category as a Saerskriven YAML version 2 file states it. */
+export type SaerskrivenYamlV2StrideCategory = z.infer<
+  typeof strideCategorySchema
+>;
+
+/** A LINDDUN category as a Saerskriven YAML version 2 file states it. */
+export type SaerskrivenYamlV2LinddunCategory = z.infer<
+  typeof linddunCategorySchema
+>;
+
+/** A CIA category as a Saerskriven YAML version 2 file states it. */
+export type SaerskrivenYamlV2CiaCategory = z.infer<typeof ciaCategorySchema>;
+
+/** A CIA-DIE category as a Saerskriven YAML version 2 file states it. */
+export type SaerskrivenYamlV2CiaDieCategory = z.infer<
+  typeof ciaDieCategorySchema
+>;
+
+/** A PLOT4ai category as a Saerskriven YAML version 2 file states it. */
+export type SaerskrivenYamlV2Plot4aiCategory = z.infer<
+  typeof plot4aiCategorySchema
+>;
+
+/** A category from a methodology the format does not enumerate. */
+export type SaerskrivenYamlV2CustomCategory = z.infer<
+  typeof customCategorySchema
+>;
